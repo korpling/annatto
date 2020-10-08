@@ -1,1 +1,9 @@
-pub mod execution;
+pub mod error;
+pub mod exporter;
+pub mod importer;
+pub mod manipulator;
+pub mod workflow;
+
+pub trait Module {
+    fn module_name(&self) -> String;
+}

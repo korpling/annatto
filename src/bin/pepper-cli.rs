@@ -1,4 +1,4 @@
-use pepper::execution::execute_workflow;
+use pepper::{error::PepperError, workflow::execute_from_file};
 use structopt::StructOpt;
 
 /// Define a conversion operation
@@ -9,7 +9,8 @@ struct Cli {
     workflow_file: std::path::PathBuf,
 }
 
-pub fn main() {
+pub fn main() -> Result<(), PepperError> {
     let args = Cli::from_args();
-    execute_workflow(&args.workflow_file);
+    execute_from_file(&args.workflow_file)?;
+    Ok(())
 }

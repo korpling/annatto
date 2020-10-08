@@ -8,3 +8,4 @@ license = "Apache-2.0"
 [dependencies]
 graphannis = "0.30"
 structopt = "0.3"
+thiserror = "1.0"
