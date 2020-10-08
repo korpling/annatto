@@ -54,19 +54,11 @@ pub fn execute(workflow: Workflow) -> Result<()> {
     // Create a new empty annotation graph
     let mut g = AnnotationGraph::new(true).map_err(|e| PepperError::CreateGraph(e.to_string()))?;
 
-    // Execute all importers and store their graph updates
+    // Execute all importers and store their graph updates in parallel
     let updates: Result<Vec<GraphUpdate>> = workflow
         .importer
         .into_par_iter()
-        .map(|desc| {
-            desc.module
-                .import_corpus(&desc.corpus_path, &desc.properties)
-                .map_err(|reason| PepperError::Import {
-                    reason: reason.to_string(),
-                    importer: desc.module.module_name(),
-                    path: desc.corpus_path.to_path_buf(),
-                })
-        })
+        .map(execute_single_importer)
         .collect();
     // Apply each graph update
     for mut u in updates? {
@@ -74,7 +66,7 @@ pub fn execute(workflow: Workflow) -> Result<()> {
             .map_err(|reason| PepperError::UpdateGraph(reason.to_string()))?;
     }
 
-    // Execute all manipulators
+    // Execute all manipulators in sequence
     for desc in workflow.manipulator.into_iter() {
         desc.module
             .manipulate_corpus(&mut g, &desc.properties)
@@ -84,16 +76,34 @@ pub fn execute(workflow: Workflow) -> Result<()> {
             })?;
     }
 
-    // Execute all exporters
-    for desc in workflow.exporter.into_iter() {
-        desc.module
-            .export_corpus(&g, &desc.properties, &desc.corpus_path)
-            .map_err(|reason| PepperError::Export {
-                reason: reason.to_string(),
-                exporter: desc.module.module_name(),
-                path: desc.corpus_path.clone(),
-            })?;
-    }
+    // Execute all exporters in parallel
+    let export_result: Result<Vec<_>> = workflow
+        .exporter
+        .into_par_iter()
+        .map(|desc| execute_single_exporter(&g, desc))
+        .collect();
+    // Check for errors during export
+    export_result?;
+    Ok(())
+}
 
+fn execute_single_importer(desc: &ImporterDesc) -> Result<GraphUpdate> {
+    desc.module
+        .import_corpus(&desc.corpus_path, &desc.properties)
+        .map_err(|reason| PepperError::Import {
+            reason: reason.to_string(),
+            importer: desc.module.module_name(),
+            path: desc.corpus_path.to_path_buf(),
+        })
+}
+
+fn execute_single_exporter(g: &AnnotationGraph, desc: &ExporterDesc) -> Result<()> {
+    desc.module
+        .export_corpus(&g, &desc.properties, &desc.corpus_path)
+        .map_err(|reason| PepperError::Export {
+            reason: reason.to_string(),
+            exporter: desc.module.module_name(),
+            path: desc.corpus_path.clone(),
+        })?;
     Ok(())
 }
