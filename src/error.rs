@@ -30,4 +30,14 @@ pub enum PepperError {
         file: PathBuf,
         reason: std::io::Error,
     },
+    #[error("Error when updating corpus graph: {0}")]
+    UpdateGraph(Box<dyn std::error::Error>),
+    #[error("Unknown error {0}")]
+    Unknown(Box<dyn std::error::Error>),
+}
+
+impl Into<PepperError> for Box<dyn std::error::Error> {
+    fn into(self) -> PepperError {
+        PepperError::Unknown(self)
+    }
 }

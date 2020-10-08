@@ -4,12 +4,13 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use graphannis::AnnotationGraph;
+use graphannis::{update::GraphUpdate, AnnotationGraph};
 
 use crate::{
     error::PepperError, error::Result, exporter::Exporter, importer::Importer,
     manipulator::Manipulator,
 };
+use rayon::prelude::*;
 
 struct ImporterDesc {
     module: Box<dyn Importer>,
@@ -53,16 +54,24 @@ pub fn execute(workflow: Workflow) -> Result<()> {
     // Create a new empty annotation graph
     let mut g = AnnotationGraph::new(true).map_err(|e| PepperError::CreateGraph(e.into()))?;
 
-    // Execute all importers
-    for importer in workflow.importer.iter() {
-        importer
-            .module
-            .import_corpus(&importer.corpus_path, &importer.properties)
-            .map_err(|reason| PepperError::Import {
-                reason,
-                importer: importer.module.module_name(),
-                path: importer.corpus_path.clone(),
-            })?;
+    // Execute all importers and store their graph updates
+    let updates: Result<Vec<GraphUpdate>> = workflow
+        .importer
+        .iter()
+        .map(|desc| {
+            desc.module
+                .import_corpus(&desc.corpus_path, &desc.properties)
+                .map_err(|reason| PepperError::Import {
+                    reason,
+                    importer: desc.module.module_name(),
+                    path: desc.corpus_path.to_path_buf(),
+                })
+        })
+        .collect();
+    // Apply each graph update
+    for mut u in updates? {
+        g.apply_update(&mut u, |_msg| {})
+            .map_err(|reason| PepperError::UpdateGraph(reason.into()))?;
     }
 
     // Execute all manipulators
