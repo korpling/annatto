@@ -5,6 +5,6 @@ It will use the graphANNIS data model and storage instead of Salt and uses Rust 
 
 Ideas what could be included are e.g.
 - adding the GraphML importer and exporter from graphANNIS
-- adding the relANNIS from graphANNIS
+- adding the relANNIS importer from graphANNIS
 - allow to execute Python3.0 scripts as modules
 - add a legacy Java and Salt interface for existing Pepper modules
