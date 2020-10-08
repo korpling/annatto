@@ -52,17 +52,17 @@ pub fn execute_from_file(workflow_file: &Path) -> Result<()> {
 
 pub fn execute(workflow: Workflow) -> Result<()> {
     // Create a new empty annotation graph
-    let mut g = AnnotationGraph::new(true).map_err(|e| PepperError::CreateGraph(e.into()))?;
+    let mut g = AnnotationGraph::new(true).map_err(|e| PepperError::CreateGraph(e.to_string()))?;
 
     // Execute all importers and store their graph updates
     let updates: Result<Vec<GraphUpdate>> = workflow
         .importer
-        .iter()
+        .into_par_iter()
         .map(|desc| {
             desc.module
                 .import_corpus(&desc.corpus_path, &desc.properties)
                 .map_err(|reason| PepperError::Import {
-                    reason,
+                    reason: reason.to_string(),
                     importer: desc.module.module_name(),
                     path: desc.corpus_path.to_path_buf(),
                 })
@@ -71,25 +71,25 @@ pub fn execute(workflow: Workflow) -> Result<()> {
     // Apply each graph update
     for mut u in updates? {
         g.apply_update(&mut u, |_msg| {})
-            .map_err(|reason| PepperError::UpdateGraph(reason.into()))?;
+            .map_err(|reason| PepperError::UpdateGraph(reason.to_string()))?;
     }
 
     // Execute all manipulators
-    for desc in workflow.manipulator.iter() {
+    for desc in workflow.manipulator.into_iter() {
         desc.module
             .manipulate_corpus(&mut g, &desc.properties)
             .map_err(|reason| PepperError::Manipulator {
-                reason,
+                reason: reason.to_string(),
                 manipulator: desc.module.module_name(),
             })?;
     }
 
     // Execute all exporters
-    for desc in workflow.exporter.iter() {
+    for desc in workflow.exporter.into_iter() {
         desc.module
             .export_corpus(&g, &desc.properties, &desc.corpus_path)
             .map_err(|reason| PepperError::Export {
-                reason,
+                reason: reason.to_string(),
                 exporter: desc.module.module_name(),
                 path: desc.corpus_path.clone(),
             })?;
