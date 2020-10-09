@@ -32,7 +32,7 @@ struct ManipulatorDesc {
 pub struct Workflow {
     importer: Vec<ImporterDesc>,
     manipulator: Vec<ManipulatorDesc>,
-    exporter: Vec<Box<ExporterDesc>>,
+    exporter: Vec<ExporterDesc>,
 }
 
 impl From<File> for Workflow {
