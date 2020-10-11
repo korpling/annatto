@@ -59,72 +59,78 @@ pub fn execute_from_file(workflow_file: &Path, tx: Option<Sender<StatusMessage>>
         file: workflow_file.to_path_buf(),
     })?;
 
-    execute(f.into(), tx)
+    let workflow: Workflow = f.into();
+    workflow.execute(tx)
 }
 
-pub fn execute(workflow: Workflow, tx: Option<Sender<StatusMessage>>) -> Result<()> {
-    // Create a new empty annotation graph
-    let mut g = AnnotationGraph::new(true).map_err(|e| PepperError::CreateGraph(e.to_string()))?;
+impl Workflow {
+    pub fn execute(&self, tx: Option<Sender<StatusMessage>>) -> Result<()> {
+        // Create a new empty annotation graph
+        let mut g =
+            AnnotationGraph::new(true).map_err(|e| PepperError::CreateGraph(e.to_string()))?;
 
-    // Execute all importers and store their graph updates in parallel
-    let updates: Result<Vec<GraphUpdate>> = workflow
-        .importer
-        .into_par_iter()
-        .map(execute_single_importer)
-        .collect();
-    // Apply each graph update
-    for mut u in updates? {
-        g.apply_update(&mut u, |_msg| {})
-            .map_err(|reason| PepperError::UpdateGraph(reason.to_string()))?;
-    }
-    if let Some(ref tx) = tx {
-        tx.send(StatusMessage::Progress(0.3))?;
+        // Execute all importers and store their graph updates in parallel
+        let updates: Result<Vec<GraphUpdate>> = self
+            .importer
+            .par_iter()
+            .map(|desc| self.execute_single_importer(desc))
+            .collect();
+        // Apply each graph update
+        for mut u in updates? {
+            g.apply_update(&mut u, |_msg| {})
+                .map_err(|reason| PepperError::UpdateGraph(reason.to_string()))?;
+        }
+        self.send_progress(0.3, &tx)?;
+
+        // Execute all manipulators in sequence
+        for desc in self.manipulator.iter() {
+            desc.module
+                .manipulate_corpus(&mut g, &desc.properties)
+                .map_err(|reason| PepperError::Manipulator {
+                    reason: reason.to_string(),
+                    manipulator: desc.module.module_name(),
+                })?;
+        }
+        self.send_progress(0.6, &tx)?;
+
+        // Execute all exporters in parallel
+        let export_result: Result<Vec<_>> = self
+            .exporter
+            .par_iter()
+            .map(|desc| self.execute_single_exporter(&g, desc))
+            .collect();
+        self.send_progress(1.0, &tx)?;
+        // Check for errors during export
+        export_result?;
+        Ok(())
     }
 
-    // Execute all manipulators in sequence
-    for desc in workflow.manipulator.into_iter() {
+    fn send_progress(&self, progress: f32, tx: &Option<Sender<StatusMessage>>) -> Result<()> {
+        // TODO: calculate progress based on the sum of module-specific progress updates
+        if let Some(tx) = tx.as_ref() {
+            tx.send(StatusMessage::Progress(progress))?;
+        }
+        Ok(())
+    }
+
+    fn execute_single_importer(&self, desc: &ImporterDesc) -> Result<GraphUpdate> {
         desc.module
-            .manipulate_corpus(&mut g, &desc.properties)
-            .map_err(|reason| PepperError::Manipulator {
+            .import_corpus(&desc.corpus_path, &desc.properties)
+            .map_err(|reason| PepperError::Import {
                 reason: reason.to_string(),
-                manipulator: desc.module.module_name(),
+                importer: desc.module.module_name(),
+                path: desc.corpus_path.to_path_buf(),
+            })
+    }
+
+    fn execute_single_exporter(&self, g: &AnnotationGraph, desc: &ExporterDesc) -> Result<()> {
+        desc.module
+            .export_corpus(&g, &desc.properties, &desc.corpus_path)
+            .map_err(|reason| PepperError::Export {
+                reason: reason.to_string(),
+                exporter: desc.module.module_name(),
+                path: desc.corpus_path.clone(),
             })?;
+        Ok(())
     }
-    if let Some(ref tx) = tx {
-        tx.send(StatusMessage::Progress(0.3))?;
-    }
-
-    // Execute all exporters in parallel
-    let export_result: Result<Vec<_>> = workflow
-        .exporter
-        .into_par_iter()
-        .map(|desc| execute_single_exporter(&g, desc))
-        .collect();
-    if let Some(ref tx) = tx {
-        tx.send(StatusMessage::Progress(1.0))?;
-    }
-    // Check for errors during export
-    export_result?;
-    Ok(())
-}
-
-fn execute_single_importer(desc: &ImporterDesc) -> Result<GraphUpdate> {
-    desc.module
-        .import_corpus(&desc.corpus_path, &desc.properties)
-        .map_err(|reason| PepperError::Import {
-            reason: reason.to_string(),
-            importer: desc.module.module_name(),
-            path: desc.corpus_path.to_path_buf(),
-        })
-}
-
-fn execute_single_exporter(g: &AnnotationGraph, desc: &ExporterDesc) -> Result<()> {
-    desc.module
-        .export_corpus(&g, &desc.properties, &desc.corpus_path)
-        .map_err(|reason| PepperError::Export {
-            reason: reason.to_string(),
-            exporter: desc.module.module_name(),
-            path: desc.corpus_path.clone(),
-        })?;
-    Ok(())
 }

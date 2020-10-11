@@ -37,7 +37,6 @@ pub enum PepperError {
     Unknown(String),
 }
 
-
 impl From<Box<dyn std::error::Error>> for PepperError {
     fn from(e: Box<dyn std::error::Error>) -> Self {
         PepperError::Unknown(e.to_string())
