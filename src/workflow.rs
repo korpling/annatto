@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     fs::File,
     path::{Path, PathBuf},
+    sync::mpsc::Sender,
 };
 
 use graphannis::{update::GraphUpdate, AnnotationGraph};
@@ -29,6 +30,17 @@ struct ManipulatorDesc {
     properties: HashMap<String, String>,
 }
 
+/// Status updates are send as single messages when the workflow is executed.
+#[derive(Debug)]
+pub enum StatusMessage {
+    /// An informing message
+    Info(String),
+    /// A warning message
+    Warning(String),
+    /// Progress report, 100 percent is 1.0
+    Progress(f32),
+}
+
 pub struct Workflow {
     importer: Vec<ImporterDesc>,
     manipulator: Vec<ManipulatorDesc>,
@@ -41,16 +53,16 @@ impl From<File> for Workflow {
     }
 }
 
-pub fn execute_from_file(workflow_file: &Path) -> Result<()> {
+pub fn execute_from_file(workflow_file: &Path, tx: Option<Sender<StatusMessage>>) -> Result<()> {
     let f = File::open(workflow_file).map_err(|reason| PepperError::OpenWorkflowFile {
         reason,
         file: workflow_file.to_path_buf(),
     })?;
 
-    execute(f.into())
+    execute(f.into(), tx)
 }
 
-pub fn execute(workflow: Workflow) -> Result<()> {
+pub fn execute(workflow: Workflow, tx: Option<Sender<StatusMessage>>) -> Result<()> {
     // Create a new empty annotation graph
     let mut g = AnnotationGraph::new(true).map_err(|e| PepperError::CreateGraph(e.to_string()))?;
 
@@ -65,6 +77,9 @@ pub fn execute(workflow: Workflow) -> Result<()> {
         g.apply_update(&mut u, |_msg| {})
             .map_err(|reason| PepperError::UpdateGraph(reason.to_string()))?;
     }
+    if let Some(ref tx) = tx {
+        tx.send(StatusMessage::Progress(0.3))?;
+    }
 
     // Execute all manipulators in sequence
     for desc in workflow.manipulator.into_iter() {
@@ -75,6 +90,9 @@ pub fn execute(workflow: Workflow) -> Result<()> {
                 manipulator: desc.module.module_name(),
             })?;
     }
+    if let Some(ref tx) = tx {
+        tx.send(StatusMessage::Progress(0.3))?;
+    }
 
     // Execute all exporters in parallel
     let export_result: Result<Vec<_>> = workflow
@@ -82,6 +100,9 @@ pub fn execute(workflow: Workflow) -> Result<()> {
         .into_par_iter()
         .map(|desc| execute_single_exporter(&g, desc))
         .collect();
+    if let Some(ref tx) = tx {
+        tx.send(StatusMessage::Progress(1.0))?;
+    }
     // Check for errors during export
     export_result?;
     Ok(())

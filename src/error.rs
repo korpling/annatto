@@ -1,6 +1,8 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::mpsc::SendError};
 
 use thiserror::Error;
+
+use crate::workflow::StatusMessage;
 
 pub type Result<T> = std::result::Result<T, PepperError>;
 
@@ -29,12 +31,21 @@ pub enum PepperError {
     },
     #[error("Error when updating corpus graph: {0}")]
     UpdateGraph(String),
+    #[error("Could not send status message: {0}")]
+    SendingStatusMessageFailed(String),
     #[error("Unknown error {0}")]
     Unknown(String),
 }
 
-impl Into<PepperError> for Box<dyn std::error::Error> {
-    fn into(self) -> PepperError {
-        PepperError::Unknown(self.to_string())
+
+impl From<Box<dyn std::error::Error>> for PepperError {
+    fn from(e: Box<dyn std::error::Error>) -> Self {
+        PepperError::Unknown(e.to_string())
+    }
+}
+
+impl From<SendError<StatusMessage>> for PepperError {
+    fn from(e: SendError<StatusMessage>) -> Self {
+        PepperError::SendingStatusMessageFailed(e.to_string())
     }
 }
