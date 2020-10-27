@@ -199,7 +199,8 @@ pub fn execute_from_file(workflow_file: &Path, tx: Option<Sender<StatusMessage>>
         reason,
         file: workflow_file.to_path_buf(),
     })?;
-    execute(Workflow::try_from(f).unwrap())
+    let workflow = Workflow::try_from(f);
+    workflow.execute()
 }
 
 impl Workflow {
