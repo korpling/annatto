@@ -231,6 +231,7 @@ impl Workflow {
         if let Some(tx) = &tx {
             let mut steps: Vec<StepID> = Vec::default();
             steps.extend(self.importer.iter().map(|importer| importer.get_step_id()));
+            // TODO: also add a step for importer that tracks applying the graph update
             steps.extend(
                 self.manipulator
                     .iter()
@@ -264,8 +265,14 @@ impl Workflow {
                 .manipulate_corpus(&mut g, &desc.properties, tx.clone())
                 .map_err(|reason| PepperError::Manipulator {
                     reason: reason.to_string(),
-                    manipulator: desc.module.module_name(),
+                    manipulator: desc.module.module_name().to_string(),
                 })?;
+            if let Some(ref tx) = tx {
+                tx.send(crate::workflow::StatusMessage::Progress {
+                    id: desc.module.step_id(None),
+                    progress: 1.0,
+                })?;
+            }
         }
 
         // Execute all exporters in parallel
@@ -286,13 +293,21 @@ impl Workflow {
         step: &ImporterStep,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate> {
-        step.module
-            .import_corpus(&step.corpus_path, &step.properties, tx)
+        let updates = step
+            .module
+            .import_corpus(&step.corpus_path, &step.properties, tx.clone())
             .map_err(|reason| PepperError::Import {
                 reason: reason.to_string(),
-                importer: step.module.module_name(),
+                importer: step.module.module_name().to_string(),
                 path: step.corpus_path.to_path_buf(),
-            })
+            })?;
+        if let Some(ref tx) = tx {
+            tx.send(crate::workflow::StatusMessage::Progress {
+                id: step.module.step_id(Some(&step.corpus_path)),
+                progress: 1.0,
+            })?;
+        }
+        Ok(updates)
     }
 
     fn execute_single_exporter(
@@ -302,12 +317,18 @@ impl Workflow {
         tx: Option<StatusSender>,
     ) -> Result<()> {
         step.module
-            .export_corpus(&g, &step.properties, &step.corpus_path, tx)
+            .export_corpus(&g, &step.properties, &step.corpus_path, tx.clone())
             .map_err(|reason| PepperError::Export {
                 reason: reason.to_string(),
-                exporter: step.module.module_name(),
+                exporter: step.module.module_name().to_string(),
                 path: step.corpus_path.clone(),
             })?;
+        if let Some(ref tx) = tx {
+            tx.send(crate::workflow::StatusMessage::Progress {
+                id: step.module.step_id(Some(&step.corpus_path)),
+                progress: 1.0,
+            })?;
+        }
         Ok(())
     }
 }

@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, fmt::Display, path::PathBuf};
+use std::{collections::BTreeMap, fmt::Display, path::{Path, PathBuf}};
 
 use exporter::Exporter;
 use importer::Importer;
@@ -40,7 +40,7 @@ struct ImporterStep {
 impl Step for ImporterStep {
     fn get_step_id(&self) -> StepID {
         StepID {
-            module_name: self.module.module_name(),
+            module_name: self.module.module_name().to_string(),
             path: Some(self.corpus_path.clone()),
         }
     }
@@ -55,7 +55,7 @@ struct ExporterStep {
 impl Step for ExporterStep {
     fn get_step_id(&self) -> StepID {
         StepID {
-            module_name: self.module.module_name(),
+            module_name: self.module.module_name().to_string(),
             path: Some(self.corpus_path.clone()),
         }
     }
@@ -69,12 +69,19 @@ struct ManipulatorStep {
 impl Step for ManipulatorStep {
     fn get_step_id(&self) -> StepID {
         StepID {
-            module_name: self.module.module_name(),
+            module_name: self.module.module_name().to_string(),
             path: None,
         }
     }
 }
 
 pub trait Module: Sync {
-    fn module_name(&self) -> String;
+    fn module_name(&self) -> &str;
+
+    fn step_id(&self, path: Option<&Path>) -> StepID {
+        StepID {
+            module_name: self.module_name().to_string(),
+            path: path.map(|p| p.to_path_buf()),
+        }
+    }
 }

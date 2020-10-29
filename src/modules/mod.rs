@@ -4,9 +4,11 @@ use crate::{
 };
 
 mod donothing;
+mod graphml;
 
 pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
     match name {
+        "GraphMLImporter" => Ok(Box::new(graphml::GraphMLImporter::new())),
         "DoNothingImporter" => Ok(Box::new(donothing::DoNothingImporter::new())),
         _ => Err(PepperError::NoSuchModule(name.to_string())),
     }

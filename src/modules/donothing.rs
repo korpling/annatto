@@ -7,15 +7,11 @@ use crate::Module;
 use crate::{exporter::Exporter, StepID};
 use crate::{importer::Importer, workflow::StatusSender};
 
-pub struct DoNothingImporter {
-    name: String,
-}
+pub struct DoNothingImporter {}
 
 impl DoNothingImporter {
     pub fn new() -> DoNothingImporter {
-        DoNothingImporter {
-            name: String::from("DoNothingImporter"),
-        }
+        DoNothingImporter {}
     }
 }
 
@@ -28,7 +24,7 @@ impl Importer for DoNothingImporter {
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         if let Some(tx) = tx {
             let id = StepID {
-                module_name: self.name.to_string(),
+                module_name: self.module_name().to_string(),
                 path: Some(path.to_path_buf()),
             };
             tx.send(crate::workflow::StatusMessage::Progress { id, progress: 1.0 })?;
@@ -38,19 +34,15 @@ impl Importer for DoNothingImporter {
 }
 
 impl Module for DoNothingImporter {
-    fn module_name(&self) -> String {
-        self.name.clone()
+    fn module_name(&self) -> &str {
+        "DoNothingImporter"
     }
 }
-pub struct DoNothingManipulator {
-    name: String,
-}
+pub struct DoNothingManipulator {}
 
 impl DoNothingManipulator {
     pub fn new() -> DoNothingManipulator {
-        DoNothingManipulator {
-            name: String::from("DoNothingManipulator"),
-        }
+        DoNothingManipulator {}
     }
 }
 
@@ -63,7 +55,7 @@ impl Manipulator for DoNothingManipulator {
     ) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(tx) = tx {
             let id = StepID {
-                module_name: self.name.to_string(),
+                module_name: self.module_name().to_string(),
                 path: None,
             };
             tx.send(crate::workflow::StatusMessage::Progress { id, progress: 1.0 })?;
@@ -73,20 +65,16 @@ impl Manipulator for DoNothingManipulator {
 }
 
 impl Module for DoNothingManipulator {
-    fn module_name(&self) -> String {
-        self.name.clone()
+    fn module_name(&self) -> &str {
+        "DoNothingManipulator"
     }
 }
 
-pub struct DoNothingExporter {
-    name: String,
-}
+pub struct DoNothingExporter {}
 
 impl DoNothingExporter {
     pub fn new() -> DoNothingExporter {
-        DoNothingExporter {
-            name: String::from("DoNothingExporter"),
-        }
+        DoNothingExporter {}
     }
 }
 
@@ -99,18 +87,17 @@ impl Exporter for DoNothingExporter {
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(tx) = tx {
-            let id = StepID {
-                module_name: self.name.to_string(),
-                path: Some(output_path.to_path_buf()),
-            };
-            tx.send(crate::workflow::StatusMessage::Progress { id, progress: 1.0 })?;
+            tx.send(crate::workflow::StatusMessage::Progress {
+                id: self.step_id(Some(output_path)),
+                progress: 1.0,
+            })?;
         }
         Ok(())
     }
 }
 
 impl Module for DoNothingExporter {
-    fn module_name(&self) -> String {
-        self.name.clone()
+    fn module_name(&self) -> &str {
+        "DoNothingExporter"
     }
 }
