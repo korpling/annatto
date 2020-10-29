@@ -8,8 +8,10 @@ use std::{
 use graphannis::{update::GraphUpdate, AnnotationGraph};
 
 use crate::{
-    error::PepperError, error::Result, exporter::Exporter, importer::Importer,
-    manipulator::Manipulator, ExporterStep, ImporterStep, ManipulatorStep, Step, StepID,
+    error::PepperError,
+    error::Result,
+    modules::{exporter_by_name, importer_by_name, manipulator_by_name},
+    ExporterStep, ImporterStep, ManipulatorStep, Step, StepID,
 };
 use rayon::prelude::*;
 
@@ -58,29 +60,6 @@ fn into_hash_map(attributes: &Vec<OwnedAttribute>) -> HashMap<String, String> {
         attr_map.insert(attribute.name.local_name.clone(), attribute.value.clone());
     }
     attr_map
-}
-
-use crate::donothing::*;
-
-fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
-    match name {
-        "DoNothingImporter" => Ok(Box::new(DoNothingImporter::new())),
-        _ => Err(PepperError::NoSuchModule(name.to_string())),
-    }
-}
-
-fn manipulator_by_name(name: &str) -> Result<Box<dyn Manipulator>> {
-    match name {
-        "DoNothingManipulator" => Ok(Box::new(DoNothingManipulator::new())),
-        _ => Err(PepperError::NoSuchModule(name.to_string())),
-    }
-}
-
-fn exporter_by_name(name: &str) -> Result<Box<dyn Exporter>> {
-    match name {
-        "DoNothingExporter" => Ok(Box::new(DoNothingExporter::new())),
-        _ => Err(PepperError::NoSuchModule(name.to_string())),
-    }
 }
 
 impl TryFrom<File> for Workflow {

@@ -4,11 +4,11 @@ use exporter::Exporter;
 use importer::Importer;
 use manipulator::Manipulator;
 
-pub mod donothing;
 pub mod error;
 pub mod exporter;
 pub mod importer;
 pub mod manipulator;
+pub mod modules;
 pub mod workflow;
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone)]
