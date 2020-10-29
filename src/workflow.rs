@@ -28,6 +28,7 @@ pub enum StatusMessage {
         /// Progress from 0.0 to 1.0
         progress: f32,
     },
+    Failed(PepperError),
 }
 
 pub struct Workflow {
@@ -216,9 +217,10 @@ impl TryFrom<File> for Workflow {
                     },
                     _ => continue,
                 },
-                Err(_) => {
-                    return Err(PepperError::ReadWorkflowFile(String::from(
-                        "Parsing error.",
+                Err(e) => {
+                    return Err(PepperError::ReadWorkflowFile(format!(
+                        "Parsing error\n{:?}",
+                        e
                     )))
                 }
             };

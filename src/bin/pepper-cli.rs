@@ -1,6 +1,9 @@
 use std::{sync::mpsc, thread};
 
-use pepper::{error::PepperError, workflow::execute_from_file};
+use pepper::{
+    error::PepperError,
+    workflow::{execute_from_file, StatusMessage},
+};
 use structopt::StructOpt;
 
 /// Define a conversion operation
@@ -16,13 +19,25 @@ pub fn main() -> Result<(), PepperError> {
 
     // Execute the conversion in the background and show the status to the user
     let (tx, rx) = mpsc::channel();
-    thread::spawn(move || {
-        execute_from_file(&args.workflow_file, Some(tx)).expect("Conversion failed");
-    });
+    thread::spawn(
+        move || match execute_from_file(&args.workflow_file, Some(tx.clone())) {
+            Ok(_) => {}
+            Err(e) => tx
+                .send(StatusMessage::Failed(e))
+                .expect("Could not send failure message"),
+        },
+    );
 
     for status_update in rx {
         // TODO: print progress updates as a nice progress bar, e.g. with the progressing crate
-        println!("{:?}", status_update);
+        match status_update {
+            StatusMessage::Failed(e) => {
+                return Err(e);
+            }
+            _ => {
+                println!("{:?}", status_update);
+            }
+        }
     }
 
     Ok(())
