@@ -1,51 +1,42 @@
-use std::{sync::Arc, collections::{BTreeMap, HashMap}, fs::File, path::{Path, PathBuf}, sync::mpsc::Sender};
+use std::{
+    collections::{BTreeMap, HashMap},
+    convert::TryInto,
+    fs::File,
+    path::{Path, PathBuf},
+    sync::mpsc::Sender,
+    sync::Arc,
+};
 
 use graphannis::{update::GraphUpdate, AnnotationGraph};
 
 use crate::{
     error::PepperError, error::Result, exporter::Exporter, importer::Importer,
-    manipulator::Manipulator,
+    manipulator::Manipulator, ExporterStep, ImporterStep, ManipulatorStep, StepDesc,
 };
 use rayon::prelude::*;
-
-
-struct ImporterStep {
-    module: Box<dyn Importer>,
-    corpus_path: PathBuf,
-    properties: BTreeMap<String, String>,
-}
-
-struct ExporterStep {
-    module: Box<dyn Exporter>,
-    corpus_path: PathBuf,
-    properties: BTreeMap<String, String>,
-}
-
-struct ManipulatorStep {
-    module: Box<dyn Manipulator>,
-    properties: BTreeMap<String, String>,
-}
 
 /// Status updates are send as single messages when the workflow is executed.
 #[derive(Debug)]
 pub enum StatusMessage {
-    /// List of all modules of the conversion pipeline
-    ModuleList(),
     /// An informing message
     Info(String),
     /// A warning message
     Warning(String),
     /// Progress report, 100 percent is 1.0
     Progress {
-        module_index: usize,
-        module_progress: f32,
+        // Progress for each step
+        step_progress: Vec<(Arc<StepDesc>, f32)>,
+        /// Overall progress
+        progress: f32,
     },
+    ConversionEnded,
 }
 
 pub struct Workflow {
     importer: Vec<ImporterStep>,
     manipulator: Vec<ManipulatorStep>,
     exporter: Vec<ExporterStep>,
+    step_progress: Vec<(Arc<StepDesc>, f32)>,
 }
 
 use std::convert::TryFrom;
@@ -71,20 +62,6 @@ fn into_hash_map(attributes: &Vec<OwnedAttribute>) -> HashMap<String, String> {
     attr_map
 }
 
-use crate::donothing::*;
-
-fn importer_by_name(name: String) -> Box<dyn Importer> {
-    Box::new(DoNothingImporter::new()) // dummy impl
-}
-
-fn manipulator_by_name(name: String) -> Box<dyn Manipulator> {
-    Box::new(DoNothingManipulator::new()) // dummy impl
-}
-
-fn exporter_by_name(name: String) -> Box<dyn Exporter> {
-    Box::new(DoNothingExporter::new()) // dummy impl
-}
-
 impl TryFrom<File> for Workflow {
     type Error = PepperError;
     fn try_from(f: File) -> Result<Workflow> {
@@ -99,6 +76,8 @@ impl TryFrom<File> for Workflow {
         let mut value: Option<String> = None;
         let mut mod_name: Option<String> = None;
         let mut path: Option<PathBuf> = None;
+        let mut step_progress = Vec::default();
+
         loop {
             match reader.next() {
                 Ok(event) => match event {
@@ -130,59 +109,76 @@ impl TryFrom<File> for Workflow {
                     XmlEvent::Characters(characters) => value = Some(characters),
                     XmlEvent::EndElement { name } => match name.local_name.as_str() {
                         ELEM_IMPORTER => {
-                            if mod_name.is_none() {
+                            if let Some(module_name) = mod_name {
+                                if let Some(path) = path {
+                                    let desc = StepDesc::Importer {
+                                        module_name,
+                                        corpus_path: path,
+                                        properties,
+                                    };
+                                    step_progress.push((Arc::from(desc), 0.0));
+                                    importers
+                                        .push(step_progress.last().unwrap().0.as_ref().try_into()?);
+                                } else {
+                                    return Err(PepperError::ReadWorkflowFile(format!(
+                                        "Corpus path not specified for importer: {}",
+                                        module_name
+                                    )));
+                                }
+                            } else {
                                 return Err(PepperError::ReadWorkflowFile(String::from(
                                     "Name of importer not specified.",
                                 )));
                             }
-                            if path.is_none() {
-                                return Err(PepperError::ReadWorkflowFile(format!(
-                                    "Corpus path not specified for importer: {}",
-                                    mod_name.unwrap()
-                                )));
-                            }
-                            let importer = ImporterStep {
-                                module: importer_by_name(mod_name.unwrap()),
-                                corpus_path: path.unwrap(),
-                                properties: properties,
-                            };
-                            importers.push(importer);
+
+                            // Reset the collected properties and other attributes
                             properties = BTreeMap::new();
                             mod_name = None;
                             path = None;
                         }
                         ELEM_MANIPULATOR => {
-                            if mod_name.is_none() {
+                            if let Some(module_name) = mod_name {
+                                let desc = StepDesc::Manipulator {
+                                    module_name,
+                                    properties,
+                                };
+                                step_progress.push((Arc::from(desc), 0.0));
+                                manipulators
+                                    .push(step_progress.last().unwrap().0.as_ref().try_into()?);
+                            } else {
                                 return Err(PepperError::ReadWorkflowFile(String::from(
                                     "Name of manipulator not specified.",
                                 )));
                             }
-                            let manipulator = ManipulatorStep {
-                                module: manipulator_by_name(mod_name.unwrap()),
-                                properties: properties,
-                            };
-                            manipulators.push(manipulator);
+
+                            // Reset the collected properties and other attributes
                             properties = BTreeMap::new();
                             mod_name = None;
                         }
                         ELEM_EXPORTER => {
-                            if mod_name.is_none() {
+                            if let Some(module_name) = mod_name {
+                                if let Some(corpus_path) = path {
+                                    let desc = StepDesc::Importer {
+                                        module_name,
+                                        corpus_path,
+                                        properties,
+                                    };
+                                    step_progress.push((Arc::from(desc), 0.0));
+                                    exporters
+                                        .push(step_progress.last().unwrap().0.as_ref().try_into()?);
+                                } else {
+                                    return Err(PepperError::ReadWorkflowFile(format!(
+                                        "Corpus path not specified for exporter: {}",
+                                        module_name
+                                    )));
+                                }
+                            } else {
                                 return Err(PepperError::ReadWorkflowFile(String::from(
                                     "Name of exporter not specified.",
                                 )));
                             }
-                            if path.is_none() {
-                                return Err(PepperError::ReadWorkflowFile(format!(
-                                    "Corpus path not specified for exporter: {}",
-                                    mod_name.unwrap()
-                                )));
-                            }
-                            let exporter = ExporterStep {
-                                module: exporter_by_name(mod_name.unwrap()),
-                                corpus_path: path.unwrap(),
-                                properties: properties,
-                            };
-                            exporters.push(exporter);
+
+                            // Reset the collected properties and other attributes
                             properties = BTreeMap::new();
                             mod_name = None;
                             path = None;
@@ -218,6 +214,7 @@ impl TryFrom<File> for Workflow {
             importer: importers,
             manipulator: manipulators,
             exporter: exporters,
+            step_progress,
         })
     }
 }
@@ -235,6 +232,8 @@ pub fn execute_from_file(workflow_file: &Path, tx: Option<Sender<StatusMessage>>
 
 impl Workflow {
     pub fn execute(&self, tx: Option<Sender<StatusMessage>>) -> Result<()> {
+        // Create a vector of all conversion steps
+
         // Create a new empty annotation graph
         let mut g =
             AnnotationGraph::new(true).map_err(|e| PepperError::CreateGraph(e.to_string()))?;
@@ -278,10 +277,7 @@ impl Workflow {
     fn send_progress(&self, progress: f32, tx: &Option<Sender<StatusMessage>>) -> Result<()> {
         // TODO: calculate progress based on the sum of module-specific progress updates
         if let Some(tx) = tx.as_ref() {
-            tx.send(StatusMessage::Progress {
-                module_progress: progress,
-                module_index: 0,
-            })?;
+            todo!()
         }
         Ok(())
     }

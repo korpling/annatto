@@ -29,6 +29,10 @@ pub enum PepperError {
         file: PathBuf,
         reason: std::io::Error,
     },
+    #[error("Could not create conversion step was not of expected type {expected}")]
+    WrongStepType{expected: String},
+    #[error("No module with name {0} found")]
+    NoSuchModule(String),
     #[error("Cannot read workflow file: {0}")]
     ReadWorkflowFile(String),
     #[error("Error when updating corpus graph: {0}")]
