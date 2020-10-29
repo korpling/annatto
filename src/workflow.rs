@@ -9,7 +9,7 @@ use graphannis::{update::GraphUpdate, AnnotationGraph};
 
 use crate::{
     error::PepperError, error::Result, exporter::Exporter, importer::Importer,
-    manipulator::Manipulator, ExporterStep, ImporterStep, ManipulatorStep, StepID,
+    manipulator::Manipulator, ExporterStep, ImporterStep, ManipulatorStep, Step, StepID,
 };
 use rayon::prelude::*;
 
@@ -242,9 +242,22 @@ pub fn execute_from_file(workflow_file: &Path, tx: Option<Sender<StatusMessage>>
     }
 }
 
+pub type StatusSender = Sender<StatusMessage>;
+
 impl Workflow {
-    pub fn execute(&self, tx: Option<Sender<StatusMessage>>) -> Result<()> {
-        // Create a vector of all conversion steps
+    pub fn execute(&self, tx: Option<StatusSender>) -> Result<()> {
+        // Create a vector of all conversion steps and report these as current status
+        if let Some(tx) = &tx {
+            let mut steps: Vec<StepID> = Vec::default();
+            steps.extend(self.importer.iter().map(|importer| importer.get_step_id()));
+            steps.extend(
+                self.manipulator
+                    .iter()
+                    .map(|manipulator| manipulator.get_step_id()),
+            );
+            steps.extend(self.exporter.iter().map(|exporter| exporter.get_step_id()));
+            tx.send(StatusMessage::StepsCreated(steps))?;
+        }
 
         // Create a new empty annotation graph
         let mut g =
@@ -254,63 +267,65 @@ impl Workflow {
         let updates: Result<Vec<GraphUpdate>> = self
             .importer
             .par_iter()
-            .map(|desc| self.execute_single_importer(desc))
+            .map_with(tx.clone(), |tx, step| {
+                self.execute_single_importer(step, tx.clone())
+            })
             .collect();
         // Apply each graph update
         for mut u in updates? {
             g.apply_update(&mut u, |_msg| {})
                 .map_err(|reason| PepperError::UpdateGraph(reason.to_string()))?;
         }
-        self.send_progress(0.3, &tx)?;
 
         // Execute all manipulators in sequence
         for desc in self.manipulator.iter() {
             desc.module
-                .manipulate_corpus(&mut g, &desc.properties)
+                .manipulate_corpus(&mut g, &desc.properties, tx.clone())
                 .map_err(|reason| PepperError::Manipulator {
                     reason: reason.to_string(),
                     manipulator: desc.module.module_name(),
                 })?;
         }
-        self.send_progress(0.6, &tx)?;
 
         // Execute all exporters in parallel
         let export_result: Result<Vec<_>> = self
             .exporter
             .par_iter()
-            .map(|desc| self.execute_single_exporter(&g, desc))
+            .map_with(tx, |tx, step| {
+                self.execute_single_exporter(&g, step, tx.clone())
+            })
             .collect();
-        self.send_progress(1.0, &tx)?;
         // Check for errors during export
         export_result?;
         Ok(())
     }
 
-    fn send_progress(&self, progress: f32, tx: &Option<Sender<StatusMessage>>) -> Result<()> {
-        // TODO: calculate progress based on the sum of module-specific progress updates
-        if let Some(tx) = tx.as_ref() {
-            todo!()
-        }
-        Ok(())
-    }
-
-    fn execute_single_importer(&self, desc: &ImporterStep) -> Result<GraphUpdate> {
-        desc.module
-            .import_corpus(&desc.corpus_path, &desc.properties)
+    fn execute_single_importer(
+        &self,
+        step: &ImporterStep,
+        tx: Option<StatusSender>,
+    ) -> Result<GraphUpdate> {
+        step.module
+            .import_corpus(&step.corpus_path, &step.properties, tx)
             .map_err(|reason| PepperError::Import {
                 reason: reason.to_string(),
-                importer: desc.module.module_name(),
-                path: desc.corpus_path.to_path_buf(),
+                importer: step.module.module_name(),
+                path: step.corpus_path.to_path_buf(),
             })
     }
 
-    fn execute_single_exporter(&self, g: &AnnotationGraph, desc: &ExporterStep) -> Result<()> {
-        desc.module
-            .export_corpus(&g, &desc.properties, &desc.corpus_path)
+    fn execute_single_exporter(
+        &self,
+        g: &AnnotationGraph,
+        step: &ExporterStep,
+        tx: Option<StatusSender>,
+    ) -> Result<()> {
+        step.module
+            .export_corpus(&g, &step.properties, &step.corpus_path, tx)
             .map_err(|reason| PepperError::Export {
                 reason: reason.to_string(),
-                exporter: desc.module.module_name(),
-                path: desc.corpus_path.clone(),
+                exporter: step.module.module_name(),
+                path: step.corpus_path.clone(),
             })?;
         Ok(())
     }

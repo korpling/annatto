@@ -1,7 +1,11 @@
-use crate::exporter::Exporter;
-use crate::importer::Importer;
+use std::{collections::BTreeMap, path::Path};
+
+use graphannis::update::GraphUpdate;
+
 use crate::manipulator::Manipulator;
 use crate::Module;
+use crate::{exporter::Exporter, StepID};
+use crate::{importer::Importer, workflow::StatusSender};
 
 pub struct DoNothingImporter {
     name: String,
@@ -18,10 +22,18 @@ impl DoNothingImporter {
 impl Importer for DoNothingImporter {
     fn import_corpus(
         &self,
-        path: &std::path::Path,
-        properties: &std::collections::BTreeMap<String, String>,
-    ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        todo!()
+        path: &Path,
+        _properties: &BTreeMap<String, String>,
+        tx: Option<StatusSender>,
+    ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
+        if let Some(tx) = tx {
+            let id = StepID {
+                module_name: self.name.to_string(),
+                path: Some(path.to_path_buf()),
+            };
+            tx.send(crate::workflow::StatusMessage::Progress { id, progress: 1.0 })?;
+        }
+        Ok(GraphUpdate::default())
     }
 }
 
@@ -45,10 +57,18 @@ impl DoNothingManipulator {
 impl Manipulator for DoNothingManipulator {
     fn manipulate_corpus(
         &self,
-        graph: &mut graphannis::AnnotationGraph,
-        properties: &std::collections::BTreeMap<String, String>,
+        _graph: &mut graphannis::AnnotationGraph,
+        _properties: &BTreeMap<String, String>,
+        tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        todo!()
+        if let Some(tx) = tx {
+            let id = StepID {
+                module_name: self.name.to_string(),
+                path: None,
+            };
+            tx.send(crate::workflow::StatusMessage::Progress { id, progress: 1.0 })?;
+        }
+        Ok(())
     }
 }
 
@@ -73,11 +93,19 @@ impl DoNothingExporter {
 impl Exporter for DoNothingExporter {
     fn export_corpus(
         &self,
-        graph: &graphannis::AnnotationGraph,
-        properties: &std::collections::BTreeMap<String, String>,
-        output_path: &std::path::Path,
+        _graph: &graphannis::AnnotationGraph,
+        _properties: &BTreeMap<String, String>,
+        output_path: &Path,
+        tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        todo!()
+        if let Some(tx) = tx {
+            let id = StepID {
+                module_name: self.name.to_string(),
+                path: Some(output_path.to_path_buf()),
+            };
+            tx.send(crate::workflow::StatusMessage::Progress { id, progress: 1.0 })?;
+        }
+        Ok(())
     }
 }
 

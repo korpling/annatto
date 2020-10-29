@@ -13,8 +13,8 @@ pub mod workflow;
 
 #[derive(Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub struct StepID {
-    module_name: String,
-    corpus_path: Option<PathBuf>,
+    pub module_name: String,
+    pub path: Option<PathBuf>,
 }
 
 pub trait Step {
@@ -31,7 +31,7 @@ impl Step for ImporterStep {
     fn get_step_id(&self) -> StepID {
         StepID {
             module_name: self.module.module_name(),
-            corpus_path: Some(self.corpus_path.clone()),
+            path: Some(self.corpus_path.clone()),
         }
     }
 }
@@ -46,7 +46,7 @@ impl Step for ExporterStep {
     fn get_step_id(&self) -> StepID {
         StepID {
             module_name: self.module.module_name(),
-            corpus_path: Some(self.corpus_path.clone()),
+            path: Some(self.corpus_path.clone()),
         }
     }
 }
@@ -60,7 +60,7 @@ impl Step for ManipulatorStep {
     fn get_step_id(&self) -> StepID {
         StepID {
             module_name: self.module.module_name(),
-            corpus_path: None,
+            path: None,
         }
     }
 }
