@@ -1,42 +1,39 @@
 use std::{
     collections::{BTreeMap, HashMap},
-    convert::TryInto,
     fs::File,
     path::{Path, PathBuf},
     sync::mpsc::Sender,
-    sync::Arc,
 };
 
 use graphannis::{update::GraphUpdate, AnnotationGraph};
 
 use crate::{
     error::PepperError, error::Result, exporter::Exporter, importer::Importer,
-    manipulator::Manipulator, ExporterStep, ImporterStep, ManipulatorStep, StepDesc,
+    manipulator::Manipulator, ExporterStep, ImporterStep, ManipulatorStep, StepID,
 };
 use rayon::prelude::*;
 
 /// Status updates are send as single messages when the workflow is executed.
 #[derive(Debug)]
 pub enum StatusMessage {
+    StepsCreated(Vec<StepID>),
     /// An informing message
     Info(String),
     /// A warning message
     Warning(String),
-    /// Progress report, 100 percent is 1.0
+    /// Progress report for a single conversion step
     Progress {
-        // Progress for each step
-        step_progress: Vec<(Arc<StepDesc>, f32)>,
-        /// Overall progress
+        // Determines which step the progress is reported for
+        id: StepID,
+        /// Progress from 0.0 to 1.0
         progress: f32,
     },
-    ConversionEnded,
 }
 
 pub struct Workflow {
     importer: Vec<ImporterStep>,
     manipulator: Vec<ManipulatorStep>,
     exporter: Vec<ExporterStep>,
-    step_progress: Vec<(Arc<StepDesc>, f32)>,
 }
 
 use std::convert::TryFrom;
@@ -62,6 +59,29 @@ fn into_hash_map(attributes: &Vec<OwnedAttribute>) -> HashMap<String, String> {
     attr_map
 }
 
+use crate::donothing::*;
+
+fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
+    match name {
+        "DoNothingImporter" => Ok(Box::new(DoNothingImporter::new())),
+        _ => Err(PepperError::NoSuchModule(name.to_string())),
+    }
+}
+
+fn manipulator_by_name(name: &str) -> Result<Box<dyn Manipulator>> {
+    match name {
+        "DoNothingManipulator" => Ok(Box::new(DoNothingManipulator::new())),
+        _ => Err(PepperError::NoSuchModule(name.to_string())),
+    }
+}
+
+fn exporter_by_name(name: &str) -> Result<Box<dyn Exporter>> {
+    match name {
+        "DoNothingExporter" => Ok(Box::new(DoNothingExporter::new())),
+        _ => Err(PepperError::NoSuchModule(name.to_string())),
+    }
+}
+
 impl TryFrom<File> for Workflow {
     type Error = PepperError;
     fn try_from(f: File) -> Result<Workflow> {
@@ -76,7 +96,6 @@ impl TryFrom<File> for Workflow {
         let mut value: Option<String> = None;
         let mut mod_name: Option<String> = None;
         let mut path: Option<PathBuf> = None;
-        let mut step_progress = Vec::default();
 
         loop {
             match reader.next() {
@@ -111,14 +130,12 @@ impl TryFrom<File> for Workflow {
                         ELEM_IMPORTER => {
                             if let Some(module_name) = mod_name {
                                 if let Some(path) = path {
-                                    let desc = StepDesc::Importer {
-                                        module_name,
+                                    let step = ImporterStep {
+                                        module: importer_by_name(&module_name)?,
                                         corpus_path: path,
                                         properties,
                                     };
-                                    step_progress.push((Arc::from(desc), 0.0));
-                                    importers
-                                        .push(step_progress.last().unwrap().0.as_ref().try_into()?);
+                                    importers.push(step);
                                 } else {
                                     return Err(PepperError::ReadWorkflowFile(format!(
                                         "Corpus path not specified for importer: {}",
@@ -138,13 +155,11 @@ impl TryFrom<File> for Workflow {
                         }
                         ELEM_MANIPULATOR => {
                             if let Some(module_name) = mod_name {
-                                let desc = StepDesc::Manipulator {
-                                    module_name,
+                                let step = ManipulatorStep {
+                                    module: manipulator_by_name(&module_name)?,
                                     properties,
                                 };
-                                step_progress.push((Arc::from(desc), 0.0));
-                                manipulators
-                                    .push(step_progress.last().unwrap().0.as_ref().try_into()?);
+                                manipulators.push(step);
                             } else {
                                 return Err(PepperError::ReadWorkflowFile(String::from(
                                     "Name of manipulator not specified.",
@@ -158,14 +173,12 @@ impl TryFrom<File> for Workflow {
                         ELEM_EXPORTER => {
                             if let Some(module_name) = mod_name {
                                 if let Some(corpus_path) = path {
-                                    let desc = StepDesc::Importer {
-                                        module_name,
+                                    let desc = ExporterStep {
+                                        module: exporter_by_name(&module_name)?,
                                         corpus_path,
                                         properties,
                                     };
-                                    step_progress.push((Arc::from(desc), 0.0));
-                                    exporters
-                                        .push(step_progress.last().unwrap().0.as_ref().try_into()?);
+                                    exporters.push(desc);
                                 } else {
                                     return Err(PepperError::ReadWorkflowFile(format!(
                                         "Corpus path not specified for exporter: {}",
@@ -214,7 +227,6 @@ impl TryFrom<File> for Workflow {
             importer: importers,
             manipulator: manipulators,
             exporter: exporters,
-            step_progress,
         })
     }
 }
