@@ -37,6 +37,8 @@ pub enum PepperError {
     UpdateGraph(String),
     #[error("Could not send status message: {0}")]
     SendingStatusMessageFailed(String),
+    #[error("XML error: {0}")]
+    XML(quick_xml::Error),
     #[error("Unknown error {0}")]
     Unknown(String),
 }
@@ -50,5 +52,17 @@ impl From<Box<dyn std::error::Error>> for PepperError {
 impl From<SendError<StatusMessage>> for PepperError {
     fn from(e: SendError<StatusMessage>) -> Self {
         PepperError::SendingStatusMessageFailed(e.to_string())
+    }
+}
+
+impl From<anyhow::Error> for PepperError {
+    fn from(e: anyhow::Error) -> Self {
+        PepperError::Unknown(e.to_string())
+    }
+}
+
+impl From<quick_xml::Error> for PepperError {
+    fn from(e: quick_xml::Error) -> Self {
+        PepperError::XML(e)
     }
 }

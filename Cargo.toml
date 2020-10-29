@@ -7,8 +7,11 @@ license = "Apache-2.0"
 
 [dependencies]
 graphannis = "0.30"
+graphannis-core = "0.30"
 structopt = "0.3"
 thiserror = "1.0"
 rayon = "1.1"
 xml-rs = "0.8"
 indicatif = "0.15"
+quick-xml = "0.20"
+anyhow = "1.0"
