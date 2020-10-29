@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::Path};
+use std::{collections::BTreeMap, path::Path};
 
 use graphannis::update::GraphUpdate;
 
@@ -8,6 +8,6 @@ pub trait Importer: Module {
     fn import_corpus(
         &self,
         path: &Path,
-        properties: &HashMap<String, String>,
+        properties: &BTreeMap<String, String>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>>;
 }

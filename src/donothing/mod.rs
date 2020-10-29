@@ -19,7 +19,7 @@ impl Importer for DoNothingImporter {
     fn import_corpus(
         &self,
         path: &std::path::Path,
-        properties: &std::collections::HashMap<String, String>,
+        properties: &std::collections::BTreeMap<String, String>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         todo!()
     }
@@ -46,7 +46,7 @@ impl Manipulator for DoNothingManipulator {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
-        properties: &std::collections::HashMap<String, String>,
+        properties: &std::collections::BTreeMap<String, String>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         todo!()
     }
@@ -74,7 +74,7 @@ impl Exporter for DoNothingExporter {
     fn export_corpus(
         &self,
         graph: &graphannis::AnnotationGraph,
-        properties: &std::collections::HashMap<String, String>,
+        properties: &std::collections::BTreeMap<String, String>,
         output_path: &std::path::Path,
     ) -> Result<(), Box<dyn std::error::Error>> {
         todo!()

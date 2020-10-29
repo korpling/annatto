@@ -1,9 +1,4 @@
-use std::{
-    collections::HashMap,
-    fs::File,
-    path::{Path, PathBuf},
-    sync::mpsc::Sender,
-};
+use std::{sync::Arc, collections::{BTreeMap, HashMap}, fs::File, path::{Path, PathBuf}, sync::mpsc::Sender};
 
 use graphannis::{update::GraphUpdate, AnnotationGraph};
 
@@ -13,38 +8,44 @@ use crate::{
 };
 use rayon::prelude::*;
 
-struct ImporterDesc {
+
+struct ImporterStep {
     module: Box<dyn Importer>,
     corpus_path: PathBuf,
-    properties: HashMap<String, String>,
+    properties: BTreeMap<String, String>,
 }
 
-struct ExporterDesc {
+struct ExporterStep {
     module: Box<dyn Exporter>,
     corpus_path: PathBuf,
-    properties: HashMap<String, String>,
+    properties: BTreeMap<String, String>,
 }
 
-struct ManipulatorDesc {
+struct ManipulatorStep {
     module: Box<dyn Manipulator>,
-    properties: HashMap<String, String>,
+    properties: BTreeMap<String, String>,
 }
 
 /// Status updates are send as single messages when the workflow is executed.
 #[derive(Debug)]
 pub enum StatusMessage {
+    /// List of all modules of the conversion pipeline
+    ModuleList(),
     /// An informing message
     Info(String),
     /// A warning message
     Warning(String),
     /// Progress report, 100 percent is 1.0
-    Progress(f32),
+    Progress {
+        module_index: usize,
+        module_progress: f32,
+    },
 }
 
 pub struct Workflow {
-    importer: Vec<ImporterDesc>,
-    manipulator: Vec<ManipulatorDesc>,
-    exporter: Vec<ExporterDesc>,
+    importer: Vec<ImporterStep>,
+    manipulator: Vec<ManipulatorStep>,
+    exporter: Vec<ExporterStep>,
 }
 
 use std::convert::TryFrom;
@@ -90,10 +91,10 @@ impl TryFrom<File> for Workflow {
         let mut parser_cfg = ParserConfig::new();
         parser_cfg.trim_whitespace = true;
         let mut reader = EventReader::new_with_config(f, parser_cfg);
-        let mut importers: Vec<ImporterDesc> = Vec::new();
-        let mut manipulators: Vec<ManipulatorDesc> = Vec::new();
-        let mut exporters: Vec<ExporterDesc> = Vec::new();
-        let mut properties: HashMap<String, String> = HashMap::new();
+        let mut importers: Vec<ImporterStep> = Vec::new();
+        let mut manipulators: Vec<ManipulatorStep> = Vec::new();
+        let mut exporters: Vec<ExporterStep> = Vec::new();
+        let mut properties: BTreeMap<String, String> = BTreeMap::new();
         let mut key: Option<String> = None;
         let mut value: Option<String> = None;
         let mut mod_name: Option<String> = None;
@@ -140,13 +141,13 @@ impl TryFrom<File> for Workflow {
                                     mod_name.unwrap()
                                 )));
                             }
-                            let importer = ImporterDesc {
+                            let importer = ImporterStep {
                                 module: importer_by_name(mod_name.unwrap()),
                                 corpus_path: path.unwrap(),
                                 properties: properties,
                             };
                             importers.push(importer);
-                            properties = HashMap::new();
+                            properties = BTreeMap::new();
                             mod_name = None;
                             path = None;
                         }
@@ -156,12 +157,12 @@ impl TryFrom<File> for Workflow {
                                     "Name of manipulator not specified.",
                                 )));
                             }
-                            let manipulator = ManipulatorDesc {
+                            let manipulator = ManipulatorStep {
                                 module: manipulator_by_name(mod_name.unwrap()),
                                 properties: properties,
                             };
                             manipulators.push(manipulator);
-                            properties = HashMap::new();
+                            properties = BTreeMap::new();
                             mod_name = None;
                         }
                         ELEM_EXPORTER => {
@@ -176,13 +177,13 @@ impl TryFrom<File> for Workflow {
                                     mod_name.unwrap()
                                 )));
                             }
-                            let exporter = ExporterDesc {
+                            let exporter = ExporterStep {
                                 module: exporter_by_name(mod_name.unwrap()),
                                 corpus_path: path.unwrap(),
                                 properties: properties,
                             };
                             exporters.push(exporter);
-                            properties = HashMap::new();
+                            properties = BTreeMap::new();
                             mod_name = None;
                             path = None;
                         }
@@ -277,12 +278,15 @@ impl Workflow {
     fn send_progress(&self, progress: f32, tx: &Option<Sender<StatusMessage>>) -> Result<()> {
         // TODO: calculate progress based on the sum of module-specific progress updates
         if let Some(tx) = tx.as_ref() {
-            tx.send(StatusMessage::Progress(progress))?;
+            tx.send(StatusMessage::Progress {
+                module_progress: progress,
+                module_index: 0,
+            })?;
         }
         Ok(())
     }
 
-    fn execute_single_importer(&self, desc: &ImporterDesc) -> Result<GraphUpdate> {
+    fn execute_single_importer(&self, desc: &ImporterStep) -> Result<GraphUpdate> {
         desc.module
             .import_corpus(&desc.corpus_path, &desc.properties)
             .map_err(|reason| PepperError::Import {
@@ -292,7 +296,7 @@ impl Workflow {
             })
     }
 
-    fn execute_single_exporter(&self, g: &AnnotationGraph, desc: &ExporterDesc) -> Result<()> {
+    fn execute_single_exporter(&self, g: &AnnotationGraph, desc: &ExporterStep) -> Result<()> {
         desc.module
             .export_corpus(&g, &desc.properties, &desc.corpus_path)
             .map_err(|reason| PepperError::Export {

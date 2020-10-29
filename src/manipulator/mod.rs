@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use graphannis::AnnotationGraph;
 
@@ -8,6 +8,6 @@ pub trait Manipulator: Module {
     fn manipulate_corpus(
         &self,
         graph: &mut AnnotationGraph,
-        properties: &HashMap<String, String>,
+        properties: &BTreeMap<String, String>,
     ) -> Result<(), Box<dyn std::error::Error>>;
 }
