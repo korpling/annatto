@@ -29,6 +29,8 @@ pub enum PepperError {
         file: PathBuf,
         reason: std::io::Error,
     },
+    #[error("Cannot read workflow file: {0}")]
+    ReadWorkflowFile(String),
     #[error("Error when updating corpus graph: {0}")]
     UpdateGraph(String),
     #[error("Could not send status message: {0}")]
