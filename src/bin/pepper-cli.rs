@@ -1,3 +1,4 @@
+use log::{info, warn};
 use std::{sync::mpsc, thread};
 
 use pepper::{
@@ -15,6 +16,8 @@ struct Cli {
 }
 
 pub fn main() -> Result<(), PepperError> {
+    env_logger::init();
+
     let args = Cli::from_args();
 
     // Execute the conversion in the background and show the status to the user
@@ -34,6 +37,21 @@ pub fn main() -> Result<(), PepperError> {
             StatusMessage::Failed(e) => {
                 return Err(e);
             }
+            StatusMessage::StepsCreated(steps) => {
+                if steps.is_empty() {
+                    println!("No steps in workflow file")
+                } else {
+                    // Print all steps
+                    println!("Conversion starts with {} steps", steps.len());
+                    println!("-------------------------------");
+                    for s in steps {
+                        println!("{}", s);
+                    }
+                    println!("-------------------------------");
+                }
+            }
+            StatusMessage::Info(msg) => info!("{}", msg),
+            StatusMessage::Warning(msg) => warn!("{}", msg),
             _ => {
                 println!("{:?}", status_update);
             }
