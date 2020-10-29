@@ -11,7 +11,7 @@ pub mod importer;
 pub mod manipulator;
 pub mod workflow;
 
-#[derive(Ord, PartialOrd, Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Hash, Debug, Clone)]
 pub struct StepID {
     pub module_name: String,
     pub path: Option<PathBuf>,
