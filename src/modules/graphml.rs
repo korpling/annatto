@@ -3,12 +3,7 @@ use quick_xml::{
     events::{attributes::Attributes, Event},
     Reader,
 };
-use std::{
-    collections::{BTreeMap, HashMap},
-    io::BufReader,
-    path::Path,
-    str::FromStr,
-};
+use std::{collections::{BTreeMap, HashMap}, io::BufReader, fs::File, path::Path, str::FromStr};
 
 use graphannis::{
     graph::AnnoKey,
@@ -16,12 +11,7 @@ use graphannis::{
     update::{GraphUpdate, UpdateEvent},
 };
 
-use crate::{
-    error::PepperError,
-    importer::Importer,
-    workflow::{StatusMessage::Progress, StatusSender},
-    Module,
-};
+use crate::{Module, error::PepperError, exporter::Exporter, importer::Importer, workflow::{StatusMessage::{self, Progress}, StatusSender}};
 
 pub struct GraphMLImporter {}
 
@@ -292,8 +282,11 @@ impl Importer for GraphMLImporter {
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         self.set_progress(0.0, path, &tx)?;
 
+        // TODO: support multiple GraphML and connected binary files
+        // TODO: refactor the graphannis_core create to expose the needed functionality directly
+
         // Load the GraphML files (could be a ZIP file, too) from the given location
-        let input = std::fs::File::open(path)?;
+        let input = File::open(path)?;
         let mut input = BufReader::new(input);
         let mut updates = GraphUpdate::default();
         let mut edge_updates = GraphUpdate::default();
@@ -313,5 +306,55 @@ impl Importer for GraphMLImporter {
 impl Module for GraphMLImporter {
     fn module_name(&self) -> &str {
         "GraphMLImporter"
+    }
+}
+
+pub struct GraphMLExporter {}
+
+impl GraphMLExporter {
+    pub fn new() -> GraphMLExporter {
+        GraphMLExporter {}
+    }
+
+    fn set_progress(
+        &self,
+        progress: f32,
+        path: &Path,
+        tx: &Option<StatusSender>,
+    ) -> Result<(), PepperError> {
+        if let Some(tx) = tx {
+            tx.send(Progress {
+                id: self.step_id(Some(path)),
+                progress,
+            })?;
+        }
+        Ok(())
+    }
+}
+
+impl Module for GraphMLExporter {
+    fn module_name(&self) -> &str {
+        "GraphMLExporter"
+    }
+}
+
+impl Exporter for GraphMLExporter {
+    fn export_corpus(
+        &self,
+        graph: &graphannis::AnnotationGraph,
+        _properties: &BTreeMap<String, String>,
+        output_path: &Path,
+        tx: Option<StatusSender>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+
+        self.set_progress(0.0, output_path, &tx)?;
+        let output_file = File::create(output_path)?;
+        graphannis_core::graph::serialization::graphml::export(graph, None, output_file, |msg| {
+            if let Some(ref tx) = tx {
+                tx.send(StatusMessage::Info(msg.to_string())).expect("Could not send status message");
+            }
+        })?;
+        self.set_progress(1.0, output_path, &tx)?;
+        Ok(())
     }
 }

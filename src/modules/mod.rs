@@ -23,6 +23,7 @@ pub fn manipulator_by_name(name: &str) -> Result<Box<dyn Manipulator>> {
 
 pub fn exporter_by_name(name: &str) -> Result<Box<dyn Exporter>> {
     match name {
+        "GraphMLExporter" => Ok(Box::new(graphml::GraphMLExporter::new())),
         "DoNothingExporter" => Ok(Box::new(donothing::DoNothingExporter::new())),
         _ => Err(PepperError::NoSuchModule(name.to_string())),
     }
