@@ -8,9 +8,7 @@ use std::{
 use graphannis::{update::GraphUpdate, AnnotationGraph};
 
 use crate::{
-    error::PepperError,
-    error::Result,
-    modules::{exporter_by_name, importer_by_name, manipulator_by_name},
+    error::PepperError, error::Result, exporter_by_name, importer_by_name, manipulator_by_name,
     ExporterStep, ImporterStep, ManipulatorStep, Step, StepID,
 };
 use rayon::prelude::*;
@@ -54,7 +52,7 @@ const ATT_NAME: &str = "name";
 const ATT_PATH: &str = "path";
 const ATT_KEY: &str = "key";
 
-fn into_hash_map(attributes: &Vec<OwnedAttribute>) -> HashMap<String, String> {
+fn into_hash_map(attributes: &[OwnedAttribute]) -> HashMap<String, String> {
     let mut attr_map = HashMap::new();
     for attribute in attributes {
         attr_map.insert(attribute.name.local_name.clone(), attribute.value.clone());

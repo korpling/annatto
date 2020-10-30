@@ -1,19 +1,42 @@
+pub mod error;
+pub mod exporter;
+pub mod importer;
+pub mod manipulator;
+pub mod workflow;
+
 use std::{
     collections::BTreeMap,
     fmt::Display,
     path::{Path, PathBuf},
 };
 
+use error::{PepperError, Result};
 use exporter::Exporter;
 use importer::Importer;
 use manipulator::Manipulator;
 
-pub mod error;
-pub mod exporter;
-pub mod importer;
-pub mod manipulator;
-pub mod modules;
-pub mod workflow;
+pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
+    match name {
+        "GraphMLImporter" => Ok(Box::new(importer::graphml::GraphMLImporter::new())),
+        "DoNothingImporter" => Ok(Box::new(importer::DoNothingImporter::new())),
+        _ => Err(PepperError::NoSuchModule(name.to_string())),
+    }
+}
+
+pub fn manipulator_by_name(name: &str) -> Result<Box<dyn Manipulator>> {
+    match name {
+        "DoNothingManipulator" => Ok(Box::new(manipulator::DoNothingManipulator::new())),
+        _ => Err(PepperError::NoSuchModule(name.to_string())),
+    }
+}
+
+pub fn exporter_by_name(name: &str) -> Result<Box<dyn Exporter>> {
+    match name {
+        "GraphMLExporter" => Ok(Box::new(exporter::graphml::GraphMLExporter::new())),
+        "DoNothingExporter" => Ok(Box::new(exporter::DoNothingExporter::new())),
+        _ => Err(PepperError::NoSuchModule(name.to_string())),
+    }
+}
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone)]
 pub struct StepID {
