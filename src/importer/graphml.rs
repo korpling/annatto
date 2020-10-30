@@ -18,9 +18,7 @@ use graphannis::{
 };
 
 use crate::{
-    error::PepperError,
-    importer::Importer,
-    workflow::{StatusMessage::Progress, StatusSender},
+    error::PepperError, importer::Importer, progress::ProgressReporter, workflow::StatusSender,
     Module,
 };
 
@@ -267,21 +265,6 @@ impl GraphMLImporter {
     pub fn new() -> GraphMLImporter {
         GraphMLImporter {}
     }
-
-    fn set_progress(
-        &self,
-        progress: f32,
-        path: &Path,
-        tx: &Option<StatusSender>,
-    ) -> Result<(), PepperError> {
-        if let Some(tx) = tx {
-            tx.send(Progress {
-                id: self.step_id(Some(path)),
-                progress,
-            })?;
-        }
-        Ok(())
-    }
 }
 
 impl Importer for GraphMLImporter {
@@ -291,7 +274,8 @@ impl Importer for GraphMLImporter {
         _properties: &BTreeMap<String, String>,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
-        self.set_progress(0.0, path, &tx)?;
+        let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(path));
+        reporter.set_progress(0.0)?;
 
         // TODO: support multiple GraphML and connected binary files
         // TODO: refactor the graphannis_core create to expose the needed functionality directly
@@ -304,11 +288,11 @@ impl Importer for GraphMLImporter {
         read_graphml(&mut input, &mut updates, &mut edge_updates)?;
         // Append all edges updates after the node updates:
         // edges would not be added if the nodes they are referring do not exist
-        self.set_progress(0.75, path, &tx)?;
+        reporter.set_progress(0.75)?;
         for (_, event) in edge_updates.iter()? {
             updates.add_event(event)?;
         }
-        self.set_progress(1.0, path, &tx)?;
+        reporter.set_progress(1.0)?;
 
         Ok(updates)
     }

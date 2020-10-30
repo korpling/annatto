@@ -1,35 +1,12 @@
 use std::{collections::BTreeMap, fs::File, path::Path};
 
-use crate::{
-    error::PepperError,
-    exporter::Exporter,
-    workflow::{
-        StatusMessage::{self, Progress},
-        StatusSender,
-    },
-    Module,
-};
+use crate::{exporter::Exporter, progress::ProgressReporter, workflow::StatusSender, Module};
 
 pub struct GraphMLExporter {}
 
 impl GraphMLExporter {
     pub fn new() -> GraphMLExporter {
         GraphMLExporter {}
-    }
-
-    fn set_progress(
-        &self,
-        progress: f32,
-        path: &Path,
-        tx: &Option<StatusSender>,
-    ) -> Result<(), PepperError> {
-        if let Some(tx) = tx {
-            tx.send(Progress {
-                id: self.step_id(Some(path)),
-                progress,
-            })?;
-        }
-        Ok(())
     }
 }
 
@@ -47,15 +24,13 @@ impl Exporter for GraphMLExporter {
         output_path: &Path,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        self.set_progress(0.0, output_path, &tx)?;
+        let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(output_path));
+        reporter.set_progress(0.0)?;
         let output_file = File::create(output_path)?;
         graphannis_core::graph::serialization::graphml::export(graph, None, output_file, |msg| {
-            if let Some(ref tx) = tx {
-                tx.send(StatusMessage::Info(msg.to_string()))
-                    .expect("Could not send status message");
-            }
+            reporter.info(msg).expect("Could not send status message");
         })?;
-        self.set_progress(1.0, output_path, &tx)?;
+        reporter.set_progress(1.0)?;
         Ok(())
     }
 }

@@ -3,6 +3,7 @@ pub mod exporter;
 pub mod importer;
 pub mod legacy;
 pub mod manipulator;
+pub mod progress;
 pub mod workflow;
 
 use std::{
