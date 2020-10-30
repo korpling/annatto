@@ -1,20 +1,20 @@
-use crate::{Module, exporter::Exporter, progress::ProgressReporter};
+use crate::{exporter::Exporter, progress::ProgressReporter, Module};
 
-pub struct ExmaraldaExporter {}
+pub struct EXMARaLDAExporter {}
 
-impl ExmaraldaExporter {
-    pub fn new() -> ExmaraldaExporter {
-        ExmaraldaExporter {}
+impl EXMARaLDAExporter {
+    pub fn new() -> EXMARaLDAExporter {
+        EXMARaLDAExporter {}
     }
 }
 
-impl Module for ExmaraldaExporter {
+impl Module for EXMARaLDAExporter {
     fn module_name(&self) -> &str {
-        "ExmaraldaExporter"
+        "EXMARaLDAExporter"
     }
 }
 
-impl Exporter for ExmaraldaExporter {
+impl Exporter for EXMARaLDAExporter {
     fn export_corpus(
         &self,
         _graph: &graphannis::AnnotationGraph,
@@ -25,6 +25,12 @@ impl Exporter for ExmaraldaExporter {
         let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(output_path));
         reporter.set_progress(0.0)?;
         let jvm = j4rs::JvmBuilder::new().build()?;
+
+        // Create an instance of the Exmaralda mapper
+        jvm.create_instance(
+            "org.corpus_tools.peppermodules.exmaralda.Salt2EXMARaLDAMapper",
+            &Vec::new(),
+        )?;
 
         todo!()
     }
