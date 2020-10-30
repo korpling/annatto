@@ -3,7 +3,13 @@ use quick_xml::{
     events::{attributes::Attributes, Event},
     Reader,
 };
-use std::{collections::{BTreeMap, HashMap}, io::BufReader, fs::File, path::Path, str::FromStr};
+use std::{
+    collections::{BTreeMap, HashMap},
+    fs::File,
+    io::BufReader,
+    path::Path,
+    str::FromStr,
+};
 
 use graphannis::{
     graph::AnnoKey,
@@ -11,7 +17,16 @@ use graphannis::{
     update::{GraphUpdate, UpdateEvent},
 };
 
-use crate::{Module, error::PepperError, exporter::Exporter, importer::Importer, workflow::{StatusMessage::{self, Progress}, StatusSender}};
+use crate::{
+    error::PepperError,
+    exporter::Exporter,
+    importer::Importer,
+    workflow::{
+        StatusMessage::{self, Progress},
+        StatusSender,
+    },
+    Module,
+};
 
 pub struct GraphMLImporter {}
 
@@ -346,12 +361,12 @@ impl Exporter for GraphMLExporter {
         output_path: &Path,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-
         self.set_progress(0.0, output_path, &tx)?;
         let output_file = File::create(output_path)?;
         graphannis_core::graph::serialization::graphml::export(graph, None, output_file, |msg| {
             if let Some(ref tx) = tx {
-                tx.send(StatusMessage::Info(msg.to_string())).expect("Could not send status message");
+                tx.send(StatusMessage::Info(msg.to_string()))
+                    .expect("Could not send status message");
             }
         })?;
         self.set_progress(1.0, output_path, &tx)?;
