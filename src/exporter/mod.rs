@@ -1,6 +1,7 @@
 //! Contains exporters and their traits.
 
 pub mod graphml;
+pub mod exb;
 
 use crate::{workflow::StatusSender, Module};
 use graphannis::AnnotationGraph;
