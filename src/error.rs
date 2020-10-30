@@ -39,6 +39,8 @@ pub enum PepperError {
     SendingStatusMessageFailed(String),
     #[error("XML error: {0}")]
     XML(quick_xml::Error),
+    #[error("Java virtual machine: {0}")]
+    JVM(j4rs::errors::J4RsError),
     #[error("Unknown error {0}")]
     Unknown(String),
 }
@@ -64,5 +66,11 @@ impl From<anyhow::Error> for PepperError {
 impl From<quick_xml::Error> for PepperError {
     fn from(e: quick_xml::Error) -> Self {
         PepperError::XML(e)
+    }
+}
+
+impl From<j4rs::errors::J4RsError> for PepperError {
+    fn from(e: j4rs::errors::J4RsError) -> Self {
+        PepperError::JVM(e)
     }
 }
