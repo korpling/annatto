@@ -7,7 +7,7 @@ Ideas what could be included are e.g.
 - ✓ import in parallel by importers producing graph updates
 - ✓ manipulate non-parallel
 - ✓ call all exporters in parallel
-- adding the GraphML importer and exporter from graphANNIS
+- ✓ adding the GraphML importer and exporter from graphANNIS
 - adding the relANNIS importer from graphANNIS
 - allow to execute Python3.0 scripts as modules
 - add a legacy Java and Salt interface for existing Pepper modules
