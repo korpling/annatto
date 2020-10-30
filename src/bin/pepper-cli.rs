@@ -1,13 +1,11 @@
-use std::{collections::HashMap, sync::mpsc, thread};
-
+use indicatif::{ProgressBar, ProgressStyle};
 use pepper::{
     error::PepperError,
     workflow::{execute_from_file, StatusMessage},
     StepID,
 };
+use std::{collections::HashMap, sync::mpsc, thread};
 use structopt::StructOpt;
-
-use indicatif::{ProgressBar, ProgressStyle};
 
 /// Define a conversion operation
 #[derive(StructOpt)]

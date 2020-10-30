@@ -16,21 +16,28 @@ use rayon::prelude::*;
 /// Status updates are send as single messages when the workflow is executed.
 #[derive(Debug)]
 pub enum StatusMessage {
+    /// Sent at the beginning when the workflow is parsed and before the pipeline steps are executed.
     StepsCreated(Vec<StepID>),
-    /// An informing message
+    /// An informing message.
     Info(String),
-    /// A warning message
+    /// A warning message.
     Warning(String),
-    /// Progress report for a single conversion step
+    /// Progress report for a single conversion step.
     Progress {
-        // Determines which step the progress is reported for
+        // Determines which step the progress is reported for.
         id: StepID,
-        /// Progress from 0.0 to 1.0
+        /// Progress from 0.0 to 1.0 (where 1.0 is "finished").
         progress: f32,
     },
+    /// Send when some error occurred in the pipeline. Any error will stop the conversion.
     Failed(PepperError),
 }
 
+/// A workflow describes the steps in the conversion pipeline process. It can be represented as XML file.
+///
+/// First , all importers are executed in parallel. Then their output are appended to create a single annotation graph.
+/// The manipulators are executed in their defined sequence and can change the annotation graph.
+/// Last, all exporters are called with the now read-only annotation graph in parallel.
 pub struct Workflow {
     importer: Vec<ImporterStep>,
     manipulator: Vec<ManipulatorStep>,
@@ -210,6 +217,32 @@ impl TryFrom<File> for Workflow {
     }
 }
 
+/// Executes a workflow from an XML file.
+///
+/// Such a file has the root element `pepper-job` and contains entries for importers, exporters and manipulators.
+/// Each of this modules have an attribute with their input/output path (except manipulators) and the module name.
+/// They can also contain `property` child elements which key-value string properties.
+///
+/// ```xml
+/// <?xml version='1.0' encoding='UTF-8'?>
+/// <pepper-job>
+///     <importer name="WebannoTSVImporter" path="./tsv/SomeCorpus/">
+///     </importer>
+///     <importer name="TextImporter" path="./meta/SomeCorpus/">
+///             <property key="pepper.before.readMeta">meta</property>
+///     </importer>
+///     <manipulator name="Merger">
+///     <property key="firstAsBase">true</property>
+///     </manipulator>
+///     <exporter name="ANNISExporter" path="./annis/">
+///     </exporter>
+/// </pepper-job>
+/// ```
+///
+/// # Arguments
+///
+/// * `workflow_file` - The XML workflow file.
+/// * `tx` - If supported by the caller, this is a sender object that allows to send [status updates](enum.StatusMessage.html) (like information messages, warnings and module progress) to the calling entity.
 pub fn execute_from_file(workflow_file: &Path, tx: Option<Sender<StatusMessage>>) -> Result<()> {
     let f = File::open(workflow_file).map_err(|reason| PepperError::OpenWorkflowFile {
         reason,
