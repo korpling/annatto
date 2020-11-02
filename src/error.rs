@@ -41,6 +41,10 @@ pub enum PepperError {
     XML(quick_xml::Error),
     #[error("Java virtual machine: {0}")]
     JVM(j4rs::errors::J4RsError),
+    #[error("Could not iterate over directory: {0}")]
+    IteratingDirectory(walkdir::Error),
+    #[error("Regular expression error: {0}")]
+    Regex(regex::Error),
     #[error("Unknown error {0}")]
     Unknown(String),
 }
@@ -72,5 +76,17 @@ impl From<quick_xml::Error> for PepperError {
 impl From<j4rs::errors::J4RsError> for PepperError {
     fn from(e: j4rs::errors::J4RsError) -> Self {
         PepperError::JVM(e)
+    }
+}
+
+impl From<walkdir::Error> for PepperError {
+    fn from(e: walkdir::Error) -> Self {
+        PepperError::IteratingDirectory(e)
+    }
+}
+
+impl From<regex::Error> for PepperError {
+    fn from(e: regex::Error) -> Self {
+        PepperError::Regex(e)
     }
 }

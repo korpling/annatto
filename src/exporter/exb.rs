@@ -26,11 +26,15 @@ impl Exporter for EXMARaLDAExporter {
         reporter.set_progress(0.0)?;
         let jvm = j4rs::JvmBuilder::new().build()?;
 
-        // Create an instance of the Exmaralda mapper
-        jvm.create_instance(
+        // Create an instance of the Salt to Exmaralda mapper
+        let mapper = jvm.create_instance(
             "org.corpus_tools.peppermodules.exmaralda.Salt2EXMARaLDAMapper",
-            &Vec::new(),
+            &vec![],
         )?;
+
+        // TODO: create corpus graph and documents as Salt objects
+        // TODO: call mapSDocument for each document in parallel
+        //jvm.invoke(&mapper, "setDocument", &vec![document]);
 
         todo!()
     }
