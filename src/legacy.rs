@@ -1,15 +1,14 @@
 //! This module contains helper methods and structures to implement with legacy Java-based modules
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use graphannis::update::{GraphUpdate, UpdateEvent};
-use j4rs::{Instance, Jvm};
 use regex::Regex;
 use walkdir::WalkDir;
 
 use crate::error::PepperError;
 
-/// Imports a corpus structure from a directory and returns a list of `SDocument` Java object instances.
+/// Imports a corpus structure from a directory and returns a list of document file paths and their node name.
 ///
 /// The root directory is modelled as the top-level corpus, each sub-directory is a sub-corpus and files matching the pattern are documents.
 ///
@@ -18,13 +17,11 @@ use crate::error::PepperError;
 /// * `root_dir` - The root directory containing the corpus files.
 /// * `file_pattern` - An optional regular expression which is applied to the file name and determines if the file is included or not. If `None`, all files are included.
 /// * `updates` - A mutable reference to the graph update list. (Sub)- corpora and empty document nodes are added to the list, including all meta data.
-/// * `jvm` - The java virtual machine reference used to create the SDocument objects.
 pub fn import_corpus_structure(
     root_dir: &Path,
     file_pattern: Option<&str>,
     updates: &mut GraphUpdate,
-    jvm: &Jvm,
-) -> Result<Vec<Instance>, PepperError> {
+) -> Result<Vec<(PathBuf, String)>, PepperError> {
     // Compile pattern as regular expression
     let file_pattern: Option<Regex> = if let Some(file_pattern) = file_pattern {
         Some(Regex::new(file_pattern)?)
@@ -62,7 +59,7 @@ pub fn import_corpus_structure(
         if path_components.len() > 1 {
             let parent_name = path_components[0..=path_components.len() - 1].join("/");
             updates.add_event(UpdateEvent::AddEdge {
-                source_node: node_name,
+                source_node: node_name.clone(),
                 target_node: parent_name,
                 component_type: "PartOf".to_string(),
                 layer: "".to_string(),
@@ -71,13 +68,7 @@ pub fn import_corpus_structure(
         }
 
         if e.file_type().is_file() {
-            // create an SDocument instance for this document
-            let doc = jvm.invoke_static(
-                "org.corpus_tools.salt.SaltFactory",
-                "createSDocument",
-                &vec![],
-            )?;
-            result.push(doc);
+            result.push((e.path().to_path_buf(), node_name));
         }
     }
     Ok(result)

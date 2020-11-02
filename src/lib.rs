@@ -20,6 +20,7 @@ use manipulator::Manipulator;
 /// Retrieve a new instance of an importer using its module name
 pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
     match name {
+        "EXMARaLDAImporter" => Ok(Box::new(importer::exb::EXMARaLDAImporter::new())),
         "GraphMLImporter" => Ok(Box::new(importer::graphml::GraphMLImporter::new())),
         "DoNothingImporter" => Ok(Box::new(importer::DoNothingImporter::new())),
         _ => Err(PepperError::NoSuchModule(name.to_string())),

@@ -45,6 +45,8 @@ pub enum PepperError {
     IteratingDirectory(walkdir::Error),
     #[error("Regular expression error: {0}")]
     Regex(regex::Error),
+    #[error("Invalid (poisoned) lock")]
+    LockPoisoning,
     #[error("Unknown error {0}")]
     Unknown(String),
 }
@@ -88,5 +90,11 @@ impl From<walkdir::Error> for PepperError {
 impl From<regex::Error> for PepperError {
     fn from(e: regex::Error) -> Self {
         PepperError::Regex(e)
+    }
+}
+
+impl<T> From<std::sync::PoisonError<T>> for PepperError {
+    fn from(e : std::sync::PoisonError<T>) -> Self {
+        PepperError::LockPoisoning
     }
 }

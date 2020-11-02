@@ -32,7 +32,8 @@ impl Exporter for EXMARaLDAExporter {
             &vec![],
         )?;
 
-        // TODO: create corpus graph and documents as Salt objects
+        
+
         // TODO: call mapSDocument for each document in parallel
         //jvm.invoke(&mapper, "setDocument", &vec![document]);
 
