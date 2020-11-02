@@ -1,6 +1,7 @@
 //! Contains importers and their traits.
 
 pub mod graphml;
+pub mod exb;
 
 use crate::{workflow::StatusSender, Module, StepID};
 use graphannis::update::GraphUpdate;
