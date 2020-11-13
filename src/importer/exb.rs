@@ -155,13 +155,14 @@ impl Importer for EXMARaLDAImporter {
         //  Process all documents in parallel and merge graph updates afterwards
         let doc_updates: Result<Vec<_>, PepperError> = documents
             .into_par_iter()
-            .map(move |(file_path, document_name)| {
+            .map(|(file_path, document_name)| {
                 let jvm = self.create_jvm(false)?;
-                map_document(file_path, &document_name, &jvm)
+                let updates_for_document =  map_document(file_path, &document_name, &jvm)?;
+                reporter.worked(1)?;
+               Ok(updates_for_document)
             })
             .collect();
         let doc_updates = doc_updates?;
-        reporter.worked(num_of_documents)?;
 
         // merge graph updates for all documents into a single one
         let mut merged_graph_updates = GraphUpdate::default();
