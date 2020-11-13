@@ -1,14 +1,7 @@
-use std::{
-    convert::TryFrom,
-    path::Path,
-    sync::{Arc, Mutex},
-};
+use std::convert::TryFrom;
 
 use graphannis::update::GraphUpdate;
-use j4rs::{
-    InvocationArg,
-    Jvm, MavenArtifact,
-};
+use j4rs::{InvocationArg, Jvm};
 use rayon::prelude::*;
 
 use crate::{error::PepperError, importer::Importer, progress::ProgressReporter, Module};
