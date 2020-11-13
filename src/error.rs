@@ -94,13 +94,13 @@ impl From<regex::Error> for PepperError {
 }
 
 impl<T> From<std::sync::PoisonError<T>> for PepperError {
-    fn from(e: std::sync::PoisonError<T>) -> Self {
+    fn from(_: std::sync::PoisonError<T>) -> Self {
         PepperError::LockPoisoning
     }
 }
 
 impl From<std::convert::Infallible> for PepperError {
-    fn from(e: std::convert::Infallible) -> Self {
+    fn from(_: std::convert::Infallible) -> Self {
         PepperError::Unknown("Infallible conversion failed".to_string())
     }
 }
