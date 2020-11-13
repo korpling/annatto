@@ -46,7 +46,7 @@ impl Importer for EXMARaLDAImporter {
         //  Process all documents in parallel and merge graph updates afterwards
         let doc_updates: Result<Vec<_>, PepperError> = documents
             .into_par_iter()
-            .map(move |(file_path, _document_name)| {
+            .map(move |(file_path, document_name)| {
                 let jvm = self.create_jvm()?;
                 // Create an instance of the Salt to Exmaralda mapper
                 let mapper = jvm.create_instance(
@@ -66,6 +66,25 @@ impl Importer for EXMARaLDAImporter {
                     &mapper,
                     "setResourceURI",
                     &vec![InvocationArg::from(resource_uri)],
+                )?;
+
+                // Create a new document object and set it
+                let sdocument = jvm.invoke_static(
+                    "org.corpus_tools.salt.SaltFactory",
+                    "createSDocument",
+                    &vec![],
+                )?;
+
+                jvm.invoke(
+                    &jvm.cast(&sdocument, "org.corpus_tools.salt.core.SNamedElement")?,
+                    "setName",
+                    &vec![InvocationArg::try_from(&document_name)?],
+                )?;
+
+                jvm.invoke(
+                    &mapper,
+                    "setDocument",
+                    &vec![InvocationArg::from(sdocument)],
                 )?;
 
                 // Invoke the internal mapper

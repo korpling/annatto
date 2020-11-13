@@ -98,3 +98,9 @@ impl<T> From<std::sync::PoisonError<T>> for PepperError {
         PepperError::LockPoisoning
     }
 }
+
+impl From<std::convert::Infallible> for PepperError {
+    fn from(e : std::convert::Infallible) -> Self {
+        PepperError::Unknown("Infallible conversion failed".to_string())
+    }
+}
