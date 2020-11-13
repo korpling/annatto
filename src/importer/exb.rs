@@ -1,4 +1,4 @@
-use std::convert::TryFrom;
+use std::{path::PathBuf, convert::TryFrom};
 
 use graphannis::update::GraphUpdate;
 use j4rs::{InvocationArg, Jvm};
@@ -25,6 +25,82 @@ impl Module for EXMARaLDAImporter {
     }
 }
 
+fn map_document(
+    file_path: PathBuf,
+    document_name: String,
+    jvm: &Jvm,
+) -> Result<GraphUpdate, PepperError> {
+    // Create an instance of the Exmaralda importer
+    let importer = jvm.create_instance(
+        "org.corpus_tools.peppermodules.exmaralda.EXMARaLDAImporter",
+        &vec![],
+    )?;
+
+    // Create a new document object that will be mapped
+    let sdocument = jvm.invoke_static(
+        "org.corpus_tools.salt.SaltFactory",
+        "createSDocument",
+        &vec![],
+    )?;
+
+    jvm.invoke(
+        &jvm.cast(&sdocument, "org.corpus_tools.salt.core.SNamedElement")?,
+        "setName",
+        &vec![InvocationArg::try_from(&document_name)?],
+    )?;
+
+    let sdocument_identifier = jvm.invoke(
+        &jvm.cast(
+            &sdocument,
+            "org.corpus_tools.salt.graph.IdentifiableElement",
+        )?,
+        "getIdentifier",
+        &vec![],
+    )?;
+
+    // Get the identifier and link it with the URI
+    let resource_table = jvm.invoke(&importer, "getIdentifier2ResourceTable", &vec![])?;
+    let uri_as_string = InvocationArg::try_from(file_path.as_os_str().to_string_lossy().as_ref())?;
+    let resource_uri = jvm.invoke_static(
+        "org.eclipse.emf.common.util.URI",
+        "createFileURI",
+        &vec![uri_as_string],
+    )?;
+    jvm.invoke(
+        &resource_table,
+        "put",
+        &vec![
+            InvocationArg::from(sdocument_identifier),
+            InvocationArg::from(resource_uri),
+        ],
+    )?;
+
+    let sdocument_identifier = jvm.invoke(
+        &jvm.cast(
+            &sdocument,
+            "org.corpus_tools.salt.graph.IdentifiableElement",
+        )?,
+        "getIdentifier",
+        &vec![],
+    )?;
+
+    // Get an instance of the Salt to Exmaralda mapper from the importer
+    let mapper = jvm.invoke(
+        &importer,
+        "createPepperMapper",
+        &vec![InvocationArg::from(sdocument_identifier)],
+    )?;
+
+    // Invoke the internal mapper
+    jvm.invoke(&mapper, "mapSDocument", &vec![])?;
+
+    // Retrieve the reference to the created graph
+
+    let u = GraphUpdate::new();
+    // TODO: map Salt to GraphML
+    Ok(u)
+}
+
 impl Importer for EXMARaLDAImporter {
     fn import_corpus(
         &self,
@@ -48,53 +124,7 @@ impl Importer for EXMARaLDAImporter {
             .into_par_iter()
             .map(move |(file_path, document_name)| {
                 let jvm = self.create_jvm()?;
-                // Create an instance of the Salt to Exmaralda mapper
-                let mapper = jvm.create_instance(
-                    "org.corpus_tools.peppermodules.exmaralda.EXMARaLDA2SaltMapper",
-                    &vec![],
-                )?;
-
-                // Make sure the mapper knows where to find the file
-                let uri_as_string =
-                    InvocationArg::try_from(file_path.as_os_str().to_string_lossy().as_ref())?;
-                let resource_uri = jvm.invoke_static(
-                    "org.eclipse.emf.common.util.URI",
-                    "createFileURI",
-                    &vec![uri_as_string],
-                )?;
-                jvm.invoke(
-                    &mapper,
-                    "setResourceURI",
-                    &vec![InvocationArg::from(resource_uri)],
-                )?;
-
-                // Create a new document object and set it
-                let sdocument = jvm.invoke_static(
-                    "org.corpus_tools.salt.SaltFactory",
-                    "createSDocument",
-                    &vec![],
-                )?;
-
-                jvm.invoke(
-                    &jvm.cast(&sdocument, "org.corpus_tools.salt.core.SNamedElement")?,
-                    "setName",
-                    &vec![InvocationArg::try_from(&document_name)?],
-                )?;
-
-                jvm.invoke(
-                    &mapper,
-                    "setDocument",
-                    &vec![InvocationArg::from(sdocument)],
-                )?;
-
-                // Invoke the internal mapper
-                jvm.invoke(&mapper, "mapSDocument", &vec![])?;
-
-                // Retrieve the reference to the created graph
-
-                let u = GraphUpdate::new();
-                // TODO: map Salt to GraphML
-                Ok(u)
+                map_document(file_path, document_name, &jvm)
             })
             .collect();
         let doc_updates = doc_updates?;
