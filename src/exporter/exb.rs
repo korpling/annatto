@@ -32,8 +32,6 @@ impl Exporter for EXMARaLDAExporter {
             &vec![],
         )?;
 
-        
-
         // TODO: call mapSDocument for each document in parallel
         //jvm.invoke(&mapper, "setDocument", &vec![document]);
 

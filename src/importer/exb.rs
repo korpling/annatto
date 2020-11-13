@@ -1,7 +1,7 @@
-use std::{path::PathBuf, convert::TryFrom};
+use std::{convert::TryFrom, path::PathBuf};
 
 use graphannis::update::GraphUpdate;
-use j4rs::{Instance, InvocationArg, Jvm};
+use j4rs::{Instance, InvocationArg, JavaOpt, Jvm};
 use rayon::prelude::*;
 
 use crate::{error::PepperError, importer::Importer, progress::ProgressReporter, Module};
@@ -13,8 +13,17 @@ impl EXMARaLDAImporter {
         EXMARaLDAImporter {}
     }
 
-    fn create_jvm(&self) -> Result<Jvm, PepperError> {
-        let jvm = j4rs::JvmBuilder::new().build()?;
+    fn create_jvm(&self, debug: bool) -> Result<Jvm, PepperError> {
+        let jvm = if debug {
+            j4rs::JvmBuilder::new()
+                .java_opt(JavaOpt::new("-Xdebug"))
+                .java_opt(JavaOpt::new(
+                    "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5000",
+                ))
+                .build()?
+        } else {
+            j4rs::JvmBuilder::new().build()?
+        };
         Ok(jvm)
     }
 }
@@ -25,19 +34,16 @@ impl Module for EXMARaLDAImporter {
     }
 }
 
-fn get_identifier(sdocument: &Instance, jvm : &Jvm) -> Result<Instance, PepperError> {
+fn get_identifier(sdocument: &Instance, jvm: &Jvm) -> Result<Instance, PepperError> {
     let id = jvm.invoke(
-        &jvm.cast(
-            sdocument,
-            "org.corpus_tools.salt.graph.IdentifiableElement",
-        )?,
+        &jvm.cast(sdocument, "org.corpus_tools.salt.graph.IdentifiableElement")?,
         "getIdentifier",
         &vec![],
     )?;
     Ok(id)
 }
 
-fn prepare_mapper(mapper: &Instance, document: Instance, jvm : &Jvm) -> Result<(), PepperError> {
+fn prepare_mapper(mapper: &Instance, document: Instance, jvm: &Jvm) -> Result<(), PepperError> {
     // Create and set an empty property map
     let props = jvm.create_instance(
         "org.corpus_tools.peppermodules.exmaralda.EXMARaLDAImporterProperties",
@@ -45,13 +51,8 @@ fn prepare_mapper(mapper: &Instance, document: Instance, jvm : &Jvm) -> Result<(
     )?;
     jvm.invoke(mapper, "setProperties", &vec![InvocationArg::from(props)])?;
 
-
-     // Explicitly set the document object
-     jvm.invoke(
-        &mapper,
-        "setDocument",
-        &vec![InvocationArg::from(document)],
-    )?;
+    // Explicitly set the document object
+    jvm.invoke(&mapper, "setDocument", &vec![InvocationArg::from(document)])?;
 
     Ok(())
 }
@@ -80,13 +81,19 @@ fn map_document(
         &vec![InvocationArg::try_from(document_name)?],
     )?;
     jvm.invoke(
-        &jvm.cast(&sdocument, "org.corpus_tools.salt.graph.IdentifiableElement")?,
+        &jvm.cast(
+            &sdocument,
+            "org.corpus_tools.salt.graph.IdentifiableElement",
+        )?,
         "setId",
-        &vec![InvocationArg::try_from(&format!("salt:/{}", document_name))?],
+        &vec![InvocationArg::try_from(&format!(
+            "salt:/{}",
+            document_name
+        ))?],
     )?;
 
     let sdocument_identifier = get_identifier(&sdocument, jvm)?;
-    
+
     // Get the identifier and link it with the URI
     let resource_table = jvm.invoke(&importer, "getIdentifier2ResourceTable", &vec![])?;
     let uri_as_string = InvocationArg::try_from(file_path.as_os_str().to_string_lossy().as_ref())?;
@@ -148,15 +155,20 @@ impl Importer for EXMARaLDAImporter {
         let doc_updates: Result<Vec<_>, PepperError> = documents
             .into_par_iter()
             .map(move |(file_path, document_name)| {
-                let jvm = self.create_jvm()?;
+                let jvm = self.create_jvm(false)?;
                 map_document(file_path, &document_name, &jvm)
             })
             .collect();
         let doc_updates = doc_updates?;
 
-        // TODO: merge graph updates into own
-
-        todo!()
+        // merge graph updates for all documents into a single one
+        let mut merged_graph_updates = GraphUpdate::default();
+        for u in doc_updates.into_iter() {
+            for (_, event) in u.iter()? {
+                merged_graph_updates.add_event(event)?;
+            }
+        }
+        Ok(merged_graph_updates)
     }
 }
 

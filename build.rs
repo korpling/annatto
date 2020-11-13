@@ -10,7 +10,6 @@ fn maven(s: &str, jvm: &Jvm) {
             s, error
         );
     });
-
 }
 
 fn deploy_java_artifacts(jvm: &Jvm) {
