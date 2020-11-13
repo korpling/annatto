@@ -1,7 +1,7 @@
 use std::{path::PathBuf, convert::TryFrom};
 
 use graphannis::update::GraphUpdate;
-use j4rs::{InvocationArg, Jvm};
+use j4rs::{Instance, InvocationArg, Jvm};
 use rayon::prelude::*;
 
 use crate::{error::PepperError, importer::Importer, progress::ProgressReporter, Module};
@@ -25,9 +25,40 @@ impl Module for EXMARaLDAImporter {
     }
 }
 
+fn get_identifier(sdocument: &Instance, jvm : &Jvm) -> Result<Instance, PepperError> {
+    let id = jvm.invoke(
+        &jvm.cast(
+            sdocument,
+            "org.corpus_tools.salt.graph.IdentifiableElement",
+        )?,
+        "getIdentifier",
+        &vec![],
+    )?;
+    Ok(id)
+}
+
+fn prepare_mapper(mapper: &Instance, document: Instance, jvm : &Jvm) -> Result<(), PepperError> {
+    // Create and set an empty property map
+    let props = jvm.create_instance(
+        "org.corpus_tools.peppermodules.exmaralda.EXMARaLDAImporterProperties",
+        &vec![],
+    )?;
+    jvm.invoke(mapper, "setProperties", &vec![InvocationArg::from(props)])?;
+
+
+     // Explicitly set the document object
+     jvm.invoke(
+        &mapper,
+        "setDocument",
+        &vec![InvocationArg::from(document)],
+    )?;
+
+    Ok(())
+}
+
 fn map_document(
     file_path: PathBuf,
-    document_name: String,
+    document_name: &str,
     jvm: &Jvm,
 ) -> Result<GraphUpdate, PepperError> {
     // Create an instance of the Exmaralda importer
@@ -46,18 +77,16 @@ fn map_document(
     jvm.invoke(
         &jvm.cast(&sdocument, "org.corpus_tools.salt.core.SNamedElement")?,
         "setName",
-        &vec![InvocationArg::try_from(&document_name)?],
+        &vec![InvocationArg::try_from(document_name)?],
+    )?;
+    jvm.invoke(
+        &jvm.cast(&sdocument, "org.corpus_tools.salt.graph.IdentifiableElement")?,
+        "setId",
+        &vec![InvocationArg::try_from(&format!("salt:/{}", document_name))?],
     )?;
 
-    let sdocument_identifier = jvm.invoke(
-        &jvm.cast(
-            &sdocument,
-            "org.corpus_tools.salt.graph.IdentifiableElement",
-        )?,
-        "getIdentifier",
-        &vec![],
-    )?;
-
+    let sdocument_identifier = get_identifier(&sdocument, jvm)?;
+    
     // Get the identifier and link it with the URI
     let resource_table = jvm.invoke(&importer, "getIdentifier2ResourceTable", &vec![])?;
     let uri_as_string = InvocationArg::try_from(file_path.as_os_str().to_string_lossy().as_ref())?;
@@ -66,6 +95,7 @@ fn map_document(
         "createFileURI",
         &vec![uri_as_string],
     )?;
+
     jvm.invoke(
         &resource_table,
         "put",
@@ -75,14 +105,7 @@ fn map_document(
         ],
     )?;
 
-    let sdocument_identifier = jvm.invoke(
-        &jvm.cast(
-            &sdocument,
-            "org.corpus_tools.salt.graph.IdentifiableElement",
-        )?,
-        "getIdentifier",
-        &vec![],
-    )?;
+    let sdocument_identifier = get_identifier(&sdocument, jvm)?;
 
     // Get an instance of the Salt to Exmaralda mapper from the importer
     let mapper = jvm.invoke(
@@ -90,6 +113,8 @@ fn map_document(
         "createPepperMapper",
         &vec![InvocationArg::from(sdocument_identifier)],
     )?;
+
+    prepare_mapper(&mapper, sdocument, jvm)?;
 
     // Invoke the internal mapper
     jvm.invoke(&mapper, "mapSDocument", &vec![])?;
@@ -124,7 +149,7 @@ impl Importer for EXMARaLDAImporter {
             .into_par_iter()
             .map(move |(file_path, document_name)| {
                 let jvm = self.create_jvm()?;
-                map_document(file_path, document_name, &jvm)
+                map_document(file_path, &document_name, &jvm)
             })
             .collect();
         let doc_updates = doc_updates?;
