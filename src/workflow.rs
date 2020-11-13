@@ -24,11 +24,15 @@ pub enum StatusMessage {
     Warning(String),
     /// Progress report for a single conversion step.
     Progress {
-        // Determines which step the progress is reported for.
+        /// Determines which step the progress is reported for.
         id: StepID,
-        /// Progress from 0.0 to 1.0 (where 1.0 is "finished").
-        progress: f32,
+        /// Estimated total needed steps to complete conversion
+        total_work: usize,
+        /// Number of steps finished. Should never be larger than `total_work`.
+        finished_work: usize,
     },
+    /// Indicates a step has finished.
+    StepDone { id: StepID },
     /// Send when some error occurred in the pipeline. Any error will stop the conversion.
     Failed(PepperError),
 }
@@ -299,9 +303,8 @@ impl Workflow {
                     manipulator: desc.module.module_name().to_string(),
                 })?;
             if let Some(ref tx) = tx {
-                tx.send(crate::workflow::StatusMessage::Progress {
+                tx.send(crate::workflow::StatusMessage::StepDone {
                     id: desc.module.step_id(None),
-                    progress: 1.0,
                 })?;
             }
         }
@@ -333,9 +336,8 @@ impl Workflow {
                 path: step.corpus_path.to_path_buf(),
             })?;
         if let Some(ref tx) = tx {
-            tx.send(crate::workflow::StatusMessage::Progress {
+            tx.send(crate::workflow::StatusMessage::StepDone {
                 id: step.module.step_id(Some(&step.corpus_path)),
-                progress: 1.0,
             })?;
         }
         Ok(updates)
@@ -355,9 +357,8 @@ impl Workflow {
                 path: step.corpus_path.clone(),
             })?;
         if let Some(ref tx) = tx {
-            tx.send(crate::workflow::StatusMessage::Progress {
+            tx.send(crate::workflow::StatusMessage::StepDone {
                 id: step.module.step_id(Some(&step.corpus_path)),
-                progress: 1.0,
             })?;
         }
         Ok(())

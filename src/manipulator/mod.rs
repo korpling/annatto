@@ -43,7 +43,11 @@ impl Manipulator for DoNothingManipulator {
                 module_name: self.module_name().to_string(),
                 path: None,
             };
-            tx.send(crate::workflow::StatusMessage::Progress { id, progress: 1.0 })?;
+            tx.send(crate::workflow::StatusMessage::Progress {
+                id,
+                total_work: 1,
+                finished_work: 1,
+            })?;
         }
         Ok(())
     }

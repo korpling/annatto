@@ -44,9 +44,8 @@ impl Exporter for DoNothingExporter {
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(tx) = tx {
-            tx.send(crate::workflow::StatusMessage::Progress {
+            tx.send(crate::workflow::StatusMessage::StepDone {
                 id: self.step_id(Some(output_path)),
-                progress: 1.0,
             })?;
         }
         Ok(())
