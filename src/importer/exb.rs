@@ -140,8 +140,6 @@ impl Importer for EXMARaLDAImporter {
         _properties: &std::collections::BTreeMap<String, String>,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(input_path));
-        reporter.set_progress(0.0)?;
         let mut updates = GraphUpdate::new();
 
         // Create the corpus structure and all Java document objects
@@ -150,6 +148,9 @@ impl Importer for EXMARaLDAImporter {
             Some(".*\\.(exb|xml|xmi|exmaralda)$"),
             &mut updates,
         )?;
+
+        let num_of_documents = documents.len();
+        let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(input_path), num_of_documents + 1)?;
 
         //  Process all documents in parallel and merge graph updates afterwards
         let doc_updates: Result<Vec<_>, PepperError> = documents
@@ -160,6 +161,7 @@ impl Importer for EXMARaLDAImporter {
             })
             .collect();
         let doc_updates = doc_updates?;
+        reporter.worked(num_of_documents)?;
 
         // merge graph updates for all documents into a single one
         let mut merged_graph_updates = GraphUpdate::default();
@@ -168,6 +170,8 @@ impl Importer for EXMARaLDAImporter {
                 merged_graph_updates.add_event(event)?;
             }
         }
+        reporter.worked(1)?;
+
         Ok(merged_graph_updates)
     }
 }

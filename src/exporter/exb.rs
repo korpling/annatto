@@ -22,8 +22,7 @@ impl Exporter for EXMARaLDAExporter {
         output_path: &std::path::Path,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(output_path));
-        reporter.set_progress(0.0)?;
+        let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(output_path), 1)?;
         let jvm = j4rs::JvmBuilder::new().build()?;
 
         // Create an instance of the Salt to Exmaralda mapper

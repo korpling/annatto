@@ -46,7 +46,7 @@ impl Importer for DoNothingImporter {
                 module_name: self.module_name().to_string(),
                 path: Some(path.to_path_buf()),
             };
-            tx.send(crate::workflow::StatusMessage::Progress { id, progress: 1.0 })?;
+            tx.send(crate::workflow::StatusMessage::StepDone { id })?;
         }
         Ok(GraphUpdate::default())
     }

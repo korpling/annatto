@@ -24,13 +24,12 @@ impl Exporter for GraphMLExporter {
         output_path: &Path,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(output_path));
-        reporter.set_progress(0.0)?;
+        let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(output_path), 1)?;
         let output_file = File::create(output_path)?;
         graphannis_core::graph::serialization::graphml::export(graph, None, output_file, |msg| {
             reporter.info(msg).expect("Could not send status message");
         })?;
-        reporter.set_progress(1.0)?;
+        reporter.worked(1)?;
         Ok(())
     }
 }

@@ -274,8 +274,7 @@ impl Importer for GraphMLImporter {
         _properties: &BTreeMap<String, String>,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
-        let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(path));
-        reporter.set_progress(0.0)?;
+        let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(path), 2)?;
 
         // TODO: support multiple GraphML and connected binary files
         // TODO: refactor the graphannis_core create to expose the needed functionality directly
@@ -286,13 +285,13 @@ impl Importer for GraphMLImporter {
         let mut updates = GraphUpdate::default();
         let mut edge_updates = GraphUpdate::default();
         read_graphml(&mut input, &mut updates, &mut edge_updates)?;
+        reporter.worked(1)?;
         // Append all edges updates after the node updates:
         // edges would not be added if the nodes they are referring do not exist
-        reporter.set_progress(0.75)?;
         for (_, event) in edge_updates.iter()? {
             updates.add_event(event)?;
         }
-        reporter.set_progress(1.0)?;
+        reporter.worked(1)?;
 
         Ok(updates)
     }
