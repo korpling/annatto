@@ -40,13 +40,14 @@ pub fn import_corpus_structure(
             }
         }
 
-        let path_components: Vec<String> = e
+        let mut path_components: Vec<String> = e
             .path()
             .ancestors()
             .take(e.depth())
             .filter_map(|p| p.file_name())
             .map(|n| n.to_string_lossy().to_string())
             .collect();
+        path_components.reverse();
         let node_name = path_components.join("/");
 
         // Add node itself
