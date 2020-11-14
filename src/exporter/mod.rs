@@ -1,6 +1,5 @@
 //! Contains exporters and their traits.
 
-pub mod exb;
 pub mod graphml;
 
 use crate::{workflow::StatusSender, Module};
