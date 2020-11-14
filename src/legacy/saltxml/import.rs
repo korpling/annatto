@@ -14,17 +14,13 @@ fn iterator_next(it: &Instance, jvm: &Jvm) -> Result<Option<Instance>, PepperErr
     }
 }
 
-
 fn add_node(
     n: &Instance,
     document_node_name: &str,
     u: &mut GraphUpdate,
     jvm: &Jvm,
 ) -> Result<(), PepperError> {
-
-    if let Ok(n) = jvm.cast(n, "org.corpus_tools.salt.common.SStructuredNode") {
-
-    }
+    if let Ok(n) = jvm.cast(n, "org.corpus_tools.salt.common.SStructuredNode") {}
 
     todo!()
 }

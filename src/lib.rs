@@ -38,7 +38,6 @@ pub fn manipulator_by_name(name: &str) -> Result<Box<dyn Manipulator>> {
 /// Retrieve a new instance of an exporter using its module name
 pub fn exporter_by_name(name: &str) -> Result<Box<dyn Exporter>> {
     match name {
-        "EXMARaLDAExporter" => Ok(Box::new(exporter::exb::EXMARaLDAExporter::new())),
         "GraphMLExporter" => Ok(Box::new(exporter::graphml::GraphMLExporter::new())),
         "DoNothingExporter" => Ok(Box::new(exporter::DoNothingExporter::new())),
         _ => Err(PepperError::NoSuchModule(name.to_string())),

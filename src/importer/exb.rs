@@ -4,7 +4,9 @@ use graphannis::update::GraphUpdate;
 use j4rs::{Instance, InvocationArg, Jvm};
 use rayon::prelude::*;
 
-use crate::{Module, error::PepperError, importer::Importer, progress::ProgressReporter, legacy::create_jvm};
+use crate::{
+    error::PepperError, importer::Importer, legacy::create_jvm, progress::ProgressReporter, Module,
+};
 
 pub struct EXMARaLDAImporter {}
 
@@ -136,16 +138,21 @@ impl Importer for EXMARaLDAImporter {
         )?;
 
         let num_of_documents = documents.len();
-        let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(input_path), num_of_documents + 1)?;
+        let reporter = ProgressReporter::new(
+            tx,
+            self as &dyn Module,
+            Some(input_path),
+            num_of_documents + 1,
+        )?;
 
         //  Process all documents in parallel and merge graph updates afterwards
         let doc_updates: Result<Vec<_>, PepperError> = documents
             .into_par_iter()
             .map(|(file_path, document_name)| {
                 let jvm = create_jvm(false)?;
-                let updates_for_document =  map_document(file_path, &document_name, &jvm)?;
+                let updates_for_document = map_document(file_path, &document_name, &jvm)?;
                 reporter.worked(1)?;
-               Ok(updates_for_document)
+                Ok(updates_for_document)
             })
             .collect();
         let doc_updates = doc_updates?;

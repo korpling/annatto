@@ -1,5 +1,6 @@
 //! This module contains helper methods and structures to implement with legacy Java-based modules
 
+pub mod importer;
 pub mod saltxml;
 
 use std::path::{Path, PathBuf};
@@ -7,10 +8,14 @@ use std::path::{Path, PathBuf};
 use graphannis::update::{GraphUpdate, UpdateEvent};
 use j4rs::{InvocationArg, JavaOpt, Jvm};
 use regex::Regex;
+use rust_embed::RustEmbed;
 use walkdir::WalkDir;
 
 use crate::error::PepperError;
 
+#[derive(RustEmbed)]
+#[folder = "pepper-plugins/"]
+struct LegacyPluginFiles;
 
 pub fn create_jvm(debug: bool) -> Result<Jvm, PepperError> {
     let jvm = if debug {
