@@ -29,6 +29,8 @@ pub enum PepperError {
         file: PathBuf,
         reason: std::io::Error,
     },
+    #[error("IO error: {0}")]
+    IO(std::io::Error),
     #[error("No module with name {0} found")]
     NoSuchModule(String),
     #[error("Cannot read workflow file: {0}")]
@@ -39,10 +41,8 @@ pub enum PepperError {
     SendingStatusMessageFailed(String),
     #[error("XML error: {0}")]
     XML(quick_xml::Error),
-    #[error("Java virtual machine: {0}")]
-    JVM(j4rs::errors::J4RsError),
     #[error("Java virtual machine invocation error: {0}")]
-    JVM2(jni::JvmError),
+    JVM(jni::JvmError),
     #[error("Java error: {0}")]
     Java(jni::errors::Error),
     #[error("Java invocation error: {0}")]
@@ -60,6 +60,12 @@ pub enum PepperError {
 impl From<Box<dyn std::error::Error>> for PepperError {
     fn from(e: Box<dyn std::error::Error>) -> Self {
         PepperError::Unknown(e.to_string())
+    }
+}
+
+impl From<std::io::Error> for PepperError {
+    fn from(e: std::io::Error) -> Self {
+        PepperError::IO(e)
     }
 }
 
@@ -81,15 +87,9 @@ impl From<quick_xml::Error> for PepperError {
     }
 }
 
-impl From<j4rs::errors::J4RsError> for PepperError {
-    fn from(e: j4rs::errors::J4RsError) -> Self {
-        PepperError::JVM(e)
-    }
-}
-
 impl From<jni::JvmError> for PepperError {
     fn from(e: jni::JvmError) -> Self {
-        PepperError::JVM2(e)
+        PepperError::JVM(e)
     }
 }
 

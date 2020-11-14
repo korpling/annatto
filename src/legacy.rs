@@ -3,12 +3,15 @@
 pub mod importer;
 pub mod saltxml;
 
-use std::path::{Path, PathBuf};
+use std::{
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 use graphannis::update::{GraphUpdate, UpdateEvent};
-use j4rs::{InvocationArg, JavaOpt, Jvm};
 use regex::Regex;
 use rust_embed::RustEmbed;
+use tempfile::NamedTempFile;
 use walkdir::WalkDir;
 
 use crate::error::PepperError;
@@ -17,18 +20,34 @@ use crate::error::PepperError;
 #[folder = "pepper-plugins/"]
 struct LegacyPluginFiles;
 
-pub fn create_jvm(debug: bool) -> Result<Jvm, PepperError> {
-    let jvm = if debug {
-        j4rs::JvmBuilder::new()
-            .java_opt(JavaOpt::new("-Xdebug"))
-            .java_opt(JavaOpt::new(
-                "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5000",
-            ))
-            .build()?
-    } else {
-        j4rs::JvmBuilder::new().build()?
-    };
-    Ok(jvm)
+pub struct PepperPluginClasspath {
+    files: Vec<NamedTempFile>,
+}
+
+impl PepperPluginClasspath {
+    pub fn new() -> Result<PepperPluginClasspath, PepperError> {
+        // Get all plugin files and extract them to a temporary location
+        let mut files = Vec::new();
+        for jar_file in LegacyPluginFiles::iter() {
+            let mut tmp_file = NamedTempFile::new()?;
+            // Copy asset content to temporary file
+            if let Some(content) = LegacyPluginFiles::get(&jar_file) {
+                tmp_file.write(&content)?;
+                files.push(tmp_file);
+            }
+        }
+        Ok(PepperPluginClasspath { files })
+    }
+
+    pub fn get_classpath_argument(&self) -> String {
+        let paths: Vec<_> = self
+            .files
+            .iter()
+            .map(|f| f.path().to_string_lossy())
+            .collect();
+        let sep = if cfg!(windows) { ";" } else { ":" };
+        format!("-Djava.class.path={}", paths.join(sep))
+    }
 }
 
 /// Imports a corpus structure from a directory and returns a list of document file paths and their node name.
