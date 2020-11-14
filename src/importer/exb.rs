@@ -1,30 +1,16 @@
 use std::{convert::TryFrom, path::PathBuf};
 
 use graphannis::update::GraphUpdate;
-use j4rs::{Instance, InvocationArg, JavaOpt, Jvm};
+use j4rs::{Instance, InvocationArg, Jvm};
 use rayon::prelude::*;
 
-use crate::{error::PepperError, importer::Importer, progress::ProgressReporter, Module};
+use crate::{Module, error::PepperError, importer::Importer, progress::ProgressReporter, legacy::create_jvm};
 
 pub struct EXMARaLDAImporter {}
 
 impl EXMARaLDAImporter {
     pub fn new() -> EXMARaLDAImporter {
         EXMARaLDAImporter {}
-    }
-
-    fn create_jvm(&self, debug: bool) -> Result<Jvm, PepperError> {
-        let jvm = if debug {
-            j4rs::JvmBuilder::new()
-                .java_opt(JavaOpt::new("-Xdebug"))
-                .java_opt(JavaOpt::new(
-                    "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5000",
-                ))
-                .build()?
-        } else {
-            j4rs::JvmBuilder::new().build()?
-        };
-        Ok(jvm)
     }
 }
 
@@ -156,7 +142,7 @@ impl Importer for EXMARaLDAImporter {
         let doc_updates: Result<Vec<_>, PepperError> = documents
             .into_par_iter()
             .map(|(file_path, document_name)| {
-                let jvm = self.create_jvm(false)?;
+                let jvm = create_jvm(false)?;
                 let updates_for_document =  map_document(file_path, &document_name, &jvm)?;
                 reporter.worked(1)?;
                Ok(updates_for_document)
@@ -185,7 +171,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn load_jvm() {
+    fn import_test_corpus() {
         let importer = EXMARaLDAImporter::new();
         let properties: BTreeMap<String, String> = BTreeMap::new();
         importer

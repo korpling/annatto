@@ -1,12 +1,30 @@
 //! This module contains helper methods and structures to implement with legacy Java-based modules
 
+pub mod saltxml;
+
 use std::path::{Path, PathBuf};
 
 use graphannis::update::{GraphUpdate, UpdateEvent};
+use j4rs::{InvocationArg, JavaOpt, Jvm};
 use regex::Regex;
 use walkdir::WalkDir;
 
 use crate::error::PepperError;
+
+
+pub fn create_jvm(debug: bool) -> Result<Jvm, PepperError> {
+    let jvm = if debug {
+        j4rs::JvmBuilder::new()
+            .java_opt(JavaOpt::new("-Xdebug"))
+            .java_opt(JavaOpt::new(
+                "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5000",
+            ))
+            .build()?
+    } else {
+        j4rs::JvmBuilder::new().build()?
+    };
+    Ok(jvm)
+}
 
 /// Imports a corpus structure from a directory and returns a list of document file paths and their node name.
 ///
