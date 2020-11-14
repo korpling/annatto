@@ -5,12 +5,15 @@ use std::{convert::TryFrom, path::PathBuf};
 
 use crate::{error::PepperError, importer::Importer, progress::ProgressReporter, Module};
 
+use super::PepperPluginClasspath;
+
 pub struct JavaImporter {
     java_importer_qname: String,
     java_properties_class: String,
     module_name: String,
     file_pattern: Option<String>,
     jvm: JavaVM,
+    _classpath: PepperPluginClasspath,
 }
 
 impl JavaImporter {
@@ -20,9 +23,11 @@ impl JavaImporter {
         module_name: &str,
         file_pattern: Option<&str>,
     ) -> Result<JavaImporter, PepperError> {
+        let classpath = PepperPluginClasspath::new()?;
         let jvm_args = InitArgsBuilder::new()
             .version(JNIVersion::V8)
             .option("-Xcheck:jni")
+            .option(&classpath.get_classpath_argument())
             .build()?;
         let jvm = JavaVM::new(jvm_args)?;
 
@@ -32,6 +37,7 @@ impl JavaImporter {
             module_name: module_name.to_string(),
             file_pattern: file_pattern.map(|s| s.to_string()),
             jvm,
+            _classpath: classpath,
         };
         Ok(importer)
     }
@@ -48,14 +54,15 @@ impl JavaImporter {
         env.call_method(
             mapper.clone(),
             "setProperties",
-            "(org/corpus_tools/pepper/modules/PepperModuleProperties)V",
+            "(Lorg/corpus_tools/pepper/modules/PepperModuleProperties;)V",
             &vec![JValue::Object(props)],
         )?;
+        // TODO: set the property values from the importer in Java
 
         env.call_method(
             mapper.clone(),
             "setDocument",
-            "(org/corpus_tools/salt/common/SDocument)V",
+            "(Lorg/corpus_tools/salt/common/SDocument;)V",
             &vec![JValue::Object(document)],
         )?;
 
@@ -78,19 +85,19 @@ impl JavaImporter {
         let sdocument = env.call_static_method(
             salt_factory,
             "createSDocument",
-            "()Lorg/corpus/tools/salt/common/SDocument",
+            "()Lorg/corpus_tools/salt/common/SDocument;",
             &vec![],
         )?;
         env.call_method(
             sdocument.l()?,
             "setName",
-            "(Ljava/lang/String)",
+            "(Ljava/lang/String;)V",
             &vec![JValue::try_from(env.new_string(document_name)?)?],
         )?;
         env.call_method(
             sdocument.l()?,
             "setId",
-            "(Ljava/lang/String)",
+            "(Ljava/lang/String;)V",
             &vec![JValue::try_from(
                 env.new_string(&format!("salt:/{}", document_name))?,
             )?],
@@ -99,7 +106,7 @@ impl JavaImporter {
         let sdocument_identifier = env.call_method(
             sdocument.l()?,
             "getIdentifier",
-            "()Lorg/corpus_tools/salt/graph/Identifier",
+            "()Lorg/corpus_tools/salt/graph/Identifier;",
             &vec![],
         )?;
 
@@ -107,20 +114,20 @@ impl JavaImporter {
         let resource_table = env.call_method(
             importer.clone(),
             "getIdentifier2ResourceTable",
-            "()Ljava/util/Map",
+            "()Ljava/util/Map;",
             &vec![],
         )?;
         let uri_as_string = env.new_string(file_path.as_os_str().to_string_lossy())?;
         let resource_uri = env.call_static_method(
             "org/eclipse/emf/common/util/URI",
             "createFileURI",
-            "(Ljava/lang/String)Lorg/eclipse/emf/common/util/URI",
+            "(Ljava/lang/String;)Lorg/eclipse/emf/common/util/URI;",
             &vec![JValue::try_from(uri_as_string)?],
         )?;
         env.call_method(
             resource_table.l()?,
             "put",
-            "(Ljava/lang/Object, Ljava/lang/Object)V",
+            "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
             &vec![
                 JValue::try_from(sdocument_identifier)?,
                 JValue::try_from(resource_uri)?,
@@ -131,7 +138,7 @@ impl JavaImporter {
         let mapper = env.call_method(
             importer.clone(),
             "createPepperMapper",
-            "(Lorg/corpus_tools/salt/graph/Identifier)V",
+            "(Lorg/corpus_tools/salt/graph/Identifier;)Lorg/corpus_tools/pepper/modules/PepperMapper;",
             &vec![JValue::try_from(sdocument_identifier)?],
         )?;
 
@@ -141,7 +148,7 @@ impl JavaImporter {
         env.call_method(
             mapper.l()?,
             "mapSDocument",
-            "()Lorg/corpus_tools/pepper/common/DOCUMENT_STATUS",
+            "()Lorg/corpus_tools/pepper/common/DOCUMENT_STATUS;",
             &vec![],
         )?;
 
@@ -221,7 +228,8 @@ mod tests {
             "org/corpus_tools/peppermodules/exmaralda/EXMARaLDAImporterProperties",
             "EXMARaLDAImporter",
             Some(".*\\.(exb|xml|xmi|exmaralda)$"),
-        ).unwrap();
+        )
+        .unwrap();
         let properties: BTreeMap<String, String> = BTreeMap::new();
         importer
             .import_corpus(
