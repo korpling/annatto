@@ -1,5 +1,8 @@
 use graphannis::update::GraphUpdate;
-use jni::{objects::JObject, objects::JValue, AttachGuard, InitArgsBuilder, JNIVersion, JavaVM};
+use jni::{
+    objects::JObject, objects::JString, objects::JValue, AttachGuard, InitArgsBuilder, JNIVersion,
+    JavaVM,
+};
 use rayon::prelude::*;
 use std::{convert::TryFrom, path::PathBuf};
 
@@ -145,12 +148,29 @@ impl JavaImporter {
         self.prepare_mapper(&mapper.l()?, sdocument.l()?, &env)?;
 
         // Invoke the internal mapper
-        env.call_method(
+        let document_status = env.call_method(
             mapper.l()?,
             "mapSDocument",
             "()Lorg/corpus_tools/pepper/common/DOCUMENT_STATUS;",
             &vec![],
         )?;
+
+        // Check if conversion was successful
+        let document_status = env.call_method(
+            document_status.l()?,
+            "getName",
+            "()Ljava/lang/String;",
+            &vec![],
+        )?;
+        let document_status = env.get_string(JString::try_from(document_status.l()?)?)?;
+        let document_status: String = document_status.into();
+        if document_status != "COMPLETED" {
+            return Err(PepperError::Import {
+                reason: format!("Legacy importer module returned status {}", document_status),
+                importer: self.module_name.to_string(),
+                path: file_path,
+            });
+        }
 
         // TODO: Retrieve the reference to the created graph
 
