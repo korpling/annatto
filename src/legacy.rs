@@ -40,16 +40,6 @@ impl PepperPluginClasspath {
         Ok(PepperPluginClasspath { files })
     }
 
-    pub fn get_classpath_argument(&self) -> String {
-        let paths: Vec<_> = self
-            .files
-            .iter()
-            .map(|f| f.path().to_string_lossy())
-            .collect();
-        let sep = if cfg!(windows) { ";" } else { ":" };
-        format!("-Djava.class.path={}", paths.join(sep))
-    }
-
     pub fn create_jvm(&self, debug: bool) -> Result<Jvm, PepperError> {
         let classpath_strings: Vec<_> = self
             .files

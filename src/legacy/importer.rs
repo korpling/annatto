@@ -24,7 +24,6 @@ fn get_identifier(sdocument: &Instance, jvm: &Jvm) -> Result<Instance, PepperErr
     Ok(id)
 }
 
-
 impl JavaImporter {
     pub fn new(
         java_importer_qname: &str,
@@ -51,10 +50,7 @@ impl JavaImporter {
         jvm: &Jvm,
     ) -> Result<(), PepperError> {
         // Create and set an empty property map
-        let props = jvm.create_instance(
-            &self.java_properties_class,
-            &vec![],
-        )?;
+        let props = jvm.create_instance(&self.java_properties_class, &vec![])?;
         // TODO: set the property values from the importer in Java
         jvm.invoke(mapper, "setProperties", &vec![InvocationArg::from(props)])?;
 
@@ -70,10 +66,7 @@ impl JavaImporter {
         jvm: &Jvm,
     ) -> Result<GraphUpdate, PepperError> {
         // Create an instance of the Exmaralda importer
-        let importer = jvm.create_instance(
-            &self.java_importer_qname,
-            &vec![],
-        )?;
+        let importer = jvm.create_instance(&self.java_importer_qname, &vec![])?;
 
         // Create a new document object that will be mapped
         let sdocument = jvm.invoke_static(
@@ -134,8 +127,8 @@ impl JavaImporter {
         // Invoke the internal mapper
         let document_status = jvm.invoke(&mapper, "mapSDocument", &vec![])?;
 
-         // Check if conversion was successful
-         let document_status = jvm.invoke(&document_status, "getName", &vec![])?;
+        // Check if conversion was successful
+        let document_status = jvm.invoke(&document_status, "getName", &vec![])?;
         let document_status: String = jvm.to_rust(document_status)?;
         if document_status != "COMPLETED" {
             return Err(PepperError::Import {
