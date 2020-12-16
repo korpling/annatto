@@ -21,8 +21,8 @@ use manipulator::Manipulator;
 pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
     match name {
         "EXMARaLDAImporter" => Ok(Box::new(legacy::importer::JavaImporter::new(
-            "org/corpus_tools/peppermodules/exmaralda/EXMARaLDAImporter",
-            "org/corpus_tools/peppermodules/exmaralda/EXMARaLDAImporterProperties",
+            "org.corpus_tools.peppermodules.exmaralda.EXMARaLDAImporter",
+            "org.corpus_tools.peppermodules.exmaralda.EXMARaLDAImporterProperties",
             "EXMARaLDAImporter",
             Some(".*\\.(exb|xml|xmi|exmaralda)$"),
         )?)),

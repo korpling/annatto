@@ -1,8 +1,5 @@
 use graphannis::update::GraphUpdate;
-use jni::{
-    objects::JObject, objects::JString, objects::JValue, AttachGuard, InitArgsBuilder, JNIVersion,
-    JavaVM,
-};
+use j4rs::{Instance, InvocationArg, Jvm};
 use rayon::prelude::*;
 use std::{convert::TryFrom, path::PathBuf};
 
@@ -15,9 +12,18 @@ pub struct JavaImporter {
     java_properties_class: String,
     module_name: String,
     file_pattern: Option<String>,
-    jvm: JavaVM,
-    _classpath: PepperPluginClasspath,
+    classpath: PepperPluginClasspath,
 }
+
+fn get_identifier(sdocument: &Instance, jvm: &Jvm) -> Result<Instance, PepperError> {
+    let id = jvm.invoke(
+        &jvm.cast(sdocument, "org.corpus_tools.salt.graph.IdentifiableElement")?,
+        "getIdentifier",
+        &vec![],
+    )?;
+    Ok(id)
+}
+
 
 impl JavaImporter {
     pub fn new(
@@ -27,48 +33,33 @@ impl JavaImporter {
         file_pattern: Option<&str>,
     ) -> Result<JavaImporter, PepperError> {
         let classpath = PepperPluginClasspath::new()?;
-        let jvm_args = InitArgsBuilder::new()
-            .version(JNIVersion::V8)
-            .option("-Xcheck:jni")
-            .option(&classpath.get_classpath_argument())
-            .build()?;
-        let jvm = JavaVM::new(jvm_args)?;
 
         let importer = JavaImporter {
             java_importer_qname: java_importer_qname.to_string(),
             java_properties_class: java_properties_class.to_string(),
             module_name: module_name.to_string(),
             file_pattern: file_pattern.map(|s| s.to_string()),
-            jvm,
-            _classpath: classpath,
+            classpath: classpath,
         };
         Ok(importer)
     }
 
     fn prepare_mapper(
         &self,
-        mapper: &JObject,
-        document: JObject,
-        env: &AttachGuard,
+        mapper: &Instance,
+        document: Instance,
+        jvm: &Jvm,
     ) -> Result<(), PepperError> {
         // Create and set an empty property map
-        let props = env.new_object(env.find_class(&self.java_properties_class)?, "()V", &vec![])?;
-
-        env.call_method(
-            mapper.clone(),
-            "setProperties",
-            "(Lorg/corpus_tools/pepper/modules/PepperModuleProperties;)V",
-            &vec![JValue::Object(props)],
+        let props = jvm.create_instance(
+            &self.java_properties_class,
+            &vec![],
         )?;
         // TODO: set the property values from the importer in Java
+        jvm.invoke(mapper, "setProperties", &vec![InvocationArg::from(props)])?;
 
-        env.call_method(
-            mapper.clone(),
-            "setDocument",
-            "(Lorg/corpus_tools/salt/common/SDocument;)V",
-            &vec![JValue::Object(document)],
-        )?;
-
+        // Explicitly set the document object
+        jvm.invoke(&mapper, "setDocument", &vec![InvocationArg::from(document)])?;
         Ok(())
     }
 
@@ -76,94 +67,76 @@ impl JavaImporter {
         &self,
         file_path: PathBuf,
         document_name: &str,
+        jvm: &Jvm,
     ) -> Result<GraphUpdate, PepperError> {
-        let env = self.jvm.attach_current_thread()?;
+        // Create an instance of the Exmaralda importer
+        let importer = jvm.create_instance(
+            &self.java_importer_qname,
+            &vec![],
+        )?;
 
-        // Create an instance of the Java importer
-        let importer =
-            env.new_object(env.find_class(&self.java_importer_qname)?, "()V", &vec![])?;
-
-        let salt_factory = env.find_class("org/corpus_tools/salt/SaltFactory")?;
         // Create a new document object that will be mapped
-        let sdocument = env.call_static_method(
-            salt_factory,
+        let sdocument = jvm.invoke_static(
+            "org.corpus_tools.salt.SaltFactory",
             "createSDocument",
-            "()Lorg/corpus_tools/salt/common/SDocument;",
             &vec![],
-        )?;
-        env.call_method(
-            sdocument.l()?,
-            "setName",
-            "(Ljava/lang/String;)V",
-            &vec![JValue::try_from(env.new_string(document_name)?)?],
-        )?;
-        env.call_method(
-            sdocument.l()?,
-            "setId",
-            "(Ljava/lang/String;)V",
-            &vec![JValue::try_from(
-                env.new_string(&format!("salt:/{}", document_name))?,
-            )?],
         )?;
 
-        let sdocument_identifier = env.call_method(
-            sdocument.l()?,
-            "getIdentifier",
-            "()Lorg/corpus_tools/salt/graph/Identifier;",
-            &vec![],
+        jvm.invoke(
+            &jvm.cast(&sdocument, "org.corpus_tools.salt.core.SNamedElement")?,
+            "setName",
+            &vec![InvocationArg::try_from(document_name)?],
         )?;
+        jvm.invoke(
+            &jvm.cast(
+                &sdocument,
+                "org.corpus_tools.salt.graph.IdentifiableElement",
+            )?,
+            "setId",
+            &vec![InvocationArg::try_from(&format!(
+                "salt:/{}",
+                document_name
+            ))?],
+        )?;
+
+        let sdocument_identifier = get_identifier(&sdocument, jvm)?;
 
         // Get the identifier and link it with the URI
-        let resource_table = env.call_method(
-            importer.clone(),
-            "getIdentifier2ResourceTable",
-            "()Ljava/util/Map;",
-            &vec![],
-        )?;
-        let uri_as_string = env.new_string(file_path.as_os_str().to_string_lossy())?;
-        let resource_uri = env.call_static_method(
-            "org/eclipse/emf/common/util/URI",
+        let resource_table = jvm.invoke(&importer, "getIdentifier2ResourceTable", &vec![])?;
+        let uri_as_string =
+            InvocationArg::try_from(file_path.as_os_str().to_string_lossy().as_ref())?;
+        let resource_uri = jvm.invoke_static(
+            "org.eclipse.emf.common.util.URI",
             "createFileURI",
-            "(Ljava/lang/String;)Lorg/eclipse/emf/common/util/URI;",
-            &vec![JValue::try_from(uri_as_string)?],
+            &vec![uri_as_string],
         )?;
-        env.call_method(
-            resource_table.l()?,
+
+        jvm.invoke(
+            &resource_table,
             "put",
-            "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
             &vec![
-                JValue::try_from(sdocument_identifier)?,
-                JValue::try_from(resource_uri)?,
+                InvocationArg::from(sdocument_identifier),
+                InvocationArg::from(resource_uri),
             ],
         )?;
 
-        // Get an instance of the Pepper mapper from the importer
-        let mapper = env.call_method(
-            importer.clone(),
+        let sdocument_identifier = get_identifier(&sdocument, jvm)?;
+
+        // Get an instance of the Salt to Exmaralda mapper from the importer
+        let mapper = jvm.invoke(
+            &importer,
             "createPepperMapper",
-            "(Lorg/corpus_tools/salt/graph/Identifier;)Lorg/corpus_tools/pepper/modules/PepperMapper;",
-            &vec![JValue::try_from(sdocument_identifier)?],
+            &vec![InvocationArg::from(sdocument_identifier)],
         )?;
 
-        self.prepare_mapper(&mapper.l()?, sdocument.l()?, &env)?;
+        self.prepare_mapper(&mapper, sdocument, jvm)?;
 
         // Invoke the internal mapper
-        let document_status = env.call_method(
-            mapper.l()?,
-            "mapSDocument",
-            "()Lorg/corpus_tools/pepper/common/DOCUMENT_STATUS;",
-            &vec![],
-        )?;
+        let document_status = jvm.invoke(&mapper, "mapSDocument", &vec![])?;
 
-        // Check if conversion was successful
-        let document_status = env.call_method(
-            document_status.l()?,
-            "getName",
-            "()Ljava/lang/String;",
-            &vec![],
-        )?;
-        let document_status = env.get_string(JString::try_from(document_status.l()?)?)?;
-        let document_status: String = document_status.into();
+         // Check if conversion was successful
+         let document_status = jvm.invoke(&document_status, "getName", &vec![])?;
+        let document_status: String = jvm.to_rust(document_status)?;
         if document_status != "COMPLETED" {
             return Err(PepperError::Import {
                 reason: format!("Legacy importer module returned status {}", document_status),
@@ -172,10 +145,10 @@ impl JavaImporter {
             });
         }
 
-        // TODO: Retrieve the reference to the created graph
+        // TODO Retrieve the reference to the created graph
 
         let u = GraphUpdate::new();
-        // TODO: map Salt to graph updates
+        // TODO: map Salt to GraphML
         Ok(u)
     }
 }
@@ -214,7 +187,8 @@ impl Importer for JavaImporter {
         let doc_updates: Result<Vec<_>, PepperError> = documents
             .into_par_iter()
             .map(|(file_path, document_name)| {
-                let updates_for_document = self.map_document(file_path, &document_name)?;
+                let jvm = self.classpath.create_jvm(false)?;
+                let updates_for_document = self.map_document(file_path, &document_name, &jvm)?;
                 reporter.worked(1)?;
                 Ok(updates_for_document)
             })
@@ -244,8 +218,8 @@ mod tests {
     #[test]
     fn import_exb_corpus() {
         let importer = JavaImporter::new(
-            "org/corpus_tools/peppermodules/exmaralda/EXMARaLDAImporter",
-            "org/corpus_tools/peppermodules/exmaralda/EXMARaLDAImporterProperties",
+            "org.corpus_tools.peppermodules.exmaralda.EXMARaLDAImporter",
+            "org.corpus_tools.peppermodules.exmaralda.EXMARaLDAImporterProperties",
             "EXMARaLDAImporter",
             Some(".*\\.(exb|xml|xmi|exmaralda)$"),
         )

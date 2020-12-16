@@ -41,12 +41,8 @@ pub enum PepperError {
     SendingStatusMessageFailed(String),
     #[error("XML error: {0}")]
     XML(quick_xml::Error),
-    #[error("Java virtual machine invocation error: {0}")]
-    JVM(jni::JvmError),
-    #[error("Java error: {0}")]
-    Java(jni::errors::Error),
-    #[error("Java invocation error: {0}")]
-    JNI(jni::errors::JniError),
+    #[error("Java virtual machine: {0}")]
+    JVM(j4rs::errors::J4RsError),
     #[error("Could not iterate over directory: {0}")]
     IteratingDirectory(walkdir::Error),
     #[error("Regular expression error: {0}")]
@@ -87,21 +83,9 @@ impl From<quick_xml::Error> for PepperError {
     }
 }
 
-impl From<jni::JvmError> for PepperError {
-    fn from(e: jni::JvmError) -> Self {
+impl From<j4rs::errors::J4RsError> for PepperError {
+    fn from(e: j4rs::errors::J4RsError) -> Self {
         PepperError::JVM(e)
-    }
-}
-
-impl From<jni::errors::Error> for PepperError {
-    fn from(e: jni::errors::Error) -> Self {
-        PepperError::Java(e)
-    }
-}
-
-impl From<jni::errors::JniError> for PepperError {
-    fn from(e: jni::errors::JniError) -> Self {
-        PepperError::JNI(e)
     }
 }
 

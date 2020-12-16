@@ -9,6 +9,7 @@ use std::{
 };
 
 use graphannis::update::{GraphUpdate, UpdateEvent};
+use j4rs::{ClasspathEntry, JavaOpt, Jvm};
 use regex::Regex;
 use rust_embed::RustEmbed;
 use tempfile::NamedTempFile;
@@ -47,6 +48,33 @@ impl PepperPluginClasspath {
             .collect();
         let sep = if cfg!(windows) { ";" } else { ":" };
         format!("-Djava.class.path={}", paths.join(sep))
+    }
+
+    pub fn create_jvm(&self, debug: bool) -> Result<Jvm, PepperError> {
+        let classpath_strings: Vec<_> = self
+            .files
+            .iter()
+            .map(|f| f.path().to_string_lossy().to_owned())
+            .collect();
+
+        let classpath_entries: Vec<_> = classpath_strings
+            .iter()
+            .map(|p| ClasspathEntry::new(p))
+            .collect();
+        let jvm = if debug {
+            j4rs::JvmBuilder::new()
+                .classpath_entries(classpath_entries)
+                .java_opt(JavaOpt::new("-Xdebug"))
+                .java_opt(JavaOpt::new(
+                    "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5000",
+                ))
+                .build()?
+        } else {
+            j4rs::JvmBuilder::new()
+                .classpath_entries(classpath_entries)
+                .build()?
+        };
+        Ok(jvm)
     }
 }
 
