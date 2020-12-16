@@ -91,15 +91,30 @@ fn node_name(node: &Instance, document_name: &str, jvm: &Jvm) -> Result<String> 
 }
 
 fn add_node(n: Instance, document_name: &str, u: &mut GraphUpdate, jvm: &Jvm) -> Result<()> {
-    if let Ok(n) = jvm.cast(&n, "org.corpus_tools.salt.common.SStructuredNode") {
-        // use the unique name
-        let node_name = node_name(&n, document_name, jvm)?;
-        u.add_event(UpdateEvent::AddNode {
-            node_name,
-            node_type: "node".to_string(),
-        })?;
-        // TODO: add all annotations
+    let struct_node_class_name = "org.corpus_tools.salt.common.SStructuredNode";
+    let struct_node_class = jvm.invoke_static(
+        "java.lang.Class",
+        "forName",
+        &[InvocationArg::try_from(struct_node_class_name)?],
+    )?;
+    let args = vec![InvocationArg::from(n)];
+    if jvm
+        .chain(&struct_node_class)?
+        .invoke("isInstance", &args)?
+        .to_rust()?
+    {
+        if let Some(n) = args.into_iter().next() {
+            let n = jvm.cast(&n.instance()?, struct_node_class_name)?;
+            // use the unique name
+            let node_name = node_name(&n, document_name, jvm)?;
+            u.add_event(UpdateEvent::AddNode {
+                node_name,
+                node_type: "node".to_string(),
+            })?;
+            // TODO: add all annotations
+        }
     }
+
     Ok(())
 }
 
