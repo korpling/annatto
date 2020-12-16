@@ -3,7 +3,12 @@ use j4rs::{Instance, InvocationArg, Jvm};
 use rayon::prelude::*;
 use std::{convert::TryFrom, path::PathBuf};
 
-use crate::{error::PepperError, importer::Importer, progress::ProgressReporter, Module};
+use crate::{
+    error::{PepperError, Result},
+    importer::Importer,
+    progress::ProgressReporter,
+    Module,
+};
 
 use super::PepperPluginClasspath;
 
@@ -15,11 +20,11 @@ pub struct JavaImporter {
     classpath: PepperPluginClasspath,
 }
 
-fn get_identifier(sdocument: &Instance, jvm: &Jvm) -> Result<Instance, PepperError> {
+fn get_identifier(sdocument: &Instance, jvm: &Jvm) -> Result<Instance> {
     let id = jvm.invoke(
         &jvm.cast(sdocument, "org.corpus_tools.salt.graph.IdentifiableElement")?,
         "getIdentifier",
-        &vec![],
+        &[],
     )?;
     Ok(id)
 }
@@ -30,7 +35,7 @@ impl JavaImporter {
         java_properties_class: &str,
         module_name: &str,
         file_pattern: Option<&str>,
-    ) -> Result<JavaImporter, PepperError> {
+    ) -> Result<JavaImporter> {
         let classpath = PepperPluginClasspath::new()?;
 
         let importer = JavaImporter {
@@ -43,19 +48,14 @@ impl JavaImporter {
         Ok(importer)
     }
 
-    fn prepare_mapper(
-        &self,
-        mapper: &Instance,
-        document: Instance,
-        jvm: &Jvm,
-    ) -> Result<(), PepperError> {
+    fn prepare_mapper(&self, mapper: &Instance, document: Instance, jvm: &Jvm) -> Result<()> {
         // Create and set an empty property map
-        let props = jvm.create_instance(&self.java_properties_class, &vec![])?;
+        let props = jvm.create_instance(&self.java_properties_class, &[])?;
         // TODO: set the property values from the importer in Java
-        jvm.invoke(mapper, "setProperties", &vec![InvocationArg::from(props)])?;
+        jvm.invoke(mapper, "setProperties", &[InvocationArg::from(props)])?;
 
         // Explicitly set the document object
-        jvm.invoke(&mapper, "setDocument", &vec![InvocationArg::from(document)])?;
+        jvm.invoke(&mapper, "setDocument", &[InvocationArg::from(document)])?;
         Ok(())
     }
 
@@ -64,21 +64,18 @@ impl JavaImporter {
         file_path: PathBuf,
         document_name: &str,
         jvm: &Jvm,
-    ) -> Result<GraphUpdate, PepperError> {
+    ) -> Result<GraphUpdate> {
         // Create an instance of the Exmaralda importer
-        let importer = jvm.create_instance(&self.java_importer_qname, &vec![])?;
+        let importer = jvm.create_instance(&self.java_importer_qname, &[])?;
 
         // Create a new document object that will be mapped
-        let sdocument = jvm.invoke_static(
-            "org.corpus_tools.salt.SaltFactory",
-            "createSDocument",
-            &vec![],
-        )?;
+        let sdocument =
+            jvm.invoke_static("org.corpus_tools.salt.SaltFactory", "createSDocument", &[])?;
 
         jvm.invoke(
             &jvm.cast(&sdocument, "org.corpus_tools.salt.core.SNamedElement")?,
             "setName",
-            &vec![InvocationArg::try_from(document_name)?],
+            &[InvocationArg::try_from(document_name)?],
         )?;
         jvm.invoke(
             &jvm.cast(
@@ -86,7 +83,7 @@ impl JavaImporter {
                 "org.corpus_tools.salt.graph.IdentifiableElement",
             )?,
             "setId",
-            &vec![InvocationArg::try_from(&format!(
+            &[InvocationArg::try_from(&format!(
                 "salt:/{}",
                 document_name
             ))?],
@@ -95,19 +92,19 @@ impl JavaImporter {
         let sdocument_identifier = get_identifier(&sdocument, jvm)?;
 
         // Get the identifier and link it with the URI
-        let resource_table = jvm.invoke(&importer, "getIdentifier2ResourceTable", &vec![])?;
+        let resource_table = jvm.invoke(&importer, "getIdentifier2ResourceTable", &[])?;
         let uri_as_string =
             InvocationArg::try_from(file_path.as_os_str().to_string_lossy().as_ref())?;
         let resource_uri = jvm.invoke_static(
             "org.eclipse.emf.common.util.URI",
             "createFileURI",
-            &vec![uri_as_string],
+            &[uri_as_string],
         )?;
 
         jvm.invoke(
             &resource_table,
             "put",
-            &vec![
+            &[
                 InvocationArg::from(sdocument_identifier),
                 InvocationArg::from(resource_uri),
             ],
@@ -119,16 +116,16 @@ impl JavaImporter {
         let mapper = jvm.invoke(
             &importer,
             "createPepperMapper",
-            &vec![InvocationArg::from(sdocument_identifier)],
+            &[InvocationArg::from(sdocument_identifier)],
         )?;
 
         self.prepare_mapper(&mapper, sdocument, jvm)?;
 
         // Invoke the internal mapper
-        let document_status = jvm.invoke(&mapper, "mapSDocument", &vec![])?;
+        let document_status = jvm.invoke(&mapper, "mapSDocument", &[])?;
 
         // Check if conversion was successful
-        let document_status = jvm.invoke(&document_status, "getName", &vec![])?;
+        let document_status = jvm.invoke(&document_status, "getName", &[])?;
         let document_status: String = jvm.to_rust(document_status)?;
         if document_status != "COMPLETED" {
             return Err(PepperError::Import {
@@ -138,10 +135,10 @@ impl JavaImporter {
             });
         }
 
-        // TODO Retrieve the reference to the created graph
-
-        let u = GraphUpdate::new();
-        // TODO: map Salt to GraphML
+        // Retrieve the reference to the created graph and map Salt to graph updates
+        let document = jvm.invoke(&mapper, "getDocument", &[])?;
+        let graph = jvm.invoke(&document, "getDocumentGraph", &[])?;
+        let u = super::mapping::convert_document_graph(graph, jvm)?;
         Ok(u)
     }
 }
@@ -158,7 +155,7 @@ impl Importer for JavaImporter {
         input_path: &std::path::Path,
         _properties: &std::collections::BTreeMap<String, String>,
         tx: Option<crate::workflow::StatusSender>,
-    ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
+    ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut updates = GraphUpdate::new();
 
         // Create the corpus structure and all Java document objects
@@ -177,7 +174,7 @@ impl Importer for JavaImporter {
         )?;
 
         //  Process all documents in parallel and merge graph updates afterwards
-        let doc_updates: Result<Vec<_>, PepperError> = documents
+        let doc_updates: Result<Vec<_>> = documents
             .into_par_iter()
             .map(|(file_path, document_name)| {
                 let jvm = self.classpath.create_jvm(false)?;
