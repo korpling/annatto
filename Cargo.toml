@@ -15,9 +15,9 @@ xml-rs = "0.8"
 indicatif = "0.15"
 quick-xml = "0.20"
 anyhow = "1.0"
-jni = {version="0.18", features = ["invocation"]}
 log = "0.4"
 walkdir = "2"
 regex = "1.4"
 tempfile = "3.1"
 rust-embed= {version="5.6.0", features=["compression"]}
+j4rs = "0.13"
