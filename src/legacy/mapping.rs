@@ -51,10 +51,19 @@ fn add_node(n: Instance, document_id: &str, u: &mut GraphUpdate, jvm: &Jvm) -> R
             // use the unique name
             let node_name = node_name(&n, document_id, jvm)?;
             u.add_event(UpdateEvent::AddNode {
-                node_name,
+                node_name: node_name.clone(),
                 node_type: "node".to_string(),
             })?;
             // TODO: add all annotations
+
+            // add connection to document node
+            u.add_event(UpdateEvent::AddEdge {
+                component_type: "PartOf".to_string(),
+                layer: "".to_string(),
+                component_name: "".to_string(),
+                source_node: node_name,
+                target_node: document_id.to_string(),
+            })?;
         }
     }
 
