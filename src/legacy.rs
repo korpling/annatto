@@ -104,7 +104,7 @@ pub fn import_corpus_structure(
         let mut path_components: Vec<String> = e
             .path()
             .ancestors()
-            .take(e.depth()+1)
+            .take(e.depth() + 1)
             .filter_map(|p| p.file_stem())
             .map(|n| n.to_string_lossy().to_string())
             .collect();

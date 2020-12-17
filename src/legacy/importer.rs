@@ -83,10 +83,7 @@ impl JavaImporter {
                 "org.corpus_tools.salt.graph.IdentifiableElement",
             )?,
             "setId",
-            &[InvocationArg::try_from(&format!(
-                "salt:/{}",
-                document_id
-            ))?],
+            &[InvocationArg::try_from(&format!("salt:/{}", document_id))?],
         )?;
 
         let sdocument_identifier = get_identifier(&sdocument, jvm)?;
