@@ -104,8 +104,8 @@ pub fn import_corpus_structure(
         let mut path_components: Vec<String> = e
             .path()
             .ancestors()
-            .take(e.depth())
-            .filter_map(|p| p.file_name())
+            .take(e.depth()+1)
+            .filter_map(|p| p.file_stem())
             .map(|n| n.to_string_lossy().to_string())
             .collect();
         path_components.reverse();
@@ -119,7 +119,7 @@ pub fn import_corpus_structure(
 
         // Add connection to parent node if necessary
         if path_components.len() > 1 {
-            let parent_name = path_components[0..=path_components.len() - 1].join("/");
+            let parent_name = path_components[0..path_components.len() - 1].join("/");
             updates.add_event(UpdateEvent::AddEdge {
                 source_node: node_name.clone(),
                 target_node: parent_name,

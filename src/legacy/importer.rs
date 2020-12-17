@@ -62,7 +62,7 @@ impl JavaImporter {
     fn map_document(
         &self,
         file_path: PathBuf,
-        document_name: &str,
+        document_id: &str,
         jvm: &Jvm,
     ) -> Result<GraphUpdate> {
         // Create an instance of the Exmaralda importer
@@ -75,7 +75,7 @@ impl JavaImporter {
         jvm.invoke(
             &jvm.cast(&sdocument, "org.corpus_tools.salt.core.SNamedElement")?,
             "setName",
-            &[InvocationArg::try_from(document_name)?],
+            &[InvocationArg::try_from(document_id)?],
         )?;
         jvm.invoke(
             &jvm.cast(
@@ -85,7 +85,7 @@ impl JavaImporter {
             "setId",
             &[InvocationArg::try_from(&format!(
                 "salt:/{}",
-                document_name
+                document_id
             ))?],
         )?;
 
@@ -138,7 +138,7 @@ impl JavaImporter {
         // Retrieve the reference to the created graph and map Salt to graph updates
         let document = jvm.invoke(&mapper, "getDocument", &[])?;
         let graph = jvm.invoke(&document, "getDocumentGraph", &[])?;
-        let u = super::mapping::convert_document_graph(graph, jvm)?;
+        let u = super::mapping::convert_document_graph(graph, document_id, jvm)?;
         Ok(u)
     }
 }
@@ -186,15 +186,14 @@ impl Importer for JavaImporter {
         let doc_updates = doc_updates?;
 
         // merge graph updates for all documents into a single one
-        let mut merged_graph_updates = GraphUpdate::default();
         for u in doc_updates.into_iter() {
             for (_, event) in u.iter()? {
-                merged_graph_updates.add_event(event)?;
+                updates.add_event(event)?;
             }
         }
         reporter.worked(1)?;
 
-        Ok(merged_graph_updates)
+        Ok(updates)
     }
 }
 
