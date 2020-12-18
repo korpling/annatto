@@ -19,7 +19,7 @@ use walkdir::WalkDir;
 use crate::error::PepperError;
 
 #[derive(RustEmbed)]
-#[folder = "pepper-plugins/"]
+#[folder = "$OUT_DIR/pepper/plugins/"]
 struct LegacyPluginFiles;
 
 pub struct PepperPluginClasspath {
