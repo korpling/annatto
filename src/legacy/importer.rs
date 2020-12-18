@@ -135,7 +135,7 @@ impl JavaImporter {
         // Retrieve the reference to the created graph and map Salt to graph updates
         let document = jvm.invoke(&mapper, "getDocument", &[])?;
         let graph = jvm.invoke(&document, "getDocumentGraph", &[])?;
-        let u = super::mapping::convert_document_graph(graph, document_id, jvm)?;
+        let u = super::mapping::convert_salt_document_graph(graph, document_id, jvm)?;
         Ok(u)
     }
 }
