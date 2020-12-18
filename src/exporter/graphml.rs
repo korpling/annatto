@@ -4,8 +4,8 @@ use crate::{exporter::Exporter, progress::ProgressReporter, workflow::StatusSend
 
 pub struct GraphMLExporter {}
 
-impl GraphMLExporter {
-    pub fn new() -> GraphMLExporter {
+impl Default for GraphMLExporter {
+    fn default() -> Self {
         GraphMLExporter {}
     }
 }

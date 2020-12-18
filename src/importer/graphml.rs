@@ -261,8 +261,8 @@ fn read_graphml<R: std::io::BufRead>(
     Ok(config)
 }
 
-impl GraphMLImporter {
-    pub fn new() -> GraphMLImporter {
+impl Default for GraphMLImporter {
+    fn default() -> Self {
         GraphMLImporter {}
     }
 }

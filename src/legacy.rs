@@ -34,7 +34,7 @@ impl PepperPluginClasspath {
             let mut tmp_file = NamedTempFile::new()?;
             // Copy asset content to temporary file
             if let Some(content) = LegacyPluginFiles::get(&jar_file) {
-                tmp_file.write(&content)?;
+                tmp_file.write_all(&content)?;
                 files.push(tmp_file);
             }
         }
@@ -45,7 +45,7 @@ impl PepperPluginClasspath {
         let classpath_strings: Vec<_> = self
             .files
             .iter()
-            .map(|f| f.path().to_string_lossy().to_owned())
+            .map(|f| f.path().to_string_lossy())
             .collect();
 
         let classpath_entries: Vec<_> = classpath_strings

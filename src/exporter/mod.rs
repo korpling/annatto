@@ -28,8 +28,8 @@ pub trait Exporter: Module {
 
 pub struct DoNothingExporter {}
 
-impl DoNothingExporter {
-    pub fn new() -> DoNothingExporter {
+impl Default for DoNothingExporter {
+    fn default() -> Self {
         DoNothingExporter {}
     }
 }

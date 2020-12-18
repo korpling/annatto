@@ -43,7 +43,7 @@ impl JavaImporter {
             java_properties_class: java_properties_class.to_string(),
             module_name: module_name.to_string(),
             file_pattern: file_pattern.map(|s| s.to_string()),
-            classpath: classpath,
+            classpath,
         };
         Ok(importer)
     }
