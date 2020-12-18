@@ -11,3 +11,4 @@ Ideas what could be included are e.g.
 - adding the relANNIS importer from graphANNIS
 - allow to execute Python3.0 scripts as modules
 - add a legacy Java and Salt interface for existing Pepper modules
+  - partially implemented for the ExmaraldaImporter
