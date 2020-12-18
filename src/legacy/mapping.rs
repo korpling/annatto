@@ -275,7 +275,11 @@ fn get_relation_layer_names(rel: &Instance, jvm: &Jvm) -> Result<BTreeSet<String
     Ok(result)
 }
 
-pub fn convert_salt_document_graph(g: Instance, document_id: &str, jvm: &Jvm) -> Result<GraphUpdate> {
+pub fn convert_salt_document_graph(
+    g: Instance,
+    document_id: &str,
+    jvm: &Jvm,
+) -> Result<GraphUpdate> {
     let mut u = GraphUpdate::default();
 
     // add all nodes and their annotations
