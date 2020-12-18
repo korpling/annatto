@@ -2,17 +2,33 @@ use graphannis::{
     errors::Result,
     update::{GraphUpdate, UpdateEvent},
 };
-use j4rs::{Instance, InvocationArg, Jvm};
-use std::convert::TryFrom;
+use j4rs::{Instance, InvocationArg, Jvm, Null};
+use std::{collections::BTreeSet, convert::TryFrom};
 
-fn nullable(o: Instance) -> Result<Option<Instance>> {
-    let as_jobject = o.java_object();
-    let is_null = as_jobject.is_null();
-    if !is_null {
-        Ok(Option::Some(Instance::from_jobject(as_jobject)?))
-    } else {
-        Ok(Option::None)
-    }
+fn is_null(o: &Instance, jvm: &Jvm) -> Result<bool> {
+    let result = jvm.invoke_static(
+        "java.util.Objects",
+        "equals",
+        &[
+            InvocationArg::try_from(Null::Of("java.lang.Object"))?,
+            InvocationArg::from(jvm.chain(o)?.collect()),
+        ],
+    )?;
+    Ok(jvm.to_rust(result)?)
+}
+
+fn is_instance_of(object: &Instance, class_name: &str, jvm: &Jvm) -> Result<bool> {
+    let class_instance = jvm.invoke_static(
+        "java.lang.Class",
+        "forName",
+        &[InvocationArg::try_from(class_name)?],
+    )?;
+    let object_arg = InvocationArg::from(jvm.cast(object, "java.lang.Object")?);
+    let is_instance = jvm
+        .chain(&class_instance)?
+        .invoke("isInstance", &[object_arg])?
+        .to_rust()?;
+    Ok(is_instance)
 }
 
 fn node_name(node: &Instance, document_id: &str, jvm: &Jvm) -> Result<String> {
@@ -46,19 +62,9 @@ fn get_text_for_token(token: &Instance, jvm: &Jvm) -> Result<Option<Instance>> {
             "org.corpus_tools.salt.core.SRelation",
         )?;
         let textrel_class_name = "org.corpus_tools.salt.common.STextualRelation";
-        let textrel_class = jvm.invoke_static(
-            "java.lang.Class",
-            "forName",
-            &[InvocationArg::try_from(textrel_class_name)?],
-        )?;
-        let target_node = nullable(jvm.invoke(&rel, "getTarget", &[])?)?;
-        let args = vec![InvocationArg::from(rel)];
-        if jvm
-            .chain(&textrel_class)?
-            .invoke("isInstance", &args)?
-            .to_rust()?
-        {
-            return Ok(target_node);
+        let target_node = jvm.invoke(&rel, "getTarget", &[])?;
+        if !is_null(&target_node, jvm)? && is_instance_of(&rel, textrel_class_name, jvm)? {
+            return Ok(Some(target_node));
         }
     }
     Ok(None)
@@ -66,58 +72,110 @@ fn get_text_for_token(token: &Instance, jvm: &Jvm) -> Result<Option<Instance>> {
 
 fn add_node(n: Instance, document_id: &str, u: &mut GraphUpdate, jvm: &Jvm) -> Result<()> {
     let struct_node_class_name = "org.corpus_tools.salt.common.SStructuredNode";
-    let struct_node_class = jvm.invoke_static(
-        "java.lang.Class",
-        "forName",
-        &[InvocationArg::try_from(struct_node_class_name)?],
-    )?;
-    let args = vec![InvocationArg::from(n)];
-    if jvm
-        .chain(&struct_node_class)?
-        .invoke("isInstance", &args)?
-        .to_rust()?
-    {
-        if let Some(n) = args.into_iter().next() {
-            let n = jvm.cast(&n.instance()?, struct_node_class_name)?;
-            // use the unique name
-            let node_name = node_name(&n, document_id, jvm)?;
-            u.add_event(UpdateEvent::AddNode {
+    if is_instance_of(&n, struct_node_class_name, jvm)? {
+        // use the unique name
+        let node_name = node_name(&n, document_id, jvm)?;
+        u.add_event(UpdateEvent::AddNode {
+            node_name: node_name.clone(),
+            node_type: "node".to_string(),
+        })?;
+        // add all annotations
+        let annos_iterator: Instance = jvm
+            .chain(&jvm.cast(&n, "org.corpus_tools.salt.core.SAnnotationContainer")?)?
+            .invoke("getAnnotations", &[])?
+            .invoke("iterator", &[])?
+            .collect();
+        while jvm.to_rust::<bool>(jvm.invoke(&annos_iterator, "hasNext", &[])?)? {
+            let anno = jvm.cast(
+                &jvm.invoke(&annos_iterator, "next", &[])?,
+                "org.corpus_tools.salt.graph.Label",
+            )?;
+            let anno_ns = jvm.invoke(&anno, "getNamespace", &[])?;
+            let anno_ns = if is_null(&anno_ns, jvm)? {
+                "".to_string()
+            } else {
+                jvm.to_rust::<String>(anno_ns)?
+            };
+            u.add_event(UpdateEvent::AddNodeLabel {
                 node_name: node_name.clone(),
-                node_type: "node".to_string(),
-            })?;
-            // add all annotations
-            let annos_iterator: Instance = jvm
-                .chain(&jvm.cast(&n, "org.corpus_tools.salt.core.SAnnotationContainer")?)?
-                .invoke("getAnnotations", &[])?
-                .invoke("iterator", &[])?
-                .collect();
-            while jvm.to_rust::<bool>(jvm.invoke(&annos_iterator, "hasNext", &[])?)? {
-                let anno = jvm.cast(
-                    &jvm.invoke(&annos_iterator, "next", &[])?,
-                    "org.corpus_tools.salt.graph.Label",
-                )?;
-                let anno_ns = nullable(jvm.invoke(&anno, "getNamespace", &[])?)?;
-                u.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: node_name.clone(),
-                    anno_ns: if let Some(ns) = anno_ns {
-                        jvm.to_rust::<String>(ns)?
-                    } else {
-                        "".to_string()
-                    },
-                    anno_name: jvm.to_rust(jvm.invoke(&anno, "getName", &[])?)?,
-                    anno_value: jvm.to_rust(jvm.invoke(&anno, "getValue", &[])?)?,
-                })?;
-            }
-
-            // add connection to document node
-            u.add_event(UpdateEvent::AddEdge {
-                component_type: "PartOf".to_string(),
-                layer: "".to_string(),
-                component_name: "".to_string(),
-                source_node: node_name,
-                target_node: document_id.to_string(),
+                anno_ns,
+                anno_name: jvm.to_rust(jvm.invoke(&anno, "getName", &[])?)?,
+                anno_value: jvm.to_rust(jvm.invoke(&anno, "getValue", &[])?)?,
             })?;
         }
+
+        // add connection to document node
+        u.add_event(UpdateEvent::AddEdge {
+            component_type: "PartOf".to_string(),
+            layer: "".to_string(),
+            component_name: "".to_string(),
+            source_node: node_name,
+            target_node: document_id.to_string(),
+        })?;
+    }
+
+    Ok(())
+}
+
+fn add_relation(
+    rel: &Instance,
+    component_type: &str,
+    layer: &str,
+    document_id: &str,
+    u: &mut GraphUpdate,
+    jvm: &Jvm,
+) -> Result<()> {
+    let rel = jvm.cast(rel, "org.corpus_tools.salt.core.SRelation")?;
+    // Get the IDs of the source and target nodes
+    let source_node = jvm.chain(&rel)?.invoke("getSource", &[])?.collect();
+    let source_node = node_name(&source_node, document_id, jvm)?;
+    let target_node = jvm.chain(&rel)?.invoke("getTarget", &[])?.collect();
+    let target_node = node_name(&target_node, document_id, jvm)?;
+
+    let rel_type = jvm.chain(&rel)?.invoke("getType", &[])?.collect();
+    let component_name = if is_null(&rel_type, jvm)? {
+        "".to_string()
+    } else {
+        jvm.to_rust(rel_type)?
+    };
+
+    // add edge event
+    u.add_event(UpdateEvent::AddEdge {
+        source_node: source_node.to_string(),
+        target_node: target_node.to_string(),
+        component_type: component_type.to_string(),
+        component_name: component_name.to_string(),
+        layer: layer.to_string(),
+    })?;
+
+    // add all annotations
+    let annos_iterator: Instance = jvm
+        .chain(&jvm.cast(&rel, "org.corpus_tools.salt.core.SAnnotationContainer")?)?
+        .invoke("getAnnotations", &[])?
+        .invoke("iterator", &[])?
+        .collect();
+    while jvm.to_rust::<bool>(jvm.invoke(&annos_iterator, "hasNext", &[])?)? {
+        let anno = jvm.cast(
+            &jvm.invoke(&annos_iterator, "next", &[])?,
+            "org.corpus_tools.salt.graph.Label",
+        )?;
+        let anno_ns = jvm.invoke(&anno, "getNamespace", &[])?;
+        let anno_ns = if is_null(&anno_ns, jvm)? {
+            "".to_string()
+        } else {
+            jvm.to_rust::<String>(anno_ns)?
+        };
+        // add edge annotation
+        u.add_event(UpdateEvent::AddEdgeLabel {
+            source_node: source_node.to_string(),
+            target_node: target_node.to_string(),
+            component_type: component_type.to_string(),
+            component_name: component_name.to_string(),
+            layer: layer.to_string(),
+            anno_ns,
+            anno_name: jvm.chain(&anno)?.invoke("getName", &[])?.to_rust()?,
+            anno_value: jvm.chain(&anno)?.invoke("getValue", &[])?.to_rust()?,
+        })?;
     }
 
     Ok(())
@@ -193,6 +251,30 @@ fn add_token_information(
     Ok(())
 }
 
+fn get_relation_layer_names(rel: &Instance, jvm: &Jvm) -> Result<BTreeSet<String>> {
+    let mut result = BTreeSet::new();
+
+    let layers = jvm.chain(rel)?.invoke("getLayers", &[])?.collect();
+    if !is_null(&layers, jvm)? {
+        let layers_iterator = jvm.chain(&layers)?.invoke("iterator", &[])?.collect();
+        while jvm.to_rust::<bool>(jvm.invoke(&layers_iterator, "hasNext", &[])?)? {
+            let layer_name = jvm
+                .chain(&layers_iterator)?
+                .invoke("next", &[])?
+                .invoke("getName", &[])?
+                .to_rust()?;
+            result.insert(layer_name);
+        }
+    }
+
+    if result.is_empty() {
+        //  add the edge to the default empty layer
+        result.insert("".to_string());
+    }
+
+    Ok(result)
+}
+
 pub fn convert_document_graph(g: Instance, document_id: &str, jvm: &Jvm) -> Result<GraphUpdate> {
     let mut u = GraphUpdate::default();
 
@@ -210,9 +292,45 @@ pub fn convert_document_graph(g: Instance, document_id: &str, jvm: &Jvm) -> Resu
     // add ordering edges and special annis:tok label
     add_token_information(&g, document_id, &mut u, jvm)?;
 
-    // TODO: add coverage information
-    // TODO: add dominance relations
-    // TODO: add pointing relations
+    // add spanning, dominance and pointing relations
+    let spanning_relations_iterator: Instance = jvm
+        .chain(&g)?
+        .invoke("getSpanningRelations", &[])?
+        .invoke("iterator", &[])?
+        .collect();
+    while jvm.to_rust::<bool>(jvm.invoke(&spanning_relations_iterator, "hasNext", &[])?)? {
+        let relation = jvm.invoke(&spanning_relations_iterator, "next", &[])?;
+        add_relation(&relation, "Coverage", "", document_id, &mut u, jvm)?;
+    }
+    let dominance_relations: Instance = jvm
+        .chain(&g)?
+        .invoke("getDominanceRelations", &[])?
+        .invoke("iterator", &[])?
+        .collect();
+    while jvm.to_rust::<bool>(jvm.invoke(&dominance_relations, "hasNext", &[])?)? {
+        let relation = jvm.invoke(&dominance_relations, "next", &[])?;
+        for layer_name in get_relation_layer_names(&relation, jvm)? {
+            add_relation(
+                &relation,
+                "Dominance",
+                &layer_name,
+                document_id,
+                &mut u,
+                jvm,
+            )?;
+        }
+    }
+    let pointing_relations_iterator: Instance = jvm
+        .chain(&g)?
+        .invoke("getPointingRelations", &[])?
+        .invoke("iterator", &[])?
+        .collect();
+    while jvm.to_rust::<bool>(jvm.invoke(&pointing_relations_iterator, "hasNext", &[])?)? {
+        let relation = jvm.invoke(&pointing_relations_iterator, "next", &[])?;
+        for layer_name in get_relation_layer_names(&relation, jvm)? {
+            add_relation(&relation, "Pointing", &layer_name, document_id, &mut u, jvm)?;
+        }
+    }
 
     Ok(u)
 }
