@@ -27,8 +27,8 @@ pub trait Importer: Module {
 
 pub struct DoNothingImporter {}
 
-impl DoNothingImporter {
-    pub fn new() -> DoNothingImporter {
+impl Default for DoNothingImporter {
+    fn default() -> Self {
         DoNothingImporter {}
     }
 }

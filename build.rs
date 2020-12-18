@@ -7,7 +7,7 @@ fn main() {
     let pepper_dist_zip = std::fs::File::open(&pepper_dist_path).unwrap();
     let mut archive = zip::ZipArchive::new(pepper_dist_zip).unwrap();
 
-    let out_dir = PathBuf::from(format!("{}", std::env::var("OUT_DIR").unwrap()));
+    let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
     std::fs::create_dir_all(&out_dir).unwrap();
 
     for i in 0..archive.len() {

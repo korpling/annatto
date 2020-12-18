@@ -25,8 +25,8 @@ pub trait Manipulator: Module {
 
 pub struct DoNothingManipulator {}
 
-impl DoNothingManipulator {
-    pub fn new() -> DoNothingManipulator {
+impl Default for DoNothingManipulator {
+    fn default() -> Self {
         DoNothingManipulator {}
     }
 }

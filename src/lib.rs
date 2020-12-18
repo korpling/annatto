@@ -26,8 +26,8 @@ pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
             "EXMARaLDAImporter",
             Some(".*\\.(exb|xml|xmi|exmaralda)$"),
         )?)),
-        "GraphMLImporter" => Ok(Box::new(importer::graphml::GraphMLImporter::new())),
-        "DoNothingImporter" => Ok(Box::new(importer::DoNothingImporter::new())),
+        "GraphMLImporter" => Ok(Box::new(importer::graphml::GraphMLImporter::default())),
+        "DoNothingImporter" => Ok(Box::new(importer::DoNothingImporter::default())),
         _ => Err(PepperError::NoSuchModule(name.to_string())),
     }
 }
@@ -35,7 +35,7 @@ pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
 /// Retrieve a new instance of a manipulator using its module name
 pub fn manipulator_by_name(name: &str) -> Result<Box<dyn Manipulator>> {
     match name {
-        "DoNothingManipulator" => Ok(Box::new(manipulator::DoNothingManipulator::new())),
+        "DoNothingManipulator" => Ok(Box::new(manipulator::DoNothingManipulator::default())),
         _ => Err(PepperError::NoSuchModule(name.to_string())),
     }
 }
@@ -43,8 +43,8 @@ pub fn manipulator_by_name(name: &str) -> Result<Box<dyn Manipulator>> {
 /// Retrieve a new instance of an exporter using its module name
 pub fn exporter_by_name(name: &str) -> Result<Box<dyn Exporter>> {
     match name {
-        "GraphMLExporter" => Ok(Box::new(exporter::graphml::GraphMLExporter::new())),
-        "DoNothingExporter" => Ok(Box::new(exporter::DoNothingExporter::new())),
+        "GraphMLExporter" => Ok(Box::new(exporter::graphml::GraphMLExporter::default())),
+        "DoNothingExporter" => Ok(Box::new(exporter::DoNothingExporter::default())),
         _ => Err(PepperError::NoSuchModule(name.to_string())),
     }
 }
