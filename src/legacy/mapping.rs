@@ -275,7 +275,7 @@ fn get_relation_layer_names(rel: &Instance, jvm: &Jvm) -> Result<BTreeSet<String
     Ok(result)
 }
 
-pub fn convert_document_graph(g: Instance, document_id: &str, jvm: &Jvm) -> Result<GraphUpdate> {
+pub fn convert_salt_document_graph(g: Instance, document_id: &str, jvm: &Jvm) -> Result<GraphUpdate> {
     let mut u = GraphUpdate::default();
 
     // add all nodes and their annotations
@@ -291,6 +291,8 @@ pub fn convert_document_graph(g: Instance, document_id: &str, jvm: &Jvm) -> Resu
 
     // add ordering edges and special annis:tok label
     add_token_information(&g, document_id, &mut u, jvm)?;
+
+    // TODO: map timeline
 
     // add spanning, dominance and pointing relations
     let spanning_relations_iterator: Instance = jvm
