@@ -6,8 +6,8 @@ edition = "2018"
 license = "Apache-2.0"
 
 [dependencies]
-graphannis = "0.30"
-graphannis-core = "0.30"
+graphannis = "0.31"
+graphannis-core = "0.31"
 structopt = "0.3"
 thiserror = "1.0"
 rayon = "1.1"

@@ -1,5 +1,7 @@
 use std::{path::PathBuf, sync::mpsc::SendError};
 
+use graphannis::errors::GraphAnnisError;
+use graphannis_core::errors::GraphAnnisCoreError;
 use thiserror::Error;
 
 use crate::workflow::StatusMessage;
@@ -7,6 +9,7 @@ use crate::workflow::StatusMessage;
 pub type Result<T> = std::result::Result<T, PepperError>;
 
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum PepperError {
     #[error("Error during exporting corpus from {path} with {exporter:?}: {reason:?}")]
     Export {
@@ -30,7 +33,7 @@ pub enum PepperError {
         reason: std::io::Error,
     },
     #[error("IO error: {0}")]
-    IO(std::io::Error),
+    IO(#[from] std::io::Error),
     #[error("No module with name {0} found")]
     NoSuchModule(String),
     #[error("Cannot read workflow file: {0}")]
@@ -40,65 +43,21 @@ pub enum PepperError {
     #[error("Could not send status message: {0}")]
     SendingStatusMessageFailed(String),
     #[error("XML error: {0}")]
-    XML(quick_xml::Error),
+    XML(#[from] quick_xml::Error),
     #[error("Java virtual machine: {0}")]
-    JVM(j4rs::errors::J4RsError),
+    JVM(#[from] j4rs::errors::J4RsError),
     #[error("Could not iterate over directory: {0}")]
-    IteratingDirectory(walkdir::Error),
-    #[error("Regular expression error: {0}")]
-    Regex(regex::Error),
+    IteratingDirectory(#[from] walkdir::Error),
+    #[error(transparent)]
+    Regex(#[from] regex::Error),
     #[error("Invalid (poisoned) lock")]
     LockPoisoning,
-    #[error("Unknown error {0}")]
-    Unknown(String),
-}
-
-impl From<Box<dyn std::error::Error>> for PepperError {
-    fn from(e: Box<dyn std::error::Error>) -> Self {
-        PepperError::Unknown(e.to_string())
-    }
-}
-
-impl From<std::io::Error> for PepperError {
-    fn from(e: std::io::Error) -> Self {
-        PepperError::IO(e)
-    }
-}
-
-impl From<SendError<StatusMessage>> for PepperError {
-    fn from(e: SendError<StatusMessage>) -> Self {
-        PepperError::SendingStatusMessageFailed(e.to_string())
-    }
-}
-
-impl From<anyhow::Error> for PepperError {
-    fn from(e: anyhow::Error) -> Self {
-        PepperError::Unknown(e.to_string())
-    }
-}
-
-impl From<quick_xml::Error> for PepperError {
-    fn from(e: quick_xml::Error) -> Self {
-        PepperError::XML(e)
-    }
-}
-
-impl From<j4rs::errors::J4RsError> for PepperError {
-    fn from(e: j4rs::errors::J4RsError) -> Self {
-        PepperError::JVM(e)
-    }
-}
-
-impl From<walkdir::Error> for PepperError {
-    fn from(e: walkdir::Error) -> Self {
-        PepperError::IteratingDirectory(e)
-    }
-}
-
-impl From<regex::Error> for PepperError {
-    fn from(e: regex::Error) -> Self {
-        PepperError::Regex(e)
-    }
+    #[error(transparent)]
+    GraphAnnisCore(#[from] GraphAnnisCoreError),
+    #[error(transparent)]
+    GraphAnnis(#[from] GraphAnnisError),
+    #[error(transparent)]
+    Infallible(std::convert::Infallible),
 }
 
 impl<T> From<std::sync::PoisonError<T>> for PepperError {
@@ -107,8 +66,8 @@ impl<T> From<std::sync::PoisonError<T>> for PepperError {
     }
 }
 
-impl From<std::convert::Infallible> for PepperError {
-    fn from(_: std::convert::Infallible) -> Self {
-        PepperError::Unknown("Infallible conversion failed".to_string())
+impl From<SendError<StatusMessage>> for PepperError {
+    fn from(e: SendError<StatusMessage>) -> Self {
+        PepperError::SendingStatusMessageFailed(e.to_string())
     }
 }

@@ -1,9 +1,9 @@
 use graphannis::{
-    errors::Result,
     update::{GraphUpdate, UpdateEvent},
 };
 use j4rs::{Instance, InvocationArg, Jvm, Null};
 use std::{collections::BTreeSet, convert::TryFrom};
+use crate::error::Result;
 
 fn is_null(o: &Instance, jvm: &Jvm) -> Result<bool> {
     let result = jvm.invoke_static(
