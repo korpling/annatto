@@ -42,8 +42,8 @@ fn add_node(
         for (key, value) in data.drain() {
             node_updates.add_event(UpdateEvent::AddNodeLabel {
                 node_name: node_name.clone(),
-                anno_ns: key.ns,
-                anno_name: key.name,
+                anno_ns: key.ns.to_string(),
+                anno_name: key.name.to_string(),
                 anno_value: value,
             })?;
         }
@@ -66,9 +66,9 @@ fn add_edge(
             edge_updates.add_event(UpdateEvent::AddEdge {
                 source_node: source.clone(),
                 target_node: target.clone(),
-                layer: component.layer.clone(),
+                layer: component.layer.to_string(),
                 component_type: component.get_type().to_string(),
-                component_name: component.name.clone(),
+                component_name: component.name.to_string(),
             })?;
 
             // Add all remaining data entries as annotations
@@ -76,11 +76,11 @@ fn add_edge(
                 edge_updates.add_event(UpdateEvent::AddEdgeLabel {
                     source_node: source.clone(),
                     target_node: target.clone(),
-                    layer: component.layer.clone(),
+                    layer: component.layer.to_string(),
                     component_type: component.get_type().to_string(),
-                    component_name: component.name.clone(),
-                    anno_ns: key.ns,
-                    anno_name: key.name,
+                    component_name: component.name.to_string(),
+                    anno_ns: key.ns.to_string(),
+                    anno_name: key.name.to_string(),
                     anno_value: value,
                 })?;
             }
@@ -109,8 +109,8 @@ fn add_annotation_key(
             b"attr.name" => {
                 let (ns, name) = split_qname(att_value.as_ref());
                 anno_key = Some(AnnoKey {
-                    ns: ns.unwrap_or("").to_string(),
-                    name: name.to_string(),
+                    ns: ns.unwrap_or_default().into(),
+                    name: name.into(),
                 });
             }
             _ => {}
