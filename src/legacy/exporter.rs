@@ -1,6 +1,14 @@
+use graphannis::model::AnnotationComponentType;
+use graphannis_core::{
+    annostorage::ValueSearch,
+    graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE},
+};
 use j4rs::{Instance, InvocationArg, Jvm};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::{error::Result, exporter::Exporter, Module};
+use crate::{
+    error::Result, exporter::Exporter, progress::ProgressReporter, workflow::StatusSender, Module,
+};
 
 use super::PepperPluginClasspath;
 
@@ -41,6 +49,17 @@ impl JavaExporter {
         jvm.invoke(&mapper, "setDocument", &[InvocationArg::from(document)])?;
         Ok(())
     }
+
+    fn map_document(
+        &self,
+        graph: &graphannis::AnnotationGraph,
+        document_id: &str,
+        properties: &std::collections::BTreeMap<String, String>,
+        jvm: &Jvm,
+        output_path: &std::path::Path,
+    ) -> Result<()> {
+        todo!()
+    }
 }
 
 impl Module for JavaExporter {
@@ -55,8 +74,51 @@ impl Exporter for JavaExporter {
         graph: &graphannis::AnnotationGraph,
         properties: &std::collections::BTreeMap<String, String>,
         output_path: &std::path::Path,
-        tx: Option<crate::workflow::StatusSender>,
+        tx: Option<StatusSender>,
     ) -> std::result::Result<(), Box<dyn std::error::Error>> {
-        todo!()
+        if let Some(part_of) = graph
+            .get_all_components(Some(AnnotationComponentType::PartOf), None)
+            .first()
+        {
+            if let Some(part_of) = graph.get_graphstorage_as_ref(part_of) {
+                let node_annos = graph.get_node_annos();
+
+                // Collect all documents for the corpus graph by querying the graph
+                let documents: Vec<_> = node_annos
+                    .exact_anno_search(Some(ANNIS_NS), NODE_TYPE, ValueSearch::Some("corpus"))
+                    .filter(|m| !part_of.has_outgoing_edges(m.node))
+                    .filter_map(|m| node_annos.get_value_for_item(&m.node, &NODE_NAME_KEY))
+                    .collect();
+                let num_of_documents = documents.len();
+                let reporter = ProgressReporter::new(
+                    tx,
+                    self as &dyn Module,
+                    Some(output_path),
+                    num_of_documents,
+                )?;
+
+                if self.map_parallel {
+                    let mapping_results: Result<Vec<_>> = documents
+                        .into_par_iter()
+                        .map(|document_id| {
+                            let jvm = self.classpath.create_jvm(false)?;
+                            self.map_document(graph, &document_id, properties, &jvm, output_path)?;
+                            reporter.worked(1)?;
+                            Ok(())
+                        })
+                        .collect();
+                    // Return an error if any single mapping resulted in an error
+                    mapping_results?;
+                } else {
+                    let jvm = self.classpath.create_jvm(false)?;
+                    for document_id in documents {
+                        self.map_document(graph, &document_id, properties, &jvm, output_path)?;
+                        reporter.worked(1)?;
+                    }
+                }
+            }
+        }
+
+        Ok(())
     }
 }
