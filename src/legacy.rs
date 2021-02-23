@@ -1,6 +1,7 @@
 //! This module contains helper methods and structures to implement with legacy Java-based modules
 
 pub mod importer;
+pub mod exporter;
 pub mod mapping;
 pub mod saltxml;
 
