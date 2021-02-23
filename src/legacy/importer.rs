@@ -10,7 +10,7 @@ use crate::{
     Module,
 };
 
-use super::{get_identifier, PepperPluginClasspath};
+use super::{salt::get_identifier, PepperPluginClasspath};
 
 pub struct JavaImporter {
     java_importer_qname: String,
@@ -56,7 +56,7 @@ impl JavaImporter {
         document_id: &str,
         jvm: &Jvm,
     ) -> Result<GraphUpdate> {
-        // Create an instance of the Exmaralda importer
+        // Create an instance of the Java importer
         let importer = jvm.create_instance(&self.java_importer_qname, &[])?;
 
         // Create a new document object that will be mapped
@@ -126,7 +126,7 @@ impl JavaImporter {
         // Retrieve the reference to the created graph and map Salt to graph updates
         let document = jvm.invoke(&mapper, "getDocument", &[])?;
         let graph = jvm.invoke(&document, "getDocumentGraph", &[])?;
-        let u = super::mapping::convert_salt_document_graph(graph, document_id, jvm)?;
+        let u = super::salt::map_from::map_document_graph(graph, document_id, jvm)?;
         Ok(u)
     }
 }

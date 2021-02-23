@@ -2,16 +2,16 @@
 
 pub mod exporter;
 pub mod importer;
-pub mod mapping;
-pub mod saltxml;
+pub mod salt;
 
 use std::{
+    convert::TryFrom,
     io::Write,
     path::{Path, PathBuf},
 };
 
 use graphannis::update::{GraphUpdate, UpdateEvent};
-use j4rs::{ClasspathEntry, Instance, JavaOpt, Jvm};
+use j4rs::{ClasspathEntry, Instance, InvocationArg, JavaOpt, Jvm, Null};
 use regex::Regex;
 use rust_embed::RustEmbed;
 use tempfile::NamedTempFile;
@@ -137,11 +137,28 @@ pub fn import_corpus_structure(
     Ok(result)
 }
 
-fn get_identifier(sdocument: &Instance, jvm: &Jvm) -> Result<Instance> {
-    let id = jvm.invoke(
-        &jvm.cast(sdocument, "org.corpus_tools.salt.graph.IdentifiableElement")?,
-        "getIdentifier",
-        &[],
+fn is_null(o: &Instance, jvm: &Jvm) -> Result<bool> {
+    let result = jvm.invoke_static(
+        "java.util.Objects",
+        "equals",
+        &[
+            InvocationArg::try_from(Null::Of("java.lang.Object"))?,
+            InvocationArg::from(jvm.chain(o)?.collect()),
+        ],
     )?;
-    Ok(id)
+    Ok(jvm.to_rust(result)?)
+}
+
+fn is_instance_of(object: &Instance, class_name: &str, jvm: &Jvm) -> Result<bool> {
+    let class_instance = jvm.invoke_static(
+        "java.lang.Class",
+        "forName",
+        &[InvocationArg::try_from(class_name)?],
+    )?;
+    let object_arg = InvocationArg::from(jvm.cast(object, "java.lang.Object")?);
+    let is_instance = jvm
+        .chain(&class_instance)?
+        .invoke("isInstance", &[object_arg])?
+        .to_rust()?;
+    Ok(is_instance)
 }

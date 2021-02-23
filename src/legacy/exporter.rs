@@ -9,6 +9,7 @@ pub struct JavaExporter {
     java_properties_class: String,
     module_name: String,
     classpath: PepperPluginClasspath,
+    map_parallel: bool,
 }
 
 impl JavaExporter {
@@ -16,6 +17,7 @@ impl JavaExporter {
         java_exporter_qname: &str,
         java_properties_class: &str,
         module_name: &str,
+        map_parallel: bool,
     ) -> Result<JavaExporter> {
         let classpath = PepperPluginClasspath::new()?;
 
@@ -23,6 +25,7 @@ impl JavaExporter {
             java_exporter_qname: java_exporter_qname.to_string(),
             java_properties_class: java_properties_class.to_string(),
             module_name: module_name.to_string(),
+            map_parallel,
             classpath,
         };
         Ok(exporter)
