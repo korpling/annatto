@@ -10,7 +10,7 @@ use crate::{
     Module,
 };
 
-use super::PepperPluginClasspath;
+use super::{get_identifier, PepperPluginClasspath};
 
 pub struct JavaImporter {
     java_importer_qname: String,
@@ -18,15 +18,6 @@ pub struct JavaImporter {
     module_name: String,
     file_pattern: Option<String>,
     classpath: PepperPluginClasspath,
-}
-
-fn get_identifier(sdocument: &Instance, jvm: &Jvm) -> Result<Instance> {
-    let id = jvm.invoke(
-        &jvm.cast(sdocument, "org.corpus_tools.salt.graph.IdentifiableElement")?,
-        "getIdentifier",
-        &[],
-    )?;
-    Ok(id)
 }
 
 impl JavaImporter {

@@ -1,7 +1,7 @@
 //! This module contains helper methods and structures to implement with legacy Java-based modules
 
-pub mod importer;
 pub mod exporter;
+pub mod importer;
 pub mod mapping;
 pub mod saltxml;
 
@@ -11,13 +11,13 @@ use std::{
 };
 
 use graphannis::update::{GraphUpdate, UpdateEvent};
-use j4rs::{ClasspathEntry, JavaOpt, Jvm};
+use j4rs::{ClasspathEntry, Instance, JavaOpt, Jvm};
 use regex::Regex;
 use rust_embed::RustEmbed;
 use tempfile::NamedTempFile;
 use walkdir::WalkDir;
 
-use crate::error::PepperError;
+use crate::error::Result;
 
 #[derive(RustEmbed)]
 #[folder = "$OUT_DIR/pepper/plugins/"]
@@ -28,7 +28,7 @@ pub struct PepperPluginClasspath {
 }
 
 impl PepperPluginClasspath {
-    pub fn new() -> Result<PepperPluginClasspath, PepperError> {
+    pub fn new() -> Result<PepperPluginClasspath> {
         // Get all plugin files and extract them to a temporary location
         let mut files = Vec::new();
         for jar_file in LegacyPluginFiles::iter() {
@@ -42,7 +42,7 @@ impl PepperPluginClasspath {
         Ok(PepperPluginClasspath { files })
     }
 
-    pub fn create_jvm(&self, debug: bool) -> Result<Jvm, PepperError> {
+    pub fn create_jvm(&self, debug: bool) -> Result<Jvm> {
         let classpath_strings: Vec<_> = self
             .files
             .iter()
@@ -83,7 +83,7 @@ pub fn import_corpus_structure(
     root_dir: &Path,
     file_pattern: Option<&str>,
     updates: &mut GraphUpdate,
-) -> Result<Vec<(PathBuf, String)>, PepperError> {
+) -> Result<Vec<(PathBuf, String)>> {
     // Compile pattern as regular expression
     let file_pattern: Option<Regex> = if let Some(file_pattern) = file_pattern {
         Some(Regex::new(file_pattern)?)
@@ -135,4 +135,13 @@ pub fn import_corpus_structure(
         }
     }
     Ok(result)
+}
+
+fn get_identifier(sdocument: &Instance, jvm: &Jvm) -> Result<Instance> {
+    let id = jvm.invoke(
+        &jvm.cast(sdocument, "org.corpus_tools.salt.graph.IdentifiableElement")?,
+        "getIdentifier",
+        &[],
+    )?;
+    Ok(id)
 }
