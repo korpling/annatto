@@ -185,29 +185,3 @@ impl Importer for JavaImporter {
     }
 }
 
-#[cfg(test)]
-mod tests {
-
-    use std::{collections::BTreeMap, path::PathBuf};
-
-    use super::*;
-
-    #[test]
-    fn import_exb_corpus() {
-        let importer = JavaImporter::new(
-            "org.corpus_tools.peppermodules.exmaralda.EXMARaLDAImporter",
-            "org.corpus_tools.peppermodules.exmaralda.EXMARaLDAImporterProperties",
-            "EXMARaLDAImporter",
-            Some(".*\\.(exb|xml|xmi|exmaralda)$"),
-        )
-        .unwrap();
-        let properties: BTreeMap<String, String> = BTreeMap::new();
-        importer
-            .import_corpus(
-                &PathBuf::from("test-corpora/exb/rootCorpus"),
-                &properties,
-                None,
-            )
-            .unwrap();
-    }
-}

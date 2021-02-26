@@ -162,3 +162,31 @@ fn is_instance_of(object: &Instance, class_name: &str, jvm: &Jvm) -> Result<bool
         .to_rust()?;
     Ok(is_instance)
 }
+
+
+#[cfg(test)]
+mod tests {
+
+    use std::{collections::BTreeMap, path::PathBuf};
+
+    use super::{exporter::*, importer::*};
+
+    #[test]
+    fn exb_conversion() {
+        let importer = JavaImporter::new(
+            "org.corpus_tools.peppermodules.exmaralda.EXMARaLDAImporter",
+            "org.corpus_tools.peppermodules.exmaralda.EXMARaLDAImporterProperties",
+            "EXMARaLDAImporter",
+            Some(".*\\.(exb|xml|xmi|exmaralda)$"),
+        )
+        .unwrap();
+        let properties: BTreeMap<String, String> = BTreeMap::new();
+        importer
+            .import_corpus(
+                &PathBuf::from("test-corpora/exb/rootCorpus"),
+                &properties,
+                None,
+            )
+            .unwrap();
+    }
+}
