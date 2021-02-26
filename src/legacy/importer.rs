@@ -184,4 +184,3 @@ impl Importer for JavaImporter {
         Ok(updates)
     }
 }
-

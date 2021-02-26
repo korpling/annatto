@@ -18,10 +18,13 @@ anyhow = "1.0"
 log = "0.4"
 walkdir = "2"
 regex = "1.4"
-tempfile = "3.1"
+tempfile = "3"
 rust-embed= {version="5.6.0", features=["compression", "interpolate-folder-path"]}
 j4rs = "0.13"
 
 [build-dependencies]
 cached-path = "0.4"
 zip = "0.5"
+
+[dev-dependencies]
+file_diff = "1"
