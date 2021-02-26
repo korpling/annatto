@@ -169,6 +169,8 @@ mod tests {
 
     use std::{collections::BTreeMap, path::PathBuf};
 
+    use crate::importer::Importer;
+
     use super::{exporter::*, importer::*};
 
     #[test]
