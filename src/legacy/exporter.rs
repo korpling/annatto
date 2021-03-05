@@ -3,7 +3,7 @@ use graphannis_core::{
     annostorage::ValueSearch,
     graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE},
 };
-use j4rs::{Instance, InvocationArg, Jvm};
+use j4rs::{InvocationArg, Jvm};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
