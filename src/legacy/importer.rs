@@ -10,7 +10,7 @@ use crate::{
     Module,
 };
 
-use super::{salt::get_identifier, PepperPluginClasspath};
+use super::{prepare_mapper, salt::get_identifier, PepperPluginClasspath};
 
 pub struct JavaImporter {
     java_importer_qname: String,
@@ -39,21 +39,11 @@ impl JavaImporter {
         Ok(importer)
     }
 
-    fn prepare_mapper(&self, mapper: &Instance, document: Instance, jvm: &Jvm) -> Result<()> {
-        // Create and set an empty property map
-        let props = jvm.create_instance(&self.java_properties_class, &[])?;
-        // TODO: set the property values from the importer in Java
-        jvm.invoke(mapper, "setProperties", &[InvocationArg::from(props)])?;
-
-        // Explicitly set the document object
-        jvm.invoke(&mapper, "setDocument", &[InvocationArg::from(document)])?;
-        Ok(())
-    }
-
     fn map_document(
         &self,
         file_path: PathBuf,
         document_id: &str,
+        properties: &std::collections::BTreeMap<String, String>,
         jvm: &Jvm,
     ) -> Result<GraphUpdate> {
         // Create an instance of the Java importer
@@ -100,14 +90,20 @@ impl JavaImporter {
 
         let sdocument_identifier = get_identifier(&sdocument, jvm)?;
 
-        // Get an instance of the Salt to Exmaralda mapper from the importer
+        // Get an instance of the mapper from the importer
         let mapper = jvm.invoke(
             &importer,
             "createPepperMapper",
             &[InvocationArg::from(sdocument_identifier)],
         )?;
 
-        self.prepare_mapper(&mapper, sdocument, jvm)?;
+        prepare_mapper(
+            &mapper,
+            sdocument,
+            &self.java_properties_class,
+            properties,
+            jvm,
+        )?;
 
         // Invoke the internal mapper
         let document_status = jvm.invoke(&mapper, "mapSDocument", &[])?;
@@ -141,7 +137,7 @@ impl Importer for JavaImporter {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
-        _properties: &std::collections::BTreeMap<String, String>,
+        properties: &std::collections::BTreeMap<String, String>,
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut updates = GraphUpdate::new();
@@ -166,7 +162,7 @@ impl Importer for JavaImporter {
             .into_par_iter()
             .map(|(file_path, document_name)| {
                 let jvm = self.classpath.create_jvm(false)?;
-                let updates_for_document = self.map_document(file_path, &document_name, &jvm)?;
+                let updates_for_document = self.map_document(file_path, &document_name, properties, &jvm)?;
                 reporter.worked(1)?;
                 Ok(updates_for_document)
             })

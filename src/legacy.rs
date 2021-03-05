@@ -163,6 +163,23 @@ fn is_instance_of(object: &Instance, class_name: &str, jvm: &Jvm) -> Result<bool
     Ok(is_instance)
 }
 
+fn prepare_mapper(
+    mapper: &Instance,
+    document: Instance,
+    java_properties_class: &str,
+    properties: &std::collections::BTreeMap<String, String>,
+    jvm: &Jvm,
+) -> Result<()> {
+    // Create and set an empty property map
+    let props = jvm.create_instance(java_properties_class, &[])?;
+    // TODO: set the property values from the importer in Java
+    jvm.invoke(mapper, "setProperties", &[InvocationArg::from(props)])?;
+
+    // Explicitly set the document object
+    jvm.invoke(&mapper, "setDocument", &[InvocationArg::from(document)])?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
 

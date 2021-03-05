@@ -7,7 +7,15 @@ use j4rs::{Instance, InvocationArg, Jvm};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
-    error::Result, exporter::Exporter, progress::ProgressReporter, workflow::StatusSender, Module,
+    error::{PepperError, Result},
+    exporter::Exporter,
+    legacy::{
+        prepare_mapper,
+        salt::{get_identifier, map_to::map_document_graph},
+    },
+    progress::ProgressReporter,
+    workflow::StatusSender,
+    Module,
 };
 
 use super::PepperPluginClasspath;
@@ -39,17 +47,6 @@ impl JavaExporter {
         Ok(exporter)
     }
 
-    fn prepare_mapper(&self, mapper: &Instance, document: Instance, jvm: &Jvm) -> Result<()> {
-        // Create and set an empty property map
-        let props = jvm.create_instance(&self.java_properties_class, &[])?;
-        // TODO: set the property values from the importer in Java
-        jvm.invoke(mapper, "setProperties", &[InvocationArg::from(props)])?;
-
-        // Explicitly set the document object
-        jvm.invoke(&mapper, "setDocument", &[InvocationArg::from(document)])?;
-        Ok(())
-    }
-
     fn map_document(
         &self,
         graph: &graphannis::AnnotationGraph,
@@ -58,7 +55,42 @@ impl JavaExporter {
         jvm: &Jvm,
         output_path: &std::path::Path,
     ) -> Result<()> {
-        todo!()
+        // Create an instance of the Java exporter
+        let exporter = jvm.create_instance(&self.java_exporter_qname, &[])?;
+
+        // Create an SDocument the exporter will use
+        let sdocument = map_document_graph(graph, document_id, jvm)?;
+        let sdocument_identifier = get_identifier(&sdocument, jvm)?;
+        // Get an instance of the mapper from the exporter
+        let mapper = jvm.invoke(
+            &exporter,
+            "createPepperMapper",
+            &[InvocationArg::from(sdocument_identifier)],
+        )?;
+
+        prepare_mapper(
+            &mapper,
+            sdocument,
+            &self.java_properties_class,
+            properties,
+            jvm,
+        )?;
+
+        // Invoke the internal mapper
+        let document_status = jvm.invoke(&mapper, "mapSDocument", &[])?;
+
+        // Check if conversion was successful
+        let document_status = jvm.invoke(&document_status, "getName", &[])?;
+        let document_status: String = jvm.to_rust(document_status)?;
+        if document_status != "COMPLETED" {
+            return Err(PepperError::Export {
+                reason: format!("Legacy exporter module returned status {}", document_status),
+                exporter: self.module_name.to_string(),
+                path: output_path.to_path_buf(),
+            });
+        }
+
+        Ok(())
     }
 }
 
