@@ -172,7 +172,20 @@ fn prepare_mapper(
 ) -> Result<()> {
     // Create and set an empty property map
     let props = jvm.create_instance(java_properties_class, &[])?;
-    // TODO: set the property values from the importer in Java
+
+    // Add all property values for the mapper
+    for (key, value) in properties {
+        jvm.invoke(
+            &props,
+            "setProperties",
+            &[
+                InvocationArg::try_from(key)?,
+                InvocationArg::try_from(value)?,
+            ],
+        )?;
+    }
+
+    // Set the property object for the mapper
     jvm.invoke(mapper, "setProperties", &[InvocationArg::from(props)])?;
 
     // Explicitly set the document object
