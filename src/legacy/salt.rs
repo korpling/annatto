@@ -38,7 +38,7 @@ pub fn node_name(node: &Instance, document_id: &str, jvm: &Jvm) -> Result<String
 pub fn get_text_for_token(token: &Instance, jvm: &Jvm) -> Result<Option<Instance>> {
     // Get all outgoing edges and return the text connected to the first STextualRelation
     let out_relations: Instance = jvm
-        .chain(&jvm.cast(&token, "org.corpus_tools.salt.core.SNode")?)?
+        .chain(&jvm.cast(token, "org.corpus_tools.salt.core.SNode")?)?
         .invoke("getOutRelations", &[])?
         .invoke("iterator", &[])?
         .collect();

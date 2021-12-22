@@ -187,7 +187,7 @@ fn prepare_mapper(
     jvm.invoke(mapper, "setProperties", &[InvocationArg::from(props)])?;
 
     // Explicitly set the document object
-    jvm.invoke(&mapper, "setDocument", &[InvocationArg::from(document)])?;
+    jvm.invoke(mapper, "setDocument", &[InvocationArg::from(document)])?;
     Ok(())
 }
 
