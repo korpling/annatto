@@ -12,12 +12,19 @@ use self::graph::GraphUpdate;
 #[folder = "py"]
 struct Scripts;
 
+/// Construct a graphannis module that is compatible with the graphANNIS Python API.
+/// This allows us to use classes like the GraphUpdate in Pepper modules.
 #[pymodule]
-pub fn graph(py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_class::<GraphUpdate>()?;
-    // Automatically add this module to the execution environment
+fn graphannis(py: Python, m: &PyModule) -> PyResult<()> {
+    let graph_module = PyModule::new(py, "graph")?;
+    graph_module.add_class::<GraphUpdate>()?;
+    m.add_submodule(graph_module)?;
+
+    // Automatically add the parent graphannis module to the execution environment
     // https://github.com/PyO3/pyo3/issues/759#issuecomment-977835119
-    py.import("sys")?.getattr("modules")?.set_item("graph", m)?;
+    py.import("sys")?.getattr("modules")?.set_item("graphannis", m)?;
+    py.import("sys")?.getattr("modules")?.set_item("graphannis.graph", graph_module)?;
+    
 
     Ok(())
 }
@@ -35,9 +42,9 @@ impl Importer for PythonImporter {
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         Python::with_gil(|py| {
-            wrap_pymodule!(graph)(py);
+            wrap_pymodule!(graphannis)(py);
 
-            let code_module = PyModule::from_code(py, &self.code, "", "")?;
+            let code_module = PyModule::from_code(py, &self.code, &format!("{}.py", &self.name), &self.name)?;
 
             let result = code_module.getattr("start_import")?.call1(())?;
             dbg!(result);
