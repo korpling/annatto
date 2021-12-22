@@ -4,9 +4,8 @@ use graphannis::update::GraphUpdate;
 use pyo3::{prelude::*, types::PyModule};
 use rust_embed::RustEmbed;
 
-use crate::Module;
+use crate::{Module, importer::Importer};
 
-use super::Importer;
 
 #[derive(RustEmbed)]
 #[folder = "py"]
