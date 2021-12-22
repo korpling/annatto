@@ -1,7 +1,6 @@
 //! Functions to access to Salt objects
 
 pub mod map_from;
-pub mod map_to;
 
 use std::collections::BTreeSet;
 

@@ -1,5 +1,5 @@
 use graphannis::update::GraphUpdate;
-use j4rs::{Instance, InvocationArg, Jvm};
+use j4rs::{InvocationArg, Jvm};
 use rayon::prelude::*;
 use std::{convert::TryFrom, path::PathBuf};
 
@@ -162,7 +162,8 @@ impl Importer for JavaImporter {
             .into_par_iter()
             .map(|(file_path, document_name)| {
                 let jvm = self.classpath.create_jvm(false)?;
-                let updates_for_document = self.map_document(file_path, &document_name, properties, &jvm)?;
+                let updates_for_document =
+                    self.map_document(file_path, &document_name, properties, &jvm)?;
                 reporter.worked(1)?;
                 Ok(updates_for_document)
             })

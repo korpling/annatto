@@ -1,6 +1,4 @@
 //! This module contains helper methods and structures to implement with legacy Java-based modules
-
-pub mod exporter;
 pub mod importer;
 pub mod salt;
 
@@ -202,7 +200,7 @@ mod tests {
 
     use crate::{exporter::Exporter, importer::Importer};
 
-    use super::{exporter::*, importer::*};
+    use super::importer::*;
 
     #[test]
     fn exb_conversion() {
