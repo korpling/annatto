@@ -44,10 +44,6 @@ pub enum PepperError {
     SendingStatusMessageFailed(String),
     #[error("XML error: {0}")]
     XML(#[from] quick_xml::Error),
-    #[error("Java virtual machine: {0}")]
-    JVM(#[from] j4rs::errors::J4RsError),
-    #[error("Could not iterate over directory: {0}")]
-    IteratingDirectory(#[from] walkdir::Error),
     #[error(transparent)]
     Regex(#[from] regex::Error),
     #[error("Invalid (poisoned) lock")]

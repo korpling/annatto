@@ -1,7 +1,6 @@
 pub mod error;
 pub mod exporter;
 pub mod importer;
-pub mod legacy;
 pub mod manipulator;
 pub mod progress;
 pub mod workflow;
@@ -20,12 +19,6 @@ use manipulator::Manipulator;
 /// Retrieve a new instance of an importer using its module name
 pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
     match name {
-        "EXMARaLDAImporter" => Ok(Box::new(legacy::importer::JavaImporter::new(
-            "org.corpus_tools.peppermodules.exmaralda.EXMARaLDAImporter",
-            "org.corpus_tools.peppermodules.exmaralda.EXMARaLDAImporterProperties",
-            "EXMARaLDAImporter",
-            Some(".*\\.(exb|xml|xmi|exmaralda)$"),
-        )?)),
         "GraphMLImporter" => Ok(Box::new(importer::graphml::GraphMLImporter::default())),
         "DoNothingImporter" => Ok(Box::new(importer::DoNothingImporter::default())),
         _ => Err(PepperError::NoSuchModule(name.to_string())),
