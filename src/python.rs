@@ -1,9 +1,7 @@
-//! Run Python scripts as importers
+//! Run Python scripts as modules
 
-use graphannis::update::GraphUpdate;
 use pyo3::{prelude::*, types::PyModule};
 use rust_embed::RustEmbed;
-
 use crate::{Module, importer::Importer};
 
 
@@ -24,10 +22,12 @@ impl Importer for PythonImporter {
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         Python::with_gil(|py| {
-            let graph_updates =
+            let module =
                 PyModule::from_code(py, &self.code, &format!("{}.py", self.name), &self.name)?;
-            let mut tmp = GraphUpdate::default();
-            Ok(tmp)
+        
+            let result = module.getattr("start_import")?.call1(())?;
+            dbg!(result);
+            todo!()
         })
     }
 }
