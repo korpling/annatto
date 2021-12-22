@@ -33,7 +33,7 @@ impl PepperPluginClasspath {
             let mut tmp_file = NamedTempFile::new()?;
             // Copy asset content to temporary file
             if let Some(content) = LegacyPluginFiles::get(&jar_file) {
-                tmp_file.write_all(&content)?;
+                tmp_file.write_all(&content.data)?;
                 files.push(tmp_file);
             }
         }

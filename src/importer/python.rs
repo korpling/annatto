@@ -2,13 +2,19 @@
 
 use graphannis::update::GraphUpdate;
 use pyo3::{prelude::*, types::PyModule};
+use rust_embed::RustEmbed;
 
 use crate::Module;
 
 use super::Importer;
 
+#[derive(RustEmbed)]
+#[folder = "py"]
+struct Scripts;
+
 pub struct PythonImporter {
     name: String,
+    code: String,
 }
 
 impl Importer for PythonImporter {
@@ -20,7 +26,7 @@ impl Importer for PythonImporter {
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         Python::with_gil(|py| {
             let graph_updates =
-                PyModule::from_code(py, r#"print(__file__, __name__)"#, &format!("{}.py", self.name), &self.name)?;
+                PyModule::from_code(py, &self.code, &format!("{}.py", self.name), &self.name)?;
             let mut tmp = GraphUpdate::default();
             Ok(tmp)
         })
@@ -44,6 +50,7 @@ mod tests {
     fn run_dummy_importer() {
         let importer = PythonImporter {
             name: "DummyImporter".to_string(),
+            code: String::from_utf8_lossy(&Scripts::get("DummyImporter.py").unwrap().data).to_string(),
         };
         let props = BTreeMap::default();
         let path = tempfile::NamedTempFile::new().unwrap();
