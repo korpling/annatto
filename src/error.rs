@@ -2,6 +2,7 @@ use std::{path::PathBuf, sync::mpsc::SendError};
 
 use graphannis::errors::GraphAnnisError;
 use graphannis_core::errors::GraphAnnisCoreError;
+use pyo3::{exceptions::PyOSError, PyErr};
 use thiserror::Error;
 
 use crate::workflow::StatusMessage;
@@ -65,5 +66,11 @@ impl<T> From<std::sync::PoisonError<T>> for PepperError {
 impl From<SendError<StatusMessage>> for PepperError {
     fn from(e: SendError<StatusMessage>) -> Self {
         PepperError::SendingStatusMessageFailed(e.to_string())
+    }
+}
+
+impl From<PepperError> for PyErr {
+    fn from(e: PepperError) -> Self {
+        PyOSError::new_err(e.to_string())
     }
 }

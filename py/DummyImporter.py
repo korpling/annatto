@@ -1,2 +1,7 @@
+import graph
+from graph import GraphUpdate
+
 def start_import():
-    return "Called module " + __name__ + " from file " + __file__
+    u = GraphUpdate()
+    u.add_node("test-corpus", "corpus")
+    return u

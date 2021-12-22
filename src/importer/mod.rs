@@ -2,7 +2,6 @@
 
 pub mod graphml;
 
-
 use crate::{workflow::StatusSender, Module, StepID};
 use graphannis::update::GraphUpdate;
 use std::{collections::BTreeMap, path::Path};
