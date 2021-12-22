@@ -1,5 +1,5 @@
 use graphannis::update::GraphUpdate;
-use j4rs::{Instance, InvocationArg, Jvm};
+use j4rs::{InvocationArg, Jvm};
 use rayon::prelude::*;
 use std::{convert::TryFrom, path::PathBuf};
 
@@ -10,7 +10,7 @@ use crate::{
     Module,
 };
 
-use super::PepperPluginClasspath;
+use super::{prepare_mapper, salt::get_identifier, PepperPluginClasspath};
 
 pub struct JavaImporter {
     java_importer_qname: String,
@@ -18,15 +18,6 @@ pub struct JavaImporter {
     module_name: String,
     file_pattern: Option<String>,
     classpath: PepperPluginClasspath,
-}
-
-fn get_identifier(sdocument: &Instance, jvm: &Jvm) -> Result<Instance> {
-    let id = jvm.invoke(
-        &jvm.cast(sdocument, "org.corpus_tools.salt.graph.IdentifiableElement")?,
-        "getIdentifier",
-        &[],
-    )?;
-    Ok(id)
 }
 
 impl JavaImporter {
@@ -48,24 +39,14 @@ impl JavaImporter {
         Ok(importer)
     }
 
-    fn prepare_mapper(&self, mapper: &Instance, document: Instance, jvm: &Jvm) -> Result<()> {
-        // Create and set an empty property map
-        let props = jvm.create_instance(&self.java_properties_class, &[])?;
-        // TODO: set the property values from the importer in Java
-        jvm.invoke(mapper, "setProperties", &[InvocationArg::from(props)])?;
-
-        // Explicitly set the document object
-        jvm.invoke(&mapper, "setDocument", &[InvocationArg::from(document)])?;
-        Ok(())
-    }
-
     fn map_document(
         &self,
         file_path: PathBuf,
         document_id: &str,
+        properties: &std::collections::BTreeMap<String, String>,
         jvm: &Jvm,
     ) -> Result<GraphUpdate> {
-        // Create an instance of the Exmaralda importer
+        // Create an instance of the Java importer
         let importer = jvm.create_instance(&self.java_importer_qname, &[])?;
 
         // Create a new document object that will be mapped
@@ -109,14 +90,20 @@ impl JavaImporter {
 
         let sdocument_identifier = get_identifier(&sdocument, jvm)?;
 
-        // Get an instance of the Salt to Exmaralda mapper from the importer
+        // Get an instance of the mapper from the importer
         let mapper = jvm.invoke(
             &importer,
             "createPepperMapper",
             &[InvocationArg::from(sdocument_identifier)],
         )?;
 
-        self.prepare_mapper(&mapper, sdocument, jvm)?;
+        prepare_mapper(
+            &mapper,
+            sdocument,
+            &self.java_properties_class,
+            properties,
+            jvm,
+        )?;
 
         // Invoke the internal mapper
         let document_status = jvm.invoke(&mapper, "mapSDocument", &[])?;
@@ -135,7 +122,7 @@ impl JavaImporter {
         // Retrieve the reference to the created graph and map Salt to graph updates
         let document = jvm.invoke(&mapper, "getDocument", &[])?;
         let graph = jvm.invoke(&document, "getDocumentGraph", &[])?;
-        let u = super::mapping::convert_salt_document_graph(graph, document_id, jvm)?;
+        let u = super::salt::map_from::map_document_graph(graph, document_id, jvm)?;
         Ok(u)
     }
 }
@@ -150,7 +137,7 @@ impl Importer for JavaImporter {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
-        _properties: &std::collections::BTreeMap<String, String>,
+        properties: &std::collections::BTreeMap<String, String>,
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut updates = GraphUpdate::new();
@@ -175,7 +162,8 @@ impl Importer for JavaImporter {
             .into_par_iter()
             .map(|(file_path, document_name)| {
                 let jvm = self.classpath.create_jvm(false)?;
-                let updates_for_document = self.map_document(file_path, &document_name, &jvm)?;
+                let updates_for_document =
+                    self.map_document(file_path, &document_name, properties, &jvm)?;
                 reporter.worked(1)?;
                 Ok(updates_for_document)
             })
@@ -191,32 +179,5 @@ impl Importer for JavaImporter {
         reporter.worked(1)?;
 
         Ok(updates)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-
-    use std::{collections::BTreeMap, path::PathBuf};
-
-    use super::*;
-
-    #[test]
-    fn import_exb_corpus() {
-        let importer = JavaImporter::new(
-            "org.corpus_tools.peppermodules.exmaralda.EXMARaLDAImporter",
-            "org.corpus_tools.peppermodules.exmaralda.EXMARaLDAImporterProperties",
-            "EXMARaLDAImporter",
-            Some(".*\\.(exb|xml|xmi|exmaralda)$"),
-        )
-        .unwrap();
-        let properties: BTreeMap<String, String> = BTreeMap::new();
-        importer
-            .import_corpus(
-                &PathBuf::from("test-corpora/exb/rootCorpus"),
-                &properties,
-                None,
-            )
-            .unwrap();
     }
 }

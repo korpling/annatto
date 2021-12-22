@@ -1,22 +1,21 @@
 //! This module contains helper methods and structures to implement with legacy Java-based modules
-
 pub mod importer;
-pub mod mapping;
-pub mod saltxml;
+pub mod salt;
 
 use std::{
+    convert::TryFrom,
     io::Write,
     path::{Path, PathBuf},
 };
 
 use graphannis::update::{GraphUpdate, UpdateEvent};
-use j4rs::{ClasspathEntry, JavaOpt, Jvm};
+use j4rs::{ClasspathEntry, Instance, InvocationArg, JavaOpt, Jvm, Null};
 use regex::Regex;
 use rust_embed::RustEmbed;
 use tempfile::NamedTempFile;
 use walkdir::WalkDir;
 
-use crate::error::PepperError;
+use crate::error::Result;
 
 #[derive(RustEmbed)]
 #[folder = "$OUT_DIR/pepper/plugins/"]
@@ -27,7 +26,7 @@ pub struct PepperPluginClasspath {
 }
 
 impl PepperPluginClasspath {
-    pub fn new() -> Result<PepperPluginClasspath, PepperError> {
+    pub fn new() -> Result<PepperPluginClasspath> {
         // Get all plugin files and extract them to a temporary location
         let mut files = Vec::new();
         for jar_file in LegacyPluginFiles::iter() {
@@ -41,7 +40,7 @@ impl PepperPluginClasspath {
         Ok(PepperPluginClasspath { files })
     }
 
-    pub fn create_jvm(&self, debug: bool) -> Result<Jvm, PepperError> {
+    pub fn create_jvm(&self, debug: bool) -> Result<Jvm> {
         let classpath_strings: Vec<_> = self
             .files
             .iter()
@@ -82,7 +81,7 @@ pub fn import_corpus_structure(
     root_dir: &Path,
     file_pattern: Option<&str>,
     updates: &mut GraphUpdate,
-) -> Result<Vec<(PathBuf, String)>, PepperError> {
+) -> Result<Vec<(PathBuf, String)>> {
     // Compile pattern as regular expression
     let file_pattern: Option<Regex> = if let Some(file_pattern) = file_pattern {
         Some(Regex::new(file_pattern)?)
@@ -134,4 +133,60 @@ pub fn import_corpus_structure(
         }
     }
     Ok(result)
+}
+
+fn is_null(o: &Instance, jvm: &Jvm) -> Result<bool> {
+    let result = jvm.invoke_static(
+        "java.util.Objects",
+        "equals",
+        &[
+            InvocationArg::try_from(Null::Of("java.lang.Object"))?,
+            InvocationArg::from(jvm.chain(o)?.collect()),
+        ],
+    )?;
+    Ok(jvm.to_rust(result)?)
+}
+
+fn is_instance_of(object: &Instance, class_name: &str, jvm: &Jvm) -> Result<bool> {
+    let class_instance = jvm.invoke_static(
+        "java.lang.Class",
+        "forName",
+        &[InvocationArg::try_from(class_name)?],
+    )?;
+    let object_arg = InvocationArg::from(jvm.cast(object, "java.lang.Object")?);
+    let is_instance = jvm
+        .chain(&class_instance)?
+        .invoke("isInstance", &[object_arg])?
+        .to_rust()?;
+    Ok(is_instance)
+}
+
+fn prepare_mapper(
+    mapper: &Instance,
+    document: Instance,
+    java_properties_class: &str,
+    properties: &std::collections::BTreeMap<String, String>,
+    jvm: &Jvm,
+) -> Result<()> {
+    // Create and set an empty property map
+    let props = jvm.create_instance(java_properties_class, &[])?;
+
+    // Add all property values for the mapper
+    for (key, value) in properties {
+        jvm.invoke(
+            &props,
+            "setProperties",
+            &[
+                InvocationArg::try_from(key)?,
+                InvocationArg::try_from(value)?,
+            ],
+        )?;
+    }
+
+    // Set the property object for the mapper
+    jvm.invoke(mapper, "setProperties", &[InvocationArg::from(props)])?;
+
+    // Explicitly set the document object
+    jvm.invoke(mapper, "setDocument", &[InvocationArg::from(document)])?;
+    Ok(())
 }

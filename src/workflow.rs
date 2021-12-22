@@ -97,18 +97,12 @@ impl TryFrom<File> for Workflow {
                         match name.local_name.as_str() {
                             ELEM_IMPORTER => {
                                 mod_name = attr.remove(ATT_NAME);
-                                path = match attr.remove(ATT_PATH) {
-                                    Some(s) => Some(PathBuf::from(s)),
-                                    None => None,
-                                };
+                                path = attr.remove(ATT_PATH).map(PathBuf::from);
                             }
                             ELEM_MANIPULATOR => mod_name = attr.remove(ATT_NAME),
                             ELEM_EXPORTER => {
                                 mod_name = attr.remove(ATT_NAME);
-                                path = match attr.remove(ATT_PATH) {
-                                    Some(s) => Some(PathBuf::from(s)),
-                                    None => None,
-                                };
+                                path = attr.remove(ATT_PATH).map(PathBuf::from);
                             }
                             ELEM_PROPERTY => key = attr.remove(ATT_KEY),
                             _ => continue,
@@ -350,7 +344,7 @@ impl Workflow {
         tx: Option<StatusSender>,
     ) -> Result<()> {
         step.module
-            .export_corpus(&g, &step.properties, &step.corpus_path, tx.clone())
+            .export_corpus(g, &step.properties, &step.corpus_path, tx.clone())
             .map_err(|reason| PepperError::Export {
                 reason: reason.to_string(),
                 exporter: step.module.module_name().to_string(),

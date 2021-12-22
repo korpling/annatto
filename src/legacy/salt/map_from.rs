@@ -1,71 +1,72 @@
 use crate::error::Result;
 use graphannis::update::{GraphUpdate, UpdateEvent};
-use j4rs::{Instance, InvocationArg, Jvm, Null};
-use std::{collections::BTreeSet, convert::TryFrom};
+use j4rs::{Instance, InvocationArg, Jvm};
 
-fn is_null(o: &Instance, jvm: &Jvm) -> Result<bool> {
-    let result = jvm.invoke_static(
-        "java.util.Objects",
-        "equals",
-        &[
-            InvocationArg::try_from(Null::Of("java.lang.Object"))?,
-            InvocationArg::from(jvm.chain(o)?.collect()),
-        ],
-    )?;
-    Ok(jvm.to_rust(result)?)
-}
+use super::{
+    super::salt::{get_relation_layer_names, get_text_for_token, node_name},
+    is_instance_of, is_null,
+};
 
-fn is_instance_of(object: &Instance, class_name: &str, jvm: &Jvm) -> Result<bool> {
-    let class_instance = jvm.invoke_static(
-        "java.lang.Class",
-        "forName",
-        &[InvocationArg::try_from(class_name)?],
-    )?;
-    let object_arg = InvocationArg::from(jvm.cast(object, "java.lang.Object")?);
-    let is_instance = jvm
-        .chain(&class_instance)?
-        .invoke("isInstance", &[object_arg])?
-        .to_rust()?;
-    Ok(is_instance)
-}
+pub fn map_document_graph(g: Instance, document_id: &str, jvm: &Jvm) -> Result<GraphUpdate> {
+    let mut u = GraphUpdate::default();
 
-fn node_name(node: &Instance, document_id: &str, jvm: &Jvm) -> Result<String> {
-    let fragment: String = jvm
-        .chain(&jvm.cast(node, "org.corpus_tools.salt.core.SPathElement")?)?
-        .invoke("getPath", &[])?
-        .invoke("fragment", &[])?
-        .to_rust()?;
-
-    if document_id.is_empty() {
-        Ok(fragment)
-    } else {
-        let mut result = String::default();
-        result.push_str(document_id);
-        result.push('#');
-        result.push_str(&fragment);
-        Ok(result)
-    }
-}
-
-fn get_text_for_token(token: &Instance, jvm: &Jvm) -> Result<Option<Instance>> {
-    // Get all outgoing edges and return the text connected to the first STextualRelation
-    let out_relations: Instance = jvm
-        .chain(&jvm.cast(&token, "org.corpus_tools.salt.core.SNode")?)?
-        .invoke("getOutRelations", &[])?
+    // add all nodes and their annotations
+    let nodes_iterator: Instance = jvm
+        .chain(&jvm.cast(&g, "org.corpus_tools.salt.graph.Graph")?)?
+        .invoke("getNodes", &[])?
         .invoke("iterator", &[])?
         .collect();
-    while jvm.to_rust::<bool>(jvm.invoke(&out_relations, "hasNext", &[])?)? {
-        let rel = jvm.cast(
-            &jvm.invoke(&out_relations, "next", &[])?,
-            "org.corpus_tools.salt.core.SRelation",
-        )?;
-        let textrel_class_name = "org.corpus_tools.salt.common.STextualRelation";
-        let target_node = jvm.invoke(&rel, "getTarget", &[])?;
-        if !is_null(&target_node, jvm)? && is_instance_of(&rel, textrel_class_name, jvm)? {
-            return Ok(Some(target_node));
+    while jvm.to_rust::<bool>(jvm.invoke(&nodes_iterator, "hasNext", &[])?)? {
+        let node = jvm.invoke(&nodes_iterator, "next", &[])?;
+        add_node(node, document_id, &mut u, jvm)?;
+    }
+
+    // add ordering edges and special annis:tok label
+    add_token_information(&g, document_id, &mut u, jvm)?;
+
+    // TODO: map timeline
+
+    // add spanning, dominance and pointing relations
+    let spanning_relations_iterator: Instance = jvm
+        .chain(&g)?
+        .invoke("getSpanningRelations", &[])?
+        .invoke("iterator", &[])?
+        .collect();
+    while jvm.to_rust::<bool>(jvm.invoke(&spanning_relations_iterator, "hasNext", &[])?)? {
+        let relation = jvm.invoke(&spanning_relations_iterator, "next", &[])?;
+        add_relation(&relation, "Coverage", "", document_id, &mut u, jvm)?;
+    }
+    let dominance_relations: Instance = jvm
+        .chain(&g)?
+        .invoke("getDominanceRelations", &[])?
+        .invoke("iterator", &[])?
+        .collect();
+    while jvm.to_rust::<bool>(jvm.invoke(&dominance_relations, "hasNext", &[])?)? {
+        let relation = jvm.invoke(&dominance_relations, "next", &[])?;
+        for layer_name in get_relation_layer_names(&relation, jvm)? {
+            add_relation(
+                &relation,
+                "Dominance",
+                &layer_name,
+                document_id,
+                &mut u,
+                jvm,
+            )?;
         }
     }
-    Ok(None)
+    let pointing_relations_iterator: Instance = jvm
+        .chain(&g)?
+        .invoke("getPointingRelations", &[])?
+        .invoke("iterator", &[])?
+        .collect();
+    while jvm.to_rust::<bool>(jvm.invoke(&pointing_relations_iterator, "hasNext", &[])?)? {
+        let relation = jvm.invoke(&pointing_relations_iterator, "next", &[])?;
+        for layer_name in get_relation_layer_names(&relation, jvm)? {
+            add_relation(&relation, "Pointing", &layer_name, document_id, &mut u, jvm)?;
+        }
+    }
+
+    Ok(u)
 }
 
 fn add_node(n: Instance, document_id: &str, u: &mut GraphUpdate, jvm: &Jvm) -> Result<()> {
@@ -186,7 +187,7 @@ fn add_token_information(
     jvm: &Jvm,
 ) -> Result<()> {
     let sorted_token: Instance = jvm
-        .chain(&g)?
+        .chain(g)?
         .invoke("getSortedTokenByText", &[])?
         .invoke("iterator", &[])?
         .collect();
@@ -247,94 +248,4 @@ fn add_token_information(
         }
     }
     Ok(())
-}
-
-fn get_relation_layer_names(rel: &Instance, jvm: &Jvm) -> Result<BTreeSet<String>> {
-    let mut result = BTreeSet::new();
-
-    let layers = jvm.chain(rel)?.invoke("getLayers", &[])?.collect();
-    if !is_null(&layers, jvm)? {
-        let layers_iterator = jvm.chain(&layers)?.invoke("iterator", &[])?.collect();
-        while jvm.to_rust::<bool>(jvm.invoke(&layers_iterator, "hasNext", &[])?)? {
-            let layer_name = jvm
-                .chain(&layers_iterator)?
-                .invoke("next", &[])?
-                .invoke("getName", &[])?
-                .to_rust()?;
-            result.insert(layer_name);
-        }
-    }
-
-    if result.is_empty() {
-        //  add the edge to the default empty layer
-        result.insert("".to_string());
-    }
-
-    Ok(result)
-}
-
-pub fn convert_salt_document_graph(
-    g: Instance,
-    document_id: &str,
-    jvm: &Jvm,
-) -> Result<GraphUpdate> {
-    let mut u = GraphUpdate::default();
-
-    // add all nodes and their annotations
-    let nodes_iterator: Instance = jvm
-        .chain(&jvm.cast(&g, "org.corpus_tools.salt.graph.Graph")?)?
-        .invoke("getNodes", &[])?
-        .invoke("iterator", &[])?
-        .collect();
-    while jvm.to_rust::<bool>(jvm.invoke(&nodes_iterator, "hasNext", &[])?)? {
-        let node = jvm.invoke(&nodes_iterator, "next", &[])?;
-        add_node(node, document_id, &mut u, jvm)?;
-    }
-
-    // add ordering edges and special annis:tok label
-    add_token_information(&g, document_id, &mut u, jvm)?;
-
-    // TODO: map timeline
-
-    // add spanning, dominance and pointing relations
-    let spanning_relations_iterator: Instance = jvm
-        .chain(&g)?
-        .invoke("getSpanningRelations", &[])?
-        .invoke("iterator", &[])?
-        .collect();
-    while jvm.to_rust::<bool>(jvm.invoke(&spanning_relations_iterator, "hasNext", &[])?)? {
-        let relation = jvm.invoke(&spanning_relations_iterator, "next", &[])?;
-        add_relation(&relation, "Coverage", "", document_id, &mut u, jvm)?;
-    }
-    let dominance_relations: Instance = jvm
-        .chain(&g)?
-        .invoke("getDominanceRelations", &[])?
-        .invoke("iterator", &[])?
-        .collect();
-    while jvm.to_rust::<bool>(jvm.invoke(&dominance_relations, "hasNext", &[])?)? {
-        let relation = jvm.invoke(&dominance_relations, "next", &[])?;
-        for layer_name in get_relation_layer_names(&relation, jvm)? {
-            add_relation(
-                &relation,
-                "Dominance",
-                &layer_name,
-                document_id,
-                &mut u,
-                jvm,
-            )?;
-        }
-    }
-    let pointing_relations_iterator: Instance = jvm
-        .chain(&g)?
-        .invoke("getPointingRelations", &[])?
-        .invoke("iterator", &[])?
-        .collect();
-    while jvm.to_rust::<bool>(jvm.invoke(&pointing_relations_iterator, "hasNext", &[])?)? {
-        let relation = jvm.invoke(&pointing_relations_iterator, "next", &[])?;
-        for layer_name in get_relation_layer_names(&relation, jvm)? {
-            add_relation(&relation, "Pointing", &layer_name, document_id, &mut u, jvm)?;
-        }
-    }
-
-    Ok(u)
 }
