@@ -187,7 +187,7 @@ fn add_token_information(
     jvm: &Jvm,
 ) -> Result<()> {
     let sorted_token: Instance = jvm
-        .chain(&g)?
+        .chain(g)?
         .invoke("getSortedTokenByText", &[])?
         .invoke("iterator", &[])?
         .collect();
