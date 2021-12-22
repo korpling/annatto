@@ -22,9 +22,12 @@ fn graphannis(py: Python, m: &PyModule) -> PyResult<()> {
 
     // Automatically add the parent graphannis module to the execution environment
     // https://github.com/PyO3/pyo3/issues/759#issuecomment-977835119
-    py.import("sys")?.getattr("modules")?.set_item("graphannis", m)?;
-    py.import("sys")?.getattr("modules")?.set_item("graphannis.graph", graph_module)?;
-    
+    py.import("sys")?
+        .getattr("modules")?
+        .set_item("graphannis", m)?;
+    py.import("sys")?
+        .getattr("modules")?
+        .set_item("graphannis.graph", graph_module)?;
 
     Ok(())
 }
@@ -44,7 +47,8 @@ impl Importer for PythonImporter {
         Python::with_gil(|py| {
             wrap_pymodule!(graphannis)(py);
 
-            let code_module = PyModule::from_code(py, &self.code, &format!("{}.py", &self.name), &self.name)?;
+            let code_module =
+                PyModule::from_code(py, &self.code, &format!("{}.py", &self.name), &self.name)?;
 
             let result = code_module.getattr("start_import")?.call1(())?;
             dbg!(result);
