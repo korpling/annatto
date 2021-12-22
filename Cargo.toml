@@ -26,6 +26,3 @@ smartstring = "0.2"
 [build-dependencies]
 cached-path = "0.4"
 zip = "0.5"
-
-[dev-dependencies]
-file_diff = "1"
