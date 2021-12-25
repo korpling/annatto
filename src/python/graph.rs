@@ -1,11 +1,14 @@
+use std::sync::{Arc, Mutex};
+
 use graphannis::update::{GraphUpdate as GraphAnnoUpdate, UpdateEvent};
 use pyo3::prelude::*;
 
 use crate::error::PepperError;
 
 #[pyclass]
+#[derive(Clone)]
 pub struct GraphUpdate {
-    pub u: GraphAnnoUpdate,
+    pub u: Arc<Mutex<GraphAnnoUpdate>>,
 }
 
 #[pymethods]
@@ -13,13 +16,15 @@ impl GraphUpdate {
     #[new]
     fn new() -> Self {
         GraphUpdate {
-            u: GraphAnnoUpdate::default(),
+            u: Arc::from(Mutex::from(GraphAnnoUpdate::default())),
         }
     }
 
     #[args(node_type = "\"node\"")]
     fn add_node(&mut self, node_name: &str, node_type: &str) -> PyResult<()> {
         self.u
+            .lock()
+            .unwrap()
             .add_event(UpdateEvent::AddNode {
                 node_name: node_name.to_string(),
                 node_type: node_type.to_string(),
@@ -30,6 +35,8 @@ impl GraphUpdate {
 
     fn delete_node(&mut self, node_name: &str) -> PyResult<()> {
         self.u
+            .lock()
+            .unwrap()
             .add_event(UpdateEvent::DeleteNode {
                 node_name: node_name.to_string(),
             })
@@ -45,6 +52,8 @@ impl GraphUpdate {
         anno_value: &str,
     ) -> PyResult<()> {
         self.u
+            .lock()
+            .unwrap()
             .add_event(UpdateEvent::AddNodeLabel {
                 node_name: node_name.to_string(),
                 anno_ns: anno_ns.to_string(),
@@ -62,6 +71,8 @@ impl GraphUpdate {
         anno_name: &str,
     ) -> PyResult<()> {
         self.u
+            .lock()
+            .unwrap()
             .add_event(UpdateEvent::DeleteNodeLabel {
                 node_name: node_name.to_string(),
                 anno_ns: anno_ns.to_string(),
@@ -80,6 +91,8 @@ impl GraphUpdate {
         component_name: &str,
     ) -> PyResult<()> {
         self.u
+            .lock()
+            .unwrap()
             .add_event(UpdateEvent::AddEdge {
                 source_node: source_node.to_string(),
                 target_node: target_node.to_string(),
@@ -100,6 +113,8 @@ impl GraphUpdate {
         component_name: &str,
     ) -> PyResult<()> {
         self.u
+            .lock()
+            .unwrap()
             .add_event(UpdateEvent::DeleteEdge {
                 source_node: source_node.to_string(),
                 target_node: target_node.to_string(),
@@ -123,6 +138,8 @@ impl GraphUpdate {
         anno_value: &str,
     ) -> PyResult<()> {
         self.u
+            .lock()
+            .unwrap()
             .add_event(UpdateEvent::AddEdgeLabel {
                 source_node: source_node.to_string(),
                 target_node: target_node.to_string(),
@@ -148,6 +165,8 @@ impl GraphUpdate {
         anno_name: &str,
     ) -> PyResult<()> {
         self.u
+            .lock()
+            .unwrap()
             .add_event(UpdateEvent::DeleteEdgeLabel {
                 source_node: source_node.to_string(),
                 target_node: target_node.to_string(),

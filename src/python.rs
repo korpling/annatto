@@ -2,7 +2,9 @@
 
 mod graph;
 
-use crate::{importer::Importer, Module};
+use std::sync::Arc;
+
+use crate::{error::PepperError, importer::Importer, Module};
 use pyo3::{prelude::*, types::PyModule, wrap_pymodule};
 use rust_embed::RustEmbed;
 
@@ -38,7 +40,7 @@ pub struct PythonImporter {
 impl Importer for PythonImporter {
     fn import_corpus(
         &self,
-        _input_path: &std::path::Path,
+        input_path: &std::path::Path,
         _properties: &std::collections::BTreeMap<String, String>,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
@@ -47,9 +49,17 @@ impl Importer for PythonImporter {
             let code_module =
                 PyModule::from_code(py, &self.code, &format!("{}.py", &self.name), &self.name)?;
 
-            let result = code_module.getattr("start_import")?.call1(())?;
-            dbg!(result);
-            Ok(graphannis::update::GraphUpdate::default())
+            let result: graph::GraphUpdate =
+                code_module.getattr("start_import")?.call1(())?.extract()?;
+            let result = Arc::try_unwrap(result.u)
+                .map_err(|_| PepperError::Import {
+                    reason: "The Python object containing the import result had multiple owners."
+                        .to_string(),
+                    importer: self.name.to_string(),
+                    path: input_path.to_path_buf(),
+                })?
+                .into_inner()?;
+            Ok(result)
         })
     }
 }
