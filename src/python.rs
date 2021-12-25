@@ -6,8 +6,6 @@ use crate::{importer::Importer, Module};
 use pyo3::{prelude::*, types::PyModule, wrap_pymodule};
 use rust_embed::RustEmbed;
 
-use self::graph::GraphUpdate;
-
 #[derive(RustEmbed)]
 #[folder = "py"]
 struct Scripts;
@@ -17,7 +15,7 @@ struct Scripts;
 #[pymodule]
 fn graphannis(py: Python, m: &PyModule) -> PyResult<()> {
     let graph_module = PyModule::new(py, "graph")?;
-    graph_module.add_class::<GraphUpdate>()?;
+    graph_module.add_class::<graph::GraphUpdate>()?;
     m.add_submodule(graph_module)?;
 
     // Automatically add the parent graphannis module to the execution environment
@@ -46,7 +44,6 @@ impl Importer for PythonImporter {
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         Python::with_gil(|py| {
             wrap_pymodule!(graphannis)(py);
-
             let code_module =
                 PyModule::from_code(py, &self.code, &format!("{}.py", &self.name), &self.name)?;
 
@@ -68,6 +65,9 @@ mod tests {
 
     use std::collections::BTreeMap;
 
+    use graphannis::AnnotationGraph;
+    use graphannis_core::annostorage::ValueSearch;
+
     use super::*;
 
     #[test]
@@ -80,6 +80,15 @@ mod tests {
         let props = BTreeMap::default();
         let path = tempfile::NamedTempFile::new().unwrap();
 
-        importer.import_corpus(path.path(), &props, None).unwrap();
+        let mut u = importer.import_corpus(path.path(), &props, None).unwrap();
+        let mut g = AnnotationGraph::new(false).unwrap();
+        g.apply_update(&mut u, |_| {}).unwrap();
+
+        // Test that the example graph has been created
+        let token: Vec<_> = g
+            .get_node_annos()
+            .exact_anno_search(Some("annis"), "tok", ValueSearch::Any)
+            .collect();
+        assert_eq!(5, token.len())
     }
 }

@@ -5,7 +5,7 @@ use crate::error::PepperError;
 
 #[pyclass]
 pub struct GraphUpdate {
-    u: GraphAnnoUpdate,
+    pub u: GraphAnnoUpdate,
 }
 
 #[pymethods]
