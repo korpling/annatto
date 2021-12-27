@@ -44,23 +44,28 @@ impl Importer for PythonImporter {
         _properties: &std::collections::BTreeMap<String, String>,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        Python::with_gil(|py| {
+        let u: PyResult<_> = Python::with_gil(|py| {
             wrap_pymodule!(graphannis)(py);
+
             let code_module =
                 PyModule::from_code(py, &self.code, &format!("{}.py", &self.name), &self.name)?;
 
             let result: graph::GraphUpdate =
                 code_module.getattr("start_import")?.call1(())?.extract()?;
-            let result = Arc::try_unwrap(result.u)
-                .map_err(|_| PepperError::Import {
-                    reason: "The Python object containing the import result had multiple owners."
-                        .to_string(),
-                    importer: self.name.to_string(),
-                    path: input_path.to_path_buf(),
-                })?
-                .into_inner()?;
-            Ok(result)
-        })
+
+            Ok(result.u)
+        });
+        let u = u?;
+
+        let result = Arc::try_unwrap(u)
+            .map_err(|_| PepperError::Import {
+                reason: "The Python object containing the import result had multiple owners."
+                    .to_string(),
+                importer: self.name.to_string(),
+                path: input_path.to_path_buf(),
+            })?
+            .into_inner()?;
+        Ok(result)
     }
 }
 
