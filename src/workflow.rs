@@ -71,9 +71,16 @@ fn into_hash_map(attributes: &[OwnedAttribute]) -> HashMap<String, String> {
     attr_map
 }
 
-impl TryFrom<File> for Workflow {
+impl TryFrom<PathBuf> for Workflow {
     type Error = PepperError;
-    fn try_from(f: File) -> Result<Workflow> {
+    fn try_from(workflow_file: PathBuf) -> Result<Workflow> {
+        let workflow_file = std::fs::canonicalize(workflow_file)?;
+        let f = File::open(&workflow_file).map_err(|reason| PepperError::OpenWorkflowFile {
+            reason,
+            file: workflow_file.clone(),
+        })?;
+        let workflow_dir = workflow_file.parent();
+
         let mut parser_cfg = ParserConfig::new();
         parser_cfg.trim_whitespace = true;
         let mut reader = EventReader::new_with_config(f, parser_cfg);
@@ -112,10 +119,16 @@ impl TryFrom<File> for Workflow {
                     XmlEvent::EndElement { name } => match name.local_name.as_str() {
                         ELEM_IMPORTER => {
                             if let Some(module_name) = mod_name {
-                                if let Some(path) = path {
+                                if let Some(mut corpus_path) = path {
+                                    if let Some(workflow_dir) = workflow_dir {
+                                        if corpus_path.is_relative() {
+                                            // Resolve the input path against the workflow file
+                                            corpus_path = workflow_dir.join(corpus_path);
+                                        }
+                                    }
                                     let step = ImporterStep {
                                         module: importer_by_name(&module_name)?,
-                                        corpus_path: path,
+                                        corpus_path,
                                         properties,
                                     };
                                     importers.push(step);
@@ -155,7 +168,13 @@ impl TryFrom<File> for Workflow {
                         }
                         ELEM_EXPORTER => {
                             if let Some(module_name) = mod_name {
-                                if let Some(corpus_path) = path {
+                                if let Some(mut corpus_path) = path {
+                                    if let Some(workflow_dir) = workflow_dir {
+                                        if corpus_path.is_relative() {
+                                            // Resolve the output path against the workflow file
+                                            corpus_path = workflow_dir.join(corpus_path);
+                                        }
+                                    }
                                     let desc = ExporterStep {
                                         module: exporter_by_name(&module_name)?,
                                         corpus_path,
@@ -242,14 +261,9 @@ impl TryFrom<File> for Workflow {
 /// * `workflow_file` - The XML workflow file.
 /// * `tx` - If supported by the caller, this is a sender object that allows to send [status updates](enum.StatusMessage.html) (like information messages, warnings and module progress) to the calling entity.
 pub fn execute_from_file(workflow_file: &Path, tx: Option<Sender<StatusMessage>>) -> Result<()> {
-    let f = File::open(workflow_file).map_err(|reason| PepperError::OpenWorkflowFile {
-        reason,
-        file: workflow_file.to_path_buf(),
-    })?;
-    match Workflow::try_from(f) {
-        Ok(wf) => wf.execute(tx),
-        Err(e) => Err(e),
-    }
+    let wf = Workflow::try_from(workflow_file.to_path_buf())?;
+    wf.execute(tx)?;
+    Ok(())
 }
 
 pub type StatusSender = Sender<StatusMessage>;
