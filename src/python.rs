@@ -32,6 +32,8 @@ fn graphannis(py: Python, m: &PyModule) -> PyResult<()> {
     Ok(())
 }
 
+include!{"../pyembedded/default_python_config.rs"}
+
 pub struct PythonImporter {
     name: String,
     code: String,
@@ -44,7 +46,10 @@ impl Importer for PythonImporter {
         _properties: &std::collections::BTreeMap<String, String>,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let u: PyResult<_> = Python::with_gil(|py| {
+
+        let python_interpreter = pyembed::MainPythonInterpreter::new(default_python_config())?;
+       
+        let u: PyResult<_> = python_interpreter.with_gil(|py| {
             wrap_pymodule!(graphannis)(py);
 
             let code_module =
