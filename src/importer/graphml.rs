@@ -288,7 +288,8 @@ impl Importer for GraphMLImporter {
         reporter.worked(1)?;
         // Append all edges updates after the node updates:
         // edges would not be added if the nodes they are referring do not exist
-        for (_, event) in edge_updates.iter()? {
+        for u in edge_updates.iter()? {
+            let (_, event) = u?;
             updates.add_event(event)?;
         }
         reporter.worked(1)?;
