@@ -45,6 +45,8 @@ pub enum PepperError {
     SendingStatusMessageFailed(String),
     #[error("XML error: {0}")]
     XML(#[from] quick_xml::Error),
+    #[error("XML Attribute error: {0}")]
+    XMLAttr(#[from] quick_xml::events::attributes::AttrError),
     #[error(transparent)]
     Regex(#[from] regex::Error),
     #[error("Invalid (poisoned) lock")]
