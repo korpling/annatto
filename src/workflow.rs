@@ -8,7 +8,7 @@ use std::{
 use graphannis::{update::GraphUpdate, AnnotationGraph};
 
 use crate::{
-    error::PepperError, error::Result, exporter_by_name, importer_by_name, manipulator_by_name,
+    error::AnnattoError, error::Result, exporter_by_name, importer_by_name, manipulator_by_name,
     ExporterStep, ImporterStep, ManipulatorStep, Step, StepID,
 };
 use rayon::prelude::*;
@@ -34,7 +34,7 @@ pub enum StatusMessage {
     /// Indicates a step has finished.
     StepDone { id: StepID },
     /// Send when some error occurred in the pipeline. Any error will stop the conversion.
-    Failed(PepperError),
+    Failed(AnnattoError),
 }
 
 /// A workflow describes the steps in the conversion pipeline process. It can be represented as XML file.
@@ -72,10 +72,10 @@ fn into_hash_map(attributes: &[OwnedAttribute]) -> HashMap<String, String> {
 }
 
 impl TryFrom<PathBuf> for Workflow {
-    type Error = PepperError;
+    type Error = AnnattoError;
     fn try_from(workflow_file: PathBuf) -> Result<Workflow> {
         let workflow_file = std::fs::canonicalize(workflow_file)?;
-        let f = File::open(&workflow_file).map_err(|reason| PepperError::OpenWorkflowFile {
+        let f = File::open(&workflow_file).map_err(|reason| AnnattoError::OpenWorkflowFile {
             reason,
             file: workflow_file.clone(),
         })?;
@@ -133,13 +133,13 @@ impl TryFrom<PathBuf> for Workflow {
                                     };
                                     importers.push(step);
                                 } else {
-                                    return Err(PepperError::ReadWorkflowFile(format!(
+                                    return Err(AnnattoError::ReadWorkflowFile(format!(
                                         "Corpus path not specified for importer: {}",
                                         module_name
                                     )));
                                 }
                             } else {
-                                return Err(PepperError::ReadWorkflowFile(String::from(
+                                return Err(AnnattoError::ReadWorkflowFile(String::from(
                                     "Name of importer not specified.",
                                 )));
                             }
@@ -157,7 +157,7 @@ impl TryFrom<PathBuf> for Workflow {
                                 };
                                 manipulators.push(step);
                             } else {
-                                return Err(PepperError::ReadWorkflowFile(String::from(
+                                return Err(AnnattoError::ReadWorkflowFile(String::from(
                                     "Name of manipulator not specified.",
                                 )));
                             }
@@ -182,13 +182,13 @@ impl TryFrom<PathBuf> for Workflow {
                                     };
                                     exporters.push(desc);
                                 } else {
-                                    return Err(PepperError::ReadWorkflowFile(format!(
+                                    return Err(AnnattoError::ReadWorkflowFile(format!(
                                         "Corpus path not specified for exporter: {}",
                                         module_name
                                     )));
                                 }
                             } else {
-                                return Err(PepperError::ReadWorkflowFile(String::from(
+                                return Err(AnnattoError::ReadWorkflowFile(String::from(
                                     "Name of exporter not specified.",
                                 )));
                             }
@@ -200,12 +200,12 @@ impl TryFrom<PathBuf> for Workflow {
                         }
                         ELEM_PROPERTY => {
                             if key.is_none() {
-                                return Err(PepperError::ReadWorkflowFile(String::from(
+                                return Err(AnnattoError::ReadWorkflowFile(String::from(
                                     "Property's key not specified.",
                                 )));
                             }
                             if value.is_none() {
-                                return Err(PepperError::ReadWorkflowFile(format!(
+                                return Err(AnnattoError::ReadWorkflowFile(format!(
                                     "Value for property `{}` not specified.",
                                     (&key).as_ref().unwrap()
                                 )));
@@ -219,7 +219,7 @@ impl TryFrom<PathBuf> for Workflow {
                     _ => continue,
                 },
                 Err(e) => {
-                    return Err(PepperError::ReadWorkflowFile(format!(
+                    return Err(AnnattoError::ReadWorkflowFile(format!(
                         "Parsing error\n{:?}",
                         e
                     )))
@@ -236,24 +236,24 @@ impl TryFrom<PathBuf> for Workflow {
 
 /// Executes a workflow from an XML file.
 ///
-/// Such a file has the root element `pepper-job` and contains entries for importers, exporters and manipulators.
+/// Such a file has the root element `annatto-job` and contains entries for importers, exporters and manipulators.
 /// Each of this modules have an attribute with their input/output path (except manipulators) and the module name.
 /// They can also contain `property` child elements which key-value string properties.
 ///
 /// ```xml
 /// <?xml version='1.0' encoding='UTF-8'?>
-/// <pepper-job>
+/// <annatto-job>
 ///     <importer name="WebannoTSVImporter" path="./tsv/SomeCorpus/">
 ///     </importer>
 ///     <importer name="TextImporter" path="./meta/SomeCorpus/">
-///             <property key="pepper.before.readMeta">meta</property>
+///             <property key="readMeta">meta</property>
 ///     </importer>
 ///     <manipulator name="Merger">
 ///     <property key="firstAsBase">true</property>
 ///     </manipulator>
 ///     <exporter name="ANNISExporter" path="./annis/">
 ///     </exporter>
-/// </pepper-job>
+/// </annatto-job>
 /// ```
 ///
 /// # Arguments
@@ -286,7 +286,7 @@ impl Workflow {
 
         // Create a new empty annotation graph
         let mut g =
-            AnnotationGraph::new(true).map_err(|e| PepperError::CreateGraph(e.to_string()))?;
+            AnnotationGraph::new(true).map_err(|e| AnnattoError::CreateGraph(e.to_string()))?;
 
         // Execute all importers and store their graph updates in parallel
         let updates: Result<Vec<GraphUpdate>> = self
@@ -299,14 +299,14 @@ impl Workflow {
         // Apply each graph update
         for mut u in updates? {
             g.apply_update(&mut u, |_msg| {})
-                .map_err(|reason| PepperError::UpdateGraph(reason.to_string()))?;
+                .map_err(|reason| AnnattoError::UpdateGraph(reason.to_string()))?;
         }
 
         // Execute all manipulators in sequence
         for desc in self.manipulator.iter() {
             desc.module
                 .manipulate_corpus(&mut g, &desc.properties, tx.clone())
-                .map_err(|reason| PepperError::Manipulator {
+                .map_err(|reason| AnnattoError::Manipulator {
                     reason: reason.to_string(),
                     manipulator: desc.module.module_name().to_string(),
                 })?;
@@ -338,7 +338,7 @@ impl Workflow {
         let updates = step
             .module
             .import_corpus(&step.corpus_path, &step.properties, tx.clone())
-            .map_err(|reason| PepperError::Import {
+            .map_err(|reason| AnnattoError::Import {
                 reason: reason.to_string(),
                 importer: step.module.module_name().to_string(),
                 path: step.corpus_path.to_path_buf(),
@@ -359,7 +359,7 @@ impl Workflow {
     ) -> Result<()> {
         step.module
             .export_corpus(g, &step.properties, &step.corpus_path, tx.clone())
-            .map_err(|reason| PepperError::Export {
+            .map_err(|reason| AnnattoError::Export {
                 reason: reason.to_string(),
                 exporter: step.module.module_name().to_string(),
                 path: step.corpus_path.clone(),

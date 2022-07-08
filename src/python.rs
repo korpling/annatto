@@ -4,7 +4,7 @@ mod graph;
 
 use std::sync::Arc;
 
-use crate::{error::PepperError, importer::Importer, Module};
+use crate::{error::AnnattoError, importer::Importer, Module};
 use pyo3::{prelude::*, types::PyModule, wrap_pymodule};
 use rust_embed::RustEmbed;
 
@@ -13,7 +13,7 @@ use rust_embed::RustEmbed;
 struct Scripts;
 
 /// Construct a graphannis module that is compatible with the graphANNIS Python API.
-/// This allows us to use classes like the GraphUpdate in Pepper modules.
+/// This allows us to use classes like the GraphUpdate in Annatto modules.
 #[pymodule]
 fn graphannis(py: Python, m: &PyModule) -> PyResult<()> {
     let graph_module = PyModule::new(py, "graph")?;
@@ -63,7 +63,7 @@ impl Importer for PythonImporter {
         let u = u?;
 
         let result = Arc::try_unwrap(u)
-            .map_err(|_| PepperError::Import {
+            .map_err(|_| AnnattoError::Import {
                 reason: "The Python object containing the import result had multiple owners."
                     .to_string(),
                 importer: self.name.to_string(),

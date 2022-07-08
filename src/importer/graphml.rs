@@ -18,7 +18,7 @@ use graphannis::{
 };
 
 use crate::{
-    error::PepperError, importer::Importer, progress::ProgressReporter, workflow::StatusSender,
+    error::AnnattoError, importer::Importer, progress::ProgressReporter, workflow::StatusSender,
     Module,
 };
 
@@ -28,7 +28,7 @@ fn add_node(
     node_updates: &mut GraphUpdate,
     current_node_id: &Option<String>,
     data: &mut HashMap<AnnoKey, String>,
-) -> Result<(), PepperError> {
+) -> Result<(), AnnattoError> {
     if let Some(node_name) = current_node_id {
         // Insert graph update for node
         let node_type = data
@@ -57,7 +57,7 @@ fn add_edge(
     current_target_id: &Option<String>,
     current_component: &Option<String>,
     data: &mut HashMap<AnnoKey, String>,
-) -> Result<(), PepperError> {
+) -> Result<(), AnnattoError> {
     if let (Some(source), Some(target), Some(component)) =
         (current_source_id, current_target_id, current_component)
     {
@@ -92,7 +92,7 @@ fn add_edge(
 fn add_annotation_key(
     keys: &mut BTreeMap<String, AnnoKey>,
     attributes: Attributes,
-) -> Result<(), PepperError> {
+) -> Result<(), AnnattoError> {
     // resolve the ID to the fully qualified annotation name
     let mut id: Option<String> = None;
     let mut anno_key: Option<AnnoKey> = None;
@@ -127,7 +127,7 @@ fn read_graphml<R: std::io::BufRead>(
     input: &mut R,
     node_updates: &mut GraphUpdate,
     edge_updates: &mut GraphUpdate,
-) -> Result<Option<String>, PepperError> {
+) -> Result<Option<String>, AnnattoError> {
     let mut reader = Reader::from_reader(input);
     reader.expand_empty_elements(true);
 

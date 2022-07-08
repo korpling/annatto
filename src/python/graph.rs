@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use graphannis::update::{GraphUpdate as GraphAnnoUpdate, UpdateEvent};
 use pyo3::prelude::*;
 
-use crate::error::PepperError;
+use crate::error::AnnattoError;
 
 #[pyclass]
 #[derive(Clone)]
@@ -29,7 +29,7 @@ impl GraphUpdate {
                 node_name: node_name.to_string(),
                 node_type: node_type.to_string(),
             })
-            .map_err(PepperError::from)?;
+            .map_err(AnnattoError::from)?;
         Ok(())
     }
 
@@ -40,7 +40,7 @@ impl GraphUpdate {
             .add_event(UpdateEvent::DeleteNode {
                 node_name: node_name.to_string(),
             })
-            .map_err(PepperError::from)?;
+            .map_err(AnnattoError::from)?;
         Ok(())
     }
 
@@ -60,7 +60,7 @@ impl GraphUpdate {
                 anno_name: anno_name.to_string(),
                 anno_value: anno_value.to_string(),
             })
-            .map_err(PepperError::from)?;
+            .map_err(AnnattoError::from)?;
         Ok(())
     }
 
@@ -78,7 +78,7 @@ impl GraphUpdate {
                 anno_ns: anno_ns.to_string(),
                 anno_name: anno_name.to_string(),
             })
-            .map_err(PepperError::from)?;
+            .map_err(AnnattoError::from)?;
         Ok(())
     }
 
@@ -100,7 +100,7 @@ impl GraphUpdate {
                 component_type: component_type.to_string(),
                 component_name: component_name.to_string(),
             })
-            .map_err(PepperError::from)?;
+            .map_err(AnnattoError::from)?;
         Ok(())
     }
 
@@ -122,7 +122,7 @@ impl GraphUpdate {
                 component_type: component_type.to_string(),
                 component_name: component_name.to_string(),
             })
-            .map_err(PepperError::from)?;
+            .map_err(AnnattoError::from)?;
         Ok(())
     }
 
@@ -150,7 +150,7 @@ impl GraphUpdate {
                 anno_name: anno_name.to_string(),
                 anno_value: anno_value.to_string(),
             })
-            .map_err(PepperError::from)?;
+            .map_err(AnnattoError::from)?;
         Ok(())
     }
 
@@ -176,7 +176,7 @@ impl GraphUpdate {
                 anno_ns: anno_ns.to_string(),
                 anno_name: anno_name.to_string(),
             })
-            .map_err(PepperError::from)?;
+            .map_err(AnnattoError::from)?;
         Ok(())
     }
 }

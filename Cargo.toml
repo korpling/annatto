@@ -1,7 +1,7 @@
 [package]
-name = "pepper"
+name = "annatto"
 version = "0.1.0"
-authors = ["Thomas Krause <krauseto@hu-berlin.de>"]
+authors = ["Thomas Krause <thomas.krause@hu-berlin.de>", "Martin Klotz <>"]
 edition = "2018"
 license = "Apache-2.0"
 

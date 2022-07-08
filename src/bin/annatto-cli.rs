@@ -1,6 +1,6 @@
 use indicatif::{ProgressBar, ProgressStyle};
-use pepper::{
-    error::PepperError,
+use annatto::{
+    error::AnnattoError,
     workflow::{execute_from_file, StatusMessage},
     StepID,
 };
@@ -15,7 +15,7 @@ struct Cli {
     workflow_file: std::path::PathBuf,
 }
 
-pub fn main() -> Result<(), PepperError> {
+pub fn main() -> Result<(), AnnattoError> {
     let args = Cli::from_args();
 
     // Execute the conversion in the background and show the status to the user

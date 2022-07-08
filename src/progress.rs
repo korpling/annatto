@@ -1,4 +1,4 @@
-use crate::{error::PepperError, workflow::StatusMessage, workflow::StatusSender, Module, StepID};
+use crate::{error::AnnattoError, workflow::StatusMessage, workflow::StatusSender, Module, StepID};
 use log::{info, warn};
 use std::{
     path::Path,
@@ -22,7 +22,7 @@ impl ProgressReporter {
         module: &dyn Module,
         path: Option<&Path>,
         total_work: usize,
-    ) -> Result<ProgressReporter, PepperError> {
+    ) -> Result<ProgressReporter, AnnattoError> {
         let step_id = module.step_id(path);
         let state = ProgressState {
             tx,
@@ -38,7 +38,7 @@ impl ProgressReporter {
         Ok(reporter)
     }
 
-    pub fn info(&self, msg: &str) -> Result<(), PepperError> {
+    pub fn info(&self, msg: &str) -> Result<(), AnnattoError> {
         let state = self.state.lock()?;
         if let Some(ref tx) = (*state).tx {
             tx.send(StatusMessage::Info(msg.to_string()))?;
@@ -48,7 +48,7 @@ impl ProgressReporter {
         Ok(())
     }
 
-    pub fn warn(&self, msg: &str) -> Result<(), PepperError> {
+    pub fn warn(&self, msg: &str) -> Result<(), AnnattoError> {
         let state = self.state.lock()?;
         if let Some(ref tx) = (*state).tx {
             tx.send(StatusMessage::Warning(msg.to_string()))?;
@@ -58,7 +58,7 @@ impl ProgressReporter {
         Ok(())
     }
 
-    pub fn worked(&self, finished_work: usize) -> Result<(), PepperError> {
+    pub fn worked(&self, finished_work: usize) -> Result<(), AnnattoError> {
         let mut state = self.state.lock()?;
         (*state).accumulated_finished_work += finished_work;
 
