@@ -12,7 +12,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use error::{PepperError, Result};
+use error::{AnnattoError, Result};
 use exporter::Exporter;
 use importer::Importer;
 use manipulator::Manipulator;
@@ -22,7 +22,7 @@ pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
     match name {
         "GraphMLImporter" => Ok(Box::new(importer::graphml::GraphMLImporter::default())),
         "DoNothingImporter" => Ok(Box::new(importer::DoNothingImporter::default())),
-        _ => Err(PepperError::NoSuchModule(name.to_string())),
+        _ => Err(AnnattoError::NoSuchModule(name.to_string())),
     }
 }
 
@@ -30,7 +30,7 @@ pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
 pub fn manipulator_by_name(name: &str) -> Result<Box<dyn Manipulator>> {
     match name {
         "DoNothingManipulator" => Ok(Box::new(manipulator::DoNothingManipulator::default())),
-        _ => Err(PepperError::NoSuchModule(name.to_string())),
+        _ => Err(AnnattoError::NoSuchModule(name.to_string())),
     }
 }
 
@@ -39,7 +39,7 @@ pub fn exporter_by_name(name: &str) -> Result<Box<dyn Exporter>> {
     match name {
         "GraphMLExporter" => Ok(Box::new(exporter::graphml::GraphMLExporter::default())),
         "DoNothingExporter" => Ok(Box::new(exporter::DoNothingExporter::default())),
-        _ => Err(PepperError::NoSuchModule(name.to_string())),
+        _ => Err(AnnattoError::NoSuchModule(name.to_string())),
     }
 }
 

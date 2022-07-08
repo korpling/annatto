@@ -7,11 +7,11 @@ use thiserror::Error;
 
 use crate::workflow::StatusMessage;
 
-pub type Result<T> = std::result::Result<T, PepperError>;
+pub type Result<T> = std::result::Result<T, AnnattoError>;
 
 #[derive(Error, Debug)]
 #[non_exhaustive]
-pub enum PepperError {
+pub enum AnnattoError {
     #[error("Error during exporting corpus from {path} with {exporter:?}: {reason:?}")]
     Export {
         reason: String,
@@ -59,20 +59,20 @@ pub enum PepperError {
     Infallible(std::convert::Infallible),
 }
 
-impl<T> From<std::sync::PoisonError<T>> for PepperError {
+impl<T> From<std::sync::PoisonError<T>> for AnnattoError {
     fn from(_: std::sync::PoisonError<T>) -> Self {
-        PepperError::LockPoisoning
+        AnnattoError::LockPoisoning
     }
 }
 
-impl From<SendError<StatusMessage>> for PepperError {
+impl From<SendError<StatusMessage>> for AnnattoError {
     fn from(e: SendError<StatusMessage>) -> Self {
-        PepperError::SendingStatusMessageFailed(e.to_string())
+        AnnattoError::SendingStatusMessageFailed(e.to_string())
     }
 }
 
-impl From<PepperError> for PyErr {
-    fn from(e: PepperError) -> Self {
+impl From<AnnattoError> for PyErr {
+    fn from(e: AnnattoError) -> Self {
         PyOSError::new_err(e.to_string())
     }
 }

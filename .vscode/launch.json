@@ -7,16 +7,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in library 'pepper'",
+            "name": "Debug unit tests in library 'annatto'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
                     "--lib",
-                    "--package=pepper"
+                    "--package=annatto"
                 ],
                 "filter": {
-                    "name": "pepper",
+                    "name": "annatto",
                     "kind": "lib"
                 }
             },
@@ -26,15 +26,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'pepper-cli'",
+            "name": "Debug executable 'annatto-cli'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=pepper-cli",
-                    "--package=pepper"
+                    "--bin=annatto-cli",
+                    "--package=annatto"
                 ],
                 "filter": {
-                    "name": "pepper-cli",
+                    "name": "annatto-cli",
                     "kind": "bin"
                 }
             },
@@ -44,16 +44,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'pepper-cli'",
+            "name": "Debug unit tests in executable 'annatto-cli'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=pepper-cli",
-                    "--package=pepper"
+                    "--bin=annatto-cli",
+                    "--package=annatto"
                 ],
                 "filter": {
-                    "name": "pepper-cli",
+                    "name": "annatto-cli",
                     "kind": "bin"
                 }
             },

@@ -1,4 +1,0 @@
-<pepper-job>
-    <importer name="EXMARaLDAImporter" path="./exb/rootCorpus"></importer>
-    <exporter name="GraphMLExporter" path="./rootCorpus.graphml"></exporter>
-</pepper-job>
