@@ -1,15 +1,16 @@
-# Experimental prototype of how a Pepper implementation in Rust could look like
+# Annatto
 
-This prototype is meant to research new Pepper implementations and not meant to be used by end-users.
-It will use the graphANNIS data model and storage instead of Salt and uses Rust to implement the basic workflow framework.
+This software aims to test and convert data within the [RUEG](https://hu.berlin/rueg)
+research group at Humboldt-Universität zu Berlin. Tests aim at 
+continuouly evaluating the state of the [RUEG corpus data](https://zenodo.org/record/3236068)
+to early identify issues regarding compatibility, consistency, and 
+integrity to facilitate data handling with regard to annotation, releases
+and integration. 
 
-Ideas what could be included are e.g.
-- ✓ import in parallel by importers producing graph updates
-- ✓ manipulate non-parallel
-- ✓ call all exporters in parallel
-- ✓ adding the GraphML importer and exporter from graphANNIS
-- adding the relANNIS importer from graphANNIS
-- allow to execute Python3.0 scripts as modules
+For efficiency annatto relies on the [graphannis representation](https://korpling.github.io/graphANNIS/docs/v2.2/data-model.html)
+and already provides a basic set of data handling modules. The set of 
+modules can be extended by the user through custom python scripts to 
+adapt the data handling workflow(s) easily.
 
 ## Building
 
