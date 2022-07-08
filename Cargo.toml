@@ -6,23 +6,18 @@ edition = "2018"
 license = "Apache-2.0"
 
 [dependencies]
-graphannis = "0.31"
-graphannis-core = "0.31"
+graphannis = "2.2"
+graphannis-core = "2.2"
 structopt = "0.3"
 thiserror = "1.0"
 rayon = "1.1"
 xml-rs = "0.8"
-indicatif = "0.15"
-quick-xml = "0.20"
+indicatif = "0.16"
+quick-xml = "0.23"
 anyhow = "1.0"
 log = "0.4"
-walkdir = "2"
 regex = "1.4"
 tempfile = "3"
-rust-embed= {version="5.6.0", features=["compression", "interpolate-folder-path"]}
-j4rs = "0.13"
-smartstring = "0.2"
-
-[build-dependencies]
-cached-path = "0.4"
-zip = "0.5"
+rust-embed= {version="6.3.0", features=["compression", "interpolate-folder-path"]}
+pyo3 = {version= "0.16"}
+pyembed = "0.22"

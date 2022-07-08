@@ -2,6 +2,7 @@ use std::{path::PathBuf, sync::mpsc::SendError};
 
 use graphannis::errors::GraphAnnisError;
 use graphannis_core::errors::GraphAnnisCoreError;
+use pyo3::{exceptions::PyOSError, PyErr};
 use thiserror::Error;
 
 use crate::workflow::StatusMessage;
@@ -44,10 +45,8 @@ pub enum PepperError {
     SendingStatusMessageFailed(String),
     #[error("XML error: {0}")]
     XML(#[from] quick_xml::Error),
-    #[error("Java virtual machine: {0}")]
-    JVM(#[from] j4rs::errors::J4RsError),
-    #[error("Could not iterate over directory: {0}")]
-    IteratingDirectory(#[from] walkdir::Error),
+    #[error("XML Attribute error: {0}")]
+    XMLAttr(#[from] quick_xml::events::attributes::AttrError),
     #[error(transparent)]
     Regex(#[from] regex::Error),
     #[error("Invalid (poisoned) lock")]
@@ -69,5 +68,11 @@ impl<T> From<std::sync::PoisonError<T>> for PepperError {
 impl From<SendError<StatusMessage>> for PepperError {
     fn from(e: SendError<StatusMessage>) -> Self {
         PepperError::SendingStatusMessageFailed(e.to_string())
+    }
+}
+
+impl From<PepperError> for PyErr {
+    fn from(e: PepperError) -> Self {
+        PyOSError::new_err(e.to_string())
     }
 }

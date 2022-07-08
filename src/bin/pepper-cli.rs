@@ -72,7 +72,7 @@ pub fn main() -> Result<(), PepperError> {
                 let num_entries: f32 = steps_progress.len() as f32;
                 let progress_percent = (progress_sum / num_entries) * 100.0;
                 bar.set_position((progress_percent * 10.0) as u64);
-                bar.set_message(&format!("Running {}", id));
+                bar.set_message(format!("Running {}", id));
             }
             StatusMessage::StepDone { id } => {
                 *steps_progress.entry(id.clone()).or_default() = 1.0;
@@ -81,7 +81,7 @@ pub fn main() -> Result<(), PepperError> {
                 let num_entries: f32 = steps_progress.len() as f32;
                 let progress_percent = (progress_sum / num_entries) * 100.0;
                 bar.set_position((progress_percent * 10.0) as u64);
-                bar.set_message(&format!("Finished {}", id));
+                bar.set_message(format!("Finished {}", id));
             }
         }
     }
