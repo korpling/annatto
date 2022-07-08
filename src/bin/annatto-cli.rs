@@ -1,9 +1,9 @@
-use indicatif::{ProgressBar, ProgressStyle};
 use annatto::{
     error::AnnattoError,
     workflow::{execute_from_file, StatusMessage},
     StepID,
 };
+use indicatif::{ProgressBar, ProgressStyle};
 use std::{collections::HashMap, sync::mpsc, thread};
 use structopt::StructOpt;
 
