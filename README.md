@@ -7,7 +7,7 @@ to early identify issues regarding compatibility, consistency, and
 integrity to facilitate data handling with regard to annotation, releases
 and integration. 
 
-For efficiency annatto relies on the [graphannis representation](https://korpling.github.io/graphANNIS/docs/v2.2/data-model.html)
+For efficiency annatto relies on the [graphANNIS representation](https://korpling.github.io/graphANNIS/docs/v2.2/data-model.html)
 and already provides a basic set of data handling modules. The set of 
 modules can be extended by the user through custom python scripts to 
 adapt the data handling workflow(s) easily.
