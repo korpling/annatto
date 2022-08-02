@@ -55,7 +55,7 @@ impl Importer for PythonImporter {
                 PyModule::from_code(py, &self.code, &format!("{}.py", &self.name), &self.name)?;
 
             let result: graph::GraphUpdate =
-                code_module.getattr("start_import")?.call1(())?.extract()?;
+                code_module.getattr("start_import")?.call1((&input_path))?.extract()?;
 
             Ok(result.u)
         });
