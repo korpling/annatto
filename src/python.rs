@@ -2,6 +2,7 @@
 
 mod graph;
 
+use std::path::Path;
 use std::sync::Arc;
 
 use crate::{error::AnnattoError, importer::Importer, Module};
@@ -109,5 +110,25 @@ mod tests {
             .exact_anno_search(Some("annis"), "tok", ValueSearch::Any)
             .collect();
         assert_eq!(5, token.len())
+    }
+
+    #[test]
+    fn run_exmaralda_importer() {
+        let importer: EXMARaLDAImporter = PythonImporter {
+            name: "EXMARaLDAImporter".to_string(),
+            code: String::from_utf8_lossy(&Scripts::get("EXMARaLDAImporter.py").unwrap().data).to_string()
+        };
+        let props = BTreeMap::default();
+        let path = Path::new("test/exmaralda/importer");
+
+        let mut u = importer.import_corpus(path.path(), &props, None).unwrap();
+        let mut g = AnnotationGraph::new(false).unwrap();
+        g.apply_update(&mut u, |_| {}).unwrap();
+
+        // Test that the example graph has been created
+        let token: Vec<_> = g
+            .get_node_annos()
+            .exact_anno_search(Some("annis"), "tok", ValueSearch::Any)
+            .collect();
     }
 }
