@@ -1,7 +1,7 @@
 from graphannis.graph import GraphUpdate
 
 
-def start_import():
+def start_import(*_):
     u = GraphUpdate()
     u.add_node("corpus", "corpus")
 
