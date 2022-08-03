@@ -6,7 +6,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::{error::AnnattoError, importer::Importer, Module};
-use pyo3::{prelude::*, types::PyModule, wrap_pymodule};
+use pyo3::{prelude::*, types::{PyModule, PyTuple}, wrap_pymodule};
 use rust_embed::RustEmbed;
 
 #[derive(RustEmbed)]
@@ -54,9 +54,9 @@ impl Importer for PythonImporter {
 
             let code_module =
                 PyModule::from_code(py, &self.code, &format!("{}.py", &self.name), &self.name)?;
-
+            let args = PyTuple::new(py, &[input_path.to_str()]);
             let result: graph::GraphUpdate =
-                code_module.getattr("start_import")?.call1((&input_path))?.extract()?;
+                code_module.getattr("start_import")?.call1(args)?.extract()?;
 
             Ok(result.u)
         });
