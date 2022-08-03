@@ -114,7 +114,7 @@ mod tests {
 
     #[test]
     fn run_exmaralda_importer() {
-        let importer: EXMARaLDAImporter = PythonImporter {
+        let importer = PythonImporter {
             name: "EXMARaLDAImporter".to_string(),
             code: String::from_utf8_lossy(&Scripts::get("EXMARaLDAImporter.py").unwrap().data).to_string()
         };
