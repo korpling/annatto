@@ -123,7 +123,7 @@ mod tests {
     fn run_exmaralda_importer() {
         let importer = PythonImporter::from_name("EXMARaLDAImporter");
         let props = BTreeMap::default();
-        let path = Path::new("test/exmaralda/importer/test_file.exb");
+        let path = Path::new("test/exmaralda/importer/");
         let mut u = importer.import_corpus(path, &props, None).unwrap();
         let mut g = AnnotationGraph::new(false).unwrap();        
         g.apply_update(&mut u, |_| {}).unwrap();
