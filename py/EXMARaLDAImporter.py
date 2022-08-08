@@ -44,7 +44,7 @@ class EXMARaLDAImport(object):
     def __init__(self, path, internal_path, graph_update) -> None:
         self._xml = ElementTree.parse(path)
         self._source_dir = os.path.dirname(path)
-        self._path = os.path.splitext(internal_path)
+        self._path = internal_path
         self._u = graph_update
         self._media_node = None
         self._spk2tok = {}
