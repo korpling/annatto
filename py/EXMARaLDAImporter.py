@@ -1,3 +1,4 @@
+from glob import iglob
 from graphannis.graph import GraphUpdate
 import logging
 import os
@@ -20,6 +21,7 @@ _ATTR_TIME = 'time'
 _ATTR_TYPE = 'type'
 _ATTR_URL = 'url'
 # ANNIS
+_ANNIS_CORPUS = 'corpus'
 _ANNIS_COVERAGE = 'Coverage'
 _ANNIS_FILE = 'file'
 _ANNIS_NS = 'annis'
@@ -32,17 +34,17 @@ _ANNIS_TOK = 'tok'
 _ANNIS_TOK_WHITE_SPACE_AFTER = 'tok-whitespace-after'
 # logger
 _logger = logging.getLogger(__name__)
-_handler = logging.StreamHandler()
+_handler = logging.FileHandler('exmaralda-importer.log')
 _handler.setLevel(logging.INFO)
 _logger.setLevel(logging.INFO)
 _logger.addHandler(_handler)
 
 
 class EXMARaLDAImport(object):
-    def __init__(self, path) -> None:
+    def __init__(self, path, internal_path, graph_update) -> None:
         self._xml = ElementTree.parse(path)
-        self._path = os.path.splitext(path)[0]
-        self._u = GraphUpdate()
+        self._path = os.path.splitext(internal_path)[0]
+        self._u = graph_update
         self._media_node = None
         self._spk2tok = {}
         self._timeline = None
@@ -68,6 +70,12 @@ class EXMARaLDAImport(object):
         if len(referenced_files) > 1:
             raise ValueError(f'More than one referenced file in {self.name}.')
         referenced_file = referenced_files[0].attrib[_ATTR_URL]
+        if not os.path.isabs(referenced_file):
+            dir_name = os.path.dirname(self._path)
+            referenced_file = os.path.join(dir_name, referenced_file)
+        if not os.path.exists(referenced_file):
+            _logger.error(f'Cannot find referenced media file {referenced_file}.')
+            return
         u = self._u
         file_name = os.path.basename(referenced_file)
         corpus_path = os.path.join(os.path.dirname(self.path), file_name)
@@ -146,30 +154,35 @@ class EXMARaLDAImport(object):
         for target in targets:
             u.add_edge(span_id, target, _ANNIS_NS, _ANNIS_COVERAGE, '')
 
-
-    def _map_base_structure(self):
-        u = self._u
-        segments = []
-        root, seg = os.path.split(self.path)
-        while root:
-            segments.append(seg)
-            root, seg = os.path.split(root)
-        segments.append(seg)
-        for seg in reversed(segments):
-            u.add_node(seg)
-
     def _read_timeline(self):
         self._timeline = {tli.attrib[_ATTR_ID]: float(tli.attrib[_ATTR_TIME]) for tli in self._xml.findall(f'.//{_TAG_TLI}[@{_ATTR_TIME}]')}
 
     def map(self):
         self._read_timeline()
-        self._map_base_structure()
         self._map_audio_source()
         self._map_tokenizations()
         self._map_annotations() 
 
 
 def start_import(path):
-    import_ = EXMARaLDAImport(path)
-    import_.map()
-    return import_.u
+    u = GraphUpdate()
+    corpus_root = os.path.basename(path)
+    u.add_node(corpus_root, node_type=_ANNIS_CORPUS)
+    _logger.info(f'Starting corpus path {path}')
+    for file_path in iglob(f'{path}/**/**exb', recursive=True):
+        extra_path = file_path[len(path):]
+        _logger.info(f'Reading {file_path} which is {extra_path}')
+        segments = []
+        root, seg = os.path.split(os.path.splitext(extra_path)[0])
+        while root:
+            segments.append(seg)
+            root, seg = os.path.split(root)
+        prev = corpus_root
+        for seg in reversed(segments):
+            id_ = os.path.join(prev, seg)
+            u.add_node(id_, node_type=_ANNIS_CORPUS)
+            u.add_edge(prev, id_, _ANNIS_NS, _ANNIS_PART_OF, '')
+            prev = id_
+        import_ = EXMARaLDAImport(file_path, extra_path, u)
+        import_.map()
+    return u
