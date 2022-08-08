@@ -43,7 +43,8 @@ _logger.addHandler(_handler)
 class EXMARaLDAImport(object):
     def __init__(self, path, internal_path, graph_update) -> None:
         self._xml = ElementTree.parse(path)
-        self._path = os.path.splitext(internal_path)[0]
+        self._source_dir = os.path.dirname(path)
+        self._path = os.path.splitext(internal_path)
         self._u = graph_update
         self._media_node = None
         self._spk2tok = {}
@@ -71,8 +72,7 @@ class EXMARaLDAImport(object):
             raise ValueError(f'More than one referenced file in {self.name}.')
         referenced_file = referenced_files[0].attrib[_ATTR_URL]
         if not os.path.isabs(referenced_file):
-            dir_name = os.path.dirname(self._path)
-            referenced_file = os.path.join(dir_name, referenced_file)
+            referenced_file = os.path.join(self._source_dir, referenced_file)
         if not os.path.exists(referenced_file):
             _logger.error(f'Cannot find referenced media file {referenced_file}.')
             return
@@ -170,10 +170,10 @@ def start_import(path):
     u.add_node(corpus_root, node_type=_ANNIS_CORPUS)
     _logger.info(f'Starting corpus path {path}')
     for file_path in iglob(f'{path}/**/**exb', recursive=True):
-        extra_path = file_path[len(path):]
+        extra_path = os.path.splitext(file_path[len(path):])[0]
         _logger.info(f'Reading {file_path} which is {extra_path}')
         segments = []
-        root, seg = os.path.split(os.path.splitext(extra_path)[0])
+        root, seg = os.path.split(extra_path)
         while root:
             segments.append(seg)
             root, seg = os.path.split(root)
