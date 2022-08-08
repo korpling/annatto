@@ -65,7 +65,7 @@ class EXMARaLDAImport(object):
             return
         if len(referenced_files) > 1:
             raise ValueError(f'More than one referenced file in {self.name}.')
-        referenced_file = referenced_files[0]
+        referenced_file = referenced_files[0].attrib[_ATTR_URL]
         u = self._u
         file_name = os.path.basename(referenced_file)
         corpus_path = os.path.join(os.path.dirname(self.path), file_name)
@@ -91,29 +91,31 @@ class EXMARaLDAImport(object):
             self._spk2tok[speaker] = {}
             for start, end, text_value in sorted(tokens):
                 token_count += 1
-                id_ = self._map_token(token_count, category, text_value, start_time=start, end_time=end)
+                id_ = self._map_token(token_count, category, text_value, start, end)
                 self._spk2tok[speaker][id_] = (start, end)
             self._add_order_relations(sorted(self._spk2tok[speaker], key=lambda e: self._spk2tok[speaker][e]), category)
 
-    def _map_token(id_, text_name, value, start_time=None, end_time=None):        
+    def _map_token(self, id_, text_name, value, start_time=None, end_time=None):        
         u = self._u
         tok_id = f'{self.path}#t{id_}'
         u.add_node(tok_id)
         u.add_node_label(tok_id, _ANNIS_NS, _ANNIS_TOK, value)
-        u.add_node_label(tok_id, None, text_name, value)
+        u.add_node_label(tok_id, '', text_name, value)
         if start_time is not None and end_time is not None:
             if start_time >= end_time:
                 raise ValueError(f'Token {id_} with value {value} in tokenization {text_name} has incorrect time values.')
-            raise NotImplementedError
+            # TODO
         return tok_id
 
     def _add_order_relations(self, node_ids, order_name):
         u = self._u
         for i in range(1, len(node_ids)):
             u.add_edge(node_ids[i - 1], node_ids[i], _ANNIS_NS, _ANNIS_ORDERING, order_name)
+            u.add_edge(node_ids[i - 1], node_ids[i], _ANNIS_NS, _ANNIS_ORDERING, '')
 
     def _map_annotations(self):
         u = self._u
+        xml = self._xml
         anno_tiers = xml.findall(f'.//{_TAG_TIER}[@{_ATTR_TYPE}="{_TYPE_ANNOTATION}"]')
         tl = self._timeline
         span_count = 0
@@ -137,7 +139,7 @@ class EXMARaLDAImport(object):
         u.add_node(span_id)
         u.add_node_label(span_id, ns, name, value)
         for target in targets:
-            u.add_edge(span_id, target, _ANNIS_NS, _ANNIS_COVERAGE, None)
+            u.add_edge(span_id, target, _ANNIS_NS, _ANNIS_COVERAGE, '')
 
 
     def _map_base_structure(self):
@@ -162,7 +164,7 @@ class EXMARaLDAImport(object):
         self._map_annotations() 
 
 
-def start(path):
+def start_import(path):
     import_ = EXMARaLDAImport(path)
     import_.map()
     return import_.u
