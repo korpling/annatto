@@ -74,7 +74,7 @@ class EXMARaLDAImport(object):
         u.add_node(corpus_path)
         u.add_node_label(corpus_path, _ANNIS_NS, _ANNIS_NODE_TYPE, _ANNIS_NODE_TYPE_FILE)
         u.add_node_label(corpus_path, _ANNIS_NS, _ANNIS_FILE, corpus_path)
-        u.add_node_edge(corpus_path, self._path, _ANNIS_NS, _ANNIS_PART_OF, '')
+        u.add_edge(corpus_path, self._path, _ANNIS_NS, _ANNIS_PART_OF, '')
         self._media_node = corpus_path
 
     def _map_tokenizations(self):
