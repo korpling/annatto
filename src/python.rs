@@ -2,7 +2,6 @@
 
 mod graph;
 
-use std::path::Path;
 use std::sync::Arc;
 
 use crate::{error::AnnattoError, importer::Importer, Module};
@@ -71,6 +70,17 @@ impl Importer for PythonImporter {
             })?
             .into_inner()?;
         Ok(result)
+    }    
+}
+
+
+impl PythonImporter {
+    pub fn from_name(name: &str) -> PythonImporter {
+        let py_name = format!("{}.py", name);
+        PythonImporter {
+            name: name.to_string(),
+            code: String::from_utf8_lossy(&Scripts::get(py_name.as_str()).unwrap().data).to_string()
+        }
     }
 }
 
@@ -83,6 +93,7 @@ impl Module for PythonImporter {
 #[cfg(test)]
 mod tests {
 
+    use std::path::Path;
     use std::collections::BTreeMap;
 
     use graphannis::AnnotationGraph;
@@ -92,11 +103,7 @@ mod tests {
     
     #[test]
     fn run_dummy_importer() {
-        let importer = PythonImporter {
-            name: "DummyImporter".to_string(),
-            code: String::from_utf8_lossy(&Scripts::get("DummyImporter.py").unwrap().data)
-                .to_string(),
-        };
+        let importer = PythonImporter::from_name("DummyImporter");
         let props = BTreeMap::default();
         let path = tempfile::NamedTempFile::new().unwrap();
 
@@ -114,10 +121,7 @@ mod tests {
 
     #[test]
     fn run_exmaralda_importer() {
-        let importer = PythonImporter {
-            name: "EXMARaLDAImporter".to_string(),
-            code: String::from_utf8_lossy(&Scripts::get("EXMARaLDAImporter.py").unwrap().data).to_string()
-        };
+        let importer = PythonImporter::from_name("EXMARaLDAImporter");
         let props = BTreeMap::default();
         let path = Path::new("test/exmaralda/importer/test_file.exb");
         let mut u = importer.import_corpus(path, &props, None).unwrap();

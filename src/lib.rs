@@ -16,13 +16,14 @@ use error::{AnnattoError, Result};
 use exporter::Exporter;
 use importer::Importer;
 use manipulator::Manipulator;
+use python::PythonImporter;
 
 /// Retrieve a new instance of an importer using its module name
 pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
     match name {
         "GraphMLImporter" => Ok(Box::new(importer::graphml::GraphMLImporter::default())),
         "DoNothingImporter" => Ok(Box::new(importer::DoNothingImporter::default())),
-        _ => Err(AnnattoError::NoSuchModule(name.to_string())),
+        _ => Ok(Box::new(PythonImporter::from_name(name))),
     }
 }
 
