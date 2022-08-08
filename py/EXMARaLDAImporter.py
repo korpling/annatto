@@ -159,7 +159,7 @@ class EXMARaLDAImport(object):
             u.add_node(seg)
 
     def _read_timeline(self):
-        self._timeline = {tli.attrib[_ATTR_ID]: float(tli.attrib[_ATTR_TIME]) for tli in self._xml.findall(f'.//{_TAG_TLI}')}
+        self._timeline = {tli.attrib[_ATTR_ID]: float(tli.attrib[_ATTR_TIME]) for tli in self._xml.findall(f'.//{_TAG_TLI}[@{_ATTR_TIME}]')}
 
     def map(self):
         self._read_timeline()
