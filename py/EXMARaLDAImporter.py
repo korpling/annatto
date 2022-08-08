@@ -27,7 +27,9 @@ _ANNIS_NODE_TYPE = 'node_type'
 _ANNIS_NODE_TYPE_FILE = 'file'
 _ANNIS_ORDERING = 'Ordering'
 _ANNIS_PART_OF = 'PartOf'
+_ANNIS_TIME = 'time'
 _ANNIS_TOK = 'tok'
+_ANNIS_TOK_WHITE_SPACE_AFTER = 'tok-whitespace-after'
 # logger
 _logger = logging.getLogger(__name__)
 _handler = logging.StreamHandler()
@@ -72,6 +74,7 @@ class EXMARaLDAImport(object):
         u.add_node(corpus_path)
         u.add_node_label(corpus_path, _ANNIS_NS, _ANNIS_NODE_TYPE, _ANNIS_NODE_TYPE_FILE)
         u.add_node_label(corpus_path, _ANNIS_NS, _ANNIS_FILE, corpus_path)
+        u.add_node_edge(corpus_path, self._path, _ANNIS_NS, _ANNIS_PART_OF, '')
         self._media_node = corpus_path
 
     def _map_tokenizations(self):
@@ -101,10 +104,12 @@ class EXMARaLDAImport(object):
         u.add_node(tok_id)
         u.add_node_label(tok_id, _ANNIS_NS, _ANNIS_TOK, value)
         u.add_node_label(tok_id, '', text_name, value)
+        u.add_node_label(tok_id, _ANNIS_NS, _ANNIS_TOK_WHITE_SPACE_AFTER, ' ')
+        u.add_edge(tok_id, self._path, _ANNIS_NS, _ANNIS_PART_OF, '')
         if start_time is not None and end_time is not None:
             if start_time >= end_time:
                 raise ValueError(f'Token {id_} with value {value} in tokenization {text_name} has incorrect time values.')
-            # TODO
+            u.add_node_label(tok_id, _ANNIS_NS, _ANNIS_TIME, f'{start_time}-{end_time}')
         return tok_id
 
     def _add_order_relations(self, node_ids, order_name):
