@@ -165,24 +165,31 @@ class EXMARaLDAImport(object):
 
 
 def start_import(path):
-    u = GraphUpdate()
-    corpus_root = os.path.basename(path)
-    u.add_node(corpus_root, node_type=_ANNIS_CORPUS)
-    _logger.info(f'Starting corpus path {path}')
-    for file_path in iglob(f'{path}/**/**exb', recursive=True):
-        extra_path = os.path.splitext(file_path[len(path):])[0]
-        _logger.info(f'Reading {file_path} which is {extra_path}')
-        segments = []
-        root, seg = os.path.split(extra_path)
-        while root:
-            segments.append(seg)
-            root, seg = os.path.split(root)
-        prev = corpus_root
-        for seg in reversed(segments):
-            id_ = os.path.join(prev, seg)
-            u.add_node(id_, node_type=_ANNIS_CORPUS)
-            u.add_edge(prev, id_, _ANNIS_NS, _ANNIS_PART_OF, '')
-            prev = id_
-        import_ = EXMARaLDAImport(file_path, extra_path, u)
-        import_.map()
-    return u
+    try:
+        _logger.info('------------------------------------------------')
+        u = GraphUpdate()
+        path = os.path.normpath(path)
+        corpus_root = os.path.basename(path)
+        u.add_node(corpus_root, node_type=_ANNIS_CORPUS)
+        _logger.info(f'Starting corpus path {path}')
+        for file_path in iglob(f'{path}/**/**exb', recursive=True):
+            extra_path = os.path.splitext(file_path[len(path) + 1:])[0]
+            _logger.info(f'Reading {file_path} which is {extra_path}')
+            segments = []
+            root, seg = os.path.split(extra_path)
+            _logger.info(f'Initial segments {root} and {seg}')
+            while root:
+                segments.append(seg)
+                root, seg = os.path.split(root)
+            prev = corpus_root
+            for seg in reversed(segments):
+                id_ = os.path.join(prev, seg)
+                u.add_node(id_, node_type=_ANNIS_CORPUS)
+                _logger.info(f'Adding node {id_} as part of {prev}')
+                u.add_edge(prev, id_, _ANNIS_NS, _ANNIS_PART_OF, '')
+                prev = id_
+            import_ = EXMARaLDAImport(file_path, extra_path, u)
+            import_.map()
+        return u
+    except KeyboardInterrupt:
+        exit(1)
