@@ -4,6 +4,7 @@ pub mod importer;
 pub mod manipulator;
 pub mod progress;
 pub mod python;
+pub mod util;
 pub mod workflow;
 
 use std::{
@@ -71,6 +72,7 @@ pub trait Step {
 struct ImporterStep {
     module: Box<dyn Importer>,
     corpus_path: PathBuf,
+    leak_path: Option<PathBuf>,
     properties: BTreeMap<String, String>,
 }
 
