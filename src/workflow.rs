@@ -6,10 +6,12 @@ use std::{
 };
 
 use graphannis::{update::GraphUpdate, AnnotationGraph};
+use serde::Serialize;
 
 use crate::{
     error::AnnattoError, error::Result, exporter_by_name, importer_by_name, manipulator_by_name,
     ExporterStep, ImporterStep, ManipulatorStep, Step, StepID,
+    util::write_to_file,
 };
 use rayon::prelude::*;
 
@@ -62,6 +64,7 @@ const ELEM_PROPERTY: &str = "property";
 const ATT_NAME: &str = "name";
 const ATT_PATH: &str = "path";
 const ATT_KEY: &str = "key";
+const ATT_LEAK_PATH: &str = "leak_results_to";
 
 fn into_hash_map(attributes: &[OwnedAttribute]) -> HashMap<String, String> {
     let mut attr_map = HashMap::new();
@@ -92,6 +95,7 @@ impl TryFrom<PathBuf> for Workflow {
         let mut value: Option<String> = None;
         let mut mod_name: Option<String> = None;
         let mut path: Option<PathBuf> = None;
+        let mut leak_path: Option<PathBuf> = None;
 
         loop {
             match reader.next() {
@@ -105,6 +109,10 @@ impl TryFrom<PathBuf> for Workflow {
                             ELEM_IMPORTER => {
                                 mod_name = attr.remove(ATT_NAME);
                                 path = attr.remove(ATT_PATH).map(PathBuf::from);
+                                // leaking currently only supported for importers, a serialization of graph objects 
+                                // as they result from manipulators could be achieved by graphml exports;
+                                // leaking exporter results is redundant
+                                leak_path = attr.remove(ATT_LEAK_PATH).map(PathBuf::from);
                             }
                             ELEM_MANIPULATOR => mod_name = attr.remove(ATT_NAME),
                             ELEM_EXPORTER => {
@@ -120,15 +128,25 @@ impl TryFrom<PathBuf> for Workflow {
                         ELEM_IMPORTER => {
                             if let Some(module_name) = mod_name {
                                 if let Some(mut corpus_path) = path {
+                                    let mut leak_results_to: Option<PathBuf> = None;
                                     if let Some(workflow_dir) = workflow_dir {
                                         if corpus_path.is_relative() {
                                             // Resolve the input path against the workflow file
                                             corpus_path = workflow_dir.join(corpus_path);
                                         }
+                                        leak_results_to = match &leak_path {
+                                            None => None,
+                                            Some(path_buf) => if path_buf.is_relative() {                                                
+                                                Some(workflow_dir.join(path_buf))
+                                            } else {
+                                                Some(PathBuf::from(path_buf))
+                                            }
+                                        };
                                     }
                                     let step = ImporterStep {
                                         module: importer_by_name(&module_name)?,
                                         corpus_path,
+                                        leak_path: leak_results_to,
                                         properties,
                                     };
                                     importers.push(step);
@@ -148,6 +166,7 @@ impl TryFrom<PathBuf> for Workflow {
                             properties = BTreeMap::new();
                             mod_name = None;
                             path = None;
+                            leak_path = None;
                         }
                         ELEM_MANIPULATOR => {
                             if let Some(module_name) = mod_name {
@@ -197,6 +216,7 @@ impl TryFrom<PathBuf> for Workflow {
                             properties = BTreeMap::new();
                             mod_name = None;
                             path = None;
+                            leak_path = None;
                         }
                         ELEM_PROPERTY => {
                             if key.is_none() {
@@ -268,6 +288,8 @@ pub fn execute_from_file(workflow_file: &Path, tx: Option<Sender<StatusMessage>>
 
 pub type StatusSender = Sender<StatusMessage>;
 
+use std::io::Write;
+
 impl Workflow {
     pub fn execute(&self, tx: Option<StatusSender>) -> Result<()> {
         // Create a vector of all conversion steps and report these as current status
@@ -329,7 +351,7 @@ impl Workflow {
         export_result?;
         Ok(())
     }
-
+    
     fn execute_single_importer(
         &self,
         step: &ImporterStep,
@@ -347,6 +369,9 @@ impl Workflow {
             tx.send(crate::workflow::StatusMessage::StepDone {
                 id: step.module.step_id(Some(&step.corpus_path)),
             })?;
+        }
+        if let Some(path_buf) = &step.leak_path {
+            write_to_file(&updates, path_buf.as_path())?;
         }
         Ok(updates)
     }
