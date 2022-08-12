@@ -57,6 +57,8 @@ pub enum AnnattoError {
     GraphAnnis(#[from] GraphAnnisError),
     #[error(transparent)]
     Infallible(std::convert::Infallible),
+    #[error("CSV error: {0}")]
+    CSV(#[from] csv::Error),
 }
 
 impl<T> From<std::sync::PoisonError<T>> for AnnattoError {
@@ -76,3 +78,4 @@ impl From<AnnattoError> for PyErr {
         PyOSError::new_err(e.to_string())
     }
 }
+
