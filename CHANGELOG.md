@@ -5,4 +5,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
++ import EXMARaLDA files using Python
 + allow to leak graph updates to text file 
