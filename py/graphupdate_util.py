@@ -1,3 +1,4 @@
+import os
 
 ANNIS_CORPUS = 'corpus'
 ANNIS_COVERAGE = 'Coverage'
@@ -14,12 +15,12 @@ ANNIS_TOK_WHITE_SPACE_AFTER = 'tok-whitespace-after'
 
 
 def corpus_root(u, root_name):
-    u.add_node(root_name, type=ANNIS_CORPUS)
+    u.add_node(root_name, node_type=ANNIS_CORPUS)
 
 
 def add_subnode(u, path):
     parent = os.path.dirname(path)
-    u.add_node(path, type=ANNIS_CORPUS)
+    u.add_node(path, node_type=ANNIS_CORPUS)
     u.add_edge(path, parent, ANNIS_NS, ANNIS_PART_OF, '')
 
 
@@ -38,7 +39,7 @@ def map_token(u, doc_path, id_, text_name, value, start_time=None, end_time=None
     if text_name is not None and text_name.strip():
         u.add_node_label(tok_id, '', text_name, value)
     u.add_node_label(tok_id, ANNIS_NS, ANNIS_TOK_WHITE_SPACE_AFTER, ' ')
-    u.add_edge(tok_id, self._path, ANNIS_NS, ANNIS_PART_OF, '')
+    u.add_edge(tok_id, doc_path, ANNIS_NS, ANNIS_PART_OF, '')
     if start_time is not None and end_time is not None:
         if start_time >= end_time:
             raise ValueError(f'Token {id_} with value {value} in tokenization {text_name} has incorrect time values.')
