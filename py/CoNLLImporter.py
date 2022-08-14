@@ -13,8 +13,6 @@ _FIELD_NAMES = [
     'xpos',
     'feats',
     'head',
-    'deprel',
-    'head',
     'deprel'
 ]
 _NONE = '_'
@@ -33,7 +31,7 @@ def _read_data(path):
         l = line.strip().split('\t')
         if not l:
             sentences.append([])
-        else:
+        elif len(l) == 10:
             sentences[-1].append(_Token(*l[:8]))
     return sentences
 
@@ -45,10 +43,10 @@ def _map_entry(u, doc_path, index, entry, text_name=None):
         val = getattr(entry, field_name)
         if val is not None and val.strip() != _NONE:
             map_token_annotation(u, id_, ns, field_name, val)
-    if entry.feat is not None and entry.feat.strip() != _NONE:
-        features = entry.feat.strip().split(_FEAT_SEP)
+    if entry.feats is not None and entry.feats.strip() != _NONE:
+        features = entry.feats.strip().split(_FEAT_SEP)
         for kv in features:
-            k, v = features.split('=')
+            k, v = kv.split('=')
             map_token_annotation(u, id_, ns, k.strip(), v.strip())
     if entry.deprel is not None and entry.deprel.strip() != _NONE:
         val = entry.deprel.strip()
