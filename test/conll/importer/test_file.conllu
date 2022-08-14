@@ -1,0 +1,83 @@
+# text = Ich war im Parkplatz
+1	Ich	Ich	PRON	PPER	Case=Nom|Number=Sing|Person=1|PronType=Prs	2	subj	_	_
+2	war	sein	VERB	VAFIN	Mood=Ind|Number=Sing|Person=1|Tense=Past|VerbForm=Fin	0	root	_	_
+3	im	in	PROPN	APPRART	_	2	comp:pred	_	_
+4	Parkplatz	Parkplatz	NOUN	NN	_	3	comp:obj	_	_
+
+# text = und da war ein Mann und seine Frau
+1	und	und	CCONJ	KON	_	3	cc	_	_
+2	da	da	ADV	ADV	Degree=Pos	3	subj@expl	_	_
+3	war	sein	VERB	VAFIN	Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin	0	root	_	_
+4	ein	ein	DET	ART	Definite=Ind|PronType=Art	5	det	_	_
+5	Mann	Mann	NOUN	NN	_	3	comp:pred	_	_
+6	und	und	CCONJ	KON	_	8	cc	_	_
+7	seine	sein	DET	PPOSAT	Gender[psor]=Masc,Neut|Person=3|Poss=Yes|PronType=Prs	8	det	_	_
+8	Frau	Frau	NOUN	NN	_	5	conj	_	_
+
+# text = und der Mann hatte einen Ball .
+1	und	und	CCONJ	KON	_	4	cc	_	_
+2	der	d	DET	ART	Case=Nom|Definite=Def|Gender=Masc|Number=Sing|PronType=Art	3	det	_	_
+3	Mann	Mann	NOUN	NN	Case=Nom|Gender=Masc|Number=Sing	4	subj	_	_
+4	hatte	haben	VERB	VAFIN	Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin	0	root	_	_
+5	einen	ein	DET	ART	Case=Acc|Definite=Ind|Gender=Masc|Number=Sing|PronType=Art	6	det	_	_
+6	Ball	Ball	NOUN	NN	Case=Acc|Gender=Masc|Number=Sing	4	comp:obj	_	_
+7	.	.	PUNCT	$.	_	4	punct	_	_
+
+# text = Der hat den Ball losgelassen als zwei Autos im Parkplatz reingefahren haben .
+1	Der	D	PRON	PDS	Case=Nom|PronType=Dem	2	subj	_	_
+2	hat	haben	VERB	VAFIN	Mood=Ind|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+3	den	d	DET	ART	Case=Acc|Definite=Def|Gender=Masc|Number=Sing|PronType=Art	4	det	_	_
+4	Ball	Ball	NOUN	NN	Case=Acc|Gender=Masc|Number=Sing	5	comp:obj	_	_
+5	losgelassen	loslassen	VERB	VVPP	Number=Plur|Person=3|VerbForm=Fin	2	comp:aux	_	_
+6	als	als	ADP	KOUS	_	5	mod	_	_
+7	zwei	zwei	NUM	CARD	NumType=Card	8	mod	_	_
+8	Autos	Auto	NOUN	NN	_	12	subj	_	_
+9	im	in	PROPN	APPRART	_	11	comp:obl	_	_
+10	Parkplatz	Parkplatz	PROPN	NN	_	9	comp:obj	_	_
+11	reingefahren	reinfahren	VERB	VVPP	VerbForm=Fin	12	comp:aux	_	_
+12	haben	haben	AUX	VAFIN	Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin	6	comp:obj	_	_
+13	.	.	PUNCT	$.	_	2	punct	_	_
+
+# text = Das Auto vorne hat angehaltet
+1	Das	d	DET	ART	Case=Nom|Definite=Def|Gender=Neut|Number=Sing|PronType=Art	2	det	_	_
+2	Auto	Auto	NOUN	NN	Case=Nom|Gender=Neut|Number=Sing	4	subj	_	_
+3	vorne	vorne	ADV	ADV	_	2	mod	_	_
+4	hat	haben	AUX	VAFIN	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+5	angehaltet	anhalten	VERB	VVPP	VerbForm=Part	4	comp:aux	_	_
+
+# text = und der Auto hinter dem ist in einem reingefahren .
+1	und	und	CCONJ	KON	_	6	cc	_	_
+2	der	d	DET	ART	Definite=Def|PronType=Art	3	det	_	_
+3	Auto	Auto	NOUN	NN	_	6	subj	_	_
+4	hinter	hinter	ADP	APPR	_	3	mod	_	_
+5	dem	d	PRON	PDS	Case=Dat|PronType=Dem	4	comp:obj	_	_
+6	ist	sein	VERB	VAFIN	Mood=Ind|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+7	in	in	ADP	APPR	_	9	comp:obl	_	_
+8	einem	ein	DET	PIS	Case=Dat|Definite=Ind|Gender=Masc,Neut|Number=Sing|PronType=Art	7	comp:obj	_	_
+9	reingefahren	reinfahren	NOUN	VVPP	Case=Dat|Gender=Masc,Neut|Number=Sing	6	comp:aux	_	_
+10	.	.	PUNCT	$.	_	6	punct	_	_
+
+# text = Nichts ist passiert zu die zwei Autofahrer ,
+1	Nichts	nichts	PRON	PIS	Number=Sing|PronType=Neg	2	subj	_	_
+2	ist	sein	AUX	VAFIN	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+3	passiert	passieren	VERB	VVPP	Number=Sing|Person=3|VerbForm=Fin	2	comp:aux	_	_
+4	zu	zu	ADP	APPR	_	3	mod	_	_
+5	die	d	DET	ART	Case=Acc|Definite=Def|Gender=Fem|Number=Plur|PronType=Art	7	det	_	_
+6	zwei	zwei	NUM	CARD	NumType=Card	7	mod	_	_
+7	Autofahrer	Autofahrer	NOUN	NN	Case=Acc|Number=Sing	4	comp:obj	_	_
+8	,	,	PUNCT	$,	_	2	punct	_	_
+
+# text = aber die sind beide ausgestiegen
+1	aber	aber	ADV	KON	_	3	cc	_	_
+2	die	d	PRON	PDS	Case=Nom|PronType=Dem	3	subj	_	_
+3	sind	sein	AUX	VAFIN	Mood=Ind|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+4	beide	beide	PRON	PIDS	NumType=Card|PronType=Tot	3	subj	_	_
+5	ausgestiegen	aussteigen	VERB	VVPP	Number=Plur|Person=3|VerbForm=Fin	3	comp:aux	_	_
+
+# text = und haben miteinander gesprochen .
+1	und	und	CCONJ	KON	_	2	cc	_	_
+2	haben	haben	AUX	VAFIN	Mood=Ind|Tense=Pres|VerbForm=Fin	0	root	_	_
+3	miteinander	miteinander	ADV	ADV	_	2	mod	_	_
+4	gesprochen	sprechen	VERB	VVPP	VerbForm=Part	2	comp:aux	_	_
+5	.	.	PUNCT	$.	_	2	punct	_	_
+
