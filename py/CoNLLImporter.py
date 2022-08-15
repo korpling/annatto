@@ -1,9 +1,9 @@
 from collections import defaultdict, namedtuple
 from glob import iglob
 from graphannis.graph import GraphUpdate
-from py.graphupdate_util import *
 import os
 
+from graphupdate_util import *
 
 _FIELD_NAMES = [
     'id',
@@ -59,6 +59,7 @@ def _map_conll_document(path, u, text_name=None):
     doc_path = os.path.splitext(path)[0]
     add_subnode(u, doc_path)
     tok_count = 1
+    all_nodes = []
     for s in sentences:
         nodes = [None]
         for i, tok in enumerate(s, tok_count):
@@ -69,13 +70,32 @@ def _map_conll_document(path, u, text_name=None):
             if h_index:
                 head_node = nodes[h_index][0]
                 add_pointing_relation(u, head_node, node_id, _TYPE_DEP, text_name, _ANNO_NAME_DEPREL, deprel)
+        all_nodes.extend(id_ for id_, _, _ in nodes[1:])
+    add_order_relations(u, all_nodes, order_name=text_name)
 
 
-def start_import(path, **kwargs):
-    properties = defaultdict(type(None), kwargs)
+def start_import(path):
+    """
+    Import all conll documents in the given directory.
+    >>> type(start_import('test/conll/importer')).__name__
+    'GraphUpdate'
+    """
     u = GraphUpdate()
     base_dir = os.path.normpath(path)
     corpus_root(u, os.path.basename(base_dir))
+    existing_structures = set()
     for path in iglob(f'{base_dir}/**/*.conllu', recursive=True):
-        _map_conll_document(path, u, text_name=properties['text_name'])
+        dir_name = os.path.dirname(path[len(base_dir) + 1:])
+        if dir_name not in existing_structures:
+            segments = []
+            prec, seg = os.path.split(dir_name)
+            while prec:
+                if seg:
+                    segments.append(seg)
+                prec, seg = os.path.split(prec)
+            for seg in reversed(seg):
+                if seg not in existing_structures:
+                    u.add_node(seg, node_type=ANNIS_CORPUS)
+                    existing_structures.add(seg)            
+        _map_conll_document(path, u)
     return u
