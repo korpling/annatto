@@ -1,10 +1,10 @@
 from glob import iglob
 from graphannis.graph import GraphUpdate
-from py.graphupdate_util import *
 import logging
 import os
 from xml.etree import ElementTree
 
+from graphupdate_util import *
 
 # EXMARALDA
 _TYPE_TOK = 't'
@@ -122,6 +122,11 @@ class EXMARaLDAImport(object):
 
 
 def start_import(path):
+    """
+    Import all conll documents in the given directory.
+    >>> type(start_import('test/exmaralda/importer')).__name__
+    'GraphUpdate'
+    """
     try:
         _logger.info('------------------------------------------------')
         u = GraphUpdate()
