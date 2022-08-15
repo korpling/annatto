@@ -5,6 +5,8 @@ import os
 
 from graphupdate_util import *
 
+_PROPERTY_TEXT_NAME = 'text_name'
+
 _FIELD_NAMES = [
     'id',
     'form',
@@ -70,16 +72,17 @@ def _map_conll_document(path, u, text_name=None):
             if h_index:
                 head_node = nodes[h_index][0]
                 add_pointing_relation(u, head_node, node_id, _TYPE_DEP, text_name, _ANNO_NAME_DEPREL, deprel)
-        all_nodes.extend(id_ for id_, _, _ in nodes[1:])
+        all_nodes.extend([id_ for id_, _, _ in nodes[1:]])
     add_order_relations(u, all_nodes, order_name=text_name)
 
 
-def start_import(path):
+def start_import(path, **properties):
     """
     Import all conll documents in the given directory.
     >>> type(start_import('test/conll/importer')).__name__
     'GraphUpdate'
     """
+    safe_props = defaultdict(type(None), properties)
     u = GraphUpdate()
     base_dir = os.path.normpath(path)
     corpus_root(u, os.path.basename(base_dir))
@@ -97,5 +100,5 @@ def start_import(path):
                 if seg not in existing_structures:
                     u.add_node(seg, node_type=ANNIS_CORPUS)
                     existing_structures.add(seg)            
-        _map_conll_document(path, u)
+        _map_conll_document(path, u, text_name=safe_props[_PROPERTY_TEXT_NAME])
     return u
