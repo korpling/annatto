@@ -5,7 +5,7 @@ mod graph;
 use std::sync::Arc;
 
 use crate::{error::AnnattoError, importer::Importer, Module};
-use pyo3::{prelude::*, types::{PyModule, PyTuple}, wrap_pymodule};
+use pyo3::{prelude::*, types::{IntoPyDict, PyModule, PyDict, PyTuple}, wrap_pymodule};
 use rust_embed::RustEmbed;
 
 #[derive(RustEmbed)]
@@ -43,7 +43,7 @@ impl Importer for PythonImporter {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
-        _properties: &std::collections::BTreeMap<String, String>,
+        properties: &std::collections::BTreeMap<String, String>,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let python_interpreter = pyembed::MainPythonInterpreter::new(default_python_config())?;
@@ -60,7 +60,7 @@ impl Importer for PythonImporter {
                 PyModule::from_code(py, &self.code, &format!("{}.py", &self.name), &self.name)?;
             let args = PyTuple::new(py, &[input_path.to_str()]);
             let result: graph::GraphUpdate =
-                code_module.getattr("start_import")?.call1(args)?.extract()?;
+                code_module.getattr("start_import")?.call(args, Some(properties.into_py_dict(py)))?.extract()?;
 
             Ok(result.u)
         });
