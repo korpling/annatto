@@ -9,3 +9,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 + allow to leak graph updates to text file 
 + CoNLLImporter (Python)
 + graphupdate_utils for all python-based importers
++ properties are forwarded to python importers
