@@ -49,8 +49,13 @@ impl Importer for PythonImporter {
         let python_interpreter = pyembed::MainPythonInterpreter::new(default_python_config())?;
 
         let u: PyResult<_> = python_interpreter.with_gil(|py| {
+            // graphannis modul
             wrap_pymodule!(graphannis)(py);
-
+            // graph update utils
+            let code_source = &Scripts::get("graphupdate_util.py").unwrap().data;
+            let util_code = &String::from_utf8_lossy(code_source)[..];
+            let util_module = PyModule::from_code(py,util_code, "_graphupdate_util.py", "graphupdate_util");
+            // importer
             let code_module =
                 PyModule::from_code(py, &self.code, &format!("{}.py", &self.name), &self.name)?;
             let args = PyTuple::new(py, &[input_path.to_str()]);
@@ -124,6 +129,17 @@ mod tests {
         let importer = PythonImporter::from_name("EXMARaLDAImporter");
         let props = BTreeMap::default();
         let path = Path::new("test/exmaralda/importer/");
+        let mut u = importer.import_corpus(path, &props, None).unwrap();
+        let mut g = AnnotationGraph::new(false).unwrap();        
+        g.apply_update(&mut u, |_| {}).unwrap();
+        assert_eq!(1, 1)
+    }
+
+    #[test]
+    fn run_conll_importer() {
+        let importer = PythonImporter::from_name("CoNLLImporter");
+        let props = BTreeMap::default();
+        let path = Path::new("test/conll/importer/");
         let mut u = importer.import_corpus(path, &props, None).unwrap();
         let mut g = AnnotationGraph::new(false).unwrap();        
         g.apply_update(&mut u, |_| {}).unwrap();
