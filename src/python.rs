@@ -54,7 +54,7 @@ impl Importer for PythonImporter {
             // graph update utils
             let code_source = &Scripts::get("graphupdate_util.py").unwrap().data;
             let util_code = &String::from_utf8_lossy(code_source)[..];
-            let util_module = PyModule::from_code(py,util_code, "_graphupdate_util.py", "graphupdate_util");
+            PyModule::from_code(py, util_code, "_graphupdate_util.py", "graphupdate_util")?;
             // importer
             let code_module =
                 PyModule::from_code(py, &self.code, &format!("{}.py", &self.name), &self.name)?;
