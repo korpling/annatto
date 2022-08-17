@@ -85,7 +85,8 @@ def start_import(path, **properties):
     safe_props = defaultdict(type(None), properties)
     u = GraphUpdate()
     base_dir = os.path.normpath(path)
-    corpus_root(u, os.path.basename(base_dir))
+    root_name = os.path.basename(base_dir)
+    corpus_root(u, root_name)
     existing_structures = set()
     for path in iglob(f'{base_dir}/**/*.conllu', recursive=True):
         dir_name = os.path.dirname(path[len(base_dir) + 1:])
@@ -96,9 +97,12 @@ def start_import(path, **properties):
                 if seg:
                     segments.append(seg)
                 prec, seg = os.path.split(prec)
+            prev = root_name
             for seg in reversed(seg):
-                if seg not in existing_structures:
-                    u.add_node(seg, node_type=ANNIS_CORPUS)
-                    existing_structures.add(seg)            
+                id_ = os.path.join(prev, seg)
+                if id_ not in existing_structures:
+                    add_subnode(u, id_)
+                    existing_structures.add(id_)
+                prev = id_
         _map_conll_document(path, u, text_name=safe_props[_PROPERTY_TEXT_NAME])
     return u

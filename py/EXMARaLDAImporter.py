@@ -135,8 +135,8 @@ def start_import(path, **properties):
         _logger.info('------------------------------------------------')
         u = GraphUpdate()
         path = os.path.normpath(path)
-        corpus_root = os.path.basename(path)
-        u.add_node(corpus_root, node_type=ANNIS_CORPUS)
+        corpus_root_name = os.path.basename(path)
+        corpus_root(corpus_root_name)
         _logger.info(f'Starting corpus path {path}')
         text_order = [t.strip() for t in properties[PROP_TEXT_ORDER].split(';')] \
                       if PROP_TEXT_ORDER in properties else None
@@ -149,12 +149,11 @@ def start_import(path, **properties):
             while root:
                 segments.append(seg)
                 root, seg = os.path.split(root)
-            prev = corpus_root
+            prev = corpus_root_name            
             for seg in reversed(segments):
                 id_ = os.path.join(prev, seg)
-                u.add_node(id_, node_type=ANNIS_CORPUS)
                 _logger.info(f'Adding node {id_} as part of {prev}')
-                u.add_edge(prev, id_, ANNIS_NS, ANNIS_PART_OF, '')
+                add_subnode(u, id_)                
                 prev = id_
             import_ = EXMARaLDAImport(file_path, extra_path, u)
             import_.map(text_order=text_order)
