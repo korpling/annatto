@@ -28,6 +28,8 @@ _handler.setLevel(logging.INFO)
 _logger.setLevel(logging.INFO)
 _logger.addHandler(_handler)
 
+PROP_TEXT_ORDER = 'text_order'
+
 
 class EXMARaLDAImport(object):
     def __init__(self, path, internal_path, graph_update) -> None:
@@ -71,11 +73,13 @@ class EXMARaLDAImport(object):
         map_audio_source(u, audio_path, self._path)
         self._media_node = audio_path
 
-    def _map_tokenizations(self):
+    def _map_tokenizations(self, text_order=None):
         xml = self._xml
         tl = self._timeline
         token_tiers = xml.findall(f'.//{_TAG_TIER}[@{_ATTR_TYPE}="{_TYPE_TOK}"]')
         token_count = 0
+        if text_order is not None:
+            token_tiers.sort(key=lambda t: text_order.index(t.attrib[_ATTR_CATEGORY]))
         for tier in token_tiers:
             category = tier.attrib[_ATTR_CATEGORY]
             try:
@@ -114,10 +118,10 @@ class EXMARaLDAImport(object):
     def _read_timeline(self):
         self._timeline = {tli.attrib[_ATTR_ID]: float(tli.attrib[_ATTR_TIME]) for tli in self._xml.findall(f'.//{_TAG_TLI}[@{_ATTR_TIME}]')}
 
-    def map(self):
+    def map(self, text_order=None):
         self._read_timeline()
         self._map_audio_source()
-        self._map_tokenizations()
+        self._map_tokenizations(text_order=text_order)
         self._map_annotations() 
 
 
@@ -134,6 +138,8 @@ def start_import(path, **properties):
         corpus_root = os.path.basename(path)
         u.add_node(corpus_root, node_type=ANNIS_CORPUS)
         _logger.info(f'Starting corpus path {path}')
+        text_order = [t.strip() for t in properties[PROP_TEXT_ORDER].split(';')] \
+                      if PROP_TEXT_ORDER in properties else None
         for file_path in iglob(f'{path}/**/**exb', recursive=True):
             extra_path = os.path.splitext(file_path[len(path) + 1:])[0]
             _logger.info(f'Reading {file_path} which is {extra_path}')
@@ -151,7 +157,7 @@ def start_import(path, **properties):
                 u.add_edge(prev, id_, ANNIS_NS, ANNIS_PART_OF, '')
                 prev = id_
             import_ = EXMARaLDAImport(file_path, extra_path, u)
-            import_.map()
+            import_.map(text_order=text_order)
         return u
     except KeyboardInterrupt:
         exit(1)
