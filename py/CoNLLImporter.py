@@ -5,7 +5,9 @@ import os
 
 from graphupdate_util import *
 
-_PROPERTY_TEXT_NAME = 'text_name'
+PROPERTY_TEXT_NAME = 'text_name'
+PROPERTY_SKIP_NAMED_ORDERING = 'skip_named_ordering'
+PROPERTY_ANNO_QNAME = 'anno_qname'
 
 _FIELD_NAMES = [
     'id',
@@ -38,9 +40,9 @@ def _read_data(path):
     return sentences
 
 
-def _map_entry(u, doc_path, index, entry, text_name=None):
+def _map_entry(u, doc_path, index, entry, text_name=None, anno_qname=None):
     id_ = map_token(u, doc_path, index, text_name, entry.form)
-    ns = '' if text_name is None else text_name
+    ns = anno_qname if anno_qname is not None else ('' if text_name is None else text_name)
     for field_name in _FIELD_NAMES[2:5]:
         val = getattr(entry, field_name)
         if val is not None and val.strip() != _NONE:
@@ -56,7 +58,12 @@ def _map_entry(u, doc_path, index, entry, text_name=None):
     return id_, entry.head, entry.deprel
 
 
-def _map_conll_document(path, internal_path, u, text_name=None):
+def _map_conll_document(path, 
+                        internal_path, 
+                        u, 
+                        text_name=None,
+                        anno_qname=None,
+                        skip_named_ordering=None):
     sentences = _read_data(path)
     doc_path = internal_path
     add_subnode(u, doc_path)
@@ -65,7 +72,7 @@ def _map_conll_document(path, internal_path, u, text_name=None):
     for s in sentences:
         nodes = [None]
         for i, tok in enumerate(s, tok_count):
-            nodes.append(_map_entry(u, doc_path, i, tok, text_name))
+            nodes.append(_map_entry(u, doc_path, i, tok, text_name, anno_qname=anno_qname))
             tok_count += 1
         for node_id, head, deprel in nodes[1:]:
             h_index = int(head)
@@ -73,7 +80,7 @@ def _map_conll_document(path, internal_path, u, text_name=None):
                 head_node = nodes[h_index][0]
                 add_pointing_relation(u, head_node, node_id, _TYPE_DEP, text_name, _ANNO_NAME_DEPREL, deprel)
         all_nodes.extend([id_ for id_, _, _ in nodes[1:]])
-    add_order_relations(u, all_nodes, order_name=text_name)
+    add_order_relations(u, all_nodes, order_name=None if skip_named_ordering else text_name)
 
 
 def start_import(path, **properties):
@@ -83,6 +90,9 @@ def start_import(path, **properties):
     'GraphUpdate'
     """
     safe_props = defaultdict(type(None), properties)
+    skip_named_ordering = PROPERTY_SKIP_NAMED_ORDERING in safe_props[PROPERTY_SKIP_NAMED_ORDERING] \
+        and safe_props[PROPERTY_SKIP_NAMED_ORDERING].lower() == 'true'
+    anno_qname = safe_props[PROPERTY_ANNO_QNAME]
     u = GraphUpdate()
     base_dir = os.path.normpath(path)
     root_name = os.path.basename(base_dir)
@@ -105,5 +115,10 @@ def start_import(path, **properties):
                     existing_structures.add(id_)
                 prev = id_
         internal_path = os.path.join(root_name, path[len(base_dir) + 1:])
-        _map_conll_document(path, os.path.splitext(internal_path)[0], u, text_name=safe_props[_PROPERTY_TEXT_NAME])
+        _map_conll_document(path, 
+                            os.path.splitext(internal_path)[0], 
+                            u, 
+                            text_name=safe_props[PROPERTY_TEXT_NAME],
+                            anno_qname=anno_qname,
+                            skip_named_ordering=skip_named_ordering)
     return u
