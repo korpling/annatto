@@ -78,7 +78,7 @@ def _map_conll_document(path,
             h_index = int(head)
             if h_index:
                 head_node = nodes[h_index][0]
-                add_pointing_relation(u, head_node, node_id, _TYPE_DEP, text_name, _ANNO_NAME_DEPREL, deprel)
+                add_pointing_relation(u, head_node, node_id, _TYPE_DEP, '', _ANNO_NAME_DEPREL, deprel)
         all_nodes.extend([id_ for id_, _, _ in nodes[1:]])
     add_order_relations(u, all_nodes, order_name=None if skip_named_ordering else text_name)
 
