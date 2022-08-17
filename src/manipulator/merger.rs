@@ -81,17 +81,17 @@ impl Manipulator for CheckingMergeFinalizer {
                 let v_ = &comparable_map.get(&k).unwrap().anno_key;
                 let av_1 = graph.get_node_annos().get_value_for_item(&k, &*v)?.unwrap();
                 let av_2 = graph.get_node_annos().get_value_for_item(&k, &*v_)?.unwrap();
+                let node_name = node_annos.get_value_for_item(&k, &NODE_NAME_KEY).unwrap().unwrap();
                 if !(*av_1).eq(&*av_2) {
-                    return Err(Box::new(AnnattoError::Manipulator { reason: String::from("Token don't match"), manipulator: String::from(self.module_name()) }));
+                    let error_msg = format!("Text values for node {} do not match: {} != {}", &node_name, av_1, av_2);
+                    return Err(Box::new(AnnattoError::Manipulator { reason: String::from(error_msg), manipulator: String::from(self.module_name()) }));
                 }
                 // delete node annotations that are no longer required
-                let node_name = node_annos.get_value_for_item(&k, &NODE_NAME_KEY).unwrap().unwrap();
                 if !(*v).name.as_str().eq(&keep_name[..]) {
                     let namespace = match ns_1 {
                         None => String::new(),
                         Some(s) => String::from(s)
                     };
-                    // FIXME where do we get a proper node name? Is there some sort of look-up available?
                     updates.add_event(UpdateEvent::DeleteNodeLabel { node_name: node_name.to_string(), anno_ns: namespace, anno_name: String::from(name_1) })?;
                 }
                 if !(*v_).name.as_str().eq(&keep_name[..]) {
@@ -99,7 +99,6 @@ impl Manipulator for CheckingMergeFinalizer {
                         None => String::new(),
                         Some(s) => String::from(s)
                     };
-                    // FIXME where do we get a proper node name? Is there some sort of look-up available?
                     updates.add_event(UpdateEvent::DeleteNodeLabel { node_name: node_name.to_string(), anno_ns: namespace, anno_name: String::from(name_2) })?;
                 }
             }
