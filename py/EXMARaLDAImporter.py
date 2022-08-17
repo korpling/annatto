@@ -136,7 +136,7 @@ def start_import(path, **properties):
         u = GraphUpdate()
         path = os.path.normpath(path)
         corpus_root_name = os.path.basename(path)
-        corpus_root(corpus_root_name)
+        corpus_root(u, corpus_root_name)
         _logger.info(f'Starting corpus path {path}')
         text_order = [t.strip() for t in properties[PROP_TEXT_ORDER].split(';')] \
                       if PROP_TEXT_ORDER in properties else None
@@ -155,7 +155,7 @@ def start_import(path, **properties):
                 _logger.info(f'Adding node {id_} as part of {prev}')
                 add_subnode(u, id_)                
                 prev = id_
-            import_ = EXMARaLDAImport(file_path, extra_path, u)
+            import_ = EXMARaLDAImport(file_path, os.path.join(corpus_root_name, extra_path), u)
             import_.map(text_order=text_order)
         return u
     except KeyboardInterrupt:

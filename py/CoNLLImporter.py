@@ -56,9 +56,9 @@ def _map_entry(u, doc_path, index, entry, text_name=None):
     return id_, entry.head, entry.deprel
 
 
-def _map_conll_document(path, u, text_name=None):
+def _map_conll_document(path, internal_path, u, text_name=None):
     sentences = _read_data(path)
-    doc_path = os.path.splitext(path)[0]
+    doc_path = internal_path
     add_subnode(u, doc_path)
     tok_count = 1
     all_nodes = []
@@ -104,5 +104,6 @@ def start_import(path, **properties):
                     add_subnode(u, id_)
                     existing_structures.add(id_)
                 prev = id_
-        _map_conll_document(path, u, text_name=safe_props[_PROPERTY_TEXT_NAME])
+        internal_path = os.path.join(root_name, path[len(base_dir) + 1:])
+        _map_conll_document(path, os.path.splitext(internal_path)[0], u, text_name=safe_props[_PROPERTY_TEXT_NAME])
     return u
