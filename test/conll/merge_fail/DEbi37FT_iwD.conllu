@@ -1,0 +1,163 @@
+1	Hi	hi	PROPN	NGIRR	_	0	root	_	_
+2	,	,	PUNCT	$,	_	1	punct	_	_
+
+1	weißt	wissen	VERB	VVFIN	_	0	root	_	_
+2	du	du	PRON	PPER	_	1	subj	_	_
+3	was	was	PRON	PWS	_	6	comp:obj	_	_
+4	ich	ich	PRON	PPER	_	7	subj	_	_
+5	heute	heute	ADV	ADV	_	7	mod	_	_
+6	erlebt	erleben	VERB	VVPP	_	7	comp:aux	_	_
+7	habe	haben	AUX	VAFIN	_	1	comp:obj	_	_
+8	?	?	PUNCT	$.	_	1	punct	_	_
+
+1	Ich	ich	PRON	PPER	_	2	subj	_	_
+2	stand	stehen	VERB	VVFIN	_	0	root	_	_
+3	an	an	ADP	APPR	_	2	comp:obl	_	_
+4	der	d	DET	ART	_	5	det	_	_
+5	Straße	Straße	NOUN	NN	_	3	comp:obj	_	_
+
+1	und	und	CCONJ	KON	_	2	cc	_	_
+2	sah	sehen	VERB	VVFIN	_	0	root	_	_
+3	ein	ein	DET	ART	_	4	det	_	_
+4	Paar	Paar	NOUN	NN	_	8	subj	_	_
+5	mit	mit	ADP	APPR	_	4	mod	_	_
+6	einem	ein	DET	ART	_	7	det	_	_
+7	Kinderwagen	Kinderwagen	NOUN	NN	_	5	comp:obj	_	_
+8	spazieren	spazieren	VERB	VVINF	_	2	comp:obj	_	_
+9	.	.	PUNCT	$.	_	2	punct	_	_
+
+1	Der	d	DET	ART	_	2	det	_	_
+2	Mann	Mann	NOUN	NN	_	3	subj	_	_
+3	spielte	spielen	VERB	VVFIN	_	0	root	_	_
+4	mit	mit	ADP	APPR	_	3	mod	_	_
+5	einem	ein	DET	ART	_	6	det	_	_
+6	Ball	Ball	NOUN	NN	_	4	comp:obj	_	_
+
+1	und	und	CCONJ	KON	_	4	cc	_	_
+2	auf	auf	ADP	APPR	_	4	mod	_	_
+3	einmal	einmal	ADV	ADV	_	2	fixed	_	_
+4	rollte	rollen	VERB	VVFIN	_	0	root	_	_
+5	der	d	DET	PDS	_	4	subj	_	_
+6	auf	auf	ADP	APPR	_	4	comp:obl	_	_
+7	die	d	DET	ART	_	8	det	_	_
+8	Straße	Straße	NOUN	NN	_	6	comp:obj	_	_
+9	.	.	PUNCT	$.	_	4	punct	_	_
+
+1	Auf	auf	ADP	APPR	_	5	comp:pred	_	_
+2	der	d	DET	ART	_	4	det	_	_
+3	anderen	ander	ADJ	PIDAT	_	4	mod	_	_
+4	Straßenseite	Straßenseite	NOUN	NN	_	1	comp:obj	_	_
+5	war	sein	VERB	VAFIN	_	0	root	_	_
+6	eine	ein	DET	ART	_	7	det	_	_
+7	Frau	Frau	NOUN	NN	_	5	subj	_	_
+8	mit	mit	ADP	APPR	_	7	mod	_	_
+9	Hund	Hund	NOUN	NN	_	8	comp:obj	_	_
+10	,	,	PUNCT	$,	_	5	punct	_	_
+11	die	d	PRON	PRELS	_	17	subj	_	_
+12	ihren	ihr	DET	PPOSAT	_	13	det	_	_
+13	Einkauf	Einkauf	ADV	NN	_	17	comp:obj	_	_
+14	aus	aus	ADP	APPR	_	17	comp:obl	_	_
+15	dem	d	DET	ART	_	16	det	_	_
+16	Kofferraum	Kofferraum	NOUN	NN	_	14	comp:obj	_	_
+17	rausnahm	rausnehmen	VERB	VVFIN	_	7	mod@relcl	_	_
+
+1	und	und	CCONJ	KON	_	4	cc	_	_
+2	ihr	ihr	DET	PPOSAT	_	3	det	_	_
+3	Hund	Hund	NOUN	NN	_	4	subj	_	_
+4	rannte	rennen	VERB	VVFIN	_	0	root	_	_
+5	auf	auf	ADP	APPR	_	4	mod	_	_
+6	einmal	einmal	ADV	ADV	_	5	fixed	_	_
+7	zu	zu	ADP	APPR	_	4	comp:obl	_	_
+8	dem	d	DET	ART	_	9	det	_	_
+9	Ball	Ball	NOUN	NN	_	7	comp:obj	_	_
+10	!	!	PUNCT	$.	_	4	punct	_	_
+
+1	Daraufhin	daraufhin	ADV	ADV	_	2	mod	_	_
+2	kam	kommen	VERB	VVFIN	_	0	root	_	_
+3	noch	noch	ADV	PTKMWL	_	5	mod	_	_
+4	ein	ein	DET	ART	_	5	det	_	_
+5	Auto	Auto	NOUN	NN	_	2	subj	_	_
+6	von	von	ADP	APPR	_	2	comp:obl	_	_
+7	der	d	DET	ART	_	9	det	_	_
+8	anderen	ander	ADJ	PIDAT	_	9	mod	_	_
+9	Seite	Seite	NOUN	NN	_	6	comp:obj	_	_
+
+1	und	und	CCONJ	KON	_	2	cc	_	_
+2	stoppte	stoppen	VERB	VVFIN	_	0	root	_	_
+3	.	.	PUNCT	$.	_	2	punct	_	_
+4	Das	d	DET	ART	_	5	det	_	_
+5	Auto	Auto	NOUN	NN	_	2	conj	_	_
+6	hinter	hinter	ADP	APPR	_	5	mod	_	_
+7	ihm	er	PRON	PPER	_	6	comp:obj	_	_
+8	in	in	ADP	APPR	_	5	mod	_	_
+9	diesem	diese	PRON	PDAT	_	10	det	_	_
+10	Fall	Fall	NOUN	NN	_	8	comp:obj	_	_
+11	auch	auch	ADV	ADV	_	5	orphan	_	_
+
+1	und	und	CCONJ	KON	_	2	cc	_	_
+2	fuhr	fahren	VERB	VVFIN	_	0	root	_	_
+3	ihm	er	PRON	PPER	_	2	comp:obj	_	_
+4	hinten	hinten	ADV	ADV	_	2	mod	_	_
+5	rein	rein	ADV	PTKVZ	_	2	compound@prt	_	_
+6	!	!	PUNCT	$.	_	2	punct	_	_
+
+1	Der	d	DET	ART	_	2	det	_	_
+2	Mann	Mann	NOUN	NN	_	7	subj	_	_
+3	mit	mit	ADP	APPR	_	2	mod	_	_
+4	dem	d	DET	ART	_	5	det	_	_
+5	Ball	Ball	NOUN	NN	_	3	comp:obj	_	_
+6	,	,	PUNCT	$,	_	7	punct	_	_
+7	half	helfen	VERB	VVFIN	_	0	root	_	_
+8	der	d	DET	ART	_	9	det	_	_
+9	Frau	Frau	NOUN	NN	_	7	comp:obj	_	_
+10	noch	noch	ADV	PTKMWL	_	7	mod	_	_
+11	mit	mit	ADP	APPR	_	7	mod	_	_
+12	ihrem	ihr	DET	PPOSAT	_	13	det	_	_
+13	Einkauf	Einkauf	NOUN	NN	_	11	comp:obj	_	_
+14	,	,	PUNCT	$,	_	7	punct	_	_
+15	der	d	PRON	PRELS	_	19	subj	_	_
+16	auf	auf	ADP	APPR	_	19	comp:obl	_	_
+17	die	d	DET	ART	_	18	det	_	_
+18	Straße	Straße	NOUN	NN	_	16	comp:obj	_	_
+19	fiel	fallen	VERB	VVFIN	_	13	mod@relcl	_	_
+
+1	und	und	CCONJ	KON	_	2	cc	_	_
+2	erkundigte	erkundigen	VERB	VVFIN	_	0	root	_	_
+3	sich	er|es|sie	PRON	PRF	_	2	comp:obj	_	_
+4	bei	bei	ADP	APPR	_	2	mod	_	_
+5	den	d	DET	ART	_	6	det	_	_
+6	Autofahrern	Autofahrer	NOUN	NN	_	4	comp:obj	_	_
+7	,	,	PUNCT	$,	_	2	punct	_	_
+8	ob	ob	SCONJ	KOUS	_	2	comp:obl	_	_
+9	alles	alle	PRON	PIS	_	11	subj	_	_
+10	okay	okay	ADJ	ADJD	_	11	comp:pred	_	_
+11	ist	sein	VERB	VAFIN	_	8	comp:obj	_	_
+12	.	.	PUNCT	$.	_	2	punct	_	_
+
+1	Die	d	PRON	PDS	_	2	subj	_	_
+2	haben	haben	VERB	VAFIN	_	0	root	_	_
+3	dann	dann	ADV	ADV	_	2	mod	_	_
+4	in	in	ADP	APPR	_	10	mod	_	_
+5	dem	d	DET	ART	_	6	det	_	_
+6	Moment	Moment	NOUN	NN	_	4	comp:obj	_	_
+7	schon	schon	ADV	ADV	_	2	mod	_	_
+8	die	d	DET	ART	_	9	det	_	_
+9	Polizei	Polizei	NOUN	NN	_	10	comp:obj	_	_
+10	gerufen	rufen	VERB	VVPP	_	2	comp:aux	_	_
+11	.	.	PUNCT	$.	_	2	punct	_	_
+
+1	Gott	Gott	PROPN	NGIRR	_	2	comp:obj	_	_
+2	sei	sein	AUX	VAFIN	_	4	discourse	_	_
+3	Dank	Dank	NOUN	NN	_	2	subj	_	_
+4	ist	sein	VERB	VAFIN	_	0	root	_	_
+5	keinem	keine	PRON	PIS	_	7	comp:obj	_	_
+6	etwas	etwas	ADV	PIS	_	4	subj	_	_
+7	passiert	passieren	ADJ	VVPP	_	4	comp:aux	_	_
+8	.	.	PUNCT	$.	_	4	punct	_	_
+
+1	Was	was	PRON	PWS	_	4	mod	_	_
+2	für	für	ADP	APPR	_	1	fixed	_	_
+3	ein	ein	DET	ART	_	4	det	_	_
+4	Tag	Tag	NOUN	NN	_	0	root	_	_
+5	!	!	PUNCT	$.	_	4	punct	_	_
+
