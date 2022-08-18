@@ -75,6 +75,8 @@ def _map_conll_document(path,
             nodes.append(_map_entry(u, doc_path, i, tok, text_name, anno_qname=anno_qname))
             tok_count += 1
         for node_id, head, deprel in nodes[1:]:
+            if not head.isnumeric():
+                continue
             h_index = int(head)
             if h_index:
                 head_node = nodes[h_index][0]
