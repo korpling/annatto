@@ -58,10 +58,15 @@ impl Manipulator for CheckingMergeFinalizer {
         let split_keep_name = split_qname(keep_name.as_str());
         let mut updates = GraphUpdate::default();
         // get to work
+        let mut docs_with_errors = HashSet::new();
         for result in node_annos.exact_anno_search(Some("annis"), "tok", ValueSearch::Any) {
             let m = result?;
             let node_id = m.node;
             let node_name = node_annos.get_value_for_item(&node_id, &NODE_NAME_KEY)?.unwrap();
+            let doc_name = String::from(node_name.split("#").collect_tuple::<(&str, &str)>().unwrap().0);
+            if docs_with_errors.contains(&doc_name) {
+                continue;
+            }
             let mut anno_values = search_name_tuples.iter()
             .map(|tpl| node_annos.get_value_for_item(&node_id, &AnnoKey {ns: smartstring::alias::String::from(tpl.0), name: smartstring::alias::String::from(tpl.1)}));
             let mut values = HashSet::new();
@@ -74,8 +79,7 @@ impl Manipulator for CheckingMergeFinalizer {
                 values.insert(v);
             }
             if values.len() > 1 {
-                let error_msg = format!("Text values do not match for node {:?}: {:?}", node_name, values);
-                return Err(Box::new(AnnattoError::Manipulator { reason: String::from(error_msg), manipulator: String::from(self.module_name()) }));
+                docs_with_errors.insert(doc_name);
             }
 
             for name_tuple in &search_name_tuples {
@@ -85,7 +89,11 @@ impl Manipulator for CheckingMergeFinalizer {
                     updates.add_event(UpdateEvent::DeleteNodeLabel { node_name: node_name.to_string(), anno_ns: String::from(ns), anno_name: String::from(name) })?;
                 }
             }
-        };   
+        };
+        if docs_with_errors.len() > 0 {
+            let msg = docs_with_errors.iter().join("\n");
+            return Err(Box::new(AnnattoError::Manipulator { reason: msg, manipulator: String::from(self.module_name()) }));
+        }   
         graph.apply_update(&mut updates, |_msg| {})?;
         Ok(())
     }
