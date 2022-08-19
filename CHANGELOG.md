@@ -14,3 +14,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 + unified path handling in EXMARaLDA and CoNLL importer (still needs refactoring to util method)
 + added properties to CoNLLImporter to drop import of ordering and to qualify annotations with a separate name
 + simplified implementation of merge checker
++ merge checker always finishes and lists all misaligned documents
