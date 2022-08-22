@@ -318,6 +318,9 @@ impl Workflow {
                 self.execute_single_importer(step, tx.clone())
             })
             .collect();
+        if let Some(sender) = &tx {
+            sender.send(StatusMessage::Info(String::from("Applying importer updates ...")))?;
+        }
         // Apply each graph update
         for mut u in updates? {
             g.apply_update(&mut u, |_msg| {})
