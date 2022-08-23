@@ -318,12 +318,22 @@ impl Workflow {
                 self.execute_single_importer(step, tx.clone())
             })
             .collect();
-        // Apply each graph update
-        for mut u in updates? {
-            g.apply_update(&mut u, |_msg| {})
-                .map_err(|reason| AnnattoError::UpdateGraph(reason.to_string()))?;
+        if let Some(sender) = &tx {
+            sender.send(StatusMessage::Info(String::from("Applying importer updates ...")))?;
         }
-
+        // collect all updates in a single update to only have a single call to `apply_update`
+        let mut super_update = GraphUpdate::new();
+        for u in updates? {
+            for uer in u.iter()? {
+                let ue = uer?;
+                let event = ue.1;
+                super_update.add_event(event);
+            }
+        }
+        // Apply super update
+        g.apply_update(&mut super_update, |_msg| {})
+            .map_err(|reason| AnnattoError::UpdateGraph(reason.to_string()))?;
+        
         // Execute all manipulators in sequence
         for desc in self.manipulator.iter() {
             desc.module
