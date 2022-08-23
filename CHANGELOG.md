@@ -15,3 +15,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 + added properties to CoNLLImporter to drop import of ordering and to qualify annotations with a separate name
 + simplified implementation of merge checker
 + merge checker always finishes and lists all misaligned documents
++ apply single combined update after imports are finished to avoid multiple calls to `apply_update`
