@@ -94,7 +94,7 @@ def start_import(path, **properties):
     'GraphUpdate'
     """
     safe_props = defaultdict(type(None), properties)
-    skip_named_ordering = PROPERTY_SKIP_NAMED_ORDERING in safe_props[PROPERTY_SKIP_NAMED_ORDERING] \
+    skip_named_ordering = PROPERTY_SKIP_NAMED_ORDERING in safe_props \
         and safe_props[PROPERTY_SKIP_NAMED_ORDERING].lower() == 'true'
     anno_qname = safe_props[PROPERTY_ANNO_QNAME]
     u = GraphUpdate()

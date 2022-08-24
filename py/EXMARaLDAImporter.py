@@ -28,6 +28,7 @@ _handler.setLevel(logging.INFO)
 _logger.setLevel(logging.INFO)
 _logger.addHandler(_handler)
 
+_DOC_NAME_PATTERN = r'.*\.(exb|xml)'
 PROP_TEXT_ORDER = 'text_order'
 
 
@@ -137,7 +138,7 @@ def start_import(path, **properties):
         _logger.info(f'Starting corpus path {path}')
         text_order = [t.strip() for t in properties[PROP_TEXT_ORDER].split(';')] \
                       if PROP_TEXT_ORDER in properties else None
-        for path, internal_path in path_structure(u, path, _DOC_NAME_PATTERN)
+        for path, internal_path in path_structure(u, path, _DOC_NAME_PATTERN):
             _logger.info(f'Reading {path} which is {internal_path}')
             import_ = EXMARaLDAImport(u, path, internal_path)
             import_.map(text_order=text_order)
