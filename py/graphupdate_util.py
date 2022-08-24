@@ -25,7 +25,7 @@ def path_structure(u, root_path, doc_name_pattern):
     for root, _, f_names in os.walk(root_path):
         for doc_name in filter(lambda fn: re.match(doc_name_pattern, fn), f_names):
             path = os.path.join(root, doc_name)
-            internal_path = path[len(root_path) + 1:].splitext()[0]
+            internal_path = os.path.join(root_name, path[len(root_path) + 1:]).splitext()[0]
             if internal_path not in created_paths:
                 add_subnode(u, internal_path)
                 created_paths.add(internal_path)
