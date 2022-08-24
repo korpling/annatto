@@ -6,7 +6,6 @@ use std::{
 };
 
 use graphannis::{update::GraphUpdate, AnnotationGraph};
-use serde::Serialize;
 
 use crate::{
     error::AnnattoError, error::Result, exporter_by_name, importer_by_name, manipulator_by_name,
@@ -288,8 +287,6 @@ pub fn execute_from_file(workflow_file: &Path, tx: Option<Sender<StatusMessage>>
 
 pub type StatusSender = Sender<StatusMessage>;
 
-use std::io::Write;
-
 impl Workflow {
     pub fn execute(&self, tx: Option<StatusSender>) -> Result<()> {
         // Create a vector of all conversion steps and report these as current status
@@ -327,7 +324,7 @@ impl Workflow {
             for uer in u.iter()? {
                 let ue = uer?;
                 let event = ue.1;
-                super_update.add_event(event);
+                super_update.add_event(event)?;
             }
         }
         // Apply super update

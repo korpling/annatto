@@ -1,15 +1,11 @@
 use std::collections::HashSet;
-use std::fmt::format;
-use std::hash::Hash;
-use std::iter::FromIterator;
-use std::{iter::Map, collections::BTreeMap};
+use std::collections::BTreeMap;
 use crate::{Manipulator,Module,workflow::StatusSender};
 use crate::error::AnnattoError;
 use graphannis::update::{GraphUpdate,UpdateEvent};
-use graphannis::{AnnotationGraph,CorpusStorage, graph::Match};
-use graphannis_core::{annostorage::ValueSearch,errors::GraphAnnisCoreError,graph::NODE_NAME_KEY,types::AnnoKey};
-use itertools::{Itertools, Update};
-use pyo3::panic;
+use graphannis::AnnotationGraph;
+use graphannis_core::{annostorage::ValueSearch,graph::NODE_NAME_KEY,types::AnnoKey};
+use itertools::Itertools;
 use smartstring;
 
 pub struct CheckingMergeFinalizer {}
@@ -23,7 +19,7 @@ impl Default for CheckingMergeFinalizer {
 
 fn split_qname(qname: &str) -> (&str, &str) {
     let split = qname.split(SEP_QNAME).collect::<Vec<&str>>();
-    let mut ns;
+    let ns;
     let name;
     match split.len() {                
         2 => {
@@ -49,8 +45,11 @@ impl Manipulator for CheckingMergeFinalizer {
         graph: &mut AnnotationGraph,
         properties: &BTreeMap<String, String>,
         tx: Option<StatusSender>,
-    ) -> Result<(), Box<dyn std::error::Error>> { // TODO this so far only implements Merge, Align is not implemented yet        
-        let mut qnames = properties.get(PROP_CHECK_NAMES).unwrap().split(";").collect::<Vec<&str>>();                
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        if let Some(sender) = &tx {
+            sender.send("Starting merge check");
+        }
+        let qnames = properties.get(PROP_CHECK_NAMES).unwrap().split(";").collect::<Vec<&str>>();                
         let search_name_tuples = qnames.iter().map(|qn| split_qname(qn)).collect::<Vec<(&str, &str)>>();        
         let node_annos = graph.get_node_annos();
         // variables for removing obsolete keys
@@ -67,7 +66,7 @@ impl Manipulator for CheckingMergeFinalizer {
             if docs_with_errors.contains(&doc_name) {
                 continue;
             }
-            let mut anno_values = search_name_tuples.iter()
+            let anno_values = search_name_tuples.iter()
             .map(|tpl| node_annos.get_value_for_item(&node_id, &AnnoKey {ns: smartstring::alias::String::from(tpl.0), name: smartstring::alias::String::from(tpl.1)}));
             let mut values = HashSet::new();
             for result in anno_values {

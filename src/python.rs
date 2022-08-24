@@ -5,7 +5,7 @@ mod graph;
 use std::sync::Arc;
 
 use crate::{error::AnnattoError, importer::Importer, Module};
-use pyo3::{prelude::*, types::{IntoPyDict, PyModule, PyDict, PyTuple}, wrap_pymodule};
+use pyo3::{prelude::*, types::{IntoPyDict, PyModule, PyTuple}, wrap_pymodule};
 use rust_embed::RustEmbed;
 
 #[derive(RustEmbed)]

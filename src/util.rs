@@ -1,6 +1,5 @@
-use graphannis::update::{GraphUpdate,GraphUpdateIterator,UpdateEvent};
-use crate::error::{Result,AnnattoError};
-use serde::{Serialize,Serializer};
+use graphannis::update::{GraphUpdate,UpdateEvent};
+use crate::error::Result;
 use std::{fs::File, io::Write};
 
 
