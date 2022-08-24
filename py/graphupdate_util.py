@@ -1,4 +1,6 @@
+from collections import defaultdict
 import os
+import re
 
 ANNIS_CORPUS = 'corpus'
 ANNIS_COVERAGE = 'Coverage'
@@ -12,6 +14,23 @@ ANNIS_PART_OF = 'PartOf'
 ANNIS_TIME = 'time'
 ANNIS_TOK = 'tok'
 ANNIS_TOK_WHITE_SPACE_AFTER = 'tok-whitespace-after'
+
+
+def path_structure(u, root_path, doc_name_pattern):
+    norm_path = os.path.normpath(root_path)
+    root_name = os.path.basename(norm_path)
+    corpus_root(u, root_name)
+    created_paths = set()
+    path_tuples = set()
+    for root, _, f_names in os.walk(root_path):
+        for doc_name in filter(lambda fn: re.match(doc_name_pattern, fn), f_names):
+            path = os.path.join(root, doc_name)
+            internal_path = path[len(root_path) + 1:].splitext()[0]
+            if internal_path not in created_paths:
+                add_subnode(u, internal_path)
+                created_paths.add(internal_path)
+                path_tuples.add((path, internal_path))
+    return sorted(path_tuples)
 
 
 def corpus_root(u, root_name):
