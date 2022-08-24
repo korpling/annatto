@@ -47,7 +47,7 @@ impl Manipulator for CheckingMergeFinalizer {
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(sender) = &tx {
-            sender.send("Starting merge check");
+            sender.send(crate::workflow::StatusMessage::Info(String::from("Starting merge check")))?;
         }
         let qnames = properties.get(PROP_CHECK_NAMES).unwrap().split(";").collect::<Vec<&str>>();                
         let search_name_tuples = qnames.iter().map(|qn| split_qname(qn)).collect::<Vec<(&str, &str)>>();        
