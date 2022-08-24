@@ -24,6 +24,8 @@ _FEAT_SEP = '|'
 _FUNC = 'func'
 _TYPE_DEP = 'dep'
 _ANNO_NAME_DEPREL = 'deprel'
+_DOC_NAME_PATTERN = r'.*\.(conll(u)?|txt)'
+
 _Token = namedtuple('Token', _FIELD_NAMES)
 
 
@@ -58,9 +60,9 @@ def _map_entry(u, doc_path, index, entry, text_name=None, anno_qname=None):
     return id_, entry.head, entry.deprel
 
 
-def _map_conll_document(path, 
+def _map_conll_document(u,
+                        path, 
                         internal_path, 
-                        u, 
                         text_name=None,
                         anno_qname=None,
                         skip_named_ordering=None):
@@ -96,30 +98,10 @@ def start_import(path, **properties):
         and safe_props[PROPERTY_SKIP_NAMED_ORDERING].lower() == 'true'
     anno_qname = safe_props[PROPERTY_ANNO_QNAME]
     u = GraphUpdate()
-    base_dir = os.path.normpath(path)
-    root_name = os.path.basename(base_dir)
-    corpus_root(u, root_name)
-    existing_structures = set()
-    for path in iglob(f'{base_dir}/**/*.conllu', recursive=True):
-        dir_name = os.path.dirname(path[len(base_dir) + 1:])
-        if dir_name not in existing_structures:
-            segments = []
-            prec, seg = os.path.split(dir_name)
-            while prec:
-                if seg:
-                    segments.append(seg)
-                prec, seg = os.path.split(prec)
-            prev = root_name
-            for seg in reversed(seg):
-                id_ = os.path.join(prev, seg)
-                if id_ not in existing_structures:
-                    add_subnode(u, id_)
-                    existing_structures.add(id_)
-                prev = id_
-        internal_path = os.path.join(root_name, path[len(base_dir) + 1:])
-        _map_conll_document(path, 
-                            os.path.splitext(internal_path)[0], 
-                            u, 
+    for path, internal_path in path_structure(u, path, _DOC_NAME_PATTERN):
+        _map_conll_document(u,
+                            path, 
+                            internal_path,
                             text_name=safe_props[PROPERTY_TEXT_NAME],
                             anno_qname=anno_qname,
                             skip_named_ordering=skip_named_ordering)
