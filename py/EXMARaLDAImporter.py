@@ -28,11 +28,12 @@ _handler.setLevel(logging.INFO)
 _logger.setLevel(logging.INFO)
 _logger.addHandler(_handler)
 
+_FILE_ENDINGS = ('.exb', '.xml')
 PROP_TEXT_ORDER = 'text_order'
 
 
 class EXMARaLDAImport(object):
-    def __init__(self, path, internal_path, graph_update) -> None:
+    def __init__(self, graph_update, path, internal_path) -> None:
         self._xml = ElementTree.parse(path)
         self._source_dir = os.path.dirname(path)
         self._path = internal_path
@@ -134,28 +135,12 @@ def start_import(path, **properties):
     try:
         _logger.info('------------------------------------------------')
         u = GraphUpdate()
-        path = os.path.normpath(path)
-        corpus_root_name = os.path.basename(path)
-        corpus_root(u, corpus_root_name)
         _logger.info(f'Starting corpus path {path}')
         text_order = [t.strip() for t in properties[PROP_TEXT_ORDER].split(';')] \
                       if PROP_TEXT_ORDER in properties else None
-        for file_path in iglob(f'{path}/**/**exb', recursive=True):
-            extra_path = os.path.splitext(file_path[len(path) + 1:])[0]
-            _logger.info(f'Reading {file_path} which is {extra_path}')
-            segments = []
-            root, seg = os.path.split(extra_path)
-            _logger.info(f'Initial segments {root} and {seg}')
-            while root:
-                segments.append(seg)
-                root, seg = os.path.split(root)
-            prev = corpus_root_name            
-            for seg in reversed(segments):
-                id_ = os.path.join(prev, seg)
-                _logger.info(f'Adding node {id_} as part of {prev}')
-                add_subnode(u, id_)                
-                prev = id_
-            import_ = EXMARaLDAImport(file_path, os.path.join(corpus_root_name, extra_path), u)
+        for path, internal_path in path_structure(u, path, _FILE_ENDINGS, logger=_logger):
+            _logger.info(f'Reading {path} which is {internal_path}')
+            import_ = EXMARaLDAImport(u, path, internal_path)
             import_.map(text_order=text_order)
         return u
     except KeyboardInterrupt:

@@ -1,4 +1,7 @@
+from collections import defaultdict
 import os
+import re
+from venv import create
 
 ANNIS_CORPUS = 'corpus'
 ANNIS_COVERAGE = 'Coverage'
@@ -14,14 +17,43 @@ ANNIS_TOK = 'tok'
 ANNIS_TOK_WHITE_SPACE_AFTER = 'tok-whitespace-after'
 
 
+def path_structure(u, root_path, file_endings, logger=None):
+    norm_path = os.path.normpath(root_path)
+    root_name = os.path.basename(norm_path)
+    if logger is not None:
+        logger.info(f'Creating corpus root {root_name}')
+    corpus_root(u, root_name)
+    created_paths = set()
+    path_tuples = set()
+    for root, _, f_names in os.walk(norm_path):
+        for doc_name in filter(lambda fn: os.path.splitext(fn)[1] in file_endings, f_names):
+            path = os.path.join(root, doc_name)
+            internal_path = os.path.splitext(os.path.join(root_name, path[len(norm_path) + 1:]))[0]
+            if internal_path not in created_paths:
+                segments = internal_path.split(os.pathsep)
+                for n_segments in range(2, len(segments)):
+                    inner_node = os.pathsep.join(segments[:n_segments])
+                    if inner_node not in created_paths:
+                        if logger is not None:
+                            logger.info(f'Creating inner node {inner_node}')
+                        add_subnode(u, inner_node)
+                        created_paths.add(inner_node)
+                if logger is not None:
+                    logger.info(f'Creating corpus node {internal_path}')
+                add_subnode(u, internal_path)
+                created_paths.add(internal_path)
+                path_tuples.add((path, internal_path))
+    return sorted(path_tuples)
+
+
 def corpus_root(u, root_name):
     u.add_node(root_name, node_type=ANNIS_CORPUS)
 
 
 def add_subnode(u, path):
     parent = os.path.dirname(path)
-    u.add_node(path, node_type=ANNIS_CORPUS)
-    u.add_edge(path, parent, ANNIS_NS, ANNIS_PART_OF, '')
+    u.add_node(path.replace(os.pathsep, '/'), node_type=ANNIS_CORPUS)
+    u.add_edge(path.replace(os.pathsep, '/'), parent.replace(os.pathsep, '/'), ANNIS_NS, ANNIS_PART_OF, '')
 
 
 def map_audio_source(u, audio_path, doc_path):
