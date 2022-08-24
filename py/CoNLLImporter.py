@@ -24,7 +24,7 @@ _FEAT_SEP = '|'
 _FUNC = 'func'
 _TYPE_DEP = 'dep'
 _ANNO_NAME_DEPREL = 'deprel'
-_DOC_NAME_PATTERN = r'.*\.(conll(u)?|txt)'
+_FILE_ENDINGS = ('.conll', '.conllu', '.txt')
 
 _Token = namedtuple('Token', _FIELD_NAMES)
 
@@ -98,7 +98,7 @@ def start_import(path, **properties):
         and safe_props[PROPERTY_SKIP_NAMED_ORDERING].lower() == 'true'
     anno_qname = safe_props[PROPERTY_ANNO_QNAME]
     u = GraphUpdate()
-    for path, internal_path in path_structure(u, path, _DOC_NAME_PATTERN):
+    for path, internal_path in path_structure(u, path, _FILE_ENDINGS):
         _map_conll_document(u,
                             path, 
                             internal_path,
