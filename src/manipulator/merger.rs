@@ -52,12 +52,19 @@ impl TryFrom<Option<&String>> for OnErrorValues {
     fn try_from(value: Option<&String>) -> Result<Self, Self::Error> {
         match value {
             None => Ok(OnErrorValues::default()),
-            Some(v) => match &v.trim().to_lowercase()[..] {
-                "fail" => Ok(OnErrorValues::Fail),
-                "drop" => Ok(OnErrorValues::Drop),
-                "forward" => Ok(OnErrorValues::Forward),
-                _ => Err(AnnattoError::Manipulator { reason: format!("Undefined value for property {}: {}", PROP_ON_ERROR, v), manipulator: String::from(MODULE_NAME) })
-            }
+            Some(v) => OnErrorValues::try_from(v)
+        }
+    }
+}
+
+impl TryFrom<&String> for OnErrorValues {
+    type Error = AnnattoError;
+    fn try_from(value: &String) -> Result<Self, Self::Error> {
+        match &value.trim().to_lowercase()[..] {
+            "fail" => Ok(OnErrorValues::Fail),
+            "drop" => Ok(OnErrorValues::Drop),
+            "forward" => Ok(OnErrorValues::Forward),
+            _ => Err(AnnattoError::Manipulator { reason: format!("Undefined value for property {}: {}", PROP_ON_ERROR, value), manipulator: String::from(MODULE_NAME) })
         }
     }
 }
