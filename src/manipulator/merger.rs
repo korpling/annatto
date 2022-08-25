@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::collections::BTreeMap;
+use std::convert::TryFrom;
 use crate::{Manipulator,Module,workflow::StatusSender};
 use crate::error::AnnattoError;
 use graphannis::update::{GraphUpdate,UpdateEvent};
@@ -36,8 +37,36 @@ fn split_qname(qname: &str) -> (&str, &str) {
 
 const PROP_CHECK_NAMES: &str = "check.names";
 const PROP_KEEP_NAME: &str = "keep.name";
+const PROP_ON_ERROR: &str = "on.error";
 const SEP_QNAME: &str = "::";
 
+
+enum OnErrorValues {    
+    Fail,
+    Drop,
+    Forward
+}
+
+impl TryFrom<Option<&String>> for OnErrorValues {
+    type Error = AnnattoError;
+    fn try_from(value: Option<&String>) -> Result<Self, Self::Error> {
+        match value {
+            None => Ok(OnErrorValues::default()),
+            Some(v) => match &v.trim().to_lowercase()[..] {
+                "fail" => Ok(OnErrorValues::Fail),
+                "drop" => Ok(OnErrorValues::Drop),
+                "forward" => Ok(OnErrorValues::Forward),
+                _ => Err(AnnattoError::Manipulator { reason: format!("Undefined value for property {}: {}", PROP_ON_ERROR, v), manipulator: String::from(MODULE_NAME) })
+            }
+        }
+    }
+}
+
+impl Default for OnErrorValues {
+    fn default() -> Self {
+        OnErrorValues::Fail
+    }
+}
 
 impl Manipulator for CheckingMergeFinalizer {
     fn manipulate_corpus(
@@ -49,6 +78,7 @@ impl Manipulator for CheckingMergeFinalizer {
         if let Some(sender) = &tx {
             sender.send(crate::workflow::StatusMessage::Info(String::from("Starting merge check")))?;
         }
+        let on_error = OnErrorValues::try_from(properties.get(PROP_ON_ERROR))?;
         let qnames = properties.get(PROP_CHECK_NAMES).unwrap().split(";").collect::<Vec<&str>>();                
         let search_name_tuples = qnames.iter().map(|qn| split_qname(qn)).collect::<Vec<(&str, &str)>>();        
         let node_annos = graph.get_node_annos();
@@ -79,6 +109,7 @@ impl Manipulator for CheckingMergeFinalizer {
             }
             if values.len() > 1 {
                 docs_with_errors.insert(doc_name);
+                continue;  // no updates for faulty documents
             }
 
             for name_tuple in &search_name_tuples {
@@ -91,15 +122,28 @@ impl Manipulator for CheckingMergeFinalizer {
         };
         if docs_with_errors.len() > 0 {
             let msg = docs_with_errors.iter().join("\n");
-            return Err(Box::new(AnnattoError::Manipulator { reason: msg, manipulator: String::from(self.module_name()) }));
+            if let Some(sender) = &tx {
+                sender.send(crate::workflow::StatusMessage::Warning(format!("Documents with ill-merged tokens:\n{}", msg)))?;
+            }
+            match on_error {
+                OnErrorValues::Fail => return Err(Box::new(AnnattoError::Manipulator { reason: String::from("Mismatching tokens in some documents."), manipulator: String::from(self.module_name()) })),
+                OnErrorValues::Drop => {
+                    for doc_node_id in docs_with_errors {
+                        updates.add_event(UpdateEvent::DeleteNode { node_name: doc_node_id })?;
+                    }
+                },
+                _ => {}
+            };
         }   
         graph.apply_update(&mut updates, |_msg| {})?;
         Ok(())
     }
 }
 
+const MODULE_NAME: &str = "CheckingMergeFinalizer";
+
 impl Module for CheckingMergeFinalizer {
     fn module_name(&self) -> &str {
-        "CheckingMergeFinalizer"
+        MODULE_NAME
     }
 }
