@@ -64,7 +64,9 @@ impl TryFrom<&String> for OnErrorValues {
             "fail" => Ok(OnErrorValues::Fail),
             "drop" => Ok(OnErrorValues::Drop),
             "forward" => Ok(OnErrorValues::Forward),
-            _ => Err(AnnattoError::Manipulator { reason: format!("Undefined value for property {}: {}", PROP_ON_ERROR, value), manipulator: String::from(MODULE_NAME) })
+            _ => Err(AnnattoError::Manipulator { 
+                reason: format!("Undefined value for property {}: {}", PROP_ON_ERROR, value), 
+                manipulator: String::from(MODULE_NAME) })
         }
     }
 }
