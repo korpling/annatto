@@ -84,7 +84,7 @@ def map_annotation(u, doc_path, id_, ns, name, value, *targets):
     u.add_node(span_id)
     u.add_node_label(span_id, ns, name, value)
     for target in targets:
-        u.add_edge(span_id, target, ANNIS_NS, ANNIS_COVERAGE, '')
+        coverage(u, [span_id], [target])
     return span_id
 
 
@@ -104,3 +104,8 @@ def add_pointing_relation(u, source, target, type_, anno_ns=None, anno_name=None
     if anno_name is not None and anno_val is not None:
         u.add_edge_label(source, target, '', ANNIS_POINTING_REL, type_, '' if anno_ns is None else anno_ns, anno_name, anno_val)
 
+
+def coverage(u, source_nodes, target_nodes):
+    for src in source_nodes:
+        for tgt in target_nodes:
+            u.add_edge(src, tgt, ANNIS_NS, ANNIS_COVERAGE, '')
