@@ -23,7 +23,7 @@ _ATTR_TYPE = 'type'
 _ATTR_URL = 'url'
 # logger
 _logger = logging.getLogger(__name__)
-_handler = logging.FileHandler('exmaralda-importer.log')
+_handler = logging.StreamHandler()
 _handler.setLevel(logging.INFO)
 _logger.setLevel(logging.INFO)
 _logger.addHandler(_handler)
@@ -41,6 +41,8 @@ class EXMARaLDAImport(object):
         self._media_node = None
         self._spk2tok = {}
         self._timeline = None
+        self._span_count = 0
+        self._token_count = 0
 
     @property
     def name(self):
@@ -78,9 +80,10 @@ class EXMARaLDAImport(object):
         xml = self._xml
         tl = self._timeline
         token_tiers = xml.findall(f'.//{_TAG_TIER}[@{_ATTR_TYPE}="{_TYPE_TOK}"]')
-        token_count = 0
         if text_order is not None:
             token_tiers.sort(key=lambda t: text_order.index(t.attrib[_ATTR_CATEGORY]))
+        time_values = sorted([tl[k] for tier in token_tiers for e in tier for k in (e.attrib[_ATTR_START], e.attrib[_ATTR_END])])
+        empty_toks = [map_token(self._u, self._path, i, '', ' ', time_values[i - 1], time_values[i]) for i in range(1, len(time_values))]        
         for tier in token_tiers:
             category = tier.attrib[_ATTR_CATEGORY]
             try:
@@ -92,16 +95,16 @@ class EXMARaLDAImport(object):
             tokens = [(tl[e.attrib[_ATTR_START]], tl[e.attrib[_ATTR_END]], e.text) for e in tier.findall(f'./{_TAG_EVENT}')]
             self._spk2tok[speaker] = {}
             for start, end, text_value in sorted(tokens):
-                token_count += 1
-                id_ = map_token(self._u, self._path, token_count, category, text_value, start, end)
+                self._span_count += 1
+                id_ = map_token_as_span(self._u, self._path, self._span_count, category, text_value, start, end, empty_toks)
                 self._spk2tok[speaker][id_] = (start, end)
             add_order_relations(self._u, sorted(self._spk2tok[speaker], key=lambda e: self._spk2tok[speaker][e]), category)
+        
 
     def _map_annotations(self):
         xml = self._xml
         anno_tiers = xml.findall(f'.//{_TAG_TIER}[@{_ATTR_TYPE}="{_TYPE_ANNOTATION}"]')
         tl = self._timeline
-        span_count = 0
         for tier in anno_tiers:
             speaker = tier.attrib[_ATTR_SPEAKER]
             category = tier.attrib[_ATTR_CATEGORY]
@@ -113,8 +116,8 @@ class EXMARaLDAImport(object):
                     continue
                 value = event.text.strip()
                 covered_tokens = filter(lambda t: t[0] >= start and t[1] <= end, tokens)
-                span_count += 1
-                map_annotation(self._u, self._path, span_count, speaker, category, value, *[id_ for _, _, id_ in covered_tokens])
+                self._span_count += 1
+                map_annotation(self._u, self._path, self._span_count, speaker, category, value, *[id_ for _, _, id_ in covered_tokens])
 
     def _read_timeline(self):
         self._timeline = {tli.attrib[_ATTR_ID]: float(tli.attrib[_ATTR_TIME]) for tli in self._xml.findall(f'.//{_TAG_TLI}[@{_ATTR_TIME}]')}
@@ -144,4 +147,5 @@ def start_import(path, **properties):
             import_.map(text_order=text_order)
         return u
     except KeyboardInterrupt:
+        _logger.error(f'Imports cancelled by user (keyboard interrupt).')
         exit(1)
