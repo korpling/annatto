@@ -5,7 +5,11 @@ mod graph;
 use std::sync::Arc;
 
 use crate::{error::AnnattoError, importer::Importer, Module};
-use pyo3::{prelude::*, types::{IntoPyDict, PyModule, PyTuple}, wrap_pymodule};
+use pyo3::{
+    prelude::*,
+    types::{IntoPyDict, PyModule, PyTuple},
+    wrap_pymodule,
+};
 use rust_embed::RustEmbed;
 
 #[derive(RustEmbed)]
@@ -59,8 +63,10 @@ impl Importer for PythonImporter {
             let code_module =
                 PyModule::from_code(py, &self.code, &format!("{}.py", &self.name), &self.name)?;
             let args = PyTuple::new(py, &[input_path.to_str()]);
-            let result: graph::GraphUpdate =
-                code_module.getattr("start_import")?.call(args, Some(properties.into_py_dict(py)))?.extract()?;
+            let result: graph::GraphUpdate = code_module
+                .getattr("start_import")?
+                .call(args, Some(properties.into_py_dict(py)))?
+                .extract()?;
 
             Ok(result.u)
         });
@@ -75,16 +81,16 @@ impl Importer for PythonImporter {
             })?
             .into_inner()?;
         Ok(result)
-    }    
+    }
 }
-
 
 impl PythonImporter {
     pub fn from_name(name: &str) -> PythonImporter {
         let py_name = format!("{}.py", name);
         PythonImporter {
             name: name.to_string(),
-            code: String::from_utf8_lossy(&Scripts::get(py_name.as_str()).unwrap().data).to_string()
+            code: String::from_utf8_lossy(&Scripts::get(py_name.as_str()).unwrap().data)
+                .to_string(),
         }
     }
 }
@@ -98,14 +104,14 @@ impl Module for PythonImporter {
 #[cfg(test)]
 mod tests {
 
-    use std::path::Path;
     use std::collections::BTreeMap;
+    use std::path::Path;
 
     use graphannis::AnnotationGraph;
     use graphannis_core::annostorage::ValueSearch;
 
     use super::*;
-    
+
     #[test]
     fn run_dummy_importer() {
         let importer = PythonImporter::from_name("DummyImporter");
@@ -130,7 +136,7 @@ mod tests {
         let props = BTreeMap::default();
         let path = Path::new("test/exmaralda/importer/");
         let mut u = importer.import_corpus(path, &props, None).unwrap();
-        let mut g = AnnotationGraph::new(false).unwrap();        
+        let mut g = AnnotationGraph::new(false).unwrap();
         g.apply_update(&mut u, |_| {}).unwrap();
         assert_eq!(1, 1)
     }
@@ -141,7 +147,7 @@ mod tests {
         let props = BTreeMap::default();
         let path = Path::new("test/conll/importer/");
         let mut u = importer.import_corpus(path, &props, None).unwrap();
-        let mut g = AnnotationGraph::new(false).unwrap();        
+        let mut g = AnnotationGraph::new(false).unwrap();
         g.apply_update(&mut u, |_| {}).unwrap();
         assert_eq!(1, 1)
     }

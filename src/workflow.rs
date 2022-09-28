@@ -9,8 +9,7 @@ use graphannis::{update::GraphUpdate, AnnotationGraph};
 
 use crate::{
     error::AnnattoError, error::Result, exporter_by_name, importer_by_name, manipulator_by_name,
-    ExporterStep, ImporterStep, ManipulatorStep, Step, StepID,
-    util::write_to_file,
+    util::write_to_file, ExporterStep, ImporterStep, ManipulatorStep, Step, StepID,
 };
 use rayon::prelude::*;
 
@@ -108,7 +107,7 @@ impl TryFrom<PathBuf> for Workflow {
                             ELEM_IMPORTER => {
                                 mod_name = attr.remove(ATT_NAME);
                                 path = attr.remove(ATT_PATH).map(PathBuf::from);
-                                // leaking currently only supported for importers, a serialization of graph objects 
+                                // leaking currently only supported for importers, a serialization of graph objects
                                 // as they result from manipulators could be achieved by graphml exports;
                                 // leaking exporter results is redundant
                                 leak_path = attr.remove(ATT_LEAK_PATH).map(PathBuf::from);
@@ -135,10 +134,12 @@ impl TryFrom<PathBuf> for Workflow {
                                         }
                                         leak_results_to = match &leak_path {
                                             None => None,
-                                            Some(path_buf) => if path_buf.is_relative() {                                                
-                                                Some(workflow_dir.join(path_buf))
-                                            } else {
-                                                Some(PathBuf::from(path_buf))
+                                            Some(path_buf) => {
+                                                if path_buf.is_relative() {
+                                                    Some(workflow_dir.join(path_buf))
+                                                } else {
+                                                    Some(PathBuf::from(path_buf))
+                                                }
                                             }
                                         };
                                     }
@@ -316,7 +317,9 @@ impl Workflow {
             })
             .collect();
         if let Some(sender) = &tx {
-            sender.send(StatusMessage::Info(String::from("Applying importer updates ...")))?;
+            sender.send(StatusMessage::Info(String::from(
+                "Applying importer updates ...",
+            )))?;
         }
         // collect all updates in a single update to only have a single call to `apply_update`
         let mut super_update = GraphUpdate::new();
@@ -330,7 +333,7 @@ impl Workflow {
         // Apply super update
         g.apply_update(&mut super_update, |_msg| {})
             .map_err(|reason| AnnattoError::UpdateGraph(reason.to_string()))?;
-        
+
         // Execute all manipulators in sequence
         for desc in self.manipulator.iter() {
             desc.module
@@ -358,7 +361,7 @@ impl Workflow {
         export_result?;
         Ok(())
     }
-    
+
     fn execute_single_importer(
         &self,
         step: &ImporterStep,
