@@ -8,6 +8,7 @@ from graphupdate_util import *
 PROPERTY_TEXT_NAME = 'text_name'
 PROPERTY_SKIP_NAMED_ORDERING = 'skip_named_ordering'
 PROPERTY_ANNO_QNAME = 'anno_qname'
+PROPERTY_SENT_ANNOS = 'sentence_annos'
 
 _FIELD_NAMES = [
     'id',

@@ -82,8 +82,8 @@ class EXMARaLDAImport(object):
         token_tiers = xml.findall(f'.//{_TAG_TIER}[@{_ATTR_TYPE}="{_TYPE_TOK}"]')
         if text_order is not None:
             token_tiers.sort(key=lambda t: text_order.index(t.attrib[_ATTR_CATEGORY]))
-        time_values = sorted([tl[k] for tier in token_tiers for e in tier for k in (e.attrib[_ATTR_START], e.attrib[_ATTR_END])])
-        empty_toks = [map_token(self._u, self._path, i, '', ' ', time_values[i - 1], time_values[i]) for i in range(1, len(time_values))]        
+        time_values = sorted(set(tl[k] for tier in token_tiers for e in tier for k in (e.attrib[_ATTR_START], e.attrib[_ATTR_END])))
+        empty_toks = [(time_values[i - 1], map_token(self._u, self._path, i, '', ' ', time_values[i - 1], time_values[i])) for i in range(1, len(time_values))]        
         for tier in token_tiers:
             category = tier.attrib[_ATTR_CATEGORY]
             try:
@@ -98,8 +98,7 @@ class EXMARaLDAImport(object):
                 self._span_count += 1
                 id_ = map_token_as_span(self._u, self._path, self._span_count, category, text_value, start, end, empty_toks)
                 self._spk2tok[speaker][id_] = (start, end)
-            add_order_relations(self._u, sorted(self._spk2tok[speaker], key=lambda e: self._spk2tok[speaker][e]), category)
-        
+            add_order_relations(self._u, sorted(self._spk2tok[speaker], key=lambda e: self._spk2tok[speaker][e]), category)        
 
     def _map_annotations(self):
         xml = self._xml
