@@ -2,6 +2,7 @@ from glob import iglob
 from graphannis.graph import GraphUpdate
 import logging
 import os
+import sys
 from xml.etree import ElementTree
 
 from graphupdate_util import *
@@ -23,7 +24,7 @@ _ATTR_TYPE = 'type'
 _ATTR_URL = 'url'
 # logger
 _logger = logging.getLogger(__name__)
-_handler = logging.StreamHandler()
+_handler = logging.StreamHandler(stream=sys.stdout)
 _handler.setLevel(logging.INFO)
 _logger.setLevel(logging.INFO)
 _logger.addHandler(_handler)
