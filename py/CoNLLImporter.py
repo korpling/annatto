@@ -8,7 +8,6 @@ from graphupdate_util import *
 PROPERTY_TEXT_NAME = 'text_name'
 PROPERTY_SKIP_NAMED_ORDERING = 'skip_named_ordering'
 PROPERTY_ANNO_QNAME = 'anno_qname'
-PROPERTY_SENT_ANNOS = 'sentence_annos'
 
 _FIELD_NAMES = [
     'id',
@@ -26,6 +25,8 @@ _FUNC = 'func'
 _TYPE_DEP = 'dep'
 _ANNO_NAME_DEPREL = 'deprel'
 _FILE_ENDINGS = ('.conll', '.conllu', '.txt')
+_META_MARKER = '#'
+_ANNO_NAME_S = 'sentence'
 
 _Token = namedtuple('Token', _FIELD_NAMES)
 
@@ -34,13 +35,18 @@ def _read_data(path):
     with open(path) as f:
         lines = f.readlines()
     sentences = [[]]
+    sentence_annotations = [{}]
     for line in lines:
+        if line.startswith(_META_MARKER):
+            k, v = map(str.strip, line[line.find(_META_MARKER) + 1:].strip().split('=', 1))
+            sentence_annotations[-1][k] = v
         l = line.strip().split('\t')
         if not l:
             sentences.append([])
+            sentence_annotations.append({})
         elif len(l) == 10:
             sentences[-1].append(_Token(*l[:8]))
-    return sentences
+    return sentences, sentence_annotations
 
 
 def _map_entry(u, doc_path, index, entry, text_name=None, anno_qname=None):
@@ -67,12 +73,12 @@ def _map_conll_document(u,
                         text_name=None,
                         anno_qname=None,
                         skip_named_ordering=None):
-    sentences = _read_data(path)
+    sentences, annotations = _read_data(path)
     doc_path = internal_path
     add_subnode(u, doc_path)
     tok_count = 1
     all_nodes = []
-    for s in sentences:
+    for s_id, (s, a) in enumerate(zip(sentences), 1):
         nodes = [None]
         for i, tok in enumerate(s, tok_count):
             nodes.append(_map_entry(u, doc_path, i, tok, text_name, anno_qname=anno_qname))
@@ -84,6 +90,9 @@ def _map_conll_document(u,
             if h_index:
                 head_node = nodes[h_index][0]
                 add_pointing_relation(u, head_node, node_id, _TYPE_DEP, '', _ANNO_NAME_DEPREL, deprel)
+        span_id = map_annotation(u, doc_path=doc_path, id_=s_id, ns=text_name, name=_ANNO_NAME_S, value=str(s_id), targets=nodes[1:])
+        for k, v in a.items():
+            u.add_node_label(span_id, text_name, k, v)
         all_nodes.extend([id_ for id_, _, _ in nodes[1:]])
     add_order_relations(u, all_nodes, order_name=None if skip_named_ordering else text_name)
 
