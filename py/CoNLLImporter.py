@@ -1,9 +1,17 @@
 from collections import defaultdict, namedtuple
 from glob import iglob
 from graphannis.graph import GraphUpdate
-import os
+import logging
+import sys
 
 from graphupdate_util import *
+
+# logger
+_logger = logging.getLogger(__name__)
+_handler = logging.FileHandler('conll-importer.log')
+_handler.setLevel(logging.INFO)
+_logger.setLevel(logging.INFO)
+_logger.addHandler(_handler)
 
 PROPERTY_TEXT_NAME = 'text_name'
 PROPERTY_SKIP_NAMED_ORDERING = 'skip_named_ordering'
@@ -32,6 +40,7 @@ _Token = namedtuple('Token', _FIELD_NAMES)
 
 
 def _read_data(path):
+    _logger.info(f'.. reading data ..')
     with open(path) as f:
         lines = f.readlines()
     sentences = [[]]
@@ -78,7 +87,7 @@ def _map_conll_document(u,
     add_subnode(u, doc_path)
     tok_count = 1
     all_nodes = []
-    for s_id, (s, a) in enumerate(zip(sentences), 1):
+    for s_id, (s, a) in enumerate(zip(sentences, annotations), 1):
         nodes = [None]
         for i, tok in enumerate(s, tok_count):
             nodes.append(_map_entry(u, doc_path, i, tok, text_name, anno_qname=anno_qname))
@@ -89,10 +98,10 @@ def _map_conll_document(u,
             h_index = int(head)
             if h_index:
                 head_node = nodes[h_index][0]
-                add_pointing_relation(u, head_node, node_id, _TYPE_DEP, '', _ANNO_NAME_DEPREL, deprel)
-        span_id = map_annotation(u, doc_path=doc_path, id_=s_id, ns=text_name, name=_ANNO_NAME_S, value=str(s_id), targets=nodes[1:])
+                add_pointing_relation(u, head_node, node_id, _TYPE_DEP, '', _ANNO_NAME_DEPREL, deprel)        
+        span_id = map_annotation(u, doc_path, s_id, '' if text_name is None else text_name, _ANNO_NAME_S, str(s_id), *[n_id for n_id, _, _ in nodes[1:]])
         for k, v in a.items():
-            u.add_node_label(span_id, text_name, k, v)
+            u.add_node_label(span_id, '' if text_name is None else text_name, k, v)
         all_nodes.extend([id_ for id_, _, _ in nodes[1:]])
     add_order_relations(u, all_nodes, order_name=None if skip_named_ordering else text_name)
 
@@ -105,10 +114,11 @@ def start_import(path, **properties):
     """
     safe_props = defaultdict(type(None), properties)
     skip_named_ordering = PROPERTY_SKIP_NAMED_ORDERING in safe_props \
-        and safe_props[PROPERTY_SKIP_NAMED_ORDERING].lower() == 'true'
+        and safe_props[PROPERTY_SKIP_NAMED_ORDERING].lower().strip() == 'true'
     anno_qname = safe_props[PROPERTY_ANNO_QNAME]
     u = GraphUpdate()
-    for path, internal_path in path_structure(u, path, _FILE_ENDINGS):
+    for path, internal_path in path_structure(u, path, _FILE_ENDINGS):        
+        _logger.info(f'Starting {path} ...')
         _map_conll_document(u,
                             path, 
                             internal_path,
