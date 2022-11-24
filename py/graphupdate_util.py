@@ -93,7 +93,8 @@ def map_token_as_span(u, doc_path, id_, text_name, value, start_time, end_time, 
 def map_annotation(u, doc_path, id_, ns, name, value, *targets):
     span_id = f'{doc_path}#sSpan{id_}'
     u.add_node(span_id)
-    u.add_node_label(span_id, ns, name, value)
+    if name is not None:
+        u.add_node_label(span_id, ns, name, value)
     for target in targets:
         coverage(u, [span_id], [target])
     return span_id
