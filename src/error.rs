@@ -78,4 +78,3 @@ impl From<AnnattoError> for PyErr {
         PyOSError::new_err(e.to_string())
     }
 }
-
