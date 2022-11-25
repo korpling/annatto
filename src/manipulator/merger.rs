@@ -117,32 +117,39 @@ impl Manipulator for CheckingMergeFinalizer {
                panic!("No ordering with name {}", *qname); //TODO
             }            
         }
+        // set up some trackers
+
         // merge or align        
         let other_names = qnames.into_iter().filter(|&name| !keep_name.as_str().eq(name)).collect::<Vec<&str>>();
         for item in ordered_items_by_name.get(keep_name.as_str()).unwrap() {
             let ref_val = node_annos.get_value_for_item(item, &keep_name_key)?.unwrap();  // by definition this has to exist
+            let ref_node_name = node_annos.get_value_for_item(item, &NODE_NAME_KEY)?.unwrap();  // existence guaranteed
             for other_name in &other_names {
                 let i = index_by_name.get(*other_name).unwrap();
                 if let Some(other_item) = ordered_items_by_name.get(*other_name).unwrap().get(*i) {
-                    let other_val = node_annos.get_value_for_item(other_item, *other_name)?.unwrap();
+                    let other_key = AnnoKey {ns: smartstring::alias::String::from(""), name: smartstring::alias::String::from(*other_name)};
+                    let other_val = node_annos.get_value_for_item(other_item, &other_key)?.unwrap();
                     if (*ref_val).eq(&*other_val) {  // text values match
                         // align or merge
                         // case merge
                         let anno_keys = node_annos.get_all_keys_for_item(other_item, None, None)?;
+                        // annotations directly on the ordered node
                         for ak in anno_keys {
                             let av = node_annos.get_value_for_item(other_item, &*ak)?.unwrap();  // existence guaranteed
-                            updates.add_event(UpdateEvent::AddNodeLabel { node_name: item, anno_ns: ak.ns, anno_name: ak.name, anno_value: av });
-                            
+                            updates.add_event(UpdateEvent::AddNodeLabel { node_name: String::from(&*ref_node_name), anno_ns: ak.ns.to_string(), anno_name: ak.name.to_string(), anno_value: av.to_string() });
                         }
-                        updates.add_event(UpdateEvent::DeleteNode { node_name: other_item });
+                        // delete ordered node, the rest (edges and labels) should theoretically die as a consequence
+                        let other_node_name = node_annos.get_value_for_item(other_item, &NODE_NAME_KEY)?.unwrap().to_string();  // existence guaranteed
+                        updates.add_event(UpdateEvent::DeleteNode { node_name: other_node_name });
                     } else {  // text values don't match
                         // alternative 
                         // TODO implement logic for punctuation etc, for now just fail
-                        panic!("Could not merge target text {} with text {}", keep_name.as_str(), *name);  // TODO
+                        panic!("Could not merge target text {} with text {}", keep_name.as_str(), *other_name);  // TODO
                     }                    
                 } else {
                     // no further nodes
-                }                
+                }
+                index_by_name.insert(*other_name, i + 1);
             }
         }
         //for result in node_annos.exact_anno_search(Some(ANNIS_NS), "tok", ValueSearch::Any) {
