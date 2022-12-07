@@ -5,6 +5,7 @@ from venv import create
 
 ANNIS_CORPUS = 'corpus'
 ANNIS_COVERAGE = 'Coverage'
+ANNIS_DOMINANCE = 'Dominance'
 ANNIS_POINTING_REL = 'Pointing'
 ANNIS_FILE = 'file'
 ANNIS_NS = 'annis'
@@ -100,6 +101,16 @@ def map_annotation(u, doc_path, id_, ns, name, value, *targets):
     return span_id
 
 
+def map_hierarchical_annotation(u, doc_path, id_, ns, name, value, *targets):
+    struct_id = f'{doc_path}#sStruct{id_}'
+    u.add_node(span_id)
+    if name is not None:
+        u.add_node_label(struct_id, ns, name, value)
+    for target in targets:
+        dominance(u, [struct_id], [target])
+    return struct_id
+
+
 def map_token_annotation(u, target_uri, ns, name, value):
     u.add_node_label(target_uri, ns, name, value)
 
@@ -117,7 +128,15 @@ def add_pointing_relation(u, source, target, type_, anno_ns=None, anno_name=None
         u.add_edge_label(source, target, '', ANNIS_POINTING_REL, type_, '' if anno_ns is None else anno_ns, anno_name, anno_val)
 
 
-def coverage(u, source_nodes, target_nodes):
+def edges(u, source_nodes, target_nodes, component_type):
     for src in source_nodes:
         for tgt in target_nodes:
-            u.add_edge(src, tgt, ANNIS_NS, ANNIS_COVERAGE, '')
+            u.add_edge(src, tgt, ANNIS_NS, component_type, '')
+
+
+def coverage(u, source_nodes, target_nodes):
+    edges(u, source_nodes, target_nodes, ANNIS_COVERAGE)
+
+
+def dominance(u, source_nodes, target_nodes):
+    edges(u, source_nodes, target_nodes, ANNIS_DOMINANCE)
