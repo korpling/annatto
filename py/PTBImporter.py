@@ -18,20 +18,20 @@ def map_document(u, path, doc_path, cat_name=_DEFAULT_CAT_NAME):
     stack = []
     children = []
     val = ''
-    t_count = 0
     s_count = 0
+    tokens = []
     for c in data:
         if c == '(':
             stack.push(())  # push
         elif c == ')':
             # pop
             if val:
-                t_count += 1
                 s_count += 1
                 stack[-1] += (val,)
                 val = ''
                 cat, text = stack.pop()
-                token_id = map_token(u, doc_path, t_count, None, text)
+                token_id = map_token(u, doc_path, len(tokens) + 1, None, text)
+                tokens.append(token_id)
                 struct_id = map_hierarchical_annotation(u, doc_path, s_count, None, cat_name, cat, [token_id])
                 children.append(struct_id)
             else:
@@ -45,6 +45,7 @@ def map_document(u, path, doc_path, cat_name=_DEFAULT_CAT_NAME):
                 val = ''
         else:            
             val += c
+    add_order_relations(u, tokens)
 
 
 def start_import(path, **properties):
