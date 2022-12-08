@@ -1,11 +1,11 @@
-from functools import partial
+from collections import defaultdict
 from graphannis.graph import GraphUpdate
 from graphupdate_util import *
-import os
 import re
 
 
-_FILE_ENDINGS = ('.ptb')
+_PROP_TEXT_NAME = 'text_name'
+_FILE_ENDINGS = ('.ptb',)
 _FIXED_SEQUENCES = {
     '-LRB-': '(',
     '-RRB-': ')'
@@ -13,7 +13,7 @@ _FIXED_SEQUENCES = {
 _DEFAULT_CAT_NAME = 'cat'
 
 
-def map_document(u, path, doc_path, cat_name=_DEFAULT_CAT_NAME):
+def map_document(u, path, doc_path, cat_name=_DEFAULT_CAT_NAME, text_name=''):
     with open(path) as f:
         data = f.read()
     stack = []
@@ -32,14 +32,14 @@ def map_document(u, path, doc_path, cat_name=_DEFAULT_CAT_NAME):
                 stack[-1] += (val,)
                 val = ''
                 cat, text = stack.pop()
-                token_id = map_token(u, doc_path, len(tokens) + 1, None, text)
+                token_id = map_token(u, doc_path, len(tokens) + 1, text_name, text)
                 tokens.append(token_id)
-                struct_id = map_hierarchical_annotation(u, doc_path, s_count, '', cat_name, cat, token_id)
+                struct_id = map_hierarchical_annotation(u, doc_path, s_count, text_name, cat_name, cat, token_id)
                 children.append(struct_id)
             elif stack and stack[-1]:
                 s_count += 1
                 (cat,) = stack.pop()
-                struct_id = map_hierarchical_annotation(u, doc_path, s_count, '', cat_name, cat, *children)
+                struct_id = map_hierarchical_annotation(u, doc_path, s_count, text_name, cat_name, cat, *children)
                 children = [struct_id]
         elif c == ' ':
             if val:
@@ -47,7 +47,7 @@ def map_document(u, path, doc_path, cat_name=_DEFAULT_CAT_NAME):
                 val = ''
         else:            
             val += c
-    add_order_relations(u, tokens)
+    add_order_relations(u, tokens, text_name)
 
 
 def start_import(path, **properties):
@@ -57,6 +57,7 @@ def start_import(path, **properties):
     'GraphUpdate'
     """
     u = GraphUpdate()
+    safe_props = defaultdict(type(None), properties)
     for path, internal_path in path_structure(u, path, _FILE_ENDINGS):
-        map_document(u, path, internal_path)
+        map_document(u, path, internal_path, text_name=safe_props[_PROP_TEXT_NAME])
     return u
