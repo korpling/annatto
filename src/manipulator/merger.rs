@@ -164,7 +164,7 @@ impl Manipulator for Merger {
         for edge_component_type in [AnnotationComponentType::Coverage, 
                                                              AnnotationComponentType::Dominance, 
                                                              AnnotationComponentType::Pointing] {            
-            for edge_component in graph.get_all_components(Some(edge_component_type), None) {            
+            for edge_component in graph.get_all_components(Some(edge_component_type.clone()), None) {            
                 let edge_component_name = &edge_component.name;
                 if let Some(edge_storage) = graph.get_graphstorage(&edge_component) {
                     // there are some coverage edges
