@@ -5,6 +5,7 @@ use std::hash::Hash;
 use std::iter::FromIterator;
 use crate::{Manipulator,Module,workflow::StatusSender};
 use crate::error::AnnattoError;
+use crate::workflow::StatusMessage;
 use graphannis::{
     graph::{Component,Edge},
     model::{AnnotationComponentType,AnnotationComponent},
@@ -24,12 +25,12 @@ use itertools::Itertools;
 use smartstring;
 use itertools::Zip;
 
-pub struct CheckingMergeFinalizer {}
+pub struct Merger {}
 
 
-impl Default for CheckingMergeFinalizer {
+impl Default for Merger {
     fn default() -> Self {
-        CheckingMergeFinalizer {}
+        Merger {}
     }
 }
 
@@ -75,7 +76,7 @@ impl Default for OnErrorValues {
     }
 }
 
-impl Manipulator for CheckingMergeFinalizer {
+impl Manipulator for Merger {
     fn manipulate_corpus(
         &self,
         graph: &mut AnnotationGraph,
@@ -83,52 +84,57 @@ impl Manipulator for CheckingMergeFinalizer {
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(sender) = &tx {
-            sender.send(crate::workflow::StatusMessage::Info(String::from("Starting merge check")))?;
+            sender.send(StatusMessage::Info(String::from("Starting merge check")))?;
         }
         let on_error = OnErrorValues::try_from(properties.get(PROP_ON_ERROR))?;
-        let qnames = properties.get(PROP_CHECK_NAMES).unwrap().split(";").collect::<Vec<&str>>();                        
+        let order_names = properties.get(PROP_CHECK_NAMES).unwrap().split(",").collect::<Vec<&str>>();    
         let node_annos = graph.get_node_annos();
         // variables for removing obsolete keys
         let keep_name = properties.get(PROP_KEEP_NAME).unwrap();
-        let keep_name_key = AnnoKey { ns: smartstring::alias::String::from(""), name: smartstring::alias::String::from(keep_name) };
-        let split_keep_name = split_qname(keep_name.as_str());
+        let keep_name_key = AnnoKey { ns: smartstring::alias::String::from(""), name: smartstring::alias::String::from(keep_name) };        
         let mut updates = GraphUpdate::default();
         // gather ordered tokens
         let mut docs_with_errors = HashSet::new();
         let mut ordered_items_by_name: HashMap<&str, Vec<u64>> = HashMap::new();
         let mut index_by_name: HashMap<&str, usize> = HashMap::new();
-        for qname in qnames.iter() {
-            let c = AnnotationComponent::new(AnnotationComponentType::Ordering, smartstring::alias::String::from(ANNIS_NS), smartstring::alias::String::from(*qname));            
+        for o_n in &order_names {
+            let order_name = *o_n;
+            let c = AnnotationComponent::new(AnnotationComponentType::Ordering, smartstring::alias::String::from(ANNIS_NS), smartstring::alias::String::from(order_name));            
             if let Some(ordering) = graph.get_graphstorage(&c) {
-                let name_matches = node_annos.exact_anno_search(None, *qname, ValueSearch::Any).collect_vec();                
-                let count = name_matches.len();
+                let name_matches = node_annos.exact_anno_search(None, order_name, ValueSearch::Any).collect_vec();
+                if let Some(sender) = &tx {
+                    let message = format!("Found {} matching nodes for name {}", name_matches.len(), order_name);
+                    sender.send(StatusMessage::Info(message));
+                }
                 let start_node = name_matches.into_iter().min_by(|r, r_| r.as_ref().unwrap().node.cmp(&r_.as_ref().unwrap().node)).unwrap()?.node;
                 let in_edges = ordering.get_ingoing_edges(start_node).count();
                 if in_edges > 0 {
                     panic!("Could not determine root of ordering."); //TODO
-                }
-                let dfs = CycleSafeDFS::new((*ordering).as_edgecontainer(), start_node, 1, count);
+                }                
                 let mut nodes: Vec<u64> = [].to_vec();
-                for entry in dfs {
-                    nodes.push(entry?.node);
+                for entry in ordering.find_connected(start_node, 1, Bound::Excluded(usize::MAX)) {
+                    nodes.push(entry?);
                 }
-                ordered_items_by_name.insert(qname, nodes);
-                index_by_name.insert(qname, 0);
+                ordered_items_by_name.insert(order_name, nodes);
+                index_by_name.insert(order_name, 0);
             } else {
-               panic!("No ordering with name {}", *qname); //TODO
+               panic!("No ordering with name {}", order_name); //TODO
             }            
         }
         // set up some trackers
         let mut node_map: HashMap<&u64, &u64> = HashMap::new();  // maps node ids of old annotations owners to new (remaining) annotation owners, relevant for mapping edges later
-        // merge or align        
-        let other_names = qnames.into_iter().filter(|&name| !keep_name.as_str().eq(name)).collect::<Vec<&str>>();
+        // merge or align                
         for item in ordered_items_by_name.get(keep_name.as_str()).unwrap() {
             let ref_val = node_annos.get_value_for_item(item, &keep_name_key)?.unwrap();  // by definition this has to exist
             let ref_node_name = node_annos.get_value_for_item(item, &NODE_NAME_KEY)?.unwrap();  // existence guaranteed
-            for other_name in &other_names {
-                let i = index_by_name.get(*other_name).unwrap();
-                if let Some(other_item) = ordered_items_by_name.get(*other_name).unwrap().get(*i) {
-                    let other_key = AnnoKey {ns: smartstring::alias::String::from(""), name: smartstring::alias::String::from(*other_name)};
+            for name in &order_names {
+                let other_name = *name;
+                if other_name.eq(keep_name) {
+                    continue;
+                }
+                let i = index_by_name.get(other_name).unwrap();
+                if let Some(other_item) = ordered_items_by_name.get(other_name).unwrap().get(*i) {
+                    let other_key = AnnoKey {ns: smartstring::alias::String::from(""), name: smartstring::alias::String::from(other_name)};
                     let other_val = node_annos.get_value_for_item(other_item, &other_key)?.unwrap();
                     if (*ref_val).eq(&*other_val) {  // text values match
                         // align or merge
@@ -146,12 +152,12 @@ impl Manipulator for CheckingMergeFinalizer {
                     } else {  // text values don't match
                         // alternative 
                         // TODO implement logic for punctuation etc, for now just fail
-                        panic!("Could not merge target text {} with text {}", keep_name.as_str(), *other_name);  // TODO
+                        panic!("Could not merge target text {} with text {}", keep_name.as_str(), other_name);  // TODO
                     }                    
                 } else {
                     // no further nodes
                 }
-                index_by_name.insert(*other_name, i + 1);
+                index_by_name.insert(other_name, i + 1);
             }
         }
         // do edges
@@ -200,7 +206,7 @@ impl Manipulator for CheckingMergeFinalizer {
                             // child does not exist in target graph, which must be legal if we allow texts to only partially match (e. g. in the case of dropped punctuation)
                             // it could also be the case that the source and target node are not in the node_map bc they are not ordered nodes and thus don't require to be modified
                             if let Some(sender) = &tx {
-                                sender.send(crate::workflow::StatusMessage::Info(format!("Not all children of node {} available in target graph.", &source_node)))?;
+                                sender.send(StatusMessage::Info(format!("Not all children of node {} available in target graph.", &source_node)))?;
                             }
                         }
                     }
@@ -210,7 +216,7 @@ impl Manipulator for CheckingMergeFinalizer {
         if docs_with_errors.len() > 0 {
             let msg = docs_with_errors.iter().join("\n");
             if let Some(sender) = &tx {
-                sender.send(crate::workflow::StatusMessage::Warning(format!("Documents with ill-merged tokens:\n{}", msg)))?;
+                sender.send(StatusMessage::Warning(format!("Documents with ill-merged tokens:\n{}", msg)))?;
             }
             match on_error {
                 OnErrorValues::Fail => return Err(Box::new(AnnattoError::Manipulator { reason: String::from("Mismatching tokens in some documents."), manipulator: String::from(self.module_name()) })),
@@ -229,7 +235,7 @@ impl Manipulator for CheckingMergeFinalizer {
 
 const MODULE_NAME: &str = "Merger";
 
-impl Module for CheckingMergeFinalizer {
+impl Module for Merger {
     fn module_name(&self) -> &str {
         MODULE_NAME
     }
