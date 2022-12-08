@@ -15,7 +15,7 @@ _logger.addHandler(_handler)
 
 PROPERTY_TEXT_NAME = 'text_name'
 PROPERTY_SKIP_NAMED_ORDERING = 'skip_named_ordering'
-PROPERTY_ANNO_QNAME = 'anno_qname'
+PROPERTY_ANNO_NS = 'anno_ns'
 
 _FIELD_NAMES = [
     'id',
@@ -115,7 +115,7 @@ def start_import(path, **properties):
     safe_props = defaultdict(type(None), properties)
     skip_named_ordering = PROPERTY_SKIP_NAMED_ORDERING in safe_props \
         and safe_props[PROPERTY_SKIP_NAMED_ORDERING].lower().strip() == 'true'
-    anno_qname = safe_props[PROPERTY_ANNO_QNAME]
+    anno_qname = safe_props[PROPERTY_ANNO_NS]
     u = GraphUpdate()
     for path, internal_path in path_structure(u, path, _FILE_ENDINGS):        
         _logger.info(f'Starting {path} ...')
