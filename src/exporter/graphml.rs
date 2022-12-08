@@ -26,7 +26,7 @@ impl Exporter for GraphMLExporter {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(output_path), 1)?;
         let output_file = File::create(output_path)?;
-        graphannis_core::graph::serialization::graphml::export(graph, None, output_file, |msg| {
+        graphannis_core::graph::serialization::graphml::export(graph, Some("\n# configure visualizations here\n"), output_file, |msg| {
             reporter.info(msg).expect("Could not send status message");
         })?;
         reporter.worked(1)?;
