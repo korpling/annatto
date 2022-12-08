@@ -101,13 +101,13 @@ def map_annotation(u, doc_path, id_, ns, name, value, *targets):
     return span_id
 
 
-def map_hierarchical_annotation(u, doc_path, id_, ns, name, value, *targets):
+def map_hierarchical_annotation(u, doc_path, id_, ns, name, value, *targets, edge_layer=''):
     struct_id = f'{doc_path}#sStruct{id_}'
     u.add_node(struct_id)
     if name:
         u.add_node_label(struct_id, ns, name, value)
     for target in targets:
-        dominance(u, [struct_id], [target])
+        dominance(u, [struct_id], [target], layer=edge_layer)
     return struct_id
 
 
@@ -128,15 +128,15 @@ def add_pointing_relation(u, source, target, type_, anno_ns=None, anno_name=None
         u.add_edge_label(source, target, '', ANNIS_POINTING_REL, type_, '' if anno_ns is None else anno_ns, anno_name, anno_val)
 
 
-def edges(u, source_nodes, target_nodes, component_type):
+def edges(u, source_nodes, target_nodes, component_type, layer=''):
     for src in source_nodes:
         for tgt in target_nodes:
-            u.add_edge(src, tgt, ANNIS_NS, component_type, '')
+            u.add_edge(src, tgt, ANNIS_NS, component_type, layer)
 
 
 def coverage(u, source_nodes, target_nodes):
     edges(u, source_nodes, target_nodes, ANNIS_COVERAGE)
 
 
-def dominance(u, source_nodes, target_nodes):
-    edges(u, source_nodes, target_nodes, ANNIS_DOMINANCE)
+def dominance(u, source_nodes, target_nodes, layer=''):
+    edges(u, source_nodes, target_nodes, ANNIS_DOMINANCE, layer)
