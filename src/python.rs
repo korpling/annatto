@@ -151,5 +151,16 @@ mod tests {
         g.apply_update(&mut u, |_| {}).unwrap();
         assert_eq!(1, 1)
     }
+
+    #[test]
+    fn run_ptb_importer() {
+        let importer = PythonImporter::from_name("PTBImporter");
+        let props = BTreeMap::default();
+        let path = Path::new("test/ptb/importer/");
+        let mut u = importer.import_corpus(path, &props, None).unwrap();
+        let mut g = AnnotationGraph::new(false).unwrap();
+        g.apply_update(&mut u, |_| {}).unwrap();
+        assert_eq!(1, 1)
+    }
     
 }
