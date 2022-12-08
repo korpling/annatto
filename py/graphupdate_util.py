@@ -94,7 +94,7 @@ def map_token_as_span(u, doc_path, id_, text_name, value, start_time, end_time, 
 def map_annotation(u, doc_path, id_, ns, name, value, *targets):
     span_id = f'{doc_path}#sSpan{id_}'
     u.add_node(span_id)
-    if name is not None:
+    if name:
         u.add_node_label(span_id, ns, name, value)
     for target in targets:
         coverage(u, [span_id], [target])
@@ -103,8 +103,8 @@ def map_annotation(u, doc_path, id_, ns, name, value, *targets):
 
 def map_hierarchical_annotation(u, doc_path, id_, ns, name, value, *targets):
     struct_id = f'{doc_path}#sStruct{id_}'
-    u.add_node(span_id)
-    if name is not None:
+    u.add_node(struct_id)
+    if name:
         u.add_node_label(struct_id, ns, name, value)
     for target in targets:
         dominance(u, [struct_id], [target])
@@ -117,7 +117,7 @@ def map_token_annotation(u, target_uri, ns, name, value):
 
 def add_order_relations(u, node_ids, order_name=None):
     for i in range(1, len(node_ids)):
-        if order_name is not None:
+        if order_name:
             u.add_edge(node_ids[i - 1], node_ids[i], ANNIS_NS, ANNIS_ORDERING, order_name)
         u.add_edge(node_ids[i - 1], node_ids[i], ANNIS_NS, ANNIS_ORDERING, '')
 
