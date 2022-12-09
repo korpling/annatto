@@ -47,7 +47,9 @@ def map_document(u, path, doc_path, cat_name=_DEFAULT_CAT_NAME, text_name=''):
                 val = ''
         else:            
             val += c
-    add_order_relations(u, tokens, text_name)
+    add_order_relations(u, tokens)
+    if text_name:
+        add_order_relations(u, tokens, text_name)
 
 
 def start_import(path, **properties):

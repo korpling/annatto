@@ -117,9 +117,7 @@ def map_token_annotation(u, target_uri, ns, name, value):
 
 def add_order_relations(u, node_ids, order_name=None):
     for i in range(1, len(node_ids)):
-        if order_name:
-            u.add_edge(node_ids[i - 1], node_ids[i], ANNIS_NS, ANNIS_ORDERING, order_name)
-        u.add_edge(node_ids[i - 1], node_ids[i], ANNIS_NS, ANNIS_ORDERING, '')
+        u.add_edge(node_ids[i - 1], node_ids[i], ANNIS_NS, ANNIS_ORDERING, order_name if order_name else '')        
 
 
 def add_pointing_relation(u, source, target, type_, anno_ns=None, anno_name=None, anno_val=None):

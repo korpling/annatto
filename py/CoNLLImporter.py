@@ -103,7 +103,9 @@ def _map_conll_document(u,
         for k, v in a.items():
             u.add_node_label(span_id, '' if text_name is None else text_name, k, v)
         all_nodes.extend([id_ for id_, _, _ in nodes[1:]])
-    add_order_relations(u, all_nodes, order_name=None if skip_named_ordering else text_name)
+    add_order_relations(u, all_nodes)
+    if not skip_named_ordering and text_name:
+        add_order_relations(u, all_nodes, text_name)
 
 
 def start_import(path, **properties):
