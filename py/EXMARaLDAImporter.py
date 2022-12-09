@@ -25,8 +25,8 @@ _ATTR_URL = 'url'
 # logger
 _logger = logging.getLogger(__name__)
 _handler = logging.StreamHandler(stream=sys.stdout)
-_handler.setLevel(logging.INFO)
-_logger.setLevel(logging.INFO)
+_handler.setLevel(logging.DEBUG)
+_logger.setLevel(logging.DEBUG)
 _logger.addHandler(_handler)
 
 _FILE_ENDINGS = ('.exb', '.xml')
@@ -84,9 +84,12 @@ class EXMARaLDAImport(object):
         if text_order is not None:
             token_tiers.sort(key=lambda t: text_order.index(t.attrib[_ATTR_CATEGORY]))
         time_values = sorted(set(tl[k] for tier in token_tiers for e in tier for k in (e.attrib[_ATTR_START], e.attrib[_ATTR_END])))
-        empty_toks = [(time_values[i - 1], map_token(self._u, self._path, i, '', ' ', time_values[i - 1], time_values[i])) for i in range(1, len(time_values))]        
-        for tier in token_tiers:
+        empty_toks = [(time_values[i - 1], map_token(self._u, self._path, i, '', ' ', time_values[i - 1], time_values[i])) for i in range(1, len(time_values))]
+        add_order_relations(u, [t for _, t in empty_toks])
+        _logger.debug(f'Created {len(empty_toks)} empty tokens and their order relations')
+        for tier in token_tiers:            
             category = tier.attrib[_ATTR_CATEGORY]
+            _logger.debug(f'Importing token tier {category}')
             try:
                 speaker = tier.attrib[_ATTR_SPEAKER]
             except KeyError:
@@ -98,17 +101,19 @@ class EXMARaLDAImport(object):
             for start, end, text_value in sorted(tokens):
                 self._span_count += 1
                 id_ = map_token_as_span(self._u, self._path, self._span_count, category, text_value, start, end, empty_toks)
-                self._spk2tok[speaker][id_] = (start, end)
+                self._spk2tok[speaker][id_] = (start, end)            
             add_order_relations(self._u, sorted(self._spk2tok[speaker], key=lambda e: self._spk2tok[speaker][e]), category)        
+            _logger.debug(f'Created order relations for {len(self._speak2tok[speaker])} tokens')
 
     def _map_annotations(self):
         xml = self._xml
         anno_tiers = xml.findall(f'.//{_TAG_TIER}[@{_ATTR_TYPE}="{_TYPE_ANNOTATION}"]')
         tl = self._timeline
-        for tier in anno_tiers:
+        for tier in anno_tiers:            
             speaker = tier.attrib[_ATTR_SPEAKER]
-            category = tier.attrib[_ATTR_CATEGORY]
+            category = tier.attrib[_ATTR_CATEGORY]            
             tokens = sorted([(start, end, tok_id) for tok_id, (start, end) in self._spk2tok[speaker].items()])
+            _logger.debug(f'Mapping annotations for tier {speaker}::{category} using {len(tokens)} tokens')
             for event in sorted(tier.findall(f'./{_TAG_EVENT}'), key=lambda e: tl[e.attrib[_ATTR_START]]):
                 start = tl[event.attrib[_ATTR_START]]
                 end = tl[event.attrib[_ATTR_END]]
