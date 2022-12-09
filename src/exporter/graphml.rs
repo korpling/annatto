@@ -18,7 +18,7 @@ impl Module for GraphMLExporter {
 
 
 pub const PROPERTY_VISUALISATIONS: &str = "add.visualisations";
-const DEFAULT_VIS_STR: &str = "\n# configure visualizations here\n";
+const DEFAULT_VIS_STR: &str = "# configure visualizations here";
 
 impl Exporter for GraphMLExporter {
     fn export_corpus(
@@ -32,9 +32,9 @@ impl Exporter for GraphMLExporter {
         let output_file = File::create(output_path)?;
         let vis_str = match properties.get(&PROPERTY_VISUALISATIONS.to_string()) {
             None => DEFAULT_VIS_STR,
-            Some(visualisations) => visualisations.as_str()
+            Some(visualisations) => visualisations
         };
-        graphannis_core::graph::serialization::graphml::export(graph, Some(vis_str), output_file, |msg| {
+        graphannis_core::graph::serialization::graphml::export(graph, Some(format!("\n{}\n", vis_str).as_str()), output_file, |msg| {
             reporter.info(msg).expect("Could not send status message");
         })?;
         reporter.worked(1)?;
