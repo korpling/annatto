@@ -26,8 +26,11 @@ _ATTR_URL = 'url'
 _logger = logging.getLogger(__name__)
 _handler = logging.StreamHandler(stream=sys.stdout)
 _handler.setLevel(logging.DEBUG)
+_file_handler = logging.FileHandler('exmaralda-importer.log')
+_file_handler.setLevel(logging.DEBUG)
 _logger.setLevel(logging.DEBUG)
 _logger.addHandler(_handler)
+_logger.addHandler(_file_handler)
 
 _FILE_ENDINGS = ('.exb', '.xml')
 PROP_TEXT_ORDER = 'text_order'
@@ -85,7 +88,7 @@ class EXMARaLDAImport(object):
             token_tiers.sort(key=lambda t: text_order.index(t.attrib[_ATTR_CATEGORY]))
         time_values = sorted(set(tl[k] for tier in token_tiers for e in tier for k in (e.attrib[_ATTR_START], e.attrib[_ATTR_END])))
         empty_toks = [(time_values[i - 1], map_token(self._u, self._path, i, '', ' ', time_values[i - 1], time_values[i])) for i in range(1, len(time_values))]
-        add_order_relations(u, [t for _, t in empty_toks])
+        add_order_relations(self._u, [t for _, t in empty_toks])
         _logger.debug(f'Created {len(empty_toks)} empty tokens and their order relations')
         for tier in token_tiers:            
             category = tier.attrib[_ATTR_CATEGORY]
@@ -103,7 +106,7 @@ class EXMARaLDAImport(object):
                 id_ = map_token_as_span(self._u, self._path, self._span_count, category, text_value, start, end, empty_toks)
                 self._spk2tok[speaker][id_] = (start, end)            
             add_order_relations(self._u, sorted(self._spk2tok[speaker], key=lambda e: self._spk2tok[speaker][e]), category)        
-            _logger.debug(f'Created order relations for {len(self._speak2tok[speaker])} tokens')
+            _logger.debug(f'Created order relations for {len(self._spk2tok[speaker])} tokens')
 
     def _map_annotations(self):
         xml = self._xml
