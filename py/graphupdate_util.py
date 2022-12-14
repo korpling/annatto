@@ -87,7 +87,7 @@ def map_token_as_span(u, doc_path, id_, text_name, value, start_time, end_time, 
         raise ValueError(f'Token {id_} with value {value} in tokenization {text_name} has incorrect time values.')
     ets = [et_id for t, et_id in empty_toks if start_time <= t < end_time]
     span_id = map_annotation(u, doc_path, id_, '', text_name, value, *ets)
-    coverage(u, [span_id], ets)
+    u.add_node_label(span_id, ANNIS_NS, ANNIS_TOK, value)
     return span_id
 
 
