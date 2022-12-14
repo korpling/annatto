@@ -5,6 +5,7 @@ import re
 
 
 _PROP_TEXT_NAME = 'text_name'
+_PROP_ANNO_NS = 'anno_ns'
 _FILE_ENDINGS = ('.ptb',)
 _FIXED_SEQUENCES = {
     '-LRB-': '(',
@@ -13,7 +14,7 @@ _FIXED_SEQUENCES = {
 _DEFAULT_CAT_NAME = 'cat'
 
 
-def map_document(u, path, doc_path, cat_name=_DEFAULT_CAT_NAME, text_name=''):
+def map_document(u, path, doc_path, cat_name=_DEFAULT_CAT_NAME, text_name='', anno_ns=None):
     with open(path) as f:
         data = f.read()
     stack = []
@@ -34,12 +35,12 @@ def map_document(u, path, doc_path, cat_name=_DEFAULT_CAT_NAME, text_name=''):
                 cat, text = stack.pop()
                 token_id = map_token(u, doc_path, len(tokens) + 1, text_name, text)
                 tokens.append(token_id)
-                struct_id = map_hierarchical_annotation(u, doc_path, s_count, text_name, cat_name, cat, token_id)
+                struct_id = map_hierarchical_annotation(u, doc_path, s_count, '' if anno_ns is None else anno_ns, cat_name, cat, token_id)
                 children.append(struct_id)
             elif stack and stack[-1]:
                 s_count += 1
                 (cat,) = stack.pop()
-                struct_id = map_hierarchical_annotation(u, doc_path, s_count, text_name, cat_name, cat, *children)
+                struct_id = map_hierarchical_annotation(u, doc_path, s_count, '' if anno_ns is None else anno_ns, cat_name, cat, *children)
                 children = [struct_id]
         elif c == ' ':
             if val:
@@ -61,5 +62,5 @@ def start_import(path, **properties):
     u = GraphUpdate()
     safe_props = defaultdict(type(None), properties)
     for path, internal_path in path_structure(u, path, _FILE_ENDINGS):
-        map_document(u, path, internal_path, text_name=safe_props[_PROP_TEXT_NAME])
+        map_document(u, path, internal_path, text_name=safe_props[_PROP_TEXT_NAME], anno_ns=safe_props[_PROP_ANNO_NS])
     return u
