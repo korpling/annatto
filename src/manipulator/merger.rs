@@ -3,9 +3,10 @@ use std::convert::TryFrom;
 use std::fmt::format;
 use std::hash::Hash;
 use std::iter::FromIterator;
-use crate::{Manipulator,Module,workflow::StatusSender};
+use crate::{Manipulator,Module};
 use crate::error::AnnattoError;
-use crate::workflow::StatusMessage;
+use crate::workflow::{StatusMessage,StatusSender};
+use crate::util::write_to_file;
 use graphannis::{
     graph::{Component,Edge},
     model::{AnnotationComponentType,AnnotationComponent},
@@ -37,7 +38,8 @@ impl Default for Merger {
 const PROP_CHECK_NAMES: &str = "check.names";
 const PROP_KEEP_NAME: &str = "keep.name";
 const PROP_ON_ERROR: &str = "on.error";
-const SEP_QNAME: &str = "::";
+const PROP_SKIP_COMPONENTS: &str = "skip.components";
+const PROPVAL_SEP: &str = ",";
 
 
 enum OnErrorValues {    
@@ -87,68 +89,67 @@ impl Manipulator for Merger {
             sender.send(StatusMessage::Info(String::from("Starting merge check")))?;
         }
         let on_error = OnErrorValues::try_from(properties.get(PROP_ON_ERROR))?;
-        let order_names = properties.get(PROP_CHECK_NAMES).unwrap().split(",").collect::<Vec<&str>>();    
-        let node_annos = graph.get_node_annos();
-        // variables for removing obsolete keys
+        let order_names = properties.get(PROP_CHECK_NAMES).unwrap().split(PROPVAL_SEP).collect::<Vec<&str>>();    
+        let node_annos = graph.get_node_annos();        
         let keep_name = properties.get(PROP_KEEP_NAME).unwrap();
-        let keep_name_key = AnnoKey { ns: smartstring::alias::String::from(""), name: smartstring::alias::String::from(keep_name) };        
+        let keep_name_key = AnnoKey { ns: smartstring::alias::String::from(""), name: smartstring::alias::String::from(keep_name) };
+        let skip_component_spec_o = properties.get(PROP_SKIP_COMPONENTS);
         let mut updates = GraphUpdate::default();
         // gather ordered tokens
         let mut docs_with_errors = HashSet::new();
-        let mut ordered_items_by_name: HashMap<&str, Vec<u64>> = HashMap::new();
-        let mut index_by_name: HashMap<&str, usize> = HashMap::new();
-        for o_n in &order_names {
-            let order_name = *o_n;
+        let mut ordered_items_by_name = HashMap::new();
+        for o_n in order_names.clone() {
+            let order_name = o_n;
             let c = AnnotationComponent::new(AnnotationComponentType::Ordering, smartstring::alias::String::from(ANNIS_NS), smartstring::alias::String::from(order_name));            
-            if let Some(ordering) = graph.get_graphstorage(&c) {
-                let name_matches = node_annos.exact_anno_search(None, order_name, ValueSearch::Any).collect_vec();
-                if let Some(sender) = &tx {
-                    let message = format!("Found {} matching nodes for name {}", name_matches.len(), order_name);
-                    sender.send(StatusMessage::Info(message));
+            if let Some(ordering) = graph.get_graphstorage(&c) {                
+                let start_node = ordering.source_nodes().find(|n| ordering.get_ingoing_edges(*n.as_ref().unwrap()).count() == 0).unwrap()?;                
+                let mut nodes: Vec<u64> = Vec::new();
+                nodes.push(start_node);
+                let dfs = CycleSafeDFS::new(ordering.as_edgecontainer(), start_node, 1, usize::MAX);
+                for entry in dfs {
+                    nodes.push(entry?.node);
                 }
-                let start_node = name_matches.into_iter().min_by(|r, r_| r.as_ref().unwrap().node.cmp(&r_.as_ref().unwrap().node)).unwrap()?.node;
-                let in_edges = ordering.get_ingoing_edges(start_node).count();
-                if in_edges > 0 {
-                    panic!("Could not determine root of ordering."); //TODO
-                }                
-                let mut nodes: Vec<u64> = [].to_vec();
-                for entry in ordering.find_connected(start_node, 1, Bound::Excluded(usize::MAX)) {
-                    nodes.push(entry?);
+                if nodes.is_empty() {                 
+                    panic!("No nodes for ordering `{}` could be retrieved.", order_name);
                 }
-                ordered_items_by_name.insert(order_name, nodes);
-                index_by_name.insert(order_name, 0);
+                ordered_items_by_name.insert(order_name, nodes.into_iter());
             } else {
-               panic!("No ordering with name {}", order_name); //TODO
+                panic!("No ordering with name {}", order_name); //TODO
             }            
         }
         // set up some trackers
-        let mut node_map: HashMap<&u64, &u64> = HashMap::new();  // maps node ids of old annotations owners to new (remaining) annotation owners, relevant for mapping edges later
-        // merge or align                
-        for item in ordered_items_by_name.get(keep_name.as_str()).unwrap() {
-            let ref_val = node_annos.get_value_for_item(item, &keep_name_key)?.unwrap();  // by definition this has to exist
-            let ref_node_name = node_annos.get_value_for_item(item, &NODE_NAME_KEY)?.unwrap();  // existence guaranteed
+        let mut node_map: HashMap<u64, u64> = HashMap::new();  // maps node ids of old annotations owners to new (remaining) annotation owners, relevant for mapping edges later
+        // merge or align 
+        let mut ordered_keep_items = ordered_items_by_name.remove(keep_name.as_str()).unwrap();               
+        for item in ordered_keep_items {
+            let ref_val = node_annos.get_value_for_item(&item, &keep_name_key)?.unwrap();  // by definition this has to exist
+            let ref_node_name = node_annos.get_value_for_item(&item, &NODE_NAME_KEY)?.unwrap();  // existence guaranteed
             for name in &order_names {
                 let other_name = *name;
-                if other_name.eq(keep_name) {
+                if other_name == keep_name {
                     continue;
                 }
-                let i = index_by_name.get(other_name).unwrap();
-                if let Some(other_item) = ordered_items_by_name.get(other_name).unwrap().get(*i) {
+                if let Some(other_item) = ordered_items_by_name.get_mut(other_name).unwrap().next() {
                     let other_key = AnnoKey {ns: smartstring::alias::String::from(""), name: smartstring::alias::String::from(other_name)};
-                    let other_val = node_annos.get_value_for_item(other_item, &other_key)?.unwrap();
-                    if (*ref_val).eq(&*other_val) {  // text values match
+                    let other_val = node_annos.get_value_for_item(&other_item, &other_key)?.unwrap();
+                    if ref_val == other_val {  // text values match
                         // align or merge
                         // case merge
-                        let anno_keys = node_annos.get_all_keys_for_item(other_item, None, None)?;
+                        let anno_keys = node_annos.get_all_keys_for_item(&other_item, None, None)?;
                         // annotations directly on the ordered node
                         for ak in anno_keys {
-                            let av = node_annos.get_value_for_item(other_item, &*ak)?.unwrap();  // existence guaranteed
-                            updates.add_event(UpdateEvent::AddNodeLabel { node_name: String::from(&*ref_node_name), anno_ns: ak.ns.to_string(), anno_name: ak.name.to_string(), anno_value: av.to_string()})?;
+                            if ak.ns != ANNIS_NS && !order_names.contains(&ak.name.as_str()) {                                
+                                let av = node_annos.get_value_for_item(&other_item, ak.as_ref())?.unwrap();  // existence guaranteed
+                                updates.add_event(UpdateEvent::AddNodeLabel { node_name: ref_node_name.to_string(),
+                                                                              anno_ns: ak.ns.to_string(), 
+                                                                              anno_name: ak.name.to_string(), 
+                                                                              anno_value: av.to_string() })?;
+                            }
                         }
                         // delete ordered node, the rest (edges and labels) should theoretically die as a consequence
-                        let other_node_name = node_annos.get_value_for_item(other_item, &NODE_NAME_KEY)?.unwrap().to_string();  // existence guaranteed
-                        updates.add_event(UpdateEvent::DeleteNode { node_name: other_node_name })?;
-                        node_map.insert(other_item, item);
+                        let other_node_name = node_annos.get_value_for_item(&other_item, &NODE_NAME_KEY)?.unwrap().to_string();  // existence guaranteed
+                        updates.add_event(UpdateEvent::DeleteNode { node_name: other_node_name })?;                        
+                        node_map.insert(other_item, item);                        
                     } else {  // text values don't match
                         // alternative 
                         // TODO implement logic for punctuation etc, for now just fail
@@ -156,59 +157,86 @@ impl Manipulator for Merger {
                     }                    
                 } else {
                     // no further nodes
+                    panic!("No item available for {}", other_name);
                 }
-                index_by_name.insert(other_name, i + 1);
             }
         }
         // do edges
+        let autogenerated_components = AnnotationComponentType::update_graph_index_components(graph).into_iter().collect::<HashSet<AnnotationComponent>>();
+        let mut skip_components = HashSet::from(autogenerated_components);
+        if let Some(skip_component_spec) = skip_component_spec_o {
+            for spec in skip_component_spec.split(PROPVAL_SEP) {
+                let split_spec = split_qname(spec);
+                let layer = match split_spec.0 {
+                    None => smartstring::alias::String::from(""),
+                    Some(v) => smartstring::alias::String::from(v)
+                };
+                let name = smartstring::alias::String::from(split_spec.1);
+                for c in graph.get_all_components(None, Some(name.as_str())) {
+                    if c.layer == layer {
+                        skip_components.insert(AnnotationComponent::new(c.get_type(), layer.clone(), name.clone()));
+                    }
+                }
+            }
+        }
+        let mut report_missing = HashSet::new();
         for edge_component_type in [AnnotationComponentType::Coverage, 
                                                              AnnotationComponentType::Dominance, 
-                                                             AnnotationComponentType::Pointing] {            
-            for edge_component in graph.get_all_components(Some(edge_component_type.clone()), None) {            
-                let edge_component_name = &edge_component.name;
+                                                             AnnotationComponentType::Pointing] {
+            for edge_component in graph.get_all_components(Some(edge_component_type.clone()), None) {
+                if skip_components.contains(&edge_component) {
+                    continue;
+                }                
+                let edge_component_name = &edge_component.name;                    
+                let layer_name = edge_component.layer.to_string();
                 if let Some(edge_storage) = graph.get_graphstorage(&edge_component) {
                     // there are some coverage edges
                     let edge_annos = edge_storage.get_anno_storage();
                     for source_node_r in edge_storage.source_nodes() {
-                        let source_node = source_node_r?;
+                        let source_node = source_node_r?;                        
                         let source_node_name = node_annos.get_value_for_item(&source_node, &NODE_NAME_KEY)?.unwrap(); // existence guaranteed
-                        for target_r in edge_storage.find_connected(source_node, 1, Bound::Included(1)) {
-                            let target = target_r?;                    
-                            if let Some(new_child) = node_map.get(&target) {                            
+                        let edge_dfs = CycleSafeDFS::new(edge_storage.as_edgecontainer(), source_node, 1, 1);
+                        report_missing.clear();
+                        for target_r in edge_dfs {
+                            let target = target_r?.node;       
+                            if let Some(new_target) = node_map.get(&target) {                            
                                 // new child still exists in target graph
-                                let target_name = node_annos.get_value_for_item(&target, &NODE_NAME_KEY)?.unwrap();  // existence guaranteed                        
-                                let layer_name = edge_component.layer.to_string();                        
-                                updates.add_event(UpdateEvent::DeleteEdge { source_node: String::from(&*source_node_name), 
-                                                                            target_node: String::from(target_name), 
+                                let target_name = node_annos.get_value_for_item(&target, &NODE_NAME_KEY)?.unwrap();  // existence guaranteed    
+                                let new_target_name = node_annos.get_value_for_item(new_target, &NODE_NAME_KEY)?.unwrap();
+                                updates.add_event(UpdateEvent::DeleteEdge { source_node: source_node_name.to_string(), 
+                                                                            target_node: target_name.to_string(), 
                                                                             layer: layer_name.to_string(),
-                                                                            component_type: edge_component_type.clone().to_string(), 
-                                                                            component_name: edge_component_name.to_string()})?;
-                                let new_target_name = node_annos.get_value_for_item(*new_child, &NODE_NAME_KEY)?.unwrap();
-                                updates.add_event(UpdateEvent::AddEdge { source_node: String::from(&*source_node_name), 
-                                                                        target_node: String::from(new_target_name.clone()), 
-                                                                        layer: layer_name.to_string(), 
-                                                                        component_type: edge_component_type.clone().to_string(), 
-                                                                        component_name: edge_component_name.to_string()})?;
+                                                                            component_type: edge_component_type.to_string(), 
+                                                                            component_name: edge_component_name.to_string() })?;
+                                updates.add_event(UpdateEvent::AddEdge { source_node: source_node_name.to_string(), 
+                                                                         target_node: new_target_name.to_string(), 
+                                                                         layer: layer_name.to_string(), 
+                                                                         component_type: edge_component_type.to_string(), 
+                                                                         component_name: edge_component_name.to_string() })?;                           
                                 // check edge for annotations that need to be transferred        
                                 let edge = Edge {source: source_node, target: target}; // TODO at least for the case of pointing relations the same container might contain more than one edge, or am I wrong?                
                                 for k in edge_annos.get_all_keys_for_item(&edge, None, None)? {
-                                    let v = edge_annos.get_value_for_item(&edge, &*k)?.unwrap();  // guaranteed to exist
-                                    updates.add_event(UpdateEvent::AddEdgeLabel { source_node: String::from(&*source_node_name), 
-                                                                                target_node: String::from(new_target_name.clone()), 
-                                                                                layer: layer_name.to_string(), 
-                                                                                component_type: edge_component_type.clone().to_string(), 
-                                                                                component_name: edge_component_name.to_string(), 
-                                                                                anno_ns: k.ns.to_string(), 
-                                                                                anno_name: k.name.to_string(), 
-                                                                                anno_value: String::from(v) })?;
+                                    if k.ns != ANNIS_NS {                                    
+                                        let v = edge_annos.get_value_for_item(&edge, &*k)?.unwrap();  // guaranteed to exist
+                                        updates.add_event(UpdateEvent::AddEdgeLabel { source_node: source_node_name.to_string(), 
+                                                                                      target_node: new_target_name.to_string(), 
+                                                                                      layer: layer_name.to_string(), 
+                                                                                      component_type: edge_component_type.to_string(), 
+                                                                                      component_name: edge_component_name.to_string(), 
+                                                                                      anno_ns: k.ns.to_string(), 
+                                                                                      anno_name: k.name.to_string(), 
+                                                                                      anno_value: v.to_string() })?;
+                                    }
                                 }
                             } else {
                                 // child does not exist in target graph, which must be legal if we allow texts to only partially match (e. g. in the case of dropped punctuation)
                                 // it could also be the case that the source and target node are not in the node_map bc they are not ordered nodes and thus don't require to be modified
-                                if let Some(sender) = &tx {
-                                    sender.send(StatusMessage::Info(format!("Not all children of node {} available in target graph.", &source_node)))?;
-                                }
+                                report_missing.insert(node_annos.get_value_for_item(&target, &NODE_NAME_KEY)?.unwrap());
                             }
+                        }
+                        if !report_missing.is_empty() && (&tx).is_some() {
+                            let sender = &tx.as_ref().unwrap();
+                            sender.send(StatusMessage::Info(format!("Not all children of node {} ({}::{}) available in target graph: {:?}", &source_node_name, &layer_name, &edge_component_name, &report_missing)))?;
                         }
                     }
                 }
@@ -228,7 +256,7 @@ impl Manipulator for Merger {
                 },
                 _ => {}
             };
-        }   
+        }
         graph.apply_update(&mut updates, |_msg| {})?;
         Ok(())
     }
