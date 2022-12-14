@@ -10,9 +10,13 @@ from graphupdate_util import *
 _logger = logging.getLogger(__name__)
 _handler = logging.FileHandler('conll-importer.log')
 _handler.setLevel(logging.INFO)
+_stream = logging.StreamHandler(stream=sys.stdout)
+_stream.setLevel(logging.INFO)
 _logger.setLevel(logging.INFO)
 _logger.addHandler(_handler)
+_logger.addHandler(_stream)
 
+# properties
 PROPERTY_TEXT_NAME = 'text_name'
 PROPERTY_SKIP_NAMED_ORDERING = 'skip_named_ordering'
 PROPERTY_ANNO_NS = 'anno_ns'
@@ -49,12 +53,17 @@ def _read_data(path):
         if line.startswith(_META_MARKER):
             k, v = map(str.strip, line[line.find(_META_MARKER) + 1:].strip().split('=', 1))
             sentence_annotations[-1][k] = v
-        l = line.strip().split('\t')
+            continue
+        l = line.strip()
         if not l:
             sentences.append([])
             sentence_annotations.append({})
-        elif len(l) == 10:
-            sentences[-1].append(_Token(*l[:8]))
+        else:
+            try:
+                sentences[-1].append(_Token(*l.split('\t')[:8]))
+            except TypeError as e:                
+                _logger.error(f'Line {line.strip()} cannot be imported (not enough or too many values).')
+                raise ValueError(f'Invalid line: "{",".join(l)}"')
     return sentences, sentence_annotations
 
 
