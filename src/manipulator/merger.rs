@@ -18,7 +18,7 @@ use graphannis_core::{
     annostorage::{ValueSearch,Match},
     dfs::CycleSafeDFS,
     errors::GraphAnnisCoreError,
-    graph::{ANNIS_NS,NODE_NAME_KEY},
+    graph::{ANNIS_NS,NODE_NAME_KEY,NODE_TYPE_KEY},
     types::{AnnoKey,ComponentType},
     util::{join_qname,split_qname}
 };
@@ -234,7 +234,12 @@ impl Manipulator for Merger {
                             if let Some(new_target) = node_map.get(&target) {                            
                                 // new child still exists in target graph
                                 let target_name = node_annos.get_value_for_item(&target, &NODE_NAME_KEY)?.unwrap();  // existence guaranteed    
-                                let new_target_name = node_annos.get_value_for_item(new_target, &NODE_NAME_KEY)?.unwrap();                                
+                                let new_target_name = node_annos.get_value_for_item(new_target, &NODE_NAME_KEY)?.unwrap();
+                                updates.add_event(UpdateEvent::DeleteEdge { source_node: source_node_name.to_string(), 
+                                                                            target_node: target_name.to_string(), 
+                                                                            layer: layer_name.to_string(),
+                                                                            component_type: edge_component_type.to_string(), 
+                                                                            component_name: edge_component_name.to_string() })?;
                                 updates.add_event(UpdateEvent::AddEdge { source_node: new_source_name.clone(), 
                                                                          target_node: new_target_name.to_string(), 
                                                                          layer: layer_name.to_string(), 
@@ -245,21 +250,17 @@ impl Manipulator for Merger {
                                 for k in edge_annos.get_all_keys_for_item(&edge, None, None)? {
                                     if k.ns != ANNIS_NS {                                    
                                         let v = edge_annos.get_value_for_item(&edge, &*k)?.unwrap();  // guaranteed to exist
-                                        updates.add_event(UpdateEvent::AddEdgeLabel { source_node: new_source_name.clone(), 
-                                                                                      target_node: new_target_name.to_string(), 
-                                                                                      layer: layer_name.to_string(), 
-                                                                                      component_type: edge_component_type.to_string(), 
-                                                                                      component_name: edge_component_name.to_string(), 
-                                                                                      anno_ns: k.ns.to_string(), 
-                                                                                      anno_name: k.name.to_string(), 
-                                                                                      anno_value: v.to_string() })?;
+                                        let u = UpdateEvent::AddEdgeLabel { source_node: new_source_name.clone(), 
+                                                                                         target_node: new_target_name.to_string(), 
+                                                                                         layer: layer_name.to_string(), 
+                                                                                         component_type: edge_component_type.to_string(), 
+                                                                                         component_name: edge_component_name.to_string(), 
+                                                                                         anno_ns: k.ns.to_string(), 
+                                                                                         anno_name: k.name.to_string(), 
+                                                                                         anno_value: v.to_string() };
+                                        updates.add_event(u)?;
                                     }
                                 }
-                                updates.add_event(UpdateEvent::DeleteEdge { source_node: source_node_name.to_string(), 
-                                                                            target_node: target_name.to_string(), 
-                                                                            layer: layer_name.to_string(),
-                                                                            component_type: edge_component_type.to_string(), 
-                                                                            component_name: edge_component_name.to_string() })?;
                             } else {
                                 // child does not exist in target graph, which must be legal if we allow texts to only partially match (e. g. in the case of dropped punctuation)
                                 // it could also be the case that the source and target node are not in the node_map bc they are not ordered nodes and thus don't require to be modified
@@ -284,8 +285,20 @@ impl Manipulator for Merger {
                         StatusMessage::Failed(err)
                     },
                     OnErrorValues::Drop => {
-                        for doc_node_id in docs_with_errors {
-                            updates.add_event(UpdateEvent::DeleteNode { node_name: doc_node_id })?;  //FIXME this is currently only the document name, not the entire path and thus does not identify the node
+                        for doc_node_name in docs_with_errors {
+                            // get all doc nodes with doc_id 
+                            let corpus_nodes = node_annos.exact_anno_search(Some(ANNIS_NS), NODE_TYPE_KEY, ValueSearch::Some("corpus"))
+                                                    .into_iter()
+                                                    .map(|m| m.unwrap().node)
+                                                    .collect::<HashSet<u64>>();
+                            let nodes_with_doc_name = node_annos.exact_anno_search(Some(NODE_NAME_KEY.ns.as_str()), NODE_NAME_KEY.name.as_str(), Some(doc_node_name.as_str()))
+                                                    .into_iter()
+                                                    .map(|m| m.unwrap().node)
+                                                    .collect::<HashSet<u64>>();
+                            for doc_node_id in corpus_nodes.intersection(&nodes_with_doc_name) {
+                                let doc_name = node_annos.get_value_for_item(doc_node_id, &NODE_NAME_KEY)?.unwrap();
+                                updates.add_event(UpdateEvent::DeleteNode { node_name: doc_node_id.to_string() })?;  //FIXME this is currently only the document name, not the entire path and thus does not identify the node
+                            }
                         };
                         let msg = format!("Documents with ill-merged tokens will be dropped from the corpus:\n{}", docs_s);
                         StatusMessage::Warning(msg)
