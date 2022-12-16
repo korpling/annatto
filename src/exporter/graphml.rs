@@ -62,7 +62,7 @@ impl Exporter for GraphMLExporter {
             None => DEFAULT_VIS_STR,
             Some(visualisations) => visualisations
         };
-        reporter.info(format!("Starting export to {}", &output_file_path.display()).as_str());
+        reporter.info(format!("Starting export to {}", &output_file_path.display()).as_str())?;
         graphannis_core::graph::serialization::graphml::export(graph, Some(format!("\n{}\n", vis_str).as_str()), output_file, |msg| {
             reporter.info(msg).expect("Could not send status message");
         })?;
