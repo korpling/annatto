@@ -7,25 +7,6 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in library 'annatto'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--lib",
-                    "--package=annatto"
-                ],
-                "filter": {
-                    "name": "annatto",
-                    "kind": "lib"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
             "name": "Debug executable 'annatto-cli'",
             "cargo": {
                 "args": [
@@ -36,29 +17,19 @@
                 "filter": {
                     "name": "annatto-cli",
                     "kind": "bin"
-                }
+                },
+                "env": {"PYO3_CONFIG_FILE": "${workspaceFolder}/pyembedded/pyo3-build-config-file.txt"}
             },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in executable 'annatto-cli'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--bin=annatto-cli",
-                    "--package=annatto"
-                ],
-                "filter": {
-                    "name": "annatto-cli",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
+            "args": ["${input:workflow_file}"],
             "cwd": "${workspaceFolder}"
         }
+    ],
+    "inputs": [
+        {
+            "id": "workflow_file",
+            "type": "promptString",
+            "description": "Annatto workflow file",
+            "default": ""
+        },
     ]
 }
