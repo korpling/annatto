@@ -34,6 +34,7 @@ _FIELD_NAMES = [
 _NONE = '_'
 _FEAT_SEP = '|'
 _FUNC = 'func'
+_LAYER_DEP = 'dependencies'
 _TYPE_DEP = 'dep'
 _ANNO_NAME_DEPREL = 'deprel'
 _FILE_ENDINGS = ('.conll', '.conllu', '.txt')
@@ -107,7 +108,7 @@ def _map_conll_document(u,
             h_index = int(head)
             if h_index:
                 head_node = nodes[h_index][0]
-                add_pointing_relation(u, head_node, node_id, _TYPE_DEP, '', _ANNO_NAME_DEPREL, deprel)        
+                add_pointing_relation(u, head_node, node_id, _TYPE_DEP, '', _ANNO_NAME_DEPREL, deprel, component_layer=_LAYER_DEP)        
         span_id = map_annotation(u, doc_path, s_id, '' if text_name is None else text_name, _ANNO_NAME_S, str(s_id), *[n_id for n_id, _, _ in nodes[1:]])
         for k, v in a.items():
             u.add_node_label(span_id, '' if text_name is None else text_name, k, v)

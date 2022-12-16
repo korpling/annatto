@@ -120,10 +120,10 @@ def add_order_relations(u, node_ids, order_name=None):
         u.add_edge(node_ids[i - 1], node_ids[i], ANNIS_NS, ANNIS_ORDERING, order_name if order_name else '')        
 
 
-def add_pointing_relation(u, source, target, type_, anno_ns=None, anno_name=None, anno_val=None):
-    u.add_edge(source, target, '', ANNIS_POINTING_REL, type_)
+def add_pointing_relation(u, source, target, type_, anno_ns=None, anno_name=None, anno_val=None, component_layer=''):
+    u.add_edge(source, target, component_layer, ANNIS_POINTING_REL, type_)
     if anno_name is not None and anno_val is not None:
-        u.add_edge_label(source, target, '', ANNIS_POINTING_REL, type_, '' if anno_ns is None else anno_ns, anno_name, anno_val)
+        u.add_edge_label(source, target, component_layer, ANNIS_POINTING_REL, type_, '' if anno_ns is None else anno_ns, anno_name, anno_val)
 
 
 def edges(u, source_nodes, target_nodes, component_type, layer=''):
