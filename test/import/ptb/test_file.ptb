@@ -1,0 +1,96 @@
+( (VROOT (DM (NGIRR hi))
+	 (DM (NE Uschi))))
+
+( (VROOT (SIMPX (VF (PPER ich))
+		(LK (VAFIN habe))
+		(MF (PTKIFG gerade) (ADV eben)))))
+
+( (VROOT (SIMPX (VF (PPER ich))
+		(LK (VAFIN war))
+		(MF (ADV unterwegs)))))
+
+( (VROOT (SIMPX (VF (PPER ich))
+		(LK (VAFIN habe))
+		(MF (ART einen) (NN Unfall))
+		(VC (VVPP bemerkt)))))
+
+( (VROOT (SIMPX (KOORD (KON beziehungsweise))
+		(VF (PPER ich))
+		(LK (VAFIN war))
+		(MF (ADV fast) (ADV dabei)))))
+
+( (VROOT (DM (KON und) (ADV zwar))
+	 (DM (NGIRR ey))
+	 (DM (PTKIFG mega) (ADJD krass))
+	 (SIMPX (VF (PTKIFG so) (ART ein) (NN Typ))
+		(LK (VVFIN kam))
+		(MF (APPR mit) (PTKIFG so) (ART einer) (NN Frau)))))
+
+( (VROOT (SIMPX (LK (VAFIN hatte))
+		(MF (PTKIFG so) (ART einen) (NN Ball) (APPR in) (ART der) (NN Hand)))))
+
+( (VROOT (SIMPX (LK (VAFIN hatte))
+		(MF (ADV dann) (ADV irgendwann) (APPR aus) (NN Versehen) (PPOSAT seinen) (NN Ball))
+		(VC (VVINF fallen) (VVINF lassen)))))
+
+( (VROOT (SIMPX (VF (APPR auf) (ART der) (ADJA gegenüberliegenden) (NN Straße))
+		(LK (VAFIN war))
+		(MF (ADV dann)
+		    (DM (NGHES äh))
+		    (ART eine)
+		    (NN Dame)
+		    (APPR mit)
+		    (ART einem)
+		    (NN Hund)))))
+
+( (VROOT (SIMPX (VF (ADV dann))
+		(LK (VAFIN ist))
+		(MF (ART das) (NN Hund) (APPR auf) (APPRART aufn) (NN Ball))
+		(VC (VVPP zugerannt)))))
+
+( (VROOT (SIMPX (KOORD (KON und))
+		(VF (PTKIFG genau) (APPR in) (ART dem) (NN Moment))
+		(DM (PTKIFG mega) (PTKIFG mega) (ADJD krass))
+		(LK (VVFIN kamen))
+		(MF (CARD zwei) (NN Autos)))))
+
+( (VROOT (SIMPX (KOORD (KON und))
+		(FRAG (ADV da))
+		(VF (SIMPX (C (KOUS weil))
+			   (MF (ART der) (PIDS eine) (PTKMA halt) (PTKIFG so))
+			   (VC (VVINF anhalten) (VMFIN musste))))
+		(DM (NGHES äh))
+		(LK (VAFIN ist))
+		(MF (ART der) (PIDS andere) (ADV dann) (PPER ihm) (ADV irgendwie) (ADV hinten) (APPR bei) (PDS dem))
+		(VC (VVPP reingefahren)))))
+
+( (VROOT (DM (PTKIFG mega) (ADJD krass) (NGIRR ey))))
+
+( (VROOT (SIMPX (FX (FM ama) (FM nasıl) (FM yaptı) (FM nasıl) (FM oldu) (FM bilmiyorum) (FM çünkü)))))
+
+( (VROOT (SIMPX (VF (ADV eigentlich))
+		(LK (VMFIN sollte))
+		(MF (PPER er) (PPER es))
+		(VC (VVINF sehen)))))
+
+( (VROOT (FRAG (PDS der))
+	 (FRAG (PDS das))
+	 (SIMPX (VF (PDS das))
+		(LK (VAFIN waren))
+		(MF (PTKMA halt)))))
+
+( (VROOT (NSU (ART das) (ORD erste) (NN Auto) (ADV vielleicht) (PTKNEG nicht) (KON aber) (ART das) (PIDS andere))))
+
+( (VROOT (SIMPX (VF (PDS die))
+		(LK (VAFIN waren))
+		(MF (PTKIFG gar) (PTKNEG nicht) (PTKMA mal) (PTKIFG so) (ADJD schnell)))))
+
+( (VROOT (NSU (KOORD (KON aber))
+	      (PIAT keine)
+	      (NN Ahnung)
+	      (SIMPX (C (PWAV wie))
+		     (MF (PDS das))
+		     (VC (VVPP passiert) (VAFIN ist))))))
+
+( (VROOT (DM (PTKIFG voll) (ADJD krass))))
+

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pepper-job id="trttqfob" version="1.0">
+  <importer name="EXMARaLDAImporter" path="./test/import/" leak_results_to="exmaralda-importer.leaks"/>
+  <importer name="CoNLLImporter" path="./test/import/" leak_results_to="conll-importer.leaks">
+    <customization>
+      <property key="text_name">conll</property>
+      <property key="anno_ns">norm</property>
+      <property key="skip_named_ordering">false</property>
+    </customization>
+  </importer>
+  <!--importer name="PTBImporter" path="./test/import/">
+    <customization>
+      <property key="text_name">ptb</property>
+      <property key="anno_ns">norm</property>
+    </customization>
+  </importer-->
+  <manipulator name="Merger">
+    <customization>
+      <property key="check.names">norm,conll</property>
+      <property key="keep.name">norm</property>
+      <property key="root.name">rueg</property>
+      <property key="skip.components">,</property>
+    </customization>
+  </manipulator>
+  <exporter name="GraphMLExporter" path="./">
+	  <property key="add.visualisations">
+[[visualizers]]
+element = "node"
+layer = ""
+vis_type = "grid"
+display_name = "annotations"
+visibility = "hidden"
+
+[visualizers.mappings]
+annos = "/dipl::cu/"
+	  </property>
+  </exporter>
+</pepper-job>
