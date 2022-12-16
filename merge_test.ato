@@ -33,6 +33,16 @@ visibility = "hidden"
 
 [visualizers.mappings]
 annos = "/dipl::cu/"
+
+[[visualizers]]
+element = "edge"
+layer = "dependencies"
+vis_type = "arch_dependency"
+display_name = "dependencies"
+visibility = "hidden"
+
+[visualizers.mappings]
+node_key = "norm"
 	  </property>
   </exporter>
 </pepper-job>
