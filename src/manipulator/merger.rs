@@ -268,7 +268,7 @@ impl Manipulator for Merger {
                         }
                         if !report_missing.is_empty() && tx.is_some() {
                             let sender = tx.as_ref().unwrap();
-                            //sender.send(StatusMessage::Info(format!("Not all children of node {} ({}::{}) available in target graph: {:?}", &source_node_name, &layer_name, &edge_component_name, &report_missing)))?;
+                            sender.send(StatusMessage::Info(format!("Not all children of node {} ({}::{}) available in target graph: {:?}", &source_node_name, &layer_name, &edge_component_name, &report_missing)))?;
                         }
                     }
                 }
@@ -298,23 +298,7 @@ impl Manipulator for Merger {
                 sender.send(message)?;
             }
         }
-        {//DEBUG            
-            write_to_file(&updates, &std::path::Path::new("/home/klotzmaz/Documents/rust/workspace/annatto/merger-leaks.txt"));
-            let c = AnnotationComponent::new(AnnotationComponentType::Pointing, smartstring::alias::String::from("dependencies"), smartstring::alias::String::from("dep"));
-            let gs = graph.get_graphstorage(&c).unwrap();
-            for anno in &gs.get_anno_storage().annotation_keys()? {
-                println!("BEFORE application of updates: {:?}", anno);
-            }
-        }//eoDEBUG
-        graph.apply_update(&mut updates, |_msg| {})?;
-        {//DEBUG
-            let c = AnnotationComponent::new(AnnotationComponentType::Pointing, smartstring::alias::String::from("dependencies"), smartstring::alias::String::from("dep"));
-            let gs = graph.get_graphstorage(&c).unwrap();
-            for anno in &gs.get_anno_storage().annotation_keys()? {
-                println!("AFTER application of updates: {:?}", anno);
-            }
-        }//eoDEBUG
-        panic!("for no reason");
+        graph.apply_update(&mut updates, |_msg| {})?;        
         Ok(())
     }
 }
