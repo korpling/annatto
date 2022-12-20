@@ -431,7 +431,10 @@ mod tests {
             };
             let matches_e = cs_e.find(query.clone(), 0, None, ResultOrder::Normal)?;
             let matches_g = cs_g.find(query, 0, None, ResultOrder::Normal)?;
-            assert_eq!(matches_e.len(), matches_g.len(), "Failed with query: {}", query_s);   
+            assert_eq!(matches_e.len(), matches_g.len(), "Failed with query: {}", query_s);
+            for (m_e, m_g) in matches_e.into_iter().zip(matches_g.into_iter()) {
+                assert_eq!(m_e, m_g);
+            }
         }
         Ok(())
     }
