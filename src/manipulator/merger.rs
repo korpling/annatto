@@ -412,6 +412,7 @@ mod tests {
             "dipl",
             "norm _o_ dipl",
             "node >* norm",
+            "node ->dep node",
             "node ->dep[deprel=/.+/] node"
         ];
         let corpus_name = "current";
