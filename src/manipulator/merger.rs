@@ -187,9 +187,11 @@ impl Merger {
                         graph: &AnnotationGraph, 
                         updates: &mut GraphUpdate,
                         skip_components: HashSet<AnnotationComponent>, 
+                        node_map: HashMap<u64, u64>,
                         docs_with_errors: &mut HashSet<String>,
                         tx: &Option<StatusSender>) -> Result<(), Box<dyn std::error::Error>> {
         let mut report_missing = HashSet::new();
+        let node_annos = graph.get_node_annos();
         for (edge_component_type, switch_source) in [(AnnotationComponentType::Coverage, false), 
                                                              (AnnotationComponentType::Dominance, false), 
                                                              (AnnotationComponentType::Pointing, true)] {
@@ -313,7 +315,7 @@ impl Manipulator for Merger {
                 }
             }
         }        
-        self.merge_components(graph, &mut updates, skip_components, &mut docs_with_errors, &tx)?;
+        self.merge_components(graph, &mut updates, skip_components, node_map, &mut docs_with_errors, &tx)?;
         if docs_with_errors.len() > 0 {
             let docs_s = docs_with_errors.iter().join("\n");            
             if let Some(sender) = &tx {
