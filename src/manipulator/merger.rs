@@ -446,13 +446,13 @@ mod tests {
     #[test]
     fn test_export_mem() {
         let export = export_test(false);
-        assert_eq!(export.is_ok(), true, "Export ends with Err: {:?}", &export);
+        assert_eq!(export.is_ok(), true, "Export test ends with Err: {:?}", &export);
     }
 
     #[test]
     fn test_export_disk() {
         let export = export_test(true);
-        assert_eq!(export.is_ok(), true, "Export ends with Err: {:?}", &export);
+        assert_eq!(export.is_ok(), true, "Export test ends with Err: {:?}", &export);
     }
 
     fn export_test(on_disk: bool) -> Result<()> {
@@ -464,7 +464,7 @@ mod tests {
         assert_eq!(merger.manipulate_corpus(&mut g, &properties, None).is_ok(), true);
         let mut tmp_file = tempfile()?;
         let export = graphannis_core::graph::serialization::graphml::export(&g, None, tmp_file, |msg| {});
-        assert_eq!(export.is_ok(), true);
+        assert_eq!(export.is_ok(), true, "Export fails: {}", &export);
         Ok(())
     }
 
