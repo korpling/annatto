@@ -464,7 +464,7 @@ mod tests {
         assert_eq!(merger.manipulate_corpus(&mut g, &properties, None).is_ok(), true);
         let mut tmp_file = tempfile()?;
         let export = graphannis_core::graph::serialization::graphml::export(&g, None, tmp_file, |msg| {});
-        assert_eq!(export.is_ok(), true, "Export fails: {}", &export);
+        assert_eq!(export.is_ok(), true, "Export fails: {:?}", &export);
         Ok(())
     }
 
