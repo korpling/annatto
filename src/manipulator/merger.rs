@@ -78,28 +78,11 @@ impl Default for OnErrorValues {
     }
 }
 
-impl Manipulator for Merger {
-    fn manipulate_corpus(
-        &self,
-        graph: &mut AnnotationGraph,
-        properties: &BTreeMap<String, String>,
-        tx: Option<StatusSender>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        if let Some(sender) = &tx {
-            sender.send(StatusMessage::Info(String::from("Starting merge")))?;
-        }
-        let on_error = OnErrorValues::try_from(properties.get(PROP_ON_ERROR))?;
-        let order_names = properties.get(PROP_CHECK_NAMES).unwrap().split(PROPVAL_SEP).collect::<Vec<&str>>();    
-        let node_annos = graph.get_node_annos();        
-        let keep_name = properties.get(PROP_KEEP_NAME).unwrap();
-        let keep_name_key = AnnoKey { ns: smartstring::alias::String::from(""), name: smartstring::alias::String::from(keep_name) };
-        let skip_component_spec_o = properties.get(PROP_SKIP_COMPONENTS);
-        let mut updates = GraphUpdate::default();
-        // gather ordered tokens
-        let mut docs_with_errors = HashSet::new();
+impl Merger {
+    fn retrieve_ordered_nodes<'a>(&self, graph: &AnnotationGraph, order_names: Vec<&'a str>) -> Result<HashMap<String, HashMap<&'a str, std::vec::IntoIter<u64>>>, Box<dyn std::error::Error>> {        
         let mut ordered_items_by_doc: HashMap<String, HashMap<&str, std::vec::IntoIter<u64>>> = HashMap::new();
-        for o_n in order_names.clone() {
-            let order_name = o_n;
+        let node_annos = graph.get_node_annos();
+        for order_name in order_names {
             let c = AnnotationComponent::new(AnnotationComponentType::Ordering, smartstring::alias::String::from(ANNIS_NS), smartstring::alias::String::from(order_name));            
             if let Some(ordering) = graph.get_graphstorage(&c) {                
                 let start_nodes = ordering.source_nodes().filter(|n| ordering.get_ingoing_edges(*n.as_ref().unwrap()).count() == 0).collect_vec();
@@ -132,44 +115,52 @@ impl Manipulator for Merger {
                 return Err(Box::new(err))
             }            
         }
-        // set up some trackers
-        let mut node_map: HashMap<u64, u64> = HashMap::new();  // maps node ids of old annotations owners to new (remaining) annotation owners, relevant for mapping edges later
-        // merge or align
+        Ok(ordered_items_by_doc)
+    }
+
+    fn map_text_nodes(&self, 
+                      graph: &AnnotationGraph, 
+                      updates: &mut GraphUpdate, 
+                      target_key: &AnnoKey, 
+                      ordered_items_by_doc: HashMap<String, HashMap<&str, std::vec::IntoIter<u64>>>, 
+                      docs_with_errors: &mut HashSet<String>) -> Result<HashMap<u64, u64>, Box<dyn std::error::Error>> {
+        let mut node_map: HashMap<u64, u64> = HashMap::new();
+        let node_annos = graph.get_node_annos();
         for (doc_name, mut ordered_items_by_name) in ordered_items_by_doc {
-            let mut ordered_keep_items = ordered_items_by_name.remove(keep_name.as_str()).unwrap();               
+            let mut ordered_keep_items = ordered_items_by_name.remove(target_key.name.as_str()).unwrap();
+            let mut order_names = HashSet::new();
+            for (k, _) in &ordered_items_by_name {
+                order_names.insert(k.to_string());
+            }
             for item in ordered_keep_items {
-                let ref_val = match node_annos.get_value_for_item(&item, &keep_name_key)? {
+                let ref_val = match node_annos.get_value_for_item(&item, target_key)? {
                     Some(v) => v,
                     None => {
                         let critical_node = node_annos.get_value_for_item(&item, &NODE_NAME_KEY)?.unwrap();
                         return Err(Box::new(AnnattoError::Manipulator { reason: format!("Could not determine annotation value for key {}::{} @ {}", 
-                                                                                        &keep_name_key.ns, 
-                                                                                        &keep_name_key.name,
+                                                                                        target_key.ns, 
+                                                                                        target_key.name,
                                                                                         critical_node), 
-                                                                        manipulator: self.module_name().to_string() }));
+                                                                                        manipulator: self.module_name().to_string() }));
                     }
                 };
-                let ref_node_name = node_annos.get_value_for_item(&item, &NODE_NAME_KEY)?.unwrap();  // existence guaranteed
-                for name in &order_names {
-                    let other_name = *name;
-                    if other_name == keep_name {
-                        continue;
-                    }
-                    if let Some(other_item) = ordered_items_by_name.get_mut(other_name).unwrap().next() {
-                        let other_key = AnnoKey {ns: smartstring::alias::String::from(""), name: smartstring::alias::String::from(other_name)};
+                let ref_node_name = node_annos.get_value_for_item(&item, &NODE_NAME_KEY)?.unwrap();  // existence guaranteed                                
+                for other_name in &order_names {                    
+                    if let Some(other_item) = ordered_items_by_name.get_mut(other_name.as_str()).unwrap().next() {
+                        let other_key = AnnoKey {ns: smartstring::alias::String::from(""), 
+                                                 name: smartstring::alias::String::from(other_name)};
                         let other_val = node_annos.get_value_for_item(&other_item, &other_key)?.unwrap();
                         if ref_val == other_val {  // text values match
-                            // align or merge
-                            // case merge
                             let anno_keys = node_annos.get_all_keys_for_item(&other_item, None, None)?;
                             // annotations directly on the ordered node
                             for ak in anno_keys {
-                                if ak.ns != ANNIS_NS && !order_names.contains(&ak.name.as_str()) {                                
+                                let anno_name = ak.name.to_string();
+                                if ak.ns != ANNIS_NS && !order_names.contains(&anno_name) {                                
                                     let av = node_annos.get_value_for_item(&other_item, ak.as_ref())?.unwrap();  // existence guaranteed
                                     updates.add_event(UpdateEvent::AddNodeLabel { node_name: ref_node_name.to_string(),
-                                                                                    anno_ns: ak.ns.to_string(), 
-                                                                                    anno_name: ak.name.to_string(), 
-                                                                                    anno_value: av.to_string() })?;
+                                                                                  anno_ns: ak.ns.to_string(), 
+                                                                                  anno_name: anno_name, 
+                                                                                  anno_value: av.to_string() })?;
                                 }
                             }
                             // delete ordered node, the rest (edges and labels) should theoretically die as a consequence
@@ -189,6 +180,31 @@ impl Manipulator for Merger {
                 }
             }
         }
+        Ok(node_map)
+    }
+}
+
+impl Manipulator for Merger {
+    fn manipulate_corpus(
+        &self,
+        graph: &mut AnnotationGraph,
+        properties: &BTreeMap<String, String>,
+        tx: Option<StatusSender>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        if let Some(sender) = &tx {
+            sender.send(StatusMessage::Info(String::from("Starting merge")))?;
+        }
+        let on_error = OnErrorValues::try_from(properties.get(PROP_ON_ERROR))?;
+        let order_names = properties.get(PROP_CHECK_NAMES).unwrap().split(PROPVAL_SEP).collect::<Vec<&str>>();    
+        let node_annos = graph.get_node_annos();        
+        let keep_name = properties.get(PROP_KEEP_NAME).unwrap();
+        let keep_name_key = AnnoKey { ns: smartstring::alias::String::from(""), name: smartstring::alias::String::from(keep_name) };
+        let skip_component_spec_o = properties.get(PROP_SKIP_COMPONENTS);
+        let mut updates = GraphUpdate::default();
+        // gather ordered tokens
+        let mut docs_with_errors = HashSet::new();
+        let mut ordered_items_by_doc = self.retrieve_ordered_nodes(graph, order_names.clone())?;   
+        let mut node_map: HashMap<u64, u64> = self.map_text_nodes(graph, &mut updates, &keep_name_key, ordered_items_by_doc, &mut docs_with_errors)?;
         // do edges
         let autogenerated_components = AnnotationComponentType::update_graph_index_components(graph).into_iter().collect::<HashSet<AnnotationComponent>>();
         let mut skip_components = HashSet::from(autogenerated_components);
