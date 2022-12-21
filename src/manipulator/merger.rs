@@ -412,6 +412,7 @@ mod tests {
             "dipl",
             "norm _o_ dipl",
             "node >* norm",
+            "cat",
             "node ->dep node",
             "node ->dep[deprel=/.+/] node"
         ];
