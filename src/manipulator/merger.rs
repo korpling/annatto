@@ -122,12 +122,14 @@ impl Manipulator for Merger {
                         nodes.push(entry?.node);
                     }
                     if nodes.is_empty() {                 
-                        panic!("No nodes for ordering `{}` could be retrieved.", order_name);
+                        let err = AnnattoError::Manipulator { reason: format!("Ordering `{}` does not connect any nodes.", order_name), manipulator: self.module_name().to_string() };
+                        Err(err)
                     }
                     ordered_items_by_doc.get_mut(&doc_name).unwrap().insert(order_name, nodes.into_iter());
                 }
             } else {
-                panic!("No ordering with name {}", order_name); //TODO
+                let err = AnnattoError::Manipulator { reason: format!("Required ordering `{}` does not exist.", order_name), manipulator: self.module_name().to_string() };
+                Err(err)
             }            
         }
         // set up some trackers
@@ -165,9 +167,9 @@ impl Manipulator for Merger {
                                 if ak.ns != ANNIS_NS && !order_names.contains(&ak.name.as_str()) {                                
                                     let av = node_annos.get_value_for_item(&other_item, ak.as_ref())?.unwrap();  // existence guaranteed
                                     updates.add_event(UpdateEvent::AddNodeLabel { node_name: ref_node_name.to_string(),
-                                                                                  anno_ns: ak.ns.to_string(), 
-                                                                                  anno_name: ak.name.to_string(), 
-                                                                                  anno_value: av.to_string() })?;
+                                                                                    anno_ns: ak.ns.to_string(), 
+                                                                                    anno_name: ak.name.to_string(), 
+                                                                                    anno_value: av.to_string() })?;
                                 }
                             }
                             // delete ordered node, the rest (edges and labels) should theoretically die as a consequence
@@ -181,7 +183,8 @@ impl Manipulator for Merger {
                         }                    
                     } else {
                         // no further nodes
-                        panic!("No item available for {}", other_name);  //FIXME
+                        let err = AnnattoError::Manipulator { reason: format!("Ran out of nodes for ordering `{}`.", other_name), manipulator: self.module_name().to_string() };
+                        Err(err)                        
                     }
                 }
             }
@@ -321,7 +324,7 @@ impl Manipulator for Merger {
                 sender.send(message)?;
             }
         }
-        graph.apply_update(&mut updates, |_msg| {})?;        
+        graph.apply_update(&mut updates, |_msg| {})?;
         Ok(())
     }
 }
@@ -467,7 +470,7 @@ mod tests {
 
     fn input_graph(on_disk: bool) -> Result<AnnotationGraph> {
         let mut g = AnnotationGraph::new(on_disk)?;
-        let mut u = GraphUpdate::new();
+        let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode { node_name: "root".to_string(), node_type: "corpus".to_string() })?;
         // import 1
         u.add_event(UpdateEvent::AddNode { node_name: "root/a".to_string(), node_type: "corpus".to_string() })?;
@@ -708,7 +711,7 @@ mod tests {
 
     fn expected_output_graph(on_disk: bool) -> Result<AnnotationGraph> {
         let mut g = AnnotationGraph::new(on_disk)?;
-        let mut u = GraphUpdate::new();
+        let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode { node_name: "root".to_string(), node_type: "corpus".to_string() })?;
         // import 1
         u.add_event(UpdateEvent::AddNode { node_name: "root/a".to_string(), node_type: "corpus".to_string() })?;
