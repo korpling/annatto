@@ -123,13 +123,13 @@ impl Manipulator for Merger {
                     }
                     if nodes.is_empty() {                 
                         let err = AnnattoError::Manipulator { reason: format!("Ordering `{}` does not connect any nodes.", order_name), manipulator: self.module_name().to_string() };
-                        Err(err)
+                        return Err(Box::new(err))
                     }
                     ordered_items_by_doc.get_mut(&doc_name).unwrap().insert(order_name, nodes.into_iter());
                 }
             } else {
                 let err = AnnattoError::Manipulator { reason: format!("Required ordering `{}` does not exist.", order_name), manipulator: self.module_name().to_string() };
-                Err(err)
+                return Err(Box::new(err))
             }            
         }
         // set up some trackers
@@ -184,7 +184,7 @@ impl Manipulator for Merger {
                     } else {
                         // no further nodes
                         let err = AnnattoError::Manipulator { reason: format!("Ran out of nodes for ordering `{}`.", other_name), manipulator: self.module_name().to_string() };
-                        Err(err)                        
+                        return Err(Box::new(err))                        
                     }
                 }
             }
