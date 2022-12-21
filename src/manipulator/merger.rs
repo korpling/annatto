@@ -183,13 +183,13 @@ impl Merger {
         Ok(node_map)
     }
 
-    fn merge_components(&self, 
-                        graph: &AnnotationGraph, 
-                        updates: &mut GraphUpdate,
-                        skip_components: HashSet<AnnotationComponent>, 
-                        node_map: HashMap<u64, u64>,
-                        docs_with_errors: &mut HashSet<String>,
-                        tx: &Option<StatusSender>) -> Result<(), Box<dyn std::error::Error>> {        
+    fn merge_all_components(&self, 
+                            graph: &AnnotationGraph, 
+                            updates: &mut GraphUpdate,
+                            skip_components: HashSet<AnnotationComponent>, 
+                            node_map: HashMap<u64, u64>,
+                            docs_with_errors: &mut HashSet<String>,
+                            tx: &Option<StatusSender>) -> Result<(), Box<dyn std::error::Error>> {        
         for (edge_component_type, switch_source) in [(AnnotationComponentType::Coverage, false), 
                                                              (AnnotationComponentType::Dominance, false), 
                                                              (AnnotationComponentType::Pointing, true)] {
@@ -286,6 +286,47 @@ impl Merger {
         }
         Ok(())
     }
+
+    fn handle_document_errors(&self, graph: &AnnotationGraph, updates: &mut GraphUpdate, docs_with_errors: HashSet<String>, policy: OnErrorValues, tx: &Option<StatusSender>) -> Result<(), Box<dyn std::error::Error>>{
+        let node_annos = graph.get_node_annos();
+        if docs_with_errors.len() > 0 {
+            let docs_s = docs_with_errors.iter().join("\n");            
+            if let Some(sender) = &tx {
+                let message = match policy {
+                    OnErrorValues::Fail => {
+                        let msg = format!("Documents with ill-merged tokens:\n{}", docs_s);
+                        let err = AnnattoError::Manipulator { reason: msg, manipulator: self.module_name().to_string() };
+                        StatusMessage::Failed(err)
+                    },
+                    OnErrorValues::Drop => {
+                        for doc_node_name in docs_with_errors {
+                            // get all doc nodes with doc_id 
+                            let corpus_nodes = node_annos.exact_anno_search(Some(NODE_TYPE_KEY.ns.as_str()), NODE_TYPE_KEY.name.as_str(), ValueSearch::Some("corpus"))
+                                                    .into_iter()
+                                                    .map(|m| m.unwrap().node)
+                                                    .collect::<HashSet<u64>>();
+                            let nodes_with_doc_name = node_annos.exact_anno_search(Some(NODE_NAME_KEY.ns.as_str()), NODE_NAME_KEY.name.as_str(), ValueSearch::Some(doc_node_name.as_str()))
+                                                    .into_iter()
+                                                    .map(|m| m.unwrap().node)
+                                                    .collect::<HashSet<u64>>();
+                            for doc_node_id in corpus_nodes.intersection(&nodes_with_doc_name) {
+                                let doc_name = node_annos.get_value_for_item(doc_node_id, &NODE_NAME_KEY)?.unwrap();
+                                updates.add_event(UpdateEvent::DeleteNode { node_name: doc_node_id.to_string() })?;  //FIXME this is currently only the document name, not the entire path and thus does not identify the node
+                            }
+                        };
+                        let msg = format!("Documents with ill-merged tokens will be dropped from the corpus:\n{}", docs_s);
+                        StatusMessage::Warning(msg)
+                    },
+                    _ => {
+                        let msg = format!("BE AWARE that the corpus contains severe merging issues in the following documents:\n{}", docs_s);
+                        StatusMessage::Warning(msg)
+                    }
+                };
+                sender.send(message)?;
+            }
+        }
+        Ok(())
+    }
 }
 
 impl Manipulator for Merger {
@@ -327,43 +368,8 @@ impl Manipulator for Merger {
                 }
             }
         }        
-        self.merge_components(graph, &mut updates, skip_components, node_map, &mut docs_with_errors, &tx)?;
-        if docs_with_errors.len() > 0 {
-            let docs_s = docs_with_errors.iter().join("\n");            
-            if let Some(sender) = &tx {
-                let message = match on_error {
-                    OnErrorValues::Fail => {
-                        let msg = format!("Documents with ill-merged tokens:\n{}", docs_s);
-                        let err = AnnattoError::Manipulator { reason: msg, manipulator: self.module_name().to_string() };
-                        StatusMessage::Failed(err)
-                    },
-                    OnErrorValues::Drop => {
-                        for doc_node_name in docs_with_errors {
-                            // get all doc nodes with doc_id 
-                            let corpus_nodes = node_annos.exact_anno_search(Some(NODE_TYPE_KEY.ns.as_str()), NODE_TYPE_KEY.name.as_str(), ValueSearch::Some("corpus"))
-                                                    .into_iter()
-                                                    .map(|m| m.unwrap().node)
-                                                    .collect::<HashSet<u64>>();
-                            let nodes_with_doc_name = node_annos.exact_anno_search(Some(NODE_NAME_KEY.ns.as_str()), NODE_NAME_KEY.name.as_str(), ValueSearch::Some(doc_node_name.as_str()))
-                                                    .into_iter()
-                                                    .map(|m| m.unwrap().node)
-                                                    .collect::<HashSet<u64>>();
-                            for doc_node_id in corpus_nodes.intersection(&nodes_with_doc_name) {
-                                let doc_name = node_annos.get_value_for_item(doc_node_id, &NODE_NAME_KEY)?.unwrap();
-                                updates.add_event(UpdateEvent::DeleteNode { node_name: doc_node_id.to_string() })?;  //FIXME this is currently only the document name, not the entire path and thus does not identify the node
-                            }
-                        };
-                        let msg = format!("Documents with ill-merged tokens will be dropped from the corpus:\n{}", docs_s);
-                        StatusMessage::Warning(msg)
-                    },
-                    _ => {
-                        let msg = format!("BE AWARE that the corpus contains severe merging issues in the following documents:\n{}", docs_s);
-                        StatusMessage::Warning(msg)
-                    }
-                };
-                sender.send(message)?;
-            }
-        }
+        self.merge_all_components(graph, &mut updates, skip_components, node_map, &mut docs_with_errors, &tx)?;
+        self.handle_document_errors(graph, &mut updates, docs_with_errors, on_error, &tx)?;        
         graph.apply_update(&mut updates, |_msg| {})?;
         Ok(())
     }
