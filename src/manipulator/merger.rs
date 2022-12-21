@@ -8,7 +8,7 @@ use crate::error::AnnattoError;
 use crate::workflow::{StatusMessage,StatusSender};
 use crate::util::write_to_file;
 use graphannis::{
-    graph::{Component,Edge},
+    graph::{AnnotationStorage,Component,Edge,NodeID},
     model::{AnnotationComponentType,AnnotationComponent},
     update,
     update::{GraphUpdate,UpdateEvent},
