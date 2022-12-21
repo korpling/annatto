@@ -189,9 +189,7 @@ impl Merger {
                         skip_components: HashSet<AnnotationComponent>, 
                         node_map: HashMap<u64, u64>,
                         docs_with_errors: &mut HashSet<String>,
-                        tx: &Option<StatusSender>) -> Result<(), Box<dyn std::error::Error>> {
-        let mut report_missing = HashSet::new();
-        let node_annos = graph.get_node_annos();
+                        tx: &Option<StatusSender>) -> Result<(), Box<dyn std::error::Error>> {        
         for (edge_component_type, switch_source) in [(AnnotationComponentType::Coverage, false), 
                                                              (AnnotationComponentType::Dominance, false), 
                                                              (AnnotationComponentType::Pointing, true)] {
@@ -203,72 +201,86 @@ impl Merger {
                     }
                     continue;
                 }                
-                let edge_component_name = &edge_component.name;                    
-                let layer_name = edge_component.layer.to_string();
-                if let Some(edge_storage) = graph.get_graphstorage(&edge_component) {
-                    // there are some coverage edges
-                    let edge_annos = edge_storage.get_anno_storage();
-                    for source_node_r in edge_storage.source_nodes() {
-                        let source_node = source_node_r?;
-                        let source_node_name = node_annos.get_value_for_item(&source_node, &NODE_NAME_KEY)?.unwrap(); // existence guaranteed
-                        let new_source_name = if switch_source {
-                            if let Some(new_source_node) = node_map.get(&source_node) {
-                                node_annos.get_value_for_item(new_source_node, &NODE_NAME_KEY)?.unwrap().to_string()
-                            } else {
-                                if let Some(sender) = tx {
-                                    let message = format!("Could not determine new source of an edge in component {}/{}, the edge will be dropped", &edge_component_type.to_string(), &edge_component_name);
-                                    sender.send(StatusMessage::Warning(message));                                    
-                                }
-                                continue;
-                            }
-                        } else {
-                            source_node_name.to_string()
-                        };
-                        let edge_dfs = CycleSafeDFS::new(edge_storage.as_edgecontainer(), source_node, 1, 1);
-                        report_missing.clear();
-                        for target_r in edge_dfs {
-                            let target = target_r?.node;       
-                            if let Some(new_target) = node_map.get(&target) {                            
-                                // new child still exists in target graph
-                                let target_name = node_annos.get_value_for_item(&target, &NODE_NAME_KEY)?.unwrap();  // existence guaranteed    
-                                let new_target_name = node_annos.get_value_for_item(new_target, &NODE_NAME_KEY)?.unwrap();
-                                updates.add_event(UpdateEvent::DeleteEdge { source_node: source_node_name.to_string(), 
-                                                                            target_node: target_name.to_string(), 
-                                                                            layer: layer_name.to_string(),
-                                                                            component_type: edge_component_type.to_string(), 
-                                                                            component_name: edge_component_name.to_string() })?;
-                                updates.add_event(UpdateEvent::AddEdge { source_node: new_source_name.clone(), 
-                                                                         target_node: new_target_name.to_string(), 
-                                                                         layer: layer_name.to_string(), 
-                                                                         component_type: edge_component_type.to_string(), 
-                                                                         component_name: edge_component_name.to_string() })?;                           
-                                // check edge for annotations that need to be transferred        
-                                let edge = Edge {source: source_node, target: target}; // TODO at least for the case of pointing relations the same container might contain more than one edge, or am I wrong?                
-                                for k in edge_annos.get_all_keys_for_item(&edge, None, None)? {
-                                    if k.ns != ANNIS_NS {                                    
-                                        let v = edge_annos.get_value_for_item(&edge, &*k)?.unwrap();  // guaranteed to exist
-                                        let u = UpdateEvent::AddEdgeLabel { source_node: new_source_name.clone(), 
-                                                                                         target_node: new_target_name.to_string(), 
-                                                                                         layer: layer_name.to_string(), 
-                                                                                         component_type: edge_component_type.to_string(), 
-                                                                                         component_name: edge_component_name.to_string(), 
-                                                                                         anno_ns: k.ns.to_string(), 
-                                                                                         anno_name: k.name.to_string(), 
-                                                                                         anno_value: v.to_string() };
-                                        updates.add_event(u)?;
-                                    }
-                                }
-                            } else {
-                                // child does not exist in target graph, which must be legal if we allow texts to only partially match (e. g. in the case of dropped punctuation)
-                                // it could also be the case that the source and target node are not in the node_map bc they are not ordered nodes and thus don't require to be modified
-                                report_missing.insert(node_annos.get_value_for_item(&target, &NODE_NAME_KEY)?.unwrap());
-                            }
+                self.merge_component(graph, updates, edge_component, switch_source, &node_map, tx)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn merge_component(&self, 
+                       graph: &AnnotationGraph,
+                       updates: &mut GraphUpdate,
+                       edge_component: Component<AnnotationComponentType>,
+                       switch_source: bool, 
+                       node_map: &HashMap<u64, u64>,
+                       tx: &Option<StatusSender>) -> Result<(), Box<dyn std::error::Error>> {
+        let mut report_missing = HashSet::new();
+        let edge_component_name = &edge_component.name;
+        let edge_component_type = edge_component.get_type();                    
+        let layer_name = edge_component.layer.to_string();
+        let node_annos = graph.get_node_annos();
+        if let Some(edge_storage) = graph.get_graphstorage(&edge_component) {
+            // there are some coverage edges
+            let edge_annos = edge_storage.get_anno_storage();
+            for source_node_r in edge_storage.source_nodes() {
+                let source_node = source_node_r?;
+                let source_node_name = node_annos.get_value_for_item(&source_node, &NODE_NAME_KEY)?.unwrap(); // existence guaranteed
+                let new_source_name = if switch_source {
+                    if let Some(new_source_node) = node_map.get(&source_node) {
+                        node_annos.get_value_for_item(new_source_node, &NODE_NAME_KEY)?.unwrap().to_string()
+                    } else {
+                        if let Some(sender) = tx {
+                            let message = format!("Could not determine new source of an edge in component {}/{}, the edge will be dropped", &edge_component_type.to_string(), &edge_component_name);
+                            sender.send(StatusMessage::Warning(message));                                    
                         }
-                        if !report_missing.is_empty() && tx.is_some() {
-                            let sender = tx.as_ref().unwrap();
-                            sender.send(StatusMessage::Info(format!("Not all children of node {} ({}::{}) available in target graph: {:?}", &source_node_name, &layer_name, &edge_component_name, &report_missing)))?;
-                        }
+                        continue;
                     }
+                } else {
+                    source_node_name.to_string()
+                };
+                let edge_dfs = CycleSafeDFS::new(edge_storage.as_edgecontainer(), source_node, 1, 1);
+                report_missing.clear();
+                for target_r in edge_dfs {
+                    let target = target_r?.node;       
+                    if let Some(new_target) = node_map.get(&target) {                            
+                        // new child still exists in target graph
+                        let target_name = node_annos.get_value_for_item(&target, &NODE_NAME_KEY)?.unwrap();  // existence guaranteed    
+                        let new_target_name = node_annos.get_value_for_item(new_target, &NODE_NAME_KEY)?.unwrap();
+                        updates.add_event(UpdateEvent::DeleteEdge { source_node: source_node_name.to_string(), 
+                                                                    target_node: target_name.to_string(), 
+                                                                    layer: layer_name.to_string(),
+                                                                    component_type: edge_component_type.to_string(), 
+                                                                    component_name: edge_component_name.to_string() })?;
+                        updates.add_event(UpdateEvent::AddEdge { source_node: new_source_name.clone(), 
+                                                                    target_node: new_target_name.to_string(), 
+                                                                    layer: layer_name.to_string(), 
+                                                                    component_type: edge_component_type.to_string(), 
+                                                                    component_name: edge_component_name.to_string() })?;                           
+                        // check edge for annotations that need to be transferred        
+                        let edge = Edge {source: source_node, target: target}; // TODO at least for the case of pointing relations the same container might contain more than one edge, or am I wrong?                
+                        for k in edge_annos.get_all_keys_for_item(&edge, None, None)? {
+                            if k.ns != ANNIS_NS {                                    
+                                let v = edge_annos.get_value_for_item(&edge, &*k)?.unwrap();  // guaranteed to exist
+                                let u = UpdateEvent::AddEdgeLabel { source_node: new_source_name.clone(), 
+                                                                                    target_node: new_target_name.to_string(), 
+                                                                                    layer: layer_name.to_string(), 
+                                                                                    component_type: edge_component_type.to_string(), 
+                                                                                    component_name: edge_component_name.to_string(), 
+                                                                                    anno_ns: k.ns.to_string(), 
+                                                                                    anno_name: k.name.to_string(), 
+                                                                                    anno_value: v.to_string() };
+                                updates.add_event(u)?;
+                            }
+                        }
+                    } else {
+                        // child does not exist in target graph, which must be legal if we allow texts to only partially match (e. g. in the case of dropped punctuation)
+                        // it could also be the case that the source and target node are not in the node_map bc they are not ordered nodes and thus don't require to be modified
+                        report_missing.insert(node_annos.get_value_for_item(&target, &NODE_NAME_KEY)?.unwrap());
+                    }
+                }
+                if !report_missing.is_empty() && tx.is_some() {
+                    let sender = tx.as_ref().unwrap();
+                    sender.send(StatusMessage::Info(format!("Not all children of node {} ({}::{}) available in target graph: {:?}", &source_node_name, &layer_name, &edge_component_name, &report_missing)))?;
                 }
             }
         }
