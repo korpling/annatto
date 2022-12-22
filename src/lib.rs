@@ -32,8 +32,8 @@ pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
 pub fn manipulator_by_name(name: &str) -> Result<Box<dyn Manipulator>> {
     match name {
         "DoNothingManipulator" => Ok(Box::new(manipulator::DoNothingManipulator::default())),
-        "CheckingMergeFinalizer" => Ok(Box::new(
-            manipulator::merger::CheckingMergeFinalizer::default(),
+        "Merger" => Ok(Box::new(
+            manipulator::merger::Merger::default(),
         )), //FIXME fix path
         _ => Err(AnnattoError::NoSuchModule(name.to_string())),
     }

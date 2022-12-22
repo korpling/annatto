@@ -51,7 +51,7 @@ impl Importer for PythonImporter {
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let python_interpreter = pyembed::MainPythonInterpreter::new(default_python_config())?;
-
+        
         let u: PyResult<_> = python_interpreter.with_gil(|py| {
             // graphannis modul
             wrap_pymodule!(graphannis)(py);
@@ -146,6 +146,17 @@ mod tests {
         let importer = PythonImporter::from_name("CoNLLImporter");
         let props = BTreeMap::default();
         let path = Path::new("test/conll/importer/");
+        let mut u = importer.import_corpus(path, &props, None).unwrap();
+        let mut g = AnnotationGraph::new(false).unwrap();
+        g.apply_update(&mut u, |_| {}).unwrap();
+        assert_eq!(1, 1)
+    }
+
+    #[test]
+    fn run_ptb_importer() {
+        let importer = PythonImporter::from_name("PTBImporter");
+        let props = BTreeMap::default();
+        let path = Path::new("test/ptb/importer/");
         let mut u = importer.import_corpus(path, &props, None).unwrap();
         let mut g = AnnotationGraph::new(false).unwrap();
         g.apply_update(&mut u, |_| {}).unwrap();

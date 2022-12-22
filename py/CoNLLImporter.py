@@ -10,12 +10,16 @@ from graphupdate_util import *
 _logger = logging.getLogger(__name__)
 _handler = logging.FileHandler('conll-importer.log')
 _handler.setLevel(logging.INFO)
+_stream = logging.StreamHandler(stream=sys.stdout)
+_stream.setLevel(logging.INFO)
 _logger.setLevel(logging.INFO)
 _logger.addHandler(_handler)
+_logger.addHandler(_stream)
 
+# properties
 PROPERTY_TEXT_NAME = 'text_name'
 PROPERTY_SKIP_NAMED_ORDERING = 'skip_named_ordering'
-PROPERTY_ANNO_QNAME = 'anno_qname'
+PROPERTY_ANNO_NS = 'anno_ns'
 
 _FIELD_NAMES = [
     'id',
@@ -30,6 +34,7 @@ _FIELD_NAMES = [
 _NONE = '_'
 _FEAT_SEP = '|'
 _FUNC = 'func'
+_LAYER_DEP = 'dependencies'
 _TYPE_DEP = 'dep'
 _ANNO_NAME_DEPREL = 'deprel'
 _FILE_ENDINGS = ('.conll', '.conllu', '.txt')
@@ -49,12 +54,17 @@ def _read_data(path):
         if line.startswith(_META_MARKER):
             k, v = map(str.strip, line[line.find(_META_MARKER) + 1:].strip().split('=', 1))
             sentence_annotations[-1][k] = v
-        l = line.strip().split('\t')
+            continue
+        l = line.strip()
         if not l:
             sentences.append([])
             sentence_annotations.append({})
-        elif len(l) == 10:
-            sentences[-1].append(_Token(*l[:8]))
+        else:
+            try:
+                sentences[-1].append(_Token(*l.split('\t')[:8]))
+            except TypeError as e:                
+                _logger.error(f'Line {line.strip()} cannot be imported (not enough or too many values).')
+                raise ValueError(f'Invalid line: "{",".join(l)}"')
     return sentences, sentence_annotations
 
 
@@ -98,12 +108,14 @@ def _map_conll_document(u,
             h_index = int(head)
             if h_index:
                 head_node = nodes[h_index][0]
-                add_pointing_relation(u, head_node, node_id, _TYPE_DEP, '', _ANNO_NAME_DEPREL, deprel)        
+                add_pointing_relation(u, head_node, node_id, _TYPE_DEP, '', _ANNO_NAME_DEPREL, deprel, component_layer=_LAYER_DEP)        
         span_id = map_annotation(u, doc_path, s_id, '' if text_name is None else text_name, _ANNO_NAME_S, str(s_id), *[n_id for n_id, _, _ in nodes[1:]])
         for k, v in a.items():
             u.add_node_label(span_id, '' if text_name is None else text_name, k, v)
         all_nodes.extend([id_ for id_, _, _ in nodes[1:]])
-    add_order_relations(u, all_nodes, order_name=None if skip_named_ordering else text_name)
+    add_order_relations(u, all_nodes)
+    if not skip_named_ordering and text_name:
+        add_order_relations(u, all_nodes, text_name)
 
 
 def start_import(path, **properties):
@@ -115,7 +127,7 @@ def start_import(path, **properties):
     safe_props = defaultdict(type(None), properties)
     skip_named_ordering = PROPERTY_SKIP_NAMED_ORDERING in safe_props \
         and safe_props[PROPERTY_SKIP_NAMED_ORDERING].lower().strip() == 'true'
-    anno_qname = safe_props[PROPERTY_ANNO_QNAME]
+    anno_qname = safe_props[PROPERTY_ANNO_NS]
     u = GraphUpdate()
     for path, internal_path in path_structure(u, path, _FILE_ENDINGS):        
         _logger.info(f'Starting {path} ...')

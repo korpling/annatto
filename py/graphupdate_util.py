@@ -5,6 +5,7 @@ from venv import create
 
 ANNIS_CORPUS = 'corpus'
 ANNIS_COVERAGE = 'Coverage'
+ANNIS_DOMINANCE = 'Dominance'
 ANNIS_POINTING_REL = 'Pointing'
 ANNIS_FILE = 'file'
 ANNIS_NS = 'annis'
@@ -86,18 +87,28 @@ def map_token_as_span(u, doc_path, id_, text_name, value, start_time, end_time, 
         raise ValueError(f'Token {id_} with value {value} in tokenization {text_name} has incorrect time values.')
     ets = [et_id for t, et_id in empty_toks if start_time <= t < end_time]
     span_id = map_annotation(u, doc_path, id_, '', text_name, value, *ets)
-    coverage(u, [span_id], ets)
+    u.add_node_label(span_id, ANNIS_NS, ANNIS_TOK, value)
     return span_id
 
 
 def map_annotation(u, doc_path, id_, ns, name, value, *targets):
     span_id = f'{doc_path}#sSpan{id_}'
     u.add_node(span_id)
-    if name is not None:
+    if name:
         u.add_node_label(span_id, ns, name, value)
     for target in targets:
         coverage(u, [span_id], [target])
     return span_id
+
+
+def map_hierarchical_annotation(u, doc_path, id_, ns, name, value, *targets, edge_layer=''):
+    struct_id = f'{doc_path}#sStruct{id_}'
+    u.add_node(struct_id)
+    if name:
+        u.add_node_label(struct_id, ns, name, value)
+    for target in targets:
+        dominance(u, [struct_id], [target], layer=edge_layer)
+    return struct_id
 
 
 def map_token_annotation(u, target_uri, ns, name, value):
@@ -106,18 +117,24 @@ def map_token_annotation(u, target_uri, ns, name, value):
 
 def add_order_relations(u, node_ids, order_name=None):
     for i in range(1, len(node_ids)):
-        if order_name is not None:
-            u.add_edge(node_ids[i - 1], node_ids[i], ANNIS_NS, ANNIS_ORDERING, order_name)
-        u.add_edge(node_ids[i - 1], node_ids[i], ANNIS_NS, ANNIS_ORDERING, '')
+        u.add_edge(node_ids[i - 1], node_ids[i], ANNIS_NS, ANNIS_ORDERING, order_name if order_name else '')        
 
 
-def add_pointing_relation(u, source, target, type_, anno_ns=None, anno_name=None, anno_val=None):
-    u.add_edge(source, target, '', ANNIS_POINTING_REL, type_)
+def add_pointing_relation(u, source, target, type_, anno_ns=None, anno_name=None, anno_val=None, component_layer=''):
+    u.add_edge(source, target, component_layer, ANNIS_POINTING_REL, type_)
     if anno_name is not None and anno_val is not None:
-        u.add_edge_label(source, target, '', ANNIS_POINTING_REL, type_, '' if anno_ns is None else anno_ns, anno_name, anno_val)
+        u.add_edge_label(source, target, component_layer, ANNIS_POINTING_REL, type_, '' if anno_ns is None else anno_ns, anno_name, anno_val)
+
+
+def edges(u, source_nodes, target_nodes, component_type, layer=''):
+    for src in source_nodes:
+        for tgt in target_nodes:
+            u.add_edge(src, tgt, ANNIS_NS, component_type, layer)
 
 
 def coverage(u, source_nodes, target_nodes):
-    for src in source_nodes:
-        for tgt in target_nodes:
-            u.add_edge(src, tgt, ANNIS_NS, ANNIS_COVERAGE, '')
+    edges(u, source_nodes, target_nodes, ANNIS_COVERAGE)
+
+
+def dominance(u, source_nodes, target_nodes, layer=''):
+    edges(u, source_nodes, target_nodes, ANNIS_DOMINANCE, layer)
