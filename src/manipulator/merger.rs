@@ -1,30 +1,23 @@
-use std::collections::{HashMap,HashSet,BTreeMap,Bound};
+use std::collections::{HashMap,HashSet,BTreeMap};
 use std::convert::TryFrom;
-use std::fmt::format;
-use std::hash::Hash;
-use std::iter::FromIterator;
 use crate::{Manipulator,Module};
 use crate::error::AnnattoError;
 use crate::workflow::{StatusMessage,StatusSender};
-use crate::util::write_to_file;
 use graphannis::{
-    graph::{AnnotationStorage,Component,Edge,NodeID},
+    graph::{Component,Edge},
     model::{AnnotationComponentType,AnnotationComponent},
-    update,
     update::{GraphUpdate,UpdateEvent},
     AnnotationGraph,
 };
 use graphannis_core::{
-    annostorage::{ValueSearch,Match},
+    annostorage::ValueSearch,
     dfs::CycleSafeDFS,
-    errors::GraphAnnisCoreError,
     graph::{ANNIS_NS,NODE_NAME_KEY,NODE_TYPE_KEY},
     types::{AnnoKey,ComponentType},
-    util::{join_qname,split_qname}
+    util::split_qname
 };
 use itertools::Itertools;
 use smartstring;
-use itertools::Zip;
 
 pub struct Merger {}
 
@@ -127,7 +120,7 @@ impl Merger {
         let mut node_map: HashMap<u64, u64> = HashMap::new();
         let node_annos = graph.get_node_annos();
         for (doc_name, mut ordered_items_by_name) in ordered_items_by_doc {
-            let mut ordered_keep_items = ordered_items_by_name.remove(target_key.name.as_str()).unwrap();
+            let ordered_keep_items = ordered_items_by_name.remove(target_key.name.as_str()).unwrap();
             let mut order_names = HashSet::new();
             for (k, _) in &ordered_items_by_name {
                 order_names.insert(k.to_string());
@@ -188,7 +181,7 @@ impl Merger {
                             updates: &mut GraphUpdate,
                             skip_components: HashSet<AnnotationComponent>, 
                             node_map: HashMap<u64, u64>,
-                            docs_with_errors: &mut HashSet<String>,
+                            _docs_with_errors: &mut HashSet<String>,  //TODO shortcut mappings?
                             tx: &Option<StatusSender>) -> Result<(), Box<dyn std::error::Error>> {        
         for (edge_component_type, switch_source) in [(AnnotationComponentType::Coverage, false), 
                                                              (AnnotationComponentType::Dominance, false), 
@@ -231,7 +224,7 @@ impl Merger {
                     } else {
                         if let Some(sender) = tx {
                             let message = format!("Could not determine new source of an edge in component {}/{}, the edge will be dropped", &edge_component_type.to_string(), &edge_component_name);
-                            sender.send(StatusMessage::Warning(message));                                    
+                            sender.send(StatusMessage::Warning(message))?;                                    
                         }
                         continue;
                     }
@@ -245,12 +238,12 @@ impl Merger {
                     if let Some(new_target) = node_map.get(&target) {                            
                         // new child still exists in target graph
                         let target_name = node_annos.get_value_for_item(&target, &NODE_NAME_KEY)?.unwrap();  // existence guaranteed    
-                        let new_target_name = node_annos.get_value_for_item(new_target, &NODE_NAME_KEY)?.unwrap();
+                        let new_target_name = node_annos.get_value_for_item(new_target, &NODE_NAME_KEY)?.unwrap();                        
                         updates.add_event(UpdateEvent::DeleteEdge { source_node: source_node_name.to_string(), 
                                                                     target_node: target_name.to_string(), 
                                                                     layer: layer_name.to_string(),
                                                                     component_type: edge_component_type.to_string(), 
-                                                                    component_name: edge_component_name.to_string() })?;
+                                                                    component_name: edge_component_name.to_string() })?;                        
                         updates.add_event(UpdateEvent::AddEdge { source_node: new_source_name.clone(), 
                                                                     target_node: new_target_name.to_string(), 
                                                                     layer: layer_name.to_string(), 
@@ -311,7 +304,7 @@ impl Merger {
                                                     .collect::<HashSet<u64>>();
                             for doc_node_id in corpus_nodes.intersection(&nodes_with_doc_name) {
                                 let doc_name = node_annos.get_value_for_item(doc_node_id, &NODE_NAME_KEY)?.unwrap();
-                                updates.add_event(UpdateEvent::DeleteNode { node_name: doc_node_id.to_string() })?;  //FIXME this is currently only the document name, not the entire path and thus does not identify the node
+                                updates.add_event(UpdateEvent::DeleteNode { node_name: doc_name.to_string() })?; 
                             }
                         };
                         let msg = format!("Documents with ill-merged tokens will be dropped from the corpus:\n{}", docs_s);
@@ -365,14 +358,13 @@ impl Manipulator for Merger {
             sender.send(StatusMessage::Info(String::from("Starting merge")))?;
         }
         let on_error = OnErrorValues::try_from(properties.get(PROP_ON_ERROR))?;
-        let order_names = properties.get(PROP_CHECK_NAMES).unwrap().split(PROPVAL_SEP).collect::<Vec<&str>>();    
-        let node_annos = graph.get_node_annos();        
+        let order_names = properties.get(PROP_CHECK_NAMES).unwrap().split(PROPVAL_SEP).collect::<Vec<&str>>();  
         let keep_name = properties.get(PROP_KEEP_NAME).unwrap();
         let keep_name_key = AnnoKey { ns: smartstring::alias::String::from(""), name: smartstring::alias::String::from(keep_name) };
         let mut updates = GraphUpdate::default();
         let mut docs_with_errors = HashSet::new();
-        let mut ordered_items_by_doc = self.retrieve_ordered_nodes(graph, order_names.clone())?;   
-        let mut node_map: HashMap<u64, u64> = self.map_text_nodes(graph, &mut updates, &keep_name_key, ordered_items_by_doc, &mut docs_with_errors)?;                
+        let ordered_items_by_doc = self.retrieve_ordered_nodes(graph, order_names.clone())?;   
+        let node_map: HashMap<u64, u64> = self.map_text_nodes(graph, &mut updates, &keep_name_key, ordered_items_by_doc, &mut docs_with_errors)?;                
         let skip_components = self.skip_components_from_prop(graph, properties.get(PROP_SKIP_COMPONENTS));
         self.merge_all_components(graph, &mut updates, skip_components, node_map, &mut docs_with_errors, &tx)?;
         self.handle_document_errors(graph, &mut updates, docs_with_errors, on_error, &tx)?;        
@@ -391,11 +383,9 @@ impl Module for Merger {
 
 #[cfg(test)]
 mod tests {
-    use std::cmp::Ordering;
     use std::collections::{BTreeMap, HashSet};
     use std::env::temp_dir;
 
-    use crate::error::AnnattoError;
     use crate::Result;
     use crate::manipulator::Manipulator;
     use crate::manipulator::merger::Merger;
@@ -405,7 +395,6 @@ mod tests {
     use graphannis_core::annostorage::ValueSearch;
     use graphannis::model::AnnotationComponentType;
     use graphannis::update::{GraphUpdate,UpdateEvent};
-    use graphannis_core::dfs::CycleSafeDFS;
     use graphannis_core::graph::{ANNIS_NS, NODE_TYPE_KEY, NODE_NAME_KEY};
     use itertools::Itertools;
     use tempfile::{tempfile, tempdir_in};
@@ -514,8 +503,8 @@ mod tests {
         properties.insert("keep.name".to_string(), "norm".to_string());
         let merger = Merger::default();
         assert_eq!(merger.manipulate_corpus(&mut g, &properties, None).is_ok(), true);
-        let mut tmp_file = tempfile()?;
-        let export = graphannis_core::graph::serialization::graphml::export(&g, None, tmp_file, |msg| {});
+        let tmp_file = tempfile()?;
+        let export = graphannis_core::graph::serialization::graphml::export(&g, None, tmp_file, |_| {});
         assert_eq!(export.is_ok(), true, "Export fails: {:?}", &export);
         Ok(())
     }
@@ -561,7 +550,7 @@ mod tests {
         for (ii, (txt, start, end)) in [("I'm", 0, 2), 
                                                   ("in", 2, 3), 
                                                   ("New", 3, 4), 
-                                                  ("York", 4, 5)].into_iter().enumerate() {
+                                                  ("York", 4, 5)].iter().enumerate() {
             let i = ii + 1;
             let name = format!("root/a/doc#s{}", i);
             u.add_event(UpdateEvent::AddNode { node_name: name.to_string(), node_type: "node".to_string() })?;
@@ -597,7 +586,7 @@ mod tests {
         for (ii, (txt, start, end, pos_label)) in [("I", 0, 1, "PRON"), 
                                                   ("am", 1, 2, "VERB"), 
                                                   ("in", 2, 3, "ADP"), 
-                                                  ("New York", 3, 5, "PROPN")].into_iter().enumerate() {
+                                                  ("New York", 3, 5, "PROPN")].iter().enumerate() {
             let i = ii + 5;
             let name = format!("root/a/doc#s{}", i);
             u.add_event(UpdateEvent::AddNode { node_name: name.to_string(), node_type: "node".to_string() })?;
@@ -641,10 +630,10 @@ mod tests {
                                            layer: ANNIS_NS.to_string(), 
                                            component_type: AnnotationComponentType::PartOf.to_string(), 
                                            component_name: "".to_string() })?;
-        for (ii, (txt, start, end, lemma_label)) in [("I", 0, 1, "I"), 
-                                                  ("am", 1, 2, "be"), 
-                                                  ("in", 2, 3, "in"), 
-                                                  ("New York", 3, 5, "New York")].into_iter().enumerate() {
+        for (ii, (txt, lemma_label)) in [("I", "I"), 
+                                                  ("am", "be"), 
+                                                  ("in", "in"), 
+                                                  ("New York", "New York")].iter().enumerate() {
             let i = ii + 1;
             let name = format!("root/b/doc#t{}", i);
             u.add_event(UpdateEvent::AddNode { node_name: name.to_string(), node_type: "node".to_string() })?;
@@ -673,7 +662,7 @@ mod tests {
         let deprel_name = "deprel";
         for (source, target, label) in [(2, 1, "subj"),
                                       (2, 3, "comp:pred"),
-                                      (3, 4, "comp:obj")].into_iter() {
+                                      (3, 4, "comp:obj")].iter() {
             let source_name = format!("root/b/doc#t{}", source);
             let target_name = format!("root/b/doc#t{}", target);
             u.add_event(UpdateEvent::AddEdge { source_node: source_name.to_string(), 
@@ -703,10 +692,10 @@ mod tests {
                                            layer: ANNIS_NS.to_string(), 
                                            component_type: AnnotationComponentType::PartOf.to_string(), 
                                            component_name: "".to_string() })?;
-        for (ii, (txt, start, end, lemma_label)) in [("I", 0, 1, "I"), 
-                                                  ("am", 1, 2, "be"), 
-                                                  ("in", 2, 3, "in"), 
-                                                  ("New York", 3, 5, "New York")].into_iter().enumerate() {
+        for (ii, (txt, lemma_label)) in [("I", "I"), 
+                                                  ("am", "be"), 
+                                                  ("in", "in"), 
+                                                  ("New York", "New York")].iter().enumerate() {
             let i = ii + 1;
             let name = format!("root/c/doc#t{}", i);
             u.add_event(UpdateEvent::AddNode { node_name: name.to_string(), node_type: "node".to_string() })?;
@@ -740,7 +729,7 @@ mod tests {
         for (node_id, label, targets) in [(sbj_struct_name, "sbj", ["root/c/doc#t1"].to_vec()),
                                                                     (pp_struct_name, "pp", ["root/c/doc#t3", "root/c/doc#t4"].to_vec()),
                                                                     (vp_struct_name, "vp", ["root/c/doc#t2", pp_struct_name].to_vec()),
-                                                                    (cp_struct_name, "cp", [sbj_struct_name, vp_struct_name].to_vec())].into_iter() {
+                                                                    (cp_struct_name, "cp", [sbj_struct_name, vp_struct_name].to_vec())].iter() {
             u.add_event(UpdateEvent::AddNode { node_name: node_id.to_string(), 
                                                node_type: "node".to_string() })?;
             u.add_event(UpdateEvent::AddNodeLabel { node_name: node_id.to_string(),
@@ -758,8 +747,6 @@ mod tests {
         g.apply_update(&mut u, |_msg| {})?;
         Ok(g)
     }
-
-    use std::fs::File;
 
     fn expected_output_graph(on_disk: bool) -> Result<AnnotationGraph> {
         let mut g = AnnotationGraph::new(on_disk)?;
@@ -802,7 +789,7 @@ mod tests {
         for (ii, (txt, start, end)) in [("I'm", 0, 2), 
                                                   ("in", 2, 3), 
                                                   ("New", 3, 4), 
-                                                  ("York", 4, 5)].into_iter().enumerate() {
+                                                  ("York", 4, 5)].iter().enumerate() {
             let i = ii + 1;
             let name = format!("root/a/doc#s{}", i);
             u.add_event(UpdateEvent::AddNode { node_name: name.to_string(), node_type: "node".to_string() })?;
@@ -838,7 +825,7 @@ mod tests {
         for (ii, (txt, start, end, pos_label)) in [("I", 0, 1, "PRON"), 
                                                   ("am", 1, 2, "VERB"), 
                                                   ("in", 2, 3, "ADP"), 
-                                                  ("New York", 3, 5, "PROPN")].into_iter().enumerate() {
+                                                  ("New York", 3, 5, "PROPN")].iter().enumerate() {
             let i = ii + 5;
             let name = format!("root/a/doc#s{}", i);
             u.add_event(UpdateEvent::AddNode { node_name: name.to_string(), node_type: "node".to_string() })?;
@@ -882,7 +869,7 @@ mod tests {
                                            layer: ANNIS_NS.to_string(), 
                                            component_type: AnnotationComponentType::PartOf.to_string(), 
                                            component_name: "".to_string() })?;
-        for (ii, lemma_label) in ["I", "be", "in", "New York"].into_iter().enumerate() {
+        for (ii, lemma_label) in ["I", "be", "in", "New York"].iter().enumerate() {
             let i = ii + 5;
             let name = format!("root/a/doc#s{}", i);
             u.add_event(UpdateEvent::AddNodeLabel { node_name: name.to_string(), 

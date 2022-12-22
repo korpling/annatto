@@ -1,13 +1,11 @@
-use std::{collections::BTreeMap, fs::File, path::Path, io::Read};
+use std::{collections::BTreeMap, fs::File, path::Path};
 
 use crate::{exporter::Exporter, progress::ProgressReporter, workflow::StatusSender, Module, error::AnnattoError};
 use graphannis_core::{
     annostorage::ValueSearch,
-    dfs::CycleSafeDFS,
-    graph::{ANNIS_NS,NODE_TYPE_KEY,NODE_NAME_KEY}
+    graph::{NODE_TYPE_KEY,NODE_NAME_KEY}
 };
-use graphannis::model::{AnnotationComponentType,AnnotationComponent};
-use itertools::Itertools;
+use graphannis::model::AnnotationComponentType;
 
 pub struct GraphMLExporter {}
 
