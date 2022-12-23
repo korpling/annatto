@@ -448,7 +448,7 @@ mod tests {
             let candidates = g.get_all_components(Some(c.get_type()), Some(c.name.as_str()));
             assert_eq!(candidates.len(), 1);
             let c_o  = candidates.get(0);
-            assert_eq!(c_o.is_some(), true);
+            assert_eq!(&c, c_o.unwrap());
         }
         // test with queries
         let queries = [
