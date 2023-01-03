@@ -32,7 +32,7 @@ const PROP_CHECK_NAMES: &str = "check.names";
 const PROP_KEEP_NAME: &str = "keep.name";
 const PROP_ON_ERROR: &str = "on.error";
 const PROP_SKIP_COMPONENTS: &str = "skip.components";
-const PROP_ALLOW_SKIP: &str = "allow.skip";
+const PROP_OPTIONAL_VALUES: &str = "optional.values";
 const PROPVAL_SEP: &str = ",";
 
 enum MergerProperties {
@@ -50,7 +50,7 @@ impl ToString for MergerProperties {
             Self::KeepName => PROP_KEEP_NAME.to_string(),
             Self::OnError => PROP_ON_ERROR.to_string(),
             Self::SkipComponents => PROP_SKIP_COMPONENTS.to_string(),
-            Self::AllowSkip => PROP_ALLOW_SKIP.to_string()
+            Self::AllowSkip => PROP_OPTIONAL_VALUES.to_string()
         }
     }
 }
