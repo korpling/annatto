@@ -34,30 +34,48 @@ const PROP_ON_ERROR: &str = "on.error";
 const PROP_SKIP_COMPONENTS: &str = "skip.components";
 const PROPVAL_SEP: &str = ",";
 
+enum MergerProperties {
+    CheckNames,
+    KeepName,
+    OnError,
+    SkipComponents
+}
 
-enum OnErrorValues {    
+impl ToString for MergerProperties {
+    fn to_string(&self) -> String {
+        match self {
+            Self::CheckNames => PROP_CHECK_NAMES.to_string(),
+            Self::KeepName => PROP_KEEP_NAME.to_string(),
+            Self::OnError => PROP_ON_ERROR.to_string(),
+            Self::SkipComponents => PROP_SKIP_COMPONENTS.to_string()
+        }
+    }
+}
+
+
+enum ErrorPolicy {    
     Fail,
     Drop,
     Forward
 }
 
-impl TryFrom<Option<&String>> for OnErrorValues {
+impl TryFrom<Option<&String>> for ErrorPolicy {
     type Error = AnnattoError;
     fn try_from(value: Option<&String>) -> Result<Self, Self::Error> {
         match value {
-            None => Ok(OnErrorValues::default()),
-            Some(v) => OnErrorValues::try_from(v)
+            None => Ok(ErrorPolicy::default()),
+            Some(v) => ErrorPolicy::try_from(v)
         }
     }
 }
 
-impl TryFrom<&String> for OnErrorValues {
+impl TryFrom<&String> for ErrorPolicy {
     type Error = AnnattoError;
     fn try_from(value: &String) -> Result<Self, Self::Error> {
         match &value.trim().to_lowercase()[..] {
-            "fail" => Ok(OnErrorValues::Fail),
-            "drop" => Ok(OnErrorValues::Drop),
-            "forward" => Ok(OnErrorValues::Forward),
+            "fail" => Ok(ErrorPolicy::Fail),
+            "drop" => Ok(ErrorPolicy::Drop),
+            "forward" => Ok(ErrorPolicy::Forward),
             _ => Err(AnnattoError::Manipulator { 
                 reason: format!("Undefined value for property {}: {}", PROP_ON_ERROR, value), 
                 manipulator: String::from(MODULE_NAME) })
@@ -65,9 +83,9 @@ impl TryFrom<&String> for OnErrorValues {
     }
 }
 
-impl Default for OnErrorValues {
+impl Default for ErrorPolicy {
     fn default() -> Self {
-        OnErrorValues::Fail
+        ErrorPolicy::Fail
     }
 }
 
@@ -280,18 +298,18 @@ impl Merger {
         Ok(())
     }
 
-    fn handle_document_errors(&self, graph: &AnnotationGraph, updates: &mut GraphUpdate, docs_with_errors: HashSet<String>, policy: OnErrorValues, tx: &Option<StatusSender>) -> Result<(), Box<dyn std::error::Error>>{
+    fn handle_document_errors(&self, graph: &AnnotationGraph, updates: &mut GraphUpdate, docs_with_errors: HashSet<String>, policy: ErrorPolicy, tx: &Option<StatusSender>) -> Result<(), Box<dyn std::error::Error>>{
         let node_annos = graph.get_node_annos();
         if docs_with_errors.len() > 0 {
             let docs_s = docs_with_errors.iter().join("\n");            
             if let Some(sender) = &tx {
                 let message = match policy {
-                    OnErrorValues::Fail => {
+                    ErrorPolicy::Fail => {
                         let msg = format!("Documents with ill-merged tokens:\n{}", docs_s);
                         let err = AnnattoError::Manipulator { reason: msg, manipulator: self.module_name().to_string() };
                         StatusMessage::Failed(err)
                     },
-                    OnErrorValues::Drop => {
+                    ErrorPolicy::Drop => {
                         for doc_node_name in docs_with_errors {
                             // get all doc nodes with doc_id 
                             let corpus_nodes = node_annos.exact_anno_search(Some(NODE_TYPE_KEY.ns.as_str()), NODE_TYPE_KEY.name.as_str(), ValueSearch::Some("corpus"))
@@ -346,7 +364,6 @@ impl Merger {
 }
 
 
-
 impl Manipulator for Merger {
     fn manipulate_corpus(
         &self,
@@ -357,9 +374,9 @@ impl Manipulator for Merger {
         if let Some(sender) = &tx {
             sender.send(StatusMessage::Info(String::from("Starting merge")))?;
         }
-        let on_error = OnErrorValues::try_from(properties.get(PROP_ON_ERROR))?;
-        let order_names = properties.get(PROP_CHECK_NAMES).unwrap().split(PROPVAL_SEP).collect::<Vec<&str>>();  
-        let keep_name = properties.get(PROP_KEEP_NAME).unwrap();
+        let on_error = ErrorPolicy::try_from(properties.get(&MergerProperties::OnError.to_string()))?;
+        let order_names = properties.get(&MergerProperties::CheckNames.to_string()).unwrap().split(PROPVAL_SEP).collect::<Vec<&str>>();  
+        let keep_name = properties.get(&MergerProperties::KeepName.to_string()).unwrap();
         let keep_name_key = AnnoKey { ns: smartstring::alias::String::from(""), name: smartstring::alias::String::from(keep_name) };
         let mut updates = GraphUpdate::default();
         let mut docs_with_errors = HashSet::new();
@@ -388,7 +405,7 @@ mod tests {
 
     use crate::Result;
     use crate::manipulator::Manipulator;
-    use crate::manipulator::merger::Merger;
+    use crate::manipulator::merger::{Merger, MergerProperties};
 
     use graphannis::{AnnotationGraph,CorpusStorage};
     use graphannis::corpusstorage::{QueryLanguage,ResultOrder,SearchQuery};
@@ -414,8 +431,8 @@ mod tests {
     fn core_test(on_disk: bool) -> Result<()> {
         let mut g = input_graph(on_disk)?;
         let mut properties = BTreeMap::new();
-        properties.insert("check.names".to_string(), "norm,text,syntext".to_string());
-        properties.insert("keep.name".to_string(), "norm".to_string());
+        properties.insert(MergerProperties::CheckNames.to_string(), "norm,text,syntext".to_string());
+        properties.insert(MergerProperties::KeepName.to_string(), "norm".to_string());
         let merger = Merger::default();
         let merge_r = merger.manipulate_corpus(&mut g, &properties, None);
         assert_eq!(merge_r.is_ok(), true, "Probing merge result {:?}", &merge_r);
