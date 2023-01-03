@@ -32,13 +32,15 @@ const PROP_CHECK_NAMES: &str = "check.names";
 const PROP_KEEP_NAME: &str = "keep.name";
 const PROP_ON_ERROR: &str = "on.error";
 const PROP_SKIP_COMPONENTS: &str = "skip.components";
+const PROP_ALLOW_SKIP: &str = "allow.skip";
 const PROPVAL_SEP: &str = ",";
 
 enum MergerProperties {
     CheckNames,
     KeepName,
     OnError,
-    SkipComponents
+    SkipComponents,
+    AllowSkip
 }
 
 impl ToString for MergerProperties {
@@ -47,7 +49,8 @@ impl ToString for MergerProperties {
             Self::CheckNames => PROP_CHECK_NAMES.to_string(),
             Self::KeepName => PROP_KEEP_NAME.to_string(),
             Self::OnError => PROP_ON_ERROR.to_string(),
-            Self::SkipComponents => PROP_SKIP_COMPONENTS.to_string()
+            Self::SkipComponents => PROP_SKIP_COMPONENTS.to_string(),
+            Self::AllowSkip => PROP_ALLOW_SKIP.to_string()
         }
     }
 }
@@ -133,7 +136,8 @@ impl Merger {
                       graph: &AnnotationGraph, 
                       updates: &mut GraphUpdate, 
                       target_key: &AnnoKey, 
-                      ordered_items_by_doc: HashMap<String, HashMap<&str, std::vec::IntoIter<u64>>>, 
+                      ordered_items_by_doc: HashMap<String, HashMap<&str, std::vec::IntoIter<u64>>>,
+                      optionals: HashSet<String>,
                       docs_with_errors: &mut HashSet<String>) -> Result<HashMap<u64, u64>, Box<dyn std::error::Error>> {
         let mut node_map: HashMap<u64, u64> = HashMap::new();
         let node_annos = graph.get_node_annos();
@@ -143,6 +147,7 @@ impl Merger {
             for (k, _) in &ordered_items_by_name {
                 order_names.insert(k.to_string());
             }
+            let unused_by_name = HashMap::new();
             for item in ordered_keep_items {
                 let ref_val = match node_annos.get_value_for_item(&item, target_key)? {
                     Some(v) => v,
@@ -156,37 +161,63 @@ impl Merger {
                     }
                 };
                 let ref_node_name = node_annos.get_value_for_item(&item, &NODE_NAME_KEY)?.unwrap();  // existence guaranteed                                
-                for other_name in &order_names {                    
-                    if let Some(other_item) = ordered_items_by_name.get_mut(other_name.as_str()).unwrap().next() {
-                        let other_key = AnnoKey {ns: smartstring::alias::String::from(""), 
-                                                 name: smartstring::alias::String::from(other_name)};
-                        let other_val = node_annos.get_value_for_item(&other_item, &other_key)?.unwrap();
-                        if ref_val == other_val {  // text values match
-                            let anno_keys = node_annos.get_all_keys_for_item(&other_item, None, None)?;
-                            // annotations directly on the ordered node
-                            for ak in anno_keys {
-                                let anno_name = ak.name.to_string();
-                                if ak.ns != ANNIS_NS && !order_names.contains(&anno_name) {                                
-                                    let av = node_annos.get_value_for_item(&other_item, ak.as_ref())?.unwrap();  // existence guaranteed
-                                    updates.add_event(UpdateEvent::AddNodeLabel { node_name: ref_node_name.to_string(),
-                                                                                  anno_ns: ak.ns.to_string(), 
-                                                                                  anno_name: anno_name, 
-                                                                                  anno_value: av.to_string() })?;
+                for other_name in &order_names {
+                    let mut finished = false;
+                    while !finished {   
+                        let other_opt= if unused_by_name.contains_key(other_name) {
+                            unused_by_name.remove(other_name)
+                        } else {
+                            ordered_items_by_name.get_mut(other_name.as_str()).unwrap().next()
+                        };
+                        if let Some(other_item) = other_opt {
+                            let other_key = AnnoKey {ns: smartstring::alias::String::from(""), 
+                                                    name: smartstring::alias::String::from(other_name)};
+                            let other_val = node_annos.get_value_for_item(&other_item, &other_key)?.unwrap();
+                            if ref_val == other_val {  // text values match
+                                let anno_keys = node_annos.get_all_keys_for_item(&other_item, None, None)?;
+                                // annotations directly on the ordered node
+                                for ak in anno_keys {
+                                    let anno_name = ak.name.to_string();
+                                    if ak.ns != ANNIS_NS && !order_names.contains(&anno_name) {                                
+                                        let av = node_annos.get_value_for_item(&other_item, ak.as_ref())?.unwrap();  // existence guaranteed
+                                        updates.add_event(UpdateEvent::AddNodeLabel { node_name: ref_node_name.to_string(),
+                                                                                    anno_ns: ak.ns.to_string(), 
+                                                                                    anno_name: anno_name, 
+                                                                                    anno_value: av.to_string() })?;
+                                    }
                                 }
-                            }
-                            // delete ordered node, the rest (edges and labels) should theoretically die as a consequence
-                            let other_node_name = node_annos.get_value_for_item(&other_item, &NODE_NAME_KEY)?.unwrap().to_string();  // existence guaranteed
-                            updates.add_event(UpdateEvent::DeleteNode { node_name: other_node_name })?;                        
-                            node_map.insert(other_item, item);                        
-                        } else {  // text values don't match
-                            // alternative 
-                            // TODO implement logic for punctuation etc, for now just fail                            
-                            docs_with_errors.insert(doc_name.to_string());
-                        }                    
-                    } else {
-                        // no further nodes
-                        let err = AnnattoError::Manipulator { reason: format!("Ran out of nodes for ordering `{}`.", other_name), manipulator: self.module_name().to_string() };
-                        return Err(Box::new(err))                        
+                                // delete ordered node, the rest (edges and labels) should theoretically die as a consequence
+                                let other_node_name = node_annos.get_value_for_item(&other_item, &NODE_NAME_KEY)?.unwrap().to_string();  // existence guaranteed
+                                updates.add_event(UpdateEvent::DeleteNode { node_name: other_node_name })?;                        
+                                node_map.insert(other_item, item); 
+                                finished = true;                       
+                            } else {  // text values don't match
+                                let ref_is_optional = optionals.contains(&ref_val.to_string());
+                                let other_is_optional = optionals.contains(&other_val.to_string());
+                                if  ref_is_optional && !other_is_optional {
+                                    // advance outer, do not advance inner
+                                    unused_by_name.insert(other_name.to_string(), other_item);
+                                    finished = true;
+                                }
+                                else if !ref_is_optional && other_is_optional {
+                                    // advance inner, do not advance outer
+                                    // i. e. do nothing                                    
+                                }
+                                else if !ref_is_optional && !other_is_optional {
+                                    // match expected, advance both
+                                    docs_with_errors.insert(doc_name.to_string());
+                                    finished = true;
+                                }
+                                else {
+                                    // both optional, but non-matching, advance both
+                                    finished = true;
+                                }
+                            }                    
+                        } else {
+                            // no further nodes
+                            let err = AnnattoError::Manipulator { reason: format!("Ran out of nodes for ordering `{}`.", other_name), manipulator: self.module_name().to_string() };
+                            return Err(Box::new(err))                        
+                        }
                     }
                 }
             }
@@ -374,14 +405,21 @@ impl Manipulator for Merger {
         if let Some(sender) = &tx {
             sender.send(StatusMessage::Info(String::from("Starting merge")))?;
         }
+        // read properties
         let on_error = ErrorPolicy::try_from(properties.get(&MergerProperties::OnError.to_string()))?;
         let order_names = properties.get(&MergerProperties::CheckNames.to_string()).unwrap().split(PROPVAL_SEP).collect::<Vec<&str>>();  
         let keep_name = properties.get(&MergerProperties::KeepName.to_string()).unwrap();
         let keep_name_key = AnnoKey { ns: smartstring::alias::String::from(""), name: smartstring::alias::String::from(keep_name) };
+        let optional_toks = match properties.get(&MergerProperties::AllowSkip.to_string()) {
+            None => [].to_vec(),
+            Some(v) => v.split("\",\"").map(|s| s.to_string().replace("\"", "")).collect_vec()
+        };
+        // init
         let mut updates = GraphUpdate::default();
         let mut docs_with_errors = HashSet::new();
+        // merge
         let ordered_items_by_doc = self.retrieve_ordered_nodes(graph, order_names.clone())?;   
-        let node_map: HashMap<u64, u64> = self.map_text_nodes(graph, &mut updates, &keep_name_key, ordered_items_by_doc, &mut docs_with_errors)?;                
+        let node_map: HashMap<u64, u64> = self.map_text_nodes(graph, &mut updates, &keep_name_key, ordered_items_by_doc, HashSet::from(optional_toks), &mut docs_with_errors)?;                
         let skip_components = self.skip_components_from_prop(graph, properties.get(&MergerProperties::SkipComponents.to_string()));
         self.merge_all_components(graph, &mut updates, skip_components, node_map, &mut docs_with_errors, &tx)?;
         self.handle_document_errors(graph, &mut updates, docs_with_errors, on_error, &tx)?;        
