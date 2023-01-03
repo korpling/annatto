@@ -471,6 +471,7 @@ mod tests {
         let mut properties = BTreeMap::new();
         properties.insert(MergerProperties::CheckNames.to_string(), "norm,text,syntext".to_string());
         properties.insert(MergerProperties::KeepName.to_string(), "norm".to_string());
+        properties.insert(MergerProperties::AllowSkip.to_string(), "\"NOISE\"".to_string());
         let merger = Merger::default();
         let merge_r = merger.manipulate_corpus(&mut g, &properties, None);
         assert_eq!(merge_r.is_ok(), true, "Probing merge result {:?}", &merge_r);
@@ -686,6 +687,7 @@ mod tests {
                                            component_type: AnnotationComponentType::PartOf.to_string(), 
                                            component_name: "".to_string() })?;
         for (ii, (txt, lemma_label)) in [("I", "I"), 
+                                                  ("NOISE", "NOISE"),
                                                   ("am", "be"), 
                                                   ("in", "in"), 
                                                   ("New York", "New York")].iter().enumerate() {
@@ -715,9 +717,9 @@ mod tests {
         let dep_layer_name = "syntax";
         let dep_comp_name = "dep";
         let deprel_name = "deprel";
-        for (source, target, label) in [(2, 1, "subj"),
-                                      (2, 3, "comp:pred"),
-                                      (3, 4, "comp:obj")].iter() {
+        for (source, target, label) in [(3, 1, "subj"),
+                                      (3, 4, "comp:pred"),
+                                      (4, 5, "comp:obj")].iter() {
             let source_name = format!("root/b/doc#t{}", source);
             let target_name = format!("root/b/doc#t{}", target);
             u.add_event(UpdateEvent::AddEdge { source_node: source_name.to_string(), 
