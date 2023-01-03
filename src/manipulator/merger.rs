@@ -382,7 +382,7 @@ impl Manipulator for Merger {
         let mut docs_with_errors = HashSet::new();
         let ordered_items_by_doc = self.retrieve_ordered_nodes(graph, order_names.clone())?;   
         let node_map: HashMap<u64, u64> = self.map_text_nodes(graph, &mut updates, &keep_name_key, ordered_items_by_doc, &mut docs_with_errors)?;                
-        let skip_components = self.skip_components_from_prop(graph, properties.get(PROP_SKIP_COMPONENTS));
+        let skip_components = self.skip_components_from_prop(graph, properties.get(&MergerProperties::SkipComponents.to_string()));
         self.merge_all_components(graph, &mut updates, skip_components, node_map, &mut docs_with_errors, &tx)?;
         self.handle_document_errors(graph, &mut updates, docs_with_errors, on_error, &tx)?;        
         graph.apply_update(&mut updates, |_msg| {})?;
