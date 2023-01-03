@@ -147,7 +147,7 @@ impl Merger {
             for (k, _) in &ordered_items_by_name {
                 order_names.insert(k.to_string());
             }
-            let unused_by_name = HashMap::new();
+            let mut unused_by_name = HashMap::new();
             for item in ordered_keep_items {
                 let ref_val = match node_annos.get_value_for_item(&item, target_key)? {
                     Some(v) => v,
@@ -411,15 +411,15 @@ impl Manipulator for Merger {
         let keep_name = properties.get(&MergerProperties::KeepName.to_string()).unwrap();
         let keep_name_key = AnnoKey { ns: smartstring::alias::String::from(""), name: smartstring::alias::String::from(keep_name) };
         let optional_toks = match properties.get(&MergerProperties::AllowSkip.to_string()) {
-            None => [].to_vec(),
-            Some(v) => v.split("\",\"").map(|s| s.to_string().replace("\"", "")).collect_vec()
+            None => HashSet::new(),
+            Some(v) => v.split("\",\"").map(|s| s.to_string().replace("\"", "")).collect::<HashSet<String>>()
         };
         // init
         let mut updates = GraphUpdate::default();
         let mut docs_with_errors = HashSet::new();
         // merge
         let ordered_items_by_doc = self.retrieve_ordered_nodes(graph, order_names.clone())?;   
-        let node_map: HashMap<u64, u64> = self.map_text_nodes(graph, &mut updates, &keep_name_key, ordered_items_by_doc, HashSet::from(optional_toks), &mut docs_with_errors)?;                
+        let node_map: HashMap<u64, u64> = self.map_text_nodes(graph, &mut updates, &keep_name_key, ordered_items_by_doc, optional_toks, &mut docs_with_errors)?;                
         let skip_components = self.skip_components_from_prop(graph, properties.get(&MergerProperties::SkipComponents.to_string()));
         self.merge_all_components(graph, &mut updates, skip_components, node_map, &mut docs_with_errors, &tx)?;
         self.handle_document_errors(graph, &mut updates, docs_with_errors, on_error, &tx)?;        
