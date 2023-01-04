@@ -33,6 +33,7 @@ const PROP_KEEP_NAME: &str = "keep.name";
 const PROP_ON_ERROR: &str = "on.error";
 const PROP_SKIP_COMPONENTS: &str = "skip.components";
 const PROP_OPTIONAL_VALUES: &str = "optional.values";
+const PROP_SILENT: &str = "silent";
 const PROPVAL_SEP: &str = ",";
 
 enum MergerProperties {
@@ -40,7 +41,8 @@ enum MergerProperties {
     KeepName,
     OnError,
     SkipComponents,
-    AllowSkip
+    OptionalValues,
+    Silent
 }
 
 impl ToString for MergerProperties {
@@ -50,7 +52,8 @@ impl ToString for MergerProperties {
             Self::KeepName => PROP_KEEP_NAME.to_string(),
             Self::OnError => PROP_ON_ERROR.to_string(),
             Self::SkipComponents => PROP_SKIP_COMPONENTS.to_string(),
-            Self::AllowSkip => PROP_OPTIONAL_VALUES.to_string()
+            Self::OptionalValues => PROP_OPTIONAL_VALUES.to_string(),
+            Self::Silent => PROP_SILENT.to_string()
         }
     }
 }
@@ -410,9 +413,18 @@ impl Manipulator for Merger {
         let order_names = properties.get(&MergerProperties::CheckNames.to_string()).unwrap().split(PROPVAL_SEP).collect::<Vec<&str>>();  
         let keep_name = properties.get(&MergerProperties::KeepName.to_string()).unwrap();
         let keep_name_key = AnnoKey { ns: smartstring::alias::String::from(""), name: smartstring::alias::String::from(keep_name) };
-        let optional_toks = match properties.get(&MergerProperties::AllowSkip.to_string()) {
+        let optional_toks = match properties.get(&MergerProperties::OptionalValues.to_string()) {
             None => HashSet::new(),
             Some(v) => v.split("\",\"").map(|s| s.to_string().replace("\"", "")).collect::<HashSet<String>>()
+        };
+        let silent = match properties.get(&MergerProperties::Silent.to_string()) {
+            None => false,
+            Some(v) => v.parse::<bool>()?
+        };
+        let sender_opt = if silent {
+            None
+        } else {
+            tx
         };
         // init
         let mut updates = GraphUpdate::default();
@@ -421,8 +433,8 @@ impl Manipulator for Merger {
         let ordered_items_by_doc = self.retrieve_ordered_nodes(graph, order_names.clone())?;   
         let node_map: HashMap<u64, u64> = self.map_text_nodes(graph, &mut updates, &keep_name_key, ordered_items_by_doc, optional_toks, &mut docs_with_errors)?;                
         let skip_components = self.skip_components_from_prop(graph, properties.get(&MergerProperties::SkipComponents.to_string()));
-        self.merge_all_components(graph, &mut updates, skip_components, node_map, &mut docs_with_errors, &tx)?;
-        self.handle_document_errors(graph, &mut updates, docs_with_errors, on_error, &tx)?;        
+        self.merge_all_components(graph, &mut updates, skip_components, node_map, &mut docs_with_errors, &sender_opt)?;
+        self.handle_document_errors(graph, &mut updates, docs_with_errors, on_error, &sender_opt)?;        
         graph.apply_update(&mut updates, |_msg| {})?;
         Ok(())
     }
@@ -471,7 +483,7 @@ mod tests {
         let mut properties = BTreeMap::new();
         properties.insert(MergerProperties::CheckNames.to_string(), "norm,text,syntext".to_string());
         properties.insert(MergerProperties::KeepName.to_string(), "norm".to_string());
-        properties.insert(MergerProperties::AllowSkip.to_string(), "\"NOISE\"".to_string());
+        properties.insert(MergerProperties::OptionalValues.to_string(), "\"NOISE\"".to_string());
         let merger = Merger::default();
         let merge_r = merger.manipulate_corpus(&mut g, &properties, None);
         assert_eq!(merge_r.is_ok(), true, "Probing merge result {:?}", &merge_r);
