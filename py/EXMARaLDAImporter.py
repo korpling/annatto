@@ -112,6 +112,7 @@ class EXMARaLDAImport(object):
         xml = self._xml
         anno_tiers = xml.findall(f'.//{_TAG_TIER}[@{_ATTR_TYPE}="{_TYPE_ANNOTATION}"]')
         tl = self._timeline
+        existing_spans = {}
         for tier in anno_tiers:            
             speaker = tier.attrib[_ATTR_SPEAKER]
             category = tier.attrib[_ATTR_CATEGORY]            
@@ -123,9 +124,15 @@ class EXMARaLDAImport(object):
                 if event.text is None:
                     continue
                 value = event.text.strip()
-                covered_tokens = filter(lambda t: t[0] >= start and t[1] <= end, tokens)
-                self._span_count += 1
-                map_annotation(self._u, self._path, self._span_count, speaker, category, value, *[id_ for _, _, id_ in covered_tokens])
+                covered_tokens = filter(lambda t: t[0] >= start and t[1] <= end, tokens)                
+                key = (speaker, start, end)
+                if key not in existing_spans:
+                    self._span_count += 1
+                    span_id = self._span_count
+                else:
+                    span_id = existing_spans[key]
+                map_annotation(self._u, self._path, span_id, speaker, category, value, *[id_ for _, _, id_ in covered_tokens])
+                existing_spans[key] = span_id
 
     def _read_timeline(self):
         self._timeline = {tli.attrib[_ATTR_ID]: float(tli.attrib[_ATTR_TIME]) for tli in self._xml.findall(f'.//{_TAG_TLI}[@{_ATTR_TIME}]')}
