@@ -8,18 +8,19 @@
       <property key="skip_named_ordering">false</property>
     </customization>
   </importer>
-  <!--importer name="PTBImporter" path="./test/import/">
+  <importer name="PTBImporter" path="./test/import/">
     <customization>
       <property key="text_name">ptb</property>
       <property key="anno_ns">norm</property>
     </customization>
-  </importer-->
+  </importer>
   <manipulator name="Merger">
     <customization>
       <property key="check.names">norm,conll</property>
       <property key="keep.name">norm</property>
       <property key="root.name">rueg</property>
       <property key="skip.components">,</property>
+      <property key="silent">true</property>
     </customization>
   </manipulator>
   <exporter name="GraphMLExporter" path="./">
