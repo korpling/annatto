@@ -147,7 +147,7 @@ class EXMARaLDAImport(object):
 def start_import(path, **properties):
     """
     Import all conll documents in the given directory.
-    >>> type(start_import('test/exmaralda/importer')).__name__
+    >>> type(start_import('test/import/exmaralda')).__name__
     'GraphUpdate'
     """
     try:

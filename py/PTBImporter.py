@@ -56,7 +56,7 @@ def map_document(u, path, doc_path, cat_name=_DEFAULT_CAT_NAME, text_name='', an
 def start_import(path, **properties):
     """
     Import all conll documents in the given directory.
-    >>> type(start_import('test/ptb/importer')).__name__
+    >>> type(start_import('test/import/ptb')).__name__
     'GraphUpdate'
     """
     u = GraphUpdate()
