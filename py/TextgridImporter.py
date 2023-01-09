@@ -14,7 +14,6 @@ _TIER_CLASS_POINT = 'PointTier'
 
 _PROP_TIER_GROUPS = 'tier_groups'
 _PROP_FORCE_MULTI_TOK = 'force_multi_tok'
-_PROP_TOLERANCE = 'tolerance'
 
 # logger
 _logger = logging.getLogger(__name__)
@@ -28,8 +27,7 @@ def map_document(u,
                  file_path, 
                  corpus_doc_path, 
                  tier_map, 
-                 force_multitok=False, 
-                 tolerance=0.0):
+                 force_multitok=False):
     with open(file_path) as f:
         data = f.readlines()
     if not data:
@@ -39,9 +37,9 @@ def map_document(u,
     tier_names = {[k] + list(v) for k, v in tier_map.items()}
     tiers_and_values = process_data(u, data, tier_names, short=file_type == _FILE_TYPE_SHORT)
     is_multi_tok = len(tier_map) > 1 or force_multitok
-    tok_dict = {}
-    valid_time_values = sorted(set(chain(*((t0, t1) for tok_name in tier_names for t0, t1, _ in tiers_and_values[tok_name]))))
+    tok_dict = {}    
     if is_multi_tok:        
+        valid_time_values = sorted(set(chain(*((t0, t1) for tok_name in tier_names for t0, t1, _ in tiers_and_values[tok_name]))))
         for i in range(len(valid_time_values)):
             start, end = valid_time_values[i:i + 2]
             tok_dict[(start, end)] = map_token(u, corpus_doc_path, i + 1, '', ' ', start, end)
@@ -49,12 +47,16 @@ def map_document(u,
     tc = len(tok_dict) if is_multi_tok else 0
     spc = 0
     for tok_tier, dependent_tiers in tier_map.items():
+        start_times = set()
+        end_times = set()
         for start, end, value in tiers_and_values[tok_tier]:
             tok_dict[(start, end, tok_tier)] = map_token(u, corpus_doc_path, tc, tok_tier, value, start, end)
             tc += 1
             if is_multi_tok:
                 overlapped = [id_ for k, id_ in tok_dict.items() if len(k) == 2 and start <= k[0] and end >= k[1]]
                 coverage(u, [tok_dict[(start, end, tok_tier)]], overlapped)
+            start_times.add(start)
+            end_times.add(end)
         all_tokens = [id_ for (s, e, name), id_ in sorted(tok_dict.items(), key=lambda e: e[0][0]) if name == tok_tier]
         add_order_relations(u, all_tokens, tok_tier)
         span_dict = {}
@@ -62,6 +64,10 @@ def map_document(u,
             for start, end, value in tiers_and_values[tier_name]:
                 if (start, end) not in span_dict:
                     spc += 1
+                    if start not in start_times:
+                        start = min(start_times, key=lambda t: abs(t - start))
+                    if end not in end_times:
+                        end = min(end_times, key=lambda t: abs(t - end))
                     overlapped = [id_ for k, id_ in tok_dict.items() if len(k) == 3 and k[2] == tok_tier and start <= k[0] and end >= k[1]]
                     span_dict[(start, end)] = map_annotation(u, corpus_doc_path, spc, tok_tier, tier_name, value, *overlapped)
                 else:
@@ -122,7 +128,7 @@ def start_import(path, **properties):
     except KeyError:
         _logger.exception(f'No tier mapping configurated. Cannot proceed.')
     clean_args = {}
-    for property in (_PROP_TOLERANCE, _PROP_FORCE_MULTI_TOK):
+    for property in (_PROP_FORCE_MULTI_TOK,):  # add properties here
         if property in properties:
             try:
                 clean_args[property] = eval(properties[property])
