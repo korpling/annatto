@@ -14,19 +14,22 @@ _TIER_CLASS_POINT = 'PointTier'
 
 _PROP_TIER_GROUPS = 'tier_groups'
 _PROP_FORCE_MULTI_TOK = 'force_multi_tok'
+_PROP_TOLERANCE = 'tolerance'
 
 # logger
 _logger = logging.getLogger(__name__)
-_handler = logging.FileHandler('conll-importer.log')
-_handler.setLevel(logging.INFO)
 _stream = logging.StreamHandler(stream=sys.stdout)
 _stream.setLevel(logging.INFO)
 _logger.setLevel(logging.INFO)
-_logger.addHandler(_handler)
 _logger.addHandler(_stream)
 
 
-def map_document(u, file_path, corpus_doc_path, tier_map, force_multitok=False):
+def map_document(u, 
+                 file_path, 
+                 corpus_doc_path, 
+                 tier_map, 
+                 force_multitok=False, 
+                 tolerance=0.0):
     with open(file_path) as f:
         data = f.readlines()
     if not data:
@@ -37,10 +40,10 @@ def map_document(u, file_path, corpus_doc_path, tier_map, force_multitok=False):
     tiers_and_values = process_data(u, data, tier_names, short=file_type == _FILE_TYPE_SHORT)
     is_multi_tok = len(tier_map) > 1 or force_multitok
     tok_dict = {}
-    if is_multi_tok:
-        total_time_values = sorted(set(chain(*((t0, t1) for tok_name in tier_names for t0, t1, _ in tiers_and_values[tok_name]))))        
-        for i in range(len(total_time_values)):
-            start, end = total_time_values[i:i + 2]
+    valid_time_values = sorted(set(chain(*((t0, t1) for tok_name in tier_names for t0, t1, _ in tiers_and_values[tok_name]))))
+    if is_multi_tok:        
+        for i in range(len(valid_time_values)):
+            start, end = valid_time_values[i:i + 2]
             tok_dict[(start, end)] = map_token(u, corpus_doc_path, i + 1, '', ' ', start, end)
         add_order_relations(u, [id_ for (s, e), id_ in sorted(tok_dict.items(), key=lambda e: e[0][0])], '')
     tc = len(tok_dict) if is_multi_tok else 0
@@ -105,7 +108,11 @@ def resolve_long(value):
 
 
 def parse_tier_map(value):
-    return ''
+    tier_map = {}
+    for group in value.split(';'):
+        owner, objects = group.split('={', 1)
+        tier_map[owner.strip()] = {e.strip() for e in objects[:-1].split(',')}
+    return tier_map
 
 
 def start_import(path, **properties):
@@ -114,6 +121,17 @@ def start_import(path, **properties):
         tier_config = parse_tier_map(properties.pop([_PROP_TIER_GROUPS]))
     except KeyError:
         _logger.exception(f'No tier mapping configurated. Cannot proceed.')
+    clean_args = {}
+    for property in (_PROP_TOLERANCE, _PROP_FORCE_MULTI_TOK):
+        if property in properties:
+            try:
+                clean_args[property] = eval(properties[property])
+            except ValueError:
+                _logger.exception(f'Could not parse property value for {property}: {properties[property]}')    
     for path, internal_path in path_structure(u, path, _FILE_ENDINGS):
-        map_document(u, path, internal_path, tier_config, **properties)
+        map_document(u, 
+                     path, 
+                     internal_path, 
+                     tier_config, 
+                     **clean_args)
     return u
