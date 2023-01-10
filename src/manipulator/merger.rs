@@ -34,6 +34,7 @@ const PROP_ON_ERROR: &str = "on.error";
 const PROP_SKIP_COMPONENTS: &str = "skip.components";
 const PROP_OPTIONAL_VALUES: &str = "optional.values";
 const PROP_SILENT: &str = "silent";
+const PROP_REPORT_DETAILS: &str = "report.details";
 const PROPVAL_SEP: &str = ",";
 
 enum MergerProperties {
@@ -42,7 +43,8 @@ enum MergerProperties {
     OnError,
     SkipComponents,
     OptionalValues,
-    Silent
+    Silent,
+    ReportDetails
 }
 
 impl ToString for MergerProperties {
@@ -53,7 +55,8 @@ impl ToString for MergerProperties {
             Self::OnError => PROP_ON_ERROR.to_string(),
             Self::SkipComponents => PROP_SKIP_COMPONENTS.to_string(),
             Self::OptionalValues => PROP_OPTIONAL_VALUES.to_string(),
-            Self::Silent => PROP_SILENT.to_string()
+            Self::Silent => PROP_SILENT.to_string(),
+            Self::ReportDetails => PROP_REPORT_DETAILS.to_string()
         }
     }
 }
@@ -141,7 +144,8 @@ impl Merger {
                       target_key: &AnnoKey, 
                       ordered_items_by_doc: HashMap<String, HashMap<&str, std::vec::IntoIter<u64>>>,
                       optionals: HashSet<String>,
-                      docs_with_errors: &mut HashSet<String>) -> Result<HashMap<u64, u64>, Box<dyn std::error::Error>> {
+                      docs_with_errors: &mut HashSet<String>,
+                      tx: &Option<StatusSender>) -> Result<HashMap<u64, u64>, Box<dyn std::error::Error>> {
         let mut node_map: HashMap<u64, u64> = HashMap::new();
         let node_annos = graph.get_node_annos();
         for (doc_name, mut ordered_items_by_name) in ordered_items_by_doc {
@@ -208,6 +212,10 @@ impl Merger {
                                 }
                                 else if !ref_is_optional && !other_is_optional {
                                     // match expected, advance both
+                                    if let Some(sender) = tx {
+                                        let message = StatusMessage::Warning(format!("{}={} and {}={} do not match. Mismatch could not be resolved.", target_key.name, ref_val, other_name, other_val));
+                                        sender.send(message)?;
+                                    }
                                     docs_with_errors.insert(doc_name.to_string());
                                     finished = true;
                                 }
@@ -421,6 +429,10 @@ impl Manipulator for Merger {
             None => false,
             Some(v) => v.parse::<bool>()?
         };
+        let report_details = match  properties.get(&MergerProperties::ReportDetails.to_string()) {
+            None => false,
+            Some(v) => v.parse::<bool>()?
+        };
         let sender_opt = if silent {
             None
         } else {
@@ -430,8 +442,13 @@ impl Manipulator for Merger {
         let mut updates = GraphUpdate::default();
         let mut docs_with_errors = HashSet::new();
         // merge
-        let ordered_items_by_doc = self.retrieve_ordered_nodes(graph, order_names.clone())?;   
-        let node_map: HashMap<u64, u64> = self.map_text_nodes(graph, &mut updates, &keep_name_key, ordered_items_by_doc, optional_toks, &mut docs_with_errors)?;                
+        let ordered_items_by_doc = self.retrieve_ordered_nodes(graph, order_names.clone())?;
+        let reporter = if report_details {
+            &sender_opt
+        } else {
+            &None
+        };
+        let node_map: HashMap<u64, u64> = self.map_text_nodes(graph, &mut updates, &keep_name_key, ordered_items_by_doc, optional_toks, &mut docs_with_errors, reporter)?;                
         let skip_components = self.skip_components_from_prop(graph, properties.get(&MergerProperties::SkipComponents.to_string()));
         self.merge_all_components(graph, &mut updates, skip_components, node_map, &mut docs_with_errors, &sender_opt)?;
         self.handle_document_errors(graph, &mut updates, docs_with_errors, on_error, &sender_opt)?;        
