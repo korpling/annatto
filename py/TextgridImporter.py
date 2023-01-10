@@ -3,9 +3,9 @@ from graphannis.graph import GraphUpdate
 from graphupdate_util import *
 from itertools import chain
 import logging
+import sys
 
-
-_FILE_ENDINGS = ('textgrid', 'TextGrid', 'textGrid')
+_FILE_ENDINGS = ('.textgrid', '.TextGrid', '.textGrid')
 
 _FILE_TYPE_SHORT = 'ooTextFile short'
 _FILE_TYPE_LONG = 'ooTextFile'
@@ -34,8 +34,9 @@ def map_document(u,
         return
     header = data[0]
     file_type = header[header.find('"') + 1:header.rfind('"')]
-    tier_names = {[k] + list(v) for k, v in tier_map.items()}
+    tier_names = set(chain(*([k] + list(v) for k, v in tier_map.items())))
     tiers_and_values = process_data(u, data, tier_names, short=file_type == _FILE_TYPE_SHORT)
+    _logger.info(f'Collected data: {tiers_and_values}')
     is_multi_tok = len(tier_map) > 1 or force_multitok
     tok_dict = {}    
     if is_multi_tok:        
@@ -45,23 +46,29 @@ def map_document(u,
             tok_dict[(start, end)] = map_token(u, corpus_doc_path, i + 1, '', ' ', start, end)
         add_order_relations(u, [id_ for (s, e), id_ in sorted(tok_dict.items(), key=lambda e: e[0][0])], '')
     tc = len(tok_dict) if is_multi_tok else 0
-    spc = 0
+    spc = 0    
     for tok_tier, dependent_tiers in tier_map.items():
         start_times = set()
         end_times = set()
         for start, end, value in tiers_and_values[tok_tier]:
+            if not value.strip():
+                continue
             tok_dict[(start, end, tok_tier)] = map_token(u, corpus_doc_path, tc, tok_tier, value, start, end)
             tc += 1
             if is_multi_tok:
                 overlapped = [id_ for k, id_ in tok_dict.items() if len(k) == 2 and start <= k[0] and end >= k[1]]
-                coverage(u, [tok_dict[(start, end, tok_tier)]], overlapped)
+                coverage(u, [tok_dict[(start, end, tok_tier)]], overlapped)                
             start_times.add(start)
-            end_times.add(end)
-        all_tokens = [id_ for (s, e, name), id_ in sorted(tok_dict.items(), key=lambda e: e[0][0]) if name == tok_tier]
+            end_times.add(end)        
+        all_tokens = [id_ for (_, _, name), id_ in sorted(tok_dict.items(), key=lambda e: e[0][0]) if name == tok_tier]
+        if not is_multi_tok:
+            add_order_relations(u, all_tokens, None)
         add_order_relations(u, all_tokens, tok_tier)
         span_dict = {}
         for tier_name in dependent_tiers:
             for start, end, value in tiers_and_values[tier_name]:
+                if not value.strip():
+                    continue
                 if (start, end) not in span_dict:
                     spc += 1
                     if start not in start_times:
@@ -81,16 +88,17 @@ def process_data(u, data, tier_names, short=False):
     tier_data = defaultdict(list)
     for line in data[9:]:
         l = line.strip()
+        print(l, size, gathered)
         if size == 0:  # reading tier header
+            if not short and l.startswith('item ['):
+                continue
             if len(gathered) < 5:
                 gathered.append(resolver(l))
             else:
                 clz, name, _, _, size = gathered
                 gathered.clear()
         else:  # reading items
-            if not short and l.startswith('intervals'):
-                continue  # skip one for explicit format
-            if len(gathered) < (2 + clz == _TIER_CLASS_INTERVAL):
+            if len(gathered) < 3:
                 gathered.append(resolver(l))
             else:
                 tier_data[name].append(tuple(gathered))
@@ -124,7 +132,7 @@ def parse_tier_map(value):
 def start_import(path, **properties):
     u = GraphUpdate()
     try:
-        tier_config = parse_tier_map(properties.pop([_PROP_TIER_GROUPS]))
+        tier_config = parse_tier_map(properties[_PROP_TIER_GROUPS])
     except KeyError:
         _logger.exception(f'No tier mapping configurated. Cannot proceed.')
     clean_args = {}
