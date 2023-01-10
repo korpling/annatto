@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::{HashMap,HashSet,BTreeMap};
 use std::convert::TryFrom;
 use crate::{Manipulator,Module};
@@ -33,6 +34,7 @@ const PROP_KEEP_NAME: &str = "keep.name";
 const PROP_ON_ERROR: &str = "on.error";
 const PROP_SKIP_COMPONENTS: &str = "skip.components";
 const PROP_OPTIONAL_VALUES: &str = "optional.values";
+const PROP_OPTIONAL_CHARS: &str = "optional.chars";
 const PROP_SILENT: &str = "silent";
 const PROP_REPORT_DETAILS: &str = "report.details";
 const PROPVAL_SEP: &str = ",";
@@ -43,6 +45,7 @@ enum MergerProperties {
     OnError,
     SkipComponents,
     OptionalValues,
+    OptionalChars,
     Silent,
     ReportDetails
 }
@@ -55,6 +58,7 @@ impl ToString for MergerProperties {
             Self::OnError => PROP_ON_ERROR.to_string(),
             Self::SkipComponents => PROP_SKIP_COMPONENTS.to_string(),
             Self::OptionalValues => PROP_OPTIONAL_VALUES.to_string(),
+            Self::OptionalChars => PROP_OPTIONAL_CHARS.to_string(),
             Self::Silent => PROP_SILENT.to_string(),
             Self::ReportDetails => PROP_REPORT_DETAILS.to_string()
         }
@@ -97,6 +101,18 @@ impl Default for ErrorPolicy {
         ErrorPolicy::Fail
     }
 }
+
+
+fn clean_value(value: &Cow<str>, remove_chars: &HashSet<char>) -> String {
+    let mut value_ = String::new();
+    for c in value.chars() {
+        if !remove_chars.contains(&c) {
+            value_.push(c);
+        }
+    }
+    return value_
+}
+
 
 impl Merger {
     fn retrieve_ordered_nodes<'a>(&self, graph: &AnnotationGraph, order_names: Vec<&'a str>) -> Result<HashMap<String, HashMap<&'a str, std::vec::IntoIter<u64>>>, Box<dyn std::error::Error>> {        
@@ -144,6 +160,7 @@ impl Merger {
                       target_key: &AnnoKey, 
                       ordered_items_by_doc: HashMap<String, HashMap<&str, std::vec::IntoIter<u64>>>,
                       optionals: HashSet<String>,
+                      optional_chars: HashSet<char>,
                       docs_with_errors: &mut HashSet<String>,
                       tx: &Option<StatusSender>) -> Result<HashMap<u64, u64>, Box<dyn std::error::Error>> {
         let mut node_map: HashMap<u64, u64> = HashMap::new();
@@ -180,7 +197,7 @@ impl Merger {
                             let other_key = AnnoKey {ns: smartstring::alias::String::from(""), 
                                                     name: smartstring::alias::String::from(other_name)};
                             let other_val = node_annos.get_value_for_item(&other_item, &other_key)?.unwrap();
-                            if ref_val == other_val {  // text values match
+                            if ref_val == other_val || clean_value(&ref_val, &optional_chars) == clean_value(&other_val, &optional_chars) {  // text values match
                                 let anno_keys = node_annos.get_all_keys_for_item(&other_item, None, None)?;
                                 // annotations directly on the ordered node
                                 for ak in anno_keys {
@@ -425,6 +442,10 @@ impl Manipulator for Merger {
             None => HashSet::new(),
             Some(v) => v.split("\",\"").map(|s| s.to_string().replace("\"", "")).collect::<HashSet<String>>()
         };
+        let optional_chars = match properties.get(&MergerProperties::OptionalChars.to_string()) {
+            None => HashSet::new(),
+            Some(v) => v.split(PROPVAL_SEP).map(|s| s.parse::<char>().unwrap()).collect::<HashSet<char>>()
+        };
         let silent = match properties.get(&MergerProperties::Silent.to_string()) {
             None => false,
             Some(v) => v.parse::<bool>()?
@@ -448,7 +469,7 @@ impl Manipulator for Merger {
         } else {
             &None
         };
-        let node_map: HashMap<u64, u64> = self.map_text_nodes(graph, &mut updates, &keep_name_key, ordered_items_by_doc, optional_toks, &mut docs_with_errors, reporter)?;                
+        let node_map: HashMap<u64, u64> = self.map_text_nodes(graph, &mut updates, &keep_name_key, ordered_items_by_doc, optional_toks, optional_chars, &mut docs_with_errors, reporter)?;                
         let skip_components = self.skip_components_from_prop(graph, properties.get(&MergerProperties::SkipComponents.to_string()));
         self.merge_all_components(graph, &mut updates, skip_components, node_map, &mut docs_with_errors, &sender_opt)?;
         self.handle_document_errors(graph, &mut updates, docs_with_errors, on_error, &sender_opt)?;        
