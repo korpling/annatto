@@ -197,7 +197,8 @@ impl Merger {
                             let other_key = AnnoKey {ns: smartstring::alias::String::from(""), 
                                                     name: smartstring::alias::String::from(other_name)};
                             let other_val = node_annos.get_value_for_item(&other_item, &other_key)?.unwrap();
-                            if ref_val == other_val || clean_value(&ref_val, &optional_chars) == clean_value(&other_val, &optional_chars) {  // text values match
+                            if ref_val == other_val || 
+                                !optional_chars.is_empty() && clean_value(&ref_val, &optional_chars) == clean_value(&other_val, &optional_chars) {  // text values match
                                 let anno_keys = node_annos.get_all_keys_for_item(&other_item, None, None)?;
                                 // annotations directly on the ordered node
                                 for ak in anno_keys {
