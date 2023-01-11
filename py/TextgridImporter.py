@@ -70,13 +70,14 @@ def map_document(u,
                 if not value.strip():
                     continue
                 if (start, end) not in span_dict:
-                    spc += 1
-                    if start not in start_times:
-                        start = min(start_times, key=lambda t: abs(t - start))
-                    if end not in end_times:
-                        end = min(end_times, key=lambda t: abs(t - end))
-                    overlapped = [id_ for k, id_ in tok_dict.items() if len(k) == 3 and k[2] == tok_tier and start <= k[0] and end >= k[1]]
+                    spc += 1                    
+                    corrected_start = min(start_times, key=lambda t: abs(t - start)) if start not in start_times else start
+                    corrected_end = min(end_times, key=lambda t: abs(t - end)) if end not in end_times else end
+                    if corrected_start == corrected_end:
+                        _logger.exception(f'Encountered zero-length interval after correction @[{start},{end}] with value {value}')
+                    overlapped = [id_ for k, id_ in tok_dict.items() if len(k) == 3 and k[2] == tok_tier and corrected_start <= k[0] and corrected_end >= k[1]]
                     span_dict[(start, end)] = map_annotation(u, corpus_doc_path, spc, tok_tier, tier_name, value, *overlapped)
+                    span_dict[(corrected_start, corrected_end)] = span_dict[(start, end)]
                 else:
                     u.add_node_label(span_dict[(start, end)], tok_tier, tier_name, value)
 
