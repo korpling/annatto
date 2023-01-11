@@ -184,6 +184,7 @@ impl Merger {
                                                                                         manipulator: self.module_name().to_string() }));
                     }
                 };
+                let ref_is_optional = optionals.contains(&ref_val.to_string());
                 let ref_node_name = node_annos.get_value_for_item(&item, &NODE_NAME_KEY)?.unwrap();  // existence guaranteed                                
                 for other_name in &order_names {
                     let mut finished = false;
@@ -217,7 +218,6 @@ impl Merger {
                                 node_map.insert(other_item, item); 
                                 finished = true;                       
                             } else {  // text values don't match
-                                let ref_is_optional = optionals.contains(&ref_val.to_string());
                                 let other_is_optional = optionals.contains(&other_val.to_string());
                                 if  ref_is_optional && !other_is_optional {
                                     // advance outer, do not advance inner
@@ -244,8 +244,12 @@ impl Merger {
                             }                    
                         } else {
                             // no further nodes
-                            let err = AnnattoError::Manipulator { reason: format!("Ran out of nodes for ordering `{}`.", other_name), manipulator: self.module_name().to_string() };
-                            return Err(Box::new(err))                        
+                            if !ref_is_optional {
+                                let err = AnnattoError::Manipulator { reason: format!("Ran out of nodes for ordering `{}` in document {}", other_name, doc_name), manipulator: self.module_name().to_string() };
+                                return Err(Box::new(err))        
+                            } else {
+                                finished = true;
+                            }               
                         }
                     }
                 }
