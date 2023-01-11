@@ -234,6 +234,7 @@ impl Merger {
                                         let message = StatusMessage::Warning(format!("{}={} and {}={} do not match. Mismatch could not be resolved.", target_key.name, ref_val, other_name, other_val));
                                         sender.send(message)?;
                                     }
+                                    node_map.insert(other_item, item);  // map anyway to be compliant with ErrorPolicy::Forward
                                     docs_with_errors.insert(doc_name.to_string());
                                     finished = true;
                                 }
