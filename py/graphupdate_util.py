@@ -18,7 +18,7 @@ ANNIS_TOK = 'tok'
 ANNIS_TOK_WHITE_SPACE_AFTER = 'tok-whitespace-after'
 
 
-def path_structure(u, root_path, file_endings, logger=None):
+def path_structure(u, root_path, file_endings, logger=None, follow_links=True):
     norm_path = os.path.normpath(root_path)
     root_name = os.path.basename(norm_path)
     if logger is not None:
@@ -26,7 +26,7 @@ def path_structure(u, root_path, file_endings, logger=None):
     corpus_root(u, root_name)
     created_paths = set()
     path_tuples = set()
-    for root, _, f_names in os.walk(norm_path):
+    for root, _, f_names in os.walk(norm_path, followlinks=follow_links):
         for doc_name in filter(lambda fn: os.path.splitext(fn)[1] in file_endings, f_names):
             path = os.path.join(root, doc_name)
             internal_path = os.path.splitext(os.path.join(root_name, path[len(norm_path) + 1:]))[0]
