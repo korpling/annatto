@@ -376,12 +376,13 @@ impl Merger {
 
     fn handle_document_errors(&self, graph: &AnnotationGraph, updates: &mut GraphUpdate, docs_with_errors: HashSet<String>, policy: ErrorPolicy, tx: &Option<StatusSender>) -> Result<(), Box<dyn std::error::Error>>{
         let node_annos = graph.get_node_annos();
-        if docs_with_errors.len() > 0 {
-            let docs_s = docs_with_errors.iter().join("\n");            
+        let n = docs_with_errors.len();
+        if n > 0 {
+            let docs_s = docs_with_errors.iter().sorted().join("\n");            
             if let Some(sender) = &tx {
                 let message = match policy {
                     ErrorPolicy::Fail => {
-                        let msg = format!("Documents with ill-merged tokens:\n{}", docs_s);
+                        let msg = format!("{} documents with ill-merged tokens:\n{}", n, docs_s);
                         let err = AnnattoError::Manipulator { reason: msg, manipulator: self.module_name().to_string() };
                         StatusMessage::Failed(err)
                     },
@@ -401,11 +402,11 @@ impl Merger {
                                 updates.add_event(UpdateEvent::DeleteNode { node_name: doc_name.to_string() })?; 
                             }
                         };
-                        let msg = format!("Documents with ill-merged tokens will be dropped from the corpus:\n{}", docs_s);
+                        let msg = format!("{} documents with ill-merged tokens will be dropped from the corpus:\n{}", n, docs_s);
                         StatusMessage::Warning(msg)
                     },
                     _ => {
-                        let msg = format!("BE AWARE that the corpus contains severe merging issues in the following documents:\n{}", docs_s);
+                        let msg = format!("BE AWARE that the corpus contains severe merging issues in the following {} documents:\n{}", n, docs_s);
                         StatusMessage::Warning(msg)
                     }
                 };
