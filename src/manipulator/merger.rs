@@ -167,13 +167,13 @@ impl Merger {
         let node_annos = graph.get_node_annos();
         for (doc_name, mut ordered_items_by_name) in ordered_items_by_doc {
             let ordered_keep_items_opt = ordered_items_by_name.remove(target_key.name.as_str());
-            if ordered_keep_items_opt.is_none() {
-                let message = format!("Document {} does not contain an ordering {}.", &doc_name, &target_key.name);
+            if ordered_keep_items_opt.is_none() {                
                 if let Some(sender) = tx {
+                    let message = format!("Document {} does not contain an ordering {}", &doc_name, &target_key.name);
                     sender.send(StatusMessage::Warning(message))?;
-                    docs_with_errors.insert(doc_name);
-                    continue
                 }
+                docs_with_errors.insert(doc_name);
+                continue
             }
             let ordered_keep_items = ordered_keep_items_opt.unwrap(); 
             let mut order_names = HashSet::new();
