@@ -61,6 +61,8 @@ def map_document(u,
             start_times.add(start)
             end_times.add(end)        
         all_tokens = [id_ for (_, _, name), id_ in sorted(tok_dict.items(), key=lambda e: e[0][0]) if name == tok_tier]
+        if not all_tokens:
+            _logger.exception(f'Token tier {tok_tier} does not exist or does not cover any labelled interval.')
         if not is_multi_tok:
             add_order_relations(u, all_tokens, None)
         add_order_relations(u, all_tokens, tok_tier)

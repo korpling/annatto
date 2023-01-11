@@ -24,12 +24,9 @@ _ATTR_TYPE = 'type'
 _ATTR_URL = 'url'
 # logger
 _logger = logging.getLogger(__name__)
-_handler = logging.StreamHandler(stream=sys.stdout)
-_handler.setLevel(logging.DEBUG)
 _file_handler = logging.FileHandler('exmaralda-importer.log')
 _file_handler.setLevel(logging.DEBUG)
-_logger.setLevel(logging.DEBUG)
-_logger.addHandler(_handler)
+_logger.setLevel(logging.INFO)
 _logger.addHandler(_file_handler)
 
 _FILE_ENDINGS = ('.exb', '.xml')
@@ -151,13 +148,13 @@ def start_import(path, **properties):
     'GraphUpdate'
     """
     try:
-        _logger.info('------------------------------------------------')
+        _logger.debug('------------------------------------------------')
         u = GraphUpdate()
-        _logger.info(f'Starting corpus path {path}')
+        _logger.debug(f'Starting corpus path {path}')
         text_order = [t.strip() for t in properties[PROP_TEXT_ORDER].split(';')] \
                       if PROP_TEXT_ORDER in properties else None
         for path, internal_path in path_structure(u, path, _FILE_ENDINGS, logger=_logger):
-            _logger.info(f'Reading {path} which is {internal_path}')
+            _logger.debug(f'Reading {path} which is {internal_path}')
             import_ = EXMARaLDAImport(u, path, internal_path)
             import_.map(text_order=text_order)
         return u
