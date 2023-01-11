@@ -166,7 +166,16 @@ impl Merger {
         let mut node_map: HashMap<u64, u64> = HashMap::new();
         let node_annos = graph.get_node_annos();
         for (doc_name, mut ordered_items_by_name) in ordered_items_by_doc {
-            let ordered_keep_items = ordered_items_by_name.remove(target_key.name.as_str()).unwrap();
+            let ordered_keep_items_opt = ordered_items_by_name.remove(target_key.name.as_str());
+            if ordered_keep_items_opt.is_none() {
+                let message = format!("Document {} does not contain an ordering {}.", &doc_name, &target_key.name);
+                if let Some(sender) = tx {
+                    sender.send(StatusMessage::Warning(message))?;
+                    docs_with_errors.insert(doc_name);
+                    continue
+                }
+            }
+            let ordered_keep_items = ordered_keep_items_opt.unwrap(); 
             let mut order_names = HashSet::new();
             for (k, _) in &ordered_items_by_name {
                 order_names.insert(k.to_string());
