@@ -231,7 +231,7 @@ impl Merger {
                                 else if !ref_is_optional && !other_is_optional {
                                     // match expected, advance both
                                     if let Some(sender) = tx {
-                                        let message = StatusMessage::Warning(format!("{}={} and {}={} do not match. Mismatch could not be resolved.", target_key.name, ref_val, other_name, other_val));
+                                        let message = StatusMessage::Warning(format!("{}: {}={} and {}={} do not match. Mismatch could not be resolved.", &doc_name, &target_key.name, ref_val, other_name, other_val));
                                         sender.send(message)?;
                                     }
                                     node_map.insert(other_item, item);  // map anyway to be compliant with ErrorPolicy::Forward
@@ -246,11 +246,13 @@ impl Merger {
                         } else {
                             // no further nodes
                             if !ref_is_optional {
-                                let err = AnnattoError::Manipulator { reason: format!("Ran out of nodes for ordering `{}` in document {}", other_name, doc_name), manipulator: self.module_name().to_string() };
-                                return Err(Box::new(err))        
-                            } else {
-                                finished = true;
-                            }               
+                                let message = format!("Ran out of nodes for ordering `{}` in document {}", other_name, &doc_name);
+                                if let Some(sender) = tx {
+                                    sender.send(StatusMessage::Warning(message))?;
+                                    docs_with_errors.insert(doc_name.to_string());
+                                }
+                            }
+                            finished = true;                            
                         }
                     }
                 }
