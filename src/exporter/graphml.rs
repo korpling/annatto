@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, fs::{File, create_dir, create_dir_all}, path::Path};
+use std::{collections::BTreeMap, fs::{File, create_dir_all}, path::Path};
 
 use crate::{exporter::Exporter, progress::ProgressReporter, workflow::StatusSender, Module, error::AnnattoError};
 use graphannis_core::{
