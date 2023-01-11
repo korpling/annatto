@@ -14,6 +14,7 @@ _TIER_CLASS_POINT = 'PointTier'
 
 _PROP_TIER_GROUPS = 'tier_groups'
 _PROP_FORCE_MULTI_TOK = 'force_multi_tok'
+_PROP_AUDIO_EXTENSION = 'audio_extension'
 
 # logger
 _logger = logging.getLogger(__name__)
@@ -27,7 +28,8 @@ def map_document(u,
                  file_path, 
                  corpus_doc_path, 
                  tier_map, 
-                 force_multitok=False):
+                 force_multitok=False,
+                 audio_extension='wav'):
     with open(file_path) as f:
         data = f.readlines()
     if not data:
@@ -36,7 +38,6 @@ def map_document(u,
     file_type = header[header.find('"') + 1:header.rfind('"')]
     tier_names = set(chain(*([k] + list(v) for k, v in tier_map.items())))
     tiers_and_values = process_data(u, data, tier_names, short=file_type == _FILE_TYPE_SHORT)
-    _logger.info(f'Collected data: {tiers_and_values}')
     is_multi_tok = len(tier_map) > 1 or force_multitok
     tok_dict = {}    
     if is_multi_tok:        
@@ -46,7 +47,7 @@ def map_document(u,
             tok_dict[(start, end)] = map_token(u, corpus_doc_path, i + 1, '', ' ', start, end)
         add_order_relations(u, [id_ for (s, e), id_ in sorted(tok_dict.items(), key=lambda e: e[0][0])], '')
     tc = len(tok_dict) if is_multi_tok else 0
-    spc = 0    
+    spc = 0
     for tok_tier, dependent_tiers in tier_map.items():
         start_times = set()
         end_times = set()
@@ -64,9 +65,11 @@ def map_document(u,
         if not all_tokens:
             _logger.exception(f'Token tier {tok_tier} does not exist or does not cover any labelled interval.')
         if not is_multi_tok:
-            add_order_relations(u, all_tokens, None)
+            add_order_relations(u, all_tokens, '')
         add_order_relations(u, all_tokens, tok_tier)
         span_dict = {}
+        ordered_start_times = sorted(start_times)
+        ordered_end_times = sorted(end_times)
         for tier_name in dependent_tiers:
             for start, end, value in tiers_and_values[tier_name]:
                 if not value.strip():
@@ -76,7 +79,9 @@ def map_document(u,
                     corrected_start = min(start_times, key=lambda t: abs(t - start)) if start not in start_times else start
                     corrected_end = min(end_times, key=lambda t: abs(t - end)) if end not in end_times else end
                     if corrected_start == corrected_end:
-                        _logger.exception(f'Encountered zero-length interval after correction @[{start},{end}] with value {value}')
+                        alternative_a = (ordered_start_times[ordered_start_times.index(corrected_start) - 1], corrected_end)
+                        alternative_b = (corrected_start, ordered_end_times[ordered_end_times.index(corrected_end) + 1])
+                        corrected_start, corrected_end = max(alternative_a, alternative_b, key=lambda e: start - e[0] + end - e[1])  # TODO check for correctness
                     overlapped = [id_ for k, id_ in tok_dict.items() if len(k) == 3 and k[2] == tok_tier and corrected_start <= k[0] and corrected_end >= k[1]]
                     span_dict[(start, end)] = map_annotation(u, corpus_doc_path, spc, tok_tier, tier_name, value, *overlapped)
                     span_dict[(corrected_start, corrected_end)] = span_dict[(start, end)]
@@ -91,7 +96,6 @@ def process_data(u, data, tier_names, short=False):
     tier_data = defaultdict(list)
     for line in data[9:]:
         l = line.strip()
-        print(l, size, gathered)
         if size == 0:  # reading tier header
             if not short and l.startswith('item ['):
                 continue
@@ -120,7 +124,10 @@ def resolve_short(value):
 
 
 def resolve_long(value):
-    bare_value = value.split(' = ', 1)[1]
+    try:
+        bare_value = value.split(' = ', 1)[1]
+    except IndexError:
+        raise ValueError(f'Could not preprocess line `{value}` correctly')
     return resolve_short(bare_value)
 
 
@@ -139,12 +146,13 @@ def start_import(path, **properties):
     except KeyError:
         _logger.exception(f'No tier mapping configurated. Cannot proceed.')
     clean_args = {}
-    for property in (_PROP_FORCE_MULTI_TOK,):  # add properties here
+    for property, evaluator in [(_PROP_FORCE_MULTI_TOK, eval),
+                                (_PROP_AUDIO_EXTENSION, str)]:  # add properties here
         if property in properties:
             try:
-                clean_args[property] = eval(properties[property])
+                clean_args[property] = evaluator(properties[property])
             except ValueError:
-                _logger.exception(f'Could not parse property value for {property}: {properties[property]}')    
+                _logger.exception(f'Could not parse property value for {property}: {properties[property]}')
     for path, internal_path in path_structure(u, path, _FILE_ENDINGS):
         map_document(u, 
                      path, 

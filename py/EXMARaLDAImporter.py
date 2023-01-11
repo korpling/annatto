@@ -128,7 +128,13 @@ class EXMARaLDAImport(object):
                     span_id = self._span_count
                 else:
                     span_id = existing_spans[key]
-                map_annotation(self._u, self._path, span_id, speaker, category, value, *[id_ for _, _, id_ in covered_tokens])
+                map_annotation(self._u, 
+                               self._path, 
+                               span_id, 
+                               speaker, 
+                               category, 
+                               value, 
+                               *[id_ for _, _, id_ in covered_tokens])
                 existing_spans[key] = span_id
 
     def _read_timeline(self):
