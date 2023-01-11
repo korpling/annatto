@@ -450,7 +450,7 @@ impl Manipulator for Merger {
         };
         let optional_chars = match properties.get(&MergerProperties::OptionalChars.to_string()) {
             None => HashSet::new(),
-            Some(v) => v.split(PROPVAL_SEP).map(|s| s.parse::<char>().unwrap()).collect::<HashSet<char>>()
+            Some(v) => v.split("','").map(|s| s.to_string().replace("'", "").parse::<char>().unwrap()).collect::<HashSet<char>>()
         };
         let silent = match properties.get(&MergerProperties::Silent.to_string()) {
             None => false,
