@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, fs::File, path::Path};
+use std::{collections::BTreeMap, fs::{File, create_dir_all}, path::Path};
 
 use crate::{exporter::Exporter, progress::ProgressReporter, workflow::StatusSender, Module, error::AnnattoError};
 use graphannis_core::{
@@ -50,9 +50,8 @@ impl Exporter for GraphMLExporter {
         let output_file_path = match output_path.is_dir() {
             true => output_path.join(file_name),
             false => {
-                let reason = String::from("File name provided instead of directory name.");
-                let err = AnnattoError::Export { reason: reason, exporter: self.module_name().to_string(), path: output_path.to_path_buf() };
-                return Err(Box::new(err));
+                create_dir_all(output_path)?;
+                output_path.join(file_name)
             }
         };
         let output_file = File::create(output_file_path.clone())?;

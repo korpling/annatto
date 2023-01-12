@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::{HashMap,HashSet,BTreeMap};
 use std::convert::TryFrom;
 use crate::{Manipulator,Module};
@@ -33,7 +34,9 @@ const PROP_KEEP_NAME: &str = "keep.name";
 const PROP_ON_ERROR: &str = "on.error";
 const PROP_SKIP_COMPONENTS: &str = "skip.components";
 const PROP_OPTIONAL_VALUES: &str = "optional.values";
+const PROP_OPTIONAL_CHARS: &str = "optional.chars";
 const PROP_SILENT: &str = "silent";
+const PROP_REPORT_DETAILS: &str = "report.details";
 const PROPVAL_SEP: &str = ",";
 
 enum MergerProperties {
@@ -42,7 +45,9 @@ enum MergerProperties {
     OnError,
     SkipComponents,
     OptionalValues,
-    Silent
+    OptionalChars,
+    Silent,
+    ReportDetails
 }
 
 impl ToString for MergerProperties {
@@ -53,7 +58,9 @@ impl ToString for MergerProperties {
             Self::OnError => PROP_ON_ERROR.to_string(),
             Self::SkipComponents => PROP_SKIP_COMPONENTS.to_string(),
             Self::OptionalValues => PROP_OPTIONAL_VALUES.to_string(),
-            Self::Silent => PROP_SILENT.to_string()
+            Self::OptionalChars => PROP_OPTIONAL_CHARS.to_string(),
+            Self::Silent => PROP_SILENT.to_string(),
+            Self::ReportDetails => PROP_REPORT_DETAILS.to_string()
         }
     }
 }
@@ -94,6 +101,18 @@ impl Default for ErrorPolicy {
         ErrorPolicy::Fail
     }
 }
+
+
+fn clean_value(value: &Cow<str>, remove_chars: &HashSet<char>) -> String {
+    let mut value_ = String::new();
+    for c in value.chars() {
+        if !remove_chars.contains(&c) {
+            value_.push(c);
+        }
+    }
+    return value_
+}
+
 
 impl Merger {
     fn retrieve_ordered_nodes<'a>(&self, graph: &AnnotationGraph, order_names: Vec<&'a str>) -> Result<HashMap<String, HashMap<&'a str, std::vec::IntoIter<u64>>>, Box<dyn std::error::Error>> {        
@@ -141,11 +160,22 @@ impl Merger {
                       target_key: &AnnoKey, 
                       ordered_items_by_doc: HashMap<String, HashMap<&str, std::vec::IntoIter<u64>>>,
                       optionals: HashSet<String>,
-                      docs_with_errors: &mut HashSet<String>) -> Result<HashMap<u64, u64>, Box<dyn std::error::Error>> {
+                      optional_chars: HashSet<char>,
+                      docs_with_errors: &mut HashSet<String>,
+                      tx: &Option<StatusSender>) -> Result<HashMap<u64, u64>, Box<dyn std::error::Error>> {
         let mut node_map: HashMap<u64, u64> = HashMap::new();
         let node_annos = graph.get_node_annos();
         for (doc_name, mut ordered_items_by_name) in ordered_items_by_doc {
-            let ordered_keep_items = ordered_items_by_name.remove(target_key.name.as_str()).unwrap();
+            let ordered_keep_items_opt = ordered_items_by_name.remove(target_key.name.as_str());
+            if ordered_keep_items_opt.is_none() {                
+                if let Some(sender) = tx {
+                    let message = format!("Document {} does not contain an ordering {}", &doc_name, &target_key.name);
+                    sender.send(StatusMessage::Warning(message))?;
+                }
+                docs_with_errors.insert(doc_name);
+                continue
+            }
+            let ordered_keep_items = ordered_keep_items_opt.unwrap(); 
             let mut order_names = HashSet::new();
             for (k, _) in &ordered_items_by_name {
                 order_names.insert(k.to_string());
@@ -163,6 +193,7 @@ impl Merger {
                                                                                         manipulator: self.module_name().to_string() }));
                     }
                 };
+                let ref_is_optional = optionals.contains(&ref_val.to_string());
                 let ref_node_name = node_annos.get_value_for_item(&item, &NODE_NAME_KEY)?.unwrap();  // existence guaranteed                                
                 for other_name in &order_names {
                     let mut finished = false;
@@ -176,7 +207,8 @@ impl Merger {
                             let other_key = AnnoKey {ns: smartstring::alias::String::from(""), 
                                                     name: smartstring::alias::String::from(other_name)};
                             let other_val = node_annos.get_value_for_item(&other_item, &other_key)?.unwrap();
-                            if ref_val == other_val {  // text values match
+                            if ref_val == other_val || 
+                                !optional_chars.is_empty() && clean_value(&ref_val, &optional_chars) == clean_value(&other_val, &optional_chars) {  // text values match
                                 let anno_keys = node_annos.get_all_keys_for_item(&other_item, None, None)?;
                                 // annotations directly on the ordered node
                                 for ak in anno_keys {
@@ -195,7 +227,6 @@ impl Merger {
                                 node_map.insert(other_item, item); 
                                 finished = true;                       
                             } else {  // text values don't match
-                                let ref_is_optional = optionals.contains(&ref_val.to_string());
                                 let other_is_optional = optionals.contains(&other_val.to_string());
                                 if  ref_is_optional && !other_is_optional {
                                     // advance outer, do not advance inner
@@ -208,6 +239,11 @@ impl Merger {
                                 }
                                 else if !ref_is_optional && !other_is_optional {
                                     // match expected, advance both
+                                    if let Some(sender) = tx {
+                                        let message = StatusMessage::Warning(format!("{}: {}={} and {}={} do not match. Mismatch could not be resolved.", &doc_name, &target_key.name, ref_val, other_name, other_val));
+                                        sender.send(message)?;
+                                    }
+                                    node_map.insert(other_item, item);  // map anyway to be compliant with ErrorPolicy::Forward
                                     docs_with_errors.insert(doc_name.to_string());
                                     finished = true;
                                 }
@@ -218,8 +254,14 @@ impl Merger {
                             }                    
                         } else {
                             // no further nodes
-                            let err = AnnattoError::Manipulator { reason: format!("Ran out of nodes for ordering `{}`.", other_name), manipulator: self.module_name().to_string() };
-                            return Err(Box::new(err))                        
+                            if !ref_is_optional {
+                                let message = format!("Ran out of nodes for ordering `{}` in document {}", other_name, &doc_name);
+                                if let Some(sender) = tx {
+                                    sender.send(StatusMessage::Warning(message))?;
+                                    docs_with_errors.insert(doc_name.to_string());
+                                }
+                            }
+                            finished = true;                            
                         }
                     }
                 }
@@ -334,12 +376,13 @@ impl Merger {
 
     fn handle_document_errors(&self, graph: &AnnotationGraph, updates: &mut GraphUpdate, docs_with_errors: HashSet<String>, policy: ErrorPolicy, tx: &Option<StatusSender>) -> Result<(), Box<dyn std::error::Error>>{
         let node_annos = graph.get_node_annos();
-        if docs_with_errors.len() > 0 {
-            let docs_s = docs_with_errors.iter().join("\n");            
+        let n = docs_with_errors.len();
+        if n > 0 {
+            let docs_s = docs_with_errors.iter().sorted().join("\n");            
             if let Some(sender) = &tx {
                 let message = match policy {
                     ErrorPolicy::Fail => {
-                        let msg = format!("Documents with ill-merged tokens:\n{}", docs_s);
+                        let msg = format!("{} documents with ill-merged tokens:\n{}", n, docs_s);
                         let err = AnnattoError::Manipulator { reason: msg, manipulator: self.module_name().to_string() };
                         StatusMessage::Failed(err)
                     },
@@ -359,11 +402,11 @@ impl Merger {
                                 updates.add_event(UpdateEvent::DeleteNode { node_name: doc_name.to_string() })?; 
                             }
                         };
-                        let msg = format!("Documents with ill-merged tokens will be dropped from the corpus:\n{}", docs_s);
+                        let msg = format!("{} documents with ill-merged tokens will be dropped from the corpus:\n{}", n, docs_s);
                         StatusMessage::Warning(msg)
                     },
                     _ => {
-                        let msg = format!("BE AWARE that the corpus contains severe merging issues in the following documents:\n{}", docs_s);
+                        let msg = format!("BE AWARE that the corpus contains severe merging issues in the following {} documents:\n{}", n, docs_s);
                         StatusMessage::Warning(msg)
                     }
                 };
@@ -417,7 +460,15 @@ impl Manipulator for Merger {
             None => HashSet::new(),
             Some(v) => v.split("\",\"").map(|s| s.to_string().replace("\"", "")).collect::<HashSet<String>>()
         };
+        let optional_chars = match properties.get(&MergerProperties::OptionalChars.to_string()) {
+            None => HashSet::new(),
+            Some(v) => v.split("','").map(|s| s.to_string().replace("'", "").parse::<char>().unwrap()).collect::<HashSet<char>>()
+        };
         let silent = match properties.get(&MergerProperties::Silent.to_string()) {
+            None => false,
+            Some(v) => v.parse::<bool>()?
+        };
+        let report_details = match  properties.get(&MergerProperties::ReportDetails.to_string()) {
             None => false,
             Some(v) => v.parse::<bool>()?
         };
@@ -430,8 +481,13 @@ impl Manipulator for Merger {
         let mut updates = GraphUpdate::default();
         let mut docs_with_errors = HashSet::new();
         // merge
-        let ordered_items_by_doc = self.retrieve_ordered_nodes(graph, order_names.clone())?;   
-        let node_map: HashMap<u64, u64> = self.map_text_nodes(graph, &mut updates, &keep_name_key, ordered_items_by_doc, optional_toks, &mut docs_with_errors)?;                
+        let ordered_items_by_doc = self.retrieve_ordered_nodes(graph, order_names.clone())?;
+        let reporter = if report_details {
+            &sender_opt
+        } else {
+            &None
+        };
+        let node_map: HashMap<u64, u64> = self.map_text_nodes(graph, &mut updates, &keep_name_key, ordered_items_by_doc, optional_toks, optional_chars, &mut docs_with_errors, reporter)?;                
         let skip_components = self.skip_components_from_prop(graph, properties.get(&MergerProperties::SkipComponents.to_string()));
         self.merge_all_components(graph, &mut updates, skip_components, node_map, &mut docs_with_errors, &sender_opt)?;
         self.handle_document_errors(graph, &mut updates, docs_with_errors, on_error, &sender_opt)?;        
