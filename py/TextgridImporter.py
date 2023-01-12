@@ -15,6 +15,8 @@ _TIER_CLASS_POINT = 'PointTier'
 _PROP_TIER_GROUPS = 'tier_groups'
 _PROP_FORCE_MULTI_TOK = 'force_multi_tok'
 _PROP_AUDIO_EXTENSION = 'audio_extension'
+_PROP_SKIP_AUDIO = 'skip_audio'
+_PROP_SKIP_TIME_ANNOS = 'skip_time_annotations'
 
 # logger
 _logger = logging.getLogger(__name__)
@@ -29,11 +31,20 @@ def map_document(u,
                  corpus_doc_path, 
                  tier_map, 
                  force_multitok=False,
-                 audio_extension='wav'):
+                 audio_extension='wav',
+                 skip_audio=False,
+                 skip_time_annotations=False):
     with open(file_path) as f:
         data = f.readlines()
     if not data:
         return
+    audio_path = f'{os.path.splitext(corpus_doc_path)[0]}{"" if audio_extension.startswith(".") else "."}{audio_extension}'
+    real_path = os.path.join(os.path.dirname(file_path), os.path.basename(audio_path))
+    if os.path.exists(real_path) and not skip_audio:
+        map_audio_source(u, audio_path, corpus_doc_path)
+    elif not skip_audio:
+        # this is no warning or error, because it is legit behaviour in a multi-format scenario
+        _logger.info(f'Could not find corresponding audio file {audio_path} (source: {real_path})')
     header = data[0]
     file_type = header[header.find('"') + 1:header.rfind('"')]
     tier_names = set(chain(*([k] + list(v) for k, v in tier_map.items())))
@@ -44,7 +55,13 @@ def map_document(u,
         valid_time_values = sorted(set(chain(*((t0, t1) for tok_name in tier_names for t0, t1, _ in tiers_and_values[tok_name]))))
         for i in range(len(valid_time_values)):
             start, end = valid_time_values[i:i + 2]
-            tok_dict[(start, end)] = map_token(u, corpus_doc_path, i + 1, '', ' ', start, end)
+            tok_dict[(start, end)] = map_token(u, 
+                                               corpus_doc_path, 
+                                               i + 1, 
+                                               '', 
+                                               ' ', 
+                                               None if skip_time_annotations else start, 
+                                               None if skip_time_annotations else end)
         add_order_relations(u, [id_ for (s, e), id_ in sorted(tok_dict.items(), key=lambda e: e[0][0])], '')
     tc = len(tok_dict) if is_multi_tok else 0
     spc = 0
@@ -54,7 +71,13 @@ def map_document(u,
         for start, end, value in tiers_and_values[tok_tier]:
             if not value.strip():
                 continue
-            tok_dict[(start, end, tok_tier)] = map_token(u, corpus_doc_path, tc, tok_tier, value, start, end)
+            tok_dict[(start, end, tok_tier)] = map_token(u, 
+                                                         corpus_doc_path, 
+                                                         tc, 
+                                                         tok_tier, 
+                                                         value, 
+                                                         None if skip_time_annotations else start, 
+                                                         None if skip_time_annotations else end)
             tc += 1
             if is_multi_tok:
                 overlapped = [id_ for k, id_ in tok_dict.items() if len(k) == 2 and start <= k[0] and end >= k[1]]
@@ -147,7 +170,9 @@ def start_import(path, **properties):
         _logger.exception(f'No tier mapping configurated. Cannot proceed.')
     clean_args = {}
     for property, evaluator in [(_PROP_FORCE_MULTI_TOK, eval),
-                                (_PROP_AUDIO_EXTENSION, str)]:  # add properties here
+                                (_PROP_AUDIO_EXTENSION, str),
+                                (_PROP_SKIP_AUDIO, eval),
+                                (_PROP_SKIP_TIME_ANNOS, eval)]:  # add properties here
         if property in properties:
             try:
                 clean_args[property] = evaluator(properties[property])
