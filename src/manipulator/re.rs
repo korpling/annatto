@@ -5,33 +5,19 @@ use itertools::Itertools;
 
 use crate::{Manipulator, Module};
 
-pub struct Rename {}
-pub struct Remove {}
+pub struct Replace {}
 
-const RENAME_ID: &str = "rename";
-const REMOVE_ID: &str = "remove";
+pub const REPLACE_ID: &str = "replace";
 
-impl Default for Rename {
+impl Default for Replace {
     fn default() -> Self {
-        Rename {}
+        Replace {}
     }
 }
 
-impl Default for Remove {
-    fn default() -> Self {
-        Remove {}
-    }
-}
-
-impl Module for Rename {
+impl Module for Replace {
     fn module_name(&self) -> &str {
-        RENAME_ID
-    }
-}
-
-impl Module for Remove {
-    fn module_name(&self) -> &str {
-        REMOVE_ID
+        REPLACE_ID
     }
 }
 
@@ -98,7 +84,7 @@ fn remove_edge_annos(graph: &mut AnnotationGraph, names: Vec<(Option<&str>, &str
     Ok(())
 }
 
-impl Manipulator for Remove {
+impl Manipulator for Replace {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
@@ -128,7 +114,7 @@ mod tests {
 
     use crate::Result;
     use crate::manipulator::Manipulator;
-    use crate::manipulator::re::Remove;
+    use crate::manipulator::re::Replace;
 
     use graphannis::{AnnotationGraph,CorpusStorage};
     use graphannis::corpusstorage::{QueryLanguage,ResultOrder,SearchQuery};
@@ -156,8 +142,8 @@ mod tests {
         let mut properties = BTreeMap::new();
         properties.insert("edge.annos".to_string(), "deprel".to_string());
         properties.insert("node.annos".to_string(), "pos".to_string());
-        let remove = Remove::default();
-        let result = remove.manipulate_corpus(&mut g, &properties, None);
+        let replace = Replace::default();
+        let result = replace.manipulate_corpus(&mut g, &properties, None);
         assert_eq!(result.is_ok(), true, "Probing merge result {:?}", &result);
         let mut e_g = expected_output_graph(on_disk)?;
         // corpus nodes
@@ -240,7 +226,7 @@ mod tests {
         let mut properties = BTreeMap::new();
         properties.insert("edge.annos".to_string(), "deprel".to_string());
         properties.insert("node.annos".to_string(), "pos".to_string());
-        let remover = Remove::default();
+        let remover = Replace::default();
         assert_eq!(remover.manipulate_corpus(&mut g, &properties, None).is_ok(), true);
         let tmp_file = tempfile()?;
         let export = graphannis_core::graph::serialization::graphml::export(&g, None, tmp_file, |_| {});
