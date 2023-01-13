@@ -1,4 +1,4 @@
-use graphannis::{AnnotationGraph, update::{GraphUpdate, UpdateEvent}};
+use graphannis::{AnnotationGraph, update::{GraphUpdate, UpdateEvent}, graph::{Edge, AnnoKey}};
 use graphannis_core::{annostorage::ValueSearch, graph::NODE_NAME_KEY};
 use graphannis_core::util::split_qname;
 use itertools::Itertools;
@@ -25,6 +25,8 @@ const PROP_NODE_ANNOS: &str = "node.annos";
 const PROP_NODE_NAMES: &str = "node.names";
 const PROP_EDGE_ANNOS: &str = "edge.annos";
 const PROPVAL_SEP: &str = ",";
+const PROPVAL_OLD_NEW_SEP: &str = ":=";
+
 
 fn remove_nodes(graph: &mut AnnotationGraph, names: Vec<&str>) -> Result<(), Box<dyn std::error::Error>> {
     let mut update = GraphUpdate::default();
@@ -35,34 +37,38 @@ fn remove_nodes(graph: &mut AnnotationGraph, names: Vec<&str>) -> Result<(), Box
     Ok(())
 }
 
-fn remove_node_annos(graph: &mut AnnotationGraph, names: Vec<(Option<&str>, &str)>) -> Result<(), Box<dyn std::error::Error>> {
+
+fn remove_node_annos(graph: &mut AnnotationGraph, names: Vec<(AnnoKey, Option<AnnoKey>)>) -> Result<(), Box<dyn std::error::Error>> {
     let mut update = GraphUpdate::default();
     let annos = graph.get_node_annos();
-    for (ns, name) in names.into_iter() {
-        for r in annos.exact_anno_search(ns, name, ValueSearch::Any) {
+    for (old_key, new_key_opt) in names.into_iter() {
+        for r in annos.exact_anno_search(ns_from_key(&old_key), old_key.name.as_str(), ValueSearch::Any) {
             let m = r?;
             let node_name = annos.get_value_for_item(&m.node, &NODE_NAME_KEY)?.unwrap();
-            let del_ns = match ns {
-                None => "".to_string(),
-                Some(v) => v.to_string()
-            };
             update.add_event(UpdateEvent::DeleteNodeLabel { node_name: node_name.to_string(), 
-                                                            anno_ns: del_ns, 
-                                                            anno_name: name.to_string() })?;
+                                                            anno_ns: old_key.ns.to_string(), 
+                                                            anno_name: old_key.name.to_string() })?;
+            if let Some(ref new_key) = new_key_opt {
+                let value = annos.get_value_for_item(&m.node, &old_key)?.unwrap();
+                update.add_event(UpdateEvent::AddNodeLabel { node_name: node_name.to_string(), 
+                                                             anno_ns: new_key.ns.to_string(), 
+                                                             anno_name: new_key.name.to_string(), 
+                                                             anno_value: value.to_string() })?;
+            }
         }
     }
     graph.apply_update(&mut update, |_| {})?;
     Ok(())
 }
 
-fn remove_edge_annos(graph: &mut AnnotationGraph, names: Vec<(Option<&str>, &str)>) -> Result<(), Box<dyn std::error::Error>> {
+fn remove_edge_annos(graph: &mut AnnotationGraph, names: Vec<(AnnoKey, Option<AnnoKey>)>) -> Result<(), Box<dyn std::error::Error>> {
     let mut update = GraphUpdate::default();
     let node_annos = graph.get_node_annos();
-    for (ns, name) in names {
+    for (old_key, new_key_opt) in names {
         for component in graph.get_all_components(None, None) {
             let component_storage = graph.get_graphstorage(&component).unwrap();            
             let edge_annos = component_storage.get_anno_storage();           
-            for r in edge_annos.exact_anno_search(ns, name, ValueSearch::Any) {
+            for r in edge_annos.exact_anno_search(ns_from_key(&old_key), old_key.name.as_str(), ValueSearch::Any) {
                 let m = r?;                
                 let source_node = m.node;
                 let source_node_name = node_annos.get_value_for_item(&source_node, &NODE_NAME_KEY)?.unwrap();
@@ -75,7 +81,18 @@ fn remove_edge_annos(graph: &mut AnnotationGraph, names: Vec<(Option<&str>, &str
                                                                     component_type: component.get_type().to_string(), 
                                                                     component_name: component.name.to_string(), 
                                                                     anno_ns: m.anno_key.ns.to_string(), 
-                                                                    anno_name: name.to_string() })?;
+                                                                    anno_name: old_key.name.to_string() })?;
+                    if let Some(ref new_key) = new_key_opt {
+                        let value = edge_annos.get_value_for_item(&Edge { source: source_node, target: target_node}, &m.anno_key)?.unwrap();
+                        update.add_event(UpdateEvent::AddEdgeLabel { source_node: source_node_name.to_string(), 
+                                                                     target_node: target_node_name.to_string(), 
+                                                                     layer: component.layer.to_string(), 
+                                                                     component_type: component.get_type().to_string(),
+                                                                     component_name: component.name.to_string(), 
+                                                                     anno_ns: new_key.ns.to_string(), 
+                                                                     anno_name: new_key.name.to_string(), 
+                                                                     anno_value: value.to_string() })?;
+                    }
                 }
             }
         }
@@ -83,6 +100,44 @@ fn remove_edge_annos(graph: &mut AnnotationGraph, names: Vec<(Option<&str>, &str
     graph.apply_update(&mut update, |_| {})?;
     Ok(())
 }
+
+
+fn key_from_qname(qname: &str) -> AnnoKey {
+    let (ns, name) = split_qname(qname);
+    match ns {
+        None => AnnoKey { ns: "".to_string().into(), name: name.to_string().into() },
+        Some(ns_val) => AnnoKey {ns: ns_val.to_string().into(), name: name.to_string().into() }
+    }
+}
+
+fn ns_from_key<'a>(anno_key: &'a AnnoKey) -> Option<&'a str> {
+    if anno_key.ns.is_empty() {
+        None
+    } else {
+        Some(anno_key.ns.as_str())
+    }
+}
+
+
+fn read_property(value: &str) -> Result<Vec<(AnnoKey, Option<AnnoKey>)>, Box<dyn std::error::Error>> {
+    let mut names = Vec::new();
+    for entry in value.split(PROPVAL_SEP) {
+        let old_new = entry.split_once(PROPVAL_OLD_NEW_SEP);
+        let key_and_opt = match old_new {
+            None => {
+                // only old name, i. e. remove
+                (key_from_qname(entry), None)  
+            },
+            Some(tpl) => {
+                // new name specified, too
+                (key_from_qname(tpl.0), Some(key_from_qname(tpl.1)))
+            }
+        };
+        names.push(key_and_opt);
+    }
+    Ok(names)
+}
+
 
 impl Manipulator for Replace {
     fn manipulate_corpus(
@@ -95,12 +150,12 @@ impl Manipulator for Replace {
             let node_names = node_name_s.split(PROPVAL_SEP).collect_vec();
             remove_nodes(graph, node_names)?;
         }
-        if let Some(node_name_s ) = properties.get(&PROP_NODE_ANNOS.to_string()) {
-            let node_annos = node_name_s.split(PROPVAL_SEP).map(|s| split_qname(s)).collect_vec();
+        if let Some(anno_name_s ) = properties.get(&PROP_NODE_ANNOS.to_string()) {
+            let node_annos = read_property(anno_name_s)?;
             remove_node_annos(graph, node_annos)?;
         }
         if let Some(edge_name_s) = properties.get(&PROP_EDGE_ANNOS.to_string()) {
-            let edge_annos = edge_name_s.split(PROPVAL_SEP).map(|s| split_qname(s)).collect_vec();
+            let edge_annos = read_property(edge_name_s)?;
             remove_edge_annos(graph, edge_annos)?;
         }
         Ok(())
@@ -127,25 +182,46 @@ mod tests {
 
     #[test]
     fn test_remove_in_mem() {
-        let r = core_test(false); 
+        let r = core_test(false, false); 
         assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
     }
 
     #[test]
     fn test_remove_on_disk() {
-        let r = core_test(true); 
+        let r = core_test(true, false); 
         assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
     }
 
-    fn core_test(on_disk: bool) -> Result<()> {
-        let mut g = input_graph(on_disk)?;
+    #[test]
+    fn test_rename_in_mem() {
+        let r = core_test(false, true); 
+        assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
+    }
+
+    #[test]
+    fn test_rename_on_disk() {
+        let r = core_test(true, true); 
+        assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
+    }
+
+    fn core_test(on_disk: bool, rename: bool) -> Result<()> {
+        let mut g = input_graph(on_disk, false)?;
         let mut properties = BTreeMap::new();
-        properties.insert("edge.annos".to_string(), "deprel".to_string());
-        properties.insert("node.annos".to_string(), "pos".to_string());
+        let (node_anno_prop_val, edge_anno_prop_val) = if rename {
+            ("pos:=upos".to_string(), "deprel:=func".to_string())
+        } else {
+            ("pos".to_string(), "deprel".to_string())
+        };
+        properties.insert("node.annos".to_string(), node_anno_prop_val);
+        properties.insert("edge.annos".to_string(), edge_anno_prop_val);
         let replace = Replace::default();
         let result = replace.manipulate_corpus(&mut g, &properties, None);
         assert_eq!(result.is_ok(), true, "Probing merge result {:?}", &result);
-        let mut e_g = expected_output_graph(on_disk)?;
+        let mut e_g = if rename {
+            input_graph(on_disk, true)?
+        } else {
+            expected_output_graph(on_disk)?
+        };
         // corpus nodes
         let e_corpus_nodes: HashSet<String> = e_g.get_node_annos()
                                         .exact_anno_search(Some(&NODE_TYPE_KEY.ns), &NODE_TYPE_KEY.name, ValueSearch::Some("corpus"))
@@ -182,8 +258,10 @@ mod tests {
             "text",
             "lemma",
             "pos",
+            "upos",
             "node ->dep node",
-            "node ->dep[deprel=/.+/] node"
+            "node ->dep[deprel=/.+/] node",
+            "node ->dep[func=/.+/] node"
         ];
         let corpus_name = "current";
         let tmp_dir_e = tempdir_in(temp_dir())?;
@@ -222,7 +300,7 @@ mod tests {
     }
 
     fn export_test(on_disk: bool) -> Result<()> {
-        let mut g = input_graph(on_disk)?;
+        let mut g = input_graph(on_disk, false)?;
         let mut properties = BTreeMap::new();
         properties.insert("edge.annos".to_string(), "deprel".to_string());
         properties.insert("node.annos".to_string(), "pos".to_string());
@@ -234,7 +312,7 @@ mod tests {
         Ok(())
     }
 
-    fn input_graph(on_disk: bool) -> Result<AnnotationGraph> {
+    fn input_graph(on_disk: bool, new_names: bool) -> Result<AnnotationGraph> {
         let mut g = AnnotationGraph::new(on_disk)?;
         let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode { node_name: "root".to_string(), node_type: "corpus".to_string() })?;        
@@ -250,6 +328,11 @@ mod tests {
                                            layer: ANNIS_NS.to_string(), 
                                            component_type: AnnotationComponentType::PartOf.to_string(), 
                                            component_name: "".to_string() })?;
+        let pos_name = if new_names {
+            "upos"
+        } else {
+            "pos"
+        };
         for (ii, (txt, lemma_label, pos_label)) in [("I", "I", "PRON"),
                                                   ("am", "be", "VERB"), 
                                                   ("in", "in", "ADP"), 
@@ -271,7 +354,7 @@ mod tests {
                                                     anno_value: lemma_label.to_string() })?;
             u.add_event(UpdateEvent::AddNodeLabel { node_name: name.to_string(), 
                                                     anno_ns: "".to_string(), 
-                                                    anno_name: "pos".to_string(), 
+                                                    anno_name: pos_name.to_string(), 
                                                     anno_value: pos_label.to_string() })?;
             if i > 1 {
                 u.add_event(UpdateEvent::AddEdge { source_node: format!("root/b/doc#t{}", i - 1), 
@@ -288,7 +371,11 @@ mod tests {
         }
         let dep_layer_name = "syntax";
         let dep_comp_name = "dep";
-        let deprel_name = "deprel";
+        let deprel_name = if new_names {
+            "func"
+        } else {
+            "deprel"
+        };
         for (source, target, label) in [(2, 1, "subj"),
                                       (2, 3, "comp:pred"),
                                       (3, 4, "comp:obj")].iter() {
