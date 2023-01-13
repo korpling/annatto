@@ -1,4 +1,4 @@
-use graphannis::{AnnotationGraph, update::{GraphUpdate, UpdateEvent}, graph::Edge};
+use graphannis::{AnnotationGraph, update::{GraphUpdate, UpdateEvent}};
 use graphannis_core::{annostorage::ValueSearch, graph::NODE_NAME_KEY};
 use graphannis_core::util::split_qname;
 use itertools::Itertools;
@@ -140,7 +140,7 @@ mod tests {
 
     use crate::Result;
     use crate::manipulator::Manipulator;
-    use crate::manipulator::merger::{Merger, MergerProperties};
+    use crate::manipulator::re::Remove;
 
     use graphannis::{AnnotationGraph,CorpusStorage};
     use graphannis::corpusstorage::{QueryLanguage,ResultOrder,SearchQuery};
@@ -152,13 +152,13 @@ mod tests {
     use tempfile::{tempfile, tempdir_in};
 
     #[test]
-    fn test_merger_in_mem() {
+    fn test_remove_in_mem() {
         let r = core_test(false); 
         assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
     }
 
     #[test]
-    fn test_merger_on_disk() {
+    fn test_remove_on_disk() {
         let r = core_test(true); 
         assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
     }
@@ -206,6 +206,8 @@ mod tests {
         let queries = [
             "tok",
             "text",
+            "lemma",
+            "pos",
             "node ->dep node",
             "node ->dep[deprel=/.+/] node"
         ];
@@ -302,6 +304,11 @@ mod tests {
                                                    target_node: name.to_string(), 
                                                    layer: ANNIS_NS.to_string(), 
                                                    component_type: AnnotationComponentType::Ordering.to_string(), 
+                                                   component_name: "".to_string() })?;
+                u.add_event(UpdateEvent::AddEdge { source_node: format!("root/b/doc#t{}", i - 1), 
+                                                   target_node: name.to_string(), 
+                                                   layer: ANNIS_NS.to_string(), 
+                                                   component_type: AnnotationComponentType::Ordering.to_string(), 
                                                    component_name: "text".to_string() })?;
             }
         }
@@ -371,8 +378,27 @@ mod tests {
                                                    target_node: name.to_string(), 
                                                    layer: ANNIS_NS.to_string(), 
                                                    component_type: AnnotationComponentType::Ordering.to_string(), 
+                                                   component_name: "".to_string() })?;
+                u.add_event(UpdateEvent::AddEdge { source_node: format!("root/b/doc#t{}", i - 1), 
+                                                   target_node: name.to_string(), 
+                                                   layer: ANNIS_NS.to_string(), 
+                                                   component_type: AnnotationComponentType::Ordering.to_string(), 
                                                    component_name: "text".to_string() })?;
             }
+        }
+        let dep_layer_name = "syntax";
+        let dep_comp_name = "dep";
+        let deprel_name = "deprel";
+        for (source, target, label) in [(2, 1, "subj"),
+                                      (2, 3, "comp:pred"),
+                                      (3, 4, "comp:obj")].iter() {
+            let source_name = format!("root/b/doc#t{}", source);
+            let target_name = format!("root/b/doc#t{}", target);
+            u.add_event(UpdateEvent::AddEdge { source_node: source_name.to_string(), 
+                                               target_node: target_name.to_string(), 
+                                               layer: dep_layer_name.to_string(), 
+                                               component_type: AnnotationComponentType::Pointing.to_string(), 
+                                               component_name: dep_comp_name.to_string() })?;
         }
         g.apply_update(&mut u, |_msg| {})?;
         Ok(g)
