@@ -105,8 +105,8 @@ fn remove_edge_annos(graph: &mut AnnotationGraph, names: Vec<(AnnoKey, Option<An
 fn key_from_qname(qname: &str) -> AnnoKey {
     let (ns, name) = split_qname(qname);
     match ns {
-        None => AnnoKey { ns: "".to_string().into(), name: name.to_string().into() },
-        Some(ns_val) => AnnoKey {ns: ns_val.to_string().into(), name: name.to_string().into() }
+        None => AnnoKey { ns: "".into(), name: name.into() },
+        Some(ns_val) => AnnoKey {ns: ns_val.into(), name: name.into() }
     }
 }
 

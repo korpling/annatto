@@ -18,7 +18,6 @@ use graphannis_core::{
     util::split_qname
 };
 use itertools::Itertools;
-use smartstring;
 
 pub struct Merger {}
 
@@ -119,7 +118,7 @@ impl Merger {
         let mut ordered_items_by_doc: HashMap<String, HashMap<&str, std::vec::IntoIter<u64>>> = HashMap::new();
         let node_annos = graph.get_node_annos();
         for order_name in order_names {
-            let c = AnnotationComponent::new(AnnotationComponentType::Ordering, smartstring::alias::String::from(ANNIS_NS), smartstring::alias::String::from(order_name));            
+            let c = AnnotationComponent::new(AnnotationComponentType::Ordering, ANNIS_NS.into(), order_name.into());            
             if let Some(ordering) = graph.get_graphstorage(&c) {                
                 let start_nodes = ordering.source_nodes().filter(|n| ordering.get_ingoing_edges(*n.as_ref().unwrap()).count() == 0).collect_vec();
                 // there should be one start node per document
@@ -204,8 +203,7 @@ impl Merger {
                             ordered_items_by_name.get_mut(other_name.as_str()).unwrap().next()
                         };
                         if let Some(other_item) = other_opt {
-                            let other_key = AnnoKey {ns: smartstring::alias::String::from(""), 
-                                                    name: smartstring::alias::String::from(other_name)};
+                            let other_key = AnnoKey {ns: "".into(), name: other_name.into()};
                             let other_val = node_annos.get_value_for_item(&other_item, &other_key)?.unwrap();
                             if ref_val == other_val || 
                                 !optional_chars.is_empty() && clean_value(&ref_val, &optional_chars) == clean_value(&other_val, &optional_chars) {  // text values match
@@ -425,13 +423,13 @@ impl Merger {
             for spec in skip_component_spec.split(PROPVAL_SEP) {
                 let split_spec = split_qname(spec);
                 let layer = match split_spec.0 {
-                    None => smartstring::alias::String::from(""),
-                    Some(v) => smartstring::alias::String::from(v)
+                    None => "",
+                    Some(v) => v
                 };
-                let name = smartstring::alias::String::from(split_spec.1);
-                for c in graph.get_all_components(None, Some(name.as_str())) {
+                let name = split_spec.1;
+                for c in graph.get_all_components(None, Some(name)) {
                     if c.layer == layer {
-                        skip_components.insert(AnnotationComponent::new(c.get_type(), layer.clone(), name.clone()));
+                        skip_components.insert(AnnotationComponent::new(c.get_type(), layer.into(), name.into()));
                     }
                 }
             }
@@ -455,7 +453,7 @@ impl Manipulator for Merger {
         let on_error = ErrorPolicy::try_from(properties.get(&MergerProperties::OnError.to_string()))?;
         let order_names = properties.get(&MergerProperties::CheckNames.to_string()).unwrap().split(PROPVAL_SEP).collect::<Vec<&str>>();  
         let keep_name = properties.get(&MergerProperties::KeepName.to_string()).unwrap();
-        let keep_name_key = AnnoKey { ns: smartstring::alias::String::from(""), name: smartstring::alias::String::from(keep_name) };
+        let keep_name_key = AnnoKey { ns: "".into(), name: keep_name.into() };
         let optional_toks = match properties.get(&MergerProperties::OptionalValues.to_string()) {
             None => HashSet::new(),
             Some(v) => v.split("\",\"").map(|s| s.to_string().replace("\"", "")).collect::<HashSet<String>>()
