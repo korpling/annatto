@@ -35,18 +35,6 @@ impl Module for Remove {
     }
 }
 
-impl Manipulator for Rename {
-    fn manipulate_corpus(
-        &self,
-        graph: &mut graphannis::AnnotationGraph,
-        properties: &std::collections::BTreeMap<String, String>,
-        tx: Option<crate::workflow::StatusSender>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-
-        Ok(())
-    }
-}
-
 const PROP_NODE_ANNOS: &str = "node.annos";
 const PROP_NODE_NAMES: &str = "node.names";
 const PROP_EDGE_ANNOS: &str = "edge.annos";
@@ -88,7 +76,7 @@ fn remove_edge_annos(graph: &mut AnnotationGraph, names: Vec<(Option<&str>, &str
         for component in graph.get_all_components(None, None) {
             let component_storage = graph.get_graphstorage(&component).unwrap();            
             let edge_annos = component_storage.get_anno_storage();           
-            for r in edge_annos.exact_anno_search(ns, name, ValueSearch::Some("subj")) {
+            for r in edge_annos.exact_anno_search(ns, name, ValueSearch::Any) {
                 let m = r?;                
                 let source_node = m.node;
                 let source_node_name = node_annos.get_value_for_item(&source_node, &NODE_NAME_KEY)?.unwrap();
@@ -103,7 +91,7 @@ fn remove_edge_annos(graph: &mut AnnotationGraph, names: Vec<(Option<&str>, &str
                                                                     anno_ns: m.anno_key.ns.to_string(), 
                                                                     anno_name: name.to_string() })?;
                 }
-            }            
+            }
         }
     }
     graph.apply_update(&mut update, |_| {})?;
@@ -115,7 +103,7 @@ impl Manipulator for Remove {
         &self,
         graph: &mut graphannis::AnnotationGraph,
         properties: &std::collections::BTreeMap<String, String>,
-        tx: Option<crate::workflow::StatusSender>,
+        _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(node_name_s ) = properties.get(&PROP_NODE_NAMES.to_string()) {
             let node_names = node_name_s.split(PROPVAL_SEP).collect_vec();
@@ -388,10 +376,7 @@ mod tests {
         }
         let dep_layer_name = "syntax";
         let dep_comp_name = "dep";
-        let deprel_name = "deprel";
-        for (source, target, label) in [(2, 1, "subj"),
-                                      (2, 3, "comp:pred"),
-                                      (3, 4, "comp:obj")].iter() {
+        for (source, target) in [(2, 1), (2, 3), (3, 4)].iter() {
             let source_name = format!("root/b/doc#t{}", source);
             let target_name = format!("root/b/doc#t{}", target);
             u.add_event(UpdateEvent::AddEdge { source_node: source_name.to_string(), 
