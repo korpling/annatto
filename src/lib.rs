@@ -35,7 +35,7 @@ pub fn manipulator_by_name(name: &str) -> Result<Box<dyn Manipulator>> {
         "Merger" => Ok(Box::new(
             manipulator::merger::Merger::default(),
         )), //FIXME fix path
-        "remove" => Ok(Box::new(manipulator::re::Remove::default())),
+        manipulator::re::REPLACE_ID => Ok(Box::new(manipulator::re::Replace::default())),
         _ => Err(AnnattoError::NoSuchModule(name.to_string())),
     }
 }
