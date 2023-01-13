@@ -38,10 +38,10 @@ fn remove_nodes(graph: &mut AnnotationGraph, names: Vec<&str>) -> Result<(), Box
 }
 
 
-fn remove_node_annos(graph: &mut AnnotationGraph, names: Vec<(AnnoKey, Option<AnnoKey>)>) -> Result<(), Box<dyn std::error::Error>> {
+fn remove_node_annos(graph: &mut AnnotationGraph, anno_keys: Vec<(AnnoKey, Option<AnnoKey>)>) -> Result<(), Box<dyn std::error::Error>> {
     let mut update = GraphUpdate::default();
     let annos = graph.get_node_annos();
-    for (old_key, new_key_opt) in names.into_iter() {
+    for (old_key, new_key_opt) in anno_keys.into_iter() {
         for r in annos.exact_anno_search(ns_from_key(&old_key), old_key.name.as_str(), ValueSearch::Any) {
             let m = r?;
             let node_name = annos.get_value_for_item(&m.node, &NODE_NAME_KEY)?.unwrap();
@@ -61,10 +61,10 @@ fn remove_node_annos(graph: &mut AnnotationGraph, names: Vec<(AnnoKey, Option<An
     Ok(())
 }
 
-fn remove_edge_annos(graph: &mut AnnotationGraph, names: Vec<(AnnoKey, Option<AnnoKey>)>) -> Result<(), Box<dyn std::error::Error>> {
+fn remove_edge_annos(graph: &mut AnnotationGraph, anno_keys: Vec<(AnnoKey, Option<AnnoKey>)>) -> Result<(), Box<dyn std::error::Error>> {
     let mut update = GraphUpdate::default();
     let node_annos = graph.get_node_annos();
-    for (old_key, new_key_opt) in names {
+    for (old_key, new_key_opt) in anno_keys {
         for component in graph.get_all_components(None, None) {
             let component_storage = graph.get_graphstorage(&component).unwrap();            
             let edge_annos = component_storage.get_anno_storage();           
