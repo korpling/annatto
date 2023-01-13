@@ -1,5 +1,6 @@
 //! Contains manipulators and their traits.
 pub mod merger;
+pub mod re;
 
 use crate::{workflow::StatusSender, Module, StepID};
 use graphannis::AnnotationGraph;
