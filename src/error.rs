@@ -59,9 +59,9 @@ pub enum AnnattoError {
     Infallible(std::convert::Infallible),
     #[error("CSV error: {0}")]
     CSV(#[from] csv::Error),
-    #[error("Checks failed: {0}")]
+    #[error("Checks failed: {failed_checks}")]
     ChecksFailed {
-        checks: Vec<String>
+        failed_checks: String
     }
 }
 

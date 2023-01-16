@@ -1,15 +1,16 @@
-use std::path::Path;
+use std::env::temp_dir;
 
-use csv::{Reader, ReaderBuilder};
-use graphannis::{AnnotationGraph, corpusstorage::{ResultOrder, SearchQuery, QueryLanguage}, CorpusStorage};
+use csv::ReaderBuilder;
+use graphannis::{AnnotationGraph, corpusstorage::{SearchQuery, QueryLanguage}, CorpusStorage};
+use tempfile::tempdir_in;
 
-use crate::{Manipulator, Module, error::AnnattoError, workflow::StatusMessage};
+use crate::{Manipulator, Module, error::AnnattoError};
 
 pub const MODULE_NAME: &str = "check";
 const PROP_CONFIG_PATH: &str = "config.path";
 const CONFIG_FILE_ENTRY_SEP: char = ',';
 
-struct Check {}
+pub struct Check {}
 
 impl Default for Check {
     fn default() -> Self {
@@ -23,51 +24,44 @@ impl Module for Check {
     }
 }
 
-fn read_config_file<'a>(path: &'a str) -> Result<Vec<(&'a str, &'a str)>, Box<dyn std::error::Error>> {
-    let reader = ReaderBuilder::new().delimiter(CONFIG_FILE_ENTRY_SEP as u8).from_path(config_path)?;
+fn read_config_file(path: &str) -> Result<Vec<(String, String)>, Box<dyn std::error::Error>> {
+    let mut reader = ReaderBuilder::new().delimiter(CONFIG_FILE_ENTRY_SEP as u8).from_path(path)?;
     let mut checks = Vec::new();
         for (line_index, entry) in reader.records().into_iter().enumerate() {
             let record = entry?;
             if record.len() != 2 {
-                let message_s = format!("Entry in line {} has invalid length ({} columns instead of 2).", line_index, record.len());
-                if let Some(sender) = &tx {
-                    let message = StatusMessage::Failed(message_s);
-                    sender.send(message)?;
-                } else {
-                    let err = AnnattoError::CSV(message_s);
-                    return Box::new(Err(err));
-                }
+                let message = format!("Entry in line {} has invalid length ({} columns instead of 2).", line_index, record.len());
+                let err = AnnattoError::Manipulator { reason: message, manipulator: MODULE_NAME.to_string() };
+                return Err(Box::new(err));
             }
-            checks.push((record.get(0).unwrap().trim(), record.get(1).unwrap().trim()))
+            checks.push((record.get(0).unwrap().trim().to_string(), record.get(1).unwrap().trim().to_string()))
         }
     Ok(checks)
 }
 
-fn run_checks(graph: &AnnotationGraph, checks_and_results: Vec<(&str, &str)>) -> Result<(), Box<dyn std::error::Error>> {
+fn run_checks(graph: &mut AnnotationGraph, 
+             checks_and_results: Vec<(String, String)>) -> Result<(), Box<dyn std::error::Error>> {
     let mut fails = Vec::new();
     let corpus_name = "current";
     let tmp_dir = tempdir_in(temp_dir())?;        
     graph.save_to(&tmp_dir.path().join(corpus_name))?;
     let cs = CorpusStorage::with_auto_cache_size(&tmp_dir.path(), true)?;        
     for (query_s, expected_result) in checks_and_results {
-        let query = SearchQuery {
-            corpus_names: &[corpus_name],
-            query: query_s,
-            query_language: QueryLanguage::AQL,
-            timeout: None
-        };
-        let result = cs.find(query, 0, None, ResultOrder::Normal);        
-        if let Ok(matches) = result {
-            let l = matches.len();
-            let passes = match expected_result.parse::<usize>() {
+        let result = run_query(&cs, &query_s[..]);
+        if let Ok(n) = result {
+            let passes = match expected_result.parse::<u64>() {
                 Ok(number) => {
-                    number == l
+                    number == n
                 },
-                Err => {
-                    match expected_result {
-                        "*" => l >= 0,
-                        "+" => l >= 1,
-                        "?" => 0 <= l <= 1
+                Err(_) => {
+                    match &expected_result[..] {
+                        "*" => n.ge(&0),
+                        "+" => n.ge(&1),
+                        "?" => n.ge(&0) && n.le(&1),
+                        _ => {
+                            let second_result = run_query(&cs, &expected_result);
+                            !second_result.is_err() && second_result.unwrap() == n
+                        }
                     }
                 }
             };
@@ -75,13 +69,26 @@ fn run_checks(graph: &AnnotationGraph, checks_and_results: Vec<(&str, &str)>) ->
                 fails.push(query_s.to_string());
             }
         } else {
-            fails.push(format!("Could not be processed: {}", query_s));
+            fails.push(format!("Could not be processed: {},{}", query_s, &expected_result));
         }
     }
     if fails.is_empty() {
         Ok(())
+    } else {
+        Err(Box::new(AnnattoError::ChecksFailed { failed_checks: fails.join("\n").to_string() }))
     }
-    Err(Box::new(AnnattoError::ChecksFailed { checks: fails }))
+}
+
+fn run_query(storage: &CorpusStorage, 
+             query_s: &str) -> Result<u64, Box<dyn std::error::Error>> {
+    let query = SearchQuery {
+        corpus_names: &["current"],
+        query: query_s,
+        query_language: QueryLanguage::AQL,
+        timeout: None
+    };
+    let c = storage.count(query)?;
+    Ok(c)
 }
 
 impl Manipulator for Check {
@@ -89,14 +96,13 @@ impl Manipulator for Check {
         &self,
         graph: &mut graphannis::AnnotationGraph,
         properties: &std::collections::BTreeMap<String, String>,
-        tx: Option<crate::workflow::StatusSender>,
+        _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let config_path = match properties.get(&PROP_CONFIG_PATH.to_string()) {
             None => return Err(Box::new(AnnattoError::Manipulator { reason: "No test file path provided".to_string(), manipulator: self.module_name().to_string() })),
             Some(path_spec) => &path_spec[..]
         };
         let checks = read_config_file(config_path)?;
-        
-        Ok(())
+        run_checks(graph, checks)
     }
 }
