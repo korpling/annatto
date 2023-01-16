@@ -32,10 +32,9 @@ pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
 pub fn manipulator_by_name(name: &str) -> Result<Box<dyn Manipulator>> {
     match name {
         "DoNothingManipulator" => Ok(Box::new(manipulator::DoNothingManipulator::default())),
-        "Merger" => Ok(Box::new(
-            manipulator::merger::Merger::default(),
-        )), //FIXME fix path
-        manipulator::re::REPLACE_ID => Ok(Box::new(manipulator::re::Replace::default())),
+        manipulator::merge::MODULE_NAME => Ok(Box::new(manipulator::merge::Merge::default())),
+        manipulator::re::MODULE_NAME => Ok(Box::new(manipulator::re::Replace::default())),
+        manipulator::check::MODULE_NAME => Ok(Box::new(manipulator::check::Check::default())),
         _ => Err(AnnattoError::NoSuchModule(name.to_string())),
     }
 }

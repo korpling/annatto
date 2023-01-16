@@ -7,7 +7,7 @@ use crate::{Manipulator, Module};
 
 pub struct Replace {}
 
-pub const REPLACE_ID: &str = "replace";
+pub const MODULE_NAME: &str = "replace";
 
 impl Default for Replace {
     fn default() -> Self {
@@ -17,7 +17,7 @@ impl Default for Replace {
 
 impl Module for Replace {
     fn module_name(&self) -> &str {
-        REPLACE_ID
+        MODULE_NAME
     }
 }
 

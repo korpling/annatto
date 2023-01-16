@@ -59,6 +59,10 @@ pub enum AnnattoError {
     Infallible(std::convert::Infallible),
     #[error("CSV error: {0}")]
     CSV(#[from] csv::Error),
+    #[error("Checks failed: {0}")]
+    ChecksFailed {
+        checks: Vec<String>
+    }
 }
 
 impl<T> From<std::sync::PoisonError<T>> for AnnattoError {

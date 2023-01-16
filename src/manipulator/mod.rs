@@ -1,4 +1,5 @@
 //! Contains manipulators and their traits.
+pub mod check;
 pub mod merger;
 pub mod re;
 
