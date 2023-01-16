@@ -19,12 +19,12 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 
-pub struct Merger {}
+pub struct Merge {}
 
 
-impl Default for Merger {
+impl Default for Merge {
     fn default() -> Self {
-        Merger {}
+        Merge {}
     }
 }
 
@@ -113,7 +113,7 @@ fn clean_value(value: &Cow<str>, remove_chars: &HashSet<char>) -> String {
 }
 
 
-impl Merger {
+impl Merge {
     fn retrieve_ordered_nodes<'a>(&self, graph: &AnnotationGraph, order_names: Vec<&'a str>) -> Result<HashMap<String, HashMap<&'a str, std::vec::IntoIter<u64>>>, Box<dyn std::error::Error>> {        
         let mut ordered_items_by_doc: HashMap<String, HashMap<&str, std::vec::IntoIter<u64>>> = HashMap::new();
         let node_annos = graph.get_node_annos();
@@ -439,7 +439,7 @@ impl Merger {
 }
 
 
-impl Manipulator for Merger {
+impl Manipulator for Merge {
     fn manipulate_corpus(
         &self,
         graph: &mut AnnotationGraph,
@@ -494,9 +494,9 @@ impl Manipulator for Merger {
     }
 }
 
-const MODULE_NAME: &str = "Merger";
+pub const MODULE_NAME: &str = "merge";
 
-impl Module for Merger {
+impl Module for Merge {
     fn module_name(&self) -> &str {
         MODULE_NAME
     }
@@ -509,7 +509,7 @@ mod tests {
 
     use crate::Result;
     use crate::manipulator::Manipulator;
-    use crate::manipulator::merger::{Merger, MergerProperties};
+    use crate::manipulator::merge::{Merge, MergerProperties};
 
     use graphannis::{AnnotationGraph,CorpusStorage};
     use graphannis::corpusstorage::{QueryLanguage,ResultOrder,SearchQuery};
@@ -538,7 +538,7 @@ mod tests {
         properties.insert(MergerProperties::CheckNames.to_string(), "norm,text,syntext".to_string());
         properties.insert(MergerProperties::KeepName.to_string(), "norm".to_string());
         properties.insert(MergerProperties::OptionalValues.to_string(), "\"NOISE\"".to_string());
-        let merger = Merger::default();
+        let merger = Merge::default();
         let merge_r = merger.manipulate_corpus(&mut g, &properties, None);
         assert_eq!(merge_r.is_ok(), true, "Probing merge result {:?}", &merge_r);
         let mut e_g = expected_output_graph(on_disk)?;
@@ -623,7 +623,7 @@ mod tests {
         let mut properties = BTreeMap::new();
         properties.insert("check.names".to_string(), "norm,text,syntext".to_string());
         properties.insert("keep.name".to_string(), "norm".to_string());
-        let merger = Merger::default();
+        let merger = Merge::default();
         assert_eq!(merger.manipulate_corpus(&mut g, &properties, None).is_ok(), true);
         let tmp_file = tempfile()?;
         let export = graphannis_core::graph::serialization::graphml::export(&g, None, tmp_file, |_| {});
