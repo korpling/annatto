@@ -8,7 +8,7 @@ use crate::{Manipulator, Module, error::AnnattoError};
 
 pub const MODULE_NAME: &str = "check";
 const PROP_CONFIG_PATH: &str = "config.path";
-const CONFIG_FILE_ENTRY_SEP: char = ',';
+const CONFIG_FILE_ENTRY_SEP: char = '\t';
 
 pub struct Check {}
 
@@ -58,7 +58,7 @@ fn run_checks(graph: &mut AnnotationGraph,
                         "*" => n.ge(&0),
                         "+" => n.ge(&1),
                         "?" => n.ge(&0) && n.le(&1),
-                        _ => {
+                        _ => { // interpret numeric digit as query as well
                             let second_result = run_query(&cs, &expected_result);
                             !second_result.is_err() && second_result.unwrap() == n
                         }
