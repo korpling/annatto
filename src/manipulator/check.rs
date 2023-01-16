@@ -8,7 +8,7 @@ use crate::{Manipulator, Module, error::AnnattoError};
 
 pub const MODULE_NAME: &str = "check";
 const PROP_CONFIG_PATH: &str = "config.path";
-const CONFIG_FILE_ENTRY_SEP: char = '\t';
+const CONFIG_FILE_ENTRY_SEP: u8 = b'\t';
 
 pub struct Check {}
 
@@ -25,7 +25,7 @@ impl Module for Check {
 }
 
 fn read_config_file(path: &str) -> Result<Vec<(String, String)>, Box<dyn std::error::Error>> {
-    let mut reader = ReaderBuilder::new().delimiter(CONFIG_FILE_ENTRY_SEP as u8).from_path(path)?;
+    let mut reader = ReaderBuilder::new().delimiter(CONFIG_FILE_ENTRY_SEP).from_path(path)?;
     let mut checks = Vec::new();
         for (line_index, entry) in reader.records().into_iter().enumerate() {
             let record = entry?;
