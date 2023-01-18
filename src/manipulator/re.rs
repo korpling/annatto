@@ -30,7 +30,6 @@ const PROP_MOVE: &str = "move.node.annos";
 const PROPVAL_SEP: &str = ",";
 const PROPVAL_OLD_NEW_SEP: &str = ":=";
 
-
 fn remove_nodes(graph: &mut AnnotationGraph, names: Vec<&str>) -> Result<(), Box<dyn std::error::Error>> {
     let mut update = GraphUpdate::default();
     for name in names {
@@ -40,18 +39,20 @@ fn remove_nodes(graph: &mut AnnotationGraph, names: Vec<&str>) -> Result<(), Box
     Ok(())
 }
 
-
-fn label_with_new_target(graph: &AnnotationGraph,
-                         update: &mut GraphUpdate,
-                         m: &Match,
-                         target_key: &AnnoKey) -> Result<(), Box<dyn std::error::Error>> {                            
+fn place_at_new_target(graph: &AnnotationGraph,
+                       update: &mut GraphUpdate,
+                       m: &Match,
+                       target_key: &AnnoKey) -> Result<(), Box<dyn std::error::Error>> {                            
     let coverage_component = AnnotationComponent::new(AnnotationComponentType::Coverage, ANNIS_NS.into(), "".into());
     let coverage_storage = graph.get_graphstorage(&coverage_component).unwrap();    
     let order_component = AnnotationComponent::new(AnnotationComponentType::Ordering, ANNIS_NS.to_string().into(), target_key.ns.clone());
     let order_storage = graph.get_graphstorage(&order_component).unwrap();
-    let node = m.node;
+    let source_node = m.node;
     let mut covered_terminal_nodes = Vec::new();
-    CycleSafeDFS::new(coverage_storage.as_edgecontainer(), node, 1, usize::MAX)
+    CycleSafeDFS::new(coverage_storage.as_edgecontainer(), 
+                      source_node.into(),
+                      1, 
+                      usize::MAX)
     .into_iter()
     .map(|r| r.unwrap().node.clone())
     .filter(|n| !coverage_storage.has_outgoing_edges(*n).unwrap())
@@ -104,7 +105,6 @@ fn label_with_new_target(graph: &AnnotationGraph,
     Ok(())
 }
 
-
 fn replace_node_annos(graph: &mut AnnotationGraph, 
                       anno_keys: Vec<(AnnoKey, Option<AnnoKey>)>, 
                       move_by_ns: bool) -> Result<(), Box<dyn std::error::Error>> {
@@ -119,7 +119,7 @@ fn replace_node_annos(graph: &mut AnnotationGraph,
                                                             anno_name: old_key.name.to_string() })?;
             if let Some(ref new_key) = new_key_opt {
                 if move_by_ns {
-                    label_with_new_target(graph, &mut update, &m, new_key)?;
+                    place_at_new_target(graph, &mut update, &m, new_key)?;
                 } else {
                     let value = annos.get_value_for_item(&m.node, &old_key)?.unwrap();
                     update.add_event(UpdateEvent::AddNodeLabel { node_name: node_name.to_string(), 
@@ -175,7 +175,6 @@ fn replace_edge_annos(graph: &mut AnnotationGraph,
     Ok(())
 }
 
-
 fn key_from_qname(qname: &str) -> AnnoKey {
     let (ns, name) = split_qname(qname);
     match ns {
@@ -192,8 +191,7 @@ fn ns_from_key<'a>(anno_key: &'a AnnoKey) -> Option<&'a str> {
     }
 }
 
-
-fn read_property(value: &str) -> Result<Vec<(AnnoKey, Option<AnnoKey>)>, Box<dyn std::error::Error>> {
+fn read_replace_property_value(value: &str) -> Result<Vec<(AnnoKey, Option<AnnoKey>)>, Box<dyn std::error::Error>> {
     let mut names = Vec::new();
     for entry in value.split(PROPVAL_SEP) {
         let old_new = entry.split_once(PROPVAL_OLD_NEW_SEP);
@@ -212,7 +210,6 @@ fn read_property(value: &str) -> Result<Vec<(AnnoKey, Option<AnnoKey>)>, Box<dyn
     Ok(names)
 }
 
-
 impl Manipulator for Replace {
     fn manipulate_corpus(
         &self,
@@ -229,11 +226,11 @@ impl Manipulator for Replace {
             remove_nodes(graph, node_names)?;
         }
         if let Some(anno_name_s ) = properties.get(&PROP_NODE_ANNOS.to_string()) {
-            let node_annos = read_property(anno_name_s)?;
+            let node_annos = read_replace_property_value(anno_name_s)?;
             replace_node_annos(graph, node_annos, move_by_ns)?;
         }
         if let Some(edge_name_s) = properties.get(&PROP_EDGE_ANNOS.to_string()) {
-            let edge_annos = read_property(edge_name_s)?;
+            let edge_annos = read_replace_property_value(edge_name_s)?;
             replace_edge_annos(graph, edge_annos)?;
         }
         Ok(())
