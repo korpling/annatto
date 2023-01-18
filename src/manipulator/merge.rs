@@ -648,7 +648,7 @@ mod tests {
                                            layer: ANNIS_NS.to_string(), 
                                            component_type: AnnotationComponentType::PartOf.to_string(), 
                                            component_name: "".to_string() })?;
-        for i in 1 .. 5 {
+        for i in 0 .. 5 {
             u.add_event(UpdateEvent::AddNode { node_name: format!("root/a/doc#t{}", i), node_type: "node".to_string() })?;
             u.add_event(UpdateEvent::AddNodeLabel { node_name: format!("root/a/doc#t{}", i), 
                                                     anno_ns: ANNIS_NS.to_string(), 
@@ -888,7 +888,7 @@ mod tests {
                                            layer: ANNIS_NS.to_string(), 
                                            component_type: AnnotationComponentType::PartOf.to_string(), 
                                            component_name: "".to_string() })?;
-        for i in 1 .. 5 {
+        for i in 0 .. 5 {
             u.add_event(UpdateEvent::AddNode { node_name: format!("root/a/doc#t{}", i), node_type: "node".to_string() })?;
             u.add_event(UpdateEvent::AddNodeLabel { node_name: format!("root/a/doc#t{}", i), 
                                                     anno_ns: ANNIS_NS.to_string(), 
