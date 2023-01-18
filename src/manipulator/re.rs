@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, collections::BTreeSet};
 
 use graphannis::{AnnotationGraph, update::{GraphUpdate, UpdateEvent}, graph::{Edge, AnnoKey, Match}, model::{AnnotationComponentType, AnnotationComponent}};
 use graphannis_core::{annostorage::ValueSearch, graph::{NODE_NAME_KEY, ANNIS_NS}, dfs::CycleSafeDFS};
@@ -56,26 +56,28 @@ fn label_with_new_target(graph: &AnnotationGraph,
     .map(|r| r.unwrap().node.clone())
     .filter(|n| !coverage_storage.has_outgoing_edges(*n).unwrap())
     .for_each(|n|covered_terminal_nodes.push(n));
-    let mut covering_nodes = Vec::new();
+    let mut covering_nodes = BTreeSet::new();
     for terminal in covered_terminal_nodes {
         for reachable in CycleSafeDFS::new_inverse(coverage_storage.as_edgecontainer(), terminal, 1, usize::MAX) {
             let covering_node = reachable?.node;            
             let is_part_of_ordering = order_storage.has_outgoing_edges(covering_node)? || order_storage.get_ingoing_edges(covering_node).count() > 0;
             if is_part_of_ordering {                       
-                covering_nodes.push(covering_node);
+                covering_nodes.insert(covering_node);
             }
         }
     }
     let node_annos = graph.get_node_annos();
-    let anno_value = node_annos.get_value_for_item(&m.node, &m.anno_key)?.unwrap();
+    let anno_value = node_annos.get_value_for_item(&m.node, &m.anno_key)?.unwrap();    
     match covering_nodes.len().partial_cmp(&1) {
         Some(Ordering::Equal) => {
-            let target_name = node_annos.get_value_for_item(covering_nodes.get(0).unwrap(), &NODE_NAME_KEY)?.unwrap();
+            let target_name = node_annos.get_value_for_item(&covering_nodes.pop_last().unwrap(), &NODE_NAME_KEY)?.unwrap();
             update.add_event(UpdateEvent::AddNodeLabel { node_name: target_name.to_string(), anno_ns: target_key.ns.to_string(), anno_name: target_key.name.to_string(), anno_value: anno_value.to_string() })?;
         },
         Some(Ordering::Greater) => {
             // create new span first (we could also check for an exiting one, but it sounds expensive and not promising)    
-            let doc_name = node_annos.get_value_for_item(covering_nodes.get(0).unwrap(), &NODE_NAME_KEY)?.unwrap().rsplit_once("#").unwrap().0.to_string();
+            let probe_node = covering_nodes.pop_last().unwrap();
+            let doc_name = node_annos.get_value_for_item(&probe_node, &NODE_NAME_KEY)?.unwrap().rsplit_once("#").unwrap().0.to_string();
+            covering_nodes.insert(probe_node);
             let node_name_pref = format!("{}#sSpan", doc_name);
             let existing = node_annos.get_all_values(&NODE_NAME_KEY, false)?
                                     .iter()
@@ -83,7 +85,7 @@ fn label_with_new_target(graph: &AnnotationGraph,
                                     .collect_vec().len();
             let span_name = format!("{}{}", node_name_pref, existing + 1);
             update.add_event(UpdateEvent::AddNode { node_name: span_name.clone(), node_type: "node".to_string() })?;
-            update.add_event(UpdateEvent::AddNodeLabel { node_name: span_name.clone(), anno_ns: target_key.ns.to_string(), anno_name: target_key.name.to_string(), anno_value: anno_value.to_string() })?;
+            update.add_event(UpdateEvent::AddNodeLabel { node_name: span_name.clone(), anno_ns: target_key.ns.to_string(), anno_name: target_key.name.to_string(), anno_value: anno_value.to_string() })?;            
             for member in covering_nodes {
                 let member_name = node_annos.get_value_for_item(&member, &NODE_NAME_KEY)?.unwrap();
                 update.add_event(UpdateEvent::AddEdge { source_node: span_name.clone(), 
@@ -240,7 +242,7 @@ impl Manipulator for Replace {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{BTreeMap, HashSet};
+    use std::collections::{BTreeMap, BTreeSet};
     use std::env::temp_dir;
 
     use crate::Result;
@@ -299,13 +301,13 @@ mod tests {
             expected_output_graph(on_disk)?
         };
         // corpus nodes
-        let e_corpus_nodes: HashSet<String> = e_g.get_node_annos()
+        let e_corpus_nodes: BTreeSet<String> = e_g.get_node_annos()
                                         .exact_anno_search(Some(&NODE_TYPE_KEY.ns), &NODE_TYPE_KEY.name, ValueSearch::Some("corpus"))
                                         .into_iter()
                                         .map(|r| r.unwrap().node)
                                         .map(|id_| e_g.get_node_annos().get_value_for_item(&id_, &NODE_NAME_KEY).unwrap().unwrap().to_string())
                                         .collect();
-        let g_corpus_nodes: HashSet<String> = g.get_node_annos()
+        let g_corpus_nodes: BTreeSet<String> = g.get_node_annos()
                                         .exact_anno_search(Some(&NODE_TYPE_KEY.ns), &NODE_TYPE_KEY.name, ValueSearch::Some("corpus"))
                                         .into_iter()
                                         .map(|r| r.unwrap().node)
@@ -385,13 +387,13 @@ mod tests {
         assert_eq!(result.is_ok(), true, "Probing merge result {:?}", &result);
         let mut e_g = expected_output_for_move(on_disk)?;
         // corpus nodes
-        let e_corpus_nodes: HashSet<String> = e_g.get_node_annos()
+        let e_corpus_nodes: BTreeSet<String> = e_g.get_node_annos()
                                         .exact_anno_search(Some(&NODE_TYPE_KEY.ns), &NODE_TYPE_KEY.name, ValueSearch::Some("corpus"))
                                         .into_iter()
                                         .map(|r| r.unwrap().node)
                                         .map(|id_| e_g.get_node_annos().get_value_for_item(&id_, &NODE_NAME_KEY).unwrap().unwrap().to_string())
                                         .collect();
-        let g_corpus_nodes: HashSet<String> = g.get_node_annos()
+        let g_corpus_nodes: BTreeSet<String> = g.get_node_annos()
                                         .exact_anno_search(Some(&NODE_TYPE_KEY.ns), &NODE_TYPE_KEY.name, ValueSearch::Some("corpus"))
                                         .into_iter()
                                         .map(|r| r.unwrap().node)
@@ -435,7 +437,7 @@ mod tests {
                 timeout: None
             };
             let matches_e = cs_e.find(query.clone(), 0, None, ResultOrder::Normal)?;
-            let matches_g = cs_g.find(query, 0, None, ResultOrder::Normal)?;
+            let matches_g = cs_g.find(query, 0, None, ResultOrder::Normal)?;    
             assert_eq!(matches_e.len(), matches_g.len(), "Failed with query: {}", query_s);
             for (m_e, m_g) in matches_e.into_iter().zip(matches_g.into_iter()) {
                 assert_eq!(m_e, m_g);
@@ -461,13 +463,38 @@ mod tests {
         let mut properties = BTreeMap::new();
         properties.insert("edge.annos".to_string(), "deprel".to_string());
         properties.insert("node.annos".to_string(), "pos".to_string());
-        let remover = Replace::default();
-        assert_eq!(remover.manipulate_corpus(&mut g, &properties, None).is_ok(), true);
+        let replace = Replace::default();
+        assert_eq!(replace.manipulate_corpus(&mut g, &properties, None).is_ok(), true);
         let tmp_file = tempfile()?;
         let export = graphannis_core::graph::serialization::graphml::export(&g, None, tmp_file, |_| {});
         assert_eq!(export.is_ok(), true, "Export fails: {:?}", &export);
         Ok(())
     }
+
+    #[test]
+    fn test_export_move_result_mem() {
+        let export = export_test_move_result(false);
+        assert_eq!(export.is_ok(), true, "Testing export of move result ends with Err: {:?}", &export);
+    }
+
+    #[test]
+    fn test_export_move_result_disk() {
+        let export = export_test_move_result(true);
+        assert_eq!(export.is_ok(), true, "Testing export of move result ends with Err: {:?}", &export);
+    }
+
+    fn export_test_move_result(on_disk: bool) -> Result<()> {
+        let mut g = input_graph_for_move(on_disk)?;
+        let mut properties = BTreeMap::new();
+        properties.insert("node.annos".to_string(), "norm::pos:=dipl::derived_pos".to_string());
+        properties.insert("move.node.annos".to_string(), "true".to_string());
+        let replace = Replace::default();
+        assert_eq!(replace.manipulate_corpus(&mut g, &properties, None).is_ok(), true);
+        let tmp_file = tempfile()?;
+        let export = graphannis_core::graph::serialization::graphml::export(&g, None, tmp_file, |_| {});
+        assert_eq!(export.is_ok(), true, "Export fails: {:?}", &export);
+        Ok(())
+    }    
 
     fn input_graph(on_disk: bool, new_names: bool) -> Result<AnnotationGraph> {
         let mut g = AnnotationGraph::new(on_disk)?;
