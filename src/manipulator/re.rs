@@ -30,12 +30,10 @@ const PROP_MOVE: &str = "move.node.annos";
 const PROPVAL_SEP: &str = ",";
 const PROPVAL_OLD_NEW_SEP: &str = ":=";
 
-fn remove_nodes(graph: &mut AnnotationGraph, names: Vec<&str>) -> Result<(), Box<dyn std::error::Error>> {
-    let mut update = GraphUpdate::default();
+fn remove_nodes(update: &mut GraphUpdate, names: Vec<&str>) -> Result<(), Box<dyn std::error::Error>> {
     for name in names {
         update.add_event(UpdateEvent::DeleteNode { node_name: name.to_string() })?;
     }
-    graph.apply_update(&mut update, |_| {})?;
     Ok(())
 }
 
@@ -105,10 +103,10 @@ fn place_at_new_target(graph: &AnnotationGraph,
     Ok(())
 }
 
-fn replace_node_annos(graph: &mut AnnotationGraph, 
+fn replace_node_annos(graph: &mut AnnotationGraph,
+                      update: &mut GraphUpdate, 
                       anno_keys: Vec<(AnnoKey, Option<AnnoKey>)>, 
                       move_by_ns: bool) -> Result<(), Box<dyn std::error::Error>> {
-    let mut update = GraphUpdate::default();
     let annos = graph.get_node_annos();
     for (old_key, new_key_opt) in anno_keys.into_iter() {
         for r in annos.exact_anno_search(ns_from_key(&old_key), old_key.name.as_str(), ValueSearch::Any) {
@@ -119,7 +117,7 @@ fn replace_node_annos(graph: &mut AnnotationGraph,
                                                             anno_name: old_key.name.to_string() })?;
             if let Some(ref new_key) = new_key_opt {
                 if move_by_ns {
-                    place_at_new_target(graph, &mut update, &m, new_key)?;
+                    place_at_new_target(graph, update, &m, new_key)?;
                 } else {
                     let value = annos.get_value_for_item(&m.node, &old_key)?.unwrap();
                     update.add_event(UpdateEvent::AddNodeLabel { node_name: node_name.to_string(), 
@@ -130,13 +128,12 @@ fn replace_node_annos(graph: &mut AnnotationGraph,
             }
         }
     }
-    graph.apply_update(&mut update, |_| {})?;
     Ok(())
 }
 
 fn replace_edge_annos(graph: &mut AnnotationGraph, 
+                      update: &mut GraphUpdate,
                       anno_keys: Vec<(AnnoKey, Option<AnnoKey>)>) -> Result<(), Box<dyn std::error::Error>> {
-    let mut update = GraphUpdate::default();
     let node_annos = graph.get_node_annos();
     for (old_key, new_key_opt) in anno_keys {
         for component in graph.get_all_components(None, None) {
@@ -171,7 +168,6 @@ fn replace_edge_annos(graph: &mut AnnotationGraph,
             }
         }
     }
-    graph.apply_update(&mut update, |_| {})?;
     Ok(())
 }
 
@@ -217,22 +213,24 @@ impl Manipulator for Replace {
         properties: &std::collections::BTreeMap<String, String>,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        let mut update = GraphUpdate::default();
         let move_by_ns = match properties.get(&PROP_MOVE.to_string()) {
             None => false,
             Some(v) => v.parse::<bool>()?
         };
         if let Some(node_name_s ) = properties.get(&PROP_NODE_NAMES.to_string()) {
             let node_names = node_name_s.split(PROPVAL_SEP).collect_vec();
-            remove_nodes(graph, node_names)?;
+            remove_nodes(&mut update, node_names)?;
         }
         if let Some(anno_name_s ) = properties.get(&PROP_NODE_ANNOS.to_string()) {
             let node_annos = read_replace_property_value(anno_name_s)?;
-            replace_node_annos(graph, node_annos, move_by_ns)?;
+            replace_node_annos(graph, &mut update, node_annos, move_by_ns)?;
         }
         if let Some(edge_name_s) = properties.get(&PROP_EDGE_ANNOS.to_string()) {
             let edge_annos = read_replace_property_value(edge_name_s)?;
-            replace_edge_annos(graph, edge_annos)?;
+            replace_edge_annos(graph, &mut update, edge_annos)?;
         }
+        graph.apply_update(&mut update, |_| {})?;
         Ok(())
     }
 }
