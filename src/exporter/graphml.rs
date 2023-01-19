@@ -5,7 +5,7 @@ use graphannis_core::{
     annostorage::ValueSearch,
     graph::{NODE_TYPE_KEY,NODE_NAME_KEY}
 };
-use graphannis::model::AnnotationComponentType;
+use graphannis::{model::AnnotationComponentType, AnnotationGraph};
 
 pub struct GraphMLExporter {}
 
@@ -22,13 +22,32 @@ impl Module for GraphMLExporter {
 }
 
 
-pub const PROPERTY_VISUALISATIONS: &str = "add.visualisations";
+pub const PROPERTY_VIS: &str = "add.vis";
+const INFER_VIS: &str = "infer.vis";
 const DEFAULT_VIS_STR: &str = "# configure visualizations here";
+
+fn node_based_vis_from_graph(graph: &AnnotationGraph) -> Result<String, Box<dyn std::error::Error>> {
+    let mut vis = String::new();
+    let node_annos = graph.get_node_annos();
+
+    Ok(vis)
+}
+
+fn edge_based_vis_from_graph(graph: &AnnotationGraph) -> Result<String, Box<dyn std::error::Error>> {
+    let mut vis = String::new();
+    Ok(vis)
+}
+
+fn vis_from_graph(graph: &AnnotationGraph) -> Result<String, Box<dyn std::error::Error>> {
+    let vis = [node_based_vis_from_graph(graph)?, 
+                       edge_based_vis_from_graph(graph)?].join("\n");
+    Ok(vis)
+}
 
 impl Exporter for GraphMLExporter {
     fn export_corpus(
         &self,
-        graph: &graphannis::AnnotationGraph,
+        graph: &AnnotationGraph,
         properties: &BTreeMap<String, String>,
         output_path: &Path,
         tx: Option<StatusSender>,
@@ -55,7 +74,7 @@ impl Exporter for GraphMLExporter {
             }
         };
         let output_file = File::create(output_file_path.clone())?;
-        let vis_str = match properties.get(&PROPERTY_VISUALISATIONS.to_string()) {
+        let vis_str = match properties.get(&PROPERTY_VIS.to_string()) {
             None => DEFAULT_VIS_STR,
             Some(visualisations) => visualisations
         };

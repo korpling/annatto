@@ -24,7 +24,7 @@
     </customization>
   </manipulator>
   <exporter name="GraphMLExporter" path="./">
-	  <property key="add.visualisations">
+	  <property key="add.vis">
 [[visualizers]]
 element = "node"
 layer = ""
