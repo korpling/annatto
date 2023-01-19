@@ -55,10 +55,10 @@ pub fn main() -> Result<(), AnnattoError> {
                 bar.println("");
             }
             StatusMessage::Info(msg) => {
-                bar.println(&msg);
+                bar.println(msg);
             }
             StatusMessage::Warning(msg) => {
-                bar.println(&format!("[WARNING] {}", &msg));
+                bar.println(format!("[WARNING] {}", &msg));
             }
             StatusMessage::Progress {
                 id,
@@ -68,7 +68,7 @@ pub fn main() -> Result<(), AnnattoError> {
                 let progress: f32 = finished_work as f32 / total_work as f32;
                 *steps_progress.entry(id.clone()).or_default() = progress;
                 // Sum up all steps
-                let progress_sum: f32 = steps_progress.iter().map(|(_, p)| p).sum();
+                let progress_sum: f32 = steps_progress.values().sum();
                 let num_entries: f32 = steps_progress.len() as f32;
                 let progress_percent = (progress_sum / num_entries) * 100.0;
                 bar.set_position((progress_percent * 10.0) as u64);
@@ -77,7 +77,7 @@ pub fn main() -> Result<(), AnnattoError> {
             StatusMessage::StepDone { id } => {
                 *steps_progress.entry(id.clone()).or_default() = 1.0;
                 // Sum up all steps
-                let progress_sum: f32 = steps_progress.iter().map(|(_, p)| p).sum();
+                let progress_sum: f32 = steps_progress.values().sum();
                 let num_entries: f32 = steps_progress.len() as f32;
                 let progress_percent = (progress_sum / num_entries) * 100.0;
                 bar.set_position((progress_percent * 10.0) as u64);
