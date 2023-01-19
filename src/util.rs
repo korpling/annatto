@@ -12,8 +12,8 @@ pub fn write_to_file(updates: &GraphUpdate, path: &std::path::Path) -> Result<()
     for update_event in it {
         let event_tuple = update_event?;
         let event_string = event_to_string(&event_tuple.1)?;
-        file.write(event_string.as_bytes())?;
-        file.write(b"\n")?;
+        file.write_all(event_string.as_bytes())?;
+        file.write_all(b"\n")?;
     }
     Ok(())
 }
