@@ -1,0 +1,4 @@
+status = [
+  "Format Rust Code",
+  "Static code analysis",
+]
