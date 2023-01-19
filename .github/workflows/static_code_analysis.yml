@@ -4,8 +4,14 @@ jobs:
   static_code_analysis:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
       - run: rustup component add clippy rustfmt
+      - name: Install pyoxidizer crate
+        uses: baptiste0928/cargo-install@v1
+        with:
+          crate: pyoxidizer
+          version: "0.24"
+      - uses: actions/checkout@v1
+      - run: pyoxidizer generate-python-embedding-artifacts pyembedded
       - uses: actions-rs/clippy-check@v1.0.7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
