@@ -8,12 +8,13 @@ use crate::{
     error::AnnattoError, exporter::Exporter, progress::ProgressReporter, workflow::StatusSender,
     Module,
 };
-use graphannis::model::{AnnotationComponentType, AnnotationComponent};
+use graphannis::model::{AnnotationComponent, AnnotationComponentType};
+use graphannis::AnnotationGraph;
 use graphannis_core::{
     annostorage::ValueSearch,
-    graph::{NODE_NAME_KEY, NODE_TYPE_KEY, ANNIS_NS}, util::{join_qname, split_qname},
+    graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY},
+    util::{join_qname, split_qname},
 };
-use graphannis::AnnotationGraph;
 use itertools::Itertools;
 use serde_derive::Serialize;
 
@@ -42,19 +43,20 @@ struct Visualizer {
     vis_type: String,
     display_name: String,
     visibility: String,
-    mappings: BTreeMap<String, String>
+    mappings: BTreeMap<String, String>,
 }
 
 #[derive(Serialize)]
 struct Visualization {
-    visualizers: Vec<Visualizer>
+    visualizers: Vec<Visualizer>,
 }
 
 fn get_orderings(graph: &AnnotationGraph) -> Vec<String> {
     let mut names = Vec::new();
     for c in graph.get_all_components(Some(AnnotationComponentType::Ordering), None) {
         let storage = graph.get_graphstorage(&c).unwrap();
-        if storage.source_nodes().count() > 0 {  // skip empty components (artifacts of previous processing)
+        if storage.source_nodes().count() > 0 {
+            // skip empty components (artifacts of previous processing)
             names.push(c.name.to_string());
         }
     }
@@ -68,7 +70,7 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
         let mut mappings = BTreeMap::new();
         let storage = graph.get_graphstorage(&c).unwrap();
         let all_keys = storage.get_anno_storage().annotation_keys()?;
-        if let Some(first_key) = all_keys.get(0) {            
+        if let Some(first_key) = all_keys.get(0) {
             if !first_key.ns.is_empty() {
                 mappings.insert("edge_anno_ns".to_string(), first_key.ns.to_string());
             }
@@ -87,18 +89,26 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
                 }
             }
         }
-        let (_, most_frequent_name) = itertools::max(node_names.into_iter().map(|(name, count)| (count, name)).collect_vec()).unwrap();
+        let (_, most_frequent_name) = itertools::max(
+            node_names
+                .into_iter()
+                .map(|(name, count)| (count, name))
+                .collect_vec(),
+        )
+        .unwrap();
         let (ns_opt, name) = split_qname(most_frequent_name.as_str());
         if let Some(ns) = ns_opt {
             mappings.insert("node_ns".to_string(), ns.to_string());
         }
         mappings.insert("node_key".to_string(), name.to_string());
-        visualizers.push(Visualizer { element: "node".to_string(), 
-                                      layer: c.layer.to_string(), 
-                                      vis_type: "tree".to_string(), 
-                                      display_name: format!("dominance ({})", c.layer), 
-                                      visibility: "hidden".to_string(), 
-                                      mappings: mappings });
+        visualizers.push(Visualizer {
+            element: "node".to_string(),
+            layer: c.layer.to_string(),
+            vis_type: "tree".to_string(),
+            display_name: format!("dominance ({})", c.layer),
+            visibility: "hidden".to_string(),
+            mappings: mappings,
+        });
     }
     Ok(visualizers)
 }
@@ -107,7 +117,11 @@ fn arch_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
     let mut visualizers = Vec::new();
     let mut order_storages = BTreeMap::new();
     for order_name in get_orderings(graph) {
-        let component = AnnotationComponent::new(AnnotationComponentType::Ordering, ANNIS_NS.into(), order_name.clone().into());
+        let component = AnnotationComponent::new(
+            AnnotationComponentType::Ordering,
+            ANNIS_NS.into(),
+            order_name.clone().into(),
+        );
         order_storages.insert(order_name, graph.get_graphstorage(&component).unwrap());
     }
     for c in graph.get_all_components(Some(AnnotationComponentType::Pointing), None) {
@@ -115,51 +129,57 @@ fn arch_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
         let storage = graph.get_graphstorage(&c).unwrap();
         let probe_node = storage.source_nodes().find(|_| true).unwrap()?;
         let node_key_opt = order_storages
-                           .iter()
-                           .filter(|(_, st)| st.get_ingoing_edges(probe_node).count() > 0)
-                           .map(|(name, _)| name.to_string())
-                           .find(|_| true);
+            .iter()
+            .filter(|(_, st)| st.get_ingoing_edges(probe_node).count() > 0)
+            .map(|(name, _)| name.to_string())
+            .find(|_| true);
         let node_key = match node_key_opt {
             None => "".to_string(),
-            Some(v) => v
+            Some(v) => v,
         };
         mappings.insert("node_key".to_string(), node_key);
-        visualizers.push(Visualizer { element: "node".to_string(), 
-                                      layer: c.layer.to_string(), 
-                                      vis_type: "arch_dependency".to_string(), 
-                                      display_name: format!("pointing ({})", c.name), 
-                                      visibility: "hidden".to_string(), 
-                                      mappings: mappings });
+        visualizers.push(Visualizer {
+            element: "node".to_string(),
+            layer: c.layer.to_string(),
+            vis_type: "arch_dependency".to_string(),
+            display_name: format!("pointing ({})", c.name),
+            visibility: "hidden".to_string(),
+            mappings: mappings,
+        });
     }
     Ok(visualizers)
-} 
+}
 
 fn vis_from_graph(graph: &AnnotationGraph) -> Result<String, Box<dyn std::error::Error>> {
-    let mut vis_list = Vec::new();    
+    let mut vis_list = Vec::new();
     // edge annos
     vis_list.extend(tree_vis(graph)?);
     vis_list.extend(arch_vis(graph)?);
     // node annos
-    let node_names = graph.get_node_annos().annotation_keys()?
-    .iter()
-    .map(|k| format!("/{}/", join_qname(&k.ns, &k.name)))
-    .join(",");
+    let node_names = graph
+        .get_node_annos()
+        .annotation_keys()?
+        .iter()
+        .map(|k| format!("/{}/", join_qname(&k.ns, &k.name)))
+        .join(",");
     let orderings = get_orderings(graph)
-    .iter()
-    .filter(|s| !s.is_empty())
-    .map(|s| format!("/{}/", s))
-    .join(",");
+        .iter()
+        .filter(|s| !s.is_empty())
+        .map(|s| format!("/{}/", s))
+        .join(",");
     let mut mapping = BTreeMap::new();
     mapping.insert("annos".to_string(), [orderings, node_names].join(","));
     vis_list.push(Visualizer {
-        element: "node".to_string(), 
-        layer: "".to_string(), 
-        vis_type: "grid".to_string(), 
-        display_name: "annotations".to_string(), 
+        element: "node".to_string(),
+        layer: "".to_string(),
+        vis_type: "grid".to_string(),
+        display_name: "annotations".to_string(),
         visibility: "hidden".to_string(),
-        mappings: mapping
+        mappings: mapping,
     });
-    let vis = toml::to_string(&Visualization { visualizers: vis_list })?; 
+    let vis = toml::to_string(&Visualization {
+        visualizers: vis_list,
+    })?;
     Ok(vis)
 }
 
@@ -221,8 +241,8 @@ impl Exporter for GraphMLExporter {
             None => None,
             Some(bool_str) => match bool_str.parse::<bool>()? {
                 false => None,
-                true => Some(vis_from_graph(graph)?)                
-            }
+                true => Some(vis_from_graph(graph)?),
+            },
         };
         let vis_str = match properties.get(&PROPERTY_VIS.to_string()) {
             None => DEFAULT_VIS_STR.to_string(),
