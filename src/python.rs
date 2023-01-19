@@ -51,7 +51,7 @@ impl Importer for PythonImporter {
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let python_interpreter = pyembed::MainPythonInterpreter::new(default_python_config())?;
-        
+
         let u: PyResult<_> = python_interpreter.with_gil(|py| {
             // graphannis modul
             wrap_pymodule!(graphannis)(py);
@@ -162,5 +162,4 @@ mod tests {
         g.apply_update(&mut u, |_| {}).unwrap();
         assert_eq!(1, 1)
     }
-    
 }

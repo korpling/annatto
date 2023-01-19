@@ -60,9 +60,7 @@ pub enum AnnattoError {
     #[error("CSV error: {0}")]
     CSV(#[from] csv::Error),
     #[error("Checks failed: {failed_checks}")]
-    ChecksFailed {
-        failed_checks: String
-    }
+    ChecksFailed { failed_checks: String },
 }
 
 impl<T> From<std::sync::PoisonError<T>> for AnnattoError {
