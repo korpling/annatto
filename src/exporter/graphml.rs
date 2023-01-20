@@ -77,11 +77,10 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
             let node = node_r?;
             for k in node_annos.get_all_keys_for_item(&node, None, None)? {
                 let qname = join_qname(k.ns.as_str(), k.name.as_str());
-                if node_names.contains_key(&qname) {
-                    *node_names.get_mut(&qname).unwrap() += 1
-                } else {
-                    node_names.insert(qname, 1);
-                }
+                node_names
+                    .entry(qname)
+                    .and_modify(|e| *e += 1)
+                    .or_insert(1);
             }
         }
         let (_, most_frequent_name) = itertools::max(
