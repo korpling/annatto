@@ -1,9 +1,8 @@
 on: push
 
-name: Format Rust Code
-
 jobs:
   format:
+    name: Format Rust Code
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

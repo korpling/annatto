@@ -1,7 +1,7 @@
 on: push
-name: Static code analysis
 jobs:
   static_code_analysis:
+    name: Static code analysis
     runs-on: ubuntu-latest
     steps:
       - run: rustup component add clippy rustfmt

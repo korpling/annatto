@@ -1,4 +1,4 @@
 status = [
-  "Format Rust Code / format ",
-  "Static code analysis / static_code_analysis",
+  "Format Rust Code",
+  "Static code analysis",
 ]
