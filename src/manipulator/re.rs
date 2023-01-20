@@ -16,15 +16,10 @@ use itertools::Itertools;
 
 use crate::{error::AnnattoError, Manipulator, Module};
 
+#[derive(Default)]
 pub struct Replace {}
 
 pub const MODULE_NAME: &str = "replace";
-
-impl Default for Replace {
-    fn default() -> Self {
-        Replace {}
-    }
-}
 
 impl Module for Replace {
     fn module_name(&self) -> &str {
@@ -73,12 +68,12 @@ fn place_at_new_target(
     let mut covered_terminal_nodes = Vec::new();
     CycleSafeDFS::new(
         coverage_storage.as_edgecontainer(),
-        source_node.into(),
+        source_node,
         1,
         usize::MAX,
     )
     .into_iter()
-    .map(|r| r.unwrap().node.clone())
+    .map(|r| r.unwrap().node)
     .filter(|n| !coverage_storage.has_outgoing_edges(*n).unwrap())
     .for_each(|n| covered_terminal_nodes.push(n));
     let mut covering_nodes = BTreeSet::new();
@@ -121,7 +116,7 @@ fn place_at_new_target(
             let doc_name = node_annos
                 .get_value_for_item(&probe_node, &NODE_NAME_KEY)?
                 .unwrap()
-                .rsplit_once("#")
+                .rsplit_once('#')
                 .unwrap()
                 .0
                 .to_string();
@@ -291,7 +286,7 @@ fn key_from_qname(qname: &str) -> AnnoKey {
     }
 }
 
-fn ns_from_key<'a>(anno_key: &'a AnnoKey) -> Option<&'a str> {
+fn ns_from_key(anno_key: &AnnoKey) -> Option<&str> {
     if anno_key.ns.is_empty() {
         None
     } else {

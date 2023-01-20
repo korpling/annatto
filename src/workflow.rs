@@ -227,7 +227,7 @@ impl TryFrom<PathBuf> for Workflow {
                             if value.is_none() {
                                 return Err(AnnattoError::ReadWorkflowFile(format!(
                                     "Value for property `{}` not specified.",
-                                    (&key).as_ref().unwrap()
+                                    key.as_ref().unwrap()
                                 )));
                             }
                             properties.insert(key.unwrap(), value.unwrap());

@@ -13,13 +13,8 @@ pub const MODULE_NAME: &str = "check";
 const PROP_CONFIG_PATH: &str = "config.path";
 const CONFIG_FILE_ENTRY_SEP: u8 = b'\t';
 
+#[derive(Default)]
 pub struct Check {}
-
-impl Default for Check {
-    fn default() -> Self {
-        Check {}
-    }
-}
 
 impl Module for Check {
     fn module_name(&self) -> &str {
@@ -62,7 +57,7 @@ fn run_checks(
     let corpus_name = "current";
     let tmp_dir = tempdir_in(temp_dir())?;
     graph.save_to(&tmp_dir.path().join(corpus_name))?;
-    let cs = CorpusStorage::with_auto_cache_size(&tmp_dir.path(), true)?;
+    let cs = CorpusStorage::with_auto_cache_size(tmp_dir.path(), true)?;
     for (query_s, expected_result) in checks_and_results {
         let result = run_query(&cs, &query_s[..]);
         if let Ok(n) = result {
@@ -76,7 +71,11 @@ fn run_checks(
                         _ => {
                             // interpret numeric digit as query as well
                             let second_result = run_query(&cs, &expected_result);
-                            !second_result.is_err() && second_result.unwrap() == n
+                            if let Ok(second_result) = second_result {
+                                second_result == n
+                            } else {
+                                false
+                            }
                         }
                     }
                 }
@@ -95,7 +94,7 @@ fn run_checks(
         Ok(())
     } else {
         Err(Box::new(AnnattoError::ChecksFailed {
-            failed_checks: fails.join("\n").to_string(),
+            failed_checks: fails.join("\n"),
         }))
     }
 }

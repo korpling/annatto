@@ -18,13 +18,8 @@ use graphannis_core::{
 use itertools::Itertools;
 use serde_derive::Serialize;
 
+#[derive(Default)]
 pub struct GraphMLExporter {}
-
-impl Default for GraphMLExporter {
-    fn default() -> Self {
-        GraphMLExporter {}
-    }
-}
 
 impl Module for GraphMLExporter {
     fn module_name(&self) -> &str {
@@ -82,11 +77,7 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
             let node = node_r?;
             for k in node_annos.get_all_keys_for_item(&node, None, None)? {
                 let qname = join_qname(k.ns.as_str(), k.name.as_str());
-                if node_names.contains_key(&qname) {
-                    *node_names.get_mut(&qname).unwrap() += 1
-                } else {
-                    node_names.insert(qname, 1);
-                }
+                node_names.entry(qname).and_modify(|e| *e += 1).or_insert(1);
             }
         }
         let (_, most_frequent_name) = itertools::max(
@@ -165,7 +156,7 @@ fn vis_media(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::er
         let m = match_r?;
         let path_opt = node_annos.get_value_for_item(&m.node, &m.anno_key)?;
         if let Some(path_s) = path_opt {
-            match path_s.split(".").last() {
+            match path_s.split('.').last() {
                 None => {}
                 Some(ending) => match ending {
                     "mp3" | "wav" => {
@@ -275,7 +266,7 @@ impl Exporter for GraphMLExporter {
         } else {
             let reason = String::from("Could not determine file name for graphML.");
             let err = AnnattoError::Export {
-                reason: reason,
+                reason,
                 exporter: self.module_name().to_string(),
                 path: output_path.to_path_buf(),
             };
