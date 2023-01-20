@@ -39,7 +39,7 @@ const DEFAULT_VIS_STR: &str = "# configure visualizations here";
 #[derive(Serialize)]
 struct Visualizer {
     element: String,
-    layer: String,
+    layer: Option<String>,
     vis_type: String,
     display_name: String,
     visibility: String,
@@ -103,7 +103,7 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
         mappings.insert("node_key".to_string(), name.to_string());
         visualizers.push(Visualizer {
             element: "node".to_string(),
-            layer: c.layer.to_string(),
+            layer: if c.layer.is_empty() { None } else { Some(c.layer.to_string()) },
             vis_type: "tree".to_string(),
             display_name: format!("dominance ({})", c.layer),
             visibility: "hidden".to_string(),
@@ -140,7 +140,7 @@ fn arch_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
         mappings.insert("node_key".to_string(), node_key);
         visualizers.push(Visualizer {
             element: "edge".to_string(),
-            layer: c.layer.to_string(),
+            layer: if c.layer.is_empty() { None } else { Some(c.layer.to_string()) },
             vis_type: "arch_dependency".to_string(),
             display_name: format!("pointing ({})", c.name),
             visibility: "hidden".to_string(),
@@ -173,7 +173,7 @@ fn vis_from_graph(graph: &AnnotationGraph) -> Result<String, Box<dyn std::error:
     mapping.insert("annos".to_string(), [orderings, node_names].join(","));
     vis_list.push(Visualizer {
         element: "node".to_string(),
-        layer: "".to_string(),
+        layer: None,
         vis_type: "grid".to_string(),
         display_name: "annotations".to_string(),
         visibility: "hidden".to_string(),
