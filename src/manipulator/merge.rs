@@ -138,10 +138,10 @@ impl Merge {
                             .unwrap()
                     })
                     .map(|v| {
-                        v.split("/")
+                        v.split('/')
                             .last()
                             .unwrap()
-                            .split("#")
+                            .split('#')
                             .next()
                             .unwrap()
                             .to_string()
@@ -601,14 +601,14 @@ impl Manipulator for Merge {
             None => HashSet::new(),
             Some(v) => v
                 .split("\",\"")
-                .map(|s| s.to_string().replace("\"", ""))
+                .map(|s| s.to_string().replace('"', ""))
                 .collect::<HashSet<String>>(),
         };
         let optional_chars = match properties.get(&MergerProperties::OptionalChars.to_string()) {
             None => HashSet::new(),
             Some(v) => v
                 .split("','")
-                .map(|s| s.to_string().replace("'", "").parse::<char>().unwrap())
+                .map(|s| s.to_string().replace('\'', "").parse::<char>().unwrap())
                 .collect::<HashSet<char>>(),
         };
         let silent = match properties.get(&MergerProperties::Silent.to_string()) {

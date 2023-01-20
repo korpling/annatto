@@ -156,7 +156,7 @@ fn vis_media(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::er
         let m = match_r?;
         let path_opt = node_annos.get_value_for_item(&m.node, &m.anno_key)?;
         if let Some(path_s) = path_opt {
-            match path_s.split(".").last() {
+            match path_s.split('.').last() {
                 None => {}
                 Some(ending) => match ending {
                     "mp3" | "wav" => {

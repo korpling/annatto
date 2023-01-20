@@ -116,7 +116,7 @@ fn place_at_new_target(
             let doc_name = node_annos
                 .get_value_for_item(&probe_node, &NODE_NAME_KEY)?
                 .unwrap()
-                .rsplit_once("#")
+                .rsplit_once('#')
                 .unwrap()
                 .0
                 .to_string();
