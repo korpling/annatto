@@ -68,7 +68,7 @@ fn place_at_new_target(
     let mut covered_terminal_nodes = Vec::new();
     CycleSafeDFS::new(
         coverage_storage.as_edgecontainer(),
-        source_node.into(),
+        source_node,
         1,
         usize::MAX,
     )
