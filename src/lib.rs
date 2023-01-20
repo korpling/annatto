@@ -22,8 +22,8 @@ use python::PythonImporter;
 /// Retrieve a new instance of an importer using its module name
 pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
     match name {
-        "GraphMLImporter" => Ok(Box::new(importer::graphml::GraphMLImporter::default())),
-        "DoNothingImporter" => Ok(Box::new(importer::DoNothingImporter::default())),
+        "GraphMLImporter" => Ok(Box::<importer::graphml::GraphMLImporter>::default()),
+        "DoNothingImporter" => Ok(Box::<importer::DoNothingImporter>::default()),
         _ => Ok(Box::new(PythonImporter::from_name(name))),
     }
 }
@@ -31,10 +31,10 @@ pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
 /// Retrieve a new instance of a manipulator using its module name
 pub fn manipulator_by_name(name: &str) -> Result<Box<dyn Manipulator>> {
     match name {
-        "DoNothingManipulator" => Ok(Box::new(manipulator::DoNothingManipulator::default())),
-        manipulator::merge::MODULE_NAME => Ok(Box::new(manipulator::merge::Merge::default())),
-        manipulator::re::MODULE_NAME => Ok(Box::new(manipulator::re::Replace::default())),
-        manipulator::check::MODULE_NAME => Ok(Box::new(manipulator::check::Check::default())),
+        "DoNothingManipulator" => Ok(Box::<manipulator::DoNothingManipulator>::default()),
+        manipulator::merge::MODULE_NAME => Ok(Box::<manipulator::merge::Merge>::default()),
+        manipulator::re::MODULE_NAME => Ok(Box::<manipulator::re::Replace>::default()),
+        manipulator::check::MODULE_NAME => Ok(Box::<manipulator::check::Check>::default()),
         _ => Err(AnnattoError::NoSuchModule(name.to_string())),
     }
 }
@@ -42,8 +42,8 @@ pub fn manipulator_by_name(name: &str) -> Result<Box<dyn Manipulator>> {
 /// Retrieve a new instance of an exporter using its module name
 pub fn exporter_by_name(name: &str) -> Result<Box<dyn Exporter>> {
     match name {
-        "GraphMLExporter" => Ok(Box::new(exporter::graphml::GraphMLExporter::default())),
-        "DoNothingExporter" => Ok(Box::new(exporter::DoNothingExporter::default())),
+        "GraphMLExporter" => Ok(Box::<exporter::graphml::GraphMLExporter>::default()),
+        "DoNothingExporter" => Ok(Box::<exporter::DoNothingExporter>::default()),
         _ => Err(AnnattoError::NoSuchModule(name.to_string())),
     }
 }
