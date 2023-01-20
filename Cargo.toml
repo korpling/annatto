@@ -20,8 +20,8 @@ regex = "1.4"
 tempfile = "3"
 toml = "0.5"
 rust-embed= {version="6.3.0", features=["compression", "interpolate-folder-path"]}
-pyo3 = {version= "0.16"}
-pyembed = "0.22"
+pyo3 = {version= "0.17"}
+pyembed = "0.24"
 serde = "1.0"
 serde_derive = "1.0"
 csv = "1.1"

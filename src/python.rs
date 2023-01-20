@@ -49,12 +49,12 @@ impl Importer for PythonImporter {
         input_path: &std::path::Path,
         properties: &std::collections::BTreeMap<String, String>,
         _tx: Option<crate::workflow::StatusSender>,
-    ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
+    ) -> Result<::graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let python_interpreter = pyembed::MainPythonInterpreter::new(default_python_config())?;
 
         let u: PyResult<_> = python_interpreter.with_gil(|py| {
             // graphannis modul
-            wrap_pymodule!(graphannis)(py);
+            wrap_pymodule!(self::graphannis)(py);
             // graph update utils
             let code_source = &Scripts::get("graphupdate_util.py").unwrap().data;
             let util_code = &String::from_utf8_lossy(code_source)[..];
