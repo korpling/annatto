@@ -103,7 +103,11 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
         mappings.insert("node_key".to_string(), name.to_string());
         visualizers.push(Visualizer {
             element: "node".to_string(),
-            layer: if c.layer.is_empty() { None } else { Some(c.layer.to_string()) },
+            layer: if c.layer.is_empty() {
+                None
+            } else {
+                Some(c.layer.to_string())
+            },
             vis_type: "tree".to_string(),
             display_name: format!("dominance ({})", c.layer),
             visibility: "hidden".to_string(),
@@ -140,7 +144,11 @@ fn arch_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
         mappings.insert("node_key".to_string(), node_key);
         visualizers.push(Visualizer {
             element: "edge".to_string(),
-            layer: if c.layer.is_empty() { None } else { Some(c.layer.to_string()) },
+            layer: if c.layer.is_empty() {
+                None
+            } else {
+                Some(c.layer.to_string())
+            },
             vis_type: "arch_dependency".to_string(),
             display_name: format!("pointing ({})", c.name),
             visibility: "hidden".to_string(),
@@ -155,33 +163,33 @@ fn vis_media(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::er
     let node_annos = graph.get_node_annos();
     for match_r in node_annos.exact_anno_search(Some(ANNIS_NS), "file", ValueSearch::Any) {
         let m = match_r?;
-        let path_opt= node_annos.get_value_for_item(&m.node, &m.anno_key)?;
+        let path_opt = node_annos.get_value_for_item(&m.node, &m.anno_key)?;
         if let Some(path_s) = path_opt {
             match path_s.split(".").last() {
-                None => {},
+                None => {}
                 Some(ending) => match ending {
-                    "mp3"|"wav" => {
-                        vis.push(Visualizer { 
-                            element: "node".to_string(), 
+                    "mp3" | "wav" => {
+                        vis.push(Visualizer {
+                            element: "node".to_string(),
                             layer: None,
-                            vis_type: "audio".to_string(), 
-                            display_name: "audio".to_string(), 
-                            visibility: "hidden".to_string(), 
-                            mappings: None 
-                        });
-                    },
-                    "mp4"|"avi"|"mov" => {
-                        vis.push(Visualizer { 
-                            element: "node".to_string(), 
-                            layer: None, 
-                            vis_type: "video".to_string(), 
-                            display_name: "video".to_string(), 
-                            visibility: "hidden".to_string(), 
-                            mappings: None
+                            vis_type: "audio".to_string(),
+                            display_name: "audio".to_string(),
+                            visibility: "hidden".to_string(),
+                            mappings: None,
                         });
                     }
-                    _ => {}  // ...
-                }
+                    "mp4" | "avi" | "mov" => {
+                        vis.push(Visualizer {
+                            element: "node".to_string(),
+                            layer: None,
+                            vis_type: "video".to_string(),
+                            display_name: "video".to_string(),
+                            visibility: "hidden".to_string(),
+                            mappings: None,
+                        });
+                    }
+                    _ => {} // ...
+                },
             };
         }
     }
