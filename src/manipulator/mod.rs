@@ -26,13 +26,8 @@ pub trait Manipulator: Module {
     ) -> Result<(), Box<dyn std::error::Error>>;
 }
 
+#[derive(Default)]
 pub struct DoNothingManipulator {}
-
-impl Default for DoNothingManipulator {
-    fn default() -> Self {
-        DoNothingManipulator {}
-    }
-}
 
 impl Manipulator for DoNothingManipulator {
     fn manipulate_corpus(

@@ -26,13 +26,8 @@ pub trait Exporter: Module {
     ) -> Result<(), Box<dyn std::error::Error>>;
 }
 
+#[derive(Default)]
 pub struct DoNothingExporter {}
-
-impl Default for DoNothingExporter {
-    fn default() -> Self {
-        DoNothingExporter {}
-    }
-}
 
 impl Exporter for DoNothingExporter {
     fn export_corpus(

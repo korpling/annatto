@@ -18,13 +18,9 @@ use graphannis_core::{
 use itertools::Itertools;
 use serde_derive::Serialize;
 
+#[derive(Default)]
 pub struct GraphMLExporter {}
 
-impl Default for GraphMLExporter {
-    fn default() -> Self {
-        GraphMLExporter {}
-    }
-}
 
 impl Module for GraphMLExporter {
     fn module_name(&self) -> &str {

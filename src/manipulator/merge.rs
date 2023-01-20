@@ -19,13 +19,9 @@ use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::convert::TryFrom;
 
+#[derive(Default)]
 pub struct Merge {}
 
-impl Default for Merge {
-    fn default() -> Self {
-        Merge {}
-    }
-}
 
 const PROP_CHECK_NAMES: &str = "check.names";
 const PROP_KEEP_NAME: &str = "keep.name";

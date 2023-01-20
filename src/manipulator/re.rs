@@ -16,15 +16,10 @@ use itertools::Itertools;
 
 use crate::{error::AnnattoError, Manipulator, Module};
 
+#[derive(Default)]
 pub struct Replace {}
 
 pub const MODULE_NAME: &str = "replace";
-
-impl Default for Replace {
-    fn default() -> Self {
-        Replace {}
-    }
-}
 
 impl Module for Replace {
     fn module_name(&self) -> &str {

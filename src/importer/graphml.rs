@@ -22,6 +22,7 @@ use crate::{
     Module,
 };
 
+#[derive(Default)]
 pub struct GraphMLImporter {}
 
 fn add_node(
@@ -259,12 +260,6 @@ fn read_graphml<R: std::io::BufRead>(
         }
     }
     Ok(config)
-}
-
-impl Default for GraphMLImporter {
-    fn default() -> Self {
-        GraphMLImporter {}
-    }
 }
 
 impl Importer for GraphMLImporter {

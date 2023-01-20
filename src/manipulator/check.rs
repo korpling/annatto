@@ -13,13 +13,9 @@ pub const MODULE_NAME: &str = "check";
 const PROP_CONFIG_PATH: &str = "config.path";
 const CONFIG_FILE_ENTRY_SEP: u8 = b'\t';
 
+#[derive(Default)]
 pub struct Check {}
 
-impl Default for Check {
-    fn default() -> Self {
-        Check {}
-    }
-}
 
 impl Module for Check {
     fn module_name(&self) -> &str {
