@@ -150,6 +150,44 @@ fn arch_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
     Ok(visualizers)
 }
 
+fn vis_media(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::error::Error>> {
+    let mut vis = Vec::new();
+    let node_annos = graph.get_node_annos();
+    for match_r in node_annos.exact_anno_search(Some(ANNIS_NS), "file", ValueSearch::Any) {
+        let m = match_r?;
+        let path_opt= node_annos.get_value_for_item(&m.node, &m.anno_key)?;
+        if let Some(path_s) = path_opt {
+            match path_s.split(".").last() {
+                None => {},
+                Some(ending) => match ending {
+                    "mp3"|"wav" => {
+                        vis.push(Visualizer { 
+                            element: "node".to_string(), 
+                            layer: None,
+                            vis_type: "audio".to_string(), 
+                            display_name: "audio".to_string(), 
+                            visibility: "hidden".to_string(), 
+                            mappings: BTreeMap::new() 
+                        });
+                    },
+                    "mp4"|"avi"|"mov" => {
+                        vis.push(Visualizer { 
+                            element: "node".to_string(), 
+                            layer: None, 
+                            vis_type: "video".to_string(), 
+                            display_name: "video".to_string(), 
+                            visibility: "hidden".to_string(), 
+                            mappings: BTreeMap::new() 
+                        });
+                    }
+                    _ => {}  // ...
+                }
+            };
+        }
+    }
+    Ok(vis)
+}
+
 fn vis_from_graph(graph: &AnnotationGraph) -> Result<String, Box<dyn std::error::Error>> {
     let mut vis_list = Vec::new();
     // edge annos
@@ -179,6 +217,7 @@ fn vis_from_graph(graph: &AnnotationGraph) -> Result<String, Box<dyn std::error:
         visibility: "hidden".to_string(),
         mappings: mapping,
     });
+    vis_list.extend(vis_media(graph)?);
     let vis = toml::to_string(&Visualization {
         visualizers: vis_list,
     })?;
