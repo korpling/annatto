@@ -1,7 +1,24 @@
 on: push
-name: Static code analysis
+
+name: Rust
+
 jobs:
+  format:
+    name: Format Code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt
+          override: true
+      - uses: mbrobbel/rustfmt-check@0.3.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
   static_code_analysis:
+    name: Static code analysis
+    needs: format
     runs-on: ubuntu-latest
     steps:
       - run: rustup component add clippy rustfmt
