@@ -16,7 +16,6 @@ const CONFIG_FILE_ENTRY_SEP: u8 = b'\t';
 #[derive(Default)]
 pub struct Check {}
 
-
 impl Module for Check {
     fn module_name(&self) -> &str {
         MODULE_NAME

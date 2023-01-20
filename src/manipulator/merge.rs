@@ -22,7 +22,6 @@ use std::convert::TryFrom;
 #[derive(Default)]
 pub struct Merge {}
 
-
 const PROP_CHECK_NAMES: &str = "check.names";
 const PROP_KEEP_NAME: &str = "keep.name";
 const PROP_ON_ERROR: &str = "on.error";
