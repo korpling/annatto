@@ -266,7 +266,7 @@ impl Exporter for GraphMLExporter {
         } else {
             let reason = String::from("Could not determine file name for graphML.");
             let err = AnnattoError::Export {
-                reason: reason,
+                reason,
                 exporter: self.module_name().to_string(),
                 path: output_path.to_path_buf(),
             };

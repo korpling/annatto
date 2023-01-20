@@ -276,7 +276,7 @@ impl Merge {
                                         updates.add_event(UpdateEvent::AddNodeLabel {
                                             node_name: ref_node_name.to_string(),
                                             anno_ns: ak.ns.to_string(),
-                                            anno_name: anno_name,
+                                            anno_name,
                                             anno_value: av.to_string(),
                                         })?;
                                     }
@@ -433,7 +433,7 @@ impl Merge {
                         // check edge for annotations that need to be transferred
                         let edge = Edge {
                             source: source_node,
-                            target: target,
+                            target,
                         }; // TODO at least for the case of pointing relations the same container might contain more than one edge, or am I wrong?
                         for k in edge_annos.get_all_keys_for_item(&edge, None, None)? {
                             if k.ns != ANNIS_NS {
