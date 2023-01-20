@@ -90,7 +90,7 @@ fn run_checks(
         Ok(())
     } else {
         Err(Box::new(AnnattoError::ChecksFailed {
-            failed_checks: fails.join("\n").to_string(),
+            failed_checks: fails.join("\n"),
         }))
     }
 }
