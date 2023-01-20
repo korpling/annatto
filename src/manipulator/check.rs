@@ -57,7 +57,7 @@ fn run_checks(
     let corpus_name = "current";
     let tmp_dir = tempdir_in(temp_dir())?;
     graph.save_to(&tmp_dir.path().join(corpus_name))?;
-    let cs = CorpusStorage::with_auto_cache_size(&tmp_dir.path(), true)?;
+    let cs = CorpusStorage::with_auto_cache_size(tmp_dir.path(), true)?;
     for (query_s, expected_result) in checks_and_results {
         let result = run_query(&cs, &query_s[..]);
         if let Ok(n) = result {
