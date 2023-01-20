@@ -286,7 +286,7 @@ fn key_from_qname(qname: &str) -> AnnoKey {
     }
 }
 
-fn ns_from_key<'a>(anno_key: &'a AnnoKey) -> Option<&'a str> {
+fn ns_from_key(anno_key: &AnnoKey) -> Option<&str> {
     if anno_key.ns.is_empty() {
         None
     } else {
