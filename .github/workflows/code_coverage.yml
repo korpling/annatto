@@ -10,9 +10,14 @@ jobs:
   base_branch_cov:
       runs-on: ubuntu-latest
       steps:
+        - name: Get base branch
+          id: base
+          run: |
+            BASE_BRANCH=${{ github.base_ref }}
+            echo "::set-output branch=value::${BASE_BRANCH:-"main"}"
         - uses: actions/checkout@v2
           with:
-            ref: ${{ github.base_ref }}
+            ref: ${{ steps.base.outputs.branch}}" 
         - uses: actions-rs/toolchain@v1.0.6
           with:
             toolchain: stable
