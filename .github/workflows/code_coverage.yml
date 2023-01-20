@@ -27,6 +27,7 @@ jobs:
             name: ref-lcov.info
             path: ./target/coverage/tests.lcov
   checks:
+    name: "Check code coverage"
     runs-on: ubuntu-latest
     needs: base_branch_cov
     steps:

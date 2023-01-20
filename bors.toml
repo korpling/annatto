@@ -1,3 +1,4 @@
 status = [
   "Static code analysis",
+  "Check code coverage",
 ]
