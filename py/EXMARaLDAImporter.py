@@ -44,6 +44,7 @@ class EXMARaLDAImport(object):
         self._timeline = None
         self._span_count = 0
         self._token_count = 0
+        self._speaker_table = {}
 
     @property
     def name(self):
@@ -91,7 +92,7 @@ class EXMARaLDAImport(object):
             category = tier.attrib[_ATTR_CATEGORY]
             _logger.debug(f'Importing token tier {category}')
             try:
-                speaker = tier.attrib[_ATTR_SPEAKER]
+                speaker = self._speaker_table[tier.attrib[_ATTR_SPEAKER]]
             except KeyError:
                 raise ValueError(f'Tier {category} has no speaker assigned.')
             if speaker in self._spk2tok:
@@ -110,9 +111,12 @@ class EXMARaLDAImport(object):
         anno_tiers = xml.findall(f'.//{_TAG_TIER}[@{_ATTR_TYPE}="{_TYPE_ANNOTATION}"]')
         tl = self._timeline
         existing_spans = {}
-        for tier in anno_tiers:            
-            speaker = tier.attrib[_ATTR_SPEAKER]
-            category = tier.attrib[_ATTR_CATEGORY]            
+        for tier in anno_tiers:
+            category = tier.attrib[_ATTR_CATEGORY]        
+            try:
+                speaker = self._speaker_table[tier.attrib[_ATTR_SPEAKER]]
+            except KeyError:
+                raise ValueError(f'Speaker for tier `{category}` could not be determined.')
             tokens = sorted([(start, end, tok_id) for tok_id, (start, end) in self._spk2tok[speaker].items()])
             _logger.debug(f'Mapping annotations for tier {speaker}::{category} using {len(tokens)} tokens')
             for event in sorted(tier.findall(f'./{_TAG_EVENT}'), key=lambda e: tl[e.attrib[_ATTR_START]]):
@@ -140,7 +144,13 @@ class EXMARaLDAImport(object):
     def _read_timeline(self):
         self._timeline = {tli.attrib[_ATTR_ID]: float(tli.attrib[_ATTR_TIME]) for tli in self._xml.findall(f'.//{_TAG_TLI}[@{_ATTR_TIME}]')}
 
+    def _read_speaker_table(self):
+        xml = self._xml
+        for speaker_entry in xml.findall('.//speaker'):
+            self._speaker_table[speaker_entry.attrib[_ATTR_ID]] = speaker_entry.find('./abbreviation').text
+
     def map(self, text_order=None):
+        self._read_speaker_table()
         self._read_timeline()
         self._map_audio_source()
         self._map_tokenizations(text_order=text_order)
