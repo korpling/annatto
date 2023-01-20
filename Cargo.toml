@@ -18,10 +18,12 @@ anyhow = "1.0"
 log = "0.4"
 regex = "1.4"
 tempfile = "3"
+toml = "0.5"
 rust-embed= {version="6.3.0", features=["compression", "interpolate-folder-path"]}
 pyo3 = {version= "0.16"}
 pyembed = "0.22"
 serde = "1.0"
+serde_derive = "1.0"
 csv = "1.1"
 itertools = "0.10"
 smartstring = "0.2"

@@ -14,9 +14,9 @@
       <property key="anno_ns">norm</property>
     </customization>
   </importer>
-  <manipulator name="Merger">
+  <manipulator name="merge">
     <customization>
-      <property key="check.names">norm,conll</property>
+      <property key="check.names">norm,conll,ptb</property>
       <property key="keep.name">norm</property>
       <property key="root.name">rueg</property>
       <property key="skip.components">,</property>
@@ -24,7 +24,8 @@
     </customization>
   </manipulator>
   <exporter name="GraphMLExporter" path="./">
-	  <property key="add.visualisations">
+	  <property key="guess.vis">true</property>
+	  <!--property key="add.vis">
 [[visualizers]]
 element = "node"
 layer = ""
@@ -44,6 +45,6 @@ visibility = "hidden"
 
 [visualizers.mappings]
 node_key = "norm"
-	  </property>
+	  </property-->
   </exporter>
 </pepper-job>
