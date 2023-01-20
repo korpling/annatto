@@ -139,7 +139,7 @@ fn arch_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
         };
         mappings.insert("node_key".to_string(), node_key);
         visualizers.push(Visualizer {
-            element: "node".to_string(),
+            element: "edge".to_string(),
             layer: c.layer.to_string(),
             vis_type: "arch_dependency".to_string(),
             display_name: format!("pointing ({})", c.name),
@@ -156,16 +156,18 @@ fn vis_from_graph(graph: &AnnotationGraph) -> Result<String, Box<dyn std::error:
     vis_list.extend(tree_vis(graph)?);
     vis_list.extend(arch_vis(graph)?);
     // node annos
+    let order_names = get_orderings(graph);
+    let orderings = order_names
+        .iter()
+        .filter(|s| !s.is_empty())
+        .map(|s| format!("/{}/", s))
+        .join(",");
     let node_names = graph
         .get_node_annos()
         .annotation_keys()?
         .iter()
+        .filter(|k| !order_names.contains(&k.name.to_string()) && k.ns.as_str() != ANNIS_NS)
         .map(|k| format!("/{}/", join_qname(&k.ns, &k.name)))
-        .join(",");
-    let orderings = get_orderings(graph)
-        .iter()
-        .filter(|s| !s.is_empty())
-        .map(|s| format!("/{}/", s))
         .join(",");
     let mut mapping = BTreeMap::new();
     mapping.insert("annos".to_string(), [orderings, node_names].join(","));
