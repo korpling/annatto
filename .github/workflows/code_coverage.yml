@@ -14,7 +14,7 @@ jobs:
           id: base
           run: |
             BASE_BRANCH=${{ github.base_ref }}
-            echo "base_branch=${BASE_BRANCH:-"main"}" >> $GITHUB_ENV
+            echo base_branch=${BASE_BRANCH:-"main"} >> $GITHUB_ENV
         - uses: actions/checkout@v2
           with:
             ref: ${{ env.base_branch }}" 
