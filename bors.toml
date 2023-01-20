@@ -1,4 +1,4 @@
 status = [
-  "Rust / Format Code",
-  "Rust / Static code analysis",
+  "Format Code",
+  "Static code analysis",
 ]
