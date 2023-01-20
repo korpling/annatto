@@ -71,7 +71,11 @@ fn run_checks(
                         _ => {
                             // interpret numeric digit as query as well
                             let second_result = run_query(&cs, &expected_result);
-                            !second_result.is_err() && second_result.unwrap() == n
+                            if let Ok(second_result) = second_result {
+                                second_result == n
+                            } else {
+                                false
+                            }
                         }
                     }
                 }
