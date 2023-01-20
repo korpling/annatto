@@ -51,8 +51,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           version: latest
       - name: Run tests with code coverage
-        run: test_coverage.sh
-
+        run: ./test_coverage.sh
       - name: Upload code coverage for ref branch
         uses: actions/upload-artifact@v2
         with:
@@ -80,7 +79,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           version: latest
       - name: Run tests with code coverage
-        run: test_coverage.sh
+        run: ./test_coverage.sh
 
       #  Compares two code coverage files and generates report as a comment
       - name: Generate Code Coverage report
