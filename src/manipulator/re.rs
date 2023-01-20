@@ -73,7 +73,7 @@ fn place_at_new_target(
         usize::MAX,
     )
     .into_iter()
-    .map(|r| r.unwrap().node.clone())
+    .map(|r| r.unwrap().node)
     .filter(|n| !coverage_storage.has_outgoing_edges(*n).unwrap())
     .for_each(|n| covered_terminal_nodes.push(n));
     let mut covering_nodes = BTreeSet::new();
