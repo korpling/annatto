@@ -16,6 +16,8 @@ ANNIS_PART_OF = 'PartOf'
 ANNIS_TIME = 'time'
 ANNIS_TOK = 'tok'
 ANNIS_TOK_WHITE_SPACE_AFTER = 'tok-whitespace-after'
+ANNIS_NAME_LAYER = 'layer'
+ANNIS_LAYER_DEFAULT = 'default_layer'
 
 
 def path_structure(u, root_path, file_endings, logger=None, follow_links=True):
@@ -65,7 +67,7 @@ def map_audio_source(u, audio_path, doc_path):
     return audio_path
 
 
-def map_token(u, doc_path, id_, text_name, value, start_time=None, end_time=None):        
+def map_token(u, doc_path, id_, text_name, value, start_time=None, end_time=None, add_annis_layer=True):        
     tok_id = f'{doc_path}#t{id_}'
     u.add_node(tok_id)
     u.add_node_label(tok_id, ANNIS_NS, ANNIS_TOK, value)
@@ -77,10 +79,12 @@ def map_token(u, doc_path, id_, text_name, value, start_time=None, end_time=None
         if start_time >= end_time:
             raise ValueError(f'Token {id_} with value {value} in tokenization {text_name} has incorrect time values.')
         u.add_node_label(tok_id, ANNIS_NS, ANNIS_TIME, f'{start_time}-{end_time}')
+    if add_annis_layer:
+        u.add_node_label(tok_id, ANNIS_NS, ANNIS_NAME_LAYER, ANNIS_LAYER_DEFAULT)    
     return tok_id
 
 
-def map_token_as_span(u, doc_path, id_, text_name, value, start_time, end_time, empty_toks):
+def map_token_as_span(u, doc_path, id_, text_name, value, start_time, end_time, empty_toks, add_annis_layer=True):
     """
     """
     if start_time >= end_time:
@@ -88,6 +92,8 @@ def map_token_as_span(u, doc_path, id_, text_name, value, start_time, end_time, 
     ets = [et_id for t, et_id in empty_toks if start_time <= t < end_time]
     span_id = map_annotation(u, doc_path, id_, '', text_name, value, *ets)
     u.add_node_label(span_id, ANNIS_NS, ANNIS_TOK, value)
+    if add_annis_layer:
+        u.add_node_label(span_id, ANNIS_NS, ANNIS_NAME_LAYER, ANNIS_LAYER_DEFAULT)
     return span_id
 
 
