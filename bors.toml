@@ -1,4 +1,4 @@
 status = [
   "Static code analysis",
-  "Code coverage report",
+  "Execute tests with code coverage",
 ]
