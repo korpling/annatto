@@ -25,13 +25,8 @@ pub trait Importer: Module {
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>>;
 }
 
+#[derive(Default)]
 pub struct DoNothingImporter {}
-
-impl Default for DoNothingImporter {
-    fn default() -> Self {
-        DoNothingImporter {}
-    }
-}
 
 impl Importer for DoNothingImporter {
     fn import_corpus(
