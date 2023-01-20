@@ -35,12 +35,12 @@ def map_document(u, path, doc_path, cat_name=_DEFAULT_CAT_NAME, text_name='', an
                 cat, text = stack.pop()
                 token_id = map_token(u, doc_path, len(tokens) + 1, text_name, text)
                 tokens.append(token_id)
-                struct_id = map_hierarchical_annotation(u, doc_path, s_count, '' if anno_ns is None else anno_ns, cat_name, cat, token_id)
+                struct_id = map_hierarchical_annotation(u, doc_path, s_count, '' if anno_ns is None else anno_ns, cat_name, cat, '' if anno_ns is None else anno_ns, token_id)
                 children.append(struct_id)
             elif stack and stack[-1]:
                 s_count += 1
                 (cat,) = stack.pop()
-                struct_id = map_hierarchical_annotation(u, doc_path, s_count, '' if anno_ns is None else anno_ns, cat_name, cat, *children)
+                struct_id = map_hierarchical_annotation(u, doc_path, s_count, '' if anno_ns is None else anno_ns, cat_name, cat, '' if anno_ns is None else anno_ns, *children)
                 children = [struct_id]
         elif c == ' ':
             if val:
@@ -55,7 +55,7 @@ def map_document(u, path, doc_path, cat_name=_DEFAULT_CAT_NAME, text_name='', an
 
 def start_import(path, **properties):
     """
-    Import all conll documents in the given directory.
+    Import all ptb documents in the given directory.
     >>> type(start_import('test/import/ptb')).__name__
     'GraphUpdate'
     """
