@@ -43,7 +43,7 @@ struct Visualizer {
     vis_type: String,
     display_name: String,
     visibility: String,
-    mappings: BTreeMap<String, String>,
+    mappings: Option<BTreeMap<String, String>>,
 }
 
 #[derive(Serialize)]
@@ -107,7 +107,7 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
             vis_type: "tree".to_string(),
             display_name: format!("dominance ({})", c.layer),
             visibility: "hidden".to_string(),
-            mappings: mappings,
+            mappings: Some(mappings),
         });
     }
     Ok(visualizers)
@@ -144,7 +144,7 @@ fn arch_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
             vis_type: "arch_dependency".to_string(),
             display_name: format!("pointing ({})", c.name),
             visibility: "hidden".to_string(),
-            mappings: mappings,
+            mappings: Some(mappings),
         });
     }
     Ok(visualizers)
@@ -167,7 +167,7 @@ fn vis_media(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::er
                             vis_type: "audio".to_string(), 
                             display_name: "audio".to_string(), 
                             visibility: "hidden".to_string(), 
-                            mappings: BTreeMap::new() 
+                            mappings: None 
                         });
                     },
                     "mp4"|"avi"|"mov" => {
@@ -177,7 +177,7 @@ fn vis_media(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::er
                             vis_type: "video".to_string(), 
                             display_name: "video".to_string(), 
                             visibility: "hidden".to_string(), 
-                            mappings: BTreeMap::new() 
+                            mappings: None
                         });
                     }
                     _ => {}  // ...
@@ -207,15 +207,18 @@ fn vis_from_graph(graph: &AnnotationGraph) -> Result<String, Box<dyn std::error:
         .filter(|k| !order_names.contains(&k.name.to_string()) && k.ns.as_str() != ANNIS_NS)
         .map(|k| format!("/{}/", join_qname(&k.ns, &k.name)))
         .join(",");
-    let mut mapping = BTreeMap::new();
-    mapping.insert("annos".to_string(), [orderings, node_names].join(","));
+    let mut mappings = BTreeMap::new();
+    mappings.insert("annos".to_string(), [orderings, node_names].join(","));
+    mappings.insert("escape_html".to_string(), "false".to_string());
+    mappings.insert("hide_tok".to_string(), "true".to_string());
+    mappings.insert("show_ns".to_string(), "false".to_string());
     vis_list.push(Visualizer {
         element: "node".to_string(),
         layer: None,
         vis_type: "grid".to_string(),
         display_name: "annotations".to_string(),
         visibility: "hidden".to_string(),
-        mappings: mapping,
+        mappings: Some(mappings),
     });
     vis_list.extend(vis_media(graph)?);
     let vis = toml::to_string(&Visualization {
