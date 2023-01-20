@@ -158,10 +158,10 @@ fn vis_from_graph(graph: &AnnotationGraph) -> Result<String, Box<dyn std::error:
     // node annos
     let order_names = get_orderings(graph);
     let orderings = order_names
-    .iter()
-    .filter(|s| !s.is_empty())
-    .map(|s| format!("/{}/", s))
-    .join(",");
+        .iter()
+        .filter(|s| !s.is_empty())
+        .map(|s| format!("/{}/", s))
+        .join(",");
     let node_names = graph
         .get_node_annos()
         .annotation_keys()?
