@@ -437,7 +437,7 @@ impl Merge {
                         }; // TODO at least for the case of pointing relations the same container might contain more than one edge, or am I wrong?
                         for k in edge_annos.get_all_keys_for_item(&edge, None, None)? {
                             if k.ns != ANNIS_NS {
-                                let v = edge_annos.get_value_for_item(&edge, &*k)?.unwrap(); // guaranteed to exist
+                                let v = edge_annos.get_value_for_item(&edge, &k)?.unwrap(); // guaranteed to exist
                                 let u = UpdateEvent::AddEdgeLabel {
                                     source_node: new_source_name.clone(),
                                     target_node: new_target_name.to_string(),

@@ -40,7 +40,7 @@ impl ProgressReporter {
 
     pub fn info(&self, msg: &str) -> Result<(), AnnattoError> {
         let state = self.state.lock()?;
-        if let Some(ref tx) = (*state).tx {
+        if let Some(ref tx) = state.tx {
             tx.send(StatusMessage::Info(msg.to_string()))?;
         } else {
             info!("{}", msg);
@@ -50,7 +50,7 @@ impl ProgressReporter {
 
     pub fn warn(&self, msg: &str) -> Result<(), AnnattoError> {
         let state = self.state.lock()?;
-        if let Some(ref tx) = (*state).tx {
+        if let Some(ref tx) = state.tx {
             tx.send(StatusMessage::Warning(msg.to_string()))?;
         } else {
             warn!("{}", msg);
@@ -60,13 +60,13 @@ impl ProgressReporter {
 
     pub fn worked(&self, finished_work: usize) -> Result<(), AnnattoError> {
         let mut state = self.state.lock()?;
-        (*state).accumulated_finished_work += finished_work;
+        state.accumulated_finished_work += finished_work;
 
-        if let Some(ref tx) = (*state).tx {
+        if let Some(ref tx) = state.tx {
             tx.send(StatusMessage::Progress {
                 id: self.step_id.clone(),
                 total_work: self.total_work,
-                finished_work: (*state).accumulated_finished_work,
+                finished_work: state.accumulated_finished_work,
             })?;
         }
         Ok(())
