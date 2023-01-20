@@ -103,6 +103,11 @@ fn place_at_new_target(
             let target_name = node_annos
                 .get_value_for_item(&covering_nodes.pop_last().unwrap(), &NODE_NAME_KEY)?
                 .unwrap();
+            update.add_event(UpdateEvent::DeleteNodeLabel { 
+                node_name: target_name.to_string(), 
+                anno_ns: target_key.ns.to_string(), 
+                anno_name: target_key.name.to_string() 
+            })?;  // safety delete in case of multiple annotations
             update.add_event(UpdateEvent::AddNodeLabel {
                 node_name: target_name.to_string(),
                 anno_ns: target_key.ns.to_string(),
@@ -128,11 +133,16 @@ fn place_at_new_target(
                 .filter(|v| v.starts_with(node_name_pref.as_str()))
                 .collect_vec()
                 .len();
-            let span_name = format!("{}{}", node_name_pref, existing + 1);
+            let span_name = format!("{}{}", node_name_pref, existing + 1);            
             update.add_event(UpdateEvent::AddNode {
                 node_name: span_name.clone(),
                 node_type: "node".to_string(),
             })?;
+            update.add_event(UpdateEvent::DeleteNodeLabel { 
+                node_name: span_name.to_string(), 
+                anno_ns: target_key.ns.to_string(), 
+                anno_name: target_key.name.to_string() 
+            })?;  // safety delete in case of multiple annotations
             update.add_event(UpdateEvent::AddNodeLabel {
                 node_name: span_name.clone(),
                 anno_ns: target_key.ns.to_string(),
