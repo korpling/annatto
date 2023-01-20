@@ -62,7 +62,7 @@ impl Importer for PythonImporter {
             // importer
             let code_module =
                 PyModule::from_code(py, &self.code, &format!("{}.py", &self.name), &self.name)?;
-            let args = PyTuple::new(py, &[input_path.to_str()]);
+            let args = PyTuple::new(py, [input_path.to_str()]);
             let result: graph::GraphUpdate = code_module
                 .getattr("start_import")?
                 .call(args, Some(properties.into_py_dict(py)))?
