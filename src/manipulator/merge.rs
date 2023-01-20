@@ -15,7 +15,6 @@ use graphannis_core::{
     util::split_qname,
 };
 use itertools::Itertools;
-use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::convert::TryFrom;
 
@@ -95,7 +94,7 @@ impl Default for ErrorPolicy {
     }
 }
 
-fn clean_value(value: &Cow<str>, remove_chars: &HashSet<char>) -> String {
+fn clean_value(value: &str, remove_chars: &HashSet<char>) -> String {
     let mut cleaned_value = String::new();
     for c in value.chars() {
         if !remove_chars.contains(&c) {
