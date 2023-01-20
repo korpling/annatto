@@ -96,13 +96,13 @@ impl Default for ErrorPolicy {
 }
 
 fn clean_value(value: &Cow<str>, remove_chars: &HashSet<char>) -> String {
-    let mut value_ = String::new();
+    let mut cleaned_value = String::new();
     for c in value.chars() {
         if !remove_chars.contains(&c) {
-            value_.push(c);
+            cleaned_value.push(c);
         }
     }
-    return value_;
+    cleaned_value
 }
 
 impl Merge {
