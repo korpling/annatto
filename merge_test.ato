@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <pepper-job id="trttqfob" version="1.0">
-  <importer name="EXMARaLDAImporter" path="./test/import/" leak_results_to="exmaralda-importer.leaks"/>
-  <importer name="CoNLLImporter" path="./test/import/" leak_results_to="conll-importer.leaks">
+  <importer name="EXMARaLDAImporter" path="./test/import/"/>
+  <importer name="CoNLLImporter" path="./test/import/">
     <customization>
       <property key="text_name">conll</property>
       <property key="anno_ns">norm</property>
@@ -14,6 +14,11 @@
       <property key="anno_ns">norm</property>
     </customization>
   </importer>
+  <manipulator name="replace">
+	  <customization>
+		  <property key="node.annos">norm::Number[psor],norm::Gender[psor]</property>
+	  </customization>
+  </manipulator>
   <manipulator name="merge">
     <customization>
       <property key="check.names">norm,conll,ptb</property>
