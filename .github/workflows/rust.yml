@@ -20,7 +20,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features
   format:
-    name: Format Rust Code
+    name: Format Code
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
