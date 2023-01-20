@@ -214,7 +214,7 @@ impl Merge {
             }
             let ordered_keep_items = ordered_keep_items_opt.unwrap();
             let mut order_names = HashSet::new();
-            for (k, _) in &ordered_items_by_name {
+            for k in ordered_items_by_name.keys() {
                 order_names.insert(k.to_string());
             }
             let mut unused_by_name = HashMap::new();
