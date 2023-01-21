@@ -13,7 +13,7 @@ use graphannis::AnnotationGraph;
 use graphannis_core::{
     annostorage::ValueSearch,
     graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY},
-    util::{join_qname, split_qname},
+    util::{join_qname, split_qname}, dfs::CycleSafeDFS,
 };
 use itertools::Itertools;
 use serde_derive::Serialize;
@@ -69,6 +69,26 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
     for c in graph.get_all_components(Some(AnnotationComponentType::Dominance), None) {
         let mut mappings = BTreeMap::new();
         let storage = graph.get_graphstorage(&c).unwrap();
+        { // determine terminal name
+            let start_node_result = storage.source_nodes().last();        
+            if let Some(node_result) = start_node_result {
+                let dfs = CycleSafeDFS::new(storage.as_edgecontainer(), node_result?, 1, usize::MAX);
+                let terminal = dfs
+                    .into_iter()
+                    .find(|nr| {
+                        let n = nr.as_ref().unwrap().node;
+                        let t = storage.has_outgoing_edges(n);
+                        t.is_ok() && !t.unwrap()
+                    })
+                    .unwrap()?
+                    .node;
+                let terminal_name = get_terminal_name(graph, terminal)?;
+                mappings.insert("terminal_name".to_string(), terminal_name);
+            } else {
+                // node nodes, no visualization required
+                continue;
+            }
+        }
         let all_keys = storage.get_anno_storage().annotation_keys()?;
         if let Some(first_key) = all_keys.get(0) {
             if !first_key.ns.is_empty() {
@@ -98,7 +118,7 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
         .unwrap();
         let (ns_opt, name) = split_qname(most_frequent_name.as_str());
         if let Some(ns) = ns_opt {
-            mappings.insert("node_ns".to_string(), ns.to_string());
+            mappings.insert("node_anno_ns".to_string(), ns.to_string());
         }
         mappings.insert("node_key".to_string(), name.to_string());
         visualizers.push(Visualizer {
@@ -117,6 +137,29 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
     Ok(visualizers)
 }
 
+fn get_terminal_name(graph: &AnnotationGraph, probe_node: u64) -> Result<String, Box<dyn std::error::Error>> {
+    let node_key = {
+        let node_key_opt = graph.get_all_components(Some(AnnotationComponentType::Ordering), None)
+            .into_iter()
+            .filter(|component| { 
+                let st_opt = graph.get_graphstorage(component);
+                if st_opt.is_none() {
+                    false
+                } else {
+                    let st = st_opt.unwrap();
+                    st.get_ingoing_edges(probe_node).count() > 0 || st.has_outgoing_edges(probe_node).unwrap()
+                }
+            })
+            .map(|component| component.name.to_string())
+            .last();
+        match node_key_opt {
+            None => "".to_string(),
+            Some(v) => v
+        }
+    };
+    Ok(node_key)
+}
+
 fn arch_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::error::Error>> {
     let mut visualizers = Vec::new();
     let mut order_storages = BTreeMap::new();
@@ -132,15 +175,7 @@ fn arch_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
         let mut mappings = BTreeMap::new();
         let storage = graph.get_graphstorage(&c).unwrap();
         let probe_node = storage.source_nodes().find(|_| true).unwrap()?;
-        let node_key_opt = order_storages
-            .iter()
-            .filter(|(_, st)| st.get_ingoing_edges(probe_node).count() > 0)
-            .map(|(name, _)| name.to_string())
-            .find(|_| true);
-        let node_key = match node_key_opt {
-            None => "".to_string(),
-            Some(v) => v,
-        };
+        let node_key = get_terminal_name(graph, probe_node)?;
         mappings.insert("node_key".to_string(), node_key);
         visualizers.push(Visualizer {
             element: "edge".to_string(),
@@ -158,7 +193,7 @@ fn arch_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
     Ok(visualizers)
 }
 
-fn vis_media(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::error::Error>> {
+fn media_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::error::Error>> {
     let mut vis = Vec::new();
     let node_annos = graph.get_node_annos();
     for match_r in node_annos.exact_anno_search(Some(ANNIS_NS), "file", ValueSearch::Any) {
@@ -228,7 +263,7 @@ fn vis_from_graph(graph: &AnnotationGraph) -> Result<String, Box<dyn std::error:
         visibility: "hidden".to_string(),
         mappings: Some(mappings),
     });
-    vis_list.extend(vis_media(graph)?);
+    vis_list.extend(media_vis(graph)?);
     let vis = toml::to_string(&Visualization {
         visualizers: vis_list,
     })?;
