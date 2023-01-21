@@ -8,7 +8,7 @@ use crate::{
     error::AnnattoError, exporter::Exporter, progress::ProgressReporter, workflow::StatusSender,
     Module,
 };
-use graphannis::model::{AnnotationComponent, AnnotationComponentType};
+use graphannis::{model::{AnnotationComponent, AnnotationComponentType}, graph::AnnoKey};
 use graphannis::AnnotationGraph;
 use graphannis_core::{
     annostorage::ValueSearch,
@@ -121,15 +121,15 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
             mappings.insert("node_anno_ns".to_string(), ns.to_string());
         }
         mappings.insert("node_key".to_string(), name.to_string());
+        let layer = match node_annos.get_value_for_item(&storage.source_nodes().last().unwrap()?, &AnnoKey { ns: ANNIS_NS.into(), name: "layer".into()})? {
+            None => None,
+            Some(v) => Some(v.to_string())
+        };
         visualizers.push(Visualizer {
             element: "node".to_string(),
-            layer: if c.layer.is_empty() {
-                None
-            } else {
-                Some(c.layer.to_string())
-            },
+            layer: layer,
             vis_type: "tree".to_string(),
-            display_name: format!("dominance ({})", c.layer),
+            display_name: "dominance ({})".to_string(),
             visibility: "hidden".to_string(),
             mappings: Some(mappings),
         });
