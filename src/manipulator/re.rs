@@ -35,6 +35,7 @@ impl Module for Replace {
 const PROP_NODE_ANNOS: &str = "node.annos";
 const PROP_NODE_NAMES: &str = "node.names";
 const PROP_EDGE_ANNOS: &str = "edge.annos";
+const PROP_ANNO_NAMESPACES: &str = "namespaces";
 const PROP_MOVE: &str = "move.node.annos";
 const PROPVAL_SEP: &str = ",";
 const PROPVAL_OLD_NEW_SEP: &str = ":=";
@@ -277,6 +278,71 @@ fn replace_edge_annos(
     Ok(())
 }
 
+fn replace_namespaces(
+    graph: &AnnotationGraph,
+    update: &mut GraphUpdate,
+    renamings: Vec<(String, Option<String>)>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let node_annos = graph.get_node_annos();
+    // for node annotations
+    for (old_namespace, new_namespace_opt) in renamings.iter() {
+        let new_ns = match new_namespace_opt {
+            None => "".to_string(),
+            Some(v) => v.to_string()
+        };
+        for ak in node_annos.annotation_keys()?.into_iter().filter(|k| k.ns.to_string() == *old_namespace) {
+            for m_r in node_annos.exact_anno_search(Some(old_namespace.as_str()), &ak.name.as_str(), ValueSearch::Any) {
+                let m = m_r?;
+                let node_name = node_annos.get_value_for_item(&m.node, &NODE_NAME_KEY)?.unwrap();
+                let value = node_annos.get_value_for_item(&m.node, &m.anno_key)?.unwrap();
+                update.add_event(UpdateEvent::DeleteNodeLabel { node_name: node_name.to_string(), anno_ns: m.anno_key.ns.to_string(), anno_name: m.anno_key.name.to_string() })?;
+                update.add_event(UpdateEvent::AddNodeLabel { node_name: node_name.to_string(), anno_ns: new_ns.to_string(), anno_name: m.anno_key.name.to_string(), anno_value: value.to_string() })?;
+            }
+        }
+    }
+    // for edge annotations
+    for component in graph.get_all_components(None, None) {
+        let storage = graph.get_graphstorage(&component).unwrap();
+        for (old_namespace, new_namespace_opt) in renamings.iter() {
+            let new_ns = match new_namespace_opt {
+                None => "".to_string(),
+                Some(v) => v.to_string()
+            };
+            for ak in storage.get_anno_storage().annotation_keys()?.into_iter().filter(|k| k.ns.to_string() == *old_namespace) {
+                for m_r in storage.get_anno_storage().exact_anno_search(Some(old_namespace.as_str()), &ak.name.as_str(), ValueSearch::Any) {
+                    let m = m_r?;
+                    let source_node = m.node;
+                    let source_node_name = node_annos.get_value_for_item(&source_node, &NODE_NAME_KEY)?.unwrap();
+                    for target_r in storage.get_outgoing_edges(source_node) {
+                        let target_node = target_r?;
+                        if let Some(value) = storage.get_anno_storage().get_value_for_item(&Edge { source: source_node, target: target_node }, &m.anno_key)? {
+                            let target_node_name = node_annos.get_value_for_item(&target_node, &NODE_NAME_KEY)?.unwrap();
+                            update.add_event(UpdateEvent::DeleteEdgeLabel { 
+                                source_node: source_node_name.to_string(), 
+                                target_node: target_node_name.to_string(), 
+                                layer: component.layer.to_string(), 
+                                component_type: component.get_type().to_string(), 
+                                component_name: component.name.to_string(),
+                                anno_ns: m.anno_key.ns.to_string(), 
+                                anno_name: m.anno_key.name.to_string() })?;
+                            update.add_event(UpdateEvent::AddEdgeLabel { 
+                                source_node: source_node_name.to_string(), 
+                                target_node: target_node_name.to_string(), 
+                                layer: component.layer.to_string(), 
+                                component_type: component.get_type().to_string(), 
+                                component_name: component.name.to_string(), 
+                                anno_ns: new_ns.to_string(), 
+                                anno_name: m.anno_key.name.to_string(), 
+                                anno_value: value.to_string() })?;
+                        }
+                    }
+                }
+            }
+        }        
+    }
+    Ok(())
+}
+
 fn key_from_qname(qname: &str) -> AnnoKey {
     let (ns, name) = split_qname(qname);
     match ns {
@@ -344,6 +410,21 @@ impl Manipulator for Replace {
             let edge_annos = read_replace_property_value(edge_name_s)?;
             replace_edge_annos(graph, &mut update, edge_annos)?;
         }
+        if let Some(namespace_s) = properties.get(&PROP_ANNO_NAMESPACES.to_string()) {
+            let namespaces = read_replace_property_value(namespace_s)?;
+            let replacements = namespaces
+                .into_iter()
+                .map(|(k, k_opt)| {
+                    let old_namespace = k.name.to_string();
+                    let new_namespace = match k_opt {
+                        None => None,
+                        Some(v) => Some(v.name.to_string())
+                    };
+                    (old_namespace, new_namespace)
+                })
+                .collect_vec();
+            replace_namespaces(graph, &mut update, replacements)?;
+        }
         graph.apply_update(&mut update, |_| {})?;
         Ok(())
     }
@@ -366,6 +447,8 @@ mod tests {
     use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY};
     use itertools::Itertools;
     use tempfile::{tempdir_in, tempfile};
+
+    use super::PROP_ANNO_NAMESPACES;
 
     #[test]
     fn test_remove_in_mem() {
@@ -702,6 +785,117 @@ mod tests {
         let export =
             graphannis_core::graph::serialization::graphml::export(&g, None, tmp_file, |_| {});
         assert_eq!(export.is_ok(), true, "Export fails: {:?}", &export);
+        Ok(())
+    }
+
+    #[test]
+    fn namespace_test_in_mem() {
+        let r = namespace_test(false); 
+        assert_eq!(r.is_ok(), true, "Failed with: {:?}", &r);
+    }
+
+    #[test]
+    fn namespace_test_on_disk() {
+        let r = namespace_test(true);
+        assert_eq!(r.is_ok(), true, "Failed with: {:?}", &r);
+    }
+
+    fn namespace_test(on_disk: bool) -> Result<()> {
+        let mut g = namespace_test_graph(on_disk, false)?;
+        let replace = Replace::default();
+        let mut properties = BTreeMap::new();
+        properties.insert(PROP_ANNO_NAMESPACES.to_string(), "ud:=default_ns,:=default_ns".to_string());
+        let op_result = replace.manipulate_corpus(&mut g, &properties, None);
+        assert_eq!(op_result.is_ok(), true, "Replacing namespaces failed: {:?}", &op_result);
+        let mut e_g = namespace_test_graph(on_disk, true)?;
+        // corpus nodes
+        let e_corpus_nodes: BTreeSet<String> = e_g
+            .get_node_annos()
+            .exact_anno_search(
+                Some(&NODE_TYPE_KEY.ns),
+                &NODE_TYPE_KEY.name,
+                ValueSearch::Some("corpus"),
+            )
+            .into_iter()
+            .map(|r| r.unwrap().node)
+            .map(|id_| {
+                e_g.get_node_annos()
+                    .get_value_for_item(&id_, &NODE_NAME_KEY)
+                    .unwrap()
+                    .unwrap()
+                    .to_string()
+            })
+            .collect();
+        let g_corpus_nodes: BTreeSet<String> = g
+            .get_node_annos()
+            .exact_anno_search(
+                Some(&NODE_TYPE_KEY.ns),
+                &NODE_TYPE_KEY.name,
+                ValueSearch::Some("corpus"),
+            )
+            .into_iter()
+            .map(|r| r.unwrap().node)
+            .map(|id_| {
+                g.get_node_annos()
+                    .get_value_for_item(&id_, &NODE_NAME_KEY)
+                    .unwrap()
+                    .unwrap()
+                    .to_string()
+            })
+            .collect();
+        assert_eq!(e_corpus_nodes, g_corpus_nodes); //TODO clarify: Delegate or assertion?
+                                                    // test by components
+        let e_c_list = e_g
+            .get_all_components(None, None)
+            .into_iter()
+            .filter(|c| e_g.get_graphstorage(c).unwrap().source_nodes().count() > 0)
+            .collect_vec();
+        let g_c_list = g
+            .get_all_components(None, None)
+            .into_iter()
+            .filter(|c| g.get_graphstorage(c).unwrap().source_nodes().count() > 0) // graph might contain empty components after merge
+            .collect_vec();
+        assert_eq!(
+            e_c_list.len(),
+            g_c_list.len(),
+            "components expected:\n{:?};\ncomponents are:\n{:?}",
+            &e_c_list,
+            &g_c_list
+        );
+        for c in e_c_list {
+            let candidates = g.get_all_components(Some(c.get_type()), Some(c.name.as_str()));
+            assert_eq!(candidates.len(), 1);
+            let c_o = candidates.get(0);
+            assert_eq!(&c, c_o.unwrap());
+        }
+        // test with queries
+        let queries = ["tok", "pos", "ud:pos", "default_ns:pos", "lemma", "default_ns:lemma", "node ->dep[func=/.*/] node", "node ->dep[ud:func=/.*/] node", "node ->dep[default_ns:func=/.*/] node"];
+        let corpus_name = "current";
+        let tmp_dir_e = tempdir_in(temp_dir())?;
+        let tmp_dir_g = tempdir_in(temp_dir())?;
+        e_g.save_to(&tmp_dir_e.path().join(corpus_name))?;
+        g.save_to(&tmp_dir_g.path().join(corpus_name))?;
+        let cs_e = CorpusStorage::with_auto_cache_size(&tmp_dir_e.path(), true)?;
+        let cs_g = CorpusStorage::with_auto_cache_size(&tmp_dir_g.path(), true)?;
+        for query_s in queries {
+            let query = SearchQuery {
+                corpus_names: &[corpus_name],
+                query: query_s,
+                query_language: QueryLanguage::AQL,
+                timeout: None,
+            };
+            let matches_e = cs_e.find(query.clone(), 0, None, ResultOrder::Normal)?;
+            let matches_g = cs_g.find(query, 0, None, ResultOrder::Normal)?;
+            assert_eq!(
+                matches_e.len(),
+                matches_g.len(),
+                "Failed with query: {}",
+                query_s
+            );
+            for (m_e, m_g) in matches_e.into_iter().zip(matches_g.into_iter()) {
+                assert_eq!(m_e, m_g);
+            }
+        }
         Ok(())
     }
 
@@ -1273,6 +1467,61 @@ mod tests {
             }
         }
         g.apply_update(&mut u, |_msg| {})?;
+        Ok(g)
+    }
+
+    fn namespace_test_graph(on_disk: bool, after: bool) -> Result<AnnotationGraph> {
+        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut u = GraphUpdate::default();
+        let corpus_type = "corpus";
+        let node_type = "node";
+        let doc_path = "root/subnode/doc";
+        u.add_event(UpdateEvent::AddNode { node_name: "root".to_string(), node_type: corpus_type.to_string() })?;
+        u.add_event(UpdateEvent::AddNode { node_name: "root/subnode".to_string(), node_type: corpus_type.to_string() })?;
+        u.add_event(UpdateEvent::AddNode { node_name: doc_path.to_string(), node_type: corpus_type.to_string() })?;
+        let default_ns = "default_ns";
+        let pos_ns = if after { default_ns } else { "ud" };
+        let pos_name = "pos";
+        let lemma_ns = if after { default_ns } else { "" };
+        let lemma_name = "lemma";
+        for (i, (text, pos_value, lemma_value)) in [("This", "PRON", "this"), ("is", "VERB", "be"), ("a", "DET", "a"), ("test", "NOUN", "test")].iter().enumerate() {
+            let tok_name = format!("{}#t{}", doc_path, &(i + 1));
+            u.add_event(UpdateEvent::AddNode { node_name: tok_name.to_string(), node_type: node_type.to_string() })?;
+            u.add_event(UpdateEvent::AddNodeLabel { node_name: tok_name.to_string(), anno_ns: ANNIS_NS.to_string(), anno_name: "tok".to_string(), anno_value: text.to_string() })?;
+            u.add_event(UpdateEvent::AddNodeLabel { node_name: tok_name.to_string(), anno_ns: lemma_ns.to_string(), anno_name: lemma_name.to_string(), anno_value: lemma_value.to_string() })?;
+            u.add_event(UpdateEvent::AddNodeLabel { node_name: tok_name.to_string(), anno_ns: pos_ns.to_string(), anno_name: pos_name.to_string(), anno_value: pos_value.to_string() })?;
+            if i.gt(&0) {
+                u.add_event(UpdateEvent::AddEdge { 
+                    source_node: format!("{}#t{}", doc_path, &i), 
+                    target_node: tok_name, 
+                    layer: ANNIS_NS.to_string(), 
+                    component_type: AnnotationComponentType::Ordering.to_string(), 
+                    component_name: "".to_string() })?;
+            }
+        }
+        let func_name = "func";
+        let func_ns = if after { default_ns } else { "ud" };
+        for (source_i, target_i, func_value) in [(4, 1, "subj"), (4, 2, "cop"), (4, 3, "det")] {
+            let source_name = format!("{}#t{}", doc_path, &source_i);
+            let target_name = format!("{}#t{}", doc_path, &target_i);
+            u.add_event(UpdateEvent::AddEdge { 
+                source_node: source_name.to_string(), 
+                target_node: target_name.to_string(), 
+                layer: "".to_string(), 
+                component_type: AnnotationComponentType::Pointing.to_string(), 
+                component_name: "dep".to_string() 
+            })?;
+            u.add_event(UpdateEvent::AddEdgeLabel { 
+                source_node: source_name.to_string(), 
+                target_node: target_name.to_string(), 
+                layer: "".to_string(), 
+                component_type: AnnotationComponentType::Pointing.to_string(), 
+                component_name: "dep".to_string(), 
+                anno_ns: func_ns.to_string(), 
+                anno_name: func_name.to_string(), 
+                anno_value: func_value.to_string() })?;
+        }
+        g.apply_update(&mut u, |_| {})?;
         Ok(g)
     }
 }
