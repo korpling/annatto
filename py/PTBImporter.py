@@ -1,6 +1,7 @@
 from collections import defaultdict
 from graphannis.graph import GraphUpdate
 from graphupdate_util import *
+import logging
 import re
 
 
@@ -13,6 +14,13 @@ _FIXED_SEQUENCES = {
     '-RRB-': ')'
 }
 _DEFAULT_CAT_NAME = 'cat'
+
+
+_logger = logging.getLogger(__name__)
+_logger.setLevel(logging.DEBUG)
+_handler = logging.StreamHandler()
+_handler.setLevel(logging.DEBUG)
+_logger.addHandler(_handler)
 
 
 def clean_text(text):
@@ -30,30 +38,36 @@ def map_document(u, path, doc_path, cat_name=_DEFAULT_CAT_NAME, text_name='', an
     s_count = 0
     tokens = []
     data = re.sub(r'\s+', ' ', data)
+    index_stack = []
     for c in data:
         if c == '(':
-            stack.append(())  # push
+            if (not stack or stack[-1]):                
+                stack.append(())  # push
+                index_stack.append(len(children))
         elif c == ')':
             # pop
-            if val:
+            if val:                
                 s_count += 1
                 stack[-1] += (val,)
                 val = ''
                 cat, text = stack.pop()
+                index_stack.pop()
                 token_id = map_token(u, doc_path, len(tokens) + 1, text_name, clean_text(text))
                 tokens.append(token_id)
-                struct_id = map_hierarchical_annotation(u, doc_path, s_count, '' if anno_ns is None else anno_ns, cat_name, cat, '' if edge_layer is None else edge_layer, token_id)
+                struct_id = map_hierarchical_annotation(u, doc_path, s_count, '' if anno_ns is None else anno_ns, cat_name, cat, '' if edge_layer is None else edge_layer, token_id)                
                 children.append(struct_id)
             elif stack and stack[-1]:
                 s_count += 1
-                (cat,) = stack.pop()
-                struct_id = map_hierarchical_annotation(u, doc_path, s_count, '' if anno_ns is None else anno_ns, cat_name, cat, '' if edge_layer is None else edge_layer, *children)
-                children = [struct_id]
+                (cat,) = stack.pop()                
+                child_index = index_stack.pop()
+                struct_id = map_hierarchical_annotation(u, doc_path, s_count, '' if anno_ns is None else anno_ns, cat_name, cat, '' if edge_layer is None else edge_layer, *children[child_index:])                
+                children = children[:child_index]
+                children.append(struct_id)
         elif c == ' ':
             if val:
                 stack[-1] += (val,)
                 val = ''
-        else:            
+        else:
             val += c
     add_order_relations(u, tokens)
     if text_name:
