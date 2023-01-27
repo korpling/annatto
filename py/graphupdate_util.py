@@ -107,13 +107,13 @@ def map_annotation(u, doc_path, id_, ns, name, value, *targets):
     return span_id
 
 
-def map_hierarchical_annotation(u, doc_path, id_, ns, name, value, *targets, edge_layer=''):
+def map_hierarchical_annotation(u, doc_path, id_, ns, name, value, edge_layer, *targets):
     struct_id = f'{doc_path}#sStruct{id_}'
     u.add_node(struct_id)
     if name:
         u.add_node_label(struct_id, ns, name, value)
-    for target in targets:
-        dominance(u, [struct_id], [target], layer=edge_layer)
+    u.add_node_label(struct_id, ANNIS_NS, ANNIS_NAME_LAYER, ns)    
+    dominance(u, [struct_id], targets, layer=edge_layer)
     return struct_id
 
 
