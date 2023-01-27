@@ -112,9 +112,8 @@ def map_hierarchical_annotation(u, doc_path, id_, ns, name, value, edge_layer, *
     u.add_node(struct_id)
     if name:
         u.add_node_label(struct_id, ns, name, value)
-    u.add_node_label(struct_id, ANNIS_NS, ANNIS_NAME_LAYER, ns)
-    for target in targets:
-        dominance(u, [struct_id], [target], layer=edge_layer)
+    u.add_node_label(struct_id, ANNIS_NS, ANNIS_NAME_LAYER, ns)    
+    dominance(u, [struct_id], targets, layer=edge_layer)
     return struct_id
 
 
