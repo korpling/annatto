@@ -1,19 +1,24 @@
 use std::{
+    cmp::Ordering,
     collections::{BTreeMap, BTreeSet},
     fs::{create_dir_all, File},
-    path::Path, cmp::Ordering,
+    path::Path,
 };
 
 use crate::{
     error::AnnattoError, exporter::Exporter, progress::ProgressReporter, workflow::StatusSender,
     Module,
 };
-use graphannis::{model::{AnnotationComponent, AnnotationComponentType}, graph::AnnoKey};
 use graphannis::AnnotationGraph;
+use graphannis::{
+    graph::AnnoKey,
+    model::{AnnotationComponent, AnnotationComponentType},
+};
 use graphannis_core::{
     annostorage::ValueSearch,
+    dfs::CycleSafeDFS,
     graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY},
-    util::{join_qname, split_qname}, dfs::CycleSafeDFS,
+    util::{join_qname, split_qname},
 };
 use itertools::Itertools;
 use serde_derive::Serialize;
@@ -70,7 +75,8 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
         let mut mappings = BTreeMap::new();
         let storage = graph.get_graphstorage(&c).unwrap();
         let random_struct = storage.source_nodes().last();
-        { // determine terminal name        
+        {
+            // determine terminal name
             if let Some(Ok(ref start_node)) = random_struct {
                 let dfs = CycleSafeDFS::new(storage.as_edgecontainer(), *start_node, 1, usize::MAX);
                 let terminal = dfs
@@ -121,9 +127,15 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
             mappings.insert("node_anno_ns".to_string(), ns.to_string());
         }
         mappings.insert("node_key".to_string(), name.to_string());
-        let layer = match node_annos.get_value_for_item(&random_struct.unwrap()?, &AnnoKey { ns: ANNIS_NS.into(), name: "layer".into()})? {
+        let layer = match node_annos.get_value_for_item(
+            &random_struct.unwrap()?,
+            &AnnoKey {
+                ns: ANNIS_NS.into(),
+                name: "layer".into(),
+            },
+        )? {
             None => None,
-            Some(v) => Some(v.to_string())
+            Some(v) => Some(v.to_string()),
         };
         visualizers.push(Visualizer {
             element: "node".to_string(),
@@ -137,24 +149,29 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
     Ok(visualizers)
 }
 
-fn get_terminal_name(graph: &AnnotationGraph, probe_node: u64) -> Result<String, Box<dyn std::error::Error>> {
+fn get_terminal_name(
+    graph: &AnnotationGraph,
+    probe_node: u64,
+) -> Result<String, Box<dyn std::error::Error>> {
     let node_key = {
-        let node_key_opt = graph.get_all_components(Some(AnnotationComponentType::Ordering), None)
+        let node_key_opt = graph
+            .get_all_components(Some(AnnotationComponentType::Ordering), None)
             .into_iter()
-            .filter(|component| { 
+            .filter(|component| {
                 let st_opt = graph.get_graphstorage(component);
                 if st_opt.is_none() {
                     false
                 } else {
                     let st = st_opt.unwrap();
-                    st.get_ingoing_edges(probe_node).count() > 0 || st.has_outgoing_edges(probe_node).unwrap()
+                    st.get_ingoing_edges(probe_node).count() > 0
+                        || st.has_outgoing_edges(probe_node).unwrap()
                 }
             })
             .map(|component| component.name.to_string())
             .last();
         match node_key_opt {
             None => "".to_string(),
-            Some(v) => v
+            Some(v) => v,
         }
     };
     Ok(node_key)
@@ -231,10 +248,15 @@ fn media_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::er
     Ok(vis)
 }
 
-fn collect_qnames(graph: &AnnotationGraph,
-                node_id: &u64) -> Result<BTreeSet<String>, Box<dyn std::error::Error>> {
+fn collect_qnames(
+    graph: &AnnotationGraph,
+    node_id: &u64,
+) -> Result<BTreeSet<String>, Box<dyn std::error::Error>> {
     let mut key_set = BTreeSet::new();
-    for key in graph.get_node_annos().get_all_keys_for_item(node_id, None, None)? {
+    for key in graph
+        .get_node_annos()
+        .get_all_keys_for_item(node_id, None, None)?
+    {
         key_set.insert(join_qname(&key.ns, &key.name));
     }
     Ok(key_set)
@@ -261,7 +283,7 @@ fn node_annos_vis(graph: &AnnotationGraph) -> Result<Visualizer, Box<dyn std::er
                 let dfs = CycleSafeDFS::new(storage.as_edgecontainer(), source_node, 1, usize::MAX);
                 for step_r in dfs {
                     let step_node = step_r?.node;
-                    if !visited.contains(&step_node) {                    
+                    if !visited.contains(&step_node) {
                         visited.insert(step_node);
                         node_qnames.extend(collect_qnames(graph, &step_node)?);
                     }
@@ -273,22 +295,33 @@ fn node_annos_vis(graph: &AnnotationGraph) -> Result<Visualizer, Box<dyn std::er
     sorted_node_qnames.sort();
     let node_names = sorted_node_qnames
         .into_iter()
-        .filter(|name| !order_names.contains(&name) && !name.starts_with(format!("{}::", ANNIS_NS).as_str()))
+        .filter(|name| {
+            !order_names.contains(&name) && !name.starts_with(format!("{}::", ANNIS_NS).as_str())
+        })
         .map(|name| format!("/{}/", name))
         .join(",");
     let mut mappings = BTreeMap::new();
     mappings.insert("annos".to_string(), [orderings, node_names].join(","));
     mappings.insert("escape_html".to_string(), "false".to_string());
-    let more_than_one_ordering = !order_names.is_empty();  // reminder: order_names does not contain the unnamed ordering, therefore !is_empty is the way to go
+    let more_than_one_ordering = !order_names.is_empty(); // reminder: order_names does not contain the unnamed ordering, therefore !is_empty is the way to go
     let ordered_nodes_are_identical = {
         more_than_one_ordering && {
-            let ordering_components = graph.get_all_components(Some(AnnotationComponentType::Ordering), None);
+            let ordering_components =
+                graph.get_all_components(Some(AnnotationComponentType::Ordering), None);
             let node_sets = ordering_components
                 .iter()
-                .map(|c| graph.get_graphstorage(c).unwrap().source_nodes().into_iter().map(|r| r.unwrap()).collect::<BTreeSet<u64>>())
-                .collect_vec();            
+                .map(|c| {
+                    graph
+                        .get_graphstorage(c)
+                        .unwrap()
+                        .source_nodes()
+                        .into_iter()
+                        .map(|r| r.unwrap())
+                        .collect::<BTreeSet<u64>>()
+                })
+                .collect_vec();
             let mut all_same = true;
-            for i in 1 .. node_sets.len() {
+            for i in 1..node_sets.len() {
                 let a = node_sets.get(i - 1).unwrap();
                 let b = node_sets.get(i).unwrap();
                 all_same &= a.cmp(b) == Ordering::Equal;
@@ -296,7 +329,10 @@ fn node_annos_vis(graph: &AnnotationGraph) -> Result<Visualizer, Box<dyn std::er
             all_same
         }
     };
-    mappings.insert("hide_tok".to_string(), (!ordered_nodes_are_identical).to_string());
+    mappings.insert(
+        "hide_tok".to_string(),
+        (!ordered_nodes_are_identical).to_string(),
+    );
     mappings.insert("show_ns".to_string(), "false".to_string());
     Ok(Visualizer {
         element: "node".to_string(),

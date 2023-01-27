@@ -288,15 +288,36 @@ fn replace_namespaces(
     for (old_namespace, new_namespace_opt) in renamings.iter() {
         let new_ns = match new_namespace_opt {
             None => "".to_string(),
-            Some(v) => v.to_string()
+            Some(v) => v.to_string(),
         };
-        for ak in node_annos.annotation_keys()?.into_iter().filter(|k| k.ns.to_string() == *old_namespace) {
-            for m_r in node_annos.exact_anno_search(Some(old_namespace.as_str()), &ak.name.as_str(), ValueSearch::Any) {
+        for ak in node_annos
+            .annotation_keys()?
+            .into_iter()
+            .filter(|k| k.ns.to_string() == *old_namespace)
+        {
+            for m_r in node_annos.exact_anno_search(
+                Some(old_namespace.as_str()),
+                &ak.name.as_str(),
+                ValueSearch::Any,
+            ) {
                 let m = m_r?;
-                let node_name = node_annos.get_value_for_item(&m.node, &NODE_NAME_KEY)?.unwrap();
-                let value = node_annos.get_value_for_item(&m.node, &m.anno_key)?.unwrap();
-                update.add_event(UpdateEvent::DeleteNodeLabel { node_name: node_name.to_string(), anno_ns: m.anno_key.ns.to_string(), anno_name: m.anno_key.name.to_string() })?;
-                update.add_event(UpdateEvent::AddNodeLabel { node_name: node_name.to_string(), anno_ns: new_ns.to_string(), anno_name: m.anno_key.name.to_string(), anno_value: value.to_string() })?;
+                let node_name = node_annos
+                    .get_value_for_item(&m.node, &NODE_NAME_KEY)?
+                    .unwrap();
+                let value = node_annos
+                    .get_value_for_item(&m.node, &m.anno_key)?
+                    .unwrap();
+                update.add_event(UpdateEvent::DeleteNodeLabel {
+                    node_name: node_name.to_string(),
+                    anno_ns: m.anno_key.ns.to_string(),
+                    anno_name: m.anno_key.name.to_string(),
+                })?;
+                update.add_event(UpdateEvent::AddNodeLabel {
+                    node_name: node_name.to_string(),
+                    anno_ns: new_ns.to_string(),
+                    anno_name: m.anno_key.name.to_string(),
+                    anno_value: value.to_string(),
+                })?;
             }
         }
     }
@@ -306,39 +327,60 @@ fn replace_namespaces(
         for (old_namespace, new_namespace_opt) in renamings.iter() {
             let new_ns = match new_namespace_opt {
                 None => "".to_string(),
-                Some(v) => v.to_string()
+                Some(v) => v.to_string(),
             };
-            for ak in storage.get_anno_storage().annotation_keys()?.into_iter().filter(|k| k.ns.to_string() == *old_namespace) {
-                for m_r in storage.get_anno_storage().exact_anno_search(Some(old_namespace.as_str()), &ak.name.as_str(), ValueSearch::Any) {
+            for ak in storage
+                .get_anno_storage()
+                .annotation_keys()?
+                .into_iter()
+                .filter(|k| k.ns.to_string() == *old_namespace)
+            {
+                for m_r in storage.get_anno_storage().exact_anno_search(
+                    Some(old_namespace.as_str()),
+                    &ak.name.as_str(),
+                    ValueSearch::Any,
+                ) {
                     let m = m_r?;
                     let source_node = m.node;
-                    let source_node_name = node_annos.get_value_for_item(&source_node, &NODE_NAME_KEY)?.unwrap();
+                    let source_node_name = node_annos
+                        .get_value_for_item(&source_node, &NODE_NAME_KEY)?
+                        .unwrap();
                     for target_r in storage.get_outgoing_edges(source_node) {
                         let target_node = target_r?;
-                        if let Some(value) = storage.get_anno_storage().get_value_for_item(&Edge { source: source_node, target: target_node }, &m.anno_key)? {
-                            let target_node_name = node_annos.get_value_for_item(&target_node, &NODE_NAME_KEY)?.unwrap();
-                            update.add_event(UpdateEvent::DeleteEdgeLabel { 
-                                source_node: source_node_name.to_string(), 
-                                target_node: target_node_name.to_string(), 
-                                layer: component.layer.to_string(), 
-                                component_type: component.get_type().to_string(), 
+                        if let Some(value) = storage.get_anno_storage().get_value_for_item(
+                            &Edge {
+                                source: source_node,
+                                target: target_node,
+                            },
+                            &m.anno_key,
+                        )? {
+                            let target_node_name = node_annos
+                                .get_value_for_item(&target_node, &NODE_NAME_KEY)?
+                                .unwrap();
+                            update.add_event(UpdateEvent::DeleteEdgeLabel {
+                                source_node: source_node_name.to_string(),
+                                target_node: target_node_name.to_string(),
+                                layer: component.layer.to_string(),
+                                component_type: component.get_type().to_string(),
                                 component_name: component.name.to_string(),
-                                anno_ns: m.anno_key.ns.to_string(), 
-                                anno_name: m.anno_key.name.to_string() })?;
-                            update.add_event(UpdateEvent::AddEdgeLabel { 
-                                source_node: source_node_name.to_string(), 
-                                target_node: target_node_name.to_string(), 
-                                layer: component.layer.to_string(), 
-                                component_type: component.get_type().to_string(), 
-                                component_name: component.name.to_string(), 
-                                anno_ns: new_ns.to_string(), 
-                                anno_name: m.anno_key.name.to_string(), 
-                                anno_value: value.to_string() })?;
+                                anno_ns: m.anno_key.ns.to_string(),
+                                anno_name: m.anno_key.name.to_string(),
+                            })?;
+                            update.add_event(UpdateEvent::AddEdgeLabel {
+                                source_node: source_node_name.to_string(),
+                                target_node: target_node_name.to_string(),
+                                layer: component.layer.to_string(),
+                                component_type: component.get_type().to_string(),
+                                component_name: component.name.to_string(),
+                                anno_ns: new_ns.to_string(),
+                                anno_name: m.anno_key.name.to_string(),
+                                anno_value: value.to_string(),
+                            })?;
                         }
                     }
                 }
             }
-        }        
+        }
     }
     Ok(())
 }
@@ -418,7 +460,7 @@ impl Manipulator for Replace {
                     let old_namespace = k.name.to_string();
                     let new_namespace = match k_opt {
                         None => None,
-                        Some(v) => Some(v.name.to_string())
+                        Some(v) => Some(v.name.to_string()),
                     };
                     (old_namespace, new_namespace)
                 })
@@ -790,7 +832,7 @@ mod tests {
 
     #[test]
     fn namespace_test_in_mem() {
-        let r = namespace_test(false); 
+        let r = namespace_test(false);
         assert_eq!(r.is_ok(), true, "Failed with: {:?}", &r);
     }
 
@@ -804,9 +846,17 @@ mod tests {
         let mut g = namespace_test_graph(on_disk, false)?;
         let replace = Replace::default();
         let mut properties = BTreeMap::new();
-        properties.insert(PROP_ANNO_NAMESPACES.to_string(), "ud:=default_ns,:=default_ns".to_string());
+        properties.insert(
+            PROP_ANNO_NAMESPACES.to_string(),
+            "ud:=default_ns,:=default_ns".to_string(),
+        );
         let op_result = replace.manipulate_corpus(&mut g, &properties, None);
-        assert_eq!(op_result.is_ok(), true, "Replacing namespaces failed: {:?}", &op_result);
+        assert_eq!(
+            op_result.is_ok(),
+            true,
+            "Replacing namespaces failed: {:?}",
+            &op_result
+        );
         let mut e_g = namespace_test_graph(on_disk, true)?;
         // corpus nodes
         let e_corpus_nodes: BTreeSet<String> = e_g
@@ -869,7 +919,17 @@ mod tests {
             assert_eq!(&c, c_o.unwrap());
         }
         // test with queries
-        let queries = ["tok", "pos", "ud:pos", "default_ns:pos", "lemma", "default_ns:lemma", "node ->dep[func=/.*/] node", "node ->dep[ud:func=/.*/] node", "node ->dep[default_ns:func=/.*/] node"];
+        let queries = [
+            "tok",
+            "pos",
+            "ud:pos",
+            "default_ns:pos",
+            "lemma",
+            "default_ns:lemma",
+            "node ->dep[func=/.*/] node",
+            "node ->dep[ud:func=/.*/] node",
+            "node ->dep[default_ns:func=/.*/] node",
+        ];
         let corpus_name = "current";
         let tmp_dir_e = tempdir_in(temp_dir())?;
         let tmp_dir_g = tempdir_in(temp_dir())?;
@@ -1476,27 +1536,63 @@ mod tests {
         let corpus_type = "corpus";
         let node_type = "node";
         let doc_path = "root/subnode/doc";
-        u.add_event(UpdateEvent::AddNode { node_name: "root".to_string(), node_type: corpus_type.to_string() })?;
-        u.add_event(UpdateEvent::AddNode { node_name: "root/subnode".to_string(), node_type: corpus_type.to_string() })?;
-        u.add_event(UpdateEvent::AddNode { node_name: doc_path.to_string(), node_type: corpus_type.to_string() })?;
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "root".to_string(),
+            node_type: corpus_type.to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "root/subnode".to_string(),
+            node_type: corpus_type.to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNode {
+            node_name: doc_path.to_string(),
+            node_type: corpus_type.to_string(),
+        })?;
         let default_ns = "default_ns";
         let pos_ns = if after { default_ns } else { "ud" };
         let pos_name = "pos";
         let lemma_ns = if after { default_ns } else { "" };
         let lemma_name = "lemma";
-        for (i, (text, pos_value, lemma_value)) in [("This", "PRON", "this"), ("is", "VERB", "be"), ("a", "DET", "a"), ("test", "NOUN", "test")].iter().enumerate() {
+        for (i, (text, pos_value, lemma_value)) in [
+            ("This", "PRON", "this"),
+            ("is", "VERB", "be"),
+            ("a", "DET", "a"),
+            ("test", "NOUN", "test"),
+        ]
+        .iter()
+        .enumerate()
+        {
             let tok_name = format!("{}#t{}", doc_path, &(i + 1));
-            u.add_event(UpdateEvent::AddNode { node_name: tok_name.to_string(), node_type: node_type.to_string() })?;
-            u.add_event(UpdateEvent::AddNodeLabel { node_name: tok_name.to_string(), anno_ns: ANNIS_NS.to_string(), anno_name: "tok".to_string(), anno_value: text.to_string() })?;
-            u.add_event(UpdateEvent::AddNodeLabel { node_name: tok_name.to_string(), anno_ns: lemma_ns.to_string(), anno_name: lemma_name.to_string(), anno_value: lemma_value.to_string() })?;
-            u.add_event(UpdateEvent::AddNodeLabel { node_name: tok_name.to_string(), anno_ns: pos_ns.to_string(), anno_name: pos_name.to_string(), anno_value: pos_value.to_string() })?;
+            u.add_event(UpdateEvent::AddNode {
+                node_name: tok_name.to_string(),
+                node_type: node_type.to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddNodeLabel {
+                node_name: tok_name.to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "tok".to_string(),
+                anno_value: text.to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddNodeLabel {
+                node_name: tok_name.to_string(),
+                anno_ns: lemma_ns.to_string(),
+                anno_name: lemma_name.to_string(),
+                anno_value: lemma_value.to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddNodeLabel {
+                node_name: tok_name.to_string(),
+                anno_ns: pos_ns.to_string(),
+                anno_name: pos_name.to_string(),
+                anno_value: pos_value.to_string(),
+            })?;
             if i.gt(&0) {
-                u.add_event(UpdateEvent::AddEdge { 
-                    source_node: format!("{}#t{}", doc_path, &i), 
-                    target_node: tok_name, 
-                    layer: ANNIS_NS.to_string(), 
-                    component_type: AnnotationComponentType::Ordering.to_string(), 
-                    component_name: "".to_string() })?;
+                u.add_event(UpdateEvent::AddEdge {
+                    source_node: format!("{}#t{}", doc_path, &i),
+                    target_node: tok_name,
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::Ordering.to_string(),
+                    component_name: "".to_string(),
+                })?;
             }
         }
         let func_name = "func";
@@ -1504,22 +1600,23 @@ mod tests {
         for (source_i, target_i, func_value) in [(4, 1, "subj"), (4, 2, "cop"), (4, 3, "det")] {
             let source_name = format!("{}#t{}", doc_path, &source_i);
             let target_name = format!("{}#t{}", doc_path, &target_i);
-            u.add_event(UpdateEvent::AddEdge { 
-                source_node: source_name.to_string(), 
-                target_node: target_name.to_string(), 
-                layer: "".to_string(), 
-                component_type: AnnotationComponentType::Pointing.to_string(), 
-                component_name: "dep".to_string() 
+            u.add_event(UpdateEvent::AddEdge {
+                source_node: source_name.to_string(),
+                target_node: target_name.to_string(),
+                layer: "".to_string(),
+                component_type: AnnotationComponentType::Pointing.to_string(),
+                component_name: "dep".to_string(),
             })?;
-            u.add_event(UpdateEvent::AddEdgeLabel { 
-                source_node: source_name.to_string(), 
-                target_node: target_name.to_string(), 
-                layer: "".to_string(), 
-                component_type: AnnotationComponentType::Pointing.to_string(), 
-                component_name: "dep".to_string(), 
-                anno_ns: func_ns.to_string(), 
-                anno_name: func_name.to_string(), 
-                anno_value: func_value.to_string() })?;
+            u.add_event(UpdateEvent::AddEdgeLabel {
+                source_node: source_name.to_string(),
+                target_node: target_name.to_string(),
+                layer: "".to_string(),
+                component_type: AnnotationComponentType::Pointing.to_string(),
+                component_name: "dep".to_string(),
+                anno_ns: func_ns.to_string(),
+                anno_name: func_name.to_string(),
+                anno_value: func_value.to_string(),
+            })?;
         }
         g.apply_update(&mut u, |_| {})?;
         Ok(g)
