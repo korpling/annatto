@@ -1,5 +1,6 @@
 //! Contains importers and their traits.
 
+pub mod corpus_annotations;
 pub mod graphml;
 
 use crate::{workflow::StatusSender, Module, StepID};
