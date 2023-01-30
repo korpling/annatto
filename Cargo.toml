@@ -6,6 +6,7 @@ edition = "2018"
 license = "Apache-2.0"
 
 [dependencies]
+calamine = "0.19.1"
 glob = "0.3"
 graphannis = "2.4.2"
 graphannis-core = "2.4.2"
