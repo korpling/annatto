@@ -1,7 +1,7 @@
 //! Contains importers and their traits.
 
 pub mod graphml;
-pub mod metadata;
+pub mod corpus_annotations;
 
 use crate::{workflow::StatusSender, Module, StepID};
 use graphannis::update::GraphUpdate;
