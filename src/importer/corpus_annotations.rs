@@ -1,9 +1,16 @@
-use std::{collections::BTreeMap, io::{self, BufRead}, path::Path};
+use std::{
+    collections::BTreeMap,
+    io::{self, BufRead},
+    path::Path,
+};
 
-use graphannis::{update::{GraphUpdate, UpdateEvent}, model::AnnotationComponentType};
+use graphannis::{
+    model::AnnotationComponentType,
+    update::{GraphUpdate, UpdateEvent},
+};
 use graphannis_core::{graph::ANNIS_NS, util::split_qname};
 
-use crate::{Module, workflow::StatusMessage};
+use crate::{workflow::StatusMessage, Module};
 
 use super::Importer;
 
@@ -25,7 +32,10 @@ impl Module for AnnotateCorpus {
 
 const KV_SEPARATOR: &str = "=";
 
-fn read_annotations(path: &Path, tx: &Option<crate::workflow::StatusSender>) -> Result<BTreeMap<String, String>, Box<dyn std::error::Error>> {
+fn read_annotations(
+    path: &Path,
+    tx: &Option<crate::workflow::StatusSender>,
+) -> Result<BTreeMap<String, String>, Box<dyn std::error::Error>> {
     let anno_file = std::fs::File::open(path)?;
     let mut anno_map = BTreeMap::new();
     for line_r in io::BufReader::new(anno_file).lines() {
@@ -33,7 +43,11 @@ fn read_annotations(path: &Path, tx: &Option<crate::workflow::StatusSender>) -> 
         if let Some((k, v)) = line.split_once(KV_SEPARATOR) {
             anno_map.insert(k.to_string(), v.to_string());
         } else if let Some(sender) = tx {
-            sender.send(StatusMessage::Warning(format!("Could not read data `{}` in file {}", &line, path.display())))?;
+            sender.send(StatusMessage::Warning(format!(
+                "Could not read data `{}` in file {}",
+                &line,
+                path.display()
+            )))?;
         }
     }
     Ok(anno_map)
@@ -49,7 +63,7 @@ impl Importer for AnnotateCorpus {
         let mut update = GraphUpdate::default();
         let path_pattern = input_path.join("**/*.meta");
         dbg!(&path_pattern);
-        let files = glob::glob(path_pattern.to_str().unwrap())?;        
+        let files = glob::glob(path_pattern.to_str().unwrap())?;
         for file_path_r in files {
             let file_path = file_path_r?;
             let mut corpus_nodes = Vec::new();
@@ -58,23 +72,30 @@ impl Importer for AnnotateCorpus {
                     break;
                 }
                 corpus_nodes.push(ancestor);
-            }            
+            }
             corpus_nodes.reverse();
             let last_item = corpus_nodes.remove(corpus_nodes.len() - 1);
-            let clean_name = last_item.to_path_buf().parent().unwrap().join(last_item.file_stem().unwrap());
+            let clean_name = last_item
+                .to_path_buf()
+                .parent()
+                .unwrap()
+                .join(last_item.file_stem().unwrap());
             corpus_nodes.push(clean_name.as_path());
             let start_index: usize = input_path.to_str().unwrap().len() + 1;
             let mut previous: Option<String> = None;
             for node_path in corpus_nodes {
                 let node_name = (&node_path.to_str().unwrap()[start_index..]).to_string();
-                update.add_event(UpdateEvent::AddNode { node_name: node_name.to_string(), node_type: "corpus".to_string() })?;  // this is required, corpus annotations might be first updates to be processed
+                update.add_event(UpdateEvent::AddNode {
+                    node_name: node_name.to_string(),
+                    node_type: "corpus".to_string(),
+                })?; // this is required, corpus annotations might be first updates to be processed
                 if let Some(previous_name) = previous {
-                    update.add_event(UpdateEvent::AddEdge { 
-                        source_node: node_name.to_string(), 
-                        target_node: previous_name.to_string(), 
-                        layer: ANNIS_NS.to_string(), 
-                        component_type: AnnotationComponentType::PartOf.to_string(), 
-                        component_name: "".to_string() 
+                    update.add_event(UpdateEvent::AddEdge {
+                        source_node: node_name.to_string(),
+                        target_node: previous_name.to_string(),
+                        layer: ANNIS_NS.to_string(),
+                        component_type: AnnotationComponentType::PartOf.to_string(),
+                        component_name: "".to_string(),
                     })?;
                 }
                 previous = Some(node_name);
@@ -85,13 +106,13 @@ impl Importer for AnnotateCorpus {
                 for (k, v) in annotations {
                     let (anno_ns, anno_name) = match split_qname(k.as_str()) {
                         (None, name) => ("", name),
-                        (Some(ns), name) => (ns, name)
+                        (Some(ns), name) => (ns, name),
                     };
-                    update.add_event(UpdateEvent::AddNodeLabel { 
-                        node_name: corpus_doc_path.to_string(), 
-                        anno_ns: anno_ns.to_string(), 
-                        anno_name: anno_name.to_string(), 
-                        anno_value: v 
+                    update.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: corpus_doc_path.to_string(),
+                        anno_ns: anno_ns.to_string(),
+                        anno_name: anno_name.to_string(),
+                        anno_value: v,
                     })?;
                 }
             }
@@ -100,12 +121,16 @@ impl Importer for AnnotateCorpus {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use std::{env::temp_dir, io::Write, collections::BTreeMap};
+    use std::{collections::BTreeMap, env::temp_dir, io::Write};
 
-    use graphannis::{AnnotationGraph, update::{GraphUpdate, UpdateEvent}, CorpusStorage, corpusstorage::{SearchQuery, QueryLanguage, ResultOrder}, model::AnnotationComponentType};
+    use graphannis::{
+        corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
+        model::AnnotationComponentType,
+        update::{GraphUpdate, UpdateEvent},
+        AnnotationGraph, CorpusStorage,
+    };
     use graphannis_core::graph::ANNIS_NS;
     use tempfile::tempdir_in;
 
@@ -133,20 +158,26 @@ mod tests {
         std::fs::create_dir_all(metadata_file_path.parent().unwrap())?;
         let mut metadata_file = std::fs::File::create(metadata_file_path)?;
         metadata_file.write(metadata.join("\n").as_bytes())?;
-        let properties = BTreeMap::new();        
-        let r = add_metadata.import_corpus(temp_dir().join("metadata").as_path(), 
-                                                                                &properties, 
-                                                                                None);
-        assert_eq!(true, r.is_ok(), "Applying corpus annotation updates ended with error: {:?}", r.err().unwrap());
+        let properties = BTreeMap::new();
+        let r =
+            add_metadata.import_corpus(temp_dir().join("metadata").as_path(), &properties, None);
+        assert_eq!(
+            true,
+            r.is_ok(),
+            "Applying corpus annotation updates ended with error: {:?}",
+            r.err().unwrap()
+        );
         let mut u = r?;
         external_updates(&mut u)?;
         let mut g = AnnotationGraph::new(on_disk)?;
         let apu = g.apply_update(&mut u, |_| {});
-        assert_eq!(true, apu.is_ok(), "Applying updates ends with error: {:?}", &apu);
-        let queries = [
-            "tok @* language",
-            "tok @* date"
-        ];
+        assert_eq!(
+            true,
+            apu.is_ok(),
+            "Applying updates ends with error: {:?}",
+            &apu
+        );
+        let queries = ["tok @* language", "tok @* date"];
         let corpus_name = "current";
         let tmp_dir_e = tempdir_in(temp_dir())?;
         let tmp_dir_g = tempdir_in(temp_dir())?;
@@ -177,62 +208,71 @@ mod tests {
     }
 
     fn external_updates(u: &mut GraphUpdate) -> Result<(), Box<dyn std::error::Error>> {
-        u.add_event(UpdateEvent::AddNode { node_name: "corpus/doc#1".to_string(), node_type: "node".to_string() })?;
-        u.add_event(UpdateEvent::AddNodeLabel { 
-            node_name: "corpus/doc#t1".to_string(), 
-            anno_ns: ANNIS_NS.to_string(), 
-            anno_name: "tok".to_string(), 
-            anno_value: "a".to_string() 
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "corpus/doc#1".to_string(),
+            node_type: "node".to_string(),
         })?;
-        u.add_event(UpdateEvent::AddNode { node_name: "corpus/doc#t2".to_string(), node_type: "node".to_string() })?;
-        u.add_event(UpdateEvent::AddNodeLabel { 
-            node_name: "corpus/doc#t2".to_string(), 
-            anno_ns: ANNIS_NS.to_string(), 
-            anno_name: "tok".to_string(), 
-            anno_value: "b".to_string() 
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "corpus/doc#t1".to_string(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "tok".to_string(),
+            anno_value: "a".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "corpus/doc#t2".to_string(),
+            node_type: "node".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "corpus/doc#t2".to_string(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "tok".to_string(),
+            anno_value: "b".to_string(),
         })?;
 
-        u.add_event(UpdateEvent::AddNode { node_name: "corpus/doc#t3".to_string(), node_type: "node".to_string() })?;
-        u.add_event(UpdateEvent::AddNodeLabel { 
-            node_name: "corpus/doc#t3".to_string(), 
-            anno_ns: ANNIS_NS.to_string(), 
-            anno_name: "tok".to_string(), 
-            anno_value: "c".to_string() 
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "corpus/doc#t3".to_string(),
+            node_type: "node".to_string(),
         })?;
-        u.add_event(UpdateEvent::AddEdge { 
-            source_node: "corpus/doc#t1".to_string(), 
-            target_node: "corpus/doc#t2".to_string(), 
-            layer: ANNIS_NS.to_string(), 
-            component_type: AnnotationComponentType::Ordering.to_string(), 
-            component_name: "".to_string()
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "corpus/doc#t3".to_string(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "tok".to_string(),
+            anno_value: "c".to_string(),
         })?;
-        u.add_event(UpdateEvent::AddEdge { 
-            source_node: "corpus/doc#t2".to_string(), 
-            target_node: "corpus/doc#t3".to_string(), 
-            layer: ANNIS_NS.to_string(), 
-            component_type: AnnotationComponentType::Ordering.to_string(), 
-            component_name: "".to_string()
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "corpus/doc#t1".to_string(),
+            target_node: "corpus/doc#t2".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::Ordering.to_string(),
+            component_name: "".to_string(),
         })?;
-        u.add_event(UpdateEvent::AddEdge { 
-            source_node: "corpus/doc#t1".to_string(), 
-            target_node: "corpus/doc".to_string(), 
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "corpus/doc#t2".to_string(),
+            target_node: "corpus/doc#t3".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::Ordering.to_string(),
+            component_name: "".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "corpus/doc#t1".to_string(),
+            target_node: "corpus/doc".to_string(),
             layer: ANNIS_NS.to_string(),
             component_type: AnnotationComponentType::PartOf.to_string(),
-            component_name: "".to_string() 
+            component_name: "".to_string(),
         })?;
-        u.add_event(UpdateEvent::AddEdge { 
-            source_node: "corpus/doc#t2".to_string(), 
-            target_node: "corpus/doc".to_string(), 
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "corpus/doc#t2".to_string(),
+            target_node: "corpus/doc".to_string(),
             layer: ANNIS_NS.to_string(),
             component_type: AnnotationComponentType::PartOf.to_string(),
-            component_name: "".to_string() 
+            component_name: "".to_string(),
         })?;
-        u.add_event(UpdateEvent::AddEdge { 
-            source_node: "corpus/doc#t3".to_string(), 
-            target_node: "corpus/doc".to_string(), 
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "corpus/doc#t3".to_string(),
+            target_node: "corpus/doc".to_string(),
             layer: ANNIS_NS.to_string(),
             component_type: AnnotationComponentType::PartOf.to_string(),
-            component_name: "".to_string() 
+            component_name: "".to_string(),
         })?;
         Ok(())
     }
@@ -240,82 +280,97 @@ mod tests {
     fn target_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
         let mut g = AnnotationGraph::new(on_disk)?;
         let mut u = GraphUpdate::default();
-        u.add_event(UpdateEvent::AddNode { node_name: "corpus".to_string(), node_type: "corpus".to_string() })?;
-        u.add_event(UpdateEvent::AddNode { node_name: "corpus/doc".to_string(), node_type: "corpus".to_string() })?;
-        u.add_event(UpdateEvent::AddNode { node_name: "corpus/doc#1".to_string(), node_type: "node".to_string() })?;
-        u.add_event(UpdateEvent::AddNodeLabel { 
-            node_name: "corpus/doc#t1".to_string(), 
-            anno_ns: ANNIS_NS.to_string(), 
-            anno_name: "tok".to_string(), 
-            anno_value: "a".to_string() 
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "corpus".to_string(),
+            node_type: "corpus".to_string(),
         })?;
-        u.add_event(UpdateEvent::AddNode { node_name: "corpus/doc#t2".to_string(), node_type: "node".to_string() })?;
-        u.add_event(UpdateEvent::AddNodeLabel { 
-            node_name: "corpus/doc#t2".to_string(), 
-            anno_ns: ANNIS_NS.to_string(), 
-            anno_name: "tok".to_string(), 
-            anno_value: "b".to_string() 
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "corpus/doc".to_string(),
+            node_type: "corpus".to_string(),
         })?;
-        u.add_event(UpdateEvent::AddNode { node_name: "corpus/doc#t3".to_string(), node_type: "node".to_string() })?;
-        u.add_event(UpdateEvent::AddNodeLabel { 
-            node_name: "corpus/doc#t3".to_string(), 
-            anno_ns: ANNIS_NS.to_string(), 
-            anno_name: "tok".to_string(), 
-            anno_value: "c".to_string() 
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "corpus/doc#1".to_string(),
+            node_type: "node".to_string(),
         })?;
-        u.add_event(UpdateEvent::AddEdge { 
-            source_node: "corpus/doc#t1".to_string(), 
-            target_node: "corpus/doc#t2".to_string(), 
-            layer: ANNIS_NS.to_string(), 
-            component_type: AnnotationComponentType::Ordering.to_string(), 
-            component_name: "".to_string()
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "corpus/doc#t1".to_string(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "tok".to_string(),
+            anno_value: "a".to_string(),
         })?;
-        u.add_event(UpdateEvent::AddEdge { 
-            source_node: "corpus/doc#t2".to_string(), 
-            target_node: "corpus/doc#t3".to_string(), 
-            layer: ANNIS_NS.to_string(), 
-            component_type: AnnotationComponentType::Ordering.to_string(), 
-            component_name: "".to_string()
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "corpus/doc#t2".to_string(),
+            node_type: "node".to_string(),
         })?;
-        u.add_event(UpdateEvent::AddNodeLabel { 
-            node_name: "corpus/doc".to_string(), 
-            anno_ns: "".to_string(), 
-            anno_name: "language".to_string(), 
-            anno_value:  "unknown".to_string()
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "corpus/doc#t2".to_string(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "tok".to_string(),
+            anno_value: "b".to_string(),
         })?;
-        u.add_event(UpdateEvent::AddNodeLabel { 
-            node_name: "corpus/doc".to_string(), 
-            anno_ns: "".to_string(), 
-            anno_name: "date".to_string(), 
-            anno_value:  "yesterday".to_string()
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "corpus/doc#t3".to_string(),
+            node_type: "node".to_string(),
         })?;
-        u.add_event(UpdateEvent::AddEdge { 
-            source_node: "corpus/doc".to_string(), 
-            target_node: "corpus".to_string(), 
-            layer: ANNIS_NS.to_string(), 
-            component_type: AnnotationComponentType::PartOf.to_string(), 
-            component_name: "".to_string() 
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "corpus/doc#t3".to_string(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "tok".to_string(),
+            anno_value: "c".to_string(),
         })?;
-        u.add_event(UpdateEvent::AddEdge { 
-            source_node: "corpus/doc#t1".to_string(), 
-            target_node: "corpus/doc".to_string(), 
-            layer: ANNIS_NS.to_string(), 
-            component_type: AnnotationComponentType::PartOf.to_string(), 
-            component_name: "".to_string() 
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "corpus/doc#t1".to_string(),
+            target_node: "corpus/doc#t2".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::Ordering.to_string(),
+            component_name: "".to_string(),
         })?;
-        u.add_event(UpdateEvent::AddEdge { 
-            source_node: "corpus/doc#t2".to_string(), 
-            target_node: "corpus/doc".to_string(), 
-            layer: ANNIS_NS.to_string(), 
-            component_type: AnnotationComponentType::PartOf.to_string(), 
-            component_name: "".to_string() 
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "corpus/doc#t2".to_string(),
+            target_node: "corpus/doc#t3".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::Ordering.to_string(),
+            component_name: "".to_string(),
         })?;
-        u.add_event(UpdateEvent::AddEdge { 
-            source_node: "corpus/doc#t3".to_string(), 
-            target_node: "corpus/doc".to_string(), 
-            layer: ANNIS_NS.to_string(), 
-            component_type: AnnotationComponentType::PartOf.to_string(), 
-            component_name: "".to_string() 
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "corpus/doc".to_string(),
+            anno_ns: "".to_string(),
+            anno_name: "language".to_string(),
+            anno_value: "unknown".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "corpus/doc".to_string(),
+            anno_ns: "".to_string(),
+            anno_name: "date".to_string(),
+            anno_value: "yesterday".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "corpus/doc".to_string(),
+            target_node: "corpus".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "corpus/doc#t1".to_string(),
+            target_node: "corpus/doc".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "corpus/doc#t2".to_string(),
+            target_node: "corpus/doc".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "corpus/doc#t3".to_string(),
+            target_node: "corpus/doc".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
         })?;
         g.apply_update(&mut u, |_| {})?;
         Ok(g)
