@@ -1,3 +1,5 @@
+use std::fs::{read, File};
+use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::*;
 use std::{collections::HashMap, path::PathBuf};
@@ -19,6 +21,12 @@ const _PROP_FORCE_MULTI_TOK: &str = "force_multi_tok";
 const _PROP_AUDIO_EXTENSION: &str = "audio_extension";
 const _PROP_SKIP_AUDIO: &str = "skip_audio";
 const _PROP_SKIP_TIME_ANNOS: &str = "skip_time_annotations";
+
+#[derive(Error, Debug)]
+pub enum TextgridImporterError {
+    #[error("Header (first line in file) is missing")]
+    HeaderMissing,
+}
 
 pub struct TextgridImporter {}
 
@@ -45,7 +53,9 @@ impl<'a> TextgridMapper<'a> {
         file_path: &Path,
         corpus_doc_path: &str,
     ) -> Result<()> {
-        let data = std::fs::read_to_string(file_path)?;
+        let file = File::read(file_path)?;
+        let buffered_file = BufReader::new(file);
+        let data = buffered_file.lines();
         if !self.skip_audio {
             // TODO: Check assumption that the audio file is always relative to the actual file
             let audio_path = file_path.with_extension(self.audio_extension);
@@ -58,7 +68,9 @@ impl<'a> TextgridMapper<'a> {
                 ));
             }
         }
-        let header = data.chars().nth(0);
+        let header = data
+            .next()
+            .ok_or_else(|| TextgridImporterError::HeaderMissing)??;
         // let file_type = header[(header.find("\"") + 1)..header.rfind("\"")];
         // let tier_names = set(chain(starred!(tier_map
         //     .items()
