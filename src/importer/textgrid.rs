@@ -4,7 +4,7 @@ use std::{collections::HashMap, path::PathBuf};
 
 use crate::error::AnnattoError;
 use crate::progress::ProgressReporter;
-use crate::util::graphupdate::{path_structure, map_audio_source};
+use crate::util::graphupdate::{map_audio_source, path_structure};
 use crate::{Module, Result};
 use graphannis::update::GraphUpdate;
 
@@ -213,20 +213,28 @@ impl Importer for TextgridImporter {
     ) -> result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(input_path), 2)?;
         let mut u = GraphUpdate::default();
-        let tier_groups = parse_tier_map(
-            properties
-                .get(_PROP_TIER_GROUPS)
-                .ok_or_else(|| AnnattoError::ReadWorkflowFile("No tier mapping configurated. Cannot proceed.".to_string()))?,
-        );
+        let tier_groups = parse_tier_map(properties.get(_PROP_TIER_GROUPS).ok_or_else(|| {
+            AnnattoError::ReadWorkflowFile(
+                "No tier mapping configurated. Cannot proceed.".to_string(),
+            )
+        })?);
 
         let mapper = TextgridMapper {
             reporter,
             input_path: input_path.to_path_buf(),
             tier_groups,
-            force_multi_tok: properties.get(_PROP_FORCE_MULTI_TOK).map_or(false, |v| v.trim().eq_ignore_ascii_case("true")),
-            skip_audio: properties.get(_PROP_SKIP_AUDIO).map_or(false, |v| v.trim().eq_ignore_ascii_case("true")),
-            skip_time_annotations: properties.get(_PROP_SKIP_TIME_ANNOS).map_or(false, |v| v.trim().eq_ignore_ascii_case("true")),
-            audio_extension: properties.get(_PROP_AUDIO_EXTENSION).map_or("wav", |ext| ext.as_str()),
+            force_multi_tok: properties
+                .get(_PROP_FORCE_MULTI_TOK)
+                .map_or(false, |v| v.trim().eq_ignore_ascii_case("true")),
+            skip_audio: properties
+                .get(_PROP_SKIP_AUDIO)
+                .map_or(false, |v| v.trim().eq_ignore_ascii_case("true")),
+            skip_time_annotations: properties
+                .get(_PROP_SKIP_TIME_ANNOS)
+                .map_or(false, |v| v.trim().eq_ignore_ascii_case("true")),
+            audio_extension: properties
+                .get(_PROP_AUDIO_EXTENSION)
+                .map_or("wav", |ext| ext.as_str()),
         };
 
         for (path, internal_path) in path_structure(&mut u, input_path, &_FILE_ENDINGS, true)? {
@@ -235,7 +243,6 @@ impl Importer for TextgridImporter {
         Ok(u)
     }
 }
-
 
 // fn process_data<T0, T1, T2, T3, RT>(u: T0, data: T1, tier_names: T2, short: T3) -> RT {
 //     let resolver = if short { resolve_short } else { resolve_long };
@@ -294,7 +301,10 @@ fn parse_tier_map(value: &str) -> HashMap<&str, Vec<&str>> {
     for group in value.split(";") {
         if let Some((owner, objects)) = group.split_once("={") {
             let owner = owner.trim();
-            let value : Vec<_> = objects[0..(objects.len()-2)].split(",").map(|e| e.trim()).collect();
+            let value: Vec<_> = objects[0..(objects.len() - 2)]
+                .split(",")
+                .map(|e| e.trim())
+                .collect();
             tier_map.insert(owner, value);
         }
     }
