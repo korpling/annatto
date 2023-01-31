@@ -17,3 +17,5 @@ pub fn write_to_file(updates: &GraphUpdate, path: &std::path::Path) -> Result<()
     }
     Ok(())
 }
+
+pub mod graphupdate;
