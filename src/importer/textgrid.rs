@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, BTreeMap};
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs::{read, File};
 use std::io::{BufRead, BufReader};
 use std::path::Path;
@@ -73,7 +73,7 @@ impl<'a> TextgridMapper<'a> {
             .next()
             .ok_or_else(|| TextgridImporterError::HeaderMissing)??;
         let file_type = header[(header.find("\"") + 1)..header.rfind("\"")];
-        let tier_names : BTreeSet<_> = self.tier_groups.iter().flat_map(|(_k,v)| *v).collect();
+        let tier_names: BTreeSet<_> = self.tier_groups.iter().flat_map(|(_k, v)| *v).collect();
         // let tiers_and_values = process_data(u, data, tier_names, file_type == _FILE_TYPE_SHORT);
         // let is_multi_tok = self.tier_map.len() > 1 || self.force_multitok;
         // let tok_dict = HashMap::new();
