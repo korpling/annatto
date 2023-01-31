@@ -1,3 +1,4 @@
+use std::collections::{BTreeSet, BTreeMap};
 use std::fs::{read, File};
 use std::io::{BufRead, BufReader};
 use std::path::Path;
@@ -39,7 +40,7 @@ impl Module for TextgridImporter {
 struct TextgridMapper<'a> {
     reporter: ProgressReporter,
     input_path: PathBuf,
-    tier_groups: HashMap<&'a str, Vec<&'a str>>,
+    tier_groups: BTreeMap<&'a str, BTreeSet<&'a str>>,
     force_multi_tok: bool,
     audio_extension: &'a str,
     skip_audio: bool,
@@ -71,12 +72,8 @@ impl<'a> TextgridMapper<'a> {
         let header = data
             .next()
             .ok_or_else(|| TextgridImporterError::HeaderMissing)??;
-        // let file_type = header[(header.find("\"") + 1)..header.rfind("\"")];
-        // let tier_names = set(chain(starred!(tier_map
-        //     .items()
-        //     .iter()
-        //     .map(|(k, v)| (vec![k] + v.collect::<Vec<_>>()))
-        //     .collect::<Vec<_>>()) /*unsupported*/));
+        let file_type = header[(header.find("\"") + 1)..header.rfind("\"")];
+        let tier_names : BTreeSet<_> = self.tier_groups.iter().flat_map(|(_k,v)| *v).collect();
         // let tiers_and_values = process_data(u, data, tier_names, file_type == _FILE_TYPE_SHORT);
         // let is_multi_tok = self.tier_map.len() > 1 || self.force_multitok;
         // let tok_dict = HashMap::new();
@@ -308,7 +305,7 @@ impl Importer for TextgridImporter {
 //     return resolve_short(bare_value);
 // }
 
-fn parse_tier_map(value: &str) -> HashMap<&str, Vec<&str>> {
+fn parse_tier_map(value: &str) -> BTreeMap<&str, BTreeSet<&str>> {
     let mut tier_map = HashMap::new();
     for group in value.split(";") {
         if let Some((owner, objects)) = group.split_once("={") {
