@@ -135,9 +135,11 @@ fn consume_document_items<'a>(items: &mut Pairs<'a, Rule>) -> Result<DocumentHea
 
 fn get_text(v: &Pair<Rule>) -> Result<String> {
     if v.as_rule() == Rule::text {
-        // Remove the prefix/postfix quotation marks
         let v_str = v.as_str();
-        let result = v_str[1..(v_str.len() - 1)].to_string();
+        // Remove the prefix/postfix quotation marks and unescape double quotes
+        let result = v_str[1..(v_str.len() - 1)]
+            .to_string()
+            .replace("\"\"", "\"");
         Ok(result)
     } else {
         return Err(TextGridError::TextExpected);

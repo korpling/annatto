@@ -5,7 +5,8 @@ WHITESPACE = _{ " " | "\t" | NEWLINE }
 // TextGrid file according to
 // https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html
 number = @{ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)?}
-text = @{"\"" ~ (! "\"" ~ ANY)* ~ "\""}
+// A text is enclosed in quotes and double quotes are used as escaping mechanism
+text = @{"\"" ~ ("\"\"" | (! "\"" ~ ANY) )* ~ "\""}
 flag = @{"<" ~ (! ">" ~ ANY)* ~ ">"}
 
 // Line comments are special, as they contain everthing until the end of the line.

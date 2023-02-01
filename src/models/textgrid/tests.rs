@@ -96,9 +96,75 @@ fn parse_maryjohn_comment() {
     assert_john_mary_equal(tg);
 }
 
-
 #[test]
 fn parse_maryjohn_short() {
     let tg = TextGrid::parse(include_str!("maryjohn_short.TextGrid")).unwrap();
     assert_john_mary_equal(tg);
+}
+
+#[test]
+fn parse_complex() {
+    let tg = TextGrid::parse(include_str!("complex.TextGrid")).unwrap();
+    assert_eq!(0.0, tg.xmin);
+    assert_eq!(2.3, tg.xmax);
+    assert_eq!(3, tg.items.len());
+
+    assert_eq!(
+        tg.items[0].clone(),
+        TextGridItem::Interval {
+            name: "sentence".to_string(),
+            xmin: 0.0,
+            xmax: 2.3,
+            intervals: vec![Interval {
+                xmin: 0.0,
+                xmax: 2.3,
+                text: "říkej \"ahoj\" dvakrát".to_string(),
+            }]
+        }
+    );
+
+    assert_eq!(
+        tg.items[1].clone(),
+        TextGridItem::Interval {
+            name: "phonemes".to_string(),
+            xmin: 0.0,
+            xmax: 2.3,
+            intervals: vec![
+                Interval {
+                    xmin: 0.0,
+                    xmax: 0.7,
+                    text: "r̝iːkɛj".to_string(),
+                },
+                Interval {
+                    xmin: 0.7,
+                    xmax: 1.6,
+                    text: "ʔaɦɔj".to_string(),
+                },
+                Interval {
+                    xmin: 1.6,
+                    xmax: 2.3,
+                    text: "dʋakraːt".to_string(),
+                }
+            ]
+        }
+    );
+
+    assert_eq!(
+        tg.items[2].clone(),
+        TextGridItem::Text {
+            name: "bell".to_string(),
+            xmin: 0.0,
+            xmax: 2.3,
+            points: vec![
+                Point {
+                    number: 0.9,
+                    mark: "ding".to_string()
+                },
+                Point {
+                    number: 1.3,
+                    mark: "dong".to_string()
+                },
+            ]
+        }
+    );
 }
