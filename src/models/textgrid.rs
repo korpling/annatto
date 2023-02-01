@@ -78,7 +78,11 @@ impl TextGrid {
         for _ in 0..header.number_items {
             let item = consume_tier_item(&mut items)?;
         }
-        todo!()
+        Ok(TextGrid {
+            xmin: header.xmin,
+            xmax: header.xmax,
+            items: vec![],
+        })
     }
 }
 
