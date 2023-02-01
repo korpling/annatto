@@ -1,12 +1,11 @@
-use core::num;
 use pest::iterators::Pairs;
-use pest::{Parser, RuleType};
 use std::collections::{BTreeMap, BTreeSet};
 use std::convert::{TryFrom, TryInto};
 use std::path::Path;
 use std::path::PathBuf;
 use std::*;
 
+use crate::models::textgrid::TextGrid;
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{map_audio_source, path_structure};
 use crate::Module;
@@ -43,10 +42,6 @@ impl Module for TextgridImporter {
     }
 }
 
-#[derive(Parser)]
-#[grammar = "importer/textgrid.pest"]
-pub struct OoTextfileParser;
-
 struct TextgridMapper<'a> {
     reporter: ProgressReporter,
     input_path: PathBuf,
@@ -57,38 +52,6 @@ struct TextgridMapper<'a> {
     skip_time_annotations: bool,
 }
 
-struct DocumentHeader {
-    xmin: f64,
-    xmax: f64,
-    number_items: u64,
-}
-
-struct Point {
-    number: f64,
-    mark: String,
-}
-
-struct Interval {
-    xmin: f64,
-    xmax: f64,
-    text: String,
-}
-
-enum TextGridItem {
-    Interval {
-        name: String,
-        xmin: f64,
-        xmax: f64,
-        intervals: Vec<Interval>,
-    },
-    Text {
-        name: String,
-        xmin: f64,
-        xmax: f64,
-        points: Vec<Point>,
-    },
-}
-
 impl<'a> TextgridMapper<'a> {
     fn map_document(
         &'a self,
@@ -97,9 +60,9 @@ impl<'a> TextgridMapper<'a> {
         corpus_doc_path: &str,
     ) -> Result<()> {
         let file_content = std::fs::read_to_string(file_path)?;
-        let textgrid = OoTextfileParser::parse(Rule::textgrid, &file_content)?
-            .next()
-            .ok_or_else(|| anyhow!("No textgrid in file"))?;
+
+        let textgrid = TextGrid::parse(&file_content)?;
+
         if !self.skip_audio {
             // TODO: Check assumption that the audio file is always relative to the actual file
             let audio_path = file_path.with_extension(self.audio_extension);
@@ -112,53 +75,7 @@ impl<'a> TextgridMapper<'a> {
                 ))?;
             }
         }
-        // The text grid is a flat sequence of numbers, texts or flags.
-        let mut items = textgrid.into_inner();
 
-        // Consume and the items for the document
-        let header = self.consume_document_items(&mut items)?;
-
-        // Map all tier items
-        for _ in 0..header.number_items {
-            let item = self.consume_tier_item(&mut items)?;
-        }
-        todo!()
-    }
-
-    fn consume_document_items(&'a self, items: &mut Pairs<'a, Rule>) -> Result<DocumentHeader> {
-        let xmin = items
-            .next()
-            .ok_or_else(|| anyhow!("Missing xmin field for document"))?;
-
-        let xmax = items
-            .next()
-            .ok_or_else(|| anyhow!("Missing xmax field for document"))?;
-
-        let mut number_items = 0;
-
-        // Check that this document has a tier
-        if let Some(tier_flag) = items.next() {
-            if tier_flag.as_rule() == Rule::flag && tier_flag.as_str() == "exists" {
-                // Get the number of items
-                let size = items
-                    .next()
-                    .ok_or_else(|| anyhow!("Missing size field for document"))?;
-                if size.as_rule() == Rule::number {
-                    number_items = size.as_str().parse::<u64>()?;
-                }
-            }
-        }
-
-        // No tier has been detected
-        let header = DocumentHeader {
-            xmin: xmin.as_str().parse::<f64>()?,
-            xmax: xmax.as_str().parse::<f64>()?,
-            number_items,
-        };
-        Ok(header)
-    }
-
-    fn consume_tier_item(&'a self, items: &mut Pairs<'a, Rule>) -> Result<TextGridItem> {
         todo!()
     }
 }
@@ -177,7 +94,6 @@ impl Importer for TextgridImporter {
                 .get(_PROP_TIER_GROUPS)
                 .ok_or_else(|| anyhow!("No tier mapping configurated. Cannot proceed."))?,
         );
-
         let mapper = TextgridMapper {
             reporter,
             input_path: input_path.to_path_buf(),
@@ -217,6 +133,3 @@ fn parse_tier_map(value: &str) -> BTreeMap<&str, BTreeSet<&str>> {
     }
     return tier_map;
 }
-
-#[cfg(test)]
-mod tests;
