@@ -72,11 +72,11 @@ pub struct TextGrid {
 
 #[derive(Parser)]
 #[grammar = "models/textgrid.pest"]
-pub struct OoTextfileParser;
+pub struct TextGridParser;
 
 impl TextGrid {
     pub fn parse(value: &str) -> Result<TextGrid> {
-        let textgrid = OoTextfileParser::parse(Rule::textgrid, &value)?
+        let textgrid = TextGridParser::parse(Rule::textgrid, &value)?
             .next()
             .ok_or(TextGridError::MissingTextGrid)?;
 

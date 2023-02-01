@@ -4,7 +4,7 @@ use super::*;
 
 #[test]
 fn parse_sequence() {
-    let textgrid = OoTextfileParser::parse(Rule::textgrid, &include_str!("empty.TextGrid"))
+    let textgrid = TextGridParser::parse(Rule::textgrid, &include_str!("empty.TextGrid"))
         .unwrap()
         .next()
         .unwrap();
