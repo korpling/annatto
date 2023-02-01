@@ -8,9 +8,9 @@ fn parse_empty() {
         .unwrap();
 
     // TextGrid fields are only a *flat* sequence of numbers, text and flags
-    let pairs : Vec<_> = textgrid.into_inner().collect();
+    let pairs: Vec<_> = textgrid.into_inner().collect();
     assert_eq!(5, pairs.len());
-    
+
     assert_eq!(Rule::number, pairs[0].as_rule());
     assert_eq!("123", pairs[0].as_str());
 
@@ -36,8 +36,9 @@ fn parse_mary_john() {
 
 #[test]
 fn parse_mary_john_short() {
-    let textgrid = OoTextfileParser::parse(Rule::textgrid, &include_str!("maryjohn_short.TextGrid"))
-        .unwrap()
-        .next()
-        .unwrap();
+    let textgrid =
+        OoTextfileParser::parse(Rule::textgrid, &include_str!("maryjohn_short.TextGrid"))
+            .unwrap()
+            .next()
+            .unwrap();
 }
