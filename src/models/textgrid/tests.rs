@@ -1,4 +1,4 @@
-use crate::importer::textgrid;
+use std::vec;
 
 use super::*;
 
@@ -36,7 +36,46 @@ fn parse_sequence() {
 
 #[test]
 fn parse_mary_john() {
-    let textgrid = TextGrid::parse(include_str!("maryjohn.TextGrid")).unwrap();
-    assert_eq!(0.0, textgrid.xmin);
-    assert_eq!(2.3, textgrid.xmax);
+    let tg = TextGrid::parse(include_str!("maryjohn.TextGrid")).unwrap();
+    assert_eq!(0.0, tg.xmin);
+    assert_eq!(2.3, tg.xmax);
+    assert_eq!(3, tg.items.len());
+
+    assert_eq!(
+        tg.items[0].clone(),
+        TextGridItem::Interval {
+            name: "Mary".to_string(),
+            xmin: 0.0,
+            xmax: 2.3,
+            intervals: vec![Interval {
+                xmin: 0.0,
+                xmax: 2.3,
+                text: String::default(),
+            }]
+        }
+    );
+
+    assert_eq!(
+        tg.items[1].clone(),
+        TextGridItem::Interval {
+            name: "John".to_string(),
+            xmin: 0.0,
+            xmax: 2.3,
+            intervals: vec![Interval {
+                xmin: 0.0,
+                xmax: 2.3,
+                text: String::default(),
+            }]
+        }
+    );
+
+    assert_eq!(
+        tg.items[2].clone(),
+        TextGridItem::Text {
+            name: "bell".to_string(),
+            xmin: 0.0,
+            xmax: 2.3,
+            points: vec![]
+        }
+    );
 }

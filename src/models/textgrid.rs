@@ -26,17 +26,20 @@ struct DocumentHeader {
     number_items: u64,
 }
 
+#[derive(Clone, Debug, PartialEq)]
 pub struct Point {
     pub number: f64,
     pub mark: String,
 }
 
+#[derive(Clone, Debug, PartialEq)]
 pub struct Interval {
     pub xmin: f64,
     pub xmax: f64,
     pub text: String,
 }
 
+#[derive(Clone, Debug, PartialEq)]
 pub enum TextGridItem {
     Interval {
         name: String,
