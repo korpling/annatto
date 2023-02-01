@@ -1,5 +1,6 @@
 WHITESPACE = _{ " " | "\t" | NEWLINE }
 
+
 // These three concepts are the only actual entitities that exist in a 
 // TextGrid file according to
 // https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html
@@ -10,8 +11,8 @@ flag = @{"<" ~ (! ">" ~ ANY)* ~ ">"}
 // Line comments are special, as they contain everthing until the end of the line.
 // Lines are otherwise whitespace and ignored, but this adds some semantics to them.
 line_comment = @{"!" ~ (!NEWLINE ~ ANY)* ~ NEWLINE}
-// We treat everything we don't know about as a comment.
-COMMENT = _{line_comment | (!(number|text|flag) ~ ANY)+}
+comment_number = _{"[" ~ number ~ "]" }
+COMMENT = _{line_comment | comment_number | (!(comment_number|number|text|flag) ~ ANY)+}
 
 // TextGrid fields are only a *flat* sequence of numbers, text and flags.
 // Everything else are just comments or whitespace,

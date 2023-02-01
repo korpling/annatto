@@ -113,7 +113,7 @@ fn consume_document_items<'a>(items: &mut Pairs<'a, Rule>) -> Result<DocumentHea
 
     // Check that this document has a tier
     if let Some(tier_flag) = items.next() {
-        if tier_flag.as_rule() == Rule::flag && tier_flag.as_str() == "exists" {
+        if tier_flag.as_rule() == Rule::flag && tier_flag.as_str() == "<exists>" {
             // Get the number of items
             let size = items
                 .next()
@@ -137,7 +137,7 @@ fn get_text(v: &Pair<Rule>) -> Result<String> {
     if v.as_rule() == Rule::text {
         // Remove the prefix/postfix quotation marks
         let v_str = v.as_str();
-        let result = v_str[1..(v_str.len() - 2)].to_string();
+        let result = v_str[1..(v_str.len() - 1)].to_string();
         Ok(result)
     } else {
         return Err(TextGridError::TextExpected);
@@ -163,7 +163,22 @@ fn get_integer(v: &Pair<Rule>) -> Result<i64> {
 }
 
 fn consume_interval<'a>(items: &mut Pairs<'a, Rule>) -> Result<Interval> {
-    todo!()
+    let xmin = items
+        .next()
+        .ok_or_else(|| TextGridError::MissingValue("xmin"))?;
+    let xmax = items
+        .next()
+        .ok_or_else(|| TextGridError::MissingValue("xmax"))?;
+    let text = items
+        .next()
+        .ok_or_else(|| TextGridError::MissingValue("text"))?;
+
+    let xmin = get_number(&xmin)?;
+    let xmax = get_number(&xmax)?;
+    let text = get_text(&text)?;
+
+    let result = Interval { xmin, xmax, text };
+    Ok(result)
 }
 
 fn consume_point<'a>(items: &mut Pairs<'a, Rule>) -> Result<Point> {
