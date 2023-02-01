@@ -34,9 +34,7 @@ fn parse_sequence() {
     assert_eq!(Rule::EOI, pairs[6].as_rule());
 }
 
-#[test]
-fn parse_mary_john() {
-    let tg = TextGrid::parse(include_str!("maryjohn.TextGrid")).unwrap();
+fn assert_john_mary_equal(tg: TextGrid) {
     assert_eq!(0.0, tg.xmin);
     assert_eq!(2.3, tg.xmax);
     assert_eq!(3, tg.items.len());
@@ -78,4 +76,16 @@ fn parse_mary_john() {
             points: vec![]
         }
     );
+}
+
+#[test]
+fn parse_mary_john() {
+    let tg = TextGrid::parse(include_str!("maryjohn.TextGrid")).unwrap();
+    assert_john_mary_equal(tg);
+
+    let tg = TextGrid::parse(include_str!("maryjohn_short.TextGrid")).unwrap();
+    assert_john_mary_equal(tg);
+
+    let tg = TextGrid::parse(include_str!("maryjohn_comments.TextGrid")).unwrap();
+    assert_john_mary_equal(tg);
 }

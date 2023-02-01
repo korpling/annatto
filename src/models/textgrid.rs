@@ -182,7 +182,16 @@ fn consume_interval<'a>(items: &mut Pairs<'a, Rule>) -> Result<Interval> {
 }
 
 fn consume_point<'a>(items: &mut Pairs<'a, Rule>) -> Result<Point> {
-    todo!()
+    let number = items.next().ok_or_else(|| TextGridError::MissingValue("number"))?;
+    let mark = items.next().ok_or_else(|| TextGridError::MissingValue("mark"))?;
+
+    let number = get_number(&number)?;
+    let mark = get_text(&mark)?;
+    let result = Point {
+        number,
+        mark,
+    };
+    Ok(result)
 }
 
 fn consume_tier_item<'a>(items: &mut Pairs<'a, Rule>) -> Result<TextGridItem> {
