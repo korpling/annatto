@@ -57,10 +57,36 @@ struct TextgridMapper<'a> {
     skip_time_annotations: bool,
 }
 
-struct TextGridHeader {
+struct DocumentHeader {
     xmin: f64,
     xmax: f64,
     number_items: u64,
+}
+
+struct Point {
+    number: f64,
+    mark: String,
+}
+
+struct Interval {
+    xmin: f64,
+    xmax: f64,
+    text: String,
+}
+
+enum TextGridItem {
+    Interval {
+        name: String,
+        xmin: f64,
+        xmax: f64,
+        intervals: Vec<Interval>,
+    },
+    Text {
+        name: String,
+        xmin: f64,
+        xmax: f64,
+        points: Vec<Point>,
+    },
 }
 
 impl<'a> TextgridMapper<'a> {
@@ -92,10 +118,14 @@ impl<'a> TextgridMapper<'a> {
         // Consume and the items for the document
         let header = self.consume_document_items(&mut items)?;
 
+        // Map all tier items
+        for _ in 0..header.number_items {
+            let item = self.consume_tier_item(&mut items)?;
+        }
         todo!()
     }
 
-    fn consume_document_items(&'a self, items: &mut Pairs<'a, Rule>) -> Result<TextGridHeader> {
+    fn consume_document_items(&'a self, items: &mut Pairs<'a, Rule>) -> Result<DocumentHeader> {
         let xmin = items
             .next()
             .ok_or_else(|| anyhow!("Missing xmin field for document"))?;
@@ -120,12 +150,16 @@ impl<'a> TextgridMapper<'a> {
         }
 
         // No tier has been detected
-        let header = TextGridHeader {
+        let header = DocumentHeader {
             xmin: xmin.as_str().parse::<f64>()?,
             xmax: xmax.as_str().parse::<f64>()?,
             number_items,
         };
         Ok(header)
+    }
+
+    fn consume_tier_item(&'a self, items: &mut Pairs<'a, Rule>) -> Result<TextGridItem> {
+        todo!()
     }
 }
 

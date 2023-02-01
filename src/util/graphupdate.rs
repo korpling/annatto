@@ -15,3 +15,16 @@ pub fn path_structure(
 pub fn map_audio_source(u: &mut GraphUpdate, audio_path: &Path, corpus_path: &str) -> Result<()> {
     todo!()
 }
+
+pub fn map_token(
+    u: &mut GraphUpdate,
+    doc_path: &Path,
+    id: &str,
+    text_name: &str,
+    value: &str,
+    start_time: Option<f64>,
+    end_time: Option<f64>,
+    add_annis_layer: bool,
+) -> Result<()> {
+    todo!()
+}
