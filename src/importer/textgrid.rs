@@ -1,11 +1,9 @@
-use pest::iterators::Pairs;
 use std::collections::{BTreeMap, BTreeSet};
-use std::convert::{TryFrom, TryInto};
 use std::path::Path;
 use std::path::PathBuf;
 use std::*;
 
-use crate::models::textgrid::TextGrid;
+use crate::models::textgrid::{TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{map_audio_source, path_structure};
 use crate::Module;
@@ -26,12 +24,7 @@ const _PROP_SKIP_TIME_ANNOS: &str = "skip_time_annotations";
 
 /// Importer for some of the Praat TextGrid file formats.
 ///
-/// There are several variants of this format and we don't have a formal parser
-/// yet. Thus, the importer should extract the correct information from valid
-/// files. But if the file is invalid, there is no guarantee that the error is
-/// catched and incomplete information might be extracted.
-///
-/// See the [Praat
+///  See the [Praat
 /// Documentation](https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html)
 /// for more information on the format(s) itself.
 pub struct TextgridImporter {}
@@ -74,6 +67,24 @@ impl<'a> TextgridMapper<'a> {
                     audio_path.to_string_lossy()
                 ))?;
             }
+        }
+
+        let is_multi_tok = self.tier_groups.len() > 1 || self.force_multi_tok;
+        if is_multi_tok {
+            // Add all used time intervals and points of time
+            let mut existing_time_intervals: Vec<(f64, f64)> = Vec::default();
+            for tier in textgrid.items.iter() {
+                match tier {
+                    TextGridItem::Interval { intervals, .. } => {
+                        existing_time_intervals.extend(intervals.iter().map(|i| (i.xmin, i.xmax)));
+                    }
+                    TextGridItem::Text { points, .. } => {
+                        existing_time_intervals.extend(points.iter().map(|p| (p.number, p.number)));
+                    }
+                }
+            }
+            // Sort them by their start time code
+            existing_time_intervals.sort_unstable_by(|a, b| a.0.total_cmp(&b.0));
         }
 
         todo!()
