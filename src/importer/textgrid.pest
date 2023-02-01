@@ -1,4 +1,23 @@
-WHITESPACE = _{ " " | "\n" | "\r" }
+newline = _{"\n" | "\r" | "\r\n"}
+ws = _{ " " | "\t" | newline }
+
+number = {ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)?}
+integer = {ASCII_DIGIT+}
+
+xmin = {"xmin" ~ ws* ~ "=" ~ ws* ~ number}
+xmax = {"xmax" ~ ws* ~ "=" ~ ws* ~ number}
+size = {"size" ~ ws* ~ "=" ~ ws* ~ integer}
+
+tiers_stmt = _{"tiers? <exists>"}
+
+header_keys = {(xmin ~ newline+) | (xmax ~ newline+) | (tiers_stmt ~ newline+) }
+
 oclass = {"Object class = \"TextGrid\""}
 header = {"File type = \"ooTextFile\""}
-textgrid = {header ~ oclass }
+textgrid = {SOI ~ 
+    header ~ newline+ ~ 
+    oclass ~ newline+ ~
+    header_keys* ~ 
+    size ~ newline* ~
+    EOI 
+}
