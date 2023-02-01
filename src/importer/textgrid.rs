@@ -1,9 +1,9 @@
+use pest::Parser;
 use std::collections::{BTreeMap, BTreeSet};
 use std::convert::{TryFrom, TryInto};
-use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::*;
-use std::{collections::HashMap, path::PathBuf};
+use std::{path::PathBuf};
 
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{map_audio_source, path_structure};
@@ -43,7 +43,7 @@ impl Module for TextgridImporter {
 
 #[derive(Parser)]
 #[grammar = "importer/textgrid.pest"]
-pub struct CSVParser;
+pub struct OoTextfileParser;
 
 struct TextgridMapper<'a> {
     reporter: ProgressReporter,
@@ -62,9 +62,9 @@ impl<'a> TextgridMapper<'a> {
         file_path: &Path,
         corpus_doc_path: &str,
     ) -> Result<()> {
-        let file = std::fs::File::open(file_path)?;
-        let buffered_file = BufReader::new(file);
-        let mut data = buffered_file.lines();
+        let file_content = std::fs::read_to_string(file_path)?;
+        let parsed = OoTextfileParser::parse(Rule::textgrid, &file_content)?;
+        let mut data = file_content.lines();
         if !self.skip_audio {
             // TODO: Check assumption that the audio file is always relative to the actual file
             let audio_path = file_path.with_extension(self.audio_extension);
@@ -79,7 +79,7 @@ impl<'a> TextgridMapper<'a> {
         }
         let header = data
             .next()
-            .ok_or_else(|| anyhow!("Missing TextGrid header"))??;
+            .ok_or_else(|| anyhow!("Missing TextGrid header"))?;
         // let file_type = header[(header.find("\"") + 1)..header.rfind("\"")];
         // let tier_names: BTreeSet<_> = self.tier_groups.iter().flat_map(|(_k, v)| *v).collect();
         // let tiers_and_values = process_data(u, data, tier_names, file_type == _FILE_TYPE_SHORT);
@@ -346,3 +346,6 @@ fn parse_tier_map(value: &str) -> BTreeMap<&str, BTreeSet<&str>> {
     }
     return tier_map;
 }
+
+#[cfg(test)]
+mod tests;

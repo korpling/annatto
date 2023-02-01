@@ -1,1 +1,4 @@
-field = { (ASCII_DIGIT | "." | "-")+ }
+WHITESPACE = _{ " " | "\n" | "\r" }
+oclass = {"Object class = \"TextGrid\""}
+header = {"File type = \"ooTextFile\""}
+textgrid = {header ~ oclass }
