@@ -79,7 +79,7 @@ fn assert_john_mary_equal(tg: TextGrid) {
 }
 
 #[test]
-fn parse_mary_john() {
+fn parse_maryjohn() {
     let tg = TextGrid::parse(include_str!("maryjohn.TextGrid")).unwrap();
     assert_john_mary_equal(tg);
 
@@ -87,5 +87,18 @@ fn parse_mary_john() {
     assert_john_mary_equal(tg);
 
     let tg = TextGrid::parse(include_str!("maryjohn_comments.TextGrid")).unwrap();
+    assert_john_mary_equal(tg);
+}
+
+#[test]
+fn parse_maryjohn_comment() {
+    let tg = TextGrid::parse(include_str!("maryjohn_comments.TextGrid")).unwrap();
+    assert_john_mary_equal(tg);
+}
+
+
+#[test]
+fn parse_maryjohn_short() {
+    let tg = TextGrid::parse(include_str!("maryjohn_short.TextGrid")).unwrap();
     assert_john_mary_equal(tg);
 }
