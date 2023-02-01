@@ -210,7 +210,7 @@ fn consume_tier_item<'a>(items: &mut Pairs<'a, Rule>) -> Result<TextGridItem> {
     let xmax = get_number(&xmax)?;
     let size = get_integer(&size)?;
 
-    match class.as_str() {
+    let result = match class.as_str() {
         "IntervalTier" => {
             let mut intervals = Vec::default();
             for _ in 0..size {
@@ -241,8 +241,7 @@ fn consume_tier_item<'a>(items: &mut Pairs<'a, Rule>) -> Result<TextGridItem> {
             return Err(TextGridError::UnknownItemClass(val.to_string()));
         }
     };
-
-    todo!()
+    Ok(result)
 }
 
 #[cfg(test)]
