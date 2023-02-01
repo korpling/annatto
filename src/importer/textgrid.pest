@@ -6,18 +6,20 @@ integer = {ASCII_DIGIT+}
 
 xmin = {"xmin" ~ ws* ~ "=" ~ ws* ~ number}
 xmax = {"xmax" ~ ws* ~ "=" ~ ws* ~ number}
-size = {"size" ~ ws* ~ "=" ~ ws* ~ integer}
+item_size = {"size" ~ ws* ~ "=" ~ ws* ~ integer}
 
-tiers_stmt = _{"tiers? <exists>"}
+tiers_exist = _{"tiers? <exists>"}
 
-header_keys = {(xmin ~ newline+) | (xmax ~ newline+) | (tiers_stmt ~ newline+) }
+header_keys = {(xmin ~ newline+) | (xmax ~ newline+) | (tiers_exist ~ newline+) }
 
-oclass = {"Object class = \"TextGrid\""}
-header = {"File type = \"ooTextFile\""}
+oclass = _{"Object class = \"TextGrid\""}
+header = _{"File type = \"ooTextFile\""}
 textgrid = {SOI ~ 
     header ~ newline+ ~ 
     oclass ~ newline+ ~
-    header_keys* ~ 
-    size ~ newline* ~
+    xmin ~ newline+ ~
+    xmax ~ newline+ ~
+    tiers_exist ~ newline+ ~
+    item_size ~ newline* ~
     EOI 
 }
