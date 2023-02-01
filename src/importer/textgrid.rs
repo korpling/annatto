@@ -1,14 +1,14 @@
 use std::collections::{BTreeMap, BTreeSet};
-use std::fs::{read, File};
+use std::convert::{TryFrom, TryInto};
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::*;
 use std::{collections::HashMap, path::PathBuf};
 
-use crate::error::AnnattoError;
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{map_audio_source, path_structure};
-use crate::{Module, Result};
+use crate::Module;
+use anyhow::{anyhow, Result};
 use graphannis::update::GraphUpdate;
 
 use super::Importer;
@@ -23,12 +23,16 @@ const _PROP_AUDIO_EXTENSION: &str = "audio_extension";
 const _PROP_SKIP_AUDIO: &str = "skip_audio";
 const _PROP_SKIP_TIME_ANNOS: &str = "skip_time_annotations";
 
-#[derive(Error, Debug)]
-pub enum TextgridImporterError {
-    #[error("Header (first line in file) is missing")]
-    HeaderMissing,
-}
-
+/// Importer for some of the Praat TextGrid file formats.
+///
+/// There are several variants of this format and we don't have a formal parser
+/// yet. Thus, the importer should extract the correct information from valid
+/// files. But if the file is invalid, there is no guarantee that the error is
+/// catched and incomplete information might be extracted.
+///
+/// See the [Praat
+/// Documentation](https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html)
+/// for more information on the format(s) itself.
 pub struct TextgridImporter {}
 
 impl Module for TextgridImporter {
@@ -36,6 +40,10 @@ impl Module for TextgridImporter {
         "TextgridImporter"
     }
 }
+
+#[derive(Parser)]
+#[grammar = "importer/textgrid.pest"]
+pub struct CSVParser;
 
 struct TextgridMapper<'a> {
     reporter: ProgressReporter,
@@ -54,9 +62,9 @@ impl<'a> TextgridMapper<'a> {
         file_path: &Path,
         corpus_doc_path: &str,
     ) -> Result<()> {
-        let file = File::read(file_path)?;
+        let file = std::fs::File::open(file_path)?;
         let buffered_file = BufReader::new(file);
-        let data = buffered_file.lines();
+        let mut data = buffered_file.lines();
         if !self.skip_audio {
             // TODO: Check assumption that the audio file is always relative to the actual file
             let audio_path = file_path.with_extension(self.audio_extension);
@@ -71,9 +79,9 @@ impl<'a> TextgridMapper<'a> {
         }
         let header = data
             .next()
-            .ok_or_else(|| TextgridImporterError::HeaderMissing)??;
-        let file_type = header[(header.find("\"") + 1)..header.rfind("\"")];
-        let tier_names: BTreeSet<_> = self.tier_groups.iter().flat_map(|(_k, v)| *v).collect();
+            .ok_or_else(|| anyhow!("Missing TextGrid header"))??;
+        // let file_type = header[(header.find("\"") + 1)..header.rfind("\"")];
+        // let tier_names: BTreeSet<_> = self.tier_groups.iter().flat_map(|(_k, v)| *v).collect();
         // let tiers_and_values = process_data(u, data, tier_names, file_type == _FILE_TYPE_SHORT);
         // let is_multi_tok = self.tier_map.len() > 1 || self.force_multitok;
         // let tok_dict = HashMap::new();
@@ -222,11 +230,11 @@ impl Importer for TextgridImporter {
     ) -> result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(input_path), 2)?;
         let mut u = GraphUpdate::default();
-        let tier_groups = parse_tier_map(properties.get(_PROP_TIER_GROUPS).ok_or_else(|| {
-            AnnattoError::ReadWorkflowFile(
-                "No tier mapping configurated. Cannot proceed.".to_string(),
-            )
-        })?);
+        let tier_groups = parse_tier_map(
+            properties
+                .get(_PROP_TIER_GROUPS)
+                .ok_or_else(|| anyhow!("No tier mapping configurated. Cannot proceed."))?,
+        );
 
         let mapper = TextgridMapper {
             reporter,
@@ -253,8 +261,12 @@ impl Importer for TextgridImporter {
     }
 }
 
-// fn process_data<T0, T1, T2, T3, RT>(u: T0, data: T1, tier_names: T2, short: T3) -> RT {
-//     let resolver = if short { resolve_short } else { resolve_long };
+// fn process_data<L: Iterator<Item = std::io::Result<String>>>(
+//     u: &mut GraphUpdate,
+//     data: L,
+//     tier_names: &BTreeSet<&str>,
+//     short: bool,
+// ) -> Result<()> {
 //     let mut gathered = vec![];
 //     let mut size = 0;
 //     let tier_data = defaultdict(list);
@@ -265,7 +277,7 @@ impl Importer for TextgridImporter {
 //                 continue;
 //             }
 //             if gathered.len() < 5 {
-//                 gathered.push(resolver(l));
+//                 gathered.push(resolve(l, short)?);
 //             } else {
 //                 let (clz, name, _, _, size) = gathered;
 //                 gathered.clear();
@@ -282,35 +294,50 @@ impl Importer for TextgridImporter {
 //     }
 //     return tier_data;
 // }
-// fn resolve_short<T0, RT>(value: T0) -> RT {
-//     if value.startswith("\"") {
-//         return value[1..-1];
-//     } else {
-//         if value.iter().any(|&x| x == ".") {
-//             return float(value);
-//         } else {
-//             return i32::from(value);
-//         }
-//     }
-// }
-// fn resolve_long<T0, RT>(value: T0) -> RT {
-//     let try_dummy = {
-//         //unsupported
-//         let bare_value = value.split(" = ", 1)[1];
-//     };
-//     let except!(IndexError) = {
-//         //unsupported
-//         raise!(ValueError("Could not preprocess line `{value}` correctly")); //unsupported
-//     };
-//     return resolve_short(bare_value);
-// }
+
+enum Value {
+    String(String),
+    Float(f64),
+    Integer(i64),
+}
+
+impl TryFrom<&str> for Value {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &str) -> result::Result<Self, Self::Error> {
+        if value.starts_with('"') {
+            Ok(Value::String(value[1..(value.len() - 1)].to_string()))
+        } else {
+            if value.chars().any(|c| c == '.') {
+                let result = value.parse::<f64>()?;
+                Ok(Value::Float(result))
+            } else {
+                let result = value.parse::<i64>()?;
+                Ok(Value::Integer(result))
+            }
+        }
+    }
+}
+
+fn resolve(line: &str, short: bool) -> Result<Value> {
+    if short {
+        let result: Value = line.try_into()?;
+        Ok(result)
+    } else {
+        let (_, bare_value) = line
+            .split_once(" = ")
+            .ok_or_else(|| anyhow!("Line '{}' did not match patterh 'key = value'", line))?;
+        let result: Value = bare_value.try_into()?;
+        Ok(result)
+    }
+}
 
 fn parse_tier_map(value: &str) -> BTreeMap<&str, BTreeSet<&str>> {
-    let mut tier_map = HashMap::new();
+    let mut tier_map = BTreeMap::new();
     for group in value.split(";") {
         if let Some((owner, objects)) = group.split_once("={") {
             let owner = owner.trim();
-            let value: Vec<_> = objects[0..(objects.len() - 2)]
+            let value: BTreeSet<_> = objects[0..(objects.len() - 2)]
                 .split(",")
                 .map(|e| e.trim())
                 .collect();

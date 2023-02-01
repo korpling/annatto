@@ -1,29 +1,31 @@
 [package]
-name = "annatto"
-version = "0.1.0"
 authors = ["Thomas Krause <thomas.krause@hu-berlin.de>", "Martin Klotz <martin.klotz@hu-berlin.de>"]
 edition = "2018"
 license = "Apache-2.0"
+name = "annatto"
+version = "0.1.0"
 
 [dependencies]
+anyhow = "1.0"
+csv = "1.1"
 graphannis = "2.4.2"
 graphannis-core = "2.4.2"
-structopt = "0.3"
-thiserror = "1.0"
-rayon = "1.1"
-xml-rs = "0.8"
 indicatif = "0.16"
-quick-xml = "0.23"
-anyhow = "1.0"
+itertools = "0.10"
 log = "0.4"
-regex = "1.4"
-tempfile = "3"
-toml = "0.5"
-rust-embed= {version="6.3.0", features=["compression", "interpolate-folder-path"]}
-pyo3 = {version= "0.16"}
+pest = "2.0"
+pest_derive = "2.0"
 pyembed = "0.22"
+pyo3 = {version = "0.16"}
+quick-xml = "0.23"
+rayon = "1.1"
+regex = "1.4"
+rust-embed = {version = "6.3.0", features = ["compression", "interpolate-folder-path"]}
 serde = "1.0"
 serde_derive = "1.0"
-csv = "1.1"
-itertools = "0.10"
 smartstring = "0.2"
+structopt = "0.3"
+tempfile = "3"
+thiserror = "1.0"
+toml = "0.5"
+xml-rs = "0.8"

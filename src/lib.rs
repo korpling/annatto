@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate pest_derive;
+
 pub mod error;
 pub mod exporter;
 pub mod importer;
