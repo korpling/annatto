@@ -2,8 +2,8 @@ use pest::Parser;
 use std::collections::{BTreeMap, BTreeSet};
 use std::convert::{TryFrom, TryInto};
 use std::path::Path;
+use std::path::PathBuf;
 use std::*;
-use std::{path::PathBuf};
 
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{map_audio_source, path_structure};
