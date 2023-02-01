@@ -1,5 +1,3 @@
-use anyhow::bail;
-
 use super::*;
 
 #[test]
@@ -9,20 +7,37 @@ fn parse_empty() {
         .next()
         .unwrap();
 
-    // Check top-level sequence
-    let mut textgrid = textgrid.into_inner();
-    let xmin = textgrid.next().unwrap();
-    assert_eq!(xmin.as_rule(), Rule::xmin);
-    let xmax = textgrid.next().unwrap();
-    assert_eq!(xmax.as_rule(), Rule::xmax);
-    let item_size = textgrid.next().unwrap();
-    assert_eq!(item_size.as_rule(), Rule::item_size);
+    // TextGrid fields are only a *flat* sequence of numbers, text and flags
+    let pairs : Vec<_> = textgrid.into_inner().collect();
+    assert_eq!(5, pairs.len());
+    
+    assert_eq!(Rule::number, pairs[0].as_rule());
+    assert_eq!("123", pairs[0].as_str());
 
-    // Check that the xmin, xmax and item_size values have been parsed
-    let xmin_val = xmin.into_inner().next().unwrap();
-    assert_eq!(xmin_val.as_str(), "123");
-    let xmax_val = xmax.into_inner().next().unwrap();
-    assert_eq!(xmax_val.as_str(), "2045.144149659864");
-    let item_size_val = item_size.into_inner().next().unwrap();
-    assert_eq!(item_size_val.as_str(), "0");
+    assert_eq!(Rule::number, pairs[1].as_rule());
+    assert_eq!("2045.144149659864", pairs[1].as_str());
+
+    assert_eq!(Rule::flag, pairs[2].as_rule());
+    assert_eq!("<exists>", pairs[2].as_str());
+
+    assert_eq!(Rule::number, pairs[3].as_rule());
+    assert_eq!("0", pairs[3].as_str());
+
+    assert_eq!(Rule::EOI, pairs[4].as_rule());
+}
+
+#[test]
+fn parse_mary_john() {
+    let textgrid = OoTextfileParser::parse(Rule::textgrid, &include_str!("maryjohn.TextGrid"))
+        .unwrap()
+        .next()
+        .unwrap();
+}
+
+#[test]
+fn parse_mary_john_short() {
+    let textgrid = OoTextfileParser::parse(Rule::textgrid, &include_str!("maryjohn_short.TextGrid"))
+        .unwrap()
+        .next()
+        .unwrap();
 }

@@ -1,25 +1,26 @@
-newline = _{"\n" | "\r" | "\r\n"}
-ws = _{ " " | "\t" | newline }
+WHITESPACE = _{ " " | "\t" | NEWLINE }
 
-number = {ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)?}
-integer = {ASCII_DIGIT+}
+// These three concepts are the only actual entitities that exist in a 
+// TextGrid file according to
+// https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html
+number = @{ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)?}
+text = @{"\"" ~ (! "\"" ~ ANY)* ~ "\""}
+flag = @{"<" ~ (! ">" ~ ANY)* ~ ">"}
 
-xmin = {"xmin" ~ ws* ~ "=" ~ ws* ~ number}
-xmax = {"xmax" ~ ws* ~ "=" ~ ws* ~ number}
-item_size = {"size" ~ ws* ~ "=" ~ ws* ~ integer}
+// Line comments are special, as they contain everthing until the end of the line.
+// Lines are otherwise whitespace and ignored, but this adds some semantics to them.
+line_comment = @{"!" ~ (!NEWLINE ~ ANY)* ~ NEWLINE}
+// We treat everything we don't know about as a comment.
+COMMENT = _{line_comment | (!(number|text|flag) ~ ANY)+}
 
-tiers_exist = _{"tiers? <exists>"}
-
-header_keys = {(xmin ~ newline+) | (xmax ~ newline+) | (tiers_exist ~ newline+) }
-
-oclass = _{"Object class = \"TextGrid\""}
-header = _{"File type = \"ooTextFile\""}
-textgrid = {SOI ~ 
-    header ~ newline+ ~ 
-    oclass ~ newline+ ~
-    xmin ~ newline+ ~
-    xmax ~ newline+ ~
-    tiers_exist ~ newline+ ~
-    item_size ~ newline* ~
+// TextGrid fields are only a *flat* sequence of numbers, text and flags.
+// Everything else are just comments or whitespace,
+// We explicitly check for the header in the beginning to make sure we only parse
+// files which we can assume are TextGrid files.
+textgrid = {
+    SOI ~ 
+    "\"ooTextFile\"" ~
+    "\"TextGrid\"" ~
+    (number | flag | text)* ~
     EOI 
 }
