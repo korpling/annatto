@@ -2,7 +2,6 @@
 
 pub mod corpus_annotations;
 pub mod graphml;
-pub mod spreadsheets;
 
 use crate::{workflow::StatusSender, Module, StepID};
 use graphannis::update::GraphUpdate;
