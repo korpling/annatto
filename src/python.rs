@@ -104,11 +104,15 @@ impl Module for PythonImporter {
 #[cfg(test)]
 mod tests {
 
-    use std::collections::BTreeMap;
+    use std::{collections::BTreeMap, env::temp_dir};
     use std::path::Path;
 
-    use graphannis::AnnotationGraph;
+    use graphannis::corpusstorage::ResultOrder;
+    use graphannis::{AnnotationGraph, CorpusStorage, corpusstorage::{SearchQuery, QueryLanguage}};
     use graphannis_core::annostorage::ValueSearch;
+    use tempfile::tempdir_in;
+
+    use crate::util::write_to_file;
 
     use super::*;
 
@@ -161,5 +165,65 @@ mod tests {
         let mut g = AnnotationGraph::new(false).unwrap();
         g.apply_update(&mut u, |_| {}).unwrap();
         assert_eq!(1, 1)
+    }
+    
+    fn run_spreadsheet_import(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
+        let importer = PythonImporter::from_name("import_spreadsheet");
+        let mut props = BTreeMap::default();
+        props.insert("column_map".to_string(), "dipl={sentence,seg};norm={pos,lemma}".to_string());
+        let path = Path::new("./test/import/xlsx/");
+        let import = importer.import_corpus(path, &props, None);
+        let mut u = import?;
+        write_to_file(&u, Path::new("xlsx_updates.log"))?;
+        let mut g = AnnotationGraph::new(on_disk)?;
+        g.apply_update(&mut u, |_| {})?;        
+        let queries_and_results: [(&str, u64); 19] = [
+            ("dipl", 4),
+            ("norm", 4),
+            ("dipl _=_ norm", 1),
+            ("dipl _l_ norm", 3),
+            ("dipl _r_ norm", 3),
+            ("dipl:sentence", 1),
+            ("dipl:seg", 2),
+            ("dipl:sentence _=_ dipl", 0),
+            ("dipl:sentence _o_ dipl", 4),
+            ("dipl:sentence _l_ dipl", 1),
+            ("dipl:sentence _r_ dipl", 1),
+            ("dipl:seg _=_ dipl", 1),
+            ("dipl:seg _o_ dipl", 4),
+            ("dipl:seg _l_ dipl", 2),
+            ("dipl:seg _r_ dipl", 2),            
+            ("norm:pos", 4),
+            ("norm:lemma", 4),
+            ("norm:pos _=_ norm", 4),
+            ("norm:lemma _=_ norm", 4)
+        ];
+        let corpus_name = "current";
+        let tmp_dir = tempdir_in(temp_dir())?;
+        g.save_to(&tmp_dir.path().join(corpus_name))?;
+        let cs = CorpusStorage::with_auto_cache_size(&tmp_dir.path(), true).unwrap();
+        for (query_s, expected_result) in queries_and_results {
+            let query = SearchQuery {
+                corpus_names: &[corpus_name],
+                query: query_s,
+                query_language: QueryLanguage::AQL,
+                timeout: None,
+            };
+            let count = cs.count(query)?;
+            assert_eq!(count, expected_result, "Result for query {} does not match", query_s);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn spreadsheet_import_in_mem() {
+        let import = run_spreadsheet_import(false);
+        assert!(import.is_ok(), "Spreadsheet import failed with error: {:?}", import.err());
+    }
+
+    #[test]
+    fn spreadsheet_import_on_disk() {        
+        let import = run_spreadsheet_import(true);
+        assert!(import.is_ok(), "Spreadsheet import failed with error: {:?}", import.err());
     }
 }
