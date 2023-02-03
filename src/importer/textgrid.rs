@@ -37,14 +37,18 @@ impl Module for TextgridImporter {
     }
 }
 
-struct TextgridMapper<'a> {
-    reporter: ProgressReporter,
-    input_path: PathBuf,
+struct MapperParams<'a> {
     tier_groups: BTreeMap<&'a str, BTreeSet<&'a str>>,
     force_multi_tok: bool,
     audio_extension: &'a str,
     skip_audio: bool,
     skip_time_annotations: bool,
+}
+
+struct TextgridMapper<'a> {
+    reporter: ProgressReporter,
+    input_path: PathBuf,
+    params: MapperParams<'a>,
 }
 
 impl<'a> TextgridMapper<'a> {
@@ -58,9 +62,9 @@ impl<'a> TextgridMapper<'a> {
 
         let textgrid = TextGrid::parse(&file_content)?;
 
-        if !self.skip_audio {
+        if !self.params.skip_audio {
             // TODO: Check assumption that the audio file is always relative to the actual file
-            let audio_path = file_path.with_extension(self.audio_extension);
+            let audio_path = file_path.with_extension(self.params.audio_extension);
             if audio_path.exists() {
                 map_audio_source(u, &audio_path, corpus_doc_path)?;
             } else {
@@ -71,12 +75,75 @@ impl<'a> TextgridMapper<'a> {
             }
         }
 
-        let is_multi_tok = self.tier_groups.len() > 1 || self.force_multi_tok;
-        if is_multi_tok {
+        let is_multi_tok = self.params.tier_groups.len() > 1 || self.params.force_multi_tok;
+        let time_to_index = if is_multi_tok {
             let time_to_index = self.map_timeline(u, &textgrid, corpus_doc_path)?;
+            time_to_index
+        } else {
+            BTreeMap::default()
+        };
+
+        for (tok_tier_name, dependend_tiers) in self.params.tier_groups.iter() {
+            self.map_tier_group(tok_tier_name, &textgrid, u, corpus_doc_path)?;
         }
 
         todo!()
+    }
+
+    fn map_tier_group(
+        &self,
+        tok_tier_name: &str,
+        textgrid: &TextGrid,
+        u: &mut GraphUpdate,
+        corpus_doc_path: &str,
+    ) -> Result<()> {
+        // Find the tier matching the name from the configuration
+        let tok_tier = textgrid
+            .items
+            .iter()
+            .filter_map(|item| match item {
+                TextGridItem::Interval { name, .. } => {
+                    if name == tok_tier_name {
+                        Some(item)
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            })
+            .next();
+        if let Some(TextGridItem::Interval {
+            name,
+            xmin,
+            xmax,
+            intervals,
+        }) = tok_tier
+        {
+            let start_time = if self.params.skip_time_annotations {
+                None
+            } else {
+                Some(*xmin)
+            };
+            let end_time = if self.params.skip_time_annotations {
+                None
+            } else {
+                Some(*xmax)
+            };
+            // Each interval of the tier is a token
+            for (token_idx, i) in intervals.iter().enumerate() {
+                map_token(
+                    u,
+                    corpus_doc_path,
+                    &format!("{}{}", tok_tier_name, token_idx),
+                    Some(name),
+                    &i.text,
+                    start_time,
+                    end_time,
+                    true,
+                )?;
+            }
+        }
+        Ok(())
     }
 
     fn map_timeline(
@@ -109,12 +176,12 @@ impl<'a> TextgridMapper<'a> {
         let mut it = existing_points_of_times.iter().peekable();
         let mut counter = 1;
         while let Some(pot) = it.next() {
-            let current_token_time = if self.skip_time_annotations {
+            let current_token_time = if self.params.skip_time_annotations {
                 None
             } else {
                 Some(pot.0)
             };
-            let next_token_time = if self.skip_time_annotations {
+            let next_token_time = if self.params.skip_time_annotations {
                 None
             } else {
                 it.peek().map(|t| t.0)
@@ -154,9 +221,7 @@ impl Importer for TextgridImporter {
                 .get(_PROP_TIER_GROUPS)
                 .ok_or_else(|| anyhow!("No tier mapping configurated. Cannot proceed."))?,
         );
-        let mapper = TextgridMapper {
-            reporter,
-            input_path: input_path.to_path_buf(),
+        let params = MapperParams {
             tier_groups,
             force_multi_tok: properties
                 .get(_PROP_FORCE_MULTI_TOK)
@@ -170,6 +235,11 @@ impl Importer for TextgridImporter {
             audio_extension: properties
                 .get(_PROP_AUDIO_EXTENSION)
                 .map_or("wav", |ext| ext.as_str()),
+        };
+        let mapper = TextgridMapper {
+            reporter,
+            input_path: input_path.to_path_buf(),
+            params,
         };
 
         for (path, internal_path) in path_structure(&mut u, input_path, &_FILE_ENDINGS, true)? {
