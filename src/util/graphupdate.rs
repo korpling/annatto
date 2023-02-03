@@ -1,16 +1,76 @@
-use std::path::{Path, PathBuf};
+use std::{
+    ffi::OsStr,
+    path::{Path, PathBuf},
+};
 
 use crate::Result;
 use graphannis::update::{GraphUpdate, UpdateEvent};
 use graphannis_core::graph::ANNIS_NS;
 
+fn add_subcorpora(
+    u: &mut GraphUpdate,
+    file_path: &Path,
+    parent_corpus: &str,
+    file_endings: &[&str],
+) -> Result<Vec<(PathBuf, String)>> {
+    let mut result = Vec::new();
+    for entry in std::fs::read_dir(file_path)? {
+        let entry = entry?;
+        let entry_type = entry.file_type()?;
+        let node_name = format!("{}/{}", parent_corpus, entry.file_name().to_string_lossy());
+        let add_node = if entry_type.is_file() {
+            let entry_file_name = entry.file_name();
+            let actual_ending = entry_file_name.to_string_lossy();
+            file_endings
+                .iter()
+                .any(|ext| *ext == actual_ending.as_ref())
+        } else if entry_type.is_dir() {
+            true
+        } else {
+            false
+        };
+        if add_node {
+            u.add_event(UpdateEvent::AddNode {
+                node_name: node_name.clone(),
+                node_type: "corpus".to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddEdge {
+                source_node: node_name.clone(),
+                target_node: parent_corpus.to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: "PartOf".to_string(),
+                component_name: "".to_string(),
+            })?;
+        }
+        if entry_type.is_dir() {
+            result.extend(add_subcorpora(u, &entry.path(), &node_name, file_endings)?);
+        } else if entry_type.is_file() {
+            // Only add the corpus graph leafs to the result vector
+            result.push((entry.path(), node_name));
+        }
+    }
+    Ok(result)
+}
+
 pub fn path_structure(
     u: &mut GraphUpdate,
     root_path: &Path,
     file_endings: &[&str],
-    follow_links: bool,
 ) -> Result<Vec<(PathBuf, String)>> {
-    todo!()
+    let norm_path = root_path.canonicalize()?;
+    let root_name = norm_path
+        .file_name()
+        .unwrap_or(OsStr::new("root-corpus"))
+        .to_string_lossy();
+
+    u.add_event(UpdateEvent::AddNode {
+        node_name: root_name.to_string(),
+        node_type: "corpus".to_string(),
+    })?;
+
+    let mut path_tuples = add_subcorpora(u, &norm_path, &root_name, file_endings)?;
+    path_tuples.sort();
+    Ok(path_tuples)
 }
 
 pub fn map_audio_source(u: &mut GraphUpdate, audio_path: &Path, corpus_path: &str) -> Result<()> {
