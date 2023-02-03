@@ -62,7 +62,7 @@ pub enum AnnattoError {
     #[error("Checks failed: {failed_checks}")]
     ChecksFailed { failed_checks: String },
     #[error("Time for end of the token ({end}) is larger than for the start ({start})")]
-    EndTokenTimeLargerThanStart{start: f64, end: f64}
+    EndTokenTimeLargerThanStart { start: f64, end: f64 },
 }
 
 impl<T> From<std::sync::PoisonError<T>> for AnnattoError {
