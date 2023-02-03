@@ -5,7 +5,7 @@ use std::*;
 
 use crate::models::textgrid::{TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
-use crate::util::graphupdate::{map_audio_source, map_token, path_structure, add_order_relations};
+use crate::util::graphupdate::{add_order_relations, map_audio_source, map_token, path_structure};
 use crate::Module;
 use anyhow::{anyhow, Result};
 use graphannis::update::GraphUpdate;
@@ -119,7 +119,7 @@ impl<'a> TextgridMapper<'a> {
             } else {
                 it.peek().map(|t| t.0)
             };
-            
+
             let tli_id = map_token(
                 u,
                 corpus_doc_path,
