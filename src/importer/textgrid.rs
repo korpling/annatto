@@ -5,10 +5,13 @@ use std::*;
 
 use crate::models::textgrid::{TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
-use crate::util::graphupdate::{add_order_relations, map_audio_source, map_token, path_structure};
+use crate::util::graphupdate::{
+    add_order_relations, map_annotations, map_audio_source, map_token, path_structure,
+};
 use crate::Module;
 use anyhow::{anyhow, Result};
 use graphannis::update::GraphUpdate;
+use itertools::Itertools;
 use ordered_float::OrderedFloat;
 
 use super::Importer;
@@ -50,10 +53,11 @@ struct DocumentMapper<'a> {
     reporter: &'a ProgressReporter,
     file_path: PathBuf,
     params: &'a MapperParams<'a>,
+    number_of_spans: usize,
 }
 
 impl<'a> DocumentMapper<'a> {
-    fn map(&self, u: &mut GraphUpdate) -> Result<()> {
+    fn map(&mut self, u: &mut GraphUpdate) -> Result<()> {
         if !self.params.skip_audio {
             // TODO: Check assumption that the audio file is always relative to the actual file
             let audio_path = self.file_path.with_extension(self.params.audio_extension);
@@ -68,18 +72,18 @@ impl<'a> DocumentMapper<'a> {
         }
 
         let is_multi_tok = self.params.tier_groups.len() > 1 || self.params.force_multi_tok;
-        let time_to_index = if is_multi_tok {
+        let time_to_token_id = if is_multi_tok {
             let time_to_index = self.map_timeline(u)?;
             time_to_index
         } else {
             BTreeMap::default()
         };
 
-        for (tok_tier_name, dependend_tiers) in self.params.tier_groups.iter() {
-            self.map_tier_group(u, tok_tier_name)?;
+        for tok_tier_name in self.params.tier_groups.keys() {
+            self.map_tier_group(u, tok_tier_name, &time_to_token_id)?;
         }
 
-        todo!()
+        Ok(())
     }
 
     fn map_timeline(&self, u: &mut GraphUpdate) -> Result<BTreeMap<OrderedFloat<f64>, String>> {
@@ -136,8 +140,7 @@ impl<'a> DocumentMapper<'a> {
 
         Ok(result)
     }
-
-    fn map_tier_group(&self, u: &mut GraphUpdate, tok_tier_name: &str) -> Result<()> {
+    fn map_token_tier(&self, u: &mut GraphUpdate, tok_tier_name: &str) -> Result<()> {
         // Find the tier matching the name from the configuration
         let tok_tier = self
             .textgrid
@@ -172,8 +175,9 @@ impl<'a> DocumentMapper<'a> {
                 Some(*xmax)
             };
             // Each interval of the tier is a token
+            let mut token_ids = Vec::default();
             for (token_idx, i) in intervals.iter().enumerate() {
-                map_token(
+                let id = map_token(
                     u,
                     &self.doc_path,
                     &format!("{}{}", tok_tier_name, token_idx),
@@ -183,6 +187,97 @@ impl<'a> DocumentMapper<'a> {
                     end_time,
                     true,
                 )?;
+                token_ids.push(id);
+            }
+            // If there this document has multiple tokenizations add named order
+            // relations
+            let seg = if self.params.tier_groups.len() > 1 || self.params.force_multi_tok {
+                Some(tok_tier_name)
+            } else {
+                None
+            };
+            add_order_relations(u, &token_ids, seg)?;
+        }
+        Ok(())
+    }
+
+    fn map_annotation_tier(
+        &mut self,
+        u: &mut GraphUpdate,
+        tier_name: &str,
+        time_to_token_id: &BTreeMap<OrderedFloat<f64>, String>,
+    ) -> Result<()> {
+        // TODO: correct the time codes
+        let tier = self.textgrid.items.iter().find(|item| match item {
+            TextGridItem::Interval { name, .. } | TextGridItem::Text { name, .. } => {
+                tier_name == name
+            }
+        });
+        if let Some(tier) = tier {
+            match tier {
+                TextGridItem::Interval {
+                    name, intervals, ..
+                } => {
+                    for i in intervals {
+                        if !i.text.trim().is_empty() {
+                            let start = OrderedFloat(i.xmin);
+                            let end = OrderedFloat(i.xmax);
+                            let overlapped: Vec<_> = time_to_token_id
+                                .range(start..=end)
+                                .map(|(_k, v)| v)
+                                .collect();
+                            map_annotations(
+                                u,
+                                &self.doc_path,
+                                &(self.number_of_spans + 1).to_string(),
+                                None,
+                                Some(&name),
+                                Some(&i.text),
+                                &overlapped,
+                            )?;
+                            self.number_of_spans += 1;
+                        }
+                    }
+                }
+                TextGridItem::Text { name, points, .. } => {
+                    for p in points {
+                        if !p.mark.trim().is_empty() {
+                            let time = OrderedFloat(p.number);
+                            let overlapped: Vec<_> = time_to_token_id
+                                .range(time..=time)
+                                .map(|(_k, v)| v)
+                                .collect();
+                            map_annotations(
+                                u,
+                                &self.doc_path,
+                                &(self.number_of_spans + 1).to_string(),
+                                None,
+                                Some(&name),
+                                Some(&p.mark),
+                                &overlapped,
+                            )?;
+                            self.number_of_spans += 1;
+                        }
+                    }
+                }
+            }
+        } else {
+            self.reporter
+                .warn(&format!("Missing tier with name {}", tier_name))?;
+        }
+        Ok(())
+    }
+
+    fn map_tier_group(
+        &mut self,
+        u: &mut GraphUpdate,
+        tok_tier_name: &str,
+        time_to_token_id: &BTreeMap<OrderedFloat<f64>, String>,
+    ) -> Result<()> {
+        self.map_token_tier(u, tok_tier_name)?;
+        if let Some(dependent_tier_names) = self.params.tier_groups.get(tok_tier_name) {
+            for tier in dependent_tier_names {
+                self.map_annotation_tier(u, tier, time_to_token_id)?;
             }
         }
         Ok(())
@@ -223,12 +318,13 @@ impl Importer for TextgridImporter {
             let file_content = std::fs::read_to_string(&file_path)?;
             let textgrid = TextGrid::parse(&file_content)?;
 
-            let doc_mapper = DocumentMapper {
+            let mut doc_mapper = DocumentMapper {
                 doc_path,
                 textgrid,
                 reporter: &reporter,
                 file_path,
                 params: &params,
+                number_of_spans: 0,
             };
 
             doc_mapper.map(&mut u)?;

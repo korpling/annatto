@@ -165,3 +165,38 @@ pub fn map_token(
     }
     Ok(tok_id)
 }
+
+pub fn map_annotations<S: AsRef<str>>(
+    u: &mut GraphUpdate,
+    doc_path: &str,
+    id: &str,
+    ns: Option<&str>,
+    name: Option<&str>,
+    value: Option<&str>,
+    targets: &[S],
+) -> Result<String> {
+    let span_id = format!("{}#sSpan{}", doc_path, id);
+    u.add_event(UpdateEvent::AddNode {
+        node_name: span_id.clone(),
+        node_type: "node".to_string(),
+    })?;
+    if let Some(name) = name {
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: span_id.clone(),
+            anno_ns: ns.unwrap_or_default().to_string(),
+            anno_name: name.to_string(),
+            anno_value: value.unwrap_or_default().to_string(),
+        })?;
+    }
+    for target in targets {
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: span_id.clone(),
+            target_node: target.as_ref().to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: "Coverage".to_string(),
+            component_name: "".to_string(),
+        })?;
+    }
+
+    Ok(span_id)
+}
