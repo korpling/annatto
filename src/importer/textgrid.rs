@@ -5,7 +5,7 @@ use std::*;
 
 use crate::models::textgrid::{TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
-use crate::util::graphupdate::{map_audio_source, map_token, path_structure};
+use crate::util::graphupdate::{map_audio_source, map_token, path_structure, add_order_relations};
 use crate::Module;
 use anyhow::{anyhow, Result};
 use graphannis::update::GraphUpdate;
@@ -103,24 +103,38 @@ impl<'a> TextgridMapper<'a> {
                 }
             }
         }
-        let result = BTreeMap::new();
+        let mut tli_names = Vec::new();
+        let mut result = BTreeMap::new();
         // Add a token for each point of time and remember its name
         let mut it = existing_points_of_times.iter().peekable();
         let mut counter = 1;
         while let Some(pot) = it.next() {
-            let next_token_time = it.peek().map(|t| t.0);
-            map_token(
+            let current_token_time = if self.skip_time_annotations {
+                None
+            } else {
+                Some(pot.0)
+            };
+            let next_token_time = if self.skip_time_annotations {
+                None
+            } else {
+                it.peek().map(|t| t.0)
+            };
+            
+            let tli_id = map_token(
                 u,
                 corpus_doc_path,
-                &format!("tok{}", counter),
+                &format!("tli{}", counter),
                 None,
                 "",
-                Some(pot.0),
+                current_token_time,
                 next_token_time,
                 false,
             )?;
+            tli_names.push(tli_id.clone());
+            result.insert(*pot, tli_id);
             counter += 1;
         }
+        add_order_relations(u, &tli_names, None)?;
 
         Ok(result)
     }
