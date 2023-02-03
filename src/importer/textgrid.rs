@@ -5,10 +5,12 @@ use std::*;
 
 use crate::models::textgrid::{TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
-use crate::util::graphupdate::{map_audio_source, path_structure};
+use crate::util::graphupdate::{map_audio_source, map_token, path_structure};
 use crate::Module;
 use anyhow::{anyhow, Result};
 use graphannis::update::GraphUpdate;
+use graphannis::Graph;
+use ordered_float::OrderedFloat;
 
 use super::Importer;
 const _FILE_ENDINGS: [&str; 3] = [".textgrid", ".TextGrid", ".textGrid"];
@@ -71,23 +73,56 @@ impl<'a> TextgridMapper<'a> {
 
         let is_multi_tok = self.tier_groups.len() > 1 || self.force_multi_tok;
         if is_multi_tok {
-            // Add all used time intervals and points of time
-            let mut existing_time_intervals: Vec<(f64, f64)> = Vec::default();
-            for tier in textgrid.items.iter() {
-                match tier {
-                    TextGridItem::Interval { intervals, .. } => {
-                        existing_time_intervals.extend(intervals.iter().map(|i| (i.xmin, i.xmax)));
-                    }
-                    TextGridItem::Text { points, .. } => {
-                        existing_time_intervals.extend(points.iter().map(|p| (p.number, p.number)));
-                    }
-                }
-            }
-            // Sort them by their start time code
-            existing_time_intervals.sort_unstable_by(|a, b| a.0.total_cmp(&b.0));
+            let time_to_index = self.map_timeline(u, &textgrid, corpus_doc_path)?;
         }
 
         todo!()
+    }
+
+    fn map_timeline(
+        &self,
+        u: &mut GraphUpdate,
+        textgrid: &TextGrid,
+        corpus_doc_path: &str,
+    ) -> Result<BTreeMap<OrderedFloat<f64>, String>> {
+        // Collect all points of time based on the intervals and points.
+        // Sort them by using a sorted set.
+        let mut existing_points_of_times: BTreeSet<OrderedFloat<f64>> = BTreeSet::default();
+        for tier in textgrid.items.iter() {
+            match tier {
+                TextGridItem::Interval { intervals, .. } => {
+                    for i in intervals {
+                        existing_points_of_times.insert(i.xmin.into());
+                        existing_points_of_times.insert(i.xmax.into());
+                    }
+                }
+                TextGridItem::Text { points, .. } => {
+                    for p in points {
+                        existing_points_of_times.insert(p.number.into());
+                    }
+                }
+            }
+        }
+        let result = BTreeMap::new();
+        // Add a token for each point of time and remember its name
+        let mut it = existing_points_of_times.iter().peekable();
+        let mut counter = 1;
+        while let Some(pot) = it.next() {
+            let next_token_time = it.peek().map(|t| t.0);
+            map_token(
+                u,
+                corpus_doc_path,
+                &format!("tok{}", counter),
+                None,
+                "",
+                Some(pot.0),
+                next_token_time,
+                false,
+            )?;
+            counter += 1;
+        }
+
+        Ok(result)
     }
 }
 

@@ -36,13 +36,72 @@ pub fn add_order_relations(
 
 pub fn map_token(
     u: &mut GraphUpdate,
-    doc_path: &Path,
+    doc_path: &str,
     id: &str,
-    text_name: &str,
+    text_name: Option<&str>,
     value: &str,
     start_time: Option<f64>,
     end_time: Option<f64>,
     add_annis_layer: bool,
-) -> Result<()> {
-    todo!("Implement map_token")
+) -> Result<String> {
+    let tok_id = format!("{}#t{}", doc_path, id);
+    u.add_event(UpdateEvent::AddNode {
+        node_name: tok_id.clone(),
+        node_type: "node".to_string(),
+    })?;
+    u.add_event(UpdateEvent::AddNodeLabel {
+        node_name: tok_id.clone(),
+        anno_ns: ANNIS_NS.to_string(),
+        anno_name: "tok".to_string(),
+        anno_value: value.to_string(),
+    })?;
+    if let Some(text_name) = text_name {
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: tok_id.clone(),
+            anno_ns: "".to_string(),
+            anno_name: text_name.to_string(),
+            anno_value: value.to_string(),
+        })?;
+    };
+    u.add_event(UpdateEvent::AddNodeLabel {
+        node_name: tok_id.clone(),
+        anno_ns: ANNIS_NS.to_string(),
+        anno_name: "tok-whitespace-after".to_string(),
+        anno_value: " ".to_string(),
+    })?;
+    u.add_event(UpdateEvent::AddEdge {
+        source_node: tok_id.clone(),
+        target_node: doc_path.to_string(),
+        layer: ANNIS_NS.to_string(),
+        component_type: "PartOf".to_string(),
+        component_name: "".to_string(),
+    })?;
+    if let Some(start_time) = start_time {
+        let time_code = if let Some(end_time) = end_time {
+            if start_time >= end_time {
+                return Err(crate::error::AnnattoError::EndTokenTimeLargerThanStart {
+                    start: start_time,
+                    end: end_time,
+                });
+            }
+            format!("{}-{}", start_time, end_time)
+        } else {
+            format!("{}-", start_time)
+        };
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: tok_id.clone(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "time".to_string(),
+            anno_value: time_code,
+        })?;
+    }
+    if add_annis_layer {
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: tok_id.clone(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "layer".to_string(),
+            anno_value: "default_layer".to_string(),
+        })?;
+    }
+    Ok(tok_id)
 }

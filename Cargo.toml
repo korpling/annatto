@@ -13,6 +13,7 @@ graphannis-core = "2.4.2"
 indicatif = "0.16"
 itertools = "0.10"
 log = "0.4"
+ordered-float = {version = "3.4.0", default-features = false}
 pest = "2.0"
 pest_derive = "2.0"
 pyembed = "0.22"
