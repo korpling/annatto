@@ -174,7 +174,6 @@ mod tests {
         let path = Path::new("./test/import/xlsx/");
         let import = importer.import_corpus(path, &props, None);
         let mut u = import?;
-        write_to_file(&u, Path::new("xlsx_updates.log"))?;
         let mut g = AnnotationGraph::new(on_disk)?;
         g.apply_update(&mut u, |_| {})?;        
         let queries_and_results: [(&str, u64); 19] = [
