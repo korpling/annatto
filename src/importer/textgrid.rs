@@ -219,7 +219,6 @@ impl Importer for TextgridImporter {
                 .map_or("wav", |ext| ext.as_str()),
         };
 
-
         for (file_path, doc_path) in path_structure(&mut u, input_path, &_FILE_ENDINGS, true)? {
             let file_content = std::fs::read_to_string(&file_path)?;
             let textgrid = TextGrid::parse(&file_content)?;
