@@ -145,7 +145,7 @@ impl<'a> DocumentMapper<'a> {
             let tli_id = map_token(
                 u,
                 &self.doc_path,
-                &format!("tli{}", counter),
+                &counter.to_string(),
                 None,
                 "",
                 current_token_time,

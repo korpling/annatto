@@ -28,6 +28,7 @@ pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
     match name {
         "GraphMLImporter" => Ok(Box::<importer::graphml::GraphMLImporter>::default()),
         "DoNothingImporter" => Ok(Box::<importer::DoNothingImporter>::default()),
+        "TextgridImporter" => Ok(Box::<importer::textgrid::TextgridImporter>::default()),
         _ => Ok(Box::new(PythonImporter::from_name(name))),
     }
 }

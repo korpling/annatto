@@ -17,7 +17,14 @@ fn add_subcorpora(
     for entry in std::fs::read_dir(file_path)? {
         let entry = entry?;
         let entry_type = entry.file_type()?;
-        let node_name = format!("{}/{}", parent_corpus, entry.file_name().to_string_lossy());
+        let entry_path = entry.path();
+        let subcorpus_name = entry_path
+            .file_stem()
+            .map(|f| f.to_os_string())
+            .unwrap_or_else(|| entry.file_name())
+            .to_string_lossy()
+            .to_string();
+        let node_name = format!("{}/{}", parent_corpus, subcorpus_name);
         let add_node = if entry_type.is_file() {
             if let Some(actual_ending) = entry.path().extension() {
                 file_endings
@@ -47,6 +54,13 @@ fn add_subcorpora(
             if entry_type.is_dir() {
                 result.extend(add_subcorpora(u, &entry.path(), &node_name, file_endings)?);
             } else if entry_type.is_file() {
+                // Also add the special "annis:doc" label to mark this as document
+                u.add_event(UpdateEvent::AddNodeLabel {
+                    node_name: node_name.clone(),
+                    anno_ns: ANNIS_NS.to_string(),
+                    anno_name: "doc".to_string(),
+                    anno_value: subcorpus_name.to_string(),
+                });
                 // Only add the corpus graph leafs to the result vector
                 result.push((entry.path(), node_name));
             }
