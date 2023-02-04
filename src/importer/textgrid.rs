@@ -28,11 +28,11 @@ const _PROP_AUDIO_EXTENSION: &str = "audio_extension";
 const _PROP_SKIP_AUDIO: &str = "skip_audio";
 const _PROP_SKIP_TIME_ANNOS: &str = "skip_time_annotations";
 
-/// Importer for some of the Praat TextGrid file formats.
+/// Importer the Praat TextGrid file format.
 ///
-///  See the [Praat
+/// See the [Praat
 /// Documentation](https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html)
-/// for more information on the format(s) itself.
+/// for more information on the format itself.
 #[derive(Default)]
 pub struct TextgridImporter {}
 
@@ -202,16 +202,18 @@ impl<'a> DocumentMapper<'a> {
             // Each interval of the tier is a token
             let mut token_ids = Vec::default();
             for i in intervals.iter() {
-                let id =
-                    self.add_span(u, tok_tier_name, &i.text, i.xmin, i.xmax, time_to_token_id)?;
-                self.number_of_spans += 1;
-                u.add_event(graphannis::update::UpdateEvent::AddNodeLabel {
-                    node_name: id.clone(),
-                    anno_ns: ANNIS_NS.to_string(),
-                    anno_name: "tok".to_string(),
-                    anno_value: i.text.clone(),
-                })?;
-                token_ids.push(id);
+                if !i.text.trim().is_empty() {
+                    let id =
+                        self.add_span(u, tok_tier_name, &i.text, i.xmin, i.xmax, time_to_token_id)?;
+                    self.number_of_spans += 1;
+                    u.add_event(graphannis::update::UpdateEvent::AddNodeLabel {
+                        node_name: id.clone(),
+                        anno_ns: ANNIS_NS.to_string(),
+                        anno_name: "tok".to_string(),
+                        anno_value: i.text.clone(),
+                    })?;
+                    token_ids.push(id);
+                }
             }
             // If there this document has multiple tokenizations add named order
             // relations
@@ -234,7 +236,7 @@ impl<'a> DocumentMapper<'a> {
         let start_time = OrderedFloat(start_time);
         let end_time = OrderedFloat(end_time);
         let overlapped: Vec<_> = time_to_token_id
-            .range(start_time..=end_time)
+            .range(start_time..end_time)
             .map(|(_k, v)| v)
             .collect();
         let id = map_annotations(
