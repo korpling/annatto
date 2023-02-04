@@ -1,5 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
-use std::io::{ErrorKind, Read};
+use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
 use std::*;
@@ -13,6 +13,7 @@ use crate::Module;
 use anyhow::{anyhow, Result};
 use encoding_rs_io::DecodeReaderBytes;
 use graphannis::update::GraphUpdate;
+use graphannis_core::graph::ANNIS_NS;
 use ordered_float::OrderedFloat;
 
 use super::Importer;
@@ -160,7 +161,12 @@ impl<'a> DocumentMapper<'a> {
 
         Ok(result)
     }
-    fn map_token_tier(&self, u: &mut GraphUpdate, tok_tier_name: &str) -> Result<()> {
+    fn map_token_tier(
+        &mut self,
+        u: &mut GraphUpdate,
+        tok_tier_name: &str,
+        time_to_token_id: &BTreeMap<OrderedFloat<f64>, String>,
+    ) -> Result<()> {
         // Find the tier matching the name from the configuration
         let tok_tier = self
             .textgrid
@@ -178,47 +184,60 @@ impl<'a> DocumentMapper<'a> {
             })
             .next();
         if let Some(TextGridItem::Interval {
-            name,
             xmin,
             xmax,
             intervals,
+            ..
         }) = tok_tier
         {
-            let start_time = if self.params.skip_time_annotations {
-                None
-            } else {
-                Some(*xmin)
-            };
-            let end_time = if self.params.skip_time_annotations {
-                None
-            } else {
-                Some(*xmax)
-            };
             // Each interval of the tier is a token
             let mut token_ids = Vec::default();
-            for (token_idx, i) in intervals.iter().enumerate() {
-                let id = map_token(
-                    u,
-                    &self.doc_path,
-                    &format!("{}{}", tok_tier_name, token_idx),
-                    Some(name),
-                    &i.text,
-                    start_time,
-                    end_time,
-                    true,
-                )?;
+            for i in intervals.iter() {
+                let id =
+                    self.add_span(u, tok_tier_name, &i.text, *xmin, *xmax, time_to_token_id)?;
+                self.number_of_spans += 1;
+                u.add_event(graphannis::update::UpdateEvent::AddNodeLabel {
+                    node_name: id.clone(),
+                    anno_ns: ANNIS_NS.to_string(),
+                    anno_name: "tok".to_string(),
+                    anno_value: i.text.clone(),
+                })?;
                 token_ids.push(id);
             }
             // If there this document has multiple tokenizations add named order
             // relations
-            let seg = if self.params.tier_groups.len() > 1 || self.params.force_multi_tok {
-                Some(tok_tier_name)
-            } else {
-                None
-            };
-            add_order_relations(u, &token_ids, seg)?;
+            if self.params.tier_groups.len() > 1 || self.params.force_multi_tok {
+                add_order_relations(u, &token_ids, Some(tok_tier_name))?;
+            }
         }
         Ok(())
+    }
+
+    fn add_span(
+        &self,
+        u: &mut GraphUpdate,
+        anno_name: &str,
+        anno_value: &str,
+        start_time: f64,
+        end_time: f64,
+        time_to_token_id: &BTreeMap<OrderedFloat<f64>, String>,
+    ) -> Result<String> {
+        let start_time = OrderedFloat(start_time);
+        let end_time = OrderedFloat(end_time);
+        let overlapped: Vec<_> = time_to_token_id
+            .range(start_time..=end_time)
+            .map(|(_k, v)| v)
+            .collect();
+        let id = map_annotations(
+            u,
+            &self.doc_path,
+            &(self.number_of_spans + 1).to_string(),
+            None,
+            Some(&anno_name),
+            Some(&anno_value),
+            &overlapped,
+        )?;
+        Ok(id)
     }
 
     fn map_annotation_tier(
@@ -240,21 +259,7 @@ impl<'a> DocumentMapper<'a> {
                 } => {
                     for i in intervals {
                         if !i.text.trim().is_empty() {
-                            let start = OrderedFloat(i.xmin);
-                            let end = OrderedFloat(i.xmax);
-                            let overlapped: Vec<_> = time_to_token_id
-                                .range(start..=end)
-                                .map(|(_k, v)| v)
-                                .collect();
-                            map_annotations(
-                                u,
-                                &self.doc_path,
-                                &(self.number_of_spans + 1).to_string(),
-                                None,
-                                Some(&name),
-                                Some(&i.text),
-                                &overlapped,
-                            )?;
+                            self.add_span(u, &name, &i.text, i.xmin, i.xmax, time_to_token_id)?;
                             self.number_of_spans += 1;
                         }
                     }
@@ -294,7 +299,7 @@ impl<'a> DocumentMapper<'a> {
         tok_tier_name: &str,
         time_to_token_id: &BTreeMap<OrderedFloat<f64>, String>,
     ) -> Result<()> {
-        self.map_token_tier(u, tok_tier_name)?;
+        self.map_token_tier(u, tok_tier_name, time_to_token_id)?;
         if let Some(dependent_tier_names) = self.params.tier_groups.get(tok_tier_name) {
             for tier in dependent_tier_names {
                 self.map_annotation_tier(u, tier, time_to_token_id)?;
