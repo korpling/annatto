@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::io::{ErrorKind, Read};
 use std::path::Path;
 use std::path::PathBuf;
 use std::*;
@@ -10,6 +11,7 @@ use crate::util::graphupdate::{
 };
 use crate::Module;
 use anyhow::{anyhow, Result};
+use encoding_rs_io::DecodeReaderBytes;
 use graphannis::update::GraphUpdate;
 use ordered_float::OrderedFloat;
 
@@ -338,7 +340,14 @@ impl Importer for TextgridImporter {
         for (file_path, doc_path) in documents {
             reporter.info(&format!("Processing {}", &file_path.to_string_lossy()))?;
 
-            let file_content = std::fs::read_to_string(&file_path)?;
+            // Some TextGrid files are not UTF-8, but UTF-16, so use a reader
+            // that uses the BOM and can transcode the file content if
+            // necessary.
+            let f = std::fs::File::open(&file_path)?;
+            let mut decoder = DecodeReaderBytes::new(f);
+            let mut file_content = String::new();
+            decoder.read_to_string(&mut file_content)?;
+
             let textgrid = TextGrid::parse(&file_content)?;
 
             let mut doc_mapper = DocumentMapper {
