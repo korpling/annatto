@@ -30,3 +30,9 @@ tempfile = "3"
 thiserror = "1.0"
 toml = "0.5"
 xml-rs = "0.8"
+
+[profile.release]
+panic = 'abort'
+
+[profile.dev]
+panic = 'abort'
