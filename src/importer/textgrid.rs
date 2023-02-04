@@ -11,11 +11,10 @@ use crate::util::graphupdate::{
 use crate::Module;
 use anyhow::{anyhow, Result};
 use graphannis::update::GraphUpdate;
-use itertools::Itertools;
 use ordered_float::OrderedFloat;
 
 use super::Importer;
-const _FILE_ENDINGS: [&str; 3] = [".textgrid", ".TextGrid", ".textGrid"];
+const _FILE_ENDINGS: [&str; 3] = ["textgrid", "TextGrid", "textGrid"];
 const _FILE_TYPE_SHORT: &str = "ooTextFile short";
 const _FILE_TYPE_LONG: &str = "ooTextFile";
 const _TIER_CLASS_INTERVAL: &str = "IntervalTier";
@@ -31,6 +30,7 @@ const _PROP_SKIP_TIME_ANNOS: &str = "skip_time_annotations";
 ///  See the [Praat
 /// Documentation](https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html)
 /// for more information on the format(s) itself.
+#[derive(Default)]
 pub struct TextgridImporter {}
 
 impl Module for TextgridImporter {
@@ -45,6 +45,24 @@ struct MapperParams<'a> {
     audio_extension: &'a str,
     skip_audio: bool,
     skip_time_annotations: bool,
+}
+
+fn parse_tier_map(value: &str) -> BTreeMap<&str, BTreeSet<&str>> {
+    let mut tier_map = BTreeMap::new();
+    for group in value.split(";") {
+        if let Some((owner, objects)) = group.split_once("={") {
+            let owner = owner.trim();
+            if objects.len() > 0 {
+                let value: BTreeSet<_> = objects[0..(objects.len() - 1)]
+                    .split(",")
+                    .map(|e| e.trim())
+                    .filter(|e| !e.is_empty())
+                    .collect();
+                tier_map.insert(owner, value);
+            }
+        }
+    }
+    return tier_map;
 }
 
 struct DocumentMapper<'a> {
@@ -263,7 +281,7 @@ impl<'a> DocumentMapper<'a> {
             }
         } else {
             self.reporter
-                .warn(&format!("Missing tier with name {}", tier_name))?;
+                .warn(&format!("Missing tier with name '{}'", tier_name))?;
         }
         Ok(())
     }
@@ -291,13 +309,13 @@ impl Importer for TextgridImporter {
         properties: &collections::BTreeMap<String, String>,
         tx: Option<crate::workflow::StatusSender>,
     ) -> result::Result<GraphUpdate, Box<dyn std::error::Error>> {
-        let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(input_path), 2)?;
         let mut u = GraphUpdate::default();
-        let tier_groups = parse_tier_map(
-            properties
-                .get(_PROP_TIER_GROUPS)
-                .ok_or_else(|| anyhow!("No tier mapping configurated. Cannot proceed."))?,
-        );
+        let tier_groups = parse_tier_map(properties.get(_PROP_TIER_GROUPS).ok_or_else(|| {
+            anyhow!(
+                "No tier mapping configurated (property \"{}\" missing). Cannot proceed.",
+                _PROP_TIER_GROUPS
+            )
+        })?);
         let params = MapperParams {
             tier_groups,
             force_multi_tok: properties
@@ -314,7 +332,12 @@ impl Importer for TextgridImporter {
                 .map_or("wav", |ext| ext.as_str()),
         };
 
-        for (file_path, doc_path) in path_structure(&mut u, input_path, &_FILE_ENDINGS)? {
+        let documents = path_structure(&mut u, input_path, &_FILE_ENDINGS)?;
+        let reporter =
+            ProgressReporter::new(tx, self as &dyn Module, Some(input_path), documents.len())?;
+        for (file_path, doc_path) in documents {
+            reporter.info(&format!("Processing {}", &file_path.to_string_lossy()))?;
+
             let file_content = std::fs::read_to_string(&file_path)?;
             let textgrid = TextGrid::parse(&file_content)?;
 
@@ -328,22 +351,8 @@ impl Importer for TextgridImporter {
             };
 
             doc_mapper.map(&mut u)?;
+            reporter.worked(1)?;
         }
         Ok(u)
     }
-}
-
-fn parse_tier_map(value: &str) -> BTreeMap<&str, BTreeSet<&str>> {
-    let mut tier_map = BTreeMap::new();
-    for group in value.split(";") {
-        if let Some((owner, objects)) = group.split_once("={") {
-            let owner = owner.trim();
-            let value: BTreeSet<_> = objects[0..(objects.len() - 2)]
-                .split(",")
-                .map(|e| e.trim())
-                .collect();
-            tier_map.insert(owner, value);
-        }
-    }
-    return tier_map;
 }

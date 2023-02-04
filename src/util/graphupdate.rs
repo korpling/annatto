@@ -19,11 +19,13 @@ fn add_subcorpora(
         let entry_type = entry.file_type()?;
         let node_name = format!("{}/{}", parent_corpus, entry.file_name().to_string_lossy());
         let add_node = if entry_type.is_file() {
-            let entry_file_name = entry.file_name();
-            let actual_ending = entry_file_name.to_string_lossy();
-            file_endings
-                .iter()
-                .any(|ext| *ext == actual_ending.as_ref())
+            if let Some(actual_ending) = entry.path().extension() {
+                file_endings
+                    .iter()
+                    .any(|ext| *ext == actual_ending.to_string_lossy().as_ref())
+            } else {
+                false
+            }
         } else if entry_type.is_dir() {
             true
         } else {
@@ -41,12 +43,13 @@ fn add_subcorpora(
                 component_type: "PartOf".to_string(),
                 component_name: "".to_string(),
             })?;
-        }
-        if entry_type.is_dir() {
-            result.extend(add_subcorpora(u, &entry.path(), &node_name, file_endings)?);
-        } else if entry_type.is_file() {
-            // Only add the corpus graph leafs to the result vector
-            result.push((entry.path(), node_name));
+
+            if entry_type.is_dir() {
+                result.extend(add_subcorpora(u, &entry.path(), &node_name, file_endings)?);
+            } else if entry_type.is_file() {
+                // Only add the corpus graph leafs to the result vector
+                result.push((entry.path(), node_name));
+            }
         }
     }
     Ok(result)
