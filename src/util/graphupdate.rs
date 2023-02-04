@@ -5,7 +5,7 @@ use std::{
 
 use crate::Result;
 use graphannis::update::{GraphUpdate, UpdateEvent};
-use graphannis_core::graph::ANNIS_NS;
+use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 
 fn add_subcorpora(
     u: &mut GraphUpdate,
@@ -103,11 +103,16 @@ pub fn add_order_relations<S: AsRef<str>>(
     node_ids: &[S],
     order_name: Option<&str>,
 ) -> Result<()> {
+    let ordering_layer = if order_name.is_none() {
+        ANNIS_NS.to_owned()
+    } else {
+        DEFAULT_NS.to_owned()
+    };
     for i in 1..node_ids.len() {
         u.add_event(UpdateEvent::AddEdge {
             source_node: node_ids[i - 1].as_ref().to_string(),
             target_node: node_ids[i].as_ref().to_string(),
-            layer: ANNIS_NS.to_string(),
+            layer: ordering_layer.clone(),
             component_type: "Ordering".to_string(),
             component_name: order_name.unwrap_or_default().to_string(),
         })?;

@@ -46,16 +46,16 @@ struct Visualization {
     visualizers: Vec<Visualizer>,
 }
 
-fn get_orderings(graph: &AnnotationGraph) -> Vec<String> {
-    let mut names = Vec::new();
+fn get_orderings(graph: &AnnotationGraph) -> Vec<AnnotationComponent> {
+    let mut components = Vec::new();
     for c in graph.get_all_components(Some(AnnotationComponentType::Ordering), None) {
         let storage = graph.get_graphstorage(&c).unwrap();
         if storage.source_nodes().count() > 0 {
             // skip empty components (artifacts of previous processing)
-            names.push(c.name.to_string());
+            components.push(c);
         }
     }
-    names
+    components
 }
 
 fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::error::Error>> {
@@ -111,13 +111,11 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
 fn arch_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::error::Error>> {
     let mut visualizers = Vec::new();
     let mut order_storages = BTreeMap::new();
-    for order_name in get_orderings(graph) {
-        let component = AnnotationComponent::new(
-            AnnotationComponentType::Ordering,
-            ANNIS_NS.into(),
-            order_name.clone().into(),
+    for component in get_orderings(graph) {
+        order_storages.insert(
+            component.name.to_string(),
+            graph.get_graphstorage(&component).unwrap(),
         );
-        order_storages.insert(order_name, graph.get_graphstorage(&component).unwrap());
     }
     for c in graph.get_all_components(Some(AnnotationComponentType::Pointing), None) {
         let mut mappings = BTreeMap::new();
@@ -193,7 +191,10 @@ fn vis_from_graph(graph: &AnnotationGraph) -> Result<String, Box<dyn std::error:
     vis_list.extend(tree_vis(graph)?);
     vis_list.extend(arch_vis(graph)?);
     // node annos
-    let order_names = get_orderings(graph);
+    let order_names: Vec<_> = get_orderings(graph)
+        .into_iter()
+        .map(|c| c.name.to_string())
+        .collect();
     let orderings = order_names
         .iter()
         .filter(|s| !s.is_empty())
