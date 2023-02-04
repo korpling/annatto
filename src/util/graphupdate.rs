@@ -60,7 +60,7 @@ fn add_subcorpora(
                     anno_ns: ANNIS_NS.to_string(),
                     anno_name: "doc".to_string(),
                     anno_value: subcorpus_name.to_string(),
-                });
+                })?;
                 // Only add the corpus graph leafs to the result vector
                 result.push((entry.path(), node_name));
             }
@@ -196,6 +196,13 @@ pub fn map_annotations<S: AsRef<str>>(
     u.add_event(UpdateEvent::AddNode {
         node_name: span_id.clone(),
         node_type: "node".to_string(),
+    })?;
+    u.add_event(UpdateEvent::AddEdge {
+        source_node: span_id.to_string(),
+        target_node: doc_path.to_string(),
+        layer: ANNIS_NS.to_string(),
+        component_type: "PartOf".to_string(),
+        component_name: "".to_string(),
     })?;
     if let Some(name) = name {
         u.add_event(UpdateEvent::AddNodeLabel {
