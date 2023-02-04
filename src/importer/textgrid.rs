@@ -183,18 +183,12 @@ impl<'a> DocumentMapper<'a> {
                 _ => None,
             })
             .next();
-        if let Some(TextGridItem::Interval {
-            xmin,
-            xmax,
-            intervals,
-            ..
-        }) = tok_tier
-        {
+        if let Some(TextGridItem::Interval { intervals, .. }) = tok_tier {
             // Each interval of the tier is a token
             let mut token_ids = Vec::default();
             for i in intervals.iter() {
                 let id =
-                    self.add_span(u, tok_tier_name, &i.text, *xmin, *xmax, time_to_token_id)?;
+                    self.add_span(u, tok_tier_name, &i.text, i.xmin, i.xmax, time_to_token_id)?;
                 self.number_of_spans += 1;
                 u.add_event(graphannis::update::UpdateEvent::AddNodeLabel {
                     node_name: id.clone(),
