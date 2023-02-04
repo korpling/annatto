@@ -123,6 +123,7 @@ pub fn add_order_relations<S: AsRef<str>>(
 pub fn map_token(
     u: &mut GraphUpdate,
     doc_path: &str,
+    text_node_name: &str,
     id: &str,
     text_name: Option<&str>,
     value: &str,
@@ -157,7 +158,7 @@ pub fn map_token(
     })?;
     u.add_event(UpdateEvent::AddEdge {
         source_node: tok_id.clone(),
-        target_node: doc_path.to_string(),
+        target_node: text_node_name.to_string(),
         layer: ANNIS_NS.to_string(),
         component_type: "PartOf".to_string(),
         component_name: "".to_string(),
@@ -195,6 +196,7 @@ pub fn map_token(
 pub fn map_annotations<S: AsRef<str>>(
     u: &mut GraphUpdate,
     doc_path: &str,
+    text_node_name: &str,
     id: &str,
     ns: Option<&str>,
     name: Option<&str>,
@@ -208,10 +210,16 @@ pub fn map_annotations<S: AsRef<str>>(
     })?;
     u.add_event(UpdateEvent::AddEdge {
         source_node: span_id.to_string(),
-        target_node: doc_path.to_string(),
+        target_node: text_node_name.to_string(),
         layer: ANNIS_NS.to_string(),
         component_type: "PartOf".to_string(),
         component_name: "".to_string(),
+    })?;
+    u.add_event(UpdateEvent::AddNodeLabel {
+        node_name: span_id.clone(),
+        anno_ns: ANNIS_NS.to_string(),
+        anno_name: "layer".to_string(),
+        anno_value: "default_ns".to_string(),
     })?;
     if let Some(name) = name {
         u.add_event(UpdateEvent::AddNodeLabel {

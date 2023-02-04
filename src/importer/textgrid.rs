@@ -12,7 +12,7 @@ use crate::util::graphupdate::{
 use crate::Module;
 use anyhow::{anyhow, Result};
 use encoding_rs_io::DecodeReaderBytes;
-use graphannis::update::GraphUpdate;
+use graphannis::update::{GraphUpdate, UpdateEvent};
 use graphannis_core::graph::ANNIS_NS;
 use ordered_float::OrderedFloat;
 
@@ -70,6 +70,7 @@ fn parse_tier_map(value: &str) -> BTreeMap<&str, BTreeSet<&str>> {
 
 struct DocumentMapper<'a> {
     doc_path: String,
+    text_node_name: String,
     textgrid: TextGrid,
     reporter: &'a ProgressReporter,
     file_path: PathBuf,
@@ -79,6 +80,19 @@ struct DocumentMapper<'a> {
 
 impl<'a> DocumentMapper<'a> {
     fn map(&mut self, u: &mut GraphUpdate) -> Result<()> {
+        // Add a subcorpus like node for the text
+        u.add_event(UpdateEvent::AddNode {
+            node_name: self.text_node_name.clone(),
+            node_type: "datasource".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: self.text_node_name.clone(),
+            target_node: self.doc_path.clone(),
+            layer: ANNIS_NS.to_string(),
+            component_type: "PartOf".to_string(),
+            component_name: "".to_string(),
+        })?;
+
         if !self.params.skip_audio {
             // TODO: Check assumption that the audio file is always relative to the actual file
             let audio_path = self.file_path.with_extension(self.params.audio_extension);
@@ -146,6 +160,7 @@ impl<'a> DocumentMapper<'a> {
             let tli_id = map_token(
                 u,
                 &self.doc_path,
+                &self.text_node_name,
                 &counter.to_string(),
                 None,
                 "",
@@ -225,6 +240,7 @@ impl<'a> DocumentMapper<'a> {
         let id = map_annotations(
             u,
             &self.doc_path,
+            &self.text_node_name,
             &(self.number_of_spans + 1).to_string(),
             None,
             Some(&anno_name),
@@ -269,6 +285,7 @@ impl<'a> DocumentMapper<'a> {
                             map_annotations(
                                 u,
                                 &self.doc_path,
+                                &self.text_node_name,
                                 &(self.number_of_spans + 1).to_string(),
                                 None,
                                 Some(&name),
@@ -349,6 +366,8 @@ impl Importer for TextgridImporter {
 
             let textgrid = TextGrid::parse(&file_content)?;
 
+            let text_node_name = format!("{}#text", &doc_path);
+
             let mut doc_mapper = DocumentMapper {
                 doc_path,
                 textgrid,
@@ -356,6 +375,7 @@ impl Importer for TextgridImporter {
                 file_path,
                 params: &params,
                 number_of_spans: 0,
+                text_node_name,
             };
 
             doc_mapper.map(&mut u)?;
