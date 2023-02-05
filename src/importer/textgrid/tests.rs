@@ -65,3 +65,17 @@ fn two_speakers() {
         actual
     );
 }
+
+#[test]
+fn needs_tier_groups_property() {
+    let properties: BTreeMap<String, String> = BTreeMap::new();
+
+    let importer = TextgridImporter::default();
+    let result = importer
+        .import_corpus(
+            &PathBuf::from("tests/data/textgrid/in/singleSpeaker"),
+            &properties,
+            None,
+        );
+    assert_eq!(true, result.is_err());
+}
