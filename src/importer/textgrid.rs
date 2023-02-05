@@ -107,7 +107,7 @@ impl<'a> DocumentMapper<'a> {
         }
 
         let is_multi_tok = self.params.tier_groups.len() > 1 || self.params.force_multi_tok;
-        let time_to_token_id = if is_multi_tok {
+        let mut time_to_token_id = if is_multi_tok {
             let time_to_index = self.map_timeline(u)?;
             time_to_index
         } else {
@@ -115,7 +115,7 @@ impl<'a> DocumentMapper<'a> {
         };
 
         for tok_tier_name in self.params.tier_groups.keys() {
-            self.map_tier_group(u, tok_tier_name, &time_to_token_id)?;
+            self.map_tier_group(u, tok_tier_name, is_multi_tok, &mut time_to_token_id)?;
         }
 
         Ok(())
@@ -180,7 +180,8 @@ impl<'a> DocumentMapper<'a> {
         &mut self,
         u: &mut GraphUpdate,
         tok_tier_name: &str,
-        time_to_token_id: &BTreeMap<OrderedFloat<f64>, String>,
+        is_multi_tok: bool,
+        time_to_token_id: &mut BTreeMap<OrderedFloat<f64>, String>,
     ) -> Result<()> {
         // Find the tier matching the name from the configuration
         let tok_tier = self
@@ -203,22 +204,60 @@ impl<'a> DocumentMapper<'a> {
             let mut token_ids = Vec::default();
             for i in intervals.iter() {
                 if !i.text.trim().is_empty() {
-                    let id =
-                        self.add_span(u, tok_tier_name, &i.text, i.xmin, i.xmax, time_to_token_id)?;
-                    self.number_of_spans += 1;
-                    u.add_event(graphannis::update::UpdateEvent::AddNodeLabel {
-                        node_name: id.clone(),
-                        anno_ns: ANNIS_NS.to_string(),
-                        anno_name: "tok".to_string(),
-                        anno_value: i.text.clone(),
-                    })?;
-                    token_ids.push(id);
+                    if is_multi_tok {
+                        // Add a span for this token
+                        let id = self.add_span(
+                            u,
+                            tok_tier_name,
+                            &i.text,
+                            i.xmin,
+                            i.xmax,
+                            time_to_token_id,
+                        )?;
+                        self.number_of_spans += 1;
+                        u.add_event(graphannis::update::UpdateEvent::AddNodeLabel {
+                            node_name: id.clone(),
+                            anno_ns: ANNIS_NS.to_string(),
+                            anno_name: "tok".to_string(),
+                            anno_value: i.text.clone(),
+                        })?;
+                        token_ids.push(id);
+                    } else {
+                        // Add an actual token and remember its position in time
+                        let start = if self.params.skip_time_annotations {
+                            None
+                        } else {
+                            Some(i.xmin)
+                        };
+                        let end = if self.params.skip_time_annotations {
+                            None
+                        } else {
+                            Some(i.xmax)
+                        };
+
+                        let id = map_token(
+                            u,
+                            &self.doc_path,
+                            &self.text_node_name,
+                            &(token_ids.len() + 1).to_string(),
+                            None,
+                            &i.text,
+                            start,
+                            end,
+                            true,
+                        )?;
+                        time_to_token_id.insert(i.xmin.into(), id.clone());
+                        time_to_token_id.insert(i.xmax.into(), id.clone());
+                        token_ids.push(id);
+                    }
                 }
             }
             // If there this document has multiple tokenizations add named order
-            // relations
-            if self.params.tier_groups.len() > 1 || self.params.force_multi_tok {
+            // relations, otherwise add normal token ordering
+            if is_multi_tok {
                 add_order_relations(u, &token_ids, Some(tok_tier_name))?;
+            } else {
+                add_order_relations(u, &token_ids, None)?;
             }
         }
         Ok(())
@@ -310,9 +349,10 @@ impl<'a> DocumentMapper<'a> {
         &mut self,
         u: &mut GraphUpdate,
         tok_tier_name: &str,
-        time_to_token_id: &BTreeMap<OrderedFloat<f64>, String>,
+        is_multi_tok: bool,
+        time_to_token_id: &mut BTreeMap<OrderedFloat<f64>, String>,
     ) -> Result<()> {
-        self.map_token_tier(u, tok_tier_name, time_to_token_id)?;
+        self.map_token_tier(u, tok_tier_name, is_multi_tok, time_to_token_id)?;
         if let Some(dependent_tier_names) = self.params.tier_groups.get(tok_tier_name) {
             for tier in dependent_tier_names {
                 self.map_annotation_tier(u, tier, time_to_token_id)?;
