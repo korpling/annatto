@@ -386,3 +386,6 @@ impl Importer for TextgridImporter {
         Ok(u)
     }
 }
+
+#[cfg(test)]
+mod tests;
