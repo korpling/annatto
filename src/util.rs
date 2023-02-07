@@ -34,7 +34,6 @@ pub fn insert_corpus_nodes_from_path(update: &mut GraphUpdate, path: &Path) -> R
         0
     };
     for c in norm_path.components() {
-        dbg!(&c);
         if sys_path_components > 0 {
             sys_path_components -= 1;
             continue;
