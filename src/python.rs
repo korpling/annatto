@@ -105,14 +105,10 @@ impl Module for PythonImporter {
 mod tests {
 
     use std::path::Path;
-    use std::{collections::BTreeMap, env::temp_dir};
+    use std::collections::BTreeMap;
 
-    use graphannis::{
-        corpusstorage::{QueryLanguage, SearchQuery},
-        AnnotationGraph, CorpusStorage,
-    };
+    use graphannis::AnnotationGraph;
     use graphannis_core::annostorage::ValueSearch;
-    use tempfile::tempdir_in;
 
     use super::*;
 
