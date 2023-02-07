@@ -104,7 +104,8 @@ impl<'a> DocumentMapper<'a> {
         }
 
         let mut time_to_id = if self.params.map_timeline {
-            let token_tier_names : BTreeSet<_> = self.params.tier_groups.keys().map(|n| *n).collect();
+            let token_tier_names: BTreeSet<_> =
+                self.params.tier_groups.keys().map(|n| *n).collect();
             let valid_tier_names = if token_tier_names.is_empty() {
                 // Add all tiers
                 None
