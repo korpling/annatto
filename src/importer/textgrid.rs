@@ -17,16 +17,12 @@ use graphannis_core::graph::ANNIS_NS;
 use ordered_float::OrderedFloat;
 
 use super::Importer;
-const _FILE_ENDINGS: [&str; 3] = ["textgrid", "TextGrid", "textGrid"];
-const _FILE_TYPE_SHORT: &str = "ooTextFile short";
-const _FILE_TYPE_LONG: &str = "ooTextFile";
-const _TIER_CLASS_INTERVAL: &str = "IntervalTier";
-const _TIER_CLASS_POINT: &str = "PointTier";
-const _PROP_TIER_GROUPS: &str = "tier_groups";
-const _PROP_FORCE_MULTI_TOK: &str = "force_multi_tok";
-const _PROP_AUDIO_EXTENSION: &str = "audio_extension";
-const _PROP_SKIP_AUDIO: &str = "skip_audio";
-const _PROP_SKIP_TIME_ANNOS: &str = "skip_time_annotations";
+const FILE_ENDINGS: [&str; 3] = ["textgrid", "TextGrid", "textGrid"];
+const PROP_TIER_GROUPS: &str = "tier_groups";
+const PROP_FORCE_MULTI_TOK: &str = "force_multi_tok";
+const PROP_AUDIO_EXTENSION: &str = "audio_extension";
+const PROP_SKIP_AUDIO: &str = "skip_audio";
+const PROP_SKIP_TIME_ANNOS: &str = "skip_time_annotations";
 
 /// Importer the Praat TextGrid file format.
 ///
@@ -370,29 +366,29 @@ impl Importer for TextgridImporter {
         tx: Option<crate::workflow::StatusSender>,
     ) -> result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut u = GraphUpdate::default();
-        let tier_groups = parse_tier_map(properties.get(_PROP_TIER_GROUPS).ok_or_else(|| {
+        let tier_groups = parse_tier_map(properties.get(PROP_TIER_GROUPS).ok_or_else(|| {
             anyhow!(
                 "No tier mapping configurated (property \"{}\" missing). Cannot proceed.",
-                _PROP_TIER_GROUPS
+                PROP_TIER_GROUPS
             )
         })?);
         let params = MapperParams {
             tier_groups,
             force_multi_tok: properties
-                .get(_PROP_FORCE_MULTI_TOK)
+                .get(PROP_FORCE_MULTI_TOK)
                 .map_or(false, |v| v.trim().eq_ignore_ascii_case("true")),
             skip_audio: properties
-                .get(_PROP_SKIP_AUDIO)
+                .get(PROP_SKIP_AUDIO)
                 .map_or(false, |v| v.trim().eq_ignore_ascii_case("true")),
             skip_time_annotations: properties
-                .get(_PROP_SKIP_TIME_ANNOS)
+                .get(PROP_SKIP_TIME_ANNOS)
                 .map_or(false, |v| v.trim().eq_ignore_ascii_case("true")),
             audio_extension: properties
-                .get(_PROP_AUDIO_EXTENSION)
+                .get(PROP_AUDIO_EXTENSION)
                 .map_or("wav", |ext| ext.as_str()),
         };
 
-        let documents = path_structure(&mut u, input_path, &_FILE_ENDINGS)?;
+        let documents = path_structure(&mut u, input_path, &FILE_ENDINGS)?;
         let reporter =
             ProgressReporter::new(tx, self as &dyn Module, Some(input_path), documents.len())?;
         for (file_path, doc_path) in documents {
