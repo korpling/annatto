@@ -252,7 +252,10 @@ fn collect_qnames(
 }
 
 fn node_annos_vis(graph: &AnnotationGraph) -> Result<Visualizer, Box<dyn std::error::Error>> {
-    let order_names = get_orderings(graph);
+    let order_names: Vec<_> = get_orderings(graph)
+        .into_iter()
+        .map(|c| c.name.to_string())
+        .collect();
     let orderings = order_names
         .iter()
         .filter(|s| !s.is_empty())
