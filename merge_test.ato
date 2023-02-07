@@ -11,14 +11,10 @@
   <importer name="PTBImporter" path="./test/import/">
     <customization>
       <property key="text_name">ptb</property>
-      <property key="anno_ns">norm</property>
+      <property key="anno_ns">topo</property>
+      <property key="edge_layer">const</property>
     </customization>
   </importer>
-  <manipulator name="replace">
-	  <customization>
-		  <property key="node.annos">norm::Number[psor],norm::Gender[psor]</property>
-	  </customization>
-  </manipulator>
   <manipulator name="merge">
     <customization>
       <property key="check.names">norm,conll,ptb</property>
@@ -27,6 +23,11 @@
       <property key="skip.components">,</property>
       <property key="silent">true</property>
     </customization>
+  </manipulator>
+  <manipulator name="replace">
+	  <customization>
+		  <property key="node.annos">norm::Number[psor],norm::Gender[psor]</property>
+	  </customization>
   </manipulator>
   <exporter name="GraphMLExporter" path="./">
 	  <property key="guess.vis">true</property>
