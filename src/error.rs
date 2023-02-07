@@ -61,6 +61,8 @@ pub enum AnnattoError {
     CSV(#[from] csv::Error),
     #[error("Checks failed: {failed_checks}")]
     ChecksFailed { failed_checks: String },
+    #[error("Invalid Property value: {property}={value}")]
+    InvalidPropertyValue { property: String, value: String },
 }
 
 impl<T> From<std::sync::PoisonError<T>> for AnnattoError {
