@@ -4,6 +4,7 @@ use graphannis::{
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::graph::ANNIS_NS;
+use itertools::Itertools;
 use std::{fs::File, io::Write, path::Path};
 
 fn event_to_string(update_event: &UpdateEvent) -> Result<String> {
@@ -26,18 +27,14 @@ pub fn insert_corpus_nodes_from_path(update: &mut GraphUpdate, path: &Path) -> R
     let clean_path = normpath::BasePath::new(path)?;
     let norm_path = normpath::BasePath::normalize(&clean_path)?;
     let mut full_path = String::new();
-    let mut sys_path_components = if norm_path.is_absolute() {
-        // normalized seems to always output absolute paths, but better safe than sorry
+    let from_component_index = if norm_path.is_absolute() {
         let sys_path = std::env::current_dir()?;
         sys_path.components().count()
     } else {
+        // normalized seems to always output absolute paths, but better safe than sorry
         0
     };
-    for c in norm_path.components() {
-        if sys_path_components > 0 {
-            sys_path_components -= 1;
-            continue;
-        }
+    for c in &norm_path.components().collect_vec()[from_component_index..] {
         let parent = full_path.clone();
         if !full_path.is_empty() {
             full_path += "/";
