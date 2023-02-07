@@ -26,19 +26,22 @@ pub fn insert_corpus_nodes_from_path(update: &mut GraphUpdate, path: &Path) -> R
     let clean_path = normpath::BasePath::new(path)?;
     let norm_path = normpath::BasePath::normalize(&clean_path)?;
     let mut full_path = String::new();
-    let mut sys_path_components = if clean_path.is_absolute() {
+    let mut sys_path_components = if norm_path.is_absolute() {  // normalized seems to always output absolute paths, but better safe than sorry
         let sys_path = std::env::current_dir()?;
         sys_path.components().count()
     } else {
         0
     };
     for c in norm_path.components() {
+        dbg!(&c);
         if sys_path_components > 0 {
             sys_path_components -= 1;
             continue;
         }
         let parent = full_path.clone();
-        full_path += "/";
+        if !full_path.is_empty() {
+            full_path += "/";
+        }
         full_path += &c.as_os_str().to_string_lossy();
         update.add_event(UpdateEvent::AddNode {
             node_name: full_path.to_string(),
@@ -55,4 +58,42 @@ pub fn insert_corpus_nodes_from_path(update: &mut GraphUpdate, path: &Path) -> R
         }
     }
     Ok(full_path)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{path::Path, env::current_dir};
+
+    use graphannis::update::GraphUpdate;
+    use crate::Result;
+
+    const TEST_PATH: &str = "test/import";
+
+    fn test_insert_corpus_nodes_from_path(absolute: bool) -> Result<()>{
+        let sys_path = current_dir()?;
+        let p = Path::new(TEST_PATH);
+        let test_path = if absolute {
+            sys_path.join(p)
+        } else {
+            p.to_path_buf()
+        };
+        let mut u = GraphUpdate::default();
+        let r = super::insert_corpus_nodes_from_path(&mut u, test_path.as_path());
+        assert!(r.is_ok());
+        let doc_path = r?;
+        assert_eq!(doc_path, TEST_PATH.to_string());
+        Ok(())
+    }
+
+    #[test]
+    fn test_insert_corpus_nodes_from_path_relative() {
+        let r = test_insert_corpus_nodes_from_path(false);
+        assert!(r.is_ok());
+    }
+
+    #[test]
+    fn test_insert_corpus_nodes_from_path_absolute() {
+        let r = test_insert_corpus_nodes_from_path(true);
+        assert!(r.is_ok());
+    }
 }
