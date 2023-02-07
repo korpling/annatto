@@ -104,8 +104,8 @@ impl Module for PythonImporter {
 #[cfg(test)]
 mod tests {
 
-    use std::path::Path;
     use std::collections::BTreeMap;
+    use std::path::Path;
 
     use graphannis::AnnotationGraph;
     use graphannis_core::annostorage::ValueSearch;

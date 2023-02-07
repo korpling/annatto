@@ -26,7 +26,8 @@ pub fn insert_corpus_nodes_from_path(update: &mut GraphUpdate, path: &Path) -> R
     let clean_path = normpath::BasePath::new(path)?;
     let norm_path = normpath::BasePath::normalize(&clean_path)?;
     let mut full_path = String::new();
-    let mut sys_path_components = if norm_path.is_absolute() {  // normalized seems to always output absolute paths, but better safe than sorry
+    let mut sys_path_components = if norm_path.is_absolute() {
+        // normalized seems to always output absolute paths, but better safe than sorry
         let sys_path = std::env::current_dir()?;
         sys_path.components().count()
     } else {
@@ -62,14 +63,14 @@ pub fn insert_corpus_nodes_from_path(update: &mut GraphUpdate, path: &Path) -> R
 
 #[cfg(test)]
 mod tests {
-    use std::{path::Path, env::current_dir};
+    use std::{env::current_dir, path::Path};
 
-    use graphannis::update::GraphUpdate;
     use crate::Result;
+    use graphannis::update::GraphUpdate;
 
     const TEST_PATH: &str = "test/import";
 
-    fn test_insert_corpus_nodes_from_path(absolute: bool) -> Result<()>{
+    fn test_insert_corpus_nodes_from_path(absolute: bool) -> Result<()> {
         let sys_path = current_dir()?;
         let p = Path::new(TEST_PATH);
         let test_path = if absolute {
