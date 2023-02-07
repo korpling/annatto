@@ -90,7 +90,7 @@ fn misaligned_lemma_annotation() {
     graphannis_core::graph::serialization::graphml::export(&g, None, &mut buf, |_| {}).unwrap();
     let bytes = buf.into_inner().unwrap();
     let actual = String::from_utf8(bytes).unwrap();
-    
+
     // Compare the actual output with the expected one
     assert_eq!(
         include_str!("../../../tests/data/textgrid/out/twoSpeakers.graphml"),
