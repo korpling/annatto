@@ -11,6 +11,7 @@ fn single_speaker() {
         "tier_groups".to_string(),
         "tok={lemma,pos,Inf-Struct}".to_string(),
     );
+    properties.insert("map_timeline".to_string(), "false".to_string());
     let importer = TextgridImporter::default();
 
     let mut u = importer
