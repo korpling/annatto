@@ -104,7 +104,15 @@ impl<'a> DocumentMapper<'a> {
         }
 
         let mut time_to_id = if self.params.map_timeline {
-            self.map_timeline_from_timecode(u)?
+            let token_tier_names : BTreeSet<_> = self.params.tier_groups.keys().map(|n| *n).collect();
+            let valid_tier_names = if token_tier_names.is_empty() {
+                // Add all tiers
+                None
+            } else {
+                // Only include the token tiers
+                Some(token_tier_names)
+            };
+            self.map_timeline_from_timecode(u, valid_tier_names.as_ref())?
         } else {
             self.map_timeline_from_token_tier(u)?
         };
@@ -119,20 +127,33 @@ impl<'a> DocumentMapper<'a> {
     fn map_timeline_from_timecode(
         &self,
         u: &mut GraphUpdate,
+        valid_tier_names: Option<&BTreeSet<&str>>,
     ) -> Result<BTreeMap<OrderedFloat<f64>, String>> {
         // Collect all points of time based on the intervals and points.
         let mut existing_points_of_times: BTreeSet<OrderedFloat<f64>> = BTreeSet::default();
         for tier in self.textgrid.items.iter() {
             match tier {
-                TextGridItem::Interval { intervals, .. } => {
-                    for i in intervals {
-                        existing_points_of_times.insert(i.xmin.into());
-                        existing_points_of_times.insert(i.xmax.into());
+                TextGridItem::Interval {
+                    intervals, name, ..
+                } => {
+                    let include_tier = valid_tier_names
+                        .map(|valid| valid.contains(name.as_str()))
+                        .unwrap_or(true);
+                    if include_tier {
+                        for i in intervals {
+                            existing_points_of_times.insert(i.xmin.into());
+                            existing_points_of_times.insert(i.xmax.into());
+                        }
                     }
                 }
-                TextGridItem::Text { points, .. } => {
-                    for p in points {
-                        existing_points_of_times.insert(p.number.into());
+                TextGridItem::Text { points, name, .. } => {
+                    let include_tier = valid_tier_names
+                        .map(|valid| valid.contains(name.as_str()))
+                        .unwrap_or(true);
+                    if include_tier {
+                        for p in points {
+                            existing_points_of_times.insert(p.number.into());
+                        }
                     }
                 }
             }

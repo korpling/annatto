@@ -93,8 +93,8 @@ fn misaligned_lemma_annotation() {
 
     // Compare the actual output with the expected one
     assert_eq!(
-        include_str!("../../../tests/data/textgrid/out/twoSpeakers.graphml"),
-        actual
+        include_str!("../../../tests/data/textgrid/out/misalignedLemma.graphml").trim(),
+        actual.trim()
     );
 }
 
