@@ -118,9 +118,6 @@ fn import_workbook(
         let index_opt = name_to_col_0index.get(tok_name);
         if let Some(col_0i) = index_opt {
             let mut row_nums = rownums_by_col0i.get(col_0i).unwrap().iter().collect_vec();
-            dbg!(&col_0i);
-            dbg!(&tok_name);
-            dbg!(&row_nums);
             row_nums.sort();
             for (start_row, end_row_excl) in row_nums.into_iter().tuple_windows() {
                 let cell = sheet
@@ -213,9 +210,6 @@ fn import_workbook(
             if let Some(col_0i) = index_opt {
                 let mut row_nums = rownums_by_col0i.get(col_0i).unwrap().iter().collect_vec();
                 row_nums.sort();
-                dbg!(&col_0i);
-                dbg!(&qname);
-                dbg!(&row_nums);
                 for (start_row, end_row_excl) in row_nums.into_iter().tuple_windows() {
                     let cell = sheet
                         .get_cell_by_column_and_row(&(col_0i + 1), start_row)
