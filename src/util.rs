@@ -23,7 +23,11 @@ pub fn write_to_file(updates: &GraphUpdate, path: &std::path::Path) -> Result<()
     Ok(())
 }
 
-pub fn insert_corpus_nodes_from_path(update: &mut GraphUpdate, root_path: &Path, document_path: &Path) -> Result<String> {
+pub fn insert_corpus_nodes_from_path(
+    update: &mut GraphUpdate,
+    root_path: &Path,
+    document_path: &Path,
+) -> Result<String> {
     let clean_path = normpath::BasePath::new(document_path)?;
     let clean_root_path = normpath::BasePath::new(root_path)?;
     let norm_path = normpath::BasePath::normalize(&clean_path)?;
@@ -61,7 +65,9 @@ mod tests {
 
     const TEST_PATH: &str = "test/import/xlsx";
 
-    fn test_insert_corpus_nodes_from_path(absolute: bool) -> Result<(), Box<dyn std::error::Error>> {
+    fn test_insert_corpus_nodes_from_path(
+        absolute: bool,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let sys_path = current_dir()?;
         let p = Path::new(TEST_PATH);
         let test_path = if absolute {
@@ -70,7 +76,11 @@ mod tests {
             p.to_path_buf()
         };
         let mut u = GraphUpdate::default();
-        let r = super::insert_corpus_nodes_from_path(&mut u, test_path.parent().unwrap().parent().unwrap(), test_path.as_path());
+        let r = super::insert_corpus_nodes_from_path(
+            &mut u,
+            test_path.parent().unwrap().parent().unwrap(),
+            test_path.as_path(),
+        );
         assert!(r.is_ok(), "Not okay: {:?}", r.err());
         let doc_path = r?;
         assert_eq!(doc_path, TEST_PATH.to_string());
