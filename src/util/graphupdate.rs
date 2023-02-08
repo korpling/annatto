@@ -90,12 +90,29 @@ pub fn path_structure(
     Ok(path_tuples)
 }
 
-pub fn map_audio_source(
-    _u: &mut GraphUpdate,
-    _audio_path: &Path,
-    _corpus_path: &str,
-) -> Result<()> {
-    todo!("Implement map_audio_source")
+pub fn map_audio_source(u: &mut GraphUpdate, audio_path: &Path, doc_path: &str) -> Result<String> {
+    // TODO: find a better naming scheme for the internal node ID
+    let node_name = audio_path.to_string_lossy();
+    u.add_event(UpdateEvent::AddNode {
+        node_name: node_name.to_string(),
+        node_type: "file".to_string(),
+    })?;
+    // TODO: make sure the file path is relative to the corpus directory
+    u.add_event(UpdateEvent::AddNodeLabel {
+        node_name: node_name.to_string(),
+        anno_ns: ANNIS_NS.to_string(),
+        anno_name: "file".to_string(),
+        anno_value: audio_path.to_string_lossy().to_string(),
+    })?;
+    u.add_event(UpdateEvent::AddEdge {
+        source_node: node_name.to_string(),
+        target_node: doc_path.to_string(),
+        layer: ANNIS_NS.to_string(),
+        component_type: "PartOf".to_string(),
+        component_name: "".to_string(),
+    })?;
+
+    Ok(node_name.into_owned())
 }
 
 pub fn add_order_relations<S: AsRef<str>>(
