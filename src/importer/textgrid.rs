@@ -119,7 +119,12 @@ impl<'a> DocumentMapper<'a> {
         };
 
         for tok_tier_name in self.params.tier_groups.keys() {
-            self.map_tier_group(u, tok_tier_name, &mut time_to_id, !self.params.skip_timeline_generation)?;
+            self.map_tier_group(
+                u,
+                tok_tier_name,
+                &mut time_to_id,
+                !self.params.skip_timeline_generation,
+            )?;
         }
 
         Ok(())
