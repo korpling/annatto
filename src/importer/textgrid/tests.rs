@@ -5,6 +5,19 @@ use graphannis::AnnotationGraph;
 use pretty_assertions::assert_eq;
 
 #[test]
+fn parse_tier_groups_param() {
+    let result = parse_tier_map("A={lemma,pos,Inf-Struct};B={}");
+    assert_eq!(2, result.len());
+    let a = result.get("A").unwrap();
+    assert_eq!(3, a.len());
+    assert!(a.contains("lemma"));
+    assert!(a.contains("pos"));
+    assert!(a.contains("Inf-Struct"));
+    let b = result.get("B").unwrap();
+    assert_eq!(0, b.len());
+}
+
+#[test]
 fn single_speaker() {
     let mut properties: BTreeMap<String, String> = BTreeMap::new();
     properties.insert(

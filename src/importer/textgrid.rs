@@ -4,7 +4,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::*;
 
-use crate::models::textgrid::{TextGrid, TextGridItem};
+use crate::models::textgrid::{Interval, TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{
     add_order_relations, map_annotations, map_audio_source, map_token, path_structure,
@@ -257,49 +257,63 @@ impl<'a> DocumentMapper<'a> {
         }
     }
 
-    fn add_span(
-        &self,
+    fn map_tier_group(
+        &mut self,
         u: &mut GraphUpdate,
-        anno_name: &str,
-        anno_value: &str,
-        start_time: f64,
-        end_time: f64,
-        time_to_token_id: &BTreeMap<OrderedFloat<f64>, String>,
-    ) -> Result<String> {
-        let start_time = OrderedFloat(start_time);
-        let end_time = OrderedFloat(end_time);
-        let overlapped: Vec<_> = time_to_token_id
-            .range(start_time..end_time)
-            .map(|(_k, v)| v)
-            .collect();
-        let id = map_annotations(
-            u,
-            &self.doc_path,
-            &self.text_node_name,
-            &(self.number_of_spans + 1).to_string(),
-            None,
-            Some(&anno_name),
-            Some(&anno_value),
-            &overlapped,
-        )?;
-        Ok(id)
+        tok_tier_name: &str,
+        time_to_id: &mut BTreeMap<OrderedFloat<f64>, String>,
+        map_token_tier: bool,
+    ) -> Result<()> {
+        if map_token_tier {
+            let segmentation_span_ids =
+                self.map_annotation_tier(u, tok_tier_name, None, true, time_to_id)?;
+
+            add_order_relations(u, &segmentation_span_ids, Some(tok_tier_name))?;
+        }
+
+        if let Some(dependent_tier_names) = self.params.tier_groups.get(tok_tier_name) {
+            for tier in dependent_tier_names {
+                self.map_annotation_tier(u, tier, Some(tok_tier_name), false, time_to_id)?;
+            }
+        }
+        Ok(())
     }
 
     fn map_annotation_tier(
         &mut self,
         u: &mut GraphUpdate,
         tier_name: &str,
+        parent_tier_name: Option<&str>,
         is_segmentation: bool,
         time_to_id: &BTreeMap<OrderedFloat<f64>, String>,
     ) -> Result<Vec<String>> {
         let mut node_ids_sorted = BTreeMap::default();
 
-        // TODO: correct the time codes
         let tier = self.textgrid.items.iter().find(|item| match item {
             TextGridItem::Interval { name, .. } | TextGridItem::Text { name, .. } => {
                 tier_name == name
             }
         });
+
+        let parent_tier_intervals = parent_tier_name.and_then(|tier_name| {
+            for item in self.textgrid.items.iter() {
+                match item {
+                    TextGridItem::Interval {
+                        name, intervals, ..
+                    } => {
+                        if name == tier_name {
+                            let mut intervals = intervals.clone();
+                            // Make sure the intervals are sorted by their start time
+                            intervals.sort_unstable_by_key(|i| OrderedFloat(i.xmin));
+                            return Some(intervals);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            None
+        });
+
         if let Some(tier) = tier {
             match tier {
                 TextGridItem::Interval {
@@ -307,8 +321,10 @@ impl<'a> DocumentMapper<'a> {
                 } => {
                     for i in intervals {
                         if !i.text.trim().is_empty() {
+                            let (start, end) = best_matching_start_end(i, &parent_tier_intervals);
+
                             let span_id =
-                                self.add_span(u, &name, &i.text, i.xmin, i.xmax, time_to_id)?;
+                                self.add_span(u, &name, &i.text, start, end, time_to_id)?;
                             if is_segmentation {
                                 u.add_event(UpdateEvent::AddNodeLabel {
                                     node_name: span_id.clone(),
@@ -355,26 +371,33 @@ impl<'a> DocumentMapper<'a> {
             .collect_vec())
     }
 
-    fn map_tier_group(
-        &mut self,
+    fn add_span(
+        &self,
         u: &mut GraphUpdate,
-        tok_tier_name: &str,
-        time_to_id: &mut BTreeMap<OrderedFloat<f64>, String>,
-        map_token_tier: bool,
-    ) -> Result<()> {
-        if map_token_tier {
-            let segmentation_span_ids =
-                self.map_annotation_tier(u, tok_tier_name, true, time_to_id)?;
+        anno_name: &str,
+        anno_value: &str,
+        start_time: f64,
+        end_time: f64,
+        time_to_token_id: &BTreeMap<OrderedFloat<f64>, String>,
+    ) -> Result<String> {
+        let start_time = OrderedFloat(start_time);
+        let end_time = OrderedFloat(end_time);
 
-            add_order_relations(u, &segmentation_span_ids, Some(tok_tier_name))?;
-        }
-
-        if let Some(dependent_tier_names) = self.params.tier_groups.get(tok_tier_name) {
-            for tier in dependent_tier_names {
-                self.map_annotation_tier(u, tier, false, time_to_id)?;
-            }
-        }
-        Ok(())
+        let overlapped: Vec<_> = time_to_token_id
+            .range(start_time..end_time)
+            .map(|(_k, v)| v)
+            .collect();
+        let id = map_annotations(
+            u,
+            &self.doc_path,
+            &self.text_node_name,
+            &(self.number_of_spans + 1).to_string(),
+            None,
+            Some(&anno_name),
+            Some(&anno_value),
+            &overlapped,
+        )?;
+        Ok(id)
     }
 }
 
@@ -441,6 +464,47 @@ impl Importer for TextgridImporter {
         }
         Ok(u)
     }
+}
+
+/// Find the token that this span belongs to and use its time code instead
+/// of the original one
+fn best_matching_start_end(
+    orig_interval: &Interval,
+    parent_tier_intervals: &Option<Vec<Interval>>,
+) -> (f64, f64) {
+    let mut start = orig_interval.xmin;
+    let mut end = orig_interval.xmax;
+    if let Some(parent_tier_intervals) = &parent_tier_intervals {
+        if let Err(insertion_idx) = parent_tier_intervals
+            .binary_search_by_key(&OrderedFloat(orig_interval.xmin), |interval| {
+                OrderedFloat(interval.xmin)
+            })
+        {
+            let upper_candidate = &parent_tier_intervals[insertion_idx];
+            start = upper_candidate.xmin;
+            if let Some(lower_candidate) = &parent_tier_intervals.get(insertion_idx - 1) {
+                // Decide based on which candidate is nearer
+                if (orig_interval.xmin - lower_candidate.xmin).abs() < (orig_interval.xmin - upper_candidate.xmin).abs() {
+                    start = lower_candidate.xmin;
+                }
+            }
+        }
+        if let Err(insertion_idx) = parent_tier_intervals
+            .binary_search_by_key(&OrderedFloat(orig_interval.xmax), |interval| {
+                OrderedFloat(interval.xmax)
+            })
+        {
+            let upper_candidate = &parent_tier_intervals[insertion_idx];
+            end = upper_candidate.xmax;
+            if let Some(lower_candidate) = &parent_tier_intervals.get(insertion_idx - 1) {
+                // Decide based on which candidate is nearer
+                if (orig_interval.xmax - lower_candidate.xmax).abs() < (orig_interval.xmax - upper_candidate.xmax).abs() {
+                    end = lower_candidate.xmax;
+                }
+            }
+        }
+    }
+    (start, end)
 }
 
 #[cfg(test)]
