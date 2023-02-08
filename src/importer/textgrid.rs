@@ -484,7 +484,9 @@ fn best_matching_start_end(
             start = upper_candidate.xmin;
             if let Some(lower_candidate) = &parent_tier_intervals.get(insertion_idx - 1) {
                 // Decide based on which candidate is nearer
-                if (orig_interval.xmin - lower_candidate.xmin).abs() < (orig_interval.xmin - upper_candidate.xmin).abs() {
+                if (orig_interval.xmin - lower_candidate.xmin).abs()
+                    < (orig_interval.xmin - upper_candidate.xmin).abs()
+                {
                     start = lower_candidate.xmin;
                 }
             }
@@ -498,7 +500,9 @@ fn best_matching_start_end(
             end = upper_candidate.xmax;
             if let Some(lower_candidate) = &parent_tier_intervals.get(insertion_idx - 1) {
                 // Decide based on which candidate is nearer
-                if (orig_interval.xmax - lower_candidate.xmax).abs() < (orig_interval.xmax - upper_candidate.xmax).abs() {
+                if (orig_interval.xmax - lower_candidate.xmax).abs()
+                    < (orig_interval.xmax - upper_candidate.xmax).abs()
+                {
                     end = lower_candidate.xmax;
                 }
             }
