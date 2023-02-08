@@ -32,10 +32,11 @@ impl Module for ImportSpreadsheet {
 
 fn import_workbook(
     update: &mut GraphUpdate,
+    root_path: &Path,
     path: &Path,
     column_map: &BTreeMap<String, Vec<String>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let doc_path = insert_corpus_nodes_from_path(update, path)?;
+    let doc_path = insert_corpus_nodes_from_path(update, root_path, path)?;
     let book = umya_spreadsheet::reader::xlsx::read(path)?;
     let sheet = book.get_sheet(&0)?;
     let merged_cells = sheet.get_merge_cells();
@@ -307,7 +308,7 @@ impl Importer for ImportSpreadsheet {
         let path_pattern = dummy_path.to_str().unwrap();
         for file_path_r in glob::glob(path_pattern)? {
             let file_path = file_path_r?;
-            import_workbook(&mut update, file_path.as_path(), &column_map)?;
+            import_workbook(&mut update, input_path, file_path.as_path(), &column_map)?;
         }
         Ok(update)
     }

@@ -23,18 +23,14 @@ pub fn write_to_file(updates: &GraphUpdate, path: &std::path::Path) -> Result<()
     Ok(())
 }
 
-pub fn insert_corpus_nodes_from_path(update: &mut GraphUpdate, path: &Path) -> Result<String> {
-    let clean_path = normpath::BasePath::new(path)?;
+pub fn insert_corpus_nodes_from_path(update: &mut GraphUpdate, root_path: &Path, document_path: &Path) -> Result<String> {
+    let clean_path = normpath::BasePath::new(document_path)?;
+    let clean_root_path = normpath::BasePath::new(root_path)?;
     let norm_path = normpath::BasePath::normalize(&clean_path)?;
+    let norm_root_path = normpath::BasePath::normalize(&clean_root_path)?;
+    let root_path_len = norm_root_path.components().count() - 1;
     let mut full_path = String::new();
-    let from_component_index = if norm_path.is_absolute() {
-        let sys_path = std::env::current_dir()?;
-        sys_path.components().count()
-    } else {
-        // normalized seems to always output absolute paths, but better safe than sorry
-        0
-    };
-    for c in &norm_path.components().collect_vec()[from_component_index..] {
+    for c in &norm_path.components().collect_vec()[root_path_len..] {
         let parent = full_path.clone();
         if !full_path.is_empty() {
             full_path += "/";
@@ -61,12 +57,11 @@ pub fn insert_corpus_nodes_from_path(update: &mut GraphUpdate, path: &Path) -> R
 mod tests {
     use std::{env::current_dir, path::Path};
 
-    use crate::Result;
     use graphannis::update::GraphUpdate;
 
-    const TEST_PATH: &str = "test/import";
+    const TEST_PATH: &str = "test/import/xlsx";
 
-    fn test_insert_corpus_nodes_from_path(absolute: bool) -> Result<()> {
+    fn test_insert_corpus_nodes_from_path(absolute: bool) -> Result<(), Box<dyn std::error::Error>> {
         let sys_path = current_dir()?;
         let p = Path::new(TEST_PATH);
         let test_path = if absolute {
@@ -75,8 +70,8 @@ mod tests {
             p.to_path_buf()
         };
         let mut u = GraphUpdate::default();
-        let r = super::insert_corpus_nodes_from_path(&mut u, test_path.as_path());
-        assert!(r.is_ok());
+        let r = super::insert_corpus_nodes_from_path(&mut u, test_path.parent().unwrap().parent().unwrap(), test_path.as_path());
+        assert!(r.is_ok(), "Not okay: {:?}", r.err());
         let doc_path = r?;
         assert_eq!(doc_path, TEST_PATH.to_string());
         Ok(())
@@ -85,12 +80,12 @@ mod tests {
     #[test]
     fn test_insert_corpus_nodes_from_path_relative() {
         let r = test_insert_corpus_nodes_from_path(false);
-        assert!(r.is_ok());
+        assert!(r.is_ok(), "Not okay: {:?}", r.err());
     }
 
     #[test]
     fn test_insert_corpus_nodes_from_path_absolute() {
         let r = test_insert_corpus_nodes_from_path(true);
-        assert!(r.is_ok());
+        assert!(r.is_ok(), "Not okay: {:?}", r.err());
     }
 }
