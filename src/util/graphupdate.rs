@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     ffi::OsStr,
     path::{Path, PathBuf},
 };
@@ -6,6 +7,7 @@ use std::{
 use crate::Result;
 use graphannis::update::{GraphUpdate, UpdateEvent};
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
+use normpath::PathExt;
 
 fn add_subcorpora(
     u: &mut GraphUpdate,
@@ -69,35 +71,53 @@ fn add_subcorpora(
     Ok(result)
 }
 
-pub fn path_structure(
-    u: &mut GraphUpdate,
-    root_path: &Path,
-    file_endings: &[&str],
-) -> Result<Vec<(PathBuf, String)>> {
-    let norm_path = root_path.canonicalize()?;
+pub fn root_corpus_from_path(root_path: &Path) -> Result<String> {
+    let norm_path = root_path.normalize()?;
     let root_name = norm_path
         .file_name()
         .unwrap_or(OsStr::new("root-corpus"))
         .to_string_lossy();
 
+    Ok(root_name.to_string())
+}
+
+pub fn path_structure(
+    u: &mut GraphUpdate,
+    root_path: &Path,
+    file_endings: &[&str],
+) -> Result<Vec<(PathBuf, String)>> {
+    let root_name = root_corpus_from_path(root_path)?;
+
     u.add_event(UpdateEvent::AddNode {
-        node_name: root_name.to_string(),
+        node_name: root_name.clone(),
         node_type: "corpus".to_string(),
     })?;
 
-    let mut path_tuples = add_subcorpora(u, &norm_path, &root_name, file_endings)?;
+    let mut path_tuples = add_subcorpora(u, root_path, &root_name, file_endings)?;
     path_tuples.sort();
     Ok(path_tuples)
 }
 
-pub fn map_audio_source(u: &mut GraphUpdate, audio_path: &Path, doc_path: &str) -> Result<String> {
-    // TODO: find a better naming scheme for the internal node ID
-    let node_name = audio_path.to_string_lossy();
+pub fn map_audio_source(
+    u: &mut GraphUpdate,
+    audio_path: &Path,
+    parent_corpus: &str,
+    doc_path: &str,
+) -> Result<String> {
+    let node_name = format!(
+        "{}/{}",
+        parent_corpus,
+        audio_path
+            .file_name()
+            .map_or_else(|| Cow::from("unknown_file"), |f| f.to_string_lossy())
+    );
     u.add_event(UpdateEvent::AddNode {
         node_name: node_name.to_string(),
         node_type: "file".to_string(),
     })?;
-    // TODO: make sure the file path is relative to the corpus directory
+    // TODO: make sure the file path is relative to the corpus directory. This
+    // means we also have to implement copying the linked files to the same
+    // location as the GraphML file.
     u.add_event(UpdateEvent::AddNodeLabel {
         node_name: node_name.to_string(),
         anno_ns: ANNIS_NS.to_string(),
@@ -112,7 +132,7 @@ pub fn map_audio_source(u: &mut GraphUpdate, audio_path: &Path, doc_path: &str) 
         component_name: "".to_string(),
     })?;
 
-    Ok(node_name.into_owned())
+    Ok(node_name)
 }
 
 pub fn add_order_relations<S: AsRef<str>>(

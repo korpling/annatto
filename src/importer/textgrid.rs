@@ -8,6 +8,7 @@ use crate::models::textgrid::{Interval, TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{
     add_order_relations, map_annotations, map_audio_source, map_token, path_structure,
+    root_corpus_from_path,
 };
 use crate::Module;
 use anyhow::{anyhow, Result};
@@ -66,6 +67,7 @@ fn parse_tier_map(value: &str) -> BTreeMap<&str, BTreeSet<&str>> {
 }
 
 struct DocumentMapper<'a> {
+    root_corpus: String,
     doc_path: String,
     text_node_name: String,
     textgrid: TextGrid,
@@ -94,7 +96,7 @@ impl<'a> DocumentMapper<'a> {
             // TODO: Check assumption that the audio file is always relative to the actual file
             let audio_path = self.file_path.with_extension(self.params.audio_extension);
             if audio_path.exists() {
-                map_audio_source(u, &audio_path, &self.doc_path)?;
+                map_audio_source(u, &audio_path, &self.root_corpus, &self.doc_path)?;
             } else {
                 self.reporter.info(&format!(
                     "Could not find corresponding audio file {}",
@@ -452,8 +454,10 @@ impl Importer for TextgridImporter {
             let textgrid = TextGrid::parse(&file_content)?;
 
             let text_node_name = format!("{}#text", &doc_path);
+            let root_corpus = root_corpus_from_path(input_path)?;
 
             let mut doc_mapper = DocumentMapper {
+                root_corpus,
                 doc_path,
                 textgrid,
                 reporter: &reporter,
