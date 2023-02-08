@@ -35,10 +35,8 @@ fn add_subcorpora(
             } else {
                 false
             }
-        } else if entry_type.is_dir() {
-            true
         } else {
-            false
+            entry_type.is_dir()
         };
         if add_node {
             u.add_event(UpdateEvent::AddNode {
@@ -168,7 +166,7 @@ pub fn map_token(
     end_time: Option<f64>,
     add_annis_layer: bool,
 ) -> Result<String> {
-    let tok_id = format!("{}#t{}", doc_path, id);
+    let tok_id = format!("{doc_path}#t{id}");
     u.add_event(UpdateEvent::AddNode {
         node_name: tok_id.clone(),
         node_type: "node".to_string(),
@@ -208,9 +206,9 @@ pub fn map_token(
                     end: end_time,
                 });
             }
-            format!("{}-{}", start_time, end_time)
+            format!("{start_time}-{end_time}")
         } else {
-            format!("{}-", start_time)
+            format!("{start_time}-")
         };
         u.add_event(UpdateEvent::AddNodeLabel {
             node_name: tok_id.clone(),
@@ -240,7 +238,7 @@ pub fn map_annotations<S: AsRef<str>>(
     value: Option<&str>,
     targets: &[S],
 ) -> Result<String> {
-    let span_id = format!("{}#sSpan{}", doc_path, id);
+    let span_id = format!("{doc_path}#sSpan{id}");
     u.add_event(UpdateEvent::AddNode {
         node_name: span_id.clone(),
         node_type: "node".to_string(),
