@@ -13,7 +13,7 @@ pub type Result<T> = std::result::Result<T, TextGridError>;
 #[non_exhaustive]
 pub enum TextGridError {
     #[error(transparent)]
-    Parser(#[from] pest::error::Error<Rule>),
+    Parser(#[from] Box<pest::error::Error<Rule>>),
     #[error("TextGrid item value {0} is missing")]
     MissingValue(&'static str),
     #[error("File exists, but contains no TextGrid")]
@@ -77,7 +77,8 @@ pub struct TextGridParser;
 
 impl TextGrid {
     pub fn parse(value: &str) -> Result<TextGrid> {
-        let textgrid = TextGridParser::parse(Rule::textgrid, &value)?
+        let textgrid = TextGridParser::parse(Rule::textgrid, value)
+            .map_err(|e| Box::new(e))?
             .next()
             .ok_or(TextGridError::MissingTextGrid)?;
 
@@ -101,14 +102,10 @@ impl TextGrid {
     }
 }
 
-fn consume_document_items<'a>(items: &mut Pairs<'a, Rule>) -> Result<DocumentHeader> {
-    let xmin = items
-        .next()
-        .ok_or_else(|| TextGridError::MissingValue("xmin"))?;
+fn consume_document_items(items: &mut Pairs<Rule>) -> Result<DocumentHeader> {
+    let xmin = items.next().ok_or(TextGridError::MissingValue("xmin"))?;
 
-    let xmax = items
-        .next()
-        .ok_or_else(|| TextGridError::MissingValue("xmax"))?;
+    let xmax = items.next().ok_or(TextGridError::MissingValue("xmax"))?;
 
     let mut number_items = 0;
 
@@ -116,9 +113,7 @@ fn consume_document_items<'a>(items: &mut Pairs<'a, Rule>) -> Result<DocumentHea
     if let Some(tier_flag) = items.next() {
         if tier_flag.as_rule() == Rule::flag && tier_flag.as_str() == "<exists>" {
             // Get the number of items
-            let size = items
-                .next()
-                .ok_or_else(|| TextGridError::MissingValue("size"))?;
+            let size = items.next().ok_or(TextGridError::MissingValue("size"))?;
             if size.as_rule() == Rule::number {
                 number_items = size.as_str().parse::<u64>()?;
             }
@@ -143,7 +138,7 @@ fn get_text(v: &Pair<Rule>) -> Result<String> {
             .replace("\"\"", "\"");
         Ok(result)
     } else {
-        return Err(TextGridError::TextExpected);
+        Err(TextGridError::TextExpected)
     }
 }
 
@@ -152,7 +147,7 @@ fn get_number(v: &Pair<Rule>) -> Result<f64> {
         let result = v.as_str().parse::<f64>()?;
         Ok(result)
     } else {
-        return Err(TextGridError::NumberExpected);
+        Err(TextGridError::NumberExpected)
     }
 }
 
@@ -161,20 +156,14 @@ fn get_integer(v: &Pair<Rule>) -> Result<i64> {
         let result = v.as_str().parse::<i64>()?;
         Ok(result)
     } else {
-        return Err(TextGridError::NumberExpected);
+        Err(TextGridError::NumberExpected)
     }
 }
 
-fn consume_interval<'a>(items: &mut Pairs<'a, Rule>) -> Result<Interval> {
-    let xmin = items
-        .next()
-        .ok_or_else(|| TextGridError::MissingValue("xmin"))?;
-    let xmax = items
-        .next()
-        .ok_or_else(|| TextGridError::MissingValue("xmax"))?;
-    let text = items
-        .next()
-        .ok_or_else(|| TextGridError::MissingValue("text"))?;
+fn consume_interval(items: &mut Pairs<Rule>) -> Result<Interval> {
+    let xmin = items.next().ok_or(TextGridError::MissingValue("xmin"))?;
+    let xmax = items.next().ok_or(TextGridError::MissingValue("xmax"))?;
+    let text = items.next().ok_or(TextGridError::MissingValue("text"))?;
 
     let xmin = get_number(&xmin)?;
     let xmax = get_number(&xmax)?;
@@ -184,13 +173,9 @@ fn consume_interval<'a>(items: &mut Pairs<'a, Rule>) -> Result<Interval> {
     Ok(result)
 }
 
-fn consume_point<'a>(items: &mut Pairs<'a, Rule>) -> Result<Point> {
-    let number = items
-        .next()
-        .ok_or_else(|| TextGridError::MissingValue("number"))?;
-    let mark = items
-        .next()
-        .ok_or_else(|| TextGridError::MissingValue("mark"))?;
+fn consume_point(items: &mut Pairs<Rule>) -> Result<Point> {
+    let number = items.next().ok_or(TextGridError::MissingValue("number"))?;
+    let mark = items.next().ok_or(TextGridError::MissingValue("mark"))?;
 
     let number = get_number(&number)?;
     let mark = get_text(&mark)?;
@@ -198,23 +183,13 @@ fn consume_point<'a>(items: &mut Pairs<'a, Rule>) -> Result<Point> {
     Ok(result)
 }
 
-fn consume_tier_item<'a>(items: &mut Pairs<'a, Rule>) -> Result<TextGridItem> {
+fn consume_tier_item(items: &mut Pairs<Rule>) -> Result<TextGridItem> {
     // Get the fields needed for both valid types of items (Interval, Tier)
-    let class = items
-        .next()
-        .ok_or_else(|| TextGridError::MissingValue("class"))?;
-    let name = items
-        .next()
-        .ok_or_else(|| TextGridError::MissingValue("name"))?;
-    let xmin = items
-        .next()
-        .ok_or_else(|| TextGridError::MissingValue("xmin"))?;
-    let xmax = items
-        .next()
-        .ok_or_else(|| TextGridError::MissingValue("xmax"))?;
-    let size = items
-        .next()
-        .ok_or_else(|| TextGridError::MissingValue("size"))?;
+    let class = items.next().ok_or(TextGridError::MissingValue("class"))?;
+    let name = items.next().ok_or(TextGridError::MissingValue("name"))?;
+    let xmin = items.next().ok_or(TextGridError::MissingValue("xmin"))?;
+    let xmax = items.next().ok_or(TextGridError::MissingValue("xmax"))?;
+    let size = items.next().ok_or(TextGridError::MissingValue("size"))?;
 
     // Convert the fields to the rust types
     let class = get_text(&class)?;
