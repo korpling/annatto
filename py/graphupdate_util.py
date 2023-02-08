@@ -87,9 +87,10 @@ def map_token(u, doc_path, id_, text_name, value, start_time=None, end_time=None
 def map_token_as_span(u, doc_path, id_, text_name, value, start_time, end_time, empty_toks, add_annis_layer=True):
     """
     """
-    if start_time >= end_time:
+    with_time_values = start_time is not None and end_time is not None
+    if with_time_values and start_time >= end_time:
         raise ValueError(f'Token {id_} with value {value} in tokenization {text_name} has incorrect time values.')
-    ets = [et_id for t, et_id in empty_toks if start_time <= t < end_time]
+    ets = [et_id for t, et_id in empty_toks if not with_time_values or start_time <= t < end_time]
     span_id = map_annotation(u, doc_path, id_, '', text_name, value, *ets)
     u.add_node_label(span_id, ANNIS_NS, ANNIS_TOK, value)
     if add_annis_layer:
@@ -106,6 +107,12 @@ def map_annotation(u, doc_path, id_, ns, name, value, *targets):
         coverage(u, [span_id], [target])
     return span_id
 
+def map_annotation_to_existing_node(u, node_id, ns, name, value, *targets):    
+    if name:
+        u.add_node_label(node_id, ns, name, value)
+    for target in targets:
+        coverage(u, [node_id], [target])
+    return node_id
 
 def map_hierarchical_annotation(u, doc_path, id_, ns, name, value, edge_layer, *targets):
     struct_id = f'{doc_path}#sStruct{id_}'

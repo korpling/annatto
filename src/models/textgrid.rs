@@ -4,6 +4,7 @@ use pest::{
     iterators::{Pair, Pairs},
     Parser,
 };
+use pest_derive::Parser;
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, TextGridError>;

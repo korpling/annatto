@@ -15,7 +15,7 @@ graphannis-core = "2.4.2"
 indicatif = "0.16"
 itertools = "0.10"
 log = "0.4"
-normpath = "1.1.0"
+normpath = "1.1"
 ordered-float = {version = "3.4.0", default-features = false}
 pest = "2.0"
 pest_derive = "2.0"
@@ -32,6 +32,7 @@ structopt = "0.3"
 tempfile = "3"
 thiserror = "1.0"
 toml = "0.5"
+umya-spreadsheet = "0.8"
 xml-rs = "0.8"
 
 [dev-dependencies]

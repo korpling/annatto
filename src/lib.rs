@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate pest_derive;
-
 pub mod error;
 pub mod exporter;
 pub mod importer;
@@ -29,7 +26,12 @@ pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
         "GraphMLImporter" => Ok(Box::<importer::graphml::GraphMLImporter>::default()),
         "DoNothingImporter" => Ok(Box::<importer::DoNothingImporter>::default()),
         "TextgridImporter" => Ok(Box::<importer::textgrid::TextgridImporter>::default()),
-        "annotate_corpus" => Ok(Box::<importer::corpus_annotations::AnnotateCorpus>::default()),
+        importer::corpus_annotations::MODULE_NAME => {
+            Ok(Box::<importer::corpus_annotations::AnnotateCorpus>::default())
+        }
+        importer::spreadsheet::MODULE_NAME => {
+            Ok(Box::<importer::spreadsheet::ImportSpreadsheet>::default())
+        }
         _ => Ok(Box::new(PythonImporter::from_name(name))),
     }
 }

@@ -63,6 +63,8 @@ pub enum AnnattoError {
     ChecksFailed { failed_checks: String },
     #[error("Time for end of the token ({end}) is larger than for the start ({start})")]
     EndTokenTimeLargerThanStart { start: f64, end: f64 },
+    #[error("Invalid Property value: {property}={value}")]
+    InvalidPropertyValue { property: String, value: String },
 }
 
 impl<T> From<std::sync::PoisonError<T>> for AnnattoError {
