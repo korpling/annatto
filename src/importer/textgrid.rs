@@ -20,7 +20,7 @@ use ordered_float::OrderedFloat;
 use super::Importer;
 const FILE_ENDINGS: [&str; 3] = ["textgrid", "TextGrid", "textGrid"];
 const PROP_TIER_GROUPS: &str = "tier_groups";
-const PROP_MAP_TIMELINE: &str = "map_timeline";
+const PROP_SKIP_TIMELINE_GENERATION: &str = "skip_timeline_generation";
 const PROP_AUDIO_EXTENSION: &str = "audio_extension";
 const PROP_SKIP_AUDIO: &str = "skip_audio";
 const PROP_SKIP_TIME_ANNOS: &str = "skip_time_annotations";
@@ -41,7 +41,7 @@ impl Module for TextgridImporter {
 
 struct MapperParams<'a> {
     tier_groups: BTreeMap<&'a str, BTreeSet<&'a str>>,
-    map_timeline: bool,
+    skip_timeline_generation: bool,
     audio_extension: &'a str,
     skip_audio: bool,
     skip_time_annotations: bool,
@@ -103,7 +103,9 @@ impl<'a> DocumentMapper<'a> {
             }
         }
 
-        let mut time_to_id = if self.params.map_timeline {
+        let mut time_to_id = if self.params.skip_timeline_generation {
+            self.map_timeline_from_token_tier(u)?
+        } else {
             let token_tier_names: BTreeSet<_> =
                 self.params.tier_groups.keys().map(|n| *n).collect();
             let valid_tier_names = if token_tier_names.is_empty() {
@@ -114,12 +116,10 @@ impl<'a> DocumentMapper<'a> {
                 Some(token_tier_names)
             };
             self.map_timeline_from_timecode(u, valid_tier_names.as_ref())?
-        } else {
-            self.map_timeline_from_token_tier(u)?
         };
 
         for tok_tier_name in self.params.tier_groups.keys() {
-            self.map_tier_group(u, tok_tier_name, &mut time_to_id, self.params.map_timeline)?;
+            self.map_tier_group(u, tok_tier_name, &mut time_to_id, !self.params.skip_timeline_generation)?;
         }
 
         Ok(())
@@ -417,9 +417,9 @@ impl Importer for TextgridImporter {
         })?);
         let params = MapperParams {
             tier_groups,
-            map_timeline: properties
-                .get(PROP_MAP_TIMELINE)
-                .map_or(true, |v| v.trim().eq_ignore_ascii_case("true")),
+            skip_timeline_generation: properties
+                .get(PROP_SKIP_TIMELINE_GENERATION)
+                .map_or(false, |v| v.trim().eq_ignore_ascii_case("true")),
             skip_audio: properties
                 .get(PROP_SKIP_AUDIO)
                 .map_or(false, |v| v.trim().eq_ignore_ascii_case("true")),
