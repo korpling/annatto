@@ -414,12 +414,11 @@ impl Importer for TextgridImporter {
         tx: Option<crate::workflow::StatusSender>,
     ) -> result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut u = GraphUpdate::default();
-        let tier_groups = parse_tier_map(properties.get(PROP_TIER_GROUPS).ok_or_else(|| {
-            anyhow!(
-                "No tier mapping configurated (property \"{}\" missing). Cannot proceed.",
-                PROP_TIER_GROUPS
-            )
-        })?);
+        let tier_groups = parse_tier_map(
+            properties
+                .get(PROP_TIER_GROUPS)
+                .map_or_else(|| "", |s| s.as_str()),
+        );
         let params = MapperParams {
             tier_groups,
             skip_timeline_generation: properties
