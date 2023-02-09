@@ -50,7 +50,7 @@ struct MapperParams<'a> {
 
 fn parse_tier_map(value: &str) -> BTreeMap<&str, BTreeSet<&str>> {
     let mut tier_map = BTreeMap::new();
-    for group in value.split(";") {
+    for group in value.split(';') {
         if let Some((owner, objects)) = group.split_once("={") {
             let owner = owner.trim();
             if objects.len() > 0 {
