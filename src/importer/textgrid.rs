@@ -53,9 +53,9 @@ fn parse_tier_map(value: &str) -> BTreeMap<&str, BTreeSet<&str>> {
     for group in value.split(';') {
         if let Some((owner, objects)) = group.split_once("={") {
             let owner = owner.trim();
-            if objects.len() > 0 {
+            if !objects.is_empty() {
                 let value: BTreeSet<_> = objects[0..(objects.len() - 1)]
-                    .split(",")
+                    .split(',')
                     .map(|e| e.trim())
                     .filter(|e| !e.is_empty())
                     .collect();
