@@ -78,7 +78,7 @@ pub struct TextGridParser;
 impl TextGrid {
     pub fn parse(value: &str) -> Result<TextGrid> {
         let textgrid = TextGridParser::parse(Rule::textgrid, value)
-            .map_err(|e| Box::new(e))?
+            .map_err(Box::new)?
             .next()
             .ok_or(TextGridError::MissingTextGrid)?;
 
