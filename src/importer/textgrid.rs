@@ -63,7 +63,7 @@ fn parse_tier_map(value: &str) -> BTreeMap<&str, BTreeSet<&str>> {
             }
         }
     }
-    return tier_map;
+    tier_map
 }
 
 struct DocumentMapper<'a> {
