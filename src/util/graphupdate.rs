@@ -5,7 +5,10 @@ use std::{
 };
 
 use crate::Result;
-use graphannis::update::{GraphUpdate, UpdateEvent};
+use graphannis::{
+    model::AnnotationComponentType,
+    update::{GraphUpdate, UpdateEvent},
+};
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use normpath::PathExt;
 
@@ -47,7 +50,7 @@ fn add_subcorpora(
                 source_node: node_name.clone(),
                 target_node: parent_corpus.to_string(),
                 layer: ANNIS_NS.to_string(),
-                component_type: "PartOf".to_string(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
                 component_name: "".to_string(),
             })?;
 
@@ -126,7 +129,7 @@ pub fn map_audio_source(
         source_node: node_name.to_string(),
         target_node: doc_path.to_string(),
         layer: ANNIS_NS.to_string(),
-        component_type: "PartOf".to_string(),
+        component_type: AnnotationComponentType::PartOf.to_string(),
         component_name: "".to_string(),
     })?;
 
@@ -148,7 +151,7 @@ pub fn add_order_relations<S: AsRef<str>>(
             source_node: node_ids[i - 1].as_ref().to_string(),
             target_node: node_ids[i].as_ref().to_string(),
             layer: ordering_layer.clone(),
-            component_type: "Ordering".to_string(),
+            component_type: AnnotationComponentType::Ordering.to_string(),
             component_name: order_name.unwrap_or_default().to_string(),
         })?;
     }
@@ -195,7 +198,7 @@ pub fn map_token(
         source_node: tok_id.clone(),
         target_node: text_node_name.to_string(),
         layer: ANNIS_NS.to_string(),
-        component_type: "PartOf".to_string(),
+        component_type: AnnotationComponentType::PartOf.to_string(),
         component_name: "".to_string(),
     })?;
     if let Some(start_time) = start_time {
@@ -247,7 +250,7 @@ pub fn map_annotations<S: AsRef<str>>(
         source_node: span_id.to_string(),
         target_node: text_node_name.to_string(),
         layer: ANNIS_NS.to_string(),
-        component_type: "PartOf".to_string(),
+        component_type: AnnotationComponentType::PartOf.to_string(),
         component_name: "".to_string(),
     })?;
     u.add_event(UpdateEvent::AddNodeLabel {
@@ -269,7 +272,7 @@ pub fn map_annotations<S: AsRef<str>>(
             source_node: span_id.clone(),
             target_node: target.as_ref().to_string(),
             layer: ANNIS_NS.to_string(),
-            component_type: "Coverage".to_string(),
+            component_type: AnnotationComponentType::Coverage.to_string(),
             component_name: "".to_string(),
         })?;
     }
