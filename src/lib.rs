@@ -2,6 +2,7 @@ pub mod error;
 pub mod exporter;
 pub mod importer;
 pub mod manipulator;
+pub mod models;
 pub mod progress;
 pub mod python;
 pub mod util;
@@ -24,6 +25,7 @@ pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
     match name {
         "GraphMLImporter" => Ok(Box::<importer::graphml::GraphMLImporter>::default()),
         "DoNothingImporter" => Ok(Box::<importer::DoNothingImporter>::default()),
+        "TextgridImporter" => Ok(Box::<importer::textgrid::TextgridImporter>::default()),
         importer::corpus_annotations::MODULE_NAME => {
             Ok(Box::<importer::corpus_annotations::AnnotateCorpus>::default())
         }

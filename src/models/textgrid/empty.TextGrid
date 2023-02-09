@@ -1,0 +1,10 @@
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 123
+xmax = 2045.144149659864
+tiers? <exists>
+size = 0
+
+something = "value" !comment "value"
+another = "value"

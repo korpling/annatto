@@ -1,0 +1,28 @@
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+
+
+// These three concepts are the only actual entitities that exist in a 
+// TextGrid file according to
+// https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html
+number = @{ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)?}
+// A text is enclosed in quotes and double quotes are used as escaping mechanism
+text = @{"\"" ~ ("\"\"" | (! "\"" ~ ANY) )* ~ "\""}
+flag = @{"<" ~ (! ">" ~ ANY)* ~ ">"}
+
+// Line comments are special, as they contain everthing until the end of the line.
+// Lines are otherwise whitespace and ignored, but this adds some semantics to them.
+line_comment = @{"!" ~ (!NEWLINE ~ ANY)* ~ NEWLINE}
+comment_number = _{"[" ~ number ~ "]" }
+COMMENT = _{line_comment | comment_number | (!(comment_number|number|text|flag) ~ ANY)+}
+
+// TextGrid fields are only a *flat* sequence of numbers, text and flags.
+// Everything else are just comments or whitespace,
+// We explicitly check for the header in the beginning to make sure we only parse
+// files which we can assume are TextGrid files.
+textgrid = {
+    SOI ~ 
+    "\"ooTextFile\"" ~
+    "\"TextGrid\"" ~
+    (number | flag | text)* ~
+    EOI 
+}

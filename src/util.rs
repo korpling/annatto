@@ -7,6 +7,8 @@ use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use std::{fs::File, io::Write, path::Path};
 
+pub mod graphupdate;
+
 fn event_to_string(update_event: &UpdateEvent) -> Result<String> {
     Ok(format!("{:?}", update_event))
 }
