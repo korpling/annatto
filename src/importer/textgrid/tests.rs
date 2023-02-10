@@ -29,7 +29,7 @@ fn single_speaker() {
 
     let mut u = importer
         .import_corpus(
-            &PathBuf::from("tests/data/textgrid/in/singleSpeaker"),
+            &PathBuf::from("tests/data/import/textgrid/input/singleSpeaker"),
             &properties,
             None,
         )
@@ -44,7 +44,7 @@ fn single_speaker() {
 
     // Compare the actual output with the expected one
     assert_eq!(
-        include_str!("../../../tests/data/textgrid/out/singleSpeaker.graphml"),
+        include_str!("../../../tests/data/import/textgrid/expected/singleSpeaker.graphml"),
         actual
     );
 }
@@ -60,7 +60,7 @@ fn two_speakers() {
 
     let mut u = importer
         .import_corpus(
-            &PathBuf::from("tests/data/textgrid/in/twoSpeakers"),
+            &PathBuf::from("tests/data/import/textgrid/input/twoSpeakers"),
             &properties,
             None,
         )
@@ -75,7 +75,7 @@ fn two_speakers() {
 
     // Compare the actual output with the expected one
     assert_eq!(
-        include_str!("../../../tests/data/textgrid/out/twoSpeakers.graphml"),
+        include_str!("../../../tests/data/import/textgrid/expected/twoSpeakers.graphml"),
         actual
     );
 }
@@ -91,7 +91,7 @@ fn misaligned_lemma_annotation() {
 
     let mut u = importer
         .import_corpus(
-            &PathBuf::from("tests/data/textgrid/in/misalignedLemma"),
+            &PathBuf::from("tests/data/import/textgrid/input/misalignedLemma"),
             &properties,
             None,
         )
@@ -106,7 +106,7 @@ fn misaligned_lemma_annotation() {
 
     // Compare the actual output with the expected one
     assert_eq!(
-        include_str!("../../../tests/data/textgrid/out/misalignedLemma.graphml").trim(),
+        include_str!("../../../tests/data/import/textgrid/expected/misalignedLemma.graphml").trim(),
         actual.trim()
     );
 }

@@ -333,7 +333,7 @@ mod tests {
             "column_map".to_string(),
             "dipl={sentence,seg};norm={pos,lemma}".to_string(),
         );
-        let path = Path::new("./test/import/xlsx/");
+        let path = Path::new("./tests/data/import/xlsx/");
         let import = importer.import_corpus(path, &props, None);
         let mut u = import?;
         let mut g = AnnotationGraph::new(on_disk)?;

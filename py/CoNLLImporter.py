@@ -121,7 +121,7 @@ def _map_conll_document(u,
 def start_import(path, **properties):
     """
     Import all conll documents in the given directory.
-    >>> type(start_import('test/import/conll')).__name__
+    >>> type(start_import('tests/data/import/conll')).__name__
     'GraphUpdate'
     """
     safe_props = defaultdict(type(None), properties)

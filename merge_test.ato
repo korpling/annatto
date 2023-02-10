@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <pepper-job id="trttqfob" version="1.0">
-  <importer name="EXMARaLDAImporter" path="./test/import/"/>
-  <importer name="CoNLLImporter" path="./test/import/">
+  <importer name="EXMARaLDAImporter" path="./tests/data/import/"/>
+  <importer name="CoNLLImporter" path="./tests/data/import/">
     <customization>
       <property key="text_name">conll</property>
       <property key="anno_ns">norm</property>
       <property key="skip_named_ordering">false</property>
     </customization>
   </importer>
-  <importer name="PTBImporter" path="./test/import/">
+  <importer name="PTBImporter" path="./tests/data/import/">
     <customization>
       <property key="text_name">ptb</property>
       <property key="anno_ns">topo</property>

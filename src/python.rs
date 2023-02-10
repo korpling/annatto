@@ -134,7 +134,7 @@ mod tests {
     fn run_exmaralda_importer() {
         let importer = PythonImporter::from_name("EXMARaLDAImporter");
         let props = BTreeMap::default();
-        let path = Path::new("test/exmaralda/importer/");
+        let path = Path::new("tests/data/import/exmaralda/");
         let mut u = importer.import_corpus(path, &props, None).unwrap();
         let mut g = AnnotationGraph::new(false).unwrap();
         g.apply_update(&mut u, |_| {}).unwrap();
@@ -145,7 +145,7 @@ mod tests {
     fn run_conll_importer() {
         let importer = PythonImporter::from_name("CoNLLImporter");
         let props = BTreeMap::default();
-        let path = Path::new("test/conll/importer/");
+        let path = Path::new("tests/data/import/conll/");
         let mut u = importer.import_corpus(path, &props, None).unwrap();
         let mut g = AnnotationGraph::new(false).unwrap();
         g.apply_update(&mut u, |_| {}).unwrap();
@@ -156,7 +156,7 @@ mod tests {
     fn run_ptb_importer() {
         let importer = PythonImporter::from_name("PTBImporter");
         let props = BTreeMap::default();
-        let path = Path::new("test/ptb/importer/");
+        let path = Path::new("tests/data/import/ptb");
         let mut u = importer.import_corpus(path, &props, None).unwrap();
         let mut g = AnnotationGraph::new(false).unwrap();
         g.apply_update(&mut u, |_| {}).unwrap();
