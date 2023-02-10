@@ -12,6 +12,10 @@ export CARGO_INCREMENTAL=0
 # the build artifacts into a different directory.
 export CARGO_TARGET_DIR='target/coverage/'
 
+# Clean and create build folder for coverage.
+# If we don't clean the folder, there might be a mixup between previous runs
+# and the reported coverage is incosistent
+rm -rf target/coverage
 mkdir -p target/coverage/
 
 # Run all tests
