@@ -65,7 +65,7 @@ mod tests {
 
     use graphannis::update::GraphUpdate;
 
-    const TEST_PATH: &str = "test/import/xlsx";
+    const TEST_PATH: &str = "tests/data/import/xlsx";
 
     fn test_insert_corpus_nodes_from_path(
         absolute: bool,
@@ -78,14 +78,12 @@ mod tests {
             p.to_path_buf()
         };
         let mut u = GraphUpdate::default();
-        let r = super::insert_corpus_nodes_from_path(
-            &mut u,
-            test_path.parent().unwrap().parent().unwrap(),
-            test_path.as_path(),
-        );
+        let parent_path = test_path.parent().unwrap().parent().unwrap();
+
+        let r = super::insert_corpus_nodes_from_path(&mut u, &parent_path, test_path.as_path());
         assert!(r.is_ok(), "Not okay: {:?}", r.err());
         let doc_path = r?;
-        assert_eq!(doc_path, TEST_PATH.to_string());
+        assert_eq!(doc_path, "data/import/xlsx");
         Ok(())
     }
 

@@ -82,7 +82,7 @@ def map_document(u, path, doc_path, cat_name=_DEFAULT_NODE_ANNO_NAME, layer_name
 def start_import(path, **properties):
     """
     Import all ptb documents in the given directory.
-    >>> type(start_import('test/import/ptb')).__name__
+    >>> type(start_import('tests/data/import/ptb')).__name__
     'GraphUpdate'
     """
     u = GraphUpdate()
