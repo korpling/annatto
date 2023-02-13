@@ -24,7 +24,9 @@ use python::PythonImporter;
 pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
     match name {
         importer::graphml::MODULE_NAME => Ok(Box::<importer::graphml::GraphMLImporter>::default()),
-        importer::CREATE_EMPTY_CORPUS_MODULE_NAME => Ok(Box::<importer::CreateEmptyCorpus>::default()),
+        importer::CREATE_EMPTY_CORPUS_MODULE_NAME => {
+            Ok(Box::<importer::CreateEmptyCorpus>::default())
+        }
         importer::textgrid::MODULE_NAME => {
             Ok(Box::<importer::textgrid::TextgridImporter>::default())
         }

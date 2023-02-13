@@ -28,7 +28,6 @@ const PROP_SKIP_TIME_ANNOS: &str = "skip_time_annotations";
 
 pub const MODULE_NAME: &str = "import_textgrid";
 
-
 /// Importer the Praat TextGrid file format.
 ///
 /// See the [Praat

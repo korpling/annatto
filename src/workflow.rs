@@ -305,8 +305,8 @@ impl Workflow {
         }
 
         // Create a new empty annotation graph
-        let mut g =
-            AnnotationGraph::new(true).map_err(|e| AnnattoError::CreateGraph(e.to_string()))?;
+        let mut g = AnnotationGraph::with_default_graphstorages(true)
+            .map_err(|e| AnnattoError::CreateGraph(e.to_string()))?;
 
         // Execute all importers and store their graph updates in parallel
         let updates: Result<Vec<GraphUpdate>> = self
@@ -405,5 +405,16 @@ impl Workflow {
             })?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn no_export_step() {
+        // This should not fail
+        execute_from_file(Path::new("tests/data/import/empty.ato"), None).unwrap();
     }
 }

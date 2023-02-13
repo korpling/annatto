@@ -24,7 +24,6 @@ use crate::{
 
 pub const MODULE_NAME: &str = "import_graphml";
 
-
 #[derive(Default)]
 pub struct GraphMLImporter {}
 
