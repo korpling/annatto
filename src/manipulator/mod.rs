@@ -3,7 +3,7 @@ pub mod check;
 pub mod merge;
 pub mod re;
 
-use crate::{workflow::StatusSender, Module, StepID};
+use crate::{workflow::StatusSender, Module};
 use graphannis::AnnotationGraph;
 use std::collections::BTreeMap;
 
@@ -24,35 +24,4 @@ pub trait Manipulator: Module {
         properties: &BTreeMap<String, String>,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>>;
-}
-
-#[derive(Default)]
-pub struct DoNothingManipulator {}
-
-impl Manipulator for DoNothingManipulator {
-    fn manipulate_corpus(
-        &self,
-        _graph: &mut graphannis::AnnotationGraph,
-        _properties: &BTreeMap<String, String>,
-        tx: Option<StatusSender>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        if let Some(tx) = tx {
-            let id = StepID {
-                module_name: self.module_name().to_string(),
-                path: None,
-            };
-            tx.send(crate::workflow::StatusMessage::Progress {
-                id,
-                total_work: 1,
-                finished_work: 1,
-            })?;
-        }
-        Ok(())
-    }
-}
-
-impl Module for DoNothingManipulator {
-    fn module_name(&self) -> &str {
-        "DoNothingManipulator"
-    }
 }

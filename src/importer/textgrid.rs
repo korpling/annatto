@@ -26,6 +26,9 @@ const PROP_AUDIO_EXTENSION: &str = "audio_extension";
 const PROP_SKIP_AUDIO: &str = "skip_audio";
 const PROP_SKIP_TIME_ANNOS: &str = "skip_time_annotations";
 
+pub const MODULE_NAME: &str = "import_textgrid";
+
+
 /// Importer the Praat TextGrid file format.
 ///
 /// See the [Praat
@@ -36,7 +39,7 @@ pub struct TextgridImporter {}
 
 impl Module for TextgridImporter {
     fn module_name(&self) -> &str {
-        "TextgridImporter"
+        MODULE_NAME
     }
 }
 

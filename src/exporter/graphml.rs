@@ -23,12 +23,14 @@ use graphannis_core::{
 use itertools::Itertools;
 use serde_derive::Serialize;
 
+pub const MODULE_NAME: &str = "export_graphml";
+
 #[derive(Default)]
 pub struct GraphMLExporter {}
 
 impl Module for GraphMLExporter {
     fn module_name(&self) -> &str {
-        "GraphMLExporter"
+        MODULE_NAME
     }
 }
 

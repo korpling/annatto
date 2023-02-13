@@ -22,6 +22,9 @@ use crate::{
     Module,
 };
 
+pub const MODULE_NAME: &str = "import_graphml";
+
+
 #[derive(Default)]
 pub struct GraphMLImporter {}
 
@@ -295,6 +298,6 @@ impl Importer for GraphMLImporter {
 
 impl Module for GraphMLImporter {
     fn module_name(&self) -> &str {
-        "GraphMLImporter"
+        MODULE_NAME
     }
 }
