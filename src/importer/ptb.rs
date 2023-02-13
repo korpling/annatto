@@ -9,11 +9,9 @@ use super::Importer;
 
 pub const MODULE_NAME: &str = "import_ptb";
 
-
 #[derive(Parser)]
 #[grammar = "importer/ptb/ptb.pest"]
 pub struct PtbParser;
-
 
 /// Importer the Penn Treebank Bracketed Text format (PTB)
 #[derive(Default)]
