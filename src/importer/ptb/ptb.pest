@@ -1,9 +1,12 @@
 WHITESPACE = _{ " " | "\t" | NEWLINE }
 
-label_character = @{!("(" | ")" | WHITESPACE) ~ ANY}
-label = @{label_character+}
+label_character = @{!("(" | ")" | "\"" | WHITESPACE) ~ ANY}
+value_character = @{!"\"" ~ ANY}
 
-phrase = {"(" ~ label ~ (phrase+ | label) ~ ")"}
+label = @{label_character+}
+quoted_value = @{"\"" ~ value_character* ~ "\""}
+
+phrase = {"(" ~ label ~ (phrase+ | quoted_value | label) ~ ")"}
 root = {"(" ~ phrase ~ ")"}
 
-ptb = {SOI ~ root+ ~ EOI}
+ptb = {SOI ~ (root+ | phrase) ~ EOI}
