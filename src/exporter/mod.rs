@@ -25,29 +25,3 @@ pub trait Exporter: Module {
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>>;
 }
-
-#[derive(Default)]
-pub struct DoNothingExporter {}
-
-impl Exporter for DoNothingExporter {
-    fn export_corpus(
-        &self,
-        _graph: &graphannis::AnnotationGraph,
-        _properties: &BTreeMap<String, String>,
-        output_path: &Path,
-        tx: Option<StatusSender>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        if let Some(tx) = tx {
-            tx.send(crate::workflow::StatusMessage::StepDone {
-                id: self.step_id(Some(output_path)),
-            })?;
-        }
-        Ok(())
-    }
-}
-
-impl Module for DoNothingExporter {
-    fn module_name(&self) -> &str {
-        "DoNothingExporter"
-    }
-}

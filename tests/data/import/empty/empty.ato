@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pepper-job id="trttqfob" version="1.0">
+    <importer name="create_empty_corpus" path="." />
+    <manipulator name="check">
+        <property key="config.path">check_empty_corpus.csv</property>
+    </manipulator>
+</pepper-job>
