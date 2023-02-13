@@ -17,6 +17,7 @@ use graphannis_core::{
 use itertools::Itertools;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::convert::TryFrom;
+use std::path::Path;
 
 #[derive(Default)]
 pub struct Merge {}
@@ -81,7 +82,7 @@ impl TryFrom<&String> for ErrorPolicy {
             "drop" => Ok(ErrorPolicy::Drop),
             "forward" => Ok(ErrorPolicy::Forward),
             _ => Err(AnnattoError::Manipulator {
-                reason: format!("Undefined value for property {}: {}", PROP_ON_ERROR, value),
+                reason: format!("Undefined value for property {PROP_ON_ERROR}: {value}"),
                 manipulator: String::from(MODULE_NAME),
             }),
         }
@@ -162,10 +163,7 @@ impl Merge {
                     }
                     if nodes.is_empty() {
                         let err = AnnattoError::Manipulator {
-                            reason: format!(
-                                "Ordering `{}` does not connect any nodes.",
-                                order_name
-                            ),
+                            reason: format!("Ordering `{order_name}` does not connect any nodes."),
                             manipulator: self.module_name().to_string(),
                         };
                         return Err(Box::new(err));
@@ -177,7 +175,7 @@ impl Merge {
                 }
             } else {
                 let err = AnnattoError::Manipulator {
-                    reason: format!("Required ordering `{}` does not exist.", order_name),
+                    reason: format!("Required ordering `{order_name}` does not exist."),
                     manipulator: self.module_name().to_string(),
                 };
                 return Err(Box::new(err));
@@ -487,7 +485,7 @@ impl Merge {
             if let Some(sender) = &tx {
                 let message = match policy {
                     ErrorPolicy::Fail => {
-                        let msg = format!("{} documents with ill-merged tokens:\n{}", n, docs_s);
+                        let msg = format!("{n} documents with ill-merged tokens:\n{docs_s}");
                         let err = AnnattoError::Manipulator {
                             reason: msg,
                             manipulator: self.module_name().to_string(),
@@ -524,11 +522,11 @@ impl Merge {
                                 })?;
                             }
                         }
-                        let msg = format!("{} documents with ill-merged tokens will be dropped from the corpus:\n{}", n, docs_s);
+                        let msg = format!("{n} documents with ill-merged tokens will be dropped from the corpus:\n{docs_s}");
                         StatusMessage::Warning(msg)
                     }
                     _ => {
-                        let msg = format!("BE AWARE that the corpus contains severe merging issues in the following {} documents:\n{}", n, docs_s);
+                        let msg = format!("BE AWARE that the corpus contains severe merging issues in the following {n} documents:\n{docs_s}");
                         StatusMessage::Warning(msg)
                     }
                 };
@@ -576,6 +574,7 @@ impl Manipulator for Merge {
         &self,
         graph: &mut AnnotationGraph,
         properties: &BTreeMap<String, String>,
+        _workflow_directory: Option<&Path>,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(sender) = &tx {
@@ -704,7 +703,7 @@ mod tests {
             "\"NOISE\"".to_string(),
         );
         let merger = Merge::default();
-        let merge_r = merger.manipulate_corpus(&mut g, &properties, None);
+        let merge_r = merger.manipulate_corpus(&mut g, &properties, None, None);
         assert_eq!(merge_r.is_ok(), true, "Probing merge result {:?}", &merge_r);
         let mut e_g = expected_output_graph(on_disk)?;
         // corpus nodes
@@ -835,7 +834,9 @@ mod tests {
         properties.insert("keep.name".to_string(), "norm".to_string());
         let merger = Merge::default();
         assert_eq!(
-            merger.manipulate_corpus(&mut g, &properties, None).is_ok(),
+            merger
+                .manipulate_corpus(&mut g, &properties, None, None)
+                .is_ok(),
             true
         );
         let tmp_file = tempfile()?;

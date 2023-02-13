@@ -26,6 +26,8 @@ const PROP_AUDIO_EXTENSION: &str = "audio_extension";
 const PROP_SKIP_AUDIO: &str = "skip_audio";
 const PROP_SKIP_TIME_ANNOS: &str = "skip_time_annotations";
 
+pub const MODULE_NAME: &str = "import_textgrid";
+
 /// Importer the Praat TextGrid file format.
 ///
 /// See the [Praat
@@ -36,7 +38,7 @@ pub struct TextgridImporter {}
 
 impl Module for TextgridImporter {
     fn module_name(&self) -> &str {
-        "TextgridImporter"
+        MODULE_NAME
     }
 }
 
@@ -216,20 +218,18 @@ impl<'a> DocumentMapper<'a> {
             let mut token_sorted_by_time = BTreeMap::default();
 
             for tier in self.textgrid.items.iter() {
-                match tier {
-                    TextGridItem::Interval {
-                        name, intervals, ..
-                    } => {
-                        if name == token_tier_name {
-                            for i in intervals {
-                                token_sorted_by_time.insert(
-                                    (OrderedFloat(i.xmin), OrderedFloat(i.xmax)),
-                                    i.text.clone(),
-                                );
-                            }
+                if let TextGridItem::Interval {
+                    name, intervals, ..
+                } = tier
+                {
+                    if name == token_tier_name {
+                        for i in intervals {
+                            token_sorted_by_time.insert(
+                                (OrderedFloat(i.xmin), OrderedFloat(i.xmax)),
+                                i.text.clone(),
+                            );
                         }
                     }
-                    _ => {}
                 }
             }
             let mut token_ids = Vec::new();
@@ -303,18 +303,16 @@ impl<'a> DocumentMapper<'a> {
 
         let parent_tier_intervals = parent_tier_name.and_then(|tier_name| {
             for item in self.textgrid.items.iter() {
-                match item {
-                    TextGridItem::Interval {
-                        name, intervals, ..
-                    } => {
-                        if name == tier_name {
-                            let mut intervals = intervals.clone();
-                            // Make sure the intervals are sorted by their start time
-                            intervals.sort_unstable_by_key(|i| OrderedFloat(i.xmin));
-                            return Some(intervals);
-                        }
+                if let TextGridItem::Interval {
+                    name, intervals, ..
+                } = item
+                {
+                    if name == tier_name {
+                        let mut intervals = intervals.clone();
+                        // Make sure the intervals are sorted by their start time
+                        intervals.sort_unstable_by_key(|i| OrderedFloat(i.xmin));
+                        return Some(intervals);
                     }
-                    _ => {}
                 }
             }
             None
@@ -330,7 +328,7 @@ impl<'a> DocumentMapper<'a> {
                             let (start, end) = best_matching_start_end(i, &parent_tier_intervals);
 
                             let span_id =
-                                self.add_span(u, &name, &i.text, start, end, time_to_id)?;
+                                self.add_span(u, name, &i.text, start, end, time_to_id)?;
                             if is_segmentation {
                                 u.add_event(UpdateEvent::AddNodeLabel {
                                     node_name: span_id.clone(),
@@ -356,7 +354,7 @@ impl<'a> DocumentMapper<'a> {
                                 &self.text_node_name,
                                 &(self.number_of_spans + 1).to_string(),
                                 None,
-                                Some(&name),
+                                Some(name),
                                 Some(&p.mark),
                                 &overlapped,
                             )?;
@@ -369,12 +367,9 @@ impl<'a> DocumentMapper<'a> {
             }
         } else {
             self.reporter
-                .warn(&format!("Missing tier with name '{}'", tier_name))?;
+                .warn(&format!("Missing tier with name '{tier_name}'"))?;
         }
-        Ok(node_ids_sorted
-            .into_iter()
-            .map(|(_, span_id)| span_id)
-            .collect_vec())
+        Ok(node_ids_sorted.into_values().collect_vec())
     }
 
     fn add_span(
@@ -399,8 +394,8 @@ impl<'a> DocumentMapper<'a> {
             &self.text_node_name,
             &(self.number_of_spans + 1).to_string(),
             None,
-            Some(&anno_name),
-            Some(&anno_value),
+            Some(anno_name),
+            Some(anno_value),
             &overlapped,
         )?;
         Ok(id)

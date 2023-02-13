@@ -29,10 +29,12 @@ pub trait Importer: Module {
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>>;
 }
 
-#[derive(Default)]
-pub struct DoNothingImporter {}
+pub const CREATE_EMPTY_CORPUS_MODULE_NAME: &str = "create_empty_corpus";
 
-impl Importer for DoNothingImporter {
+#[derive(Default)]
+pub struct CreateEmptyCorpus {}
+
+impl Importer for CreateEmptyCorpus {
     fn import_corpus(
         &self,
         path: &Path,
@@ -50,8 +52,8 @@ impl Importer for DoNothingImporter {
     }
 }
 
-impl Module for DoNothingImporter {
+impl Module for CreateEmptyCorpus {
     fn module_name(&self) -> &str {
-        "DoNothingImporter"
+        CREATE_EMPTY_CORPUS_MODULE_NAME
     }
 }

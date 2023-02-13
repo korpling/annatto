@@ -1,4 +1,7 @@
-use std::env::temp_dir;
+use std::{
+    env::temp_dir,
+    path::{Path, PathBuf},
+};
 
 use csv::ReaderBuilder;
 use graphannis::{
@@ -22,7 +25,7 @@ impl Module for Check {
     }
 }
 
-fn read_config_file(path: &str) -> Result<Vec<(String, String)>, Box<dyn std::error::Error>> {
+fn read_config_file(path: &Path) -> Result<Vec<(String, String)>, Box<dyn std::error::Error>> {
     let mut reader = ReaderBuilder::new()
         .delimiter(CONFIG_FILE_ENTRY_SEP)
         .from_path(path)?;
@@ -115,18 +118,25 @@ impl Manipulator for Check {
         &self,
         graph: &mut graphannis::AnnotationGraph,
         properties: &std::collections::BTreeMap<String, String>,
+        workflow_directory: Option<&Path>,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let config_path = match properties.get(&PROP_CONFIG_PATH.to_string()) {
+        let mut config_path = match properties.get(&PROP_CONFIG_PATH.to_string()) {
             None => {
                 return Err(Box::new(AnnattoError::Manipulator {
                     reason: "No test file path provided".to_string(),
                     manipulator: self.module_name().to_string(),
                 }))
             }
-            Some(path_spec) => &path_spec[..],
+            Some(path_spec) => PathBuf::from(path_spec),
         };
-        let checks = read_config_file(config_path)?;
+        if config_path.is_relative() {
+            if let Some(workflow_directory) = workflow_directory {
+                // Resolve the config file path against the directory of the workflow file
+                config_path = workflow_directory.join(config_path);
+            }
+        }
+        let checks = read_config_file(&config_path)?;
         run_checks(graph, checks)
     }
 }

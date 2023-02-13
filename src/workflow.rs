@@ -152,8 +152,7 @@ impl TryFrom<PathBuf> for Workflow {
                                     importers.push(step);
                                 } else {
                                     return Err(AnnattoError::ReadWorkflowFile(format!(
-                                        "Corpus path not specified for importer: {}",
-                                        module_name
+                                        "Corpus path not specified for importer: {module_name}"
                                     )));
                                 }
                             } else {
@@ -173,6 +172,7 @@ impl TryFrom<PathBuf> for Workflow {
                                 let step = ManipulatorStep {
                                     module: manipulator_by_name(&module_name)?,
                                     properties,
+                                    workflow_directory: workflow_dir.map(|d| d.to_path_buf()),
                                 };
                                 manipulators.push(step);
                             } else {
@@ -202,8 +202,7 @@ impl TryFrom<PathBuf> for Workflow {
                                     exporters.push(desc);
                                 } else {
                                     return Err(AnnattoError::ReadWorkflowFile(format!(
-                                        "Corpus path not specified for exporter: {}",
-                                        module_name
+                                        "Corpus path not specified for exporter: {module_name}"
                                     )));
                                 }
                             } else {
@@ -240,8 +239,7 @@ impl TryFrom<PathBuf> for Workflow {
                 },
                 Err(e) => {
                     return Err(AnnattoError::ReadWorkflowFile(format!(
-                        "Parsing error\n{:?}",
-                        e
+                        "Parsing error\n{e:?}"
                     )))
                 }
             };
@@ -305,8 +303,8 @@ impl Workflow {
         }
 
         // Create a new empty annotation graph
-        let mut g =
-            AnnotationGraph::new(true).map_err(|e| AnnattoError::CreateGraph(e.to_string()))?;
+        let mut g = AnnotationGraph::with_default_graphstorages(true)
+            .map_err(|e| AnnattoError::CreateGraph(e.to_string()))?;
 
         // Execute all importers and store their graph updates in parallel
         let updates: Result<Vec<GraphUpdate>> = self
@@ -336,8 +334,14 @@ impl Workflow {
 
         // Execute all manipulators in sequence
         for desc in self.manipulator.iter() {
+            let workflow_directory = desc.workflow_directory.as_ref();
             desc.module
-                .manipulate_corpus(&mut g, &desc.properties, tx.clone())
+                .manipulate_corpus(
+                    &mut g,
+                    &desc.properties,
+                    workflow_directory.map(|d| d.as_path()),
+                    tx.clone(),
+                )
                 .map_err(|reason| AnnattoError::Manipulator {
                     reason: reason.to_string(),
                     manipulator: desc.module.module_name().to_string(),
@@ -405,5 +409,16 @@ impl Workflow {
             })?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn no_export_step() {
+        // This should not fail
+        execute_from_file(Path::new("tests/data/import/empty/empty.ato"), None).unwrap();
     }
 }

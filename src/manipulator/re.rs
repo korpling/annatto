@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, collections::BTreeSet};
+use std::{cmp::Ordering, collections::BTreeSet, path::Path};
 
 use graphannis::{
     graph::{AnnoKey, Edge, Match},
@@ -122,7 +122,7 @@ fn place_at_new_target(
                 .0
                 .to_string();
             covering_nodes.insert(probe_node);
-            let node_name_pref = format!("{}#sSpan", doc_name);
+            let node_name_pref = format!("{doc_name}#sSpan");
             let existing = node_annos
                 .get_all_values(&NODE_NAME_KEY, false)?
                 .iter()
@@ -288,11 +288,11 @@ fn replace_namespaces(
         for ak in node_annos
             .annotation_keys()?
             .into_iter()
-            .filter(|k| k.ns.to_string() == *old_namespace)
+            .filter(|k| k.ns.as_str() == old_namespace)
         {
             for m_r in node_annos.exact_anno_search(
                 Some(old_namespace.as_str()),
-                &ak.name.as_str(),
+                ak.name.as_str(),
                 ValueSearch::Any,
             ) {
                 let m = m_r?;
@@ -328,11 +328,11 @@ fn replace_namespaces(
                 .get_anno_storage()
                 .annotation_keys()?
                 .into_iter()
-                .filter(|k| k.ns.to_string() == *old_namespace)
+                .filter(|k| k.ns.as_str() == old_namespace)
             {
                 for m_r in storage.get_anno_storage().exact_anno_search(
                     Some(old_namespace.as_str()),
-                    &ak.name.as_str(),
+                    ak.name.as_str(),
                     ValueSearch::Any,
                 ) {
                     let m = m_r?;
@@ -428,6 +428,7 @@ impl Manipulator for Replace {
         &self,
         graph: &mut graphannis::AnnotationGraph,
         properties: &std::collections::BTreeMap<String, String>,
+        _workflow_directory: Option<&Path>,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
@@ -522,7 +523,7 @@ mod tests {
         properties.insert("node.annos".to_string(), node_anno_prop_val);
         properties.insert("edge.annos".to_string(), edge_anno_prop_val);
         let replace = Replace::default();
-        let result = replace.manipulate_corpus(&mut g, &properties, None);
+        let result = replace.manipulate_corpus(&mut g, &properties, None, None);
         assert_eq!(result.is_ok(), true, "Probing merge result {:?}", &result);
         let mut e_g = if rename {
             input_graph(on_disk, true)?
@@ -650,7 +651,7 @@ mod tests {
         );
         properties.insert("move.node.annos".to_string(), "true".to_string());
         let replace = Replace::default();
-        let result = replace.manipulate_corpus(&mut g, &properties, None);
+        let result = replace.manipulate_corpus(&mut g, &properties, None, None);
         assert_eq!(result.is_ok(), true, "Probing merge result {:?}", &result);
         let mut e_g = expected_output_for_move(on_disk)?;
         // corpus nodes
@@ -773,7 +774,9 @@ mod tests {
         properties.insert("node.annos".to_string(), "pos".to_string());
         let replace = Replace::default();
         assert_eq!(
-            replace.manipulate_corpus(&mut g, &properties, None).is_ok(),
+            replace
+                .manipulate_corpus(&mut g, &properties, None, None)
+                .is_ok(),
             true
         );
         let tmp_file = tempfile()?;
@@ -815,7 +818,9 @@ mod tests {
         properties.insert("move.node.annos".to_string(), "true".to_string());
         let replace = Replace::default();
         assert_eq!(
-            replace.manipulate_corpus(&mut g, &properties, None).is_ok(),
+            replace
+                .manipulate_corpus(&mut g, &properties, None, None)
+                .is_ok(),
             true
         );
         let tmp_file = tempfile()?;
@@ -845,7 +850,7 @@ mod tests {
             PROP_ANNO_NAMESPACES.to_string(),
             "ud:=default_ns,:=default_ns".to_string(),
         );
-        let op_result = replace.manipulate_corpus(&mut g, &properties, None);
+        let op_result = replace.manipulate_corpus(&mut g, &properties, None, None);
         assert_eq!(
             op_result.is_ok(),
             true,
