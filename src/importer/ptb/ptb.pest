@@ -1,0 +1,9 @@
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+
+label_character = @{!("(" | ")" | WHITESPACE) ~ ANY}
+label = @{label_character+}
+
+phrase = {"(" ~ label ~ (phrase+ | label) ~ ")"}
+root = {"(" ~ phrase ~ ")"}
+
+ptb = {SOI ~ root+ ~ EOI}

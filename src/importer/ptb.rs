@@ -1,10 +1,19 @@
 use std::{collections::BTreeMap, path::Path, result};
 
 use graphannis::update::GraphUpdate;
+use pest_derive::Parser;
 
 use crate::{progress::ProgressReporter, Module};
 
 use super::Importer;
+
+pub const MODULE_NAME: &str = "import_ptb";
+
+
+#[derive(Parser)]
+#[grammar = "importer/ptb/ptb.pest"]
+pub struct PtbParser;
+
 
 /// Importer the Penn Treebank Bracketed Text format (PTB)
 #[derive(Default)]
@@ -12,7 +21,7 @@ pub struct PtbImporter {}
 
 impl Module for PtbImporter {
     fn module_name(&self) -> &str {
-        "PtbImporter"
+        MODULE_NAME
     }
 }
 
