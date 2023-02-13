@@ -152,8 +152,7 @@ impl TryFrom<PathBuf> for Workflow {
                                     importers.push(step);
                                 } else {
                                     return Err(AnnattoError::ReadWorkflowFile(format!(
-                                        "Corpus path not specified for importer: {}",
-                                        module_name
+                                        "Corpus path not specified for importer: {module_name}"
                                     )));
                                 }
                             } else {
@@ -203,8 +202,7 @@ impl TryFrom<PathBuf> for Workflow {
                                     exporters.push(desc);
                                 } else {
                                     return Err(AnnattoError::ReadWorkflowFile(format!(
-                                        "Corpus path not specified for exporter: {}",
-                                        module_name
+                                        "Corpus path not specified for exporter: {module_name}"
                                     )));
                                 }
                             } else {
@@ -241,8 +239,7 @@ impl TryFrom<PathBuf> for Workflow {
                 },
                 Err(e) => {
                     return Err(AnnattoError::ReadWorkflowFile(format!(
-                        "Parsing error\n{:?}",
-                        e
+                        "Parsing error\n{e:?}"
                     )))
                 }
             };

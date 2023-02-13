@@ -120,19 +120,18 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
             mappings.insert("node_anno_ns".to_string(), ns.to_string());
         }
         mappings.insert("node_key".to_string(), name.to_string());
-        let layer = match node_annos.get_value_for_item(
-            &random_struct.unwrap()?,
-            &AnnoKey {
-                ns: ANNIS_NS.into(),
-                name: "layer".into(),
-            },
-        )? {
-            None => None,
-            Some(v) => Some(v.to_string()),
-        };
+        let layer = node_annos
+            .get_value_for_item(
+                &random_struct.unwrap()?,
+                &AnnoKey {
+                    ns: ANNIS_NS.into(),
+                    name: "layer".into(),
+                },
+            )?
+            .map(|v| v.to_string());
         visualizers.push(Visualizer {
             element: "node".to_string(),
-            layer: layer,
+            layer,
             vis_type: "tree".to_string(),
             display_name: "dominance".to_string(),
             visibility: "hidden".to_string(),
@@ -152,12 +151,11 @@ fn get_terminal_name(
             .into_iter()
             .filter(|component| {
                 let st_opt = graph.get_graphstorage(component);
-                if st_opt.is_none() {
-                    false
-                } else {
-                    let st = st_opt.unwrap();
+                if let Some(st) = st_opt {
                     st.get_ingoing_edges(probe_node).count() > 0
                         || st.has_outgoing_edges(probe_node).unwrap()
+                } else {
+                    false
                 }
             })
             .map(|component| component.name.to_string())
@@ -261,26 +259,24 @@ fn node_annos_vis(graph: &AnnotationGraph) -> Result<Visualizer, Box<dyn std::er
     let orderings = order_names
         .iter()
         .filter(|s| !s.is_empty())
-        .map(|s| format!("/{}/", s))
+        .map(|s| format!("/{s}/"))
         .join(",");
     let mut node_qnames = BTreeSet::new();
     let mut visited = BTreeSet::new();
     // gather all qnames that occur on nodes reachable through coverage edges (other annotations cannot be visualized in grid)
     for component in graph.get_all_components(Some(AnnotationComponentType::Coverage), None) {
         let storage = graph.get_graphstorage(&component).unwrap();
-        for source_node_r in storage.source_nodes() {
-            if let Ok(source_node) = source_node_r {
-                if !visited.contains(&source_node) {
-                    visited.insert(source_node);
-                    node_qnames.extend(collect_qnames(graph, &source_node)?);
-                }
-                let dfs = CycleSafeDFS::new(storage.as_edgecontainer(), source_node, 1, usize::MAX);
-                for step_r in dfs {
-                    let step_node = step_r?.node;
-                    if !visited.contains(&step_node) {
-                        visited.insert(step_node);
-                        node_qnames.extend(collect_qnames(graph, &step_node)?);
-                    }
+        for source_node in storage.source_nodes().flatten() {
+            if !visited.contains(&source_node) {
+                visited.insert(source_node);
+                node_qnames.extend(collect_qnames(graph, &source_node)?);
+            }
+            let dfs = CycleSafeDFS::new(storage.as_edgecontainer(), source_node, 1, usize::MAX);
+            for step_r in dfs {
+                let step_node = step_r?.node;
+                if !visited.contains(&step_node) {
+                    visited.insert(step_node);
+                    node_qnames.extend(collect_qnames(graph, &step_node)?);
                 }
             }
         }
@@ -290,9 +286,9 @@ fn node_annos_vis(graph: &AnnotationGraph) -> Result<Visualizer, Box<dyn std::er
     let node_names = sorted_node_qnames
         .into_iter()
         .filter(|name| {
-            !order_names.contains(&name) && !name.starts_with(format!("{}::", ANNIS_NS).as_str())
+            !order_names.contains(name) && !name.starts_with(format!("{ANNIS_NS}::").as_str())
         })
-        .map(|name| format!("/{}/", name))
+        .map(|name| format!("/{name}/"))
         .join(",");
     let mut mappings = BTreeMap::new();
     mappings.insert("annos".to_string(), [orderings, node_names].join(","));
@@ -425,7 +421,7 @@ impl Exporter for GraphMLExporter {
         reporter.info(format!("Starting export to {}", &output_file_path.display()).as_str())?;
         graphannis_core::graph::serialization::graphml::export(
             graph,
-            Some(format!("\n{}\n", vis).as_str()),
+            Some(format!("\n{vis}\n").as_str()),
             output_file,
             |msg| {
                 reporter.info(msg).expect("Could not send status message");

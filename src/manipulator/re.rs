@@ -122,7 +122,7 @@ fn place_at_new_target(
                 .0
                 .to_string();
             covering_nodes.insert(probe_node);
-            let node_name_pref = format!("{}#sSpan", doc_name);
+            let node_name_pref = format!("{doc_name}#sSpan");
             let existing = node_annos
                 .get_all_values(&NODE_NAME_KEY, false)?
                 .iter()
@@ -288,11 +288,11 @@ fn replace_namespaces(
         for ak in node_annos
             .annotation_keys()?
             .into_iter()
-            .filter(|k| k.ns.to_string() == *old_namespace)
+            .filter(|k| k.ns.as_str() == old_namespace)
         {
             for m_r in node_annos.exact_anno_search(
                 Some(old_namespace.as_str()),
-                &ak.name.as_str(),
+                ak.name.as_str(),
                 ValueSearch::Any,
             ) {
                 let m = m_r?;
@@ -328,11 +328,11 @@ fn replace_namespaces(
                 .get_anno_storage()
                 .annotation_keys()?
                 .into_iter()
-                .filter(|k| k.ns.to_string() == *old_namespace)
+                .filter(|k| k.ns.as_str() == old_namespace)
             {
                 for m_r in storage.get_anno_storage().exact_anno_search(
                     Some(old_namespace.as_str()),
-                    &ak.name.as_str(),
+                    ak.name.as_str(),
                     ValueSearch::Any,
                 ) {
                     let m = m_r?;
