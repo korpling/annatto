@@ -116,6 +116,7 @@ impl Step for ExporterStep {
 struct ManipulatorStep {
     module: Box<dyn Manipulator>,
     properties: BTreeMap<String, String>,
+    workflow_directory: Option<PathBuf>,
 }
 
 impl Step for ManipulatorStep {

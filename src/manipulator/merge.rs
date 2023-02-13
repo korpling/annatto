@@ -17,6 +17,7 @@ use graphannis_core::{
 use itertools::Itertools;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::convert::TryFrom;
+use std::path::Path;
 
 #[derive(Default)]
 pub struct Merge {}
@@ -576,6 +577,7 @@ impl Manipulator for Merge {
         &self,
         graph: &mut AnnotationGraph,
         properties: &BTreeMap<String, String>,
+        _workflow_directory: Option<&Path>,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(sender) = &tx {
@@ -704,7 +706,7 @@ mod tests {
             "\"NOISE\"".to_string(),
         );
         let merger = Merge::default();
-        let merge_r = merger.manipulate_corpus(&mut g, &properties, None);
+        let merge_r = merger.manipulate_corpus(&mut g, &properties, None, None);
         assert_eq!(merge_r.is_ok(), true, "Probing merge result {:?}", &merge_r);
         let mut e_g = expected_output_graph(on_disk)?;
         // corpus nodes
@@ -835,7 +837,9 @@ mod tests {
         properties.insert("keep.name".to_string(), "norm".to_string());
         let merger = Merge::default();
         assert_eq!(
-            merger.manipulate_corpus(&mut g, &properties, None).is_ok(),
+            merger
+                .manipulate_corpus(&mut g, &properties, None, None)
+                .is_ok(),
             true
         );
         let tmp_file = tempfile()?;

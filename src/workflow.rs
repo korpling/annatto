@@ -173,6 +173,7 @@ impl TryFrom<PathBuf> for Workflow {
                                 let step = ManipulatorStep {
                                     module: manipulator_by_name(&module_name)?,
                                     properties,
+                                    workflow_directory: workflow_dir.map(|d| d.to_path_buf()),
                                 };
                                 manipulators.push(step);
                             } else {
@@ -336,8 +337,14 @@ impl Workflow {
 
         // Execute all manipulators in sequence
         for desc in self.manipulator.iter() {
+            let workflow_directory = desc.workflow_directory.as_ref();
             desc.module
-                .manipulate_corpus(&mut g, &desc.properties, tx.clone())
+                .manipulate_corpus(
+                    &mut g,
+                    &desc.properties,
+                    workflow_directory.map(|d| d.as_path()),
+                    tx.clone(),
+                )
                 .map_err(|reason| AnnattoError::Manipulator {
                     reason: reason.to_string(),
                     manipulator: desc.module.module_name().to_string(),
@@ -415,6 +422,6 @@ mod tests {
     #[test]
     fn no_export_step() {
         // This should not fail
-        execute_from_file(Path::new("tests/data/import/empty.ato"), None).unwrap();
+        execute_from_file(Path::new("tests/data/import/empty/empty.ato"), None).unwrap();
     }
 }
