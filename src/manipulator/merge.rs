@@ -163,10 +163,7 @@ impl Merge {
                     }
                     if nodes.is_empty() {
                         let err = AnnattoError::Manipulator {
-                            reason: format!(
-                                "Ordering `{}` does not connect any nodes.",
-                                order_name
-                            ),
+                            reason: format!("Ordering `{order_name}` does not connect any nodes."),
                             manipulator: self.module_name().to_string(),
                         };
                         return Err(Box::new(err));
@@ -525,7 +522,7 @@ impl Merge {
                                 })?;
                             }
                         }
-                        let msg = format!("{} documents with ill-merged tokens will be dropped from the corpus:\n{}", n, docs_s);
+                        let msg = format!("{n} documents with ill-merged tokens will be dropped from the corpus:\n{docs_s}");
                         StatusMessage::Warning(msg)
                     }
                     _ => {
