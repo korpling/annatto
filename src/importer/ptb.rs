@@ -47,8 +47,7 @@ impl<'a> DocumentMapper<'a> {
             component_type: "PartOf".to_string(),
             component_name: "".to_string(),
         })?;
-
-        todo!()
+        Ok(())
     }
 }
 
@@ -100,7 +99,9 @@ impl Importer for PtbImporter {
             doc_mapper.map(&mut u)?;
             reporter.worked(1)?;
         }
-
-        todo!()
+        Ok(u)
     }
 }
+
+#[cfg(test)]
+mod tests;

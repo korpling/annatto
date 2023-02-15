@@ -1,0 +1,26 @@
+---
+source: src/importer/ptb/tests.rs
+assertion_line: 31
+expression: actual
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k1" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <node id="oneline">
+            <data key="k1">corpus</data>
+        </node>
+        <node id="oneline/doc1">
+            <data key="k1">corpus</data>
+            <data key="k0">doc1</data>
+        </node>
+        <node id="oneline/doc1#text">
+            <data key="k1">datasource</data>
+        </node>
+        <edge id="e0" source="oneline/doc1" target="oneline" label="PartOf/annis/">
+        </edge>
+        <edge id="e1" source="oneline/doc1#text" target="oneline/doc1" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>
