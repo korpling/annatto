@@ -1,9 +1,7 @@
-use std::io::BufWriter;
-
 use crate::util::import_as_graphml_string;
 
 use super::*;
-use graphannis::AnnotationGraph;
+use insta::assert_snapshot;
 use pretty_assertions::assert_eq;
 
 #[test]
@@ -29,16 +27,12 @@ fn single_speaker() {
     properties.insert("skip_timeline_generation".to_string(), "true".to_string());
 
     let actual = import_as_graphml_string::<TextgridImporter, _>(
-        Path::new("tests/data/import/textgrid/input/singleSpeaker"),
+        Path::new("tests/data/import/textgrid/singleSpeaker"),
         properties,
     )
     .unwrap();
 
-    // Compare the actual output with the expected one
-    assert_eq!(
-        include_str!("../../../tests/data/import/textgrid/expected/singleSpeaker.graphml"),
-        actual
-    );
+    assert_snapshot!(actual);
 }
 
 #[test]
@@ -49,16 +43,12 @@ fn two_speakers() {
         "A={lemma,pos,Inf-Struct};B={}".to_string(),
     );
     let actual = import_as_graphml_string::<TextgridImporter, _>(
-        Path::new("tests/data/import/textgrid/input/twoSpeakers"),
+        Path::new("tests/data/import/textgrid/twoSpeakers"),
         properties,
     )
     .unwrap();
 
-    // Compare the actual output with the expected one
-    assert_eq!(
-        include_str!("../../../tests/data/import/textgrid/expected/twoSpeakers.graphml"),
-        actual
-    );
+    assert_snapshot!(actual);
 }
 
 #[test]
@@ -69,14 +59,10 @@ fn misaligned_lemma_annotation() {
         "A={lemma,pos,Inf-Struct};B={}".to_string(),
     );
     let actual = import_as_graphml_string::<TextgridImporter, _>(
-        Path::new("tests/data/import/textgrid/input/misalignedLemma"),
+        Path::new("tests/data/import/textgrid/misalignedLemma"),
         properties,
     )
     .unwrap();
 
-    // Compare the actual output with the expected one
-    assert_eq!(
-        include_str!("../../../tests/data/import/textgrid/expected/misalignedLemma.graphml").trim(),
-        actual.trim()
-    );
+    assert_snapshot!(actual);
 }
