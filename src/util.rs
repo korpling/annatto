@@ -1,11 +1,20 @@
-use crate::error::Result;
+use crate::{
+    error::{AnnattoError, Result},
+    importer::Importer,
+};
 use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
+    AnnotationGraph,
 };
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
-use std::{fs::File, io::Write, path::Path};
+use std::{
+    collections::BTreeMap,
+    fs::File,
+    io::{BufWriter, Write},
+    path::Path,
+};
 
 pub mod graphupdate;
 
@@ -57,6 +66,30 @@ pub fn insert_corpus_nodes_from_path(
         }
     }
     Ok(full_path)
+}
+
+pub fn import_as_graphml_string<I: Importer + Default, P: AsRef<Path>>(
+    path: P,
+    properties: BTreeMap<String, String>,
+) -> Result<String> {
+    let importer = I::default();
+
+    let mut u = importer
+        .import_corpus(path.as_ref(), &properties, None)
+        .map_err(|e| AnnattoError::Import {
+            reason: e.to_string(),
+            importer: importer.module_name().to_string(),
+            path: path.as_ref().to_path_buf(),
+        })?;
+    let mut g = AnnotationGraph::with_default_graphstorages(false)?;
+    g.apply_update(&mut u, |_| {})?;
+
+    let mut buf = BufWriter::new(Vec::new());
+    graphannis_core::graph::serialization::graphml::export(&g, None, &mut buf, |_| {})?;
+    let bytes = buf.into_inner()?;
+    let actual = String::from_utf8(bytes)?;
+
+    Ok(actual)
 }
 
 #[cfg(test)]
