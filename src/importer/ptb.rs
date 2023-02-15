@@ -7,7 +7,7 @@ use std::{
 use encoding_rs_io::DecodeReaderBytes;
 use graphannis::update::{GraphUpdate, UpdateEvent};
 use graphannis_core::graph::ANNIS_NS;
-use pest::Parser;
+use pest::{iterators::Pairs, Parser};
 use pest_derive::Parser;
 
 use crate::{
@@ -34,7 +34,7 @@ struct DocumentMapper<'a> {
 }
 
 impl<'a> DocumentMapper<'a> {
-    fn map(&mut self, u: &mut GraphUpdate) -> Result<()> {
+    fn map(&mut self, u: &mut GraphUpdate, ptb: Pairs<'a, Rule>) -> Result<()> {
         // Add a subcorpus like node for the text
         u.add_event(UpdateEvent::AddNode {
             node_name: self.text_node_name.clone(),
@@ -47,7 +47,20 @@ impl<'a> DocumentMapper<'a> {
             component_type: "PartOf".to_string(),
             component_name: "".to_string(),
         })?;
-        Ok(())
+
+        // Iterate over all root spans and map these sentences
+        for pair in ptb {
+            if Rule::ptb == pair.as_rule() {
+                let t = pair.into_inner();
+
+                self.map_root()?
+            }
+        }
+        todo!()
+    }
+
+    fn map_root(&self) -> Result<()> {
+        todo!()
     }
 }
 
@@ -83,7 +96,7 @@ impl Importer for PtbImporter {
             let mut file_content = String::new();
             decoder.read_to_string(&mut file_content)?;
 
-            let ptb = PtbParser::parse(Rule::ptb, &file_content)?;
+            let ptb: Pairs<Rule> = PtbParser::parse(Rule::ptb, &file_content)?;
 
             let text_node_name = format!("{}#text", &doc_path);
             let root_corpus = root_corpus_from_path(input_path)?;
@@ -96,7 +109,7 @@ impl Importer for PtbImporter {
                 text_node_name,
             };
 
-            doc_mapper.map(&mut u)?;
+            doc_mapper.map(&mut u, ptb)?;
             reporter.worked(1)?;
         }
         Ok(u)
