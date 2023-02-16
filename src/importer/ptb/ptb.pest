@@ -6,7 +6,10 @@ value_character = @{!"\"" ~ ANY}
 label = @{label_character+}
 quoted_value = @{"\"" ~ value_character* ~ "\""}
 
-phrase = {"(" ~ label ~ (phrase+ | quoted_value | label) ~ ")"}
-root = {"(" ~ phrase ~ ")"}
+left_bracket = _{"("}
+right_bracket = _{")"}
 
-ptb = {SOI ~ (root+ | phrase) ~ EOI}
+phrase = {left_bracket ~ label ~ (phrase+ | quoted_value | label) ~ right_bracket}
+root = {left_bracket ~ phrase ~ right_bracket}
+
+ptb = {SOI ~ (root+) ~ EOI}

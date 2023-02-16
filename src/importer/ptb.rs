@@ -4,17 +4,20 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use anyhow::anyhow;
 use encoding_rs_io::DecodeReaderBytes;
 use graphannis::update::{GraphUpdate, UpdateEvent};
 use graphannis_core::graph::ANNIS_NS;
-use pest::{iterators::Pairs, Parser};
+use pest::{
+    iterators::{Pair, Pairs},
+    Parser,
+};
 use pest_derive::Parser;
 
 use crate::{
-    models::textgrid::TextGrid,
     progress::ProgressReporter,
     util::graphupdate::{path_structure, root_corpus_from_path},
-    Module, Result,
+    Module,
 };
 
 use super::Importer;
@@ -34,7 +37,7 @@ struct DocumentMapper<'a> {
 }
 
 impl<'a> DocumentMapper<'a> {
-    fn map(&mut self, u: &mut GraphUpdate, ptb: Pairs<'a, Rule>) -> Result<()> {
+    fn map(&mut self, u: &mut GraphUpdate, ptb: Pairs<'a, Rule>) -> anyhow::Result<()> {
         // Add a subcorpus like node for the text
         u.add_event(UpdateEvent::AddNode {
             node_name: self.text_node_name.clone(),
@@ -50,17 +53,51 @@ impl<'a> DocumentMapper<'a> {
 
         // Iterate over all root spans and map these sentences
         for pair in ptb {
-            if Rule::ptb == pair.as_rule() {
-                let t = pair.into_inner();
-
-                self.map_root()?
+            if Rule::root == pair.as_rule() {
+                self.consume_root(pair.into_inner())?
             }
         }
-        todo!()
+        Ok(())
     }
 
-    fn map_root(&self) -> Result<()> {
-        todo!()
+    fn consume_root(&self, mut root_children: Pairs<Rule>) -> anyhow::Result<()> {
+        // A root must have exactly one phrase child
+        if let Some(phrase) = root_children.next() {
+            if phrase.as_rule() == Rule::phrase {
+                self.consume_phrase(phrase.into_inner())?;
+                Ok(())
+            } else {
+                Err(anyhow!(
+                    "Expected phrase but got {:?} ({:?})",
+                    phrase.as_rule(),
+                    phrase.as_span()
+                ))
+            }
+        } else {
+            Err(anyhow!("Missing phrase for root element"))
+        }
+    }
+
+    fn consume_phrase(&self, mut phrase_children: Pairs<Rule>) -> anyhow::Result<()> {
+        // First child element of a phrase must be a label
+        if let Some(phrase_label) = phrase_children.next() {
+            let phrase_label = self.consume_label(phrase_label)?;
+
+            // TODO: Left-descend to any phrase
+        }
+        Ok(())
+    }
+
+    fn consume_label(&self, label: Pair<Rule>) -> anyhow::Result<String> {
+        if label.as_rule() == Rule::label {
+            Ok(label.as_str().to_string())
+        } else {
+            Err(anyhow!(
+                "Expected label but got {:?} ({:?})",
+                label.as_rule(),
+                label.as_span()
+            ))
+        }
     }
 }
 
