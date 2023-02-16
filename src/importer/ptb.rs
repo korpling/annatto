@@ -83,9 +83,32 @@ impl<'a> DocumentMapper<'a> {
         if let Some(phrase_label) = phrase_children.next() {
             let phrase_label = self.consume_label(phrase_label)?;
 
-            // TODO: Left-descend to any phrase
+            let children: Vec<_> = phrase_children.collect();
+            if children.len() == 1 {
+                // TODO: map the token value
+                let value = self.consume_value(&children[0])?;
+            } else if children.len() > 1 {
+                // TODO: Left-descend to any phrase
+            }
         }
         Ok(())
+    }
+
+    fn consume_value(&self, value: &Pair<Rule>) -> anyhow::Result<String> {
+        let r = value.as_rule();
+        if r == Rule::label {
+            Ok(value.as_str().to_string())
+        } else if r == Rule::quoted_value {
+            let raw_value = value.as_str();
+            // Remove the quotation marks at the beginning and end
+            Ok(raw_value[1..raw_value.len() - 1].to_string())
+        } else {
+            Err(anyhow!(
+                "Expected (quoted) value but got {:?} ({:?})",
+                r,
+                value.as_span()
+            ))
+        }
     }
 
     fn consume_label(&self, label: Pair<Rule>) -> anyhow::Result<String> {
