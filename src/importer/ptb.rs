@@ -1,8 +1,4 @@
-use std::{
-    collections::{BTreeMap, HashSet},
-    io::Read,
-    path::{Path, PathBuf},
-};
+use std::{collections::BTreeMap, io::Read, path::Path};
 
 use anyhow::anyhow;
 use encoding_rs_io::DecodeReaderBytes;
@@ -13,15 +9,11 @@ use graphannis::{
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use pest::{
     iterators::{Pair, Pairs},
-    Parser, RuleType,
+    Parser,
 };
 use pest_derive::Parser;
 
-use crate::{
-    progress::ProgressReporter,
-    util::graphupdate::{path_structure, root_corpus_from_path},
-    Module,
-};
+use crate::{progress::ProgressReporter, util::graphupdate::path_structure, Module};
 
 use super::Importer;
 
@@ -31,17 +23,15 @@ pub const MODULE_NAME: &str = "import_ptb";
 #[grammar = "importer/ptb/ptb.pest"]
 pub struct PtbParser;
 
-struct DocumentMapper<'a> {
-    root_corpus: String,
+struct DocumentMapper {
     doc_path: String,
     text_node_name: String,
-    reporter: &'a ProgressReporter,
     last_token_id: Option<String>,
     number_of_token: usize,
     number_of_spans: usize,
 }
 
-impl<'a> DocumentMapper<'a> {
+impl<'a> DocumentMapper {
     fn map(&mut self, u: &mut GraphUpdate, mut ptb: Pairs<'a, Rule>) -> anyhow::Result<()> {
         // Add a subcorpus like node for the text
         u.add_event(UpdateEvent::AddNode {
@@ -261,12 +251,9 @@ impl Importer for PtbImporter {
             let ptb: Pairs<Rule> = PtbParser::parse(Rule::ptb, &file_content)?;
 
             let text_node_name = format!("{}#text", &doc_path);
-            let root_corpus = root_corpus_from_path(input_path)?;
 
             let mut doc_mapper = DocumentMapper {
-                root_corpus,
                 doc_path,
-                reporter: &reporter,
                 text_node_name,
                 last_token_id: None,
                 number_of_token: 0,
