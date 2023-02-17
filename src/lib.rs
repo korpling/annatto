@@ -30,6 +30,7 @@ pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
         importer::textgrid::MODULE_NAME => {
             Ok(Box::<importer::textgrid::TextgridImporter>::default())
         }
+        importer::ptb::MODULE_NAME => Ok(Box::<importer::ptb::PtbImporter>::default()),
         importer::corpus_annotations::MODULE_NAME => {
             Ok(Box::<importer::corpus_annotations::AnnotateCorpus>::default())
         }

@@ -1,7 +1,7 @@
-use std::io::BufWriter;
+use crate::util::import_as_graphml_string;
 
 use super::*;
-use graphannis::AnnotationGraph;
+use insta::assert_snapshot;
 use pretty_assertions::assert_eq;
 
 #[test]
@@ -25,28 +25,16 @@ fn single_speaker() {
         "tok={lemma,pos,Inf-Struct}".to_string(),
     );
     properties.insert("skip_timeline_generation".to_string(), "true".to_string());
-    let importer = TextgridImporter::default();
 
-    let mut u = importer
-        .import_corpus(
-            &PathBuf::from("tests/data/import/textgrid/input/singleSpeaker"),
-            &properties,
-            None,
-        )
-        .unwrap();
-    let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
-    g.apply_update(&mut u, |_| {}).unwrap();
+    let actual = import_as_graphml_string(
+        TextgridImporter::default(),
+        Path::new("tests/data/import/textgrid/singleSpeaker"),
+        properties,
+        None,
+    )
+    .unwrap();
 
-    let mut buf = BufWriter::new(Vec::new());
-    graphannis_core::graph::serialization::graphml::export(&g, None, &mut buf, |_| {}).unwrap();
-    let bytes = buf.into_inner().unwrap();
-    let actual = String::from_utf8(bytes).unwrap();
-
-    // Compare the actual output with the expected one
-    assert_eq!(
-        include_str!("../../../tests/data/import/textgrid/expected/singleSpeaker.graphml"),
-        actual
-    );
+    assert_snapshot!(actual);
 }
 
 #[test]
@@ -56,28 +44,15 @@ fn two_speakers() {
         "tier_groups".to_string(),
         "A={lemma,pos,Inf-Struct};B={}".to_string(),
     );
-    let importer = TextgridImporter::default();
+    let actual = import_as_graphml_string(
+        TextgridImporter::default(),
+        Path::new("tests/data/import/textgrid/twoSpeakers"),
+        properties,
+        None,
+    )
+    .unwrap();
 
-    let mut u = importer
-        .import_corpus(
-            &PathBuf::from("tests/data/import/textgrid/input/twoSpeakers"),
-            &properties,
-            None,
-        )
-        .unwrap();
-    let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
-    g.apply_update(&mut u, |_| {}).unwrap();
-
-    let mut buf = BufWriter::new(Vec::new());
-    graphannis_core::graph::serialization::graphml::export(&g, None, &mut buf, |_| {}).unwrap();
-    let bytes = buf.into_inner().unwrap();
-    let actual = String::from_utf8(bytes).unwrap();
-
-    // Compare the actual output with the expected one
-    assert_eq!(
-        include_str!("../../../tests/data/import/textgrid/expected/twoSpeakers.graphml"),
-        actual
-    );
+    assert_snapshot!(actual);
 }
 
 #[test]
@@ -87,26 +62,13 @@ fn misaligned_lemma_annotation() {
         "tier_groups".to_string(),
         "A={lemma,pos,Inf-Struct};B={}".to_string(),
     );
-    let importer = TextgridImporter::default();
+    let actual = import_as_graphml_string(
+        TextgridImporter::default(),
+        Path::new("tests/data/import/textgrid/misalignedLemma"),
+        properties,
+        None,
+    )
+    .unwrap();
 
-    let mut u = importer
-        .import_corpus(
-            &PathBuf::from("tests/data/import/textgrid/input/misalignedLemma"),
-            &properties,
-            None,
-        )
-        .unwrap();
-    let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
-    g.apply_update(&mut u, |_| {}).unwrap();
-
-    let mut buf = BufWriter::new(Vec::new());
-    graphannis_core::graph::serialization::graphml::export(&g, None, &mut buf, |_| {}).unwrap();
-    let bytes = buf.into_inner().unwrap();
-    let actual = String::from_utf8(bytes).unwrap();
-
-    // Compare the actual output with the expected one
-    assert_eq!(
-        include_str!("../../../tests/data/import/textgrid/expected/misalignedLemma.graphml").trim(),
-        actual.trim()
-    );
+    assert_snapshot!(actual);
 }

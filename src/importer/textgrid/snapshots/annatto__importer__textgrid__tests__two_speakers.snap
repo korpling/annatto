@@ -1,3 +1,7 @@
+---
+source: src/importer/textgrid/tests.rs
+expression: actual
+---
 <?xml version="1.0" encoding="UTF-8"?>
 <graphml>
     <key id="k0" for="node" attr.name="A" attr.type="string"/>

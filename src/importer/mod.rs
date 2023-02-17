@@ -2,6 +2,7 @@
 
 pub mod corpus_annotations;
 pub mod graphml;
+pub mod ptb;
 pub mod spreadsheet;
 pub mod textgrid;
 

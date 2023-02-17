@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::mpsc::SendError};
+use std::{io::BufWriter, path::PathBuf, string::FromUtf8Error, sync::mpsc::SendError};
 
 use graphannis::errors::GraphAnnisError;
 use graphannis_core::errors::GraphAnnisCoreError;
@@ -65,6 +65,10 @@ pub enum AnnattoError {
     EndTokenTimeLargerThanStart { start: f64, end: f64 },
     #[error("Invalid Property value: {property}={value}")]
     InvalidPropertyValue { property: String, value: String },
+    #[error(transparent)]
+    ConvertBufWriterAsByteVector(#[from] std::io::IntoInnerError<BufWriter<Vec<u8>>>),
+    #[error(transparent)]
+    InvalidUtf8(#[from] FromUtf8Error),
 }
 
 impl<T> From<std::sync::PoisonError<T>> for AnnattoError {

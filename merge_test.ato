@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <pepper-job id="trttqfob" version="1.0">
-  <importer name="EXMARaLDAImporter" path="./tests/data/import/"/>
-  <importer name="CoNLLImporter" path="./tests/data/import/">
+  <importer name="EXMARaLDAImporter" path="./tests/data/merge_test/" />
+  <importer name="CoNLLImporter" path="./tests/data/merge_test/">
     <customization>
       <property key="text_name">conll</property>
       <property key="anno_ns">norm</property>
       <property key="skip_named_ordering">false</property>
     </customization>
   </importer>
-  <importer name="PTBImporter" path="./tests/data/import/">
+  <importer name="import_ptb" path="./tests/data/merge_test/">
     <customization>
       <property key="text_name">ptb</property>
       <property key="anno_ns">topo</property>
@@ -25,13 +25,14 @@
     </customization>
   </manipulator>
   <manipulator name="replace">
-	  <customization>
-		  <property key="node.annos">norm::Number[psor],norm::Gender[psor]</property>
-	  </customization>
+    <customization>
+      <property key="node.annos">norm::Number[psor],norm::Gender[psor]</property>
+    </customization>
   </manipulator>
-  <exporter name="GraphMLExporter" path="./">
-	  <property key="guess.vis">true</property>
-	  <!--property key="add.vis">
+  <exporter name="export_graphml" path="./">
+    <property key="guess.vis">true</property>
+    <!--property
+    key="add.vis">
 [[visualizers]]
 element = "node"
 layer = ""

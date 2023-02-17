@@ -1,0 +1,14 @@
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+
+label_character = @{!("(" | ")" | "\"" | WHITESPACE) ~ ANY}
+value_character = @{!"\"" ~ ANY}
+
+label = @{label_character+}
+quoted_value = @{"\"" ~ value_character* ~ "\""}
+
+left_bracket = _{"("}
+right_bracket = _{")"}
+
+phrase = {left_bracket ~ label ~ (phrase+ | quoted_value | label) ~ right_bracket}
+
+ptb = {SOI ~ (phrase+) | (left_bracket ~ phrase+ ~ right_bracket)+ ~ EOI}
