@@ -1,5 +1,5 @@
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashSet},
     io::Read,
     path::{Path, PathBuf},
 };
@@ -59,7 +59,7 @@ impl<'a> DocumentMapper<'a> {
         if let Some(ptb) = ptb.next() {
             if ptb.as_rule() == Rule::ptb {
                 for root_phrase in ptb.into_inner() {
-                    self.consume_phrase(root_phrase.into_inner(), u)?
+                    self.consume_phrase(root_phrase.into_inner(), u)?;
                 }
             }
         }
@@ -70,75 +70,88 @@ impl<'a> DocumentMapper<'a> {
         &mut self,
         mut phrase_children: Pairs<Rule>,
         u: &mut GraphUpdate,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<HashSet<String>> {
+        // Collect all token IDs covered by this phrase
+        let mut covered_tokens = HashSet::new();
         // First child element of a phrase must be a label
         if let Some(phrase_label) = phrase_children.next() {
             let phrase_label = self.consume_label(phrase_label)?;
-
             let children: Vec<_> = phrase_children.collect();
             if children.len() == 1
                 && (children[0].as_rule() == Rule::quoted_value
                     || children[0].as_rule() == Rule::label)
             {
                 // map the value as token
-                let value = self.consume_value(&children[0])?;
-                let id = self.number_of_token + 1;
-                let tok_id = format!("{}#t{id}", self.doc_path);
-                u.add_event(UpdateEvent::AddNode {
-                    node_name: tok_id.clone(),
-                    node_type: "node".to_string(),
-                })?;
-                u.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: tok_id.clone(),
-                    anno_ns: ANNIS_NS.to_string(),
-                    anno_name: "tok".to_string(),
-                    anno_value: value.to_string(),
-                })?;
-                u.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: tok_id.clone(),
-                    anno_ns: ANNIS_NS.to_string(),
-                    anno_name: "layer".to_string(),
-                    anno_value: "default_layer".to_string(),
-                })?;
-                u.add_event(UpdateEvent::AddEdge {
-                    source_node: tok_id.clone(),
-                    target_node: self.text_node_name.clone(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::PartOf.to_string(),
-                    component_name: "".to_string(),
-                })?;
-                // TODO: allow to customize the token annotation name
-                u.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: tok_id.clone(),
-                    anno_ns: DEFAULT_NS.to_string(),
-                    anno_name: "pos".to_string(),
-                    anno_value: phrase_label,
-                })?;
-                if let Some(last_token_id) = &self.last_token_id {
-                    u.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: tok_id.clone(),
-                        anno_ns: ANNIS_NS.to_string(),
-                        anno_name: "tok-whitespace-before".to_string(),
-                        anno_value: " ".to_string(),
-                    })?;
-                    u.add_event(UpdateEvent::AddEdge {
-                        source_node: last_token_id.clone(),
-                        target_node: tok_id.clone(),
-                        layer: ANNIS_NS.to_string(),
-                        component_type: AnnotationComponentType::Ordering.to_string(),
-                        component_name: "".to_string(),
-                    })?;
-                }
-                self.number_of_token += 1;
-                self.last_token_id = Some(tok_id);
+                let tok_id = self.consume_token(u, &children[0], phrase_label)?;
+                covered_tokens.insert(tok_id);
             } else {
                 // Left-descend to any phrase
                 for c in children {
-                    self.consume_phrase(c.into_inner(), u)?;
+                    let covered_by_child = self.consume_phrase(c.into_inner(), u)?;
+                    covered_tokens.extend(covered_by_child);
                 }
             }
         }
-        Ok(())
+        Ok(covered_tokens)
+    }
+
+    fn consume_token(
+        &mut self,
+        u: &mut GraphUpdate,
+        pair: &Pair<Rule>,
+        phrase_label: String,
+    ) -> anyhow::Result<String> {
+        let value = self.consume_value(pair)?;
+        let id = self.number_of_token + 1;
+        let tok_id = format!("{}#t{id}", self.doc_path);
+        u.add_event(UpdateEvent::AddNode {
+            node_name: tok_id.clone(),
+            node_type: "node".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: tok_id.clone(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "tok".to_string(),
+            anno_value: value.to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: tok_id.clone(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "layer".to_string(),
+            anno_value: "default_layer".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: tok_id.clone(),
+            target_node: self.text_node_name.clone(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
+        // TODO: allow to customize the token annotation name
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: tok_id.clone(),
+            anno_ns: DEFAULT_NS.to_string(),
+            anno_name: "pos".to_string(),
+            anno_value: phrase_label,
+        })?;
+        if let Some(last_token_id) = &self.last_token_id {
+            u.add_event(UpdateEvent::AddNodeLabel {
+                node_name: tok_id.clone(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "tok-whitespace-before".to_string(),
+                anno_value: " ".to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddEdge {
+                source_node: last_token_id.clone(),
+                target_node: tok_id.clone(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::Ordering.to_string(),
+                component_name: "".to_string(),
+            })?;
+        }
+        self.number_of_token += 1;
+        self.last_token_id = Some(tok_id.clone());
+        Ok(tok_id)
     }
 
     fn consume_value(&self, value: &Pair<Rule>) -> anyhow::Result<String> {
