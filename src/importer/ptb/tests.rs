@@ -16,3 +16,16 @@ fn ptb_single_sentence() {
 
     assert_snapshot!(actual);
 }
+
+#[test]
+fn ptb_brackets_in_value() {
+    let properties: BTreeMap<String, String> = BTreeMap::new();
+
+    let actual = import_as_graphml_string::<PtbImporter, _>(
+        Path::new("tests/data/import/ptb/brackets_in_value"),
+        properties,
+    )
+    .unwrap();
+
+    assert_snapshot!(actual);
+}

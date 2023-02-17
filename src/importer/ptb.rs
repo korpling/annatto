@@ -50,7 +50,9 @@ impl<'a> DocumentMapper {
         if let Some(ptb) = ptb.next() {
             if ptb.as_rule() == Rule::ptb {
                 for root_phrase in ptb.into_inner() {
-                    self.consume_phrase(root_phrase.into_inner(), u)?;
+                    if root_phrase.as_rule() == Rule::phrase {
+                        self.consume_phrase(root_phrase.into_inner(), u)?;
+                    }
                 }
             }
         }
@@ -72,7 +74,7 @@ impl<'a> DocumentMapper {
             {
                 // map the value as token
                 let tok_id = self.consume_token(u, &remaining_children[0], phrase_label)?;
-                return Ok(tok_id);
+                Ok(tok_id)
             } else {
                 // Map this as span
                 let id = self.number_of_spans + 1;
@@ -121,10 +123,11 @@ impl<'a> DocumentMapper {
                         component_name: "edge".to_string(),
                     })?;
                 }
-                return Ok(node_name);
+                Ok(node_name)
             }
+        } else {
+            Err(anyhow!("Empty phrase without label or children"))
         }
-        Err(anyhow!("Empty phrase without label or children"))
     }
 
     fn consume_token(
@@ -189,7 +192,9 @@ impl<'a> DocumentMapper {
     fn consume_value(&self, value: &Pair<Rule>) -> anyhow::Result<String> {
         let r = value.as_rule();
         if r == Rule::label {
-            Ok(value.as_str().to_string())
+            // Replace any special bracket value
+            let value = value.as_str().replace("-LRB-", "(").replace("-RRB-", ")");
+            Ok(value)
         } else if r == Rule::quoted_value {
             let raw_value = value.as_str();
             // Remove the quotation marks at the beginning and end
