@@ -68,11 +68,16 @@ pub fn insert_corpus_nodes_from_path(
     Ok(full_path)
 }
 
-pub fn import_as_graphml_string<I: Importer, P: AsRef<Path>>(
+pub fn import_as_graphml_string<I, P>(
     importer: I,
     path: P,
     properties: BTreeMap<String, String>,
-) -> Result<String> {
+    graph_configuration: Option<&str>,
+) -> Result<String>
+where
+    I: Importer,
+    P: AsRef<Path>,
+{
     let mut u = importer
         .import_corpus(path.as_ref(), &properties, None)
         .map_err(|e| AnnattoError::Import {
@@ -84,7 +89,12 @@ pub fn import_as_graphml_string<I: Importer, P: AsRef<Path>>(
     g.apply_update(&mut u, |_| {})?;
 
     let mut buf = BufWriter::new(Vec::new());
-    graphannis_core::graph::serialization::graphml::export(&g, None, &mut buf, |_| {})?;
+    graphannis_core::graph::serialization::graphml::export(
+        &g,
+        graph_configuration,
+        &mut buf,
+        |_| {},
+    )?;
     let bytes = buf.into_inner()?;
     let actual = String::from_utf8(bytes)?;
 

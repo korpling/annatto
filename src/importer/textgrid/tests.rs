@@ -30,6 +30,7 @@ fn single_speaker() {
         TextgridImporter::default(),
         Path::new("tests/data/import/textgrid/singleSpeaker"),
         properties,
+        None,
     )
     .unwrap();
 
@@ -47,6 +48,7 @@ fn two_speakers() {
         TextgridImporter::default(),
         Path::new("tests/data/import/textgrid/twoSpeakers"),
         properties,
+        None,
     )
     .unwrap();
 
@@ -64,6 +66,7 @@ fn misaligned_lemma_annotation() {
         TextgridImporter::default(),
         Path::new("tests/data/import/textgrid/misalignedLemma"),
         properties,
+        None,
     )
     .unwrap();
 
