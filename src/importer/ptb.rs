@@ -38,6 +38,7 @@ struct DocumentMapper<'a> {
     reporter: &'a ProgressReporter,
     last_token_id: Option<String>,
     number_of_token: usize,
+    number_of_spans: usize,
 }
 
 impl<'a> DocumentMapper<'a> {
@@ -70,29 +71,70 @@ impl<'a> DocumentMapper<'a> {
         &mut self,
         mut phrase_children: Pairs<Rule>,
         u: &mut GraphUpdate,
-    ) -> anyhow::Result<HashSet<String>> {
-        // Collect all token IDs covered by this phrase
-        let mut covered_tokens = HashSet::new();
-        // First child element of a phrase must be a label
+    ) -> anyhow::Result<String> {
+        // The first child of a phrase we want to map must be a label
         if let Some(phrase_label) = phrase_children.next() {
             let phrase_label = self.consume_label(phrase_label)?;
-            let children: Vec<_> = phrase_children.collect();
-            if children.len() == 1
-                && (children[0].as_rule() == Rule::quoted_value
-                    || children[0].as_rule() == Rule::label)
+            let remaining_children: Vec<_> = phrase_children.collect();
+            if remaining_children.len() == 1
+                && (remaining_children[0].as_rule() == Rule::quoted_value
+                    || remaining_children[0].as_rule() == Rule::label)
             {
                 // map the value as token
-                let tok_id = self.consume_token(u, &children[0], phrase_label)?;
-                covered_tokens.insert(tok_id);
+                let tok_id = self.consume_token(u, &remaining_children[0], phrase_label)?;
+                return Ok(tok_id);
             } else {
+                // Map this as span
+                let id = self.number_of_spans + 1;
+                let node_name = format!("{}#n{id}", self.doc_path);
+
+                u.add_event(UpdateEvent::AddNode {
+                    node_name: node_name.clone(),
+                    node_type: "node".to_string(),
+                })?;
+                // TODO: make the annotaton name configurable
+                u.add_event(UpdateEvent::AddNodeLabel {
+                    node_name: node_name.clone(),
+                    anno_ns: "syntax".to_string(),
+                    anno_name: "cat".to_string(),
+                    anno_value: phrase_label,
+                })?;
+                // TODO: make the layer configurable
+                u.add_event(UpdateEvent::AddNodeLabel {
+                    node_name: node_name.clone(),
+                    anno_ns: ANNIS_NS.to_string(),
+                    anno_name: "layer".to_string(),
+                    anno_value: "syntax".to_string(),
+                })?;
+
+                self.number_of_spans += 1;
+
                 // Left-descend to any phrase
-                for c in children {
-                    let covered_by_child = self.consume_phrase(c.into_inner(), u)?;
-                    covered_tokens.extend(covered_by_child);
+                for c in remaining_children {
+                    let target_node = self.consume_phrase(c.into_inner(), u)?;
+                    // Add a a typed (with component name) and an untyped
+                    // dominance edge (empty component name) between this parent
+                    // node and the child node.
+                    // TODO: make the layer and component name configurable
+                    u.add_event(UpdateEvent::AddEdge {
+                        source_node: node_name.clone(),
+                        target_node: target_node.clone(),
+                        layer: "syntax".to_string(),
+                        component_type: AnnotationComponentType::Dominance.to_string(),
+                        component_name: "".to_string(),
+                    })?;
+                    u.add_event(UpdateEvent::AddEdge {
+                        source_node: node_name.clone(),
+                        target_node,
+                        layer: "syntax".to_string(),
+                        component_type: AnnotationComponentType::Dominance.to_string(),
+                        component_name: "edge".to_string(),
+                    })?;
                 }
+                return Ok(node_name);
             }
         }
-        Ok(covered_tokens)
+        Err(anyhow!("Empty phrase without label or children"))
     }
 
     fn consume_token(
@@ -228,6 +270,7 @@ impl Importer for PtbImporter {
                 text_node_name,
                 last_token_id: None,
                 number_of_token: 0,
+                number_of_spans: 0,
             };
 
             doc_mapper.map(&mut u, ptb)?;
