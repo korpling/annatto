@@ -68,12 +68,11 @@ pub fn insert_corpus_nodes_from_path(
     Ok(full_path)
 }
 
-pub fn import_as_graphml_string<I: Importer + Default, P: AsRef<Path>>(
+pub fn import_as_graphml_string<I: Importer, P: AsRef<Path>>(
+    importer: I,
     path: P,
     properties: BTreeMap<String, String>,
 ) -> Result<String> {
-    let importer = I::default();
-
     let mut u = importer
         .import_corpus(path.as_ref(), &properties, None)
         .map_err(|e| AnnattoError::Import {

@@ -26,7 +26,8 @@ fn single_speaker() {
     );
     properties.insert("skip_timeline_generation".to_string(), "true".to_string());
 
-    let actual = import_as_graphml_string::<TextgridImporter, _>(
+    let actual = import_as_graphml_string(
+        TextgridImporter::default(),
         Path::new("tests/data/import/textgrid/singleSpeaker"),
         properties,
     )
@@ -42,7 +43,8 @@ fn two_speakers() {
         "tier_groups".to_string(),
         "A={lemma,pos,Inf-Struct};B={}".to_string(),
     );
-    let actual = import_as_graphml_string::<TextgridImporter, _>(
+    let actual = import_as_graphml_string(
+        TextgridImporter::default(),
         Path::new("tests/data/import/textgrid/twoSpeakers"),
         properties,
     )
@@ -58,7 +60,8 @@ fn misaligned_lemma_annotation() {
         "tier_groups".to_string(),
         "A={lemma,pos,Inf-Struct};B={}".to_string(),
     );
-    let actual = import_as_graphml_string::<TextgridImporter, _>(
+    let actual = import_as_graphml_string(
+        TextgridImporter::default(),
         Path::new("tests/data/import/textgrid/misalignedLemma"),
         properties,
     )
