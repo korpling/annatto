@@ -10,6 +10,5 @@ left_bracket = _{"("}
 right_bracket = _{")"}
 
 phrase = {left_bracket ~ label ~ (phrase+ | quoted_value | label) ~ right_bracket}
-root = {left_bracket ~ phrase ~ right_bracket}
 
-ptb = {SOI ~ (root+) ~ EOI}
+ptb = {SOI ~ (phrase+) | (left_bracket ~ phrase+ ~ right_bracket)+ ~ EOI}

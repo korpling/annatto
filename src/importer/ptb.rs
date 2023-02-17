@@ -6,11 +6,14 @@ use std::{
 
 use anyhow::anyhow;
 use encoding_rs_io::DecodeReaderBytes;
-use graphannis::update::{GraphUpdate, UpdateEvent};
-use graphannis_core::graph::ANNIS_NS;
+use graphannis::{
+    model::AnnotationComponentType,
+    update::{GraphUpdate, UpdateEvent},
+};
+use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use pest::{
     iterators::{Pair, Pairs},
-    Parser,
+    Parser, RuleType,
 };
 use pest_derive::Parser;
 
@@ -33,11 +36,12 @@ struct DocumentMapper<'a> {
     doc_path: String,
     text_node_name: String,
     reporter: &'a ProgressReporter,
-    file_path: PathBuf,
+    last_token_id: Option<String>,
+    number_of_token: usize,
 }
 
 impl<'a> DocumentMapper<'a> {
-    fn map(&mut self, u: &mut GraphUpdate, ptb: Pairs<'a, Rule>) -> anyhow::Result<()> {
+    fn map(&mut self, u: &mut GraphUpdate, mut ptb: Pairs<'a, Rule>) -> anyhow::Result<()> {
         // Add a subcorpus like node for the text
         u.add_event(UpdateEvent::AddNode {
             node_name: self.text_node_name.clone(),
@@ -51,44 +55,87 @@ impl<'a> DocumentMapper<'a> {
             component_name: "".to_string(),
         })?;
 
-        // Iterate over all root spans and map these sentences
-        for pair in ptb {
-            if Rule::root == pair.as_rule() {
-                self.consume_root(pair.into_inner())?
+        // Iterate over all root phrases and map them
+        if let Some(ptb) = ptb.next() {
+            if ptb.as_rule() == Rule::ptb {
+                for root_phrase in ptb.into_inner() {
+                    self.consume_phrase(root_phrase.into_inner(), u)?
+                }
             }
         }
         Ok(())
     }
 
-    fn consume_root(&self, mut root_children: Pairs<Rule>) -> anyhow::Result<()> {
-        // A root must have exactly one phrase child
-        if let Some(phrase) = root_children.next() {
-            if phrase.as_rule() == Rule::phrase {
-                self.consume_phrase(phrase.into_inner())?;
-                Ok(())
-            } else {
-                Err(anyhow!(
-                    "Expected phrase but got {:?} ({:?})",
-                    phrase.as_rule(),
-                    phrase.as_span()
-                ))
-            }
-        } else {
-            Err(anyhow!("Missing phrase for root element"))
-        }
-    }
-
-    fn consume_phrase(&self, mut phrase_children: Pairs<Rule>) -> anyhow::Result<()> {
+    fn consume_phrase(
+        &mut self,
+        mut phrase_children: Pairs<Rule>,
+        u: &mut GraphUpdate,
+    ) -> anyhow::Result<()> {
         // First child element of a phrase must be a label
         if let Some(phrase_label) = phrase_children.next() {
             let phrase_label = self.consume_label(phrase_label)?;
 
             let children: Vec<_> = phrase_children.collect();
-            if children.len() == 1 {
-                // TODO: map the token value
+            if children.len() == 1
+                && (children[0].as_rule() == Rule::quoted_value
+                    || children[0].as_rule() == Rule::label)
+            {
+                // map the value as token
                 let value = self.consume_value(&children[0])?;
-            } else if children.len() > 1 {
-                // TODO: Left-descend to any phrase
+                let id = self.number_of_token + 1;
+                let tok_id = format!("{}#t{id}", self.doc_path);
+                u.add_event(UpdateEvent::AddNode {
+                    node_name: tok_id.clone(),
+                    node_type: "node".to_string(),
+                })?;
+                u.add_event(UpdateEvent::AddNodeLabel {
+                    node_name: tok_id.clone(),
+                    anno_ns: ANNIS_NS.to_string(),
+                    anno_name: "tok".to_string(),
+                    anno_value: value.to_string(),
+                })?;
+                u.add_event(UpdateEvent::AddNodeLabel {
+                    node_name: tok_id.clone(),
+                    anno_ns: ANNIS_NS.to_string(),
+                    anno_name: "layer".to_string(),
+                    anno_value: "default_layer".to_string(),
+                })?;
+                u.add_event(UpdateEvent::AddEdge {
+                    source_node: tok_id.clone(),
+                    target_node: self.text_node_name.clone(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::PartOf.to_string(),
+                    component_name: "".to_string(),
+                })?;
+                // TODO: allow to customize the token annotation name
+                u.add_event(UpdateEvent::AddNodeLabel {
+                    node_name: tok_id.clone(),
+                    anno_ns: DEFAULT_NS.to_string(),
+                    anno_name: "pos".to_string(),
+                    anno_value: phrase_label,
+                })?;
+                if let Some(last_token_id) = &self.last_token_id {
+                    u.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: tok_id.clone(),
+                        anno_ns: ANNIS_NS.to_string(),
+                        anno_name: "tok-whitespace-before".to_string(),
+                        anno_value: " ".to_string(),
+                    })?;
+                    u.add_event(UpdateEvent::AddEdge {
+                        source_node: last_token_id.clone(),
+                        target_node: tok_id.clone(),
+                        layer: ANNIS_NS.to_string(),
+                        component_type: AnnotationComponentType::Ordering.to_string(),
+                        component_name: "".to_string(),
+                    })?;
+                }
+                self.number_of_token += 1;
+                self.last_token_id = Some(tok_id);
+            } else {
+                // Left-descend to any phrase
+                for c in children {
+                    self.consume_phrase(c.into_inner(), u)?;
+                }
             }
         }
         Ok(())
@@ -138,7 +185,7 @@ impl Importer for PtbImporter {
     fn import_corpus(
         &self,
         input_path: &Path,
-        properties: &BTreeMap<String, String>,
+        _properties: &BTreeMap<String, String>,
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut u = GraphUpdate::default();
@@ -165,8 +212,9 @@ impl Importer for PtbImporter {
                 root_corpus,
                 doc_path,
                 reporter: &reporter,
-                file_path,
                 text_node_name,
+                last_token_id: None,
+                number_of_token: 0,
             };
 
             doc_mapper.map(&mut u, ptb)?;

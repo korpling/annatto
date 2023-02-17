@@ -1,0 +1,18 @@
+(ROOT
+    (S
+        (NP 
+            (ART Die)
+            (NN Jugendlichen)
+            (PP 
+                (APPR in)
+                (NE Zossen)
+            )
+            (VMFIN wollen)
+            (NP
+                (ART ein)
+                (NN Musikcafé)
+            )
+        )
+    )
+    ($. .)
+)
