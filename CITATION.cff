@@ -1,0 +1,35 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Annatto
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Thomas
+    family-names: Krause
+    email: thomas.krause@hu-berlin.de
+    affiliation: Humboldt-Universität zu Berlin
+    orcid: 'https://orcid.org/0000-0003-3731-2422'
+  - given-names: Martin
+    family-names: Klotz
+    email: martin.klotz@hu-berlin.de
+    affiliation: Humboldt-Universität zu Berlin
+    orcid: 'https://orcid.org/0000-0002-8078-4516'
+repository-code: 'https://github.com/korpling/annatto/'
+abstract: >-
+  This software aims to test and convert linguistic corpus
+  data. Tests aim at continuously evaluating the state of a
+  corpus to early identify issues regarding compatibility,
+  consistency, and integrity to facilitate data handling
+  with regard to annotation, releases and integration.
+
+
+  For efficiency, Annatto relies on the graphANNIS
+  representation and already provides a basic set of data
+  handling modules. The set of modules can be extended by
+  the user through custom python scripts to adapt the data
+  handling workflow(s) easily.
+license: Apache-2.0
