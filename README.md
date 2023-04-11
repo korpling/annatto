@@ -29,4 +29,9 @@ pyoxidizer generate-python-embedding-artifacts pyembedded
 ```nash
 export PYO3_CONFIG_FILE=$(pwd)/pyembedded/pyo3-build-config-file.txt
 ```
-   
+
+# Funding
+
+Die Forschungsergebnisse dieser Veröffentlichung wurden gefördert durch die Deutsche Forschungsgemeinschaft (DFG) – SFB 1412, 416591334 sowie FOR 2537, 313607803, GZ LU 856/16-1.
+
+This research was funded by the German Research Foundation (DFG, Deutsche Forschungsgemeinschaft) – SFB 1412, 416591334 and FOR 2537, 313607803, GZ LU 856/16-1.
