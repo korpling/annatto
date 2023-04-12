@@ -28,12 +28,6 @@ jobs:
           with:
             github-token: ${{ secrets.GITHUB_TOKEN }}
             version: latest
-        - name: Install pyoxidizer crate
-          uses: baptiste0928/cargo-install@v1
-          with:
-            crate: pyoxidizer
-            version: "0.24"
-        - run: pyoxidizer generate-python-embedding-artifacts pyembedded
         - name: Run tests with code coverage
           run: ./test_coverage.sh
         - name: Upload code coverage for ref branch
@@ -61,12 +55,6 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           version: latest
-      - name: Install pyoxidizer crate
-        uses: baptiste0928/cargo-install@v1
-        with:
-          crate: pyoxidizer
-          version: "0.24"
-      - run: pyoxidizer generate-python-embedding-artifacts pyembedded
       - name: Run tests with code coverage
         run: ./test_coverage.sh
 

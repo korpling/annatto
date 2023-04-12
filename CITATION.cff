@@ -27,9 +27,7 @@ abstract: >-
   with regard to annotation, releases and integration. For
   efficiency, Annatto relies on the graphANNIS
   representation and already provides a basic set of data
-  handling modules. The set of modules can be extended by
-  the user through custom python scripts to adapt the data
-  handling workflow(s) easily.
+  handling modules.
 license: Apache-2.0
 version: 0.0.0
 date-released: '1970-01-01'
