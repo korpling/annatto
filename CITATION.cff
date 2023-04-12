@@ -1,7 +1,7 @@
 # This CITATION.cff file was generated with cffinit.
 # Visit https://bit.ly/cffinit to generate yours today!
 
-cff-version: 1.2.0
+cff-version: 0.1.0
 title: Annatto
 message: >-
   If you use this software, please cite it using the
@@ -29,5 +29,5 @@ abstract: >-
   representation and already provides a basic set of data
   handling modules.
 license: Apache-2.0
-version: 0.0.0
-date-released: '1970-01-01'
+version: 0.1.0
+date-released: '2023-04-12'
