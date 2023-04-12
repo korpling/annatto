@@ -26,7 +26,7 @@ cargo install pyoxidizer
 pyoxidizer generate-python-embedding-artifacts pyembedded
 ```
 3. Set the environment variables necessary to build the project with `cargo`
-```nash
+```bash
 export PYO3_CONFIG_FILE=$(pwd)/pyembedded/pyo3-build-config-file.txt
 ```
 
