@@ -2,7 +2,6 @@ use std::{io::BufWriter, path::PathBuf, string::FromUtf8Error, sync::mpsc::SendE
 
 use graphannis::errors::GraphAnnisError;
 use graphannis_core::errors::GraphAnnisCoreError;
-use pyo3::{exceptions::PyOSError, PyErr};
 use thiserror::Error;
 
 use crate::workflow::StatusMessage;
@@ -80,11 +79,5 @@ impl<T> From<std::sync::PoisonError<T>> for AnnattoError {
 impl From<SendError<StatusMessage>> for AnnattoError {
     fn from(e: SendError<StatusMessage>) -> Self {
         AnnattoError::SendingStatusMessageFailed(e.to_string())
-    }
-}
-
-impl From<AnnattoError> for PyErr {
-    fn from(e: AnnattoError) -> Self {
-        PyOSError::new_err(e.to_string())
     }
 }

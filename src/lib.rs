@@ -4,7 +4,6 @@ pub mod importer;
 pub mod manipulator;
 pub mod models;
 pub mod progress;
-pub mod python;
 pub mod util;
 pub mod workflow;
 
@@ -18,7 +17,6 @@ use error::{AnnattoError, Result};
 use exporter::Exporter;
 use importer::Importer;
 use manipulator::Manipulator;
-use python::PythonImporter;
 
 /// Retrieve a new instance of an importer using its module name
 pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
@@ -37,7 +35,7 @@ pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
         importer::spreadsheet::MODULE_NAME => {
             Ok(Box::<importer::spreadsheet::ImportSpreadsheet>::default())
         }
-        _ => Ok(Box::new(PythonImporter::from_name(name))),
+        _ => Err(AnnattoError::NoSuchModule(name.to_string())),
     }
 }
 
