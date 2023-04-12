@@ -21,8 +21,6 @@ normpath = "1.1"
 ordered-float = {version = "3.4.0", default-features = false}
 pest = "2.0"
 pest_derive = "2.0"
-pyembed = "0.22"
-pyo3 = {version = "0.16"}
 quick-xml = "0.23"
 rayon = "1.1"
 regex = "1.4"
