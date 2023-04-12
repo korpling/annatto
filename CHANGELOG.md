@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2023-04-12
+
 ### Added
 
 - allow to leak graph updates to text file
@@ -15,4 +17,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - apply single combined update after imports are finished to avoid multiple
 - calls to apply_update
 - replace annotation names, namespaces, move annotations, delete annotations (re)
-- export gaphml
+- export graphml
