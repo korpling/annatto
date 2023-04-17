@@ -41,7 +41,9 @@ pub fn insert_corpus_nodes_from_path(
 ) -> Result<String> {
     let clean_path = normpath::BasePath::new(document_path)?;
     let clean_root_path = normpath::BasePath::new(root_path)?;
-    let norm_path = normpath::BasePath::normalize(&clean_path)?;
+    let norm_path = normpath::BasePath::normalize(&clean_path)?
+        .as_path()
+        .with_extension("");
     let norm_root_path = normpath::BasePath::normalize(&clean_root_path)?;
     let root_path_len = norm_root_path.components().count() - 1;
     let mut full_path = String::new();
