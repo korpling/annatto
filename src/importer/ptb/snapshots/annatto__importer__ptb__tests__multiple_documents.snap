@@ -1,5 +1,6 @@
 ---
 source: src/importer/ptb/tests.rs
+assertion_line: 82
 expression: actual
 ---
 <?xml version="1.0" encoding="UTF-8"?>
@@ -49,13 +50,13 @@ visibility = "hidden"
         <node id="multiple_documents">
             <data key="k4">corpus</data>
         </node>
-        <node id="multiple_documents/test_file">
-            <data key="k4">corpus</data>
-            <data key="k2">test_file</data>
-        </node>
         <node id="multiple_documents/DEmo68FD_fsD">
             <data key="k4">corpus</data>
             <data key="k2">DEmo68FD_fsD</data>
+        </node>
+        <node id="multiple_documents/test_file">
+            <data key="k4">corpus</data>
+            <data key="k2">test_file</data>
         </node>
         <node id="multiple_documents/DEmo68FD_fsD#n1">
             <data key="k4">node</data>
@@ -7852,7 +7853,7 @@ visibility = "hidden"
         </edge>
         <edge id="e1787" source="multiple_documents/DEmo68FD_fsD#t186" target="multiple_documents/DEmo68FD_fsD#text" label="PartOf/annis/">
         </edge>
-        <edge id="e1788" source="multiple_documents/test_file" target="multiple_documents" label="PartOf/annis/">
+        <edge id="e1788" source="multiple_documents/DEmo68FD_fsD" target="multiple_documents" label="PartOf/annis/">
         </edge>
         <edge id="e1789" source="multiple_documents/test_file#t36" target="multiple_documents/test_file#text" label="PartOf/annis/">
         </edge>
@@ -8076,7 +8077,7 @@ visibility = "hidden"
         </edge>
         <edge id="e1899" source="multiple_documents/test_file#t133" target="multiple_documents/test_file#text" label="PartOf/annis/">
         </edge>
-        <edge id="e1900" source="multiple_documents/DEmo68FD_fsD" target="multiple_documents" label="PartOf/annis/">
+        <edge id="e1900" source="multiple_documents/test_file" target="multiple_documents" label="PartOf/annis/">
         </edge>
         <edge id="e1901" source="multiple_documents/DEmo68FD_fsD#t108" target="multiple_documents/DEmo68FD_fsD#text" label="PartOf/annis/">
         </edge>
