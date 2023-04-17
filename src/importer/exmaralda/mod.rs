@@ -331,3 +331,6 @@ impl ImportEXMARaLDA {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests;
