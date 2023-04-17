@@ -35,6 +35,9 @@ pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
         importer::spreadsheet::MODULE_NAME => {
             Ok(Box::<importer::spreadsheet::ImportSpreadsheet>::default())
         }
+        importer::exmaralda::MODULE_NAME => {
+            Ok(Box::<importer::exmaralda::ImportEXMARaLDA>::default())
+        }
         _ => Err(AnnattoError::NoSuchModule(name.to_string())),
     }
 }
