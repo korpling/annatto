@@ -104,12 +104,15 @@ impl ImportEXMARaLDA {
                     match name.to_string().as_str() {
                         "referenced-file" => {
                             if let Some(file_url) = attr_vec_to_map(&attributes).get("url") {
-                                map_audio_source(
-                                    update,
-                                    &Path::new(file_url),
-                                    corpus_path.to_str().unwrap(),
-                                    &doc_node_name,
-                                )?;
+                                if let Some(parent_path) = document_path.parent() {
+                                    let audio_path = parent_path.join(file_url);
+                                    map_audio_source(
+                                        update,
+                                        audio_path.as_path(),
+                                        corpus_path.to_str().unwrap(),
+                                        &doc_node_name,
+                                    )?;
+                                };
                             }
                         }
                         "tli" => {
