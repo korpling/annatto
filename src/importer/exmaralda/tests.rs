@@ -2,6 +2,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     env::temp_dir,
     path::Path,
+    sync::mpsc,
 };
 
 use graphannis::{
@@ -55,7 +56,9 @@ fn test_exb(on_disk: bool, with_audio: bool) -> Result<(), Box<dyn std::error::E
     } else {
         "./tests/data/import/exmaralda/broken_audio/import/"
     };
-    let mut update = import.import_corpus(Path::new(import_path), &BTreeMap::new(), None)?;
+    let (sender, receiver) = mpsc::channel();
+    let mut update =
+        import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender))?;
     let mut g = AnnotationGraph::new(on_disk)?;
     let update_app = g.apply_update(&mut update, |_| {});
     assert!(
@@ -188,6 +191,12 @@ fn test_exb(on_disk: bool, with_audio: bool) -> Result<(), Box<dyn std::error::E
             assert_eq!(match_g, match_e);
         }
     }
+    // if with_audio is false, it means we are testing with a broken audio link
+    // which is supposed to be reported and leave a trace in the receiver
+    let message_count = receiver.into_iter().count();
+    assert_eq!(!with_audio, message_count > 0);
+    // also, there should be no warnings for the regular test case
+    assert_eq!(with_audio, message_count == 0);
     Ok(())
 }
 
