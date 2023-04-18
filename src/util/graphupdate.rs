@@ -19,8 +19,17 @@ fn add_subcorpora(
     file_endings: &[&str],
 ) -> Result<Vec<(PathBuf, String)>> {
     let mut result = Vec::new();
+
+    // Get the files and sort them according to their path, to get a predictable
+    // order of adding the documents to the graph.
+    let mut files_in_directory = Vec::new();
     for entry in std::fs::read_dir(file_path)? {
         let entry = entry?;
+        files_in_directory.push(entry);
+    }
+    files_in_directory.sort_by_key(|dir_entry| dir_entry.path());
+
+    for entry in files_in_directory {
         let entry_type = entry.file_type()?;
         let entry_path = entry.path();
         let subcorpus_name = entry_path
