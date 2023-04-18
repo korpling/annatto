@@ -256,11 +256,6 @@ fn node_annos_vis(graph: &AnnotationGraph) -> Result<Visualizer, Box<dyn std::er
         .into_iter()
         .map(|c| c.name.to_string())
         .collect();
-    let orderings = order_names
-        .iter()
-        .filter(|s| !s.is_empty())
-        .map(|s| format!("/{s}/"))
-        .join(",");
     let mut node_qnames = BTreeSet::new();
     let mut visited = BTreeSet::new();
     // gather all qnames that occur on nodes reachable through coverage edges (other annotations cannot be visualized in grid)
@@ -291,7 +286,7 @@ fn node_annos_vis(graph: &AnnotationGraph) -> Result<Visualizer, Box<dyn std::er
         .map(|name| format!("/{name}/"))
         .join(",");
     let mut mappings = BTreeMap::new();
-    mappings.insert("annos".to_string(), [orderings, node_names].join(","));
+    mappings.insert("annos".to_string(), node_names);
     mappings.insert("escape_html".to_string(), "false".to_string());
     let more_than_one_ordering = !order_names.is_empty(); // reminder: order_names does not contain the unnamed ordering, therefore !is_empty is the way to go
     let ordered_nodes_are_identical = {

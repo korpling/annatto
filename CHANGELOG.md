@@ -25,3 +25,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - import exmaralda
 - fix character buffer in exmaralda import
+- order names are no longer part of the guessed visualisation when exporting GraphML
