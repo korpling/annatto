@@ -27,3 +27,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix character buffer in exmaralda import
 - order names are no longer part of the guessed visualisation when exporting GraphML
 - if audio file linked in an exmaralda file cannot be found, no audio source will be linked
+- set annis::layer with speaker name when importing exmaralda files

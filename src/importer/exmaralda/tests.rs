@@ -310,18 +310,18 @@ fn target_graph(
             anno_name: "time".to_string(),
             anno_value: format!("{}-{}", start_time, end_time),
         })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: node_name.to_string(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "layer".to_string(),
+            anno_value: spk.to_string(),
+        })?;
         if tpe == "t" {
             u.add_event(UpdateEvent::AddNodeLabel {
                 node_name: node_name.to_string(),
                 anno_ns: ANNIS_NS.to_string(),
                 anno_name: "tok".to_string(),
                 anno_value: "value".to_string(),
-            })?;
-            u.add_event(UpdateEvent::AddNodeLabel {
-                node_name: node_name.to_string(),
-                anno_ns: ANNIS_NS.to_string(),
-                anno_name: "layer".to_string(),
-                anno_value: "default_layer".to_string(),
             })?;
             if let Some(other_name) = prev {
                 u.add_event(UpdateEvent::AddEdge {

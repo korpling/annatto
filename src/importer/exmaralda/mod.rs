@@ -268,6 +268,12 @@ impl ImportEXMARaLDA {
                                 })?;
                                 already_defined.insert(node_name.to_string());
                             }
+                            update.add_event(UpdateEvent::AddNodeLabel {
+                                node_name: node_name.to_string(),
+                                anno_ns: ANNIS_NS.to_string(),
+                                anno_name: "layer".to_string(),
+                                anno_value: speaker_name.to_string(),
+                            })?;
                             if tier_type.as_str() == "t" {
                                 // tokenization
                                 update.add_event(UpdateEvent::AddNodeLabel {
@@ -275,12 +281,6 @@ impl ImportEXMARaLDA {
                                     anno_ns: ANNIS_NS.to_string(),
                                     anno_name: "tok".to_string(),
                                     anno_value: text.to_string(),
-                                })?;
-                                update.add_event(UpdateEvent::AddNodeLabel {
-                                    node_name: node_name.to_string(),
-                                    anno_ns: ANNIS_NS.to_string(),
-                                    anno_name: "layer".to_string(),
-                                    anno_value: "default_layer".to_string(),
                                 })?;
                                 // order nodes
                                 if !named_orderings.contains_key(anno_name) {
