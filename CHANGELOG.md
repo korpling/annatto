@@ -18,3 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - calls to apply_update
 - replace annotation names, namespaces, move annotations, delete annotations (re)
 - export graphml
+
+## [0.2.0-SNAPSHOT]
+
+### Added
+
+- import exmaralda
+- fix character buffer in exmaralda import
