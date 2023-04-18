@@ -1,9 +1,7 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
     env::temp_dir,
-    fs::File,
     path::Path,
-    slice,
 };
 
 use graphannis::{
@@ -22,7 +20,7 @@ use crate::importer::Importer;
 
 use super::ImportEXMARaLDA;
 
-use itertools::{Itertools, Zip};
+use itertools::Itertools;
 
 #[test]
 fn test_exb_in_mem() {
