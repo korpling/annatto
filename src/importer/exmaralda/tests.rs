@@ -2,6 +2,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     env::temp_dir,
     path::Path,
+    sync::mpsc,
 };
 
 use graphannis::{
@@ -25,21 +26,39 @@ use itertools::Itertools;
 
 #[test]
 fn test_exb_in_mem() {
-    let r = test_exb(false);
+    let r = test_exb(false, true);
     assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
 }
 
 #[test]
 fn test_exb_on_disk() {
-    let r = test_exb(true);
+    let r = test_exb(true, true);
     assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
 }
 
-fn test_exb(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
-    let mut e_g = target_graph(on_disk)?;
+#[test]
+fn test_exb_broken_audio_in_mem() {
+    let r = test_exb(false, false);
+    assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
+}
+
+#[test]
+fn test_exb_broken_audio_on_disk() {
+    let r = test_exb(true, false);
+    assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
+}
+
+fn test_exb(on_disk: bool, with_audio: bool) -> Result<(), Box<dyn std::error::Error>> {
+    let mut e_g = target_graph(on_disk, with_audio)?;
     let import = ImportEXMARaLDA::default();
+    let import_path = if with_audio {
+        "./tests/data/import/exmaralda/clean/import/"
+    } else {
+        "./tests/data/import/exmaralda/broken_audio/import/"
+    };
+    let (sender, receiver) = mpsc::channel();
     let mut update =
-        import.import_corpus(Path::new("./tests/data/import/"), &BTreeMap::new(), None)?;
+        import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender))?;
     let mut g = AnnotationGraph::new(on_disk)?;
     let update_app = g.apply_update(&mut update, |_| {});
     assert!(
@@ -172,10 +191,19 @@ fn test_exb(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
             assert_eq!(match_g, match_e);
         }
     }
+    // if with_audio is false, it means we are testing with a broken audio link
+    // which is supposed to be reported and leave a trace in the receiver
+    let message_count = receiver.into_iter().count();
+    assert_eq!(!with_audio, message_count > 0);
+    // also, there should be no warnings for the regular test case
+    assert_eq!(with_audio, message_count == 0);
     Ok(())
 }
 
-fn target_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
+fn target_graph(
+    on_disk: bool,
+    with_audio: bool,
+) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
     let mut graph = AnnotationGraph::new(on_disk)?;
     let mut u = GraphUpdate::default();
     u.add_event(UpdateEvent::AddNode {
@@ -204,12 +232,14 @@ fn target_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Er
         component_type: AnnotationComponentType::PartOf.to_string(),
         component_name: "".to_string(),
     })?;
-    map_audio_source(
-        &mut u,
-        Path::new("./import/exmaralda/test_file.wav"),
-        "import/exmaralda",
-        "import/exmaralda/test_doc",
-    )?;
+    if with_audio {
+        map_audio_source(
+            &mut u,
+            Path::new("./import/exmaralda/test_file.wav"),
+            "import/exmaralda",
+            "import/exmaralda/test_doc",
+        )?;
+    }
     let tlis = ["T286", "T0", "T1", "T2", "T3", "T4"];
     let times = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
     for tli in tlis {
