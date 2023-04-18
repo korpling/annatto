@@ -99,12 +99,17 @@ impl ImportEXMARaLDA {
                             if let Some(file_url) = attr_vec_to_map(&attributes).get("url") {
                                 if let Some(parent_path) = document_path.parent() {
                                     let audio_path = parent_path.join(file_url);
-                                    map_audio_source(
-                                        update,
-                                        audio_path.as_path(),
-                                        corpus_path.to_str().unwrap(),
-                                        &doc_node_name,
-                                    )?;
+                                    if audio_path.exists() {
+                                        map_audio_source(
+                                            update,
+                                            audio_path.as_path(),
+                                            corpus_path.to_str().unwrap(),
+                                            &doc_node_name,
+                                        )?;
+                                    } else if let Some(sender) = tx {
+                                        let msg = format!("Linked file {} could not be found to be linked in document {}", audio_path.as_path().to_string_lossy(), &doc_node_name);
+                                        sender.send(StatusMessage::Warning(msg))?;
+                                    }
                                 };
                             }
                         }
