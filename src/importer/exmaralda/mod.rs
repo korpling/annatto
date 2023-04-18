@@ -1,7 +1,6 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs::File,
-    path::Path,
 };
 
 use graphannis::{
@@ -86,19 +85,13 @@ impl ImportEXMARaLDA {
         loop {
             match reader.next() {
                 Ok(XmlEvent::EndDocument) => break,
-                Ok(XmlEvent::StartDocument {
-                    version,
-                    encoding,
-                    standalone,
-                }) => {
+                Ok(XmlEvent::StartDocument { .. }) => {
                     doc_node_name =
                         insert_corpus_nodes_from_path(update, corpus_path, document_path)?;
                 }
                 Ok(XmlEvent::Characters(value)) => char_buf.push_str(value.as_str()),
                 Ok(XmlEvent::StartElement {
-                    name,
-                    attributes,
-                    namespace,
+                    name, attributes, ..
                 }) => {
                     parent_map.insert(name.to_string(), attr_vec_to_map(&attributes));
                     match name.to_string().as_str() {
