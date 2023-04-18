@@ -127,6 +127,7 @@ impl ImportEXMARaLDA {
                                 (attr_map["time"].parse::<f64>()?, node_name),
                             );
                         }
+                        "event" | "abbreviation" => char_buf.clear(),
                         _ => {}
                     }
                 }
@@ -136,7 +137,6 @@ impl ImportEXMARaLDA {
                             // write speaker name to speaker table
                             let speaker_id = parent_map.get("speaker").unwrap()["id"].to_string();
                             let speaker_name = char_buf.to_string();
-                            char_buf.clear();
                             speaker_map.insert(speaker_id, speaker_name);
                         }
                         "common-timeline" => {
@@ -166,7 +166,6 @@ impl ImportEXMARaLDA {
                         }
                         "event" => {
                             let text = char_buf.to_string();
-                            char_buf.clear();
                             let tier_info = parent_map.get("tier").unwrap();
                             let speaker_id = tier_info.get("speaker").unwrap();
                             let speaker_name = speaker_map.get(speaker_id).unwrap();

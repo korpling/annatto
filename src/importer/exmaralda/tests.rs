@@ -13,10 +13,11 @@ use graphannis::{
 use graphannis_core::{
     annostorage::ValueSearch,
     graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY},
+    util::join_qname,
 };
 use tempfile::tempdir_in;
 
-use crate::importer::Importer;
+use crate::{importer::Importer, util::graphupdate::map_audio_source};
 
 use super::ImportEXMARaLDA;
 
@@ -82,6 +83,27 @@ fn test_exb(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
         })
         .collect();
     assert_eq!(e_corpus_nodes, g_corpus_nodes);
+    // anno names
+    let e_anno_names = e_g.get_node_annos().annotation_keys()?;
+    let g_anno_names = g.get_node_annos().annotation_keys()?;
+    let e_name_iter = e_anno_names
+        .iter()
+        .sorted_by(|a, b| join_qname(&a.ns, &a.name).cmp(&join_qname(&b.ns, &b.name)));
+    let g_name_iter = g_anno_names
+        .iter()
+        .sorted_by(|a, b| join_qname(&a.ns, &a.name).cmp(&join_qname(&b.ns, &b.name)));
+    for (e_qname, g_qname) in e_name_iter.zip(g_name_iter) {
+        assert_eq!(
+            e_qname, g_qname,
+            "Differing annotation keys between expected and generated graph: `{:?}` vs. `{:?}`",
+            e_qname, g_qname
+        );
+    }
+    assert_eq!(
+        e_anno_names.len(),
+        g_anno_names.len(),
+        "Expected graph and generated graph do not contain the same number of annotation keys."
+    );
     let e_c_list = e_g
         .get_all_components(None, None)
         .into_iter()
@@ -182,6 +204,12 @@ fn target_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Er
         component_type: AnnotationComponentType::PartOf.to_string(),
         component_name: "".to_string(),
     })?;
+    map_audio_source(
+        &mut u,
+        Path::new("./import/exmaralda/test_file.wav"),
+        "import/exmaralda",
+        "import/exmaralda/test_doc",
+    )?;
     let tlis = ["T286", "T0", "T1", "T2", "T3", "T4"];
     let times = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
     for tli in tlis {
