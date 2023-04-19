@@ -109,7 +109,7 @@ impl Merge {
         graph: &AnnotationGraph,
         order_names: Vec<&'a str>,
     ) -> StandardErrorResult<HashMap<String, HashMap<&'a str, NodeIdCollection>>> {
-        let mut ordered_items_by_doc: HashMap<String, HashMap<&str, std::vec::IntoIter<u64>>> =
+        let mut ordered_items_by_doc: HashMap<String, HashMap<&str, NodeIdCollection>> =
             HashMap::new();
         let node_annos = graph.get_node_annos();
         for order_name in order_names {
@@ -184,7 +184,7 @@ impl Merge {
         graph: &AnnotationGraph,
         updates: &mut GraphUpdate,
         target_key: &AnnoKey,
-        ordered_items_by_doc: HashMap<String, HashMap<&str, std::vec::IntoIter<u64>>>,
+        ordered_items_by_doc: HashMap<String, HashMap<&str, NodeIdCollection>>,
         optionals: HashSet<String>,
         optional_chars: HashSet<char>,
         docs_with_errors: &mut HashSet<String>,

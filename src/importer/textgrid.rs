@@ -193,8 +193,7 @@ impl<'a> DocumentMapper<'a> {
                 &counter.to_string(),
                 None,
                 "",
-                start,
-                end,
+                (start, end),
                 false,
             )?;
             tli_names.push(tli_id.clone());
@@ -243,8 +242,7 @@ impl<'a> DocumentMapper<'a> {
                     &counter.to_string(),
                     None,
                     &token_text,
-                    Some(time_range.0 .0),
-                    Some(time_range.1 .0),
+                    (Some(time_range.0 .0), Some(time_range.1 .0)),
                     true,
                 )?;
 
