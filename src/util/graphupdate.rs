@@ -167,18 +167,32 @@ pub fn add_order_relations<S: AsRef<str>>(
     Ok(())
 }
 
+pub struct NodeInfo<'a> {
+    node_id: &'a str,
+    doc_path: &'a str,
+    text_node_name: &'a str,
+}
+
+impl<'a> NodeInfo<'a> {
+    pub fn new(node_id: &'a str, doc_path: &'a str, text_node_name: &'a str) -> NodeInfo<'a> {
+        NodeInfo {
+            node_id,
+            doc_path,
+            text_node_name,
+        }
+    }
+}
+
 pub fn map_token(
     u: &mut GraphUpdate,
-    doc_path: &str,
-    text_node_name: &str,
-    id: &str,
+    node: &NodeInfo,
     text_name: Option<&str>,
     value: &str,
     start_time: Option<f64>,
     end_time: Option<f64>,
     add_annis_layer: bool,
 ) -> Result<String> {
-    let tok_id = format!("{doc_path}#t{id}");
+    let tok_id = format!("{}#t{}", node.doc_path, node.node_id);
     u.add_event(UpdateEvent::AddNode {
         node_name: tok_id.clone(),
         node_type: "node".to_string(),
@@ -205,7 +219,7 @@ pub fn map_token(
     })?;
     u.add_event(UpdateEvent::AddEdge {
         source_node: tok_id.clone(),
-        target_node: text_node_name.to_string(),
+        target_node: node.text_node_name.to_string(),
         layer: ANNIS_NS.to_string(),
         component_type: AnnotationComponentType::PartOf.to_string(),
         component_name: "".to_string(),
@@ -242,22 +256,20 @@ pub fn map_token(
 
 pub fn map_annotations<S: AsRef<str>>(
     u: &mut GraphUpdate,
-    doc_path: &str,
-    text_node_name: &str,
-    id: &str,
+    node: &NodeInfo,
     ns: Option<&str>,
     name: Option<&str>,
     value: Option<&str>,
     targets: &[S],
 ) -> Result<String> {
-    let span_id = format!("{doc_path}#sSpan{id}");
+    let span_id = format!("{}#sSpan{}", node.doc_path, node.node_id);
     u.add_event(UpdateEvent::AddNode {
         node_name: span_id.clone(),
         node_type: "node".to_string(),
     })?;
     u.add_event(UpdateEvent::AddEdge {
         source_node: span_id.to_string(),
-        target_node: text_node_name.to_string(),
+        target_node: node.text_node_name.to_string(),
         layer: ANNIS_NS.to_string(),
         component_type: AnnotationComponentType::PartOf.to_string(),
         component_name: "".to_string(),

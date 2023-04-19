@@ -16,13 +16,8 @@ use super::Importer;
 
 pub const MODULE_NAME: &str = "import_spreadsheet";
 
+#[derive(Default)]
 pub struct ImportSpreadsheet {}
-
-impl Default for ImportSpreadsheet {
-    fn default() -> Self {
-        ImportSpreadsheet {}
-    }
-}
 
 impl Module for ImportSpreadsheet {
     fn module_name(&self) -> &str {
@@ -114,7 +109,7 @@ fn import_workbook(
     }
     let mut next_span_num = 1;
     let mut next_tok_num = base_tokens.len() + 1;
-    for (tok_name, anno_names) in column_map.into_iter() {
+    for (tok_name, anno_names) in column_map {
         let mut token_map = BTreeMap::new();
         let index_opt = name_to_col_0index.get(tok_name);
         if let Some(col_0i) = index_opt {
@@ -261,8 +256,8 @@ fn get_column_map(
 ) -> Result<BTreeMap<String, Vec<String>>, Box<dyn std::error::Error>> {
     // TODO produce some errors
     let mut column_map = BTreeMap::new();
-    for group in property_val.split(";") {
-        let (key, names) = match group.trim().split_once("=") {
+    for group in property_val.split(';') {
+        let (key, names) = match group.trim().split_once('=') {
             None => {
                 let err = AnnattoError::InvalidPropertyValue {
                     property: PROP_COLUMN_MAP.to_string(),
@@ -272,8 +267,7 @@ fn get_column_map(
             }
             Some((k, v)) => {
                 let anno_names = v
-                    .replace("{", "")
-                    .replace("}", "")
+                    .replace(['{', '}'], "")
                     .split(',')
                     .map(|name| name.trim().to_string())
                     .collect_vec();

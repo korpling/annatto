@@ -300,7 +300,6 @@ fn node_annos_vis(graph: &AnnotationGraph) -> Result<Visualizer, Box<dyn std::er
                         .get_graphstorage(c)
                         .unwrap()
                         .source_nodes()
-                        .into_iter()
                         .map(|r| r.unwrap())
                         .collect::<BTreeSet<u64>>()
                 })
