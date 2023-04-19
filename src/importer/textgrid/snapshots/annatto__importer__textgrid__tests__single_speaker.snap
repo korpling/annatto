@@ -18,207 +18,207 @@ expression: actual
             <data key="k4">corpus</data>
         </node>
         <node id="singleSpeaker/doc1">
-            <data key="k4">corpus</data>
             <data key="k1">doc1</data>
+            <data key="k4">corpus</data>
         </node>
         <node id="singleSpeaker/doc1#text">
             <data key="k4">datasource</data>
         </node>
         <node id="singleSpeaker/doc1#t1">
+            <data key="k2">default_layer</data>
             <data key="k4">node</data>
+            <data key="k6">0-1</data>
             <data key="k7">Is</data>
             <data key="k8"> </data>
-            <data key="k6">0-1</data>
-            <data key="k2">default_layer</data>
         </node>
         <node id="singleSpeaker/doc1#t2">
+            <data key="k2">default_layer</data>
             <data key="k4">node</data>
+            <data key="k6">1-2</data>
             <data key="k7">this</data>
             <data key="k8"> </data>
-            <data key="k6">1-2</data>
-            <data key="k2">default_layer</data>
         </node>
         <node id="singleSpeaker/doc1#t3">
+            <data key="k2">default_layer</data>
             <data key="k4">node</data>
+            <data key="k6">2-3</data>
             <data key="k7">example</data>
             <data key="k8"> </data>
-            <data key="k6">2-3</data>
-            <data key="k2">default_layer</data>
         </node>
         <node id="singleSpeaker/doc1#t4">
+            <data key="k2">default_layer</data>
             <data key="k4">node</data>
+            <data key="k6">3-4</data>
             <data key="k7">more</data>
             <data key="k8"> </data>
-            <data key="k6">3-4</data>
-            <data key="k2">default_layer</data>
         </node>
         <node id="singleSpeaker/doc1#t5">
+            <data key="k2">default_layer</data>
             <data key="k4">node</data>
+            <data key="k6">4-5</data>
             <data key="k7">complicated</data>
             <data key="k8"> </data>
-            <data key="k6">4-5</data>
-            <data key="k2">default_layer</data>
         </node>
         <node id="singleSpeaker/doc1#t6">
+            <data key="k2">default_layer</data>
             <data key="k4">node</data>
+            <data key="k6">5-6</data>
             <data key="k7">than</data>
             <data key="k8"> </data>
-            <data key="k6">5-6</data>
-            <data key="k2">default_layer</data>
         </node>
         <node id="singleSpeaker/doc1#t7">
+            <data key="k2">default_layer</data>
             <data key="k4">node</data>
+            <data key="k6">6-7</data>
             <data key="k7">it</data>
             <data key="k8"> </data>
-            <data key="k6">6-7</data>
-            <data key="k2">default_layer</data>
         </node>
         <node id="singleSpeaker/doc1#t8">
+            <data key="k2">default_layer</data>
             <data key="k4">node</data>
+            <data key="k6">7-8</data>
             <data key="k7">appears</data>
             <data key="k8"> </data>
-            <data key="k6">7-8</data>
-            <data key="k2">default_layer</data>
         </node>
         <node id="singleSpeaker/doc1#t9">
+            <data key="k2">default_layer</data>
             <data key="k4">node</data>
+            <data key="k6">8-9</data>
             <data key="k7">to</data>
             <data key="k8"> </data>
-            <data key="k6">8-9</data>
-            <data key="k2">default_layer</data>
         </node>
         <node id="singleSpeaker/doc1#t10">
+            <data key="k2">default_layer</data>
             <data key="k4">node</data>
+            <data key="k6">9-10</data>
             <data key="k7">be</data>
             <data key="k8"> </data>
-            <data key="k6">9-10</data>
-            <data key="k2">default_layer</data>
         </node>
         <node id="singleSpeaker/doc1#t11">
+            <data key="k2">default_layer</data>
             <data key="k4">node</data>
+            <data key="k6">10-11</data>
             <data key="k7">?</data>
             <data key="k8"> </data>
-            <data key="k6">10-11</data>
-            <data key="k2">default_layer</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan1">
-            <data key="k4">node</data>
-            <data key="k2">default_ns</data>
             <data key="k0">contrast-focus</data>
+            <data key="k2">default_ns</data>
+            <data key="k4">node</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan2">
-            <data key="k4">node</data>
-            <data key="k2">default_ns</data>
             <data key="k0">topic</data>
+            <data key="k2">default_ns</data>
+            <data key="k4">node</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan3">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
             <data key="k3">be</data>
+            <data key="k4">node</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan4">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
             <data key="k3">this</data>
+            <data key="k4">node</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan5">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
             <data key="k3">example</data>
+            <data key="k4">node</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan6">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
             <data key="k3">more</data>
+            <data key="k4">node</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan7">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
             <data key="k3">complicated</data>
+            <data key="k4">node</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan8">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
             <data key="k3">than</data>
+            <data key="k4">node</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan9">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
             <data key="k3">it</data>
+            <data key="k4">node</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan10">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
             <data key="k3">appear</data>
+            <data key="k4">node</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan11">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
             <data key="k3">to</data>
+            <data key="k4">node</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan12">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
             <data key="k3">be</data>
+            <data key="k4">node</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan13">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
             <data key="k3">?</data>
+            <data key="k4">node</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan14">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
+            <data key="k4">node</data>
             <data key="k5">VBZ</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan15">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
+            <data key="k4">node</data>
             <data key="k5">DT</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan16">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
+            <data key="k4">node</data>
             <data key="k5">NN</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan17">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
+            <data key="k4">node</data>
             <data key="k5">RBR</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan18">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
+            <data key="k4">node</data>
             <data key="k5">JJ</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan19">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
+            <data key="k4">node</data>
             <data key="k5">IN</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan20">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
+            <data key="k4">node</data>
             <data key="k5">PRP</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan21">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
+            <data key="k4">node</data>
             <data key="k5">VBZ</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan22">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
+            <data key="k4">node</data>
             <data key="k5">TO</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan23">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
+            <data key="k4">node</data>
             <data key="k5">VB</data>
         </node>
         <node id="singleSpeaker/doc1#sSpan24">
-            <data key="k4">node</data>
             <data key="k2">default_ns</data>
+            <data key="k4">node</data>
             <data key="k5">.</data>
         </node>
         <edge id="e0" source="singleSpeaker/doc1#sSpan19" target="singleSpeaker/doc1#t6" label="Coverage/annis/">

@@ -20,299 +20,299 @@ expression: actual
             <data key="k6">corpus</data>
         </node>
         <node id="misalignedLemma/doc1">
-            <data key="k6">corpus</data>
             <data key="k3">doc1</data>
+            <data key="k6">corpus</data>
         </node>
         <node id="misalignedLemma/doc1#text">
             <data key="k6">datasource</data>
         </node>
         <node id="misalignedLemma/doc1#t1">
-            <data key="k6">node</data>
-            <data key="k9"></data>
             <data key="k10"> </data>
+            <data key="k6">node</data>
             <data key="k8">0-1</data>
+            <data key="k9"></data>
         </node>
         <node id="misalignedLemma/doc1#t2">
-            <data key="k6">node</data>
-            <data key="k9"></data>
             <data key="k10"> </data>
+            <data key="k6">node</data>
             <data key="k8">1-2</data>
+            <data key="k9"></data>
         </node>
         <node id="misalignedLemma/doc1#t3">
-            <data key="k6">node</data>
-            <data key="k9"></data>
             <data key="k10"> </data>
+            <data key="k6">node</data>
             <data key="k8">2-3</data>
+            <data key="k9"></data>
         </node>
         <node id="misalignedLemma/doc1#t4">
-            <data key="k6">node</data>
-            <data key="k9"></data>
             <data key="k10"> </data>
+            <data key="k6">node</data>
             <data key="k8">3-4</data>
+            <data key="k9"></data>
         </node>
         <node id="misalignedLemma/doc1#t5">
-            <data key="k6">node</data>
-            <data key="k9"></data>
             <data key="k10"> </data>
+            <data key="k6">node</data>
             <data key="k8">4-5</data>
+            <data key="k9"></data>
         </node>
         <node id="misalignedLemma/doc1#t6">
-            <data key="k6">node</data>
-            <data key="k9"></data>
             <data key="k10"> </data>
+            <data key="k6">node</data>
             <data key="k8">5-6</data>
+            <data key="k9"></data>
         </node>
         <node id="misalignedLemma/doc1#t7">
-            <data key="k6">node</data>
-            <data key="k9"></data>
             <data key="k10"> </data>
+            <data key="k6">node</data>
             <data key="k8">6-7</data>
+            <data key="k9"></data>
         </node>
         <node id="misalignedLemma/doc1#t8">
-            <data key="k6">node</data>
-            <data key="k9"></data>
             <data key="k10"> </data>
+            <data key="k6">node</data>
             <data key="k8">7-8</data>
+            <data key="k9"></data>
         </node>
         <node id="misalignedLemma/doc1#t9">
-            <data key="k6">node</data>
-            <data key="k9"></data>
             <data key="k10"> </data>
+            <data key="k6">node</data>
             <data key="k8">8-9</data>
+            <data key="k9"></data>
         </node>
         <node id="misalignedLemma/doc1#t10">
-            <data key="k6">node</data>
-            <data key="k9"></data>
             <data key="k10"> </data>
+            <data key="k6">node</data>
             <data key="k8">9-10</data>
+            <data key="k9"></data>
         </node>
         <node id="misalignedLemma/doc1#t11">
-            <data key="k6">node</data>
-            <data key="k9"></data>
             <data key="k10"> </data>
+            <data key="k6">node</data>
             <data key="k8">10-11</data>
+            <data key="k9"></data>
         </node>
         <node id="misalignedLemma/doc1#t12">
-            <data key="k6">node</data>
-            <data key="k9"></data>
             <data key="k10"> </data>
+            <data key="k6">node</data>
             <data key="k8">11-12</data>
+            <data key="k9"></data>
         </node>
         <node id="misalignedLemma/doc1#t13">
-            <data key="k6">node</data>
-            <data key="k9"></data>
             <data key="k10"> </data>
+            <data key="k6">node</data>
             <data key="k8">12-13</data>
+            <data key="k9"></data>
         </node>
         <node id="misalignedLemma/doc1#t14">
-            <data key="k6">node</data>
-            <data key="k9"></data>
             <data key="k10"> </data>
+            <data key="k6">node</data>
             <data key="k8">13-</data>
+            <data key="k9"></data>
         </node>
         <node id="misalignedLemma/doc1#sSpan1">
+            <data key="k0">Is</data>
+            <data key="k4">default_ns</data>
             <data key="k6">node</data>
             <data key="k9">Is</data>
-            <data key="k4">default_ns</data>
-            <data key="k0">Is</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan2">
+            <data key="k0">this</data>
+            <data key="k4">default_ns</data>
             <data key="k6">node</data>
             <data key="k9">this</data>
-            <data key="k4">default_ns</data>
-            <data key="k0">this</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan3">
+            <data key="k0">example</data>
+            <data key="k4">default_ns</data>
             <data key="k6">node</data>
             <data key="k9">example</data>
-            <data key="k4">default_ns</data>
-            <data key="k0">example</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan4">
+            <data key="k0">more</data>
+            <data key="k4">default_ns</data>
             <data key="k6">node</data>
             <data key="k9">more</data>
-            <data key="k4">default_ns</data>
-            <data key="k0">more</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan5">
+            <data key="k0">complicated</data>
+            <data key="k4">default_ns</data>
             <data key="k6">node</data>
             <data key="k9">complicated</data>
-            <data key="k4">default_ns</data>
-            <data key="k0">complicated</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan6">
+            <data key="k0">than</data>
+            <data key="k4">default_ns</data>
             <data key="k6">node</data>
             <data key="k9">than</data>
-            <data key="k4">default_ns</data>
-            <data key="k0">than</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan7">
+            <data key="k0">it</data>
+            <data key="k4">default_ns</data>
             <data key="k6">node</data>
             <data key="k9">it</data>
-            <data key="k4">default_ns</data>
-            <data key="k0">it</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan8">
+            <data key="k0">appears</data>
+            <data key="k4">default_ns</data>
             <data key="k6">node</data>
             <data key="k9">appears</data>
-            <data key="k4">default_ns</data>
-            <data key="k0">appears</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan9">
+            <data key="k0">to</data>
+            <data key="k4">default_ns</data>
             <data key="k6">node</data>
             <data key="k9">to</data>
-            <data key="k4">default_ns</data>
-            <data key="k0">to</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan10">
+            <data key="k0">be</data>
+            <data key="k4">default_ns</data>
             <data key="k6">node</data>
             <data key="k9">be</data>
-            <data key="k4">default_ns</data>
-            <data key="k0">be</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan11">
+            <data key="k0">?</data>
+            <data key="k4">default_ns</data>
             <data key="k6">node</data>
             <data key="k9">?</data>
-            <data key="k4">default_ns</data>
-            <data key="k0">?</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan12">
-            <data key="k6">node</data>
-            <data key="k4">default_ns</data>
             <data key="k2">contrast-focus</data>
+            <data key="k4">default_ns</data>
+            <data key="k6">node</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan13">
-            <data key="k6">node</data>
-            <data key="k4">default_ns</data>
             <data key="k2">topic</data>
+            <data key="k4">default_ns</data>
+            <data key="k6">node</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan14">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
             <data key="k5">be</data>
+            <data key="k6">node</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan15">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
             <data key="k5">this</data>
+            <data key="k6">node</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan16">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
             <data key="k5">example</data>
+            <data key="k6">node</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan17">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
             <data key="k5">more</data>
+            <data key="k6">node</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan18">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
             <data key="k5">complicated</data>
+            <data key="k6">node</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan19">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
             <data key="k5">than</data>
+            <data key="k6">node</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan20">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
             <data key="k5">it</data>
+            <data key="k6">node</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan21">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
             <data key="k5">appear</data>
+            <data key="k6">node</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan22">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
             <data key="k5">to</data>
+            <data key="k6">node</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan23">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
             <data key="k5">be</data>
+            <data key="k6">node</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan24">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
             <data key="k5">?</data>
+            <data key="k6">node</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan25">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
+            <data key="k6">node</data>
             <data key="k7">VBZ</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan26">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
+            <data key="k6">node</data>
             <data key="k7">DT</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan27">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
+            <data key="k6">node</data>
             <data key="k7">NN</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan28">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
+            <data key="k6">node</data>
             <data key="k7">RBR</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan29">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
+            <data key="k6">node</data>
             <data key="k7">JJ</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan30">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
+            <data key="k6">node</data>
             <data key="k7">IN</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan31">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
+            <data key="k6">node</data>
             <data key="k7">PRP</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan32">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
+            <data key="k6">node</data>
             <data key="k7">VBZ</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan33">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
+            <data key="k6">node</data>
             <data key="k7">TO</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan34">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
+            <data key="k6">node</data>
             <data key="k7">VB</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan35">
-            <data key="k6">node</data>
             <data key="k4">default_ns</data>
+            <data key="k6">node</data>
             <data key="k7">.</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan36">
+            <data key="k1">um</data>
+            <data key="k4">default_ns</data>
             <data key="k6">node</data>
             <data key="k9">um</data>
-            <data key="k4">default_ns</data>
-            <data key="k1">um</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan37">
+            <data key="k1">No</data>
+            <data key="k4">default_ns</data>
             <data key="k6">node</data>
             <data key="k9">No</data>
-            <data key="k4">default_ns</data>
-            <data key="k1">No</data>
         </node>
         <node id="misalignedLemma/doc1#sSpan38">
+            <data key="k1">!</data>
+            <data key="k4">default_ns</data>
             <data key="k6">node</data>
             <data key="k9">!</data>
-            <data key="k4">default_ns</data>
-            <data key="k1">!</data>
         </node>
         <edge id="e0" source="misalignedLemma/doc1#sSpan36" target="misalignedLemma/doc1#t5" label="Coverage/annis/">
         </edge>

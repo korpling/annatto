@@ -50,35 +50,35 @@ visibility = "hidden"
             <data key="k4">corpus</data>
         </node>
         <node id="brackets_in_value/doc1">
-            <data key="k4">corpus</data>
             <data key="k2">doc1</data>
+            <data key="k4">corpus</data>
         </node>
         <node id="brackets_in_value/doc1#text">
             <data key="k4">datasource</data>
         </node>
         <node id="brackets_in_value/doc1#n1">
-            <data key="k4">node</data>
             <data key="k1">P</data>
             <data key="k3">syntax</data>
+            <data key="k4">node</data>
         </node>
         <node id="brackets_in_value/doc1#t1">
-            <data key="k4">node</data>
             <data key="k3">default_layer</data>
-            <data key="k6">(</data>
+            <data key="k4">node</data>
             <data key="k5">PUNCT</data>
+            <data key="k6">(</data>
         </node>
         <node id="brackets_in_value/doc1#t2">
-            <data key="k4">node</data>
             <data key="k3">default_layer</data>
-            <data key="k6">-RRB-</data>
+            <data key="k4">node</data>
             <data key="k5">NOUN</data>
+            <data key="k6">-RRB-</data>
             <data key="k7"> </data>
         </node>
         <node id="brackets_in_value/doc1#t3">
-            <data key="k4">node</data>
             <data key="k3">default_layer</data>
-            <data key="k6">)</data>
+            <data key="k4">node</data>
             <data key="k5">PUNCT</data>
+            <data key="k6">)</data>
             <data key="k7"> </data>
         </node>
         <edge id="e0" source="brackets_in_value/doc1#n1" target="brackets_in_value/doc1#t1" label="Dominance/syntax/">
