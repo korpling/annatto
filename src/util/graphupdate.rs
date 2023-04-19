@@ -85,7 +85,7 @@ pub fn root_corpus_from_path(root_path: &Path) -> Result<String> {
     let norm_path = root_path.normalize()?;
     let root_name = norm_path
         .file_name()
-        .unwrap_or(OsStr::new("root-corpus"))
+        .unwrap_or_else(|| OsStr::new("root-corpus"))
         .to_string_lossy();
 
     Ok(root_name.to_string())
