@@ -58,7 +58,9 @@ impl ToString for MergerProperties {
     }
 }
 
+#[derive(Default)]
 enum ErrorPolicy {
+    #[default]
     Fail,
     Drop,
     Forward,
@@ -86,12 +88,6 @@ impl TryFrom<&String> for ErrorPolicy {
                 manipulator: String::from(MODULE_NAME),
             }),
         }
-    }
-}
-
-impl Default for ErrorPolicy {
-    fn default() -> Self {
-        ErrorPolicy::Fail
     }
 }
 

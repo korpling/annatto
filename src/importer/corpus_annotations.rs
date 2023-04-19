@@ -16,13 +16,8 @@ use super::Importer;
 
 pub const MODULE_NAME: &str = "annotate_corpus";
 
+#[derive(Default)]
 pub struct AnnotateCorpus {}
-
-impl Default for AnnotateCorpus {
-    fn default() -> Self {
-        AnnotateCorpus {}
-    }
-}
 
 impl Module for AnnotateCorpus {
     fn module_name(&self) -> &str {

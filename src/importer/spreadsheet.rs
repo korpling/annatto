@@ -16,13 +16,8 @@ use super::Importer;
 
 pub const MODULE_NAME: &str = "import_spreadsheet";
 
+#[derive(Default)]
 pub struct ImportSpreadsheet {}
-
-impl Default for ImportSpreadsheet {
-    fn default() -> Self {
-        ImportSpreadsheet {}
-    }
-}
 
 impl Module for ImportSpreadsheet {
     fn module_name(&self) -> &str {

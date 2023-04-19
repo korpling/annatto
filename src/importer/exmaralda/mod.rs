@@ -21,13 +21,8 @@ use super::Importer;
 
 pub const MODULE_NAME: &str = "import_exmaralda";
 
+#[derive(Default)]
 pub struct ImportEXMARaLDA {}
-
-impl Default for ImportEXMARaLDA {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 impl Module for ImportEXMARaLDA {
     fn module_name(&self) -> &str {
