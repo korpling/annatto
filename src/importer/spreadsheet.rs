@@ -76,136 +76,55 @@ fn import_workbook(
         }
         m
     };
-    let is_multi_tok = column_map.len() > 1;
     let mut base_tokens = Vec::new();
-    if is_multi_tok {
-        for i in 2..sheet.get_highest_row() + 1 {
-            let tok_id = format!("{}#t{}", &doc_path, i - 1);
-            update.add_event(UpdateEvent::AddNode {
-                node_name: tok_id.to_string(),
-                node_type: "node".to_string(),
-            })?;
-            update.add_event(UpdateEvent::AddNodeLabel {
-                node_name: tok_id.to_string(),
-                anno_ns: ANNIS_NS.to_string(),
-                anno_name: "tok".to_string(),
-                anno_value: " ".to_string(),
-            })?;
-            base_tokens.push(tok_id);
-        }
-        base_tokens
-            .iter()
-            .tuple_windows()
-            .try_for_each(|(first, second)| {
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: first.to_string(),
-                    target_node: second.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: "".to_string(),
-                })?;
-                Ok::<(), Box<dyn std::error::Error>>(())
-            })?;
+    for i in 2..sheet.get_highest_row() + 1 {
+        let tok_id = format!("{}#t{}", &doc_path, i - 1);
+        update.add_event(UpdateEvent::AddNode {
+            node_name: tok_id.to_string(),
+            node_type: "node".to_string(),
+        })?;
+        update.add_event(UpdateEvent::AddNodeLabel {
+            node_name: tok_id.to_string(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "tok".to_string(),
+            anno_value: " ".to_string(),
+        })?;
+        update.add_event(UpdateEvent::AddNodeLabel {
+            node_name: tok_id.to_string(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "layer".to_string(),
+            anno_value: "default_layer".to_string(),
+        })?;
+        base_tokens.push(tok_id);
     }
-    let mut next_span_num = 1;
-    let mut next_tok_num = base_tokens.len() + 1;
+    base_tokens
+        .iter()
+        .tuple_windows()
+        .try_for_each(|(first, second)| {
+            update.add_event(UpdateEvent::AddEdge {
+                source_node: first.to_string(),
+                target_node: second.to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::Ordering.to_string(),
+                component_name: "".to_string(),
+            })?;
+            Ok::<(), Box<dyn std::error::Error>>(())
+        })?;
     for (tok_name, anno_names) in column_map {
-        let mut token_map = BTreeMap::new();
-        let index_opt = name_to_col_0index.get(tok_name);
-        if let Some(col_0i) = index_opt {
-            let mut row_nums = rownums_by_col0i.get(col_0i).unwrap().iter().collect_vec();
-            row_nums.sort();
-            for (start_row, end_row_excl) in row_nums.into_iter().tuple_windows() {
-                let cell = sheet
-                    .get_cell_by_column_and_row(&(col_0i + 1), start_row)
-                    .unwrap();
-                let cell_value = cell.get_value();
-                let value = cell_value.trim();
-                if value.is_empty() {
-                    continue;
+        let mut names = vec![tok_name];
+        names.extend(anno_names);
+        for name in names {
+            let index_opt = match name_to_col_0index.get(name) {
+                Some(v) => Some(v),
+                None => {
+                    let k = split_qname(name).1;
+                    name_to_col_0index.get(k)
                 }
-                if is_multi_tok {
-                    let overlapped_tokens: &[String] =
-                        &base_tokens[*start_row as usize - 2..*end_row_excl as usize - 2];
-                    let span_name = format!("{}#span{}", &doc_path, next_span_num);
-                    next_span_num += 1;
-                    update.add_event(UpdateEvent::AddNode {
-                        node_name: span_name.to_string(),
-                        node_type: "node".to_string(),
-                    })?;
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: span_name.to_string(),
-                        anno_ns: ANNIS_NS.to_string(),
-                        anno_name: "tok".to_string(),
-                        anno_value: value.to_string(),
-                    })?;
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: span_name.to_string(),
-                        anno_ns: "".to_string(),
-                        anno_name: tok_name.to_string(),
-                        anno_value: value.to_string(),
-                    })?;
-                    for target_id in overlapped_tokens {
-                        update.add_event(UpdateEvent::AddEdge {
-                            source_node: span_name.to_string(),
-                            target_node: target_id.to_string(),
-                            layer: ANNIS_NS.to_string(),
-                            component_type: AnnotationComponentType::Coverage.to_string(),
-                            component_name: "".to_string(),
-                        })?;
-                    }
-                    for row_num in *start_row..*end_row_excl {
-                        token_map.insert(row_num, span_name.to_string());
-                    }
-                } else {
-                    let node_name = format!("{}#t{}", &doc_path, next_tok_num);
-                    next_tok_num += 1;
-                    update.add_event(UpdateEvent::AddNode {
-                        node_name: node_name.to_string(),
-                        node_type: "node".to_string(),
-                    })?;
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: ANNIS_NS.to_string(),
-                        anno_name: "tok".to_string(),
-                        anno_value: value.to_string(),
-                    })?;
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: "".to_string(),
-                        anno_name: tok_name.to_string(),
-                        anno_value: value.to_string(),
-                    })?;
-                    for row_num in *start_row..*end_row_excl {
-                        token_map.insert(row_num, node_name.to_string());
-                    }
-                }
-            }
-        } else {
-            // TODO warning
-            continue; // no tokenization, no mapping of dependent annotations
-        }
-        token_map.iter().sorted().tuple_windows().try_for_each(
-            |((_, first_id), (_, second_id))| {
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: first_id.to_string(),
-                    target_node: second_id.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: "".to_string(),
-                })?;
-                Ok::<(), Box<dyn std::error::Error>>(())
-            },
-        )?;
-        for qname in anno_names {
-            let (anno_ns, anno_name) = match split_qname(qname.as_str()) {
-                (None, name) => (tok_name.as_str(), name),
-                (Some(ns), name) => (ns, name),
             };
-            let index_opt = name_to_col_0index.get(qname);
             if let Some(col_0i) = index_opt {
                 let mut row_nums = rownums_by_col0i.get(col_0i).unwrap().iter().collect_vec();
                 row_nums.sort();
+                let mut nodes = Vec::new();
                 for (start_row, end_row_excl) in row_nums.into_iter().tuple_windows() {
                     let cell = sheet
                         .get_cell_by_column_and_row(&(col_0i + 1), start_row)
@@ -215,36 +134,60 @@ fn import_workbook(
                     if value.is_empty() {
                         continue;
                     }
-                    let overlapped_tokens = (*start_row..*end_row_excl)
-                        .filter(|i| token_map.contains_key(i))
-                        .map(|i| token_map.get(&i).unwrap())
-                        .unique()
-                        .collect_vec();
-                    let span_name = format!("{}#s{}", &doc_path, next_span_num);
-                    next_span_num += 1;
+                    let overlapped_tokens: &[String] =
+                        &base_tokens[*start_row as usize - 2..*end_row_excl as usize - 2]; // TODO check indices
+                    let node_name =
+                        format!("{}#{}_{}-{}", &doc_path, tok_name, start_row, end_row_excl);
                     update.add_event(UpdateEvent::AddNode {
-                        node_name: span_name.to_string(),
+                        node_name: node_name.to_string(),
                         node_type: "node".to_string(),
                     })?;
                     update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: span_name.to_string(),
-                        anno_ns: anno_ns.to_string(),
-                        anno_name: anno_name.to_string(),
+                        node_name: node_name.to_string(),
+                        anno_ns: ANNIS_NS.to_string(),
+                        anno_name: "tok".to_string(),
                         anno_value: value.to_string(),
                     })?;
-                    for covered_token in overlapped_tokens {
+                    update.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: node_name.to_string(),
+                        anno_ns: ANNIS_NS.to_string(),
+                        anno_name: "layer".to_string(),
+                        anno_value: tok_name.to_string(),
+                    })?;
+                    update.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: node_name.to_string(),
+                        anno_ns: tok_name.to_string(),
+                        anno_name: name.to_string(),
+                        anno_value: value.to_string(),
+                    })?;
+                    for target_id in overlapped_tokens {
                         update.add_event(UpdateEvent::AddEdge {
-                            source_node: span_name.to_string(),
-                            target_node: covered_token.to_string(),
+                            source_node: node_name.to_string(),
+                            target_node: target_id.to_string(),
                             layer: ANNIS_NS.to_string(),
                             component_type: AnnotationComponentType::Coverage.to_string(),
                             component_name: "".to_string(),
                         })?;
                     }
+                    nodes.push(node_name);
+                }
+                if name == tok_name {
+                    nodes.iter().sorted().tuple_windows().try_for_each(
+                        |(first_name, second_name)| {
+                            update.add_event(UpdateEvent::AddEdge {
+                                source_node: first_name.to_string(),
+                                target_node: second_name.to_string(),
+                                layer: ANNIS_NS.to_string(),
+                                component_type: AnnotationComponentType::Ordering.to_string(),
+                                component_name: tok_name.to_string(),
+                            })?;
+                            Ok::<(), Box<dyn std::error::Error>>(())
+                        },
+                    )?;
                 }
             } else {
                 // TODO warning
-                continue; // skip this anno name, intrinsicly sparse layers are usually not found in all files
+                continue; // no tokenization, no mapping of dependent annotations
             }
         }
     }
