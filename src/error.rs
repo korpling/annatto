@@ -7,6 +7,7 @@ use thiserror::Error;
 use crate::workflow::StatusMessage;
 
 pub type Result<T> = std::result::Result<T, AnnattoError>;
+pub type StandardErrorResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 #[derive(Error, Debug)]
 #[non_exhaustive]

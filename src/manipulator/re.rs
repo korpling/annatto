@@ -14,7 +14,10 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 
-use crate::{error::AnnattoError, Manipulator, Module};
+use crate::{
+    error::{AnnattoError, StandardErrorResult},
+    Manipulator, Module,
+};
 
 #[derive(Default)]
 pub struct Replace {}
@@ -403,7 +406,7 @@ fn ns_from_key(anno_key: &AnnoKey) -> Option<&str> {
 
 fn read_replace_property_value(
     value: &str,
-) -> Result<Vec<(AnnoKey, Option<AnnoKey>)>, Box<dyn std::error::Error>> {
+) -> StandardErrorResult<Vec<(AnnoKey, Option<AnnoKey>)>> {
     let mut names = Vec::new();
     for entry in value.split(PROPVAL_SEP) {
         let old_new = entry.split_once(PROPVAL_OLD_NEW_SEP);

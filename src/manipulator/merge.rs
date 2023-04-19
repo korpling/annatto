@@ -1,4 +1,4 @@
-use crate::error::AnnattoError;
+use crate::error::{AnnattoError, StandardErrorResult};
 use crate::workflow::{StatusMessage, StatusSender};
 use crate::{Manipulator, Module};
 use graphannis::{
@@ -101,15 +101,14 @@ fn clean_value(value: &str, remove_chars: &HashSet<char>) -> String {
     cleaned_value
 }
 
+type NodeIdCollection = std::vec::IntoIter<u64>;
+
 impl Merge {
     fn retrieve_ordered_nodes<'a>(
         &self,
         graph: &AnnotationGraph,
         order_names: Vec<&'a str>,
-    ) -> Result<
-        HashMap<String, HashMap<&'a str, std::vec::IntoIter<u64>>>,
-        Box<dyn std::error::Error>,
-    > {
+    ) -> StandardErrorResult<HashMap<String, HashMap<&'a str, NodeIdCollection>>> {
         let mut ordered_items_by_doc: HashMap<String, HashMap<&str, std::vec::IntoIter<u64>>> =
             HashMap::new();
         let node_annos = graph.get_node_annos();
