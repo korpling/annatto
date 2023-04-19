@@ -79,7 +79,7 @@ impl Importer for AnnotateCorpus {
             let start_index: usize = input_path.to_str().unwrap().len() + 1;
             let mut previous: Option<String> = None;
             for node_path in corpus_nodes {
-                let node_name = (&node_path.to_str().unwrap()[start_index..]).to_string();
+                let node_name = (node_path.to_str().unwrap()[start_index..]).to_string();
                 update.add_event(UpdateEvent::AddNode {
                     node_name: node_name.to_string(),
                     node_type: "corpus".to_string(),
