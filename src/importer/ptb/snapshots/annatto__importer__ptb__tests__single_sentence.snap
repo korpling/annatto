@@ -50,90 +50,90 @@ visibility = "hidden"
             <data key="k4">corpus</data>
         </node>
         <node id="single_sentence/zossen">
-            <data key="k4">corpus</data>
             <data key="k2">zossen</data>
+            <data key="k4">corpus</data>
         </node>
         <node id="single_sentence/zossen#text">
             <data key="k4">datasource</data>
         </node>
         <node id="single_sentence/zossen#n1">
-            <data key="k4">node</data>
             <data key="k1">ROOT</data>
             <data key="k3">syntax</data>
+            <data key="k4">node</data>
         </node>
         <node id="single_sentence/zossen#n2">
-            <data key="k4">node</data>
             <data key="k1">S</data>
             <data key="k3">syntax</data>
+            <data key="k4">node</data>
         </node>
         <node id="single_sentence/zossen#n3">
-            <data key="k4">node</data>
             <data key="k1">NP</data>
             <data key="k3">syntax</data>
+            <data key="k4">node</data>
         </node>
         <node id="single_sentence/zossen#t1">
-            <data key="k4">node</data>
             <data key="k3">default_layer</data>
-            <data key="k6">Die</data>
+            <data key="k4">node</data>
             <data key="k5">ART</data>
+            <data key="k6">Die</data>
         </node>
         <node id="single_sentence/zossen#t2">
-            <data key="k4">node</data>
             <data key="k3">default_layer</data>
-            <data key="k6">Jugendlichen</data>
+            <data key="k4">node</data>
             <data key="k5">NN</data>
+            <data key="k6">Jugendlichen</data>
             <data key="k7"> </data>
         </node>
         <node id="single_sentence/zossen#n4">
-            <data key="k4">node</data>
             <data key="k1">PP</data>
             <data key="k3">syntax</data>
+            <data key="k4">node</data>
         </node>
         <node id="single_sentence/zossen#t3">
-            <data key="k4">node</data>
             <data key="k3">default_layer</data>
-            <data key="k6">in</data>
+            <data key="k4">node</data>
             <data key="k5">APPR</data>
+            <data key="k6">in</data>
             <data key="k7"> </data>
         </node>
         <node id="single_sentence/zossen#t4">
-            <data key="k4">node</data>
             <data key="k3">default_layer</data>
-            <data key="k6">Zossen</data>
+            <data key="k4">node</data>
             <data key="k5">NE</data>
+            <data key="k6">Zossen</data>
             <data key="k7"> </data>
         </node>
         <node id="single_sentence/zossen#t5">
-            <data key="k4">node</data>
             <data key="k3">default_layer</data>
-            <data key="k6">wollen</data>
+            <data key="k4">node</data>
             <data key="k5">VMFIN</data>
+            <data key="k6">wollen</data>
             <data key="k7"> </data>
         </node>
         <node id="single_sentence/zossen#n5">
-            <data key="k4">node</data>
             <data key="k1">NP</data>
             <data key="k3">syntax</data>
+            <data key="k4">node</data>
         </node>
         <node id="single_sentence/zossen#t6">
-            <data key="k4">node</data>
             <data key="k3">default_layer</data>
-            <data key="k6">ein</data>
+            <data key="k4">node</data>
             <data key="k5">ART</data>
+            <data key="k6">ein</data>
             <data key="k7"> </data>
         </node>
         <node id="single_sentence/zossen#t7">
-            <data key="k4">node</data>
             <data key="k3">default_layer</data>
-            <data key="k6">Musikcafé</data>
+            <data key="k4">node</data>
             <data key="k5">NN</data>
+            <data key="k6">Musikcafé</data>
             <data key="k7"> </data>
         </node>
         <node id="single_sentence/zossen#t8">
-            <data key="k4">node</data>
             <data key="k3">default_layer</data>
-            <data key="k6">.</data>
+            <data key="k4">node</data>
             <data key="k5">$.</data>
+            <data key="k6">.</data>
             <data key="k7"> </data>
         </node>
         <edge id="e0" source="single_sentence/zossen#n4" target="single_sentence/zossen#t3" label="Dominance/syntax/">

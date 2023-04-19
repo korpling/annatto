@@ -16,88 +16,88 @@ expression: actual
             <data key="k3">corpus</data>
         </node>
         <node id="single_sentence/zossen">
-            <data key="k3">corpus</data>
             <data key="k1">zossen</data>
+            <data key="k3">corpus</data>
         </node>
         <node id="single_sentence/zossen#text">
             <data key="k3">datasource</data>
         </node>
         <node id="single_sentence/zossen#n1">
-            <data key="k3">node</data>
             <data key="k0">ROOT</data>
             <data key="k2">syntax</data>
+            <data key="k3">node</data>
         </node>
         <node id="single_sentence/zossen#n2">
-            <data key="k3">node</data>
             <data key="k0">S</data>
             <data key="k2">syntax</data>
+            <data key="k3">node</data>
         </node>
         <node id="single_sentence/zossen#n3">
-            <data key="k3">node</data>
             <data key="k0">NP</data>
             <data key="k2">syntax</data>
+            <data key="k3">node</data>
         </node>
         <node id="single_sentence/zossen#t1">
-            <data key="k3">node</data>
             <data key="k2">default_layer</data>
+            <data key="k3">node</data>
             <data key="k4">ART</data>
             <data key="k5">Die</data>
         </node>
         <node id="single_sentence/zossen#t2">
-            <data key="k3">node</data>
             <data key="k2">default_layer</data>
+            <data key="k3">node</data>
             <data key="k4">NN</data>
             <data key="k5">Jugendlichen</data>
             <data key="k6"> </data>
         </node>
         <node id="single_sentence/zossen#n4">
-            <data key="k3">node</data>
             <data key="k0">PP</data>
             <data key="k2">syntax</data>
+            <data key="k3">node</data>
         </node>
         <node id="single_sentence/zossen#t3">
-            <data key="k3">node</data>
             <data key="k2">default_layer</data>
+            <data key="k3">node</data>
             <data key="k4">APPR</data>
             <data key="k5">in</data>
             <data key="k6"> </data>
         </node>
         <node id="single_sentence/zossen#t4">
-            <data key="k3">node</data>
             <data key="k2">default_layer</data>
+            <data key="k3">node</data>
             <data key="k4">NE</data>
             <data key="k5">Zossen</data>
             <data key="k6"> </data>
         </node>
         <node id="single_sentence/zossen#t5">
-            <data key="k3">node</data>
             <data key="k2">default_layer</data>
+            <data key="k3">node</data>
             <data key="k4">VMFIN</data>
             <data key="k5">wollen</data>
             <data key="k6"> </data>
         </node>
         <node id="single_sentence/zossen#n5">
-            <data key="k3">node</data>
             <data key="k0">NP</data>
             <data key="k2">syntax</data>
+            <data key="k3">node</data>
         </node>
         <node id="single_sentence/zossen#t6">
-            <data key="k3">node</data>
             <data key="k2">default_layer</data>
+            <data key="k3">node</data>
             <data key="k4">ART</data>
             <data key="k5">ein</data>
             <data key="k6"> </data>
         </node>
         <node id="single_sentence/zossen#t7">
-            <data key="k3">node</data>
             <data key="k2">default_layer</data>
+            <data key="k3">node</data>
             <data key="k4">NN</data>
             <data key="k5">Musikcafé</data>
             <data key="k6"> </data>
         </node>
         <node id="single_sentence/zossen#t8">
-            <data key="k3">node</data>
             <data key="k2">default_layer</data>
+            <data key="k3">node</data>
             <data key="k4">$.</data>
             <data key="k5">.</data>
             <data key="k6"> </data>
