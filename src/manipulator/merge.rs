@@ -179,162 +179,12 @@ impl Merge {
         Ok(ordered_items_by_doc)
     }
 
-    fn map_text_nodes(
-        &self,
-        graph: &AnnotationGraph,
-        updates: &mut GraphUpdate,
-        target_key: &AnnoKey,
-        ordered_items_by_doc: HashMap<String, HashMap<&str, NodeIdCollection>>,
-        optionals: HashSet<String>,
-        optional_chars: HashSet<char>,
-        docs_with_errors: &mut HashSet<String>,
-        tx: &Option<StatusSender>,
-    ) -> Result<HashMap<u64, u64>, Box<dyn std::error::Error>> {
-        let mut node_map: HashMap<u64, u64> = HashMap::new();
-        let node_annos = graph.get_node_annos();
-        for (doc_name, mut ordered_items_by_name) in ordered_items_by_doc {
-            let ordered_keep_items_opt = ordered_items_by_name.remove(target_key.name.as_str());
-            if ordered_keep_items_opt.is_none() {
-                if let Some(sender) = tx {
-                    let message = format!(
-                        "Document {} does not contain an ordering {}",
-                        &doc_name, &target_key.name
-                    );
-                    sender.send(StatusMessage::Warning(message))?;
-                }
-                docs_with_errors.insert(doc_name);
-                continue;
-            }
-            let ordered_keep_items = ordered_keep_items_opt.unwrap();
-            let mut order_names = HashSet::new();
-            for k in ordered_items_by_name.keys() {
-                order_names.insert(k.to_string());
-            }
-            let mut unused_by_name = HashMap::new();
-            for item in ordered_keep_items {
-                let ref_val = match node_annos.get_value_for_item(&item, target_key)? {
-                    Some(v) => v,
-                    None => {
-                        let critical_node = node_annos
-                            .get_value_for_item(&item, &NODE_NAME_KEY)?
-                            .unwrap();
-                        return Err(Box::new(AnnattoError::Manipulator {
-                            reason: format!(
-                                "Could not determine annotation value for key {}::{} @ {}",
-                                target_key.ns, target_key.name, critical_node
-                            ),
-                            manipulator: self.module_name().to_string(),
-                        }));
-                    }
-                };
-                let ref_is_optional = optionals.contains(&ref_val.to_string());
-                let ref_node_name = node_annos
-                    .get_value_for_item(&item, &NODE_NAME_KEY)?
-                    .unwrap(); // existence guaranteed
-                for other_name in &order_names {
-                    let mut finished = false;
-                    while !finished {
-                        let other_opt = if unused_by_name.contains_key(other_name) {
-                            unused_by_name.remove(other_name)
-                        } else {
-                            ordered_items_by_name
-                                .get_mut(other_name.as_str())
-                                .unwrap()
-                                .next()
-                        };
-                        if let Some(other_item) = other_opt {
-                            let other_key = AnnoKey {
-                                ns: "".into(),
-                                name: other_name.into(),
-                            };
-                            let other_val = node_annos
-                                .get_value_for_item(&other_item, &other_key)?
-                                .unwrap();
-                            if ref_val == other_val
-                                || !optional_chars.is_empty()
-                                    && clean_value(&ref_val, &optional_chars)
-                                        == clean_value(&other_val, &optional_chars)
-                            {
-                                // text values match
-                                let anno_keys =
-                                    node_annos.get_all_keys_for_item(&other_item, None, None)?;
-                                // annotations directly on the ordered node
-                                for ak in anno_keys {
-                                    let anno_name = ak.name.to_string();
-                                    if ak.ns != ANNIS_NS && !order_names.contains(&anno_name) {
-                                        let av = node_annos
-                                            .get_value_for_item(&other_item, ak.as_ref())?
-                                            .unwrap(); // existence guaranteed
-                                        updates.add_event(UpdateEvent::AddNodeLabel {
-                                            node_name: ref_node_name.to_string(),
-                                            anno_ns: ak.ns.to_string(),
-                                            anno_name,
-                                            anno_value: av.to_string(),
-                                        })?;
-                                    }
-                                }
-                                // delete ordered node, the rest (edges and labels) should theoretically die as a consequence
-                                let other_node_name = node_annos
-                                    .get_value_for_item(&other_item, &NODE_NAME_KEY)?
-                                    .unwrap()
-                                    .to_string(); // existence guaranteed
-                                updates.add_event(UpdateEvent::DeleteNode {
-                                    node_name: other_node_name,
-                                })?;
-                                node_map.insert(other_item, item);
-                                finished = true;
-                            } else {
-                                // text values don't match
-                                let other_is_optional = optionals.contains(&other_val.to_string());
-                                if ref_is_optional && !other_is_optional {
-                                    // advance outer, do not advance inner
-                                    unused_by_name.insert(other_name.to_string(), other_item);
-                                    finished = true;
-                                } else if !ref_is_optional && other_is_optional {
-                                    // advance inner, do not advance outer
-                                    // i. e. do nothing
-                                } else if !ref_is_optional && !other_is_optional {
-                                    // match expected, advance both
-                                    if let Some(sender) = tx {
-                                        let message = StatusMessage::Warning(format!("{}: {}={} and {}={} do not match. Mismatch could not be resolved.", &doc_name, &target_key.name, ref_val, other_name, other_val));
-                                        sender.send(message)?;
-                                    }
-                                    node_map.insert(other_item, item); // map anyway to be compliant with ErrorPolicy::Forward
-                                    docs_with_errors.insert(doc_name.to_string());
-                                    finished = true;
-                                } else {
-                                    // both optional, but non-matching, advance both
-                                    finished = true;
-                                }
-                            }
-                        } else {
-                            // no further nodes
-                            if !ref_is_optional {
-                                let message = format!(
-                                    "Ran out of nodes for ordering `{}` in document {}",
-                                    other_name, &doc_name
-                                );
-                                if let Some(sender) = tx {
-                                    sender.send(StatusMessage::Warning(message))?;
-                                    docs_with_errors.insert(doc_name.to_string());
-                                }
-                            }
-                            finished = true;
-                        }
-                    }
-                }
-            }
-        }
-        Ok(node_map)
-    }
-
     fn merge_all_components(
         &self,
         graph: &AnnotationGraph,
         updates: &mut GraphUpdate,
         skip_components: HashSet<AnnotationComponent>,
         node_map: HashMap<u64, u64>,
-        _docs_with_errors: &mut HashSet<String>, //TODO shortcut mappings?
         tx: &Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         for (edge_component_type, switch_source) in [
@@ -562,6 +412,161 @@ impl Merge {
     }
 }
 
+struct TextNodeMapper {
+    module_name: String,
+    docs_with_errors: HashSet<String>,
+}
+
+impl TextNodeMapper {
+    fn map_text_nodes(
+        &mut self,
+        graph: &AnnotationGraph,
+        updates: &mut GraphUpdate,
+        target_key: &AnnoKey,
+        ordered_items_by_doc: HashMap<String, HashMap<&str, NodeIdCollection>>,
+        optionals: HashSet<String>,
+        optional_chars: HashSet<char>,
+        tx: &Option<StatusSender>,
+    ) -> Result<HashMap<u64, u64>, Box<dyn std::error::Error>> {
+        let mut node_map: HashMap<u64, u64> = HashMap::new();
+        let node_annos = graph.get_node_annos();
+        for (doc_name, mut ordered_items_by_name) in ordered_items_by_doc {
+            let ordered_keep_items_opt = ordered_items_by_name.remove(target_key.name.as_str());
+            if ordered_keep_items_opt.is_none() {
+                if let Some(sender) = tx {
+                    let message = format!(
+                        "Document {} does not contain an ordering {}",
+                        &doc_name, &target_key.name
+                    );
+                    sender.send(StatusMessage::Warning(message))?;
+                }
+                self.docs_with_errors.insert(doc_name);
+                continue;
+            }
+            let ordered_keep_items = ordered_keep_items_opt.unwrap();
+            let mut order_names = HashSet::new();
+            for k in ordered_items_by_name.keys() {
+                order_names.insert(k.to_string());
+            }
+            let mut unused_by_name = HashMap::new();
+            for item in ordered_keep_items {
+                let ref_val = match node_annos.get_value_for_item(&item, target_key)? {
+                    Some(v) => v,
+                    None => {
+                        let critical_node = node_annos
+                            .get_value_for_item(&item, &NODE_NAME_KEY)?
+                            .unwrap();
+                        return Err(Box::new(AnnattoError::Manipulator {
+                            reason: format!(
+                                "Could not determine annotation value for key {}::{} @ {}",
+                                target_key.ns, target_key.name, critical_node
+                            ),
+                            manipulator: self.module_name.clone(),
+                        }));
+                    }
+                };
+                let ref_is_optional = optionals.contains(&ref_val.to_string());
+                let ref_node_name = node_annos
+                    .get_value_for_item(&item, &NODE_NAME_KEY)?
+                    .unwrap(); // existence guaranteed
+                for other_name in &order_names {
+                    let mut finished = false;
+                    while !finished {
+                        let other_opt = if unused_by_name.contains_key(other_name) {
+                            unused_by_name.remove(other_name)
+                        } else {
+                            ordered_items_by_name
+                                .get_mut(other_name.as_str())
+                                .unwrap()
+                                .next()
+                        };
+                        if let Some(other_item) = other_opt {
+                            let other_key = AnnoKey {
+                                ns: "".into(),
+                                name: other_name.into(),
+                            };
+                            let other_val = node_annos
+                                .get_value_for_item(&other_item, &other_key)?
+                                .unwrap();
+                            if ref_val == other_val
+                                || !optional_chars.is_empty()
+                                    && clean_value(&ref_val, &optional_chars)
+                                        == clean_value(&other_val, &optional_chars)
+                            {
+                                // text values match
+                                let anno_keys =
+                                    node_annos.get_all_keys_for_item(&other_item, None, None)?;
+                                // annotations directly on the ordered node
+                                for ak in anno_keys {
+                                    let anno_name = ak.name.to_string();
+                                    if ak.ns != ANNIS_NS && !order_names.contains(&anno_name) {
+                                        let av = node_annos
+                                            .get_value_for_item(&other_item, ak.as_ref())?
+                                            .unwrap(); // existence guaranteed
+                                        updates.add_event(UpdateEvent::AddNodeLabel {
+                                            node_name: ref_node_name.to_string(),
+                                            anno_ns: ak.ns.to_string(),
+                                            anno_name,
+                                            anno_value: av.to_string(),
+                                        })?;
+                                    }
+                                }
+                                // delete ordered node, the rest (edges and labels) should theoretically die as a consequence
+                                let other_node_name = node_annos
+                                    .get_value_for_item(&other_item, &NODE_NAME_KEY)?
+                                    .unwrap()
+                                    .to_string(); // existence guaranteed
+                                updates.add_event(UpdateEvent::DeleteNode {
+                                    node_name: other_node_name,
+                                })?;
+                                node_map.insert(other_item, item);
+                                finished = true;
+                            } else {
+                                // text values don't match
+                                let other_is_optional = optionals.contains(&other_val.to_string());
+                                if ref_is_optional && !other_is_optional {
+                                    // advance outer, do not advance inner
+                                    unused_by_name.insert(other_name.to_string(), other_item);
+                                    finished = true;
+                                } else if !ref_is_optional && other_is_optional {
+                                    // advance inner, do not advance outer
+                                    // i. e. do nothing
+                                } else if !ref_is_optional && !other_is_optional {
+                                    // match expected, advance both
+                                    if let Some(sender) = tx {
+                                        let message = StatusMessage::Warning(format!("{}: {}={} and {}={} do not match. Mismatch could not be resolved.", &doc_name, &target_key.name, ref_val, other_name, other_val));
+                                        sender.send(message)?;
+                                    }
+                                    node_map.insert(other_item, item); // map anyway to be compliant with ErrorPolicy::Forward
+                                    self.docs_with_errors.insert(doc_name.to_string());
+                                    finished = true;
+                                } else {
+                                    // both optional, but non-matching, advance both
+                                    finished = true;
+                                }
+                            }
+                        } else {
+                            // no further nodes
+                            if !ref_is_optional {
+                                let message = format!(
+                                    "Ran out of nodes for ordering `{}` in document {}",
+                                    other_name, &doc_name
+                                );
+                                if let Some(sender) = tx {
+                                    sender.send(StatusMessage::Warning(message))?;
+                                    self.docs_with_errors.insert(doc_name.to_string());
+                                }
+                            }
+                            finished = true;
+                        }
+                    }
+                }
+            }
+        }
+        Ok(node_map)
+    }
+}
+
 impl Manipulator for Merge {
     fn manipulate_corpus(
         &self,
@@ -613,33 +618,34 @@ impl Manipulator for Merge {
         let sender_opt = if silent { None } else { tx };
         // init
         let mut updates = GraphUpdate::default();
-        let mut docs_with_errors = HashSet::new();
         // merge
         let ordered_items_by_doc = self.retrieve_ordered_nodes(graph, order_names.clone())?;
         let reporter = if report_details { &sender_opt } else { &None };
-        let node_map: HashMap<u64, u64> = self.map_text_nodes(
+        let mut mapper = TextNodeMapper {
+            module_name: self.module_name().to_string(),
+            docs_with_errors: HashSet::default(),
+        };
+        let node_map: HashMap<u64, u64> = mapper.map_text_nodes(
             graph,
             &mut updates,
             &keep_name_key,
             ordered_items_by_doc,
             optional_toks,
             optional_chars,
-            &mut docs_with_errors,
             reporter,
         )?;
         let skip_components = self.skip_components_from_prop(
             graph,
             properties.get(&MergerProperties::SkipComponents.to_string()),
         );
-        self.merge_all_components(
+        self.merge_all_components(graph, &mut updates, skip_components, node_map, &sender_opt)?;
+        self.handle_document_errors(
             graph,
             &mut updates,
-            skip_components,
-            node_map,
-            &mut docs_with_errors,
+            mapper.docs_with_errors,
+            on_error,
             &sender_opt,
         )?;
-        self.handle_document_errors(graph, &mut updates, docs_with_errors, on_error, &sender_opt)?;
         graph.apply_update(&mut updates, |_msg| {})?;
         Ok(())
     }
