@@ -1,5 +1,3 @@
-#![deny(warnings)]
-
 use annatto::{
     error::AnnattoError,
     workflow::{execute_from_file, StatusMessage},
