@@ -256,8 +256,8 @@ fn get_column_map(
 ) -> Result<BTreeMap<String, Vec<String>>, Box<dyn std::error::Error>> {
     // TODO produce some errors
     let mut column_map = BTreeMap::new();
-    for group in property_val.split(";") {
-        let (key, names) = match group.trim().split_once("=") {
+    for group in property_val.split(';') {
+        let (key, names) = match group.trim().split_once('=') {
             None => {
                 let err = AnnattoError::InvalidPropertyValue {
                     property: PROP_COLUMN_MAP.to_string(),
@@ -267,8 +267,8 @@ fn get_column_map(
             }
             Some((k, v)) => {
                 let anno_names = v
-                    .replace("{", "")
-                    .replace("}", "")
+                    .replace('{', "")
+                    .replace('}', "")
                     .split(',')
                     .map(|name| name.trim().to_string())
                     .collect_vec();
