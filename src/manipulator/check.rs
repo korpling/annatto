@@ -30,7 +30,7 @@ fn read_config_file(path: &Path) -> Result<Vec<(String, String)>, Box<dyn std::e
         .delimiter(CONFIG_FILE_ENTRY_SEP)
         .from_path(path)?;
     let mut checks = Vec::new();
-    for (line_index, entry) in reader.records().into_iter().enumerate() {
+    for (line_index, entry) in reader.records().enumerate() {
         let record = entry?;
         if record.len() != 2 {
             let message = format!(

@@ -497,7 +497,6 @@ impl Merge {
                                     NODE_TYPE_KEY.name.as_str(),
                                     ValueSearch::Some("corpus"),
                                 )
-                                .into_iter()
                                 .map(|m| m.unwrap().node)
                                 .collect::<HashSet<u64>>();
                             let nodes_with_doc_name = node_annos
@@ -506,7 +505,6 @@ impl Merge {
                                     NODE_NAME_KEY.name.as_str(),
                                     ValueSearch::Some(doc_node_name.as_str()),
                                 )
-                                .into_iter()
                                 .map(|m| m.unwrap().node)
                                 .collect::<HashSet<u64>>();
                             for doc_node_id in corpus_nodes.intersection(&nodes_with_doc_name) {
