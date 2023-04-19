@@ -415,6 +415,9 @@ impl Merge {
 struct TextNodeMapper {
     module_name: String,
     docs_with_errors: HashSet<String>,
+    target_key: AnnoKey,
+    optional_chars: HashSet<char>,
+    optionals: HashSet<String>,
 }
 
 impl TextNodeMapper {
@@ -422,21 +425,19 @@ impl TextNodeMapper {
         &mut self,
         graph: &AnnotationGraph,
         updates: &mut GraphUpdate,
-        target_key: &AnnoKey,
         ordered_items_by_doc: HashMap<String, HashMap<&str, NodeIdCollection>>,
-        optionals: HashSet<String>,
-        optional_chars: HashSet<char>,
         tx: &Option<StatusSender>,
     ) -> Result<HashMap<u64, u64>, Box<dyn std::error::Error>> {
         let mut node_map: HashMap<u64, u64> = HashMap::new();
         let node_annos = graph.get_node_annos();
         for (doc_name, mut ordered_items_by_name) in ordered_items_by_doc {
-            let ordered_keep_items_opt = ordered_items_by_name.remove(target_key.name.as_str());
+            let ordered_keep_items_opt =
+                ordered_items_by_name.remove(self.target_key.name.as_str());
             if ordered_keep_items_opt.is_none() {
                 if let Some(sender) = tx {
                     let message = format!(
                         "Document {} does not contain an ordering {}",
-                        &doc_name, &target_key.name
+                        &doc_name, &self.target_key.name
                     );
                     sender.send(StatusMessage::Warning(message))?;
                 }
@@ -450,7 +451,7 @@ impl TextNodeMapper {
             }
             let mut unused_by_name = HashMap::new();
             for item in ordered_keep_items {
-                let ref_val = match node_annos.get_value_for_item(&item, target_key)? {
+                let ref_val = match node_annos.get_value_for_item(&item, &self.target_key)? {
                     Some(v) => v,
                     None => {
                         let critical_node = node_annos
@@ -459,13 +460,13 @@ impl TextNodeMapper {
                         return Err(Box::new(AnnattoError::Manipulator {
                             reason: format!(
                                 "Could not determine annotation value for key {}::{} @ {}",
-                                target_key.ns, target_key.name, critical_node
+                                self.target_key.ns, self.target_key.name, critical_node
                             ),
                             manipulator: self.module_name.clone(),
                         }));
                     }
                 };
-                let ref_is_optional = optionals.contains(&ref_val.to_string());
+                let ref_is_optional = self.optionals.contains(&ref_val.to_string());
                 let ref_node_name = node_annos
                     .get_value_for_item(&item, &NODE_NAME_KEY)?
                     .unwrap(); // existence guaranteed
@@ -489,9 +490,9 @@ impl TextNodeMapper {
                                 .get_value_for_item(&other_item, &other_key)?
                                 .unwrap();
                             if ref_val == other_val
-                                || !optional_chars.is_empty()
-                                    && clean_value(&ref_val, &optional_chars)
-                                        == clean_value(&other_val, &optional_chars)
+                                || !self.optional_chars.is_empty()
+                                    && clean_value(&ref_val, &self.optional_chars)
+                                        == clean_value(&other_val, &self.optional_chars)
                             {
                                 // text values match
                                 let anno_keys =
@@ -523,7 +524,8 @@ impl TextNodeMapper {
                                 finished = true;
                             } else {
                                 // text values don't match
-                                let other_is_optional = optionals.contains(&other_val.to_string());
+                                let other_is_optional =
+                                    self.optionals.contains(&other_val.to_string());
                                 if ref_is_optional && !other_is_optional {
                                     // advance outer, do not advance inner
                                     unused_by_name.insert(other_name.to_string(), other_item);
@@ -534,7 +536,7 @@ impl TextNodeMapper {
                                 } else if !ref_is_optional && !other_is_optional {
                                     // match expected, advance both
                                     if let Some(sender) = tx {
-                                        let message = StatusMessage::Warning(format!("{}: {}={} and {}={} do not match. Mismatch could not be resolved.", &doc_name, &target_key.name, ref_val, other_name, other_val));
+                                        let message = StatusMessage::Warning(format!("{}: {}={} and {}={} do not match. Mismatch could not be resolved.", &doc_name, &self.target_key.name, ref_val, other_name, other_val));
                                         sender.send(message)?;
                                     }
                                     node_map.insert(other_item, item); // map anyway to be compliant with ErrorPolicy::Forward
@@ -622,18 +624,14 @@ impl Manipulator for Merge {
         let ordered_items_by_doc = self.retrieve_ordered_nodes(graph, order_names.clone())?;
         let reporter = if report_details { &sender_opt } else { &None };
         let mut mapper = TextNodeMapper {
+            target_key: keep_name_key,
             module_name: self.module_name().to_string(),
             docs_with_errors: HashSet::default(),
-        };
-        let node_map: HashMap<u64, u64> = mapper.map_text_nodes(
-            graph,
-            &mut updates,
-            &keep_name_key,
-            ordered_items_by_doc,
-            optional_toks,
             optional_chars,
-            reporter,
-        )?;
+            optionals: optional_toks,
+        };
+        let node_map: HashMap<u64, u64> =
+            mapper.map_text_nodes(graph, &mut updates, ordered_items_by_doc, reporter)?;
         let skip_components = self.skip_components_from_prop(
             graph,
             properties.get(&MergerProperties::SkipComponents.to_string()),
