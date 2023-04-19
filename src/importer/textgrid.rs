@@ -8,7 +8,7 @@ use crate::models::textgrid::{Interval, TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{
     add_order_relations, map_annotations, map_audio_source, map_token, path_structure,
-    root_corpus_from_path,
+    root_corpus_from_path, NodeInfo,
 };
 use crate::Module;
 use anyhow::{anyhow, Result};
@@ -188,12 +188,11 @@ impl<'a> DocumentMapper<'a> {
             }
             let tli_id = map_token(
                 u,
-                &self.doc_path,
-                &self.text_node_name,
-                &counter.to_string(),
+                &NodeInfo::new(&counter.to_string(), &self.doc_path, &self.text_node_name),
                 None,
                 "",
-                (start, end),
+                start,
+                end,
                 false,
             )?;
             tli_names.push(tli_id.clone());
@@ -237,12 +236,11 @@ impl<'a> DocumentMapper<'a> {
             for (time_range, token_text) in token_sorted_by_time {
                 let id = map_token(
                     u,
-                    &self.doc_path,
-                    &self.text_node_name,
-                    &counter.to_string(),
+                    &NodeInfo::new(&counter.to_string(), &self.doc_path, &self.text_node_name),
                     None,
                     &token_text,
-                    (Some(time_range.0 .0), Some(time_range.1 .0)),
+                    Some(time_range.0 .0),
+                    Some(time_range.1 .0),
                     true,
                 )?;
 
@@ -348,9 +346,11 @@ impl<'a> DocumentMapper<'a> {
                                 time_to_id.range(time..=time).map(|(_k, v)| v).collect();
                             let span_id = map_annotations(
                                 u,
-                                &self.doc_path,
-                                &self.text_node_name,
-                                &(self.number_of_spans + 1).to_string(),
+                                &NodeInfo::new(
+                                    &(self.number_of_spans + 1).to_string(),
+                                    &self.doc_path,
+                                    &self.text_node_name,
+                                ),
                                 None,
                                 Some(name),
                                 Some(&p.mark),
@@ -388,9 +388,11 @@ impl<'a> DocumentMapper<'a> {
             .collect();
         let id = map_annotations(
             u,
-            &self.doc_path,
-            &self.text_node_name,
-            &(self.number_of_spans + 1).to_string(),
+            &NodeInfo::new(
+                &(self.number_of_spans + 1).to_string(),
+                &self.doc_path,
+                &self.text_node_name,
+            ),
             None,
             Some(anno_name),
             Some(anno_value),
