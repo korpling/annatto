@@ -109,7 +109,7 @@ fn import_workbook(
     }
     let mut next_span_num = 1;
     let mut next_tok_num = base_tokens.len() + 1;
-    for (tok_name, anno_names) in column_map.into_iter() {
+    for (tok_name, anno_names) in column_map {
         let mut token_map = BTreeMap::new();
         let index_opt = name_to_col_0index.get(tok_name);
         if let Some(col_0i) = index_opt {

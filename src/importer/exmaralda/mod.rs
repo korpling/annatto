@@ -50,7 +50,7 @@ impl Importer for ImportEXMARaLDA {
 
 fn attr_vec_to_map(attributes: &Vec<OwnedAttribute>) -> BTreeMap<String, String> {
     attributes
-        .into_iter()
+        .iter()
         .map(|attr| (attr.name.to_string(), attr.value.to_string()))
         .collect::<BTreeMap<String, String>>()
 }
