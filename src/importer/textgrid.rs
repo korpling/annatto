@@ -213,7 +213,7 @@ impl<'a> DocumentMapper<'a> {
         // One can only map without a timeline if there is a single token
         // layer explicitily defined by the tier_group property.
         if self.params.tier_groups.len() > 1 {
-            return Err(anyhow!("Only one token tier can be defined in tier_groups when mapping without a timeline (map_timeline=false)."));
+            Err(anyhow!("Only one token tier can be defined in tier_groups when mapping without a timeline (map_timeline=false)."))
         } else if let Some((token_tier_name, _)) = self.params.tier_groups.iter().next() {
             let mut token_sorted_by_time = BTreeMap::default();
 

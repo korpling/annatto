@@ -267,8 +267,7 @@ fn get_column_map(
             }
             Some((k, v)) => {
                 let anno_names = v
-                    .replace('{', "")
-                    .replace('}', "")
+                    .replace(['{', '}'], "")
                     .split(',')
                     .map(|name| name.trim().to_string())
                     .collect_vec();

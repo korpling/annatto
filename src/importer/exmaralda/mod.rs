@@ -110,8 +110,7 @@ impl ImportEXMARaLDA {
                         }
                         "tli" => {
                             let attr_map = attr_vec_to_map(&attributes);
-                            let node_name =
-                                format!("{}#{}", doc_node_name, attr_map["id"].to_string());
+                            let node_name = format!("{}#{}", doc_node_name, attr_map["id"]);
                             update.add_event(UpdateEvent::AddNode {
                                 node_name: node_name.to_string(),
                                 node_type: "node".to_string(),
@@ -284,7 +283,7 @@ impl ImportEXMARaLDA {
                                 named_orderings
                                     .get_mut(anno_name)
                                     .unwrap()
-                                    .push(((*start_time).clone(), node_name.to_string()));
+                                    .push((*start_time, node_name.to_string()));
                             }
                             update.add_event(UpdateEvent::AddNodeLabel {
                                 node_name: node_name.to_string(),
