@@ -134,7 +134,7 @@ impl ImportEXMARaLDA {
                         "common-timeline" => {
                             // build empty toks
                             for (time_value, tli_ids) in
-                                time_to_tli_attrs.iter().sorted_by(|e0, e1| e0.0.cmp(&e1.0))
+                                time_to_tli_attrs.iter().sorted_by(|e0, e1| e0.0.cmp(e1.0))
                             {
                                 let tli_id_suffix = tli_ids.join("_");
                                 let node_name = format!("{}#{}", &doc_node_name, tli_id_suffix);
@@ -151,7 +151,7 @@ impl ImportEXMARaLDA {
                                 for tli_id in tli_ids {
                                     timeline.insert(
                                         tli_id.to_string(),
-                                        (time_value.clone(), node_name.to_string()),
+                                        (*time_value, node_name.to_string()),
                                     );
                                 }
                             }
