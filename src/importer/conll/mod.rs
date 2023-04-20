@@ -68,6 +68,8 @@ struct CoNLLToken {
     misc: BTreeMap<String, String>,
 }
 
+fn 
+
 impl TryFrom<String> for CoNLLToken {
     type Error = Box<dyn std::error::Error>;
     fn try_from(value: String) -> Result<Self, Self::Error> {

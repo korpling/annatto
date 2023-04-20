@@ -1,0 +1,20 @@
+WHITESPACE = _{ "\t" }
+no_value = { "_" }
+id = ${ ASCII_DIGIT+ }
+simple_value = _{ 'a' .. 'z' | 'A' .. 'Z' | ASCII_DIGIT }
+form = ${ no_value | simple_value+ }
+lemma = ${ no_value | simple_value+ }
+upos = ${ no_value | simple_value+ }
+xpos = ${ no_value | simple_value+ }
+feature = ${ name ~ "=" ~ value }
+name = { simple_value+ }
+value = { simple_value+ }
+features = ${ no_value | ( feature ~ ( "|" ~ feature )*) }
+head = ${ no_value | ASCII_DIGIT+ }
+deprel = ${ no_value | simple_value+ }
+enhanced_dep = ${ ASCII_DIGIT+ ~ ":" ~ simple_value+ }
+enhanced_deps = ${ no_value | ( enhanced_dep ~ ( "|" ~ enhanced_dep )*) }
+misc = ${ no_value | (feature ~ ( "|" ~ feature )*) }
+token = { (NEWLINE | SOI) ~ id ~ form ~ lemma ~ upos ~ xpos ~ features ~ head ~ deprel ~ enhanced_deps ~ misc ~ EOI? }
+sentence = { token+ ~ NEWLINE }
+text = { sentence+ }
