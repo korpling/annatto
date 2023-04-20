@@ -10,7 +10,7 @@ use graphannis::{
 };
 use graphannis_core::{graph::ANNIS_NS, util::split_qname};
 
-use crate::{workflow::StatusMessage, Module};
+use crate::{util::get_all_files, workflow::StatusMessage, Module};
 
 use super::Importer;
 
@@ -56,11 +56,7 @@ impl Importer for AnnotateCorpus {
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let path_pattern = input_path.join("**/*.meta");
-        dbg!(&path_pattern);
-        let files = glob::glob(path_pattern.to_str().unwrap())?;
-        for file_path_r in files {
-            let file_path = file_path_r?;
+        for file_path in get_all_files(input_path, vec!["meta"])? {
             let mut corpus_nodes = Vec::new();
             for ancestor in file_path.ancestors() {
                 if ancestor == input_path {

@@ -13,7 +13,7 @@ use ordered_float::OrderedFloat;
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader, ParserConfig};
 
 use crate::{
-    util::{graphupdate::map_audio_source, insert_corpus_nodes_from_path},
+    util::{get_all_files, graphupdate::map_audio_source, insert_corpus_nodes_from_path},
     workflow::StatusMessage,
     Module,
 };
@@ -39,12 +39,10 @@ impl Importer for ImportEXMARaLDA {
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let path_pattern_path = input_path.join("**").join("*.exb");
-        let path_pattern = path_pattern_path.to_str().unwrap();
-        for file_path_r in glob::glob(path_pattern)? {
-            let file_path = file_path_r?;
-            self.import_document(input_path, &file_path, &mut update, &tx)?;
-        }
+        let all_files = get_all_files(input_path, vec!["exb", "xml"])?;
+        all_files
+            .into_iter()
+            .try_for_each(|pb| self.import_document(input_path, pb.as_path(), &mut update, &tx))?;
         Ok(update)
     }
 }
