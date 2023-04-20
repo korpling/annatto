@@ -10,7 +10,11 @@ use graphannis::{
 use graphannis_core::{graph::ANNIS_NS, util::split_qname};
 use itertools::Itertools;
 
-use crate::{error::AnnattoError, util::insert_corpus_nodes_from_path, Module};
+use crate::{
+    error::AnnattoError,
+    util::{get_all_files, insert_corpus_nodes_from_path},
+    Module,
+};
 
 use super::Importer;
 
@@ -241,12 +245,10 @@ impl Importer for ImportSpreadsheet {
                 path: input_path.to_path_buf(),
             }));
         };
-        let dummy_path = input_path.join("**").join("*.xlsx");
-        let path_pattern = dummy_path.to_str().unwrap();
-        for file_path_r in glob::glob(path_pattern)? {
-            let file_path = file_path_r?;
-            import_workbook(&mut update, input_path, file_path.as_path(), &column_map)?;
-        }
+        let all_files = get_all_files(input_path, vec!["xlsx"])?;
+        all_files.into_iter().try_for_each(|pb| {
+            import_workbook(&mut update, input_path, pb.as_path(), &column_map)
+        })?;
         Ok(update)
     }
 }

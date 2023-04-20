@@ -13,7 +13,7 @@ use std::{
     collections::BTreeMap,
     fs::File,
     io::{BufWriter, Write},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 pub mod graphupdate;
@@ -32,6 +32,21 @@ pub fn write_to_file(updates: &GraphUpdate, path: &std::path::Path) -> Result<()
         file.write_all(b"\n")?;
     }
     Ok(())
+}
+
+pub fn get_all_files(
+    corpus_root_dir: &Path,
+    file_extensions: Vec<&str>,
+) -> std::result::Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
+    let mut paths = Vec::new();
+    let flex_path = corpus_root_dir.join("**");
+    for ext in file_extensions {
+        let ext_path = flex_path.join(format!("*.{ext}"));
+        for file_opt in glob::glob(&ext_path.to_string_lossy())? {
+            paths.push(file_opt?)
+        }
+    }
+    Ok(paths)
 }
 
 pub fn insert_corpus_nodes_from_path(
