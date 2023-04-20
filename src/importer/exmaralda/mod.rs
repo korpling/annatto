@@ -9,6 +9,7 @@ use graphannis::{
 };
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
+use ordered_float::OrderedFloat;
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader, ParserConfig};
 
 use crate::{
@@ -76,7 +77,9 @@ impl ImportEXMARaLDA {
         let mut speaker_map = BTreeMap::new();
         let mut parent_map: BTreeMap<String, BTreeMap<String, String>> = BTreeMap::new();
         let mut already_defined: BTreeSet<String> = BTreeSet::new();
-        let mut named_orderings: BTreeMap<String, Vec<(f64, String)>> = BTreeMap::new();
+        let mut named_orderings: BTreeMap<String, Vec<(OrderedFloat<f64>, String)>> =
+            BTreeMap::new();
+        let mut time_to_tli_attrs: BTreeMap<OrderedFloat<f64>, Vec<String>> = BTreeMap::new();
         // reader
         let f = File::open(document_path)?;
         let mut parser_cfg = ParserConfig::new();
@@ -115,22 +118,11 @@ impl ImportEXMARaLDA {
                         }
                         "tli" => {
                             let attr_map = attr_vec_to_map(&attributes);
-                            let node_name =
-                                format!("{}#{}", doc_node_name, attr_map["id"].to_string());
-                            update.add_event(UpdateEvent::AddNode {
-                                node_name: node_name.to_string(),
-                                node_type: "node".to_string(),
-                            })?;
-                            update.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: node_name.to_string(),
-                                anno_ns: ANNIS_NS.to_string(),
-                                anno_name: "tok".to_string(),
-                                anno_value: " ".to_string(),
-                            })?;
-                            timeline.insert(
-                                attr_map["id"].to_string(),
-                                (attr_map["time"].parse::<f64>()?, node_name),
-                            );
+                            let time = attr_map["time"].parse::<OrderedFloat<f64>>()?;
+                            time_to_tli_attrs
+                                .entry(time)
+                                .or_insert_with(Vec::default)
+                                .push(attr_map["id"].to_string());
                         }
                         "event" | "abbreviation" => char_buf.clear(),
                         _ => {}
@@ -145,11 +137,34 @@ impl ImportEXMARaLDA {
                             speaker_map.insert(speaker_id, speaker_name);
                         }
                         "common-timeline" => {
+                            // build empty toks
+                            for (time_value, tli_ids) in
+                                time_to_tli_attrs.iter().sorted_by(|e0, e1| e0.0.cmp(&e1.0))
+                            {
+                                let tli_id_suffix = tli_ids.join("_");
+                                let node_name = format!("{}#{}", &doc_node_name, tli_id_suffix);
+                                update.add_event(UpdateEvent::AddNode {
+                                    node_name: node_name.to_string(),
+                                    node_type: "node".to_string(),
+                                })?;
+                                update.add_event(UpdateEvent::AddNodeLabel {
+                                    node_name: node_name.to_string(),
+                                    anno_ns: ANNIS_NS.to_string(),
+                                    anno_name: "tok".to_string(),
+                                    anno_value: " ".to_string(),
+                                })?;
+                                for tli_id in tli_ids {
+                                    timeline.insert(
+                                        tli_id.to_string(),
+                                        (time_value.clone(), node_name.to_string()),
+                                    );
+                                }
+                            }
                             // order timeline elements / empty toks
                             ordered_tl_nodes.extend(
                                 timeline
                                     .iter()
-                                    .sorted_by(|a, b| a.1 .0.partial_cmp(&b.1 .0).unwrap())
+                                    .sorted_by(|a, b| a.1 .0.cmp(&b.1 .0))
                                     .map(|t| t.0.to_string())
                                     .collect_vec(),
                             );
