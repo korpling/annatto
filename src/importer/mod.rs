@@ -1,5 +1,6 @@
 //! Contains importers and their traits.
 
+pub mod conll;
 pub mod corpus_annotations;
 pub mod exmaralda;
 pub mod graphml;
