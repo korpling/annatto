@@ -22,13 +22,8 @@ use super::Importer;
 
 pub const MODULE_NAME: &str = "import_exmaralda";
 
+#[derive(Default)]
 pub struct ImportEXMARaLDA {}
-
-impl Default for ImportEXMARaLDA {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 impl Module for ImportEXMARaLDA {
     fn module_name(&self) -> &str {
@@ -54,9 +49,9 @@ impl Importer for ImportEXMARaLDA {
     }
 }
 
-fn attr_vec_to_map(attributes: &Vec<OwnedAttribute>) -> BTreeMap<String, String> {
+fn attr_vec_to_map(attributes: &[OwnedAttribute]) -> BTreeMap<String, String> {
     attributes
-        .into_iter()
+        .iter()
         .map(|attr| (attr.name.to_string(), attr.value.to_string()))
         .collect::<BTreeMap<String, String>>()
 }
@@ -304,7 +299,7 @@ impl ImportEXMARaLDA {
                                 named_orderings
                                     .get_mut(anno_name)
                                     .unwrap()
-                                    .push(((*start_time).clone(), node_name.to_string()));
+                                    .push((*start_time, node_name.to_string()));
                             }
                             update.add_event(UpdateEvent::AddNodeLabel {
                                 node_name: node_name.to_string(),

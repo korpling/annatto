@@ -300,3 +300,25 @@ impl Module for GraphMLImporter {
         MODULE_NAME
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{collections::BTreeMap, path::Path};
+
+    use insta::assert_snapshot;
+
+    use crate::{importer::graphml::GraphMLImporter, util::import_as_graphml_string};
+
+    #[test]
+    fn single_sentence() {
+        let actual = import_as_graphml_string(
+            GraphMLImporter::default(),
+            Path::new("tests/data/import/graphml/single_sentence/zossen.graphml"),
+            BTreeMap::default(),
+            None,
+        )
+        .unwrap();
+
+        assert_snapshot!(actual);
+    }
+}
