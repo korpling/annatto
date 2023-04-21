@@ -38,6 +38,7 @@ pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
         importer::exmaralda::MODULE_NAME => {
             Ok(Box::<importer::exmaralda::ImportEXMARaLDA>::default())
         }
+        importer::conll::MODULE_NAME => Ok(Box::<importer::conll::ImportCoNLL>::default()),
         _ => Err(AnnattoError::NoSuchModule(name.to_string())),
     }
 }
