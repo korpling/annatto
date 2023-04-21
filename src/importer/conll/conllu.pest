@@ -1,6 +1,7 @@
-WHITESPACE = _{ " " }
-value = @{ ( LETTER | MARK | NUMBER | PUNCTUATION | UNASSIGNED )+ }
-name = ${ value }
+WHITESPACE = _{ "\t" }
+value_char = _{ !("=" | "|" | WHITESPACE | NEWLINE) ~ ANY }
+value = @{ value_char+ }
+name = @{ value }
 no_value = @{ "_" }
 conll = { sentence+ }
 sentence = { token+ ~ NEWLINE }
