@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeMap,
     io::Read,
     path::{Path, PathBuf},
 };
@@ -17,7 +18,10 @@ use pest::{
 use pest_derive::Parser;
 
 use crate::{
-    error::AnnattoError, util::graphupdate::path_structure, workflow::StatusSender, Module,
+    error::AnnattoError,
+    util::graphupdate::path_structure,
+    workflow::{StatusMessage, StatusSender},
+    Module,
 };
 
 use super::Importer;
@@ -136,16 +140,19 @@ impl ImportCoNLL {
         sentence: Pair<Rule>,
         tx: &Option<StatusSender>,
     ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-        let mut token_names = Vec::new();
+        let mut id_to_tok_name = BTreeMap::new();
         let mut dependencies = Vec::new();
         let mut s_annos = Vec::new();
         let (l, c) = sentence.line_col();
         for member in sentence.into_inner() {
             match member.as_rule() {
                 Rule::token => {
-                    let (tok_name, dep) = self.map_token(update, document_node_name, member, tx)?;
-                    token_names.push(tok_name);
-                    dependencies.push(dep);
+                    let (tok_name, tok_id, dep) =
+                        self.map_token(update, document_node_name, member, tx)?;
+                    id_to_tok_name.insert(tok_id, tok_name.to_string());
+                    if let Some(dependency) = dep {
+                        dependencies.push((tok_name, dependency.0, dependency.1));
+                    }
                 }
                 Rule::s_anno => {
                     let mut name = None;
@@ -169,8 +176,8 @@ impl ImportCoNLL {
                 _ => {}
             }
         }
-        if !token_names.is_empty() {
-            let node_name = format!("{document_node_name}#{l}_{c}");
+        if !id_to_tok_name.is_empty() {
+            let node_name = format!("{document_node_name}#s{l}_{c}");
             update.add_event(UpdateEvent::AddNode {
                 node_name: node_name.to_string(),
                 node_type: "node".to_string(),
@@ -183,7 +190,7 @@ impl ImportCoNLL {
                     anno_value: anno_value.to_string(),
                 })?;
             }
-            for token_name in &token_names {
+            for (_, token_name) in &id_to_tok_name {
                 update.add_event(UpdateEvent::AddEdge {
                     source_node: node_name.to_string(),
                     target_node: token_name.to_string(),
@@ -192,35 +199,40 @@ impl ImportCoNLL {
                     component_name: "".to_string(),
                 })?;
             }
-            for (node_index, dependency) in dependencies.into_iter().enumerate() {
-                let (head_id, deprel) = dependency.unwrap();
-                let head_index = head_id - 1;
-                if head_index < token_names.len() {
-                    let source_node_name = token_names.get(head_index).unwrap();
-                    let target_node_name = token_names.get(node_index).unwrap();
-                    update.add_event(UpdateEvent::AddEdge {
-                        source_node: source_node_name.to_string(),
-                        target_node: target_node_name.to_string(),
-                        layer: "".to_string(),
-                        component_type: AnnotationComponentType::Pointing.to_string(),
-                        component_name: "dep".to_string(),
-                    })?;
-                    if let Some(deprel_value) = deprel {
-                        update.add_event(UpdateEvent::AddEdgeLabel {
+            for (target_node_name, head_id, deprel) in dependencies {
+                if head_id > 0 {
+                    if let Some(source_node_name) = id_to_tok_name.get(&head_id) {
+                        update.add_event(UpdateEvent::AddEdge {
                             source_node: source_node_name.to_string(),
                             target_node: target_node_name.to_string(),
                             layer: "".to_string(),
                             component_type: AnnotationComponentType::Pointing.to_string(),
                             component_name: "dep".to_string(),
-                            anno_ns: "".to_string(),
-                            anno_name: "deprel".to_string(),
-                            anno_value: deprel_value.to_string(),
                         })?;
+                        if let Some(deprel_value) = deprel {
+                            update.add_event(UpdateEvent::AddEdgeLabel {
+                                source_node: source_node_name.to_string(),
+                                target_node: target_node_name.to_string(),
+                                layer: "".to_string(),
+                                component_type: AnnotationComponentType::Pointing.to_string(),
+                                component_name: "dep".to_string(),
+                                anno_ns: "".to_string(),
+                                anno_name: "deprel".to_string(),
+                                anno_value: deprel_value.to_string(),
+                            })?;
+                        }
+                    } else {
+                        if let Some(sender) = tx {
+                            let msg = format!(
+                                "{document_node_name}: Unknown head id `{head_id}` ({l}, {c})"
+                            );
+                            sender.send(StatusMessage::Warning(msg))?;
+                        }
                     }
                 }
             }
         }
-        Ok(token_names)
+        Ok(id_to_tok_name.into_iter().map(|e| e.1).collect_vec())
     }
 
     fn map_token(
@@ -229,9 +241,10 @@ impl ImportCoNLL {
         document_node_name: &str,
         mut token: Pair<Rule>,
         tx: &Option<StatusSender>,
-    ) -> Result<(String, Option<(usize, Option<String>)>), Box<dyn std::error::Error>> {
+    ) -> Result<(String, usize, Option<(usize, Option<String>)>), Box<dyn std::error::Error>> {
         let (l, c) = token.line_col();
-        let node_name = format!("{document_node_name}#{l}_{c}");
+        let line = token.as_str().to_string();
+        let node_name = format!("{document_node_name}#t{l}_{c}");
         update.add_event(UpdateEvent::AddNode {
             node_name: node_name.to_string(),
             node_type: "node".to_string(),
@@ -242,12 +255,15 @@ impl ImportCoNLL {
             anno_name: "layer".to_string(),
             anno_value: "default_layer".to_string(),
         })?;
+        let mut token_id = None;
         let mut head_id = None;
         let mut deprel = None;
         for member in token.into_inner() {
             let rule = member.as_rule();
             match rule {
-                Rule::id => {}
+                Rule::id => {
+                    token_id = Some(member.as_str().parse::<usize>()?);
+                }
                 Rule::form => {
                     update.add_event(UpdateEvent::AddNodeLabel {
                         node_name: node_name.to_string(),
@@ -314,7 +330,17 @@ impl ImportCoNLL {
             None => None,
             Some(v) => Some((v, deprel)),
         };
-        Ok((node_name, dependency))
+        if let Some(id) = token_id {
+            Ok((node_name, id, dependency))
+        } else {
+            // by grammar spec this branch should never be possible
+            let reason = format!("Token `{line}` ({l}, {c}) has no id which is invalid.");
+            Err(Box::new(AnnattoError::Import {
+                reason: reason,
+                importer: self.module_name().to_string(),
+                path: document_node_name.into(),
+            }))
+        }
     }
 }
 
