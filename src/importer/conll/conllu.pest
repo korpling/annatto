@@ -1,20 +1,26 @@
 WHITESPACE = _{ "\t" }
 value_char = _{ !("=" | "|" | WHITESPACE | NEWLINE | SOI | EOI ) ~ ANY }
+enhanced_char = _{ !(":" | "|" | WHITESPACE | NEWLINE | SOI | EOI ) ~ ANY }
+form_char = _{ !(WHITESPACE | NEWLINE | SOI | EOI ) ~ ANY }
 value = @{ value_char+ }
 name = @{ value }
 no_value = @{ "_" }
 conll = { SOI ~ sentence+ }
-sentence = { NEWLINE? ~ token+ }
+sentence = { NEWLINE* ~ s_anno* ~ token+ }
 token = { NEWLINE? ~ id ~ form ~ lemma ~ upos ~ xpos ~ features ~ head ~ deprel ~ enhanced_deps ~ misc }
 id = @{ ASCII_DIGIT+ }
-form = ${ no_value | value }
-lemma = ${ no_value | value }
-upos = ${ no_value | value }
-xpos = ${ no_value | value }
+form = ${ no_value | form_char+ }
+lemma = ${ no_value | form_char+ }
+upos = ${ no_value | form_char+ }
+xpos = ${ no_value | form_char+ }
 features = ${ no_value | (feature ~ ("|" ~ feature)*) }
-feature = ${ name ~ "=" ~ value}
+feature = ${ name ~ "=" ~ value }
 head = ${ no_value | id }
-deprel = ${ no_value | value }
+deprel = ${ no_value | form_char+ }
+enhanced_rel = @{ enhanced_char+ }
 enhanced_deps = ${ no_value | (enhanced_dep ~ ("|" ~ enhanced_dep)*)}
-enhanced_dep = ${ id ~ ":" ~ value }
+enhanced_dep = ${ id ~ ":" ~ enhanced_rel }
 misc = ${ no_value | (feature ~ ("|" ~ feature)*) }
+s_char = _{ !(NEWLINE | SOI | EOI) ~ ANY }
+s_value = @{ s_char+ }
+s_anno = ${ NEWLINE? ~ "#" ~ name ~ ("=" ~ s_value ~ NEWLINE)? }
