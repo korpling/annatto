@@ -6,7 +6,7 @@ value = @{ value_char+ }
 name = @{ value }
 no_value = @{ "_" ~ &( WHITESPACE | NEWLINE | EOI ) }
 conll = { SOI ~ sentence+ }
-sentence = { NEWLINE* ~ s_anno* ~ ((multi_token ~ token ~ token+) | token)+ }
+sentence = { NEWLINE* ~ s_anno* ~ (multi_token | token)+ }
 token = { NEWLINE? 
 ~ id 
 ~ ( no_value | form)
