@@ -30,3 +30,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - set annis::layer with speaker name when importing exmaralda files
 - spreadsheet import builds regular ANNIS coverage-based model
 - exmaralda import: Multiple tlis with the same time value are now merged into a single tli token
+- import CoNLL-U files
