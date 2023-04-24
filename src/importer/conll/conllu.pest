@@ -6,7 +6,7 @@ value = @{ value_char+ }
 name = @{ value }
 no_value = @{ "_" ~ &( WHITESPACE | NEWLINE | EOI ) }
 conll = { SOI ~ sentence+ }
-sentence = { NEWLINE* ~ s_anno* ~ (multi_token | token)+ }
+sentence = { NEWLINE* ~ s_anno* ~ (empty_node | multi_token | token)+ }
 token = { NEWLINE? 
 ~ id 
 ~ ( no_value | form)
@@ -28,10 +28,22 @@ multi_token = { NEWLINE?
 ~ no_value
 ~ no_value
 ~ no_value
-~ no_value 
-}
+~ no_value }
+empty_node = { NEWLINE? 
+~ empty_id 
+~ ( no_value | form)
+~ ( no_value | lemma )
+~ ( no_value | upos )
+~ ( no_value | xpos )
+~ ( no_value | features )
+~ no_value
+~ no_value
+~ ( no_value | enhanced_deps )
+~ ( no_value | misc ) }
 id = @{ ASCII_DIGIT+ }
+sub_id = @{ ASCII_DIGIT+ }
 multi_id = ${ id~"-"~id }
+empty_id = ${ id~"."~sub_id }
 form = ${ form_char+ }
 lemma = ${ form_char+ }
 upos = ${ form_char+ }
