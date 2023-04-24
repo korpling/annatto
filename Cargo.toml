@@ -21,7 +21,7 @@ normpath = "1.1"
 ordered-float = {version = "3.4.0", default-features = false}
 pest = "2.0"
 pest_derive = "2.0"
-quick-xml = "0.23"
+quick-xml = "0.28"
 rayon = "1.1"
 regex = "1.4"
 rust-embed = {version = "6.3.0", features = ["compression", "interpolate-folder-path"]}
