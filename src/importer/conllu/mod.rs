@@ -28,13 +28,8 @@ use super::Importer;
 
 pub const MODULE_NAME: &str = "import_conllu";
 
+#[derive(Default)]
 pub struct ImportCoNLLU {}
-
-impl Default for ImportCoNLLU {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 impl Module for ImportCoNLLU {
     fn module_name(&self) -> &str {
@@ -70,6 +65,8 @@ impl ToString for Rule {
         }
     }
 }
+
+type DepSpec = (usize, Option<String>);
 
 impl ImportCoNLLU {
     fn import_document(
@@ -110,16 +107,14 @@ impl ImportCoNLLU {
                     }
                 }
             }
-        } else {
-            if let Some(sender) = tx {
-                let msg = format!("Could not parse file as conllu: {document_node_name}");
-                let err = AnnattoError::Import {
-                    reason: msg,
-                    importer: self.module_name().to_string(),
-                    path: PathBuf::from(document_node_name),
-                };
-                sender.send(crate::workflow::StatusMessage::Failed(err))?;
-            }
+        } else if let Some(sender) = tx {
+            let msg = format!("Could not parse file as conllu: {document_node_name}");
+            let err = AnnattoError::Import {
+                reason: msg,
+                importer: self.module_name().to_string(),
+                path: PathBuf::from(document_node_name),
+            };
+            sender.send(crate::workflow::StatusMessage::Failed(err))?;
         }
         for (source, target) in token_names.iter().tuple_windows() {
             update.add_event(UpdateEvent::AddEdge {
@@ -173,9 +168,11 @@ impl ImportCoNLLU {
                             }
                             _ => {}
                         }
-                        if name.is_some() && value.is_some() {
-                            s_annos.push((name.unwrap(), value.unwrap()));
-                            break;
+                        if let Some(ref n) = name {
+                            if let Some(ref v) = value {
+                                s_annos.push((n.to_string(), v.to_string()));
+                                break;
+                            }
                         }
                     }
                 }
@@ -196,7 +193,7 @@ impl ImportCoNLLU {
                     anno_value: anno_value.to_string(),
                 })?;
             }
-            for (_, token_name) in &id_to_tok_name {
+            for token_name in id_to_tok_name.values() {
                 update.add_event(UpdateEvent::AddEdge {
                     source_node: node_name.to_string(),
                     target_node: token_name.to_string(),
@@ -227,13 +224,10 @@ impl ImportCoNLLU {
                                 anno_value: deprel_value.to_string(),
                             })?;
                         }
-                    } else {
-                        if let Some(sender) = tx {
-                            let msg = format!(
-                                "{document_node_name}: Unknown head id `{head_id}` ({l}, {c})"
-                            );
-                            sender.send(StatusMessage::Warning(msg))?;
-                        }
+                    } else if let Some(sender) = tx {
+                        let msg =
+                            format!("{document_node_name}: Unknown head id `{head_id}` ({l}, {c})");
+                        sender.send(StatusMessage::Warning(msg))?;
                     }
                 }
             }
@@ -247,7 +241,7 @@ impl ImportCoNLLU {
         document_node_name: &str,
         token: Pair<Rule>,
         _tx: &Option<StatusSender>,
-    ) -> Result<(String, usize, Option<(usize, Option<String>)>), Box<dyn std::error::Error>> {
+    ) -> Result<(String, usize, Option<DepSpec>), Box<dyn std::error::Error>> {
         let (l, c) = token.line_col();
         let line = token.as_str().to_string();
         let node_name = format!("{document_node_name}#t{l}_{c}");
@@ -316,12 +310,9 @@ impl ImportCoNLLU {
                 }
                 Rule::head => {
                     for id_or_else in member.into_inner() {
-                        match id_or_else.as_rule() {
-                            Rule::id => {
-                                head_id = Some(id_or_else.as_str().trim().parse::<usize>()?);
-                                break;
-                            }
-                            _ => {}
+                        if id_or_else.as_rule() == Rule::id {
+                            head_id = Some(id_or_else.as_str().trim().parse::<usize>()?);
+                            break;
                         }
                     }
                 }
@@ -332,17 +323,14 @@ impl ImportCoNLLU {
                 _ => {}
             }
         }
-        let dependency = match head_id {
-            None => None,
-            Some(v) => Some((v, deprel)),
-        };
+        let dependency = head_id.map(|v| (v, deprel));
         if let Some(id) = token_id {
             Ok((node_name, id, dependency))
         } else {
             // by grammar spec this branch should never be possible
             let reason = format!("Token `{line}` ({l}, {c}) has no id which is invalid.");
             Err(Box::new(AnnattoError::Import {
-                reason: reason,
+                reason,
                 importer: self.module_name().to_string(),
                 path: document_node_name.into(),
             }))
