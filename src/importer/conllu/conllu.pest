@@ -1,0 +1,83 @@
+WHITESPACE = _{ "\t" }
+value_char = _{ !("=" | "|" | WHITESPACE | NEWLINE | SOI | EOI ) ~ ANY }
+enhanced_char = _{ !(":" | "|" | WHITESPACE | NEWLINE | SOI | EOI ) ~ ANY }
+form_char = _{ !(WHITESPACE | NEWLINE | SOI | EOI ) ~ ANY }
+value = @{ value_char+ }
+name = @{ value }
+no_value = @{ "_" ~ &( WHITESPACE | NEWLINE | EOI ) }
+conll = { SOI ~ sentence+ }
+sentence = { NEWLINE* ~ s_anno* ~ (empty_node | invalid_empty_node | multi_token | invalid_multi_token | token)+ }
+token = { NEWLINE? 
+~ id 
+~ ( no_value | form)
+~ ( no_value | lemma )
+~ ( no_value | upos )
+~ ( no_value | xpos )
+~ ( no_value | features )
+~ ( no_value | head )
+~ ( no_value | deprel )
+~ ( no_value | enhanced_deps )
+~ ( no_value | misc ) }
+multi_token = { NEWLINE? 
+~ multi_id
+~ ( no_value | form)
+~ no_value
+~ no_value
+~ no_value
+~ no_value
+~ no_value
+~ no_value
+~ no_value
+~ no_value }
+invalid_multi_token = { NEWLINE? 
+~ multi_id 
+~ ( no_value | form)
+~ ( no_value | lemma )
+~ ( no_value | upos )
+~ ( no_value | xpos )
+~ ( no_value | features )
+~ ( no_value | head )
+~ ( no_value | deprel )
+~ ( no_value | enhanced_deps )
+~ ( no_value | misc ) }
+empty_node = { NEWLINE? 
+~ empty_id 
+~ ( no_value | form)
+~ ( no_value | lemma )
+~ ( no_value | upos )
+~ ( no_value | xpos )
+~ ( no_value | features )
+~ no_value
+~ no_value
+~ ( no_value | enhanced_deps )
+~ ( no_value | misc ) }
+invalid_empty_node = { NEWLINE? 
+~ empty_id 
+~ ( no_value | form)
+~ ( no_value | lemma )
+~ ( no_value | upos )
+~ ( no_value | xpos )
+~ ( no_value | features )
+~ ( no_value | head )
+~ ( no_value | deprel )
+~ ( no_value | enhanced_deps )
+~ ( no_value | misc ) }
+id = @{ ASCII_DIGIT+ }
+sub_id = @{ ASCII_DIGIT+ }
+multi_id = ${ id~"-"~id }
+empty_id = ${ id~"."~sub_id }
+form = ${ form_char+ }
+lemma = ${ form_char+ }
+upos = ${ form_char+ }
+xpos = ${ form_char+ }
+features = ${ feature ~ ("|" ~ feature)* }
+feature = ${ name ~ "=" ~ value }
+head = ${ id }
+deprel = ${ form_char+ }
+enhanced_rel = @{ enhanced_char+ }
+enhanced_deps = ${ enhanced_dep ~ ("|" ~ enhanced_dep)* }
+enhanced_dep = ${ id ~ ":" ~ enhanced_rel }
+misc = ${ feature ~ ("|" ~ feature)* }
+s_char = _{ !(NEWLINE | SOI | EOI) ~ ANY }
+s_value = @{ s_char+ }
+s_anno = ${ NEWLINE? ~ "#" ~ name ~ ("=" ~ s_value ~ NEWLINE)? }
