@@ -20,7 +20,11 @@ jobs:
     needs: format
     runs-on: ubuntu-latest
     steps:
-      - run: rustup component add clippy rustfmt
+      - name: Setup Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          rustup default stable
+      - run: rustup component add clippy
       - uses: actions/checkout@v3
       - uses: qernal/github-actions-rust-clippy@v2.0.2
         with:
