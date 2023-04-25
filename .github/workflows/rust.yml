@@ -25,5 +25,6 @@ jobs:
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
           rustup default stable
       - run: rustup component add clippy
+      - uses: Swatinem/rust-cache@v2.2.1
       - uses: actions/checkout@v3
       - run: cargo clippy --all-features -- -D warnings
