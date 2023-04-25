@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Upgrade to quick-xml 0.28 to avoid issues in future versions of Rust.
+
 ## [0.1.0] - 2023-04-12
 
 ### Added

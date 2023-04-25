@@ -105,7 +105,7 @@ fn add_annotation_key(
 
         let att_value = String::from_utf8_lossy(&att.value);
 
-        match att.key {
+        match att.key.0 {
             b"id" => {
                 id = Some(att_value.to_string());
             }
@@ -150,11 +150,11 @@ fn read_graphml<R: std::io::BufRead>(
     let mut config = None;
 
     loop {
-        match reader.read_event(&mut buf)? {
+        match reader.read_event_into(&mut buf)? {
             Event::Start(ref e) => {
                 level += 1;
 
-                match e.name() {
+                match e.name().0 {
                     b"graph" => {
                         if level == 2 {
                             in_graph = true;
@@ -170,7 +170,7 @@ fn read_graphml<R: std::io::BufRead>(
                             // Get the ID of this node
                             for att in e.attributes() {
                                 let att = att?;
-                                if att.key == b"id" {
+                                if att.key.0 == b"id" {
                                     current_node_id =
                                         Some(String::from_utf8_lossy(&att.value).to_string());
                                 }
@@ -182,13 +182,13 @@ fn read_graphml<R: std::io::BufRead>(
                             // Get the source and target node IDs
                             for att in e.attributes() {
                                 let att = att?;
-                                if att.key == b"source" {
+                                if att.key.0 == b"source" {
                                     current_source_id =
                                         Some(String::from_utf8_lossy(&att.value).to_string());
-                                } else if att.key == b"target" {
+                                } else if att.key.0 == b"target" {
                                     current_target_id =
                                         Some(String::from_utf8_lossy(&att.value).to_string());
-                                } else if att.key == b"label" {
+                                } else if att.key.0 == b"label" {
                                     current_component =
                                         Some(String::from_utf8_lossy(&att.value).to_string());
                                 }
@@ -198,7 +198,7 @@ fn read_graphml<R: std::io::BufRead>(
                     b"data" => {
                         for att in e.attributes() {
                             let att = att?;
-                            if att.key == b"key" {
+                            if att.key.0 == b"key" {
                                 current_data_key =
                                     Some(String::from_utf8_lossy(&att.value).to_string());
                             }
@@ -212,7 +212,7 @@ fn read_graphml<R: std::io::BufRead>(
                     if in_graph && level == 4 {
                         if let Some(anno_key) = keys.get(current_data_key) {
                             // Copy all data attributes into our own map
-                            data.insert(anno_key.clone(), t.unescape_and_decode(&reader)?);
+                            data.insert(anno_key.clone(), t.unescape()?.to_string());
                         }
                     }
                 }
@@ -226,7 +226,7 @@ fn read_graphml<R: std::io::BufRead>(
                 }
             }
             Event::End(ref e) => {
-                match e.name() {
+                match e.name().0 {
                     b"graph" => {
                         in_graph = false;
                     }
