@@ -130,9 +130,7 @@ fn import_workbook(
                 row_nums.sort();
                 let mut nodes = Vec::new();
                 for (start_row, end_row_excl) in row_nums.into_iter().tuple_windows() {
-                    let cell = sheet
-                        .get_cell_by_column_and_row(&(col_0i + 1), start_row)
-                        .unwrap();
+                    let cell = sheet.get_cell(((col_0i + 1), *start_row)).unwrap();
                     let cell_value = cell.get_value();
                     let value = cell_value.trim();
                     if value.is_empty() {
