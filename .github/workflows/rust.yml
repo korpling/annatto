@@ -26,6 +26,4 @@ jobs:
           rustup default stable
       - run: rustup component add clippy
       - uses: actions/checkout@v3
-      - uses: qernal/github-actions-rust-clippy@v2.0.2
-        with:
-          clippy_args: --all-features -- -D warnings
+      - run: cargo clippy --all-features -- -D warnings
