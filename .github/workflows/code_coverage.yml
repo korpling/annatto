@@ -8,39 +8,39 @@ on:
 
 jobs:
   base_branch_cov:
-      runs-on: ubuntu-latest
-      steps:
-        - name: Get base branch
-          id: base
-          run: |
-            BASE_BRANCH=${{ github.base_ref }}
-            echo "base_branch=${BASE_BRANCH:-"main"}" >> $GITHUB_ENV
-        - uses: actions/checkout@v2
-          with:
-            ref: ${{ env.base_branch }}
-        - uses: actions-rs/toolchain@v1.0.6
-          with:
-            toolchain: stable
-            profile: minimal
-            components: llvm-tools-preview
-        - uses: Swatinem/rust-cache@v2.2.0
-        - uses: SierraSoftworks/setup-grcov@v1
-          with:
-            github-token: ${{ secrets.GITHUB_TOKEN }}
-            version: latest
-        - name: Run tests with code coverage
-          run: ./test_coverage.sh
-        - name: Upload code coverage for ref branch
-          uses: actions/upload-artifact@v2
-          with:
-            name: ref-lcov.info
-            path: ./target/coverage/tests.lcov
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get base branch
+        id: base
+        run: |
+          BASE_BRANCH=${{ github.base_ref }}
+          echo "base_branch=${BASE_BRANCH:-"main"}" >> $GITHUB_ENV
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.base_branch }}
+      - uses: actions-rs/toolchain@v1.0.6
+        with:
+          toolchain: stable
+          profile: minimal
+          components: llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2.2.0
+      - uses: SierraSoftworks/setup-grcov@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest
+      - name: Run tests with code coverage
+        run: ./test_coverage.sh
+      - name: Upload code coverage for ref branch
+        uses: actions/upload-artifact@v2
+        with:
+          name: ref-lcov.info
+          path: ./target/coverage/tests.lcov
   checks:
     name: "Execute tests with code coverage"
     runs-on: ubuntu-latest
     needs: base_branch_cov
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Download code coverage report from base branch
         uses: actions/download-artifact@v2
         with:
