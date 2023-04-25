@@ -1,3 +1,5 @@
+#![warn(clippy::unwrap_used)]
+
 pub mod error;
 pub mod exporter;
 pub mod importer;
