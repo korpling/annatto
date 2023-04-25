@@ -18,12 +18,9 @@ jobs:
       - uses: actions/checkout@v3
         with:
           ref: ${{ env.base_branch }}
-      - name: Setup Rust
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-          rustup default stable
-          rustup component add llvm-tools-preview
-      - uses: Swatinem/rust-cache@v2.2.0
+      - uses: actions-rust-lang/setup-rust-toolchain@v1.4.4
+        with:
+          components: llvm-tools-preview
       - uses: SierraSoftworks/setup-grcov@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -45,12 +42,9 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: ref-lcov.info
-      - name: Setup Rust
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-          rustup default stable
-          rustup component add llvm-tools-preview
-      - uses: Swatinem/rust-cache@v2.2.0
+      - uses: actions-rust-lang/setup-rust-toolchain@v1.4.4
+        with:
+          components: llvm-tools-preview
       - uses: SierraSoftworks/setup-grcov@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
