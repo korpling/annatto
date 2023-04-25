@@ -22,7 +22,6 @@ jobs:
     steps:
       - run: rustup component add clippy rustfmt
       - uses: actions/checkout@v3
-      - uses: actions-rs/clippy-check@v1.0.7
+      - uses: qernal/github-actions-rust-clippy@v2.0.2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features -- -D warnings
+          clippy_args: --all-features -- -D warnings
