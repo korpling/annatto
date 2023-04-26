@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - if audio file linked in an exmaralda file cannot be found, no audio source will be linked
 - exmaralda import: Multiple tlis with the same time value are now merged into a single tli token
 - Upgrade to quick-xml 0.28 to avoid issues in future versions of Rust.
+- exmaralda: catch flipped time values (start >= end)
 
 ## [0.1.0] - 2023-04-12
 

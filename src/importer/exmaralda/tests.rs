@@ -25,6 +25,16 @@ use super::ImportEXMARaLDA;
 use itertools::Itertools;
 
 #[test]
+fn test_exb_fail_for_timeline() {
+    let import = ImportEXMARaLDA::default();
+    let import_path = "./tests/data/import/exmaralda/fail-corrupt_timeline/import/";
+    let (sender, receiver) = mpsc::channel();
+    let r = import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender));
+    assert!(r.is_err());
+    assert!(receiver.into_iter().count() > 0);
+}
+
+#[test]
 fn test_exb_in_mem() {
     let r = test_exb(false, true);
     assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
