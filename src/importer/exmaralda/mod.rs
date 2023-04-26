@@ -13,6 +13,7 @@ use ordered_float::OrderedFloat;
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader, ParserConfig};
 
 use crate::{
+    error::AnnattoError,
     util::{get_all_files, graphupdate::map_audio_source, insert_corpus_nodes_from_path},
     workflow::StatusMessage,
     Module,
@@ -223,6 +224,12 @@ impl ImportEXMARaLDA {
                             let start_i =
                                 ordered_tl_nodes.iter().position(|e| e == start_id).unwrap();
                             let end_i = ordered_tl_nodes.iter().position(|e| e == end_id).unwrap();
+                            if start_i >= end_i {
+                                if let Some(sender) = tx {
+                                    let error = AnnattoError::Import { reason: format!("Start time is bigger than end time for ids: {start_id}--{end_id} "), importer: self.module_name().to_string(), path: document_path.to_path_buf() };
+                                    sender.send(StatusMessage::Failed(error))?;
+                                }
+                            }
                             let overlapped = &ordered_tl_nodes[start_i..end_i];
                             if overlapped.is_empty() {
                                 if let Some(sender) = tx {
