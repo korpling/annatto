@@ -5,8 +5,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- import exmaralda
+- set annis::layer with speaker name when importing exmaralda files
+- spreadsheet import builds regular ANNIS coverage-based model
+- import CoNLL-U files
+
 ### Fixed
 
+- fix character buffer in exmaralda import
+- order names are no longer part of the guessed visualisation when exporting GraphML
+- if audio file linked in an exmaralda file cannot be found, no audio source will be linked
+- exmaralda import: Multiple tlis with the same time value are now merged into a single tli token
 - Upgrade to quick-xml 0.28 to avoid issues in future versions of Rust.
 
 ## [0.1.0] - 2023-04-12
@@ -22,16 +33,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - calls to apply_update
 - replace annotation names, namespaces, move annotations, delete annotations (re)
 - export graphml
-
-## [0.2.0-SNAPSHOT]
-
-### Added
-
-- import exmaralda
-- fix character buffer in exmaralda import
-- order names are no longer part of the guessed visualisation when exporting GraphML
-- if audio file linked in an exmaralda file cannot be found, no audio source will be linked
-- set annis::layer with speaker name when importing exmaralda files
-- spreadsheet import builds regular ANNIS coverage-based model
-- exmaralda import: Multiple tlis with the same time value are now merged into a single tli token
-- import CoNLL-U files
