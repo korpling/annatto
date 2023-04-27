@@ -337,7 +337,7 @@ impl ImportEXMARaLDA {
                     }
                     parent_map.remove(&name.to_string());
                 }
-                Err(_) => break,
+                Err(e) => return Err(Box::new(e)),
                 _ => continue,
             }
         }
