@@ -30,8 +30,38 @@ fn test_exb_fail_for_timeline() {
     let import_path = "./tests/data/import/exmaralda/fail-corrupt_timeline/import/";
     let (sender, receiver) = mpsc::channel();
     let r = import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender));
-    assert!(r.is_err());
+    assert!(r.is_ok());
     assert!(receiver.into_iter().count() > 0);
+    let document_path = "./tests/data/import/exmaralda/fail-corrupt_timeline/import/test_doc.exb";
+    let mut u = GraphUpdate::default();
+    assert!(import
+        .import_document(
+            Path::new(import_path),
+            Path::new(document_path),
+            &mut u,
+            &None
+        )
+        .is_err());
+}
+
+#[test]
+fn test_fail_invalid() {
+    let import = ImportEXMARaLDA::default();
+    let import_path = "./tests/data/import/exmaralda/fail-invalid/import/";
+    let (sender, receiver) = mpsc::channel();
+    let r = import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender));
+    assert!(r.is_ok());
+    assert!(receiver.into_iter().count() > 0);
+    let document_path = "./tests/data/import/exmaralda/fail-invalid/import/test_doc_invalid.exb";
+    let mut u = GraphUpdate::default();
+    assert!(import
+        .import_document(
+            Path::new(import_path),
+            Path::new(document_path),
+            &mut u,
+            &None
+        )
+        .is_err());
 }
 
 #[test]

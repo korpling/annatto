@@ -41,9 +41,20 @@ impl Importer for ImportEXMARaLDA {
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
         let all_files = get_all_files(input_path, vec!["exb", "xml"])?;
-        all_files
-            .into_iter()
-            .try_for_each(|pb| self.import_document(input_path, pb.as_path(), &mut update, &tx))?;
+        if all_files
+            .iter()
+            .map(|pb| self.import_document(input_path, pb.as_path(), &mut update, &tx))
+            .any(|r| r.is_err())
+        {
+            if let Some(ref sender) = tx {
+                sender.send(StatusMessage::Failed(AnnattoError::Import {
+                    reason: "Import is marked as failed, because at least one document failed."
+                        .to_string(),
+                    importer: self.module_name().to_string(),
+                    path: input_path.to_path_buf(),
+                }))?;
+            }
+        }
         Ok(update)
     }
 }
@@ -225,7 +236,19 @@ impl ImportEXMARaLDA {
                                 ordered_tl_nodes.iter().position(|e| e == start_id).unwrap();
                             let end_i = ordered_tl_nodes.iter().position(|e| e == end_id).unwrap();
                             if start_i >= end_i {
-                                return Err(Box::new(AnnattoError::Import { reason: format!("Start time is bigger than end time for ids: {start_id}--{end_id} "), importer: self.module_name().to_string(), path: document_path.to_path_buf() }));
+                                let err_msg = format!("Start time is bigger than end time for ids: {start_id}--{end_id} ");
+                                if let Some(sender) = tx {
+                                    sender.send(StatusMessage::Failed(AnnattoError::Import {
+                                        reason: err_msg.to_string(),
+                                        importer: self.module_name().to_string(),
+                                        path: document_path.to_path_buf(),
+                                    }))?;
+                                }
+                                return Err(Box::new(AnnattoError::Import {
+                                    reason: err_msg,
+                                    importer: self.module_name().to_string(),
+                                    path: document_path.to_path_buf(),
+                                }));
                             }
                             let overlapped = &ordered_tl_nodes[start_i..end_i];
                             if overlapped.is_empty() {
@@ -314,7 +337,7 @@ impl ImportEXMARaLDA {
                     }
                     parent_map.remove(&name.to_string());
                 }
-                Err(_) => break,
+                Err(e) => return Err(Box::new(e)),
                 _ => continue,
             }
         }
