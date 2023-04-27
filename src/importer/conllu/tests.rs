@@ -2,6 +2,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     env::temp_dir,
     path::Path,
+    sync::mpsc,
 };
 
 use graphannis::{
@@ -18,7 +19,7 @@ use graphannis_core::{
 use itertools::Itertools;
 use tempfile::tempdir_in;
 
-use crate::importer::Importer;
+use crate::{importer::Importer, workflow::StatusMessage};
 
 use super::ImportCoNLLU;
 
@@ -39,6 +40,29 @@ fn test_conll_fail_invalid() {
             &None
         )
         .is_err());
+}
+
+#[test]
+fn test_conll_fail_invalid_heads() {
+    let import = ImportCoNLLU::default();
+    let import_path = Path::new("tests/data/import/conll/invalid-heads/");
+    let (sender, receiver) = mpsc::channel();
+    let job = import.import_corpus(import_path, &BTreeMap::new(), Some(sender));
+    assert!(job.is_ok());
+    let fail_msgs = receiver.into_iter().filter(|s| match *s {
+        StatusMessage::Failed(_) => true,
+        _ => false,
+    });
+    assert!(fail_msgs.count() > 0);
+}
+
+#[test]
+fn test_conll_fail_cyclic() -> Result<(), Box<dyn std::error::Error>> {
+    let import = ImportCoNLLU::default();
+    let import_path = Path::new("tests/data/import/conll/cyclic-deps/");
+    let job = import.import_corpus(import_path, &BTreeMap::new(), None);
+    assert!(job.is_ok());
+    Ok(())
 }
 
 #[test]

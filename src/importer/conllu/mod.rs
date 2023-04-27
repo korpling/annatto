@@ -236,8 +236,13 @@ impl ImportCoNLLU {
                         }
                     } else if let Some(sender) = tx {
                         let msg =
-                            format!("{document_node_name}: Unknown head id `{head_id}` ({l}, {c})");
-                        sender.send(StatusMessage::Warning(msg))?;
+                            format!("Failed to build dependency tree: Unknown head id `{head_id}` ({l}, {c})");
+                        let err = AnnattoError::Import {
+                            reason: msg,
+                            importer: self.module_name().to_string(),
+                            path: Path::new(document_node_name).to_path_buf(),
+                        };
+                        sender.send(StatusMessage::Failed(err))?;
                     }
                 }
             }
