@@ -33,11 +33,11 @@ pub fn main() -> Result<(), AnnattoError> {
 
     let bar = ProgressBar::new(1000);
     bar.set_style(ProgressStyle::default_bar().template("[{elapsed}] [{bar:40}] {percent}% {msg}"));
-
+    let mut errors = Vec::new();
     for status_update in rx {
         match status_update {
             StatusMessage::Failed(e) => {
-                return Err(e);
+                errors.push(e);
             }
             StatusMessage::StepsCreated(steps) => {
                 if steps.is_empty() {
@@ -85,7 +85,10 @@ pub fn main() -> Result<(), AnnattoError> {
             }
         }
     }
-
-    bar.finish_with_message("Conversion successful");
-    Ok(())
+    if errors.is_empty() {
+        bar.finish_with_message("Conversion successful");
+        Ok(())
+    } else {
+        Err(AnnattoError::ConversionFailed { errors: errors })
+    }
 }
