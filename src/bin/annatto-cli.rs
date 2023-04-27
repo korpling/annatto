@@ -89,6 +89,6 @@ pub fn main() -> Result<(), AnnattoError> {
         bar.finish_with_message("Conversion successful");
         Ok(())
     } else {
-        Err(AnnattoError::ConversionFailed { errors: errors })
+        Err(AnnattoError::ConversionFailed { errors })
     }
 }
