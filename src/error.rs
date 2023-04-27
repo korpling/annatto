@@ -2,6 +2,7 @@ use std::{io::BufWriter, path::PathBuf, string::FromUtf8Error, sync::mpsc::SendE
 
 use graphannis::errors::GraphAnnisError;
 use graphannis_core::errors::GraphAnnisCoreError;
+use itertools::Itertools;
 use thiserror::Error;
 
 use crate::workflow::StatusMessage;
@@ -12,6 +13,8 @@ pub type StandardErrorResult<T> = std::result::Result<T, Box<dyn std::error::Err
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum AnnattoError {
+    #[error("Conversion failed with errors: {}", errors.into_iter().map(|e| e.to_string()).join("\n"))]
+    ConversionFailed { errors: Vec<AnnattoError> },
     #[error("Error during exporting corpus from {path} with {exporter:?}: {reason:?}")]
     Export {
         reason: String,
