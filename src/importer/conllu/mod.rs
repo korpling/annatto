@@ -47,7 +47,17 @@ impl Importer for ImportCoNLLU {
         let mut update = GraphUpdate::default();
         let paths_and_node_names = path_structure(&mut update, input_path, &["conll", "conllu"])?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
-            self.import_document(&mut update, pathbuf.as_path(), doc_node_name, &tx)?;
+            if let Err(e) = self.import_document(&mut update, pathbuf.as_path(), doc_node_name, &tx)
+            {
+                if let Some(ref sender) = tx {
+                    let reason = e.to_string();
+                    sender.send(StatusMessage::Failed(AnnattoError::Import {
+                        reason,
+                        importer: self.module_name().to_string(),
+                        path: input_path.to_path_buf(),
+                    }))?;
+                }
+            }
         }
         Ok(update)
     }
