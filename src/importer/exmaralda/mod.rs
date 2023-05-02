@@ -225,7 +225,7 @@ impl ImportEXMARaLDA {
                                 };
                                 if let Some(sender) = tx {
                                     sender.send(StatusMessage::Failed(AnnattoError::Import {
-                                        reason: rs.to_string(),
+                                        reason: rs,
                                         importer: self.module_name().to_string(),
                                         path: document_path.to_path_buf(),
                                     }))?;
