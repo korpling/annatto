@@ -196,35 +196,59 @@ impl ImportEXMARaLDA {
                             let speaker_id = if let Some(speaker_id_val) = speaker_id_opt {
                                 speaker_id_val
                             } else {
+                                let rs = "Undefined speaker (not defined in tier attributes).";
                                 let err = AnnattoError::Import {
-                                    reason: "Undefined speaker (not defined in tier attributes)."
-                                        .to_string(),
+                                    reason: rs.to_string(),
                                     importer: self.module_name().to_string(),
                                     path: document_path.to_path_buf(),
                                 };
+                                if let Some(sender) = tx {
+                                    sender.send(StatusMessage::Failed(AnnattoError::Import {
+                                        reason: rs.to_string(),
+                                        importer: self.module_name().to_string(),
+                                        path: document_path.to_path_buf(),
+                                    }))?;
+                                }
                                 return Err(Box::new(err));
                             };
                             let speaker_name_opt = speaker_map.get(speaker_id);
                             let speaker_name = if let Some(speaker_name_value) = speaker_name_opt {
                                 speaker_name_value
                             } else {
+                                let rs = format!(
+                                    "Speaker `{speaker_id}` has not been defined in speaker-table."
+                                );
                                 let err = AnnattoError::Import {
-                                    reason: format!("Speaker `{speaker_id}` has not been defined in speaker-table."),
+                                    reason: rs.to_string(),
                                     importer: self.module_name().to_string(),
                                     path: document_path.to_path_buf(),
                                 };
+                                if let Some(sender) = tx {
+                                    sender.send(StatusMessage::Failed(AnnattoError::Import {
+                                        reason: rs,
+                                        importer: self.module_name().to_string(),
+                                        path: document_path.to_path_buf(),
+                                    }))?;
+                                }
                                 return Err(Box::new(err));
                             };
                             let anno_name_opt = tier_info.get("category");
                             let anno_name = if let Some(anno_name_value) = anno_name_opt {
                                 anno_name_value
                             } else {
+                                let rs = "Tier encountered with undefined category attribute.";
                                 let err = AnnattoError::Import {
-                                    reason: "Tier encountered with undefined category attribute."
-                                        .to_string(),
+                                    reason: rs.to_string(),
                                     importer: self.module_name().to_string(),
                                     path: document_path.to_path_buf(),
                                 };
+                                if let Some(sender) = tx {
+                                    sender.send(StatusMessage::Failed(AnnattoError::Import {
+                                        reason: rs.to_string(),
+                                        importer: self.module_name().to_string(),
+                                        path: document_path.to_path_buf(),
+                                    }))?;
+                                }
                                 return Err(Box::new(err));
                             };
                             let tier_type = if let Some(tpe) = tier_info.get("type") {

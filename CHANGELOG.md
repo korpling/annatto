@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - fixed panics caused by undefined attributes in tier tag or missing speaker table / wrong speaker id
+- exmaralda import did not properly forward errors through the status sender, which it now does
 
 ## [0.2.0] - 2023-04-27
 
