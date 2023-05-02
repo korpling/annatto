@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- (c) http://www.rrz.uni-hamburg.de/exmaralda -->
+<basic-transcription>
+  <head>
+    <meta-information>
+      <project-name />
+      <transcription-name />
+      <referenced-file url="test_file.wav" />
+      <ud-meta-information />
+      <comment />
+      <transcription-convention />
+    </meta-information>
+    <speakertable>
+      <speaker id="dipl">
+        <abbreviation>dipl</abbreviation>
+        <sex value="u" />
+        <languages-used />
+        <l1 />
+        <l2 />
+        <ud-speaker-information />
+        <comment />
+      </speaker>
+      <speaker id="norm">
+        <abbreviation>norm</abbreviation>
+        <sex value="u" />
+        <languages-used />
+        <l1 />
+        <l2 />
+        <ud-speaker-information />
+        <comment />
+      </speaker>
+    </speakertable>
+  </head>
+  <basic-body>
+    <common-timeline>
+      <tli id="T286" time="0.0" />
+      <tli id="T0" time="1.0" />
+      <tli id="T1" time="2.0" />
+      <tli id="T2" time="3.0" />
+      <tli id="T3" time="4.0" />
+      <tli id="T4" time="5.0" />
+    </common-timeline>
+    <tier id="TIE0" speaker="dipl" category="dipl" type="t" display-name="dipl [dipl]">
+      <event start="T286" end="T1">I'm</event>
+      <event start="T1" end="T2">in</event>
+      <event start="T2" end="T3">New</event>
+      <event start="T3" end="T4">York</event>
+    </tier>
+    <tier id="TIE1" category="norm" type="t" display-name="norm [norm]">
+      <event start="T286" end="T0">I</event>
+      <event start="T0" end="T1">am</event>
+      <event start="T1" end="T2">in</event>
+      <event start="T2" end="T4">New York</event>
+    </tier>
+    <tier id="TIE19" speaker="dipl" category="sentence" type="a" display-name="dipl [sentence]">
+      <event start="T286" end="T4">1</event>
+    </tier>
+    <tier id="TIE21" speaker="norm" category="lemma" type="a" display-name="norm [lemma]">
+      <event start="T286" end="T0">I</event>
+      <event start="T0" end="T1">be</event>
+      <event start="T1" end="T2">in</event>
+      <event start="T2" end="T4">New York</event>
+    </tier>
+    <tier id="POS_TIER" speaker="norm" category="pos" type="a" display-name="norm [pos]">
+      <event start="T286" end="T0">PRON</event>
+      <event start="T0" end="T1">VERB</event>
+      <event start="T1" end="T2">ADP</event>
+      <event start="T2" end="T4">ADP</event>
+    </tier>
+  </basic-body>
+</basic-transcription>

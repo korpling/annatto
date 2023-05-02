@@ -192,20 +192,52 @@ impl ImportEXMARaLDA {
                         "event" => {
                             let text = char_buf.to_string();
                             let tier_info = parent_map.get("tier").unwrap();
-                            let speaker_id = tier_info.get("speaker").unwrap();
-                            let speaker_name = speaker_map.get(speaker_id).unwrap();
-                            let anno_name = tier_info.get("category").unwrap();
+                            let speaker_id_opt = tier_info.get("speaker");
+                            let speaker_id = if let Some(speaker_id_val) = speaker_id_opt {
+                                speaker_id_val
+                            } else {
+                                let err = AnnattoError::Import {
+                                    reason: "Undefined speaker (not defined in tier attributes)."
+                                        .to_string(),
+                                    importer: self.module_name().to_string(),
+                                    path: document_path.to_path_buf(),
+                                };
+                                return Err(Box::new(err));
+                            };
+                            let speaker_name_opt = speaker_map.get(speaker_id);
+                            let speaker_name = if let Some(speaker_name_value) = speaker_name_opt {
+                                speaker_name_value
+                            } else {
+                                let err = AnnattoError::Import {
+                                    reason: format!("Speaker `{speaker_id}` has not been defined in speaker-table."),
+                                    importer: self.module_name().to_string(),
+                                    path: document_path.to_path_buf(),
+                                };
+                                return Err(Box::new(err));
+                            };
+                            let anno_name_opt = tier_info.get("category");
+                            let anno_name = if let Some(anno_name_value) = anno_name_opt {
+                                anno_name_value
+                            } else {
+                                let err = AnnattoError::Import {
+                                    reason: "Tier encountered with undefined category attribute."
+                                        .to_string(),
+                                    importer: self.module_name().to_string(),
+                                    path: document_path.to_path_buf(),
+                                };
+                                return Err(Box::new(err));
+                            };
                             let tier_type = if let Some(tpe) = tier_info.get("type") {
-                                tpe
+                                tpe.as_str()
                             } else {
                                 if let Some(sender) = tx {
                                     let msg = format!(
-                                        "Could not determine tier type for {}::{}. Tier will be skipped.",
+                                        "Could not determine tier type for {}::{}. Tier will be treated as annotation tier.",
                                         &speaker_id, &anno_name
                                     );
                                     sender.send(StatusMessage::Warning(msg))?;
                                 }
-                                continue;
+                                "a"
                             };
                             let event_info = parent_map.get("event").unwrap();
                             let start_id = if let Some(id) = event_info.get("start") {
@@ -309,7 +341,7 @@ impl ImportEXMARaLDA {
                                 anno_name: "layer".to_string(),
                                 anno_value: speaker_name.to_string(),
                             })?;
-                            if tier_type.as_str() == "t" {
+                            if tier_type == "t" {
                                 // tokenization
                                 update.add_event(UpdateEvent::AddNodeLabel {
                                     node_name: node_name.to_string(),

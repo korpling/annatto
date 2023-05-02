@@ -5,7 +5,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
 - collected errors in status messages `Failed` are now all reported at the end of the job
+
+### Fixed
+
+- fixed panics caused by undefined attributes in tier tag or missing speaker table / wrong speaker id
 
 ## [0.2.0] - 2023-04-27
 
