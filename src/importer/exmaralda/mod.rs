@@ -395,7 +395,7 @@ impl ImportEXMARaLDA {
                     }
                     parent_map.remove(&name.to_string());
                 }
-                Err(e) => {
+                Err(_) => {
                     return Err(AnnattoError::Import {
                         reason: "Failed parsing EXMARaLDA XML.".to_string(),
                         importer: self.module_name().to_string(),
