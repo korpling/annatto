@@ -61,7 +61,7 @@ impl Importer for ImportEXMARaLDA {
                     _ => {
                         if let Some(ref sender) = tx {
                             sender.send(StatusMessage::Failed(AnnattoError::Import {
-                                reason: format!("Import failed with error: {}", e.to_string()),
+                                reason: format!("Import failed with error: {}", e),
                                 importer: self.module_name().to_string(),
                                 path: file_path,
                             }))?;
