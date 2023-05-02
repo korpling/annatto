@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- import exmaralda
+- added import module for exmaralda partitur files
 - set annis::layer with speaker name when importing exmaralda files
 - spreadsheet import builds regular ANNIS coverage-based model
 - import CoNLL-U files
