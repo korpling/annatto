@@ -125,6 +125,26 @@ fn test_exb_fail_for_unknown_tli() {
 }
 
 #[test]
+fn test_exb_fail_for_bad_timevalue() {
+    let import = ImportEXMARaLDA::default();
+    let import_path = "./tests/data/import/exmaralda/fail-bad_timevalue/";
+    let (sender, receiver) = mpsc::channel();
+    let r = import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender));
+    assert!(r.is_ok());
+    assert!(receiver.into_iter().count() > 0);
+    let document_path = Path::new(import_path).join("test_doc.exb");
+    let mut u = GraphUpdate::default();
+    assert!(import
+        .import_document(
+            Path::new(import_path),
+            document_path.as_path(),
+            &mut u,
+            &None
+        )
+        .is_err());
+}
+
+#[test]
 fn test_fail_invalid() {
     let import = ImportEXMARaLDA::default();
     let import_path = "./tests/data/import/exmaralda/fail-invalid/import/";
