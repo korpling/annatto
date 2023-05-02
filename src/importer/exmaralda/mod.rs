@@ -41,18 +41,33 @@ impl Importer for ImportEXMARaLDA {
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
         let all_files = get_all_files(input_path, vec!["exb", "xml"])?;
-        if all_files
-            .iter()
-            .map(|pb| self.import_document(input_path, pb.as_path(), &mut update, &tx))
-            .any(|r| r.is_err())
-        {
-            if let Some(ref sender) = tx {
-                sender.send(StatusMessage::Failed(AnnattoError::Import {
-                    reason: "Import is marked as failed, because at least one document failed."
-                        .to_string(),
-                    importer: self.module_name().to_string(),
-                    path: input_path.to_path_buf(),
-                }))?;
+        for file_path in all_files {
+            let r = self.import_document(input_path, file_path.as_path(), &mut update, &tx);
+            if let Err(e) = r {
+                match e.downcast_ref::<AnnattoError>() {
+                    Some(AnnattoError::Import {
+                        reason,
+                        importer,
+                        path,
+                    }) => {
+                        if let Some(ref sender) = tx {
+                            sender.send(StatusMessage::Failed(AnnattoError::Import {
+                                reason: reason.to_string(),
+                                importer: importer.to_string(),
+                                path: path.clone(),
+                            }))?;
+                        };
+                    }
+                    _ => {
+                        if let Some(ref sender) = tx {
+                            sender.send(StatusMessage::Failed(AnnattoError::Import {
+                                reason: format!("Import failed with error: {}", e.to_string()),
+                                importer: self.module_name().to_string(),
+                                path: file_path,
+                            }))?;
+                        };
+                    }
+                };
             }
         }
         Ok(update)
@@ -202,13 +217,6 @@ impl ImportEXMARaLDA {
                                     importer: self.module_name().to_string(),
                                     path: document_path.to_path_buf(),
                                 };
-                                if let Some(sender) = tx {
-                                    sender.send(StatusMessage::Failed(AnnattoError::Import {
-                                        reason: rs.to_string(),
-                                        importer: self.module_name().to_string(),
-                                        path: document_path.to_path_buf(),
-                                    }))?;
-                                }
                                 return Err(Box::new(err));
                             };
                             let speaker_name_opt = speaker_map.get(speaker_id);
@@ -219,17 +227,10 @@ impl ImportEXMARaLDA {
                                     "Speaker `{speaker_id}` has not been defined in speaker-table."
                                 );
                                 let err = AnnattoError::Import {
-                                    reason: rs.to_string(),
+                                    reason: rs,
                                     importer: self.module_name().to_string(),
                                     path: document_path.to_path_buf(),
                                 };
-                                if let Some(sender) = tx {
-                                    sender.send(StatusMessage::Failed(AnnattoError::Import {
-                                        reason: rs,
-                                        importer: self.module_name().to_string(),
-                                        path: document_path.to_path_buf(),
-                                    }))?;
-                                }
                                 return Err(Box::new(err));
                             };
                             let anno_name_opt = tier_info.get("category");
@@ -242,13 +243,6 @@ impl ImportEXMARaLDA {
                                     importer: self.module_name().to_string(),
                                     path: document_path.to_path_buf(),
                                 };
-                                if let Some(sender) = tx {
-                                    sender.send(StatusMessage::Failed(AnnattoError::Import {
-                                        reason: rs.to_string(),
-                                        importer: self.module_name().to_string(),
-                                        path: document_path.to_path_buf(),
-                                    }))?;
-                                }
                                 return Err(Box::new(err));
                             };
                             let tier_type = if let Some(tpe) = tier_info.get("type") {
@@ -293,13 +287,6 @@ impl ImportEXMARaLDA {
                             let end_i = ordered_tl_nodes.iter().position(|e| e == end_id).unwrap();
                             if start_i >= end_i {
                                 let err_msg = format!("Start time is bigger than end time for ids: {start_id}--{end_id} ");
-                                if let Some(sender) = tx {
-                                    sender.send(StatusMessage::Failed(AnnattoError::Import {
-                                        reason: err_msg.to_string(),
-                                        importer: self.module_name().to_string(),
-                                        path: document_path.to_path_buf(),
-                                    }))?;
-                                }
                                 return Err(Box::new(AnnattoError::Import {
                                     reason: err_msg,
                                     importer: self.module_name().to_string(),
