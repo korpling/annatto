@@ -282,9 +282,30 @@ impl ImportEXMARaLDA {
                                 }
                                 continue;
                             };
-                            let start_i =
-                                ordered_tl_nodes.iter().position(|e| e == start_id).unwrap();
-                            let end_i = ordered_tl_nodes.iter().position(|e| e == end_id).unwrap();
+                            let start_i = if let Some(i_val) =
+                                ordered_tl_nodes.iter().position(|e| e == start_id)
+                            {
+                                i_val
+                            } else {
+                                let err = AnnattoError::Import {
+                                    reason: format!("Unknown time line item: {start_id}"),
+                                    importer: self.module_name().to_string(),
+                                    path: document_path.to_path_buf(),
+                                };
+                                return Err(Box::new(err));
+                            };
+                            let end_i = if let Some(i_val) =
+                                ordered_tl_nodes.iter().position(|e| e == end_id)
+                            {
+                                i_val
+                            } else {
+                                let err = AnnattoError::Import {
+                                    reason: format!("Unknown time line item: {start_id}"),
+                                    importer: self.module_name().to_string(),
+                                    path: document_path.to_path_buf(),
+                                };
+                                return Err(Box::new(err));
+                            };
                             if start_i >= end_i {
                                 let err_msg = format!("Start time is bigger than end time for ids: {start_id}--{end_id} ");
                                 return Err(Box::new(AnnattoError::Import {
