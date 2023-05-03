@@ -255,24 +255,36 @@ impl ImportEXMARaLDA {
                             let start_id = if let Some(id) = event_info.get("start") {
                                 id
                             } else {
+                                // send "Failed", but continue to collect potential further errors in the file
                                 if let Some(sender) = tx {
                                     let msg = format!(
-                                            "Could not determine start id of currently processed event `{}`. Event will be skipped.",
+                                            "Could not determine start id of currently processed event `{}`. Event will be skipped. Import will fail.",
                                             text
                                         );
-                                    sender.send(StatusMessage::Warning(msg))?;
+                                    let err = AnnattoError::Import {
+                                        reason: msg,
+                                        importer: self.module_name().to_string(),
+                                        path: document_path.to_path_buf(),
+                                    };
+                                    sender.send(StatusMessage::Failed(err))?;
                                 }
                                 continue;
                             };
                             let end_id = if let Some(id) = event_info.get("end") {
                                 id
                             } else {
+                                // send "Failed", but continue to collect potential further errors in the file
                                 if let Some(sender) = tx {
                                     let msg = format!(
-                                            "Could not determine end id of currently processed event `{}`. Event will be skipped.",
+                                            "Could not determine end id of currently processed event `{}`. Event will be skipped. Import will fail.",
                                             text
                                         );
-                                    sender.send(StatusMessage::Warning(msg))?;
+                                    let err = AnnattoError::Import {
+                                        reason: msg,
+                                        importer: self.module_name().to_string(),
+                                        path: document_path.to_path_buf(),
+                                    };
+                                    sender.send(StatusMessage::Failed(err))?;
                                 }
                                 continue;
                             };

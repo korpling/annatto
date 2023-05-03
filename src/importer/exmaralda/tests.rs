@@ -18,7 +18,7 @@ use graphannis_core::{
 };
 use tempfile::tempdir_in;
 
-use crate::{importer::Importer, util::graphupdate::map_audio_source};
+use crate::{importer::Importer, util::graphupdate::map_audio_source, workflow::StatusMessage};
 
 use super::ImportEXMARaLDA;
 
@@ -142,6 +142,25 @@ fn test_exb_fail_for_bad_timevalue() {
             &None
         )
         .is_err());
+}
+
+#[test]
+fn test_exb_fail_no_start_no_end() {
+    let import = ImportEXMARaLDA::default();
+    let import_path = "./tests/data/import/exmaralda/fail-no_start_no_end/";
+    let (sender, receiver) = mpsc::channel();
+    let r = import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender));
+    assert!(r.is_ok());
+    assert_eq!(
+        receiver
+            .iter()
+            .filter(|m| match m {
+                StatusMessage::Failed(_) => true,
+                _ => false,
+            })
+            .count(),
+        3
+    );
 }
 
 #[test]
