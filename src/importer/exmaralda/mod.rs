@@ -41,20 +41,19 @@ impl Importer for ImportEXMARaLDA {
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
         let all_files = get_all_files(input_path, vec!["exb", "xml"])?;
-        if all_files
-            .iter()
-            .map(|pb| self.import_document(input_path, pb.as_path(), &mut update, &tx))
-            .any(|r| r.is_err())
-        {
-            if let Some(ref sender) = tx {
-                sender.send(StatusMessage::Failed(AnnattoError::Import {
-                    reason: "Import is marked as failed, because at least one document failed."
-                        .to_string(),
-                    importer: self.module_name().to_string(),
-                    path: input_path.to_path_buf(),
-                }))?;
-            }
-        }
+        all_files
+            .into_iter()
+            .map(|fp| self.import_document(input_path, fp.as_path(), &mut update, &tx))
+            .filter_map(|r| match r {
+                Ok(_) => None,
+                Err(e) => Some(e),
+            })
+            .try_for_each(|e| {
+                if let Some(ref sender) = tx {
+                    sender.send(StatusMessage::Failed(e))?
+                }
+                Ok::<(), Box<dyn std::error::Error>>(())
+            })?;
         Ok(update)
     }
 }
@@ -73,7 +72,7 @@ impl ImportEXMARaLDA {
         document_path: &std::path::Path,
         update: &mut GraphUpdate,
         tx: &Option<crate::workflow::StatusSender>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> crate::error::Result<()> {
         // buffers
         let mut doc_node_name = String::new();
         let mut char_buf = String::new();
@@ -123,7 +122,17 @@ impl ImportEXMARaLDA {
                         }
                         "tli" => {
                             let attr_map = attr_vec_to_map(&attributes);
-                            let time = attr_map["time"].parse::<OrderedFloat<f64>>()?;
+                            let time =
+                                if let Ok(t_val) = attr_map["time"].parse::<OrderedFloat<f64>>() {
+                                    t_val
+                                } else {
+                                    let err = AnnattoError::Import {
+                                        reason: "Failed to parse tli time value.".to_string(),
+                                        importer: self.module_name().to_string(),
+                                        path: document_path.to_path_buf(),
+                                    };
+                                    return Err(err);
+                                };
                             time_to_tli_attrs
                                 .entry(time)
                                 .or_insert_with(Vec::default)
@@ -202,14 +211,7 @@ impl ImportEXMARaLDA {
                                     importer: self.module_name().to_string(),
                                     path: document_path.to_path_buf(),
                                 };
-                                if let Some(sender) = tx {
-                                    sender.send(StatusMessage::Failed(AnnattoError::Import {
-                                        reason: rs.to_string(),
-                                        importer: self.module_name().to_string(),
-                                        path: document_path.to_path_buf(),
-                                    }))?;
-                                }
-                                return Err(Box::new(err));
+                                return Err(err);
                             };
                             let speaker_name_opt = speaker_map.get(speaker_id);
                             let speaker_name = if let Some(speaker_name_value) = speaker_name_opt {
@@ -219,18 +221,11 @@ impl ImportEXMARaLDA {
                                     "Speaker `{speaker_id}` has not been defined in speaker-table."
                                 );
                                 let err = AnnattoError::Import {
-                                    reason: rs.to_string(),
+                                    reason: rs,
                                     importer: self.module_name().to_string(),
                                     path: document_path.to_path_buf(),
                                 };
-                                if let Some(sender) = tx {
-                                    sender.send(StatusMessage::Failed(AnnattoError::Import {
-                                        reason: rs,
-                                        importer: self.module_name().to_string(),
-                                        path: document_path.to_path_buf(),
-                                    }))?;
-                                }
-                                return Err(Box::new(err));
+                                return Err(err);
                             };
                             let anno_name_opt = tier_info.get("category");
                             let anno_name = if let Some(anno_name_value) = anno_name_opt {
@@ -242,14 +237,7 @@ impl ImportEXMARaLDA {
                                     importer: self.module_name().to_string(),
                                     path: document_path.to_path_buf(),
                                 };
-                                if let Some(sender) = tx {
-                                    sender.send(StatusMessage::Failed(AnnattoError::Import {
-                                        reason: rs.to_string(),
-                                        importer: self.module_name().to_string(),
-                                        path: document_path.to_path_buf(),
-                                    }))?;
-                                }
-                                return Err(Box::new(err));
+                                return Err(err);
                             };
                             let tier_type = if let Some(tpe) = tier_info.get("type") {
                                 tpe.as_str()
@@ -267,44 +255,70 @@ impl ImportEXMARaLDA {
                             let start_id = if let Some(id) = event_info.get("start") {
                                 id
                             } else {
+                                // send "Failed", but continue to collect potential further errors in the file
                                 if let Some(sender) = tx {
                                     let msg = format!(
-                                            "Could not determine start id of currently processed event `{}`. Event will be skipped.",
+                                            "Could not determine start id of currently processed event `{}`. Event will be skipped. Import will fail.",
                                             text
                                         );
-                                    sender.send(StatusMessage::Warning(msg))?;
+                                    let err = AnnattoError::Import {
+                                        reason: msg,
+                                        importer: self.module_name().to_string(),
+                                        path: document_path.to_path_buf(),
+                                    };
+                                    sender.send(StatusMessage::Failed(err))?;
                                 }
                                 continue;
                             };
                             let end_id = if let Some(id) = event_info.get("end") {
                                 id
                             } else {
+                                // send "Failed", but continue to collect potential further errors in the file
                                 if let Some(sender) = tx {
                                     let msg = format!(
-                                            "Could not determine end id of currently processed event `{}`. Event will be skipped.",
+                                            "Could not determine end id of currently processed event `{}`. Event will be skipped. Import will fail.",
                                             text
                                         );
-                                    sender.send(StatusMessage::Warning(msg))?;
+                                    let err = AnnattoError::Import {
+                                        reason: msg,
+                                        importer: self.module_name().to_string(),
+                                        path: document_path.to_path_buf(),
+                                    };
+                                    sender.send(StatusMessage::Failed(err))?;
                                 }
                                 continue;
                             };
-                            let start_i =
-                                ordered_tl_nodes.iter().position(|e| e == start_id).unwrap();
-                            let end_i = ordered_tl_nodes.iter().position(|e| e == end_id).unwrap();
+                            let start_i = if let Some(i_val) =
+                                ordered_tl_nodes.iter().position(|e| e == start_id)
+                            {
+                                i_val
+                            } else {
+                                let err = AnnattoError::Import {
+                                    reason: format!("Unknown time line item: {start_id}"),
+                                    importer: self.module_name().to_string(),
+                                    path: document_path.to_path_buf(),
+                                };
+                                return Err(err);
+                            };
+                            let end_i = if let Some(i_val) =
+                                ordered_tl_nodes.iter().position(|e| e == end_id)
+                            {
+                                i_val
+                            } else {
+                                let err = AnnattoError::Import {
+                                    reason: format!("Unknown time line item: {start_id}"),
+                                    importer: self.module_name().to_string(),
+                                    path: document_path.to_path_buf(),
+                                };
+                                return Err(err);
+                            };
                             if start_i >= end_i {
                                 let err_msg = format!("Start time is bigger than end time for ids: {start_id}--{end_id} ");
-                                if let Some(sender) = tx {
-                                    sender.send(StatusMessage::Failed(AnnattoError::Import {
-                                        reason: err_msg.to_string(),
-                                        importer: self.module_name().to_string(),
-                                        path: document_path.to_path_buf(),
-                                    }))?;
-                                }
-                                return Err(Box::new(AnnattoError::Import {
+                                return Err(AnnattoError::Import {
                                     reason: err_msg,
                                     importer: self.module_name().to_string(),
                                     path: document_path.to_path_buf(),
-                                }));
+                                });
                             }
                             let overlapped = &ordered_tl_nodes[start_i..end_i];
                             if overlapped.is_empty() {
@@ -393,7 +407,13 @@ impl ImportEXMARaLDA {
                     }
                     parent_map.remove(&name.to_string());
                 }
-                Err(e) => return Err(Box::new(e)),
+                Err(_) => {
+                    return Err(AnnattoError::Import {
+                        reason: "Failed parsing EXMARaLDA XML.".to_string(),
+                        importer: self.module_name().to_string(),
+                        path: document_path.to_path_buf(),
+                    })
+                }
                 _ => continue,
             }
         }

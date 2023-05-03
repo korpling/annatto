@@ -18,7 +18,7 @@ use graphannis_core::{
 };
 use tempfile::tempdir_in;
 
-use crate::{importer::Importer, util::graphupdate::map_audio_source};
+use crate::{importer::Importer, util::graphupdate::map_audio_source, workflow::StatusMessage};
 
 use super::ImportEXMARaLDA;
 
@@ -105,6 +105,65 @@ fn test_exb_fail_for_undefined_speaker() {
 }
 
 #[test]
+fn test_exb_fail_for_unknown_tli() {
+    let import = ImportEXMARaLDA::default();
+    let import_path = "./tests/data/import/exmaralda/fail-unknown_tli/";
+    let (sender, receiver) = mpsc::channel();
+    let r = import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender));
+    assert!(r.is_ok());
+    assert!(receiver.into_iter().count() > 0);
+    let document_path = Path::new(import_path).join("test_doc.exb");
+    let mut u = GraphUpdate::default();
+    assert!(import
+        .import_document(
+            Path::new(import_path),
+            document_path.as_path(),
+            &mut u,
+            &None
+        )
+        .is_err());
+}
+
+#[test]
+fn test_exb_fail_for_bad_timevalue() {
+    let import = ImportEXMARaLDA::default();
+    let import_path = "./tests/data/import/exmaralda/fail-bad_timevalue/";
+    let (sender, receiver) = mpsc::channel();
+    let r = import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender));
+    assert!(r.is_ok());
+    assert!(receiver.into_iter().count() > 0);
+    let document_path = Path::new(import_path).join("test_doc.exb");
+    let mut u = GraphUpdate::default();
+    assert!(import
+        .import_document(
+            Path::new(import_path),
+            document_path.as_path(),
+            &mut u,
+            &None
+        )
+        .is_err());
+}
+
+#[test]
+fn test_exb_fail_no_start_no_end() {
+    let import = ImportEXMARaLDA::default();
+    let import_path = "./tests/data/import/exmaralda/fail-no_start_no_end/";
+    let (sender, receiver) = mpsc::channel();
+    let r = import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender));
+    assert!(r.is_ok());
+    assert_eq!(
+        receiver
+            .iter()
+            .filter(|m| match m {
+                StatusMessage::Failed(_) => true,
+                _ => false,
+            })
+            .count(),
+        3
+    );
+}
+
+#[test]
 fn test_fail_invalid() {
     let import = ImportEXMARaLDA::default();
     let import_path = "./tests/data/import/exmaralda/fail-invalid/import/";
@@ -126,36 +185,73 @@ fn test_fail_invalid() {
 
 #[test]
 fn test_exb_in_mem() {
-    let r = test_exb(false, true);
+    let r = test_exb(
+        false,
+        "./tests/data/import/exmaralda/clean/import/",
+        true,
+        0,
+    );
     assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
 }
 
 #[test]
 fn test_exb_on_disk() {
-    let r = test_exb(true, true);
+    let r = test_exb(true, "./tests/data/import/exmaralda/clean/import/", true, 0);
     assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
 }
 
 #[test]
 fn test_exb_broken_audio_in_mem() {
-    let r = test_exb(false, false);
+    let r = test_exb(
+        false,
+        "./tests/data/import/exmaralda/broken_audio/import/",
+        false,
+        1,
+    );
     assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
 }
 
 #[test]
 fn test_exb_broken_audio_on_disk() {
-    let r = test_exb(true, false);
+    let r = test_exb(
+        true,
+        "./tests/data/import/exmaralda/broken_audio/import/",
+        false,
+        1,
+    );
     assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
 }
 
-fn test_exb(on_disk: bool, with_audio: bool) -> Result<(), Box<dyn std::error::Error>> {
+#[test]
+fn test_exb_pass_missing_type_attr_in_mem() {
+    let r = test_exb(
+        false,
+        "./tests/data/import/exmaralda/pass-no_tier_type/import/",
+        true,
+        9,
+    );
+    assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
+}
+
+#[test]
+fn test_exb_pass_missing_type_attr_on_disk() {
+    let r = test_exb(
+        true,
+        "./tests/data/import/exmaralda/pass-no_tier_type/import/",
+        true,
+        9,
+    );
+    assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
+}
+
+fn test_exb(
+    on_disk: bool,
+    import_path: &str,
+    with_audio: bool,
+    expected_message_count: usize,
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut e_g = target_graph(on_disk, with_audio)?;
     let import = ImportEXMARaLDA::default();
-    let import_path = if with_audio {
-        "./tests/data/import/exmaralda/clean/import/"
-    } else {
-        "./tests/data/import/exmaralda/broken_audio/import/"
-    };
     let (sender, receiver) = mpsc::channel();
     let mut update =
         import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender))?;
@@ -291,12 +387,8 @@ fn test_exb(on_disk: bool, with_audio: bool) -> Result<(), Box<dyn std::error::E
             assert_eq!(match_g, match_e);
         }
     }
-    // if with_audio is false, it means we are testing with a broken audio link
-    // which is supposed to be reported and leave a trace in the receiver
     let message_count = receiver.into_iter().count();
-    assert_eq!(!with_audio, message_count > 0);
-    // also, there should be no warnings for the regular test case
-    assert_eq!(with_audio, message_count == 0);
+    assert_eq!(expected_message_count, message_count);
     Ok(())
 }
 
