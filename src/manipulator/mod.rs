@@ -1,5 +1,6 @@
 //! Contains manipulators and their traits.
 pub mod check;
+pub mod map_annos;
 pub mod merge;
 pub mod re;
 

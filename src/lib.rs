@@ -46,6 +46,9 @@ pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
 /// Retrieve a new instance of a manipulator using its module name
 pub fn manipulator_by_name(name: &str) -> Result<Box<dyn Manipulator>> {
     match name {
+        manipulator::map_annos::MODULE_NAME => {
+            Ok(Box::<manipulator::map_annos::MapAnnos>::default())
+        }
         manipulator::merge::MODULE_NAME => Ok(Box::<manipulator::merge::Merge>::default()),
         manipulator::re::MODULE_NAME => Ok(Box::<manipulator::re::Replace>::default()),
         manipulator::check::MODULE_NAME => Ok(Box::<manipulator::check::Check>::default()),

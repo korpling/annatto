@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - collected errors in status messages `Failed` are now all reported at the end of the job
+- an annotation mapper can create annotations from existing annotations using AQL for defining target nodes
 
 ### Fixed
 
