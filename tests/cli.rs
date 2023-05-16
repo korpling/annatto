@@ -27,9 +27,25 @@ fn run_empty_conversion() {
         .unwrap();
     cmd.assert().success();
 
-    // Get output and replace version number
+    // Get output
     let output = std::str::from_utf8(&output.stderr).unwrap();
-    let output = output.replace(env!("CARGO_PKG_VERSION"), "<version>");
+
+    assert_snapshot!(output);
+}
+
+#[test]
+fn run_failing_conversion() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd
+        .arg("run")
+        .arg("tests/data/import/empty_failing/failing.ato")
+        .output()
+        .unwrap();
+    cmd.assert().failure();
+
+    // Get output
+    let output = std::str::from_utf8(&output.stderr).unwrap();
 
     assert_snapshot!(output);
 }
