@@ -15,8 +15,10 @@ use log::{error, info};
 static DOC_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/docs/book/");
 
 pub fn start_server() -> anyhow::Result<()> {
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-    info!("Starting server with address http://{addr}", addr = addr);
+    let addr = SocketAddr::from((
+        [127, 0, 0, 1],
+        portpicker::pick_unused_port().unwrap_or(3000),
+    ));
 
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -24,6 +26,10 @@ pub fn start_server() -> anyhow::Result<()> {
         .block_on(async {
             let router = app()?;
             let server = axum::Server::bind(&addr).serve(router.into_make_service());
+
+            info!("Opening http://{addr} in your browser.");
+            open::that(format!("http://{addr}"))?;
+
             if let Err(e) = server.await {
                 error!("{}", e);
             }
