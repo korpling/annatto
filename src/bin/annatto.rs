@@ -22,13 +22,13 @@ enum Cli {
     ShowDocumentation,
 }
 
-pub fn main() -> Result<(), AnnattoError> {
+pub fn main() -> anyhow::Result<()> {
     let args = Cli::from_args();
 
     match args {
         Cli::Run { workflow_file } => convert(workflow_file)?,
         #[cfg(feature = "embed-documentation")]
-        Cli::ShowDocumentation => todo!(),
+        Cli::ShowDocumentation => documentation_server::start_server()?,
     };
     Ok(())
 }
@@ -112,9 +112,23 @@ fn convert(workflow_file: PathBuf) -> Result<(), AnnattoError> {
 #[cfg(feature = "embed-documentation")]
 mod documentation_server {
 
+    use anyhow::Ok;
     use rust_embed::RustEmbed;
 
     #[derive(RustEmbed)]
     #[folder = "docs/book/"]
     struct CompiledDocumentation;
+
+    pub fn start_server() -> anyhow::Result<()> {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(server_documentation_files())?;
+        Ok(())
+    }
+
+    async fn server_documentation_files() -> anyhow::Result<()> {
+        println!("Hello World from async");
+        Ok(())
+    }
 }
