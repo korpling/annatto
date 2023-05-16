@@ -24,7 +24,7 @@ pest_derive = "2.0"
 quick-xml = "0.28"
 rayon = "1.1"
 regex = "1.4"
-rust-embed = {version = "6.3.0", features = ["compression", "interpolate-folder-path"]}
+rust-embed = "6.6.1"
 serde = "1.0"
 serde_derive = "1.0"
 smartstring = "1"
