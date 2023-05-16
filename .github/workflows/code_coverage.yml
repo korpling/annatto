@@ -28,6 +28,8 @@ jobs:
         uses: peaceiris/actions-mdbook@v1.2.0
         with:
           mdbook-version: 'latest'
+      - run: ls -lisa
+      - run: ls -lsa ..
       - run: mdbook build
         working-directory: docs/
       - name: Run tests with code coverage
