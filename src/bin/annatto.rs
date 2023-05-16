@@ -1,3 +1,5 @@
+#[cfg(feature = "embed-documentation")]
+use annatto::documentation_server;
 use annatto::{
     error::AnnattoError,
     workflow::{execute_from_file, StatusMessage},
@@ -23,8 +25,9 @@ enum Cli {
 }
 
 pub fn main() -> anyhow::Result<()> {
-    let args = Cli::from_args();
+    tracing_subscriber::fmt::init();
 
+    let args = Cli::from_args();
     match args {
         Cli::Run { workflow_file } => convert(workflow_file)?,
         #[cfg(feature = "embed-documentation")]
@@ -106,29 +109,5 @@ fn convert(workflow_file: PathBuf) -> Result<(), AnnattoError> {
         Ok(())
     } else {
         Err(AnnattoError::ConversionFailed { errors })
-    }
-}
-
-#[cfg(feature = "embed-documentation")]
-mod documentation_server {
-
-    use anyhow::Ok;
-    use rust_embed::RustEmbed;
-
-    #[derive(RustEmbed)]
-    #[folder = "docs/book/"]
-    struct CompiledDocumentation;
-
-    pub fn start_server() -> anyhow::Result<()> {
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?
-            .block_on(server_documentation_files())?;
-        Ok(())
-    }
-
-    async fn server_documentation_files() -> anyhow::Result<()> {
-        println!("Hello World from async");
-        Ok(())
     }
 }

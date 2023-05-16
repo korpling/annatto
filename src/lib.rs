@@ -1,3 +1,5 @@
+#[cfg(feature = "embed-documentation")]
+pub mod documentation_server;
 pub mod error;
 pub mod exporter;
 pub mod importer;
