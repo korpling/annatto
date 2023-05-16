@@ -12,12 +12,12 @@ and already provides a basic set of data handling modules.
 
 ## Performing a release
 
-You need to have [`cargo-release`](https://crates.io/crates/cargo-release) and
-and [`mdbook`](https://crates.io/crates/mdbook) installed to perform a release.
-Execute the follwing `cargo` command once to install these dependencies.
+You need to have [`cargo-release`](https://crates.io/crates/cargo-release)
+installed to perform a release. Execute the follwing `cargo` command once to
+install it.
 
 ```bash
-cargo install cargo-release mdbook
+cargo install cargo-release
 ```
 
 To perform a release, switch to the main branch and execute:
