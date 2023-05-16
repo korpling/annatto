@@ -86,3 +86,40 @@ async fn static_file(Path(path): Path<String>) -> impl IntoResponse {
     };
     response
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    use axum::{body::Body, http::Request};
+    use tower::util::ServiceExt;
+
+    #[tokio::test]
+    async fn index_found() {
+        let app = app().unwrap();
+
+        let response = app
+            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn missing_static_resource() {
+        let app = app().unwrap();
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/THIS_FILE_DOES_NOT_EXIST.html")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+}
