@@ -31,7 +31,7 @@ jobs:
           mkdir bin
           curl -sSL $url | tar -xz --directory=bin
           echo "$(pwd)/bin" >> $GITHUB_PATH
-      - run: bin/mdbook build docs/
+      - run: mdbook build -d books docs/
       - name: Run tests with code coverage
         run: ./test_coverage.sh
       - name: Upload code coverage for ref branch
@@ -63,7 +63,7 @@ jobs:
           mkdir bin
           curl -sSL $url | tar -xz --directory=bin
           echo "$(pwd)/bin" >> $GITHUB_PATH
-      - run: bin/mdbook build docs/
+      - run: mdbook build -d books docs/
       - name: Run tests with code coverage
         run: ./test_coverage.sh
 
