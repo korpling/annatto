@@ -49,6 +49,7 @@ insta = {version = "1.26.0", features = ["toml"]}
 pretty_assertions = "1.3"
 
 [features]
+default = ["embed-documentation"]
 embed-documentation = ["dep:include_dir", "dep:axum", "dep:tokio", "dep:mime_guess", "dep:portpicker", "dep:open"]
 
 # Compile some of the dev dependencies in release mode

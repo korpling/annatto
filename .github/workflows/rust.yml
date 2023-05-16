@@ -23,7 +23,7 @@ jobs:
         with:
           components: clippy
       - uses: actions/checkout@v3
-      - name: Check code with default features
-        run: cargo check
+      - name: Check code without default features
+        run: cargo check --no-default-features
       - name: Check with clippy with all features enabled
         run: cargo clippy --all-features -- -D warnings
