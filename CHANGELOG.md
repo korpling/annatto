@@ -5,10 +5,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Changes
+
+- CLI binary renamed from `annatto-cli` to `annatto`
+- To execute a workflow file, use `annatto run <workflow-file>`
+
 ### Added
 
-- collected errors in status messages `Failed` are now all reported at the end of the job
-- an annotation mapper can create annotations from existing annotations using AQL for defining target nodes
+- collected errors in status messages `Failed` are now all reported at the end
+  of the job
+- an annotation mapper can create annotations from existing annotations using
+  AQL for defining target nodes
+- New command `show-documentation` for CLI, which starts a browser with the user
+  guide.
 
 ### Fixed
 

@@ -1,27 +1,46 @@
+#[cfg(feature = "embed-documentation")]
+use annatto::documentation_server;
 use annatto::{
     error::AnnattoError,
     workflow::{execute_from_file, StatusMessage},
     StepID,
 };
 use indicatif::{ProgressBar, ProgressStyle};
-use std::{collections::HashMap, sync::mpsc, thread};
+
+use std::{collections::HashMap, path::PathBuf, sync::mpsc, thread};
 use structopt::StructOpt;
 
 /// Define a conversion operation
 #[derive(StructOpt)]
-struct Cli {
-    /// The path to the workflow file
-    #[structopt(parse(from_os_str))]
-    workflow_file: std::path::PathBuf,
+enum Cli {
+    /// Run a conversion pipeline from a workflow file.
+    Run {
+        /// The path to the workflow file.
+        #[structopt(parse(from_os_str))]
+        workflow_file: std::path::PathBuf,
+    },
+    #[cfg(feature = "embed-documentation")]
+    /// Show the documentation for this version of Annatto in the browser.
+    ShowDocumentation,
 }
 
-pub fn main() -> Result<(), AnnattoError> {
-    let args = Cli::from_args();
+pub fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
 
-    // Execute the conversion in the background and show the status to the user
+    let args = Cli::from_args();
+    match args {
+        Cli::Run { workflow_file } => convert(workflow_file)?,
+        #[cfg(feature = "embed-documentation")]
+        Cli::ShowDocumentation => documentation_server::start_server()?,
+    };
+    Ok(())
+}
+
+/// Execute the conversion in the background and show the status to the user
+fn convert(workflow_file: PathBuf) -> Result<(), AnnattoError> {
     let (tx, rx) = mpsc::channel();
     thread::spawn(
-        move || match execute_from_file(&args.workflow_file, Some(tx.clone())) {
+        move || match execute_from_file(&workflow_file, Some(tx.clone())) {
             Ok(_) => {}
             Err(e) => tx
                 .send(StatusMessage::Failed(e))

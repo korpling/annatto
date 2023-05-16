@@ -1,0 +1,19 @@
+---
+source: tests/cli.rs
+expression: output
+---
+annatto <version>
+Define a conversion operation
+
+USAGE:
+    annatto <SUBCOMMAND>
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+SUBCOMMANDS:
+    help                  Prints this message or the help of the given subcommand(s)
+    run                   Run a conversion pipeline from a workflow file
+    show-documentation    Show the documentation for this version of Annatto in the browser
+
