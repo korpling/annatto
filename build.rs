@@ -1,7 +1,7 @@
 use std::path::Path;
 
 fn main() {
-    println!("cargo:rerun-if-changed={}", "docs/");
+    println!("cargo:rerun-if-changed=docs/");
 
     // Make sure that the docs/book directory exists, otherwise include_dir will
     // fail.
