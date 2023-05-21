@@ -1,9 +1,4 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    env::temp_dir,
-    path::Path,
-    sync::mpsc,
-};
+use std::{collections::BTreeSet, env::temp_dir, path::Path, sync::mpsc};
 
 use graphannis::{
     corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},

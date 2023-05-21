@@ -603,7 +603,7 @@ impl Module for Merge {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{BTreeMap, BTreeSet};
+    use std::collections::BTreeSet;
     use std::env::temp_dir;
 
     use crate::manipulator::merge::Merge;

@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, path::Path};
+use std::path::Path;
 
 use crate::{importer::ptb::PtbImporter, util::import_as_graphml_string};
 use insta::assert_snapshot;

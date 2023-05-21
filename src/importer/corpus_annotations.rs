@@ -114,7 +114,7 @@ impl Importer for AnnotateCorpus {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeMap, env::temp_dir, io::Write};
+    use std::{env::temp_dir, io::Write};
 
     use graphannis::{
         corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
