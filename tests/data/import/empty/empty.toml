@@ -1,0 +1,8 @@
+[workflow]
+
+[[importer]]
+corpus_path = "tests/data/import/empty"
+module = { InitEmptyCorpus = {} }
+
+[[manipulator]]
+module = { Check = { config_path = "./check_empty_corpus.csv" } }
