@@ -431,7 +431,7 @@ impl Manipulator for Replace {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
-        _workflow_directory: Option<&Path>,
+        _workflow_directory: &Path,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
@@ -523,7 +523,7 @@ mod tests {
             edge_annos: Some(edge_anno_prop_val),
             namespaces: None,
         };
-        let result = replace.manipulate_corpus(&mut g, None, None);
+        let result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), None);
         assert_eq!(result.is_ok(), true, "Probing merge result {:?}", &result);
         let mut e_g = if rename {
             input_graph(on_disk, true)?
@@ -651,7 +651,7 @@ mod tests {
             edge_annos: None,
             remove_nodes: None,
         };
-        let result = replace.manipulate_corpus(&mut g, None, None);
+        let result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), None);
         assert_eq!(result.is_ok(), true, "Probing merge result {:?}", &result);
         let mut e_g = expected_output_for_move(on_disk)?;
         // corpus nodes
@@ -776,7 +776,12 @@ mod tests {
             edge_annos: Some("deprel".to_string()),
             remove_nodes: None,
         };
-        assert_eq!(replace.manipulate_corpus(&mut g, None, None).is_ok(), true);
+        assert_eq!(
+            replace
+                .manipulate_corpus(&mut g, temp_dir().as_path(), None)
+                .is_ok(),
+            true
+        );
         let tmp_file = tempfile()?;
         let export =
             graphannis_core::graph::serialization::graphml::export(&g, None, tmp_file, |_| {});
@@ -815,7 +820,12 @@ mod tests {
             edge_annos: Some("deprel".to_string()),
             remove_nodes: None,
         };
-        assert_eq!(replace.manipulate_corpus(&mut g, None, None).is_ok(), true);
+        assert_eq!(
+            replace
+                .manipulate_corpus(&mut g, temp_dir().as_path(), None)
+                .is_ok(),
+            true
+        );
         let tmp_file = tempfile()?;
         let export =
             graphannis_core::graph::serialization::graphml::export(&g, None, tmp_file, |_| {});

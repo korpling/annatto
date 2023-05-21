@@ -546,7 +546,7 @@ impl Manipulator for Merge {
     fn manipulate_corpus(
         &self,
         graph: &mut AnnotationGraph,
-        _workflow_directory: Option<&Path>,
+        _workflow_directory: &Path,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(sender) = &tx {
@@ -649,7 +649,7 @@ mod tests {
             silent: false,
             skip_components: None,
         };
-        let merge_r = merger.manipulate_corpus(&mut g, None, None);
+        let merge_r = merger.manipulate_corpus(&mut g, temp_dir().as_path(), None);
         assert_eq!(merge_r.is_ok(), true, "Probing merge result {:?}", &merge_r);
         let mut e_g = expected_output_graph(on_disk)?;
         // corpus nodes
@@ -784,14 +784,17 @@ mod tests {
             error_policy: "fail".to_string(),
             keep_name: "norm".to_string(),
             optional_chars: BTreeSet::new(),
-            optional_values: vec!["\"NOISE\"".to_string()] // TODO this might have to be removed for this particular test
-                .into_iter()
-                .collect::<BTreeSet<String>>(),
+            optional_values: BTreeSet::new(),
             report_details: false,
             silent: false,
             skip_components: None,
         };
-        assert_eq!(merger.manipulate_corpus(&mut g, None, None).is_ok(), true);
+        assert_eq!(
+            merger
+                .manipulate_corpus(&mut g, temp_dir().as_path(), None)
+                .is_ok(),
+            true
+        );
         let tmp_file = tempfile()?;
         let export =
             graphannis_core::graph::serialization::graphml::export(&g, None, tmp_file, |_| {});

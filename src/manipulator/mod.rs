@@ -22,7 +22,7 @@ pub trait Manipulator: Module {
     fn manipulate_corpus(
         &self,
         graph: &mut AnnotationGraph,
-        workflow_directory: Option<&Path>,
+        workflow_directory: &Path,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>>;
 }

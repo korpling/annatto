@@ -73,7 +73,11 @@ pub fn execute_from_file(workflow_file: &Path, tx: Option<Sender<StatusMessage>>
 pub type StatusSender = Sender<StatusMessage>;
 
 impl Workflow {
-    pub fn execute(&self, tx: Option<StatusSender>) -> Result<()> {
+    pub fn execute(
+        &self,
+        tx: Option<StatusSender>,
+        default_workflow_directory: PathBuf,
+    ) -> Result<()> {
         // Create a vector of all conversion steps and report these as current status
         if let Some(tx) = &tx {
             let mut steps: Vec<StepID> = Vec::default();
@@ -125,10 +129,15 @@ impl Workflow {
         // Execute all manipulators in sequence
         if let Some(ref manipulators) = self.manipulator {
             for desc in manipulators.iter() {
-                let workflow_directory = desc.workflow_directory.as_ref();
+                let workflow_directory = desc.workflow_directory;
                 desc.module
                     .manipulator()
-                    .manipulate_corpus(&mut g, workflow_directory.map(|d| d.as_path()), tx.clone())
+                    .manipulate_corpus(
+                        &mut g,
+                        workflow_directory
+                            .map_or(default_workflow_directory.as_path(), |d| d.as_path()),
+                        tx.clone(),
+                    )
                     .map_err(|reason| AnnattoError::Manipulator {
                         reason: reason.to_string(),
                         manipulator: desc.module.to_string(),
@@ -207,6 +216,6 @@ mod tests {
     #[test]
     fn no_export_step() {
         // This should not fail
-        execute_from_file(Path::new("tests/data/import/empty/empty.toml"), None).unwrap();
+        execute_from_file(Path::new("./tests/data/import/empty/empty.toml"), None).unwrap();
     }
 }

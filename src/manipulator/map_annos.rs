@@ -30,17 +30,13 @@ impl Manipulator for MapAnnos {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
-        workflow_directory: Option<&std::path::Path>,
+        workflow_directory: &std::path::Path,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let read_from_path = {
             let p = Path::new(&self.rule_file).to_path_buf();
-            if let Some(pp) = workflow_directory {
-                if p.is_relative() {
-                    p.join(pp)
-                } else {
-                    p
-                }
+            if p.is_relative() {
+                workflow_directory.join(p).to_path_buf()
             } else {
                 p
             }

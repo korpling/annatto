@@ -116,15 +116,13 @@ impl Manipulator for Check {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
-        workflow_directory: Option<&Path>,
+        workflow_directory: &Path,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut config_path = Path::new(&self.config_path).to_path_buf();
         if config_path.is_relative() {
-            if let Some(workflow_directory) = workflow_directory {
-                // Resolve the config file path against the directory of the workflow file
-                config_path = workflow_directory.join(config_path);
-            }
+            // Resolve the config file path against the directory of the workflow file
+            config_path = workflow_directory.join(config_path);
         }
         let checks = read_config_file(&config_path)?;
         run_checks(graph, checks)
