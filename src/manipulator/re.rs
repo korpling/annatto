@@ -854,7 +854,7 @@ mod tests {
             edge_annos: None,
             namespaces: Some("ud:=default_ns,:=default_ns".to_string()),
         };
-        let op_result = replace.manipulate_corpus(&mut g, None, None);
+        let op_result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), None);
         assert_eq!(
             op_result.is_ok(),
             true,

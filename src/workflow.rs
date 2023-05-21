@@ -66,7 +66,12 @@ impl TryFrom<PathBuf> for Workflow {
 /// * `tx` - If supported by the caller, this is a sender object that allows to send [status updates](enum.StatusMessage.html) (like information messages, warnings and module progress) to the calling entity.
 pub fn execute_from_file(workflow_file: &Path, tx: Option<Sender<StatusMessage>>) -> Result<()> {
     let wf = Workflow::try_from(workflow_file.to_path_buf())?;
-    wf.execute(tx)?;
+    let parent_dir = if let Some(directory) = workflow_file.parent() {
+        directory
+    } else {
+        Path::new("")
+    };
+    wf.execute(tx, parent_dir)?;
     Ok(())
 }
 
@@ -76,7 +81,7 @@ impl Workflow {
     pub fn execute(
         &self,
         tx: Option<StatusSender>,
-        default_workflow_directory: PathBuf,
+        default_workflow_directory: &Path,
     ) -> Result<()> {
         // Create a vector of all conversion steps and report these as current status
         if let Some(tx) = &tx {
@@ -129,13 +134,14 @@ impl Workflow {
         // Execute all manipulators in sequence
         if let Some(ref manipulators) = self.manipulator {
             for desc in manipulators.iter() {
-                let workflow_directory = desc.workflow_directory;
+                let workflow_directory = &desc.workflow_directory;
                 desc.module
                     .manipulator()
                     .manipulate_corpus(
                         &mut g,
                         workflow_directory
-                            .map_or(default_workflow_directory.as_path(), |d| d.as_path()),
+                            .as_ref()
+                            .map_or(default_workflow_directory, PathBuf::as_path),
                         tx.clone(),
                     )
                     .map_err(|reason| AnnattoError::Manipulator {
