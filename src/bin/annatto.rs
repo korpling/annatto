@@ -2,12 +2,12 @@
 use annatto::documentation_server;
 use annatto::{
     error::AnnattoError,
-    workflow::{execute_from_file, StatusMessage},
+    workflow::{execute_from_file, StatusMessage, Workflow},
     StepID,
 };
 use indicatif::{ProgressBar, ProgressStyle};
 
-use std::{collections::HashMap, path::PathBuf, sync::mpsc, thread};
+use std::{collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread};
 use structopt::StructOpt;
 
 /// Define a conversion operation
@@ -15,6 +15,12 @@ use structopt::StructOpt;
 enum Cli {
     /// Run a conversion pipeline from a workflow file.
     Run {
+        /// The path to the workflow file.
+        #[structopt(parse(from_os_str))]
+        workflow_file: std::path::PathBuf,
+    },
+    /// only checks if a workflow can be imported
+    Validate {
         /// The path to the workflow file.
         #[structopt(parse(from_os_str))]
         workflow_file: std::path::PathBuf,
@@ -32,6 +38,9 @@ pub fn main() -> anyhow::Result<()> {
         Cli::Run { workflow_file } => convert(workflow_file)?,
         #[cfg(feature = "embed-documentation")]
         Cli::ShowDocumentation => documentation_server::start_server()?,
+        Cli::Validate { workflow_file } => {
+            Workflow::try_from(workflow_file)?;
+        }
     };
     Ok(())
 }
