@@ -72,7 +72,7 @@ pub enum AnnattoError {
     ConvertBufWriterAsByteVector(#[from] std::io::IntoInnerError<BufWriter<Vec<u8>>>),
     #[error(transparent)]
     InvalidUtf8(#[from] FromUtf8Error),
-    #[error("Could not parse TOML workflow file {error}")]
+    #[error("Could not parse TOML workflow file: {error}")]
     TOMLError { error: String },
 }
 
