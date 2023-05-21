@@ -72,6 +72,8 @@ pub enum AnnattoError {
     ConvertBufWriterAsByteVector(#[from] std::io::IntoInnerError<BufWriter<Vec<u8>>>),
     #[error(transparent)]
     InvalidUtf8(#[from] FromUtf8Error),
+    #[error("Could not parse TOML workflow file {error}")]
+    TOMLError { error: String },
 }
 
 impl<T> From<std::sync::PoisonError<T>> for AnnattoError {
@@ -83,5 +85,13 @@ impl<T> From<std::sync::PoisonError<T>> for AnnattoError {
 impl From<SendError<StatusMessage>> for AnnattoError {
     fn from(e: SendError<StatusMessage>) -> Self {
         AnnattoError::SendingStatusMessageFailed(e.to_string())
+    }
+}
+
+impl From<toml::de::Error> for AnnattoError {
+    fn from(value: toml::de::Error) -> Self {
+        AnnattoError::TOMLError {
+            error: value.to_string(),
+        }
     }
 }

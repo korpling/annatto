@@ -10,7 +10,8 @@ pub mod textgrid;
 
 use crate::{workflow::StatusSender, Module, StepID};
 use graphannis::update::GraphUpdate;
-use std::{collections::BTreeMap, path::Path};
+use serde_derive::Deserialize;
+use std::path::Path;
 
 /// An importer is a module that takes a path and produces a list of graph update events.
 /// Using the graph update event list allows to execute several importers in parallel and join them to a single annotation graph.
@@ -26,21 +27,19 @@ pub trait Importer: Module {
     fn import_corpus(
         &self,
         input_path: &Path,
-        properties: &BTreeMap<String, String>,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>>;
 }
 
 pub const CREATE_EMPTY_CORPUS_MODULE_NAME: &str = "create_empty_corpus";
 
-#[derive(Default)]
+#[derive(Default, Deserialize)]
 pub struct CreateEmptyCorpus {}
 
 impl Importer for CreateEmptyCorpus {
     fn import_corpus(
         &self,
         path: &Path,
-        _properties: &BTreeMap<String, String>,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         if let Some(tx) = tx {

@@ -9,18 +9,16 @@ use itertools::Itertools;
 use serde_derive::Deserialize;
 use tempfile::tempdir_in;
 
-use crate::{
-    error::AnnattoError,
-    workflow::{StatusMessage, StatusSender},
-    Module,
-};
+use crate::{workflow::StatusSender, Module};
 
 use super::Manipulator;
 
 pub const MODULE_NAME: &str = "map_annotations";
 
-#[derive(Default)]
-pub struct MapAnnos {}
+#[derive(Default, Deserialize)]
+pub struct MapAnnos {
+    rule_file: String,
+}
 
 impl Module for MapAnnos {
     fn module_name(&self) -> &str {
@@ -28,38 +26,27 @@ impl Module for MapAnnos {
     }
 }
 
-const PROP_RULE_FILE: &str = "rule.file";
-
 impl Manipulator for MapAnnos {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
-        properties: &std::collections::BTreeMap<String, String>,
         workflow_directory: Option<&std::path::Path>,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        if let Some(config_path) = properties.get(PROP_RULE_FILE) {
-            let read_from_path = {
-                let p = Path::new(config_path).to_path_buf();
-                if let Some(pp) = workflow_directory {
-                    if p.is_relative() {
-                        p.join(pp)
-                    } else {
-                        p
-                    }
+        let read_from_path = {
+            let p = Path::new(&self.rule_file).to_path_buf();
+            if let Some(pp) = workflow_directory {
+                if p.is_relative() {
+                    p.join(pp)
                 } else {
                     p
                 }
-            };
-            let mapping = read_config(read_from_path.as_path())?;
-            self.run(graph, mapping, &tx)?;
-        } else if let Some(sender) = &tx {
-            let msg = StatusMessage::Failed(AnnattoError::Manipulator {
-                reason: "Could not read config file".to_string(),
-                manipulator: self.module_name().to_string(),
-            });
-            sender.send(msg)?;
-        }
+            } else {
+                p
+            }
+        };
+        let mapping = read_config(read_from_path.as_path())?;
+        self.run(graph, mapping, &tx)?;
         Ok(())
     }
 }

@@ -29,7 +29,7 @@ fn test_exb_fail_for_timeline() {
     let import = ImportEXMARaLDA::default();
     let import_path = "./tests/data/import/exmaralda/fail-corrupt_timeline/import/";
     let (sender, receiver) = mpsc::channel();
-    let r = import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender));
+    let r = import.import_corpus(Path::new(import_path), Some(sender));
     assert!(r.is_ok());
     assert!(receiver.into_iter().count() > 0);
     let document_path = "./tests/data/import/exmaralda/fail-corrupt_timeline/import/test_doc.exb";
@@ -49,7 +49,7 @@ fn test_exb_fail_for_no_category() {
     let import = ImportEXMARaLDA::default();
     let import_path = "./tests/data/import/exmaralda/fail-no_category/";
     let (sender, receiver) = mpsc::channel();
-    let r = import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender));
+    let r = import.import_corpus(Path::new(import_path), Some(sender));
     assert!(r.is_ok());
     assert!(receiver.into_iter().count() > 0);
     let document_path = Path::new(import_path).join("test_doc.exb");
@@ -69,7 +69,7 @@ fn test_exb_fail_for_no_speaker() {
     let import = ImportEXMARaLDA::default();
     let import_path = "./tests/data/import/exmaralda/fail-no_speaker/";
     let (sender, receiver) = mpsc::channel();
-    let r = import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender));
+    let r = import.import_corpus(Path::new(import_path), Some(sender));
     assert!(r.is_ok());
     assert!(receiver.into_iter().count() > 0);
     let document_path = Path::new(import_path).join("test_doc.exb");
@@ -89,7 +89,7 @@ fn test_exb_fail_for_undefined_speaker() {
     let import = ImportEXMARaLDA::default();
     let import_path = "./tests/data/import/exmaralda/fail-undefined_speaker/";
     let (sender, receiver) = mpsc::channel();
-    let r = import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender));
+    let r = import.import_corpus(Path::new(import_path), Some(sender));
     assert!(r.is_ok());
     assert!(receiver.into_iter().count() > 0);
     let document_path = Path::new(import_path).join("test_doc.exb");
@@ -109,7 +109,7 @@ fn test_exb_fail_for_unknown_tli() {
     let import = ImportEXMARaLDA::default();
     let import_path = "./tests/data/import/exmaralda/fail-unknown_tli/";
     let (sender, receiver) = mpsc::channel();
-    let r = import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender));
+    let r = import.import_corpus(Path::new(import_path), Some(sender));
     assert!(r.is_ok());
     assert!(receiver.into_iter().count() > 0);
     let document_path = Path::new(import_path).join("test_doc.exb");
@@ -129,7 +129,7 @@ fn test_exb_fail_for_bad_timevalue() {
     let import = ImportEXMARaLDA::default();
     let import_path = "./tests/data/import/exmaralda/fail-bad_timevalue/";
     let (sender, receiver) = mpsc::channel();
-    let r = import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender));
+    let r = import.import_corpus(Path::new(import_path), Some(sender));
     assert!(r.is_ok());
     assert!(receiver.into_iter().count() > 0);
     let document_path = Path::new(import_path).join("test_doc.exb");
@@ -149,7 +149,7 @@ fn test_exb_fail_no_start_no_end() {
     let import = ImportEXMARaLDA::default();
     let import_path = "./tests/data/import/exmaralda/fail-no_start_no_end/";
     let (sender, receiver) = mpsc::channel();
-    let r = import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender));
+    let r = import.import_corpus(Path::new(import_path), Some(sender));
     assert!(r.is_ok());
     assert_eq!(
         receiver
@@ -168,7 +168,7 @@ fn test_fail_invalid() {
     let import = ImportEXMARaLDA::default();
     let import_path = "./tests/data/import/exmaralda/fail-invalid/import/";
     let (sender, receiver) = mpsc::channel();
-    let r = import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender));
+    let r = import.import_corpus(Path::new(import_path), Some(sender));
     assert!(r.is_ok());
     assert!(receiver.into_iter().count() > 0);
     let document_path = "./tests/data/import/exmaralda/fail-invalid/import/test_doc_invalid.exb";
@@ -253,8 +253,7 @@ fn test_exb(
     let mut e_g = target_graph(on_disk, with_audio)?;
     let import = ImportEXMARaLDA::default();
     let (sender, receiver) = mpsc::channel();
-    let mut update =
-        import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender))?;
+    let mut update = import.import_corpus(Path::new(import_path), Some(sender))?;
     let mut g = AnnotationGraph::new(on_disk)?;
     let update_app = g.apply_update(&mut update, |_| {});
     assert!(

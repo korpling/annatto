@@ -15,47 +15,21 @@ use graphannis_core::{
     util::split_qname,
 };
 use itertools::Itertools;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use serde_derive::Deserialize;
+use std::collections::{BTreeMap, BTreeSet};
 use std::convert::TryFrom;
 use std::path::Path;
 
-#[derive(Default)]
-pub struct Merge {}
-
-const PROP_CHECK_NAMES: &str = "check.names";
-const PROP_KEEP_NAME: &str = "keep.name";
-const PROP_ON_ERROR: &str = "on.error";
-const PROP_SKIP_COMPONENTS: &str = "skip.components";
-const PROP_OPTIONAL_VALUES: &str = "optional.values";
-const PROP_OPTIONAL_CHARS: &str = "optional.chars";
-const PROP_SILENT: &str = "silent";
-const PROP_REPORT_DETAILS: &str = "report.details";
-const PROPVAL_SEP: &str = ",";
-
-enum MergerProperties {
-    CheckNames,
-    KeepName,
-    OnError,
-    SkipComponents,
-    OptionalValues,
-    OptionalChars,
-    Silent,
-    ReportDetails,
-}
-
-impl ToString for MergerProperties {
-    fn to_string(&self) -> String {
-        match self {
-            Self::CheckNames => PROP_CHECK_NAMES.to_string(),
-            Self::KeepName => PROP_KEEP_NAME.to_string(),
-            Self::OnError => PROP_ON_ERROR.to_string(),
-            Self::SkipComponents => PROP_SKIP_COMPONENTS.to_string(),
-            Self::OptionalValues => PROP_OPTIONAL_VALUES.to_string(),
-            Self::OptionalChars => PROP_OPTIONAL_CHARS.to_string(),
-            Self::Silent => PROP_SILENT.to_string(),
-            Self::ReportDetails => PROP_REPORT_DETAILS.to_string(),
-        }
-    }
+#[derive(Default, Deserialize)]
+pub struct Merge {
+    error_policy: String,
+    check_names: Vec<String>,
+    keep_name: String,
+    optional_values: BTreeSet<String>,
+    optional_chars: BTreeSet<char>,
+    silent: bool,
+    report_details: bool,
+    skip_components: Option<Vec<String>>,
 }
 
 #[derive(Default)]
@@ -84,14 +58,14 @@ impl TryFrom<&String> for ErrorPolicy {
             "drop" => Ok(ErrorPolicy::Drop),
             "forward" => Ok(ErrorPolicy::Forward),
             _ => Err(AnnattoError::Manipulator {
-                reason: format!("Undefined value for property {PROP_ON_ERROR}: {value}"),
+                reason: format!("Undefined error policy: {value}"),
                 manipulator: String::from(MODULE_NAME),
             }),
         }
     }
 }
 
-fn clean_value(value: &str, remove_chars: &HashSet<char>) -> String {
+fn clean_value(value: &str, remove_chars: &BTreeSet<char>) -> String {
     let mut cleaned_value = String::new();
     for c in value.chars() {
         if !remove_chars.contains(&c) {
@@ -107,10 +81,10 @@ impl Merge {
     fn retrieve_ordered_nodes<'a>(
         &self,
         graph: &AnnotationGraph,
-        order_names: Vec<&'a str>,
-    ) -> StandardErrorResult<HashMap<String, HashMap<&'a str, NodeIdCollection>>> {
-        let mut ordered_items_by_doc: HashMap<String, HashMap<&str, NodeIdCollection>> =
-            HashMap::new();
+        order_names: &'a Vec<String>,
+    ) -> StandardErrorResult<BTreeMap<String, BTreeMap<&'a str, NodeIdCollection>>> {
+        let mut ordered_items_by_doc: BTreeMap<String, BTreeMap<&str, NodeIdCollection>> =
+            BTreeMap::new();
         let node_annos = graph.get_node_annos();
         for order_name in order_names {
             let c = AnnotationComponent::new(
@@ -144,7 +118,7 @@ impl Merge {
                     .collect_vec();
                 for doc_name in &doc_names {
                     if !ordered_items_by_doc.contains_key(doc_name) {
-                        ordered_items_by_doc.insert(doc_name.to_string(), HashMap::new());
+                        ordered_items_by_doc.insert(doc_name.to_string(), BTreeMap::new());
                     }
                 }
                 for (start_node_r, doc_name) in start_nodes.into_iter().zip(doc_names) {
@@ -183,8 +157,8 @@ impl Merge {
         &self,
         graph: &AnnotationGraph,
         updates: &mut GraphUpdate,
-        skip_components: HashSet<AnnotationComponent>,
-        node_map: HashMap<u64, u64>,
+        skip_components: BTreeSet<AnnotationComponent>,
+        node_map: BTreeMap<u64, u64>,
         tx: &Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         for (edge_component_type, switch_source) in [
@@ -213,10 +187,10 @@ impl Merge {
         updates: &mut GraphUpdate,
         edge_component: Component<AnnotationComponentType>,
         switch_source: bool,
-        node_map: &HashMap<u64, u64>,
+        node_map: &BTreeMap<u64, u64>,
         tx: &Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let mut report_missing = HashSet::new();
+        let mut report_missing = BTreeSet::new();
         let edge_component_name = &edge_component.name;
         let edge_component_type = edge_component.get_type();
         let layer_name = edge_component.layer.to_string();
@@ -319,7 +293,7 @@ impl Merge {
         &self,
         graph: &AnnotationGraph,
         updates: &mut GraphUpdate,
-        docs_with_errors: HashSet<String>,
+        docs_with_errors: BTreeSet<String>,
         policy: ErrorPolicy,
         tx: &Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -347,7 +321,7 @@ impl Merge {
                                     ValueSearch::Some("corpus"),
                                 )
                                 .map(|m| m.unwrap().node)
-                                .collect::<HashSet<u64>>();
+                                .collect::<BTreeSet<u64>>();
                             let nodes_with_doc_name = node_annos
                                 .exact_anno_search(
                                     Some(NODE_NAME_KEY.ns.as_str()),
@@ -355,7 +329,7 @@ impl Merge {
                                     ValueSearch::Some(doc_node_name.as_str()),
                                 )
                                 .map(|m| m.unwrap().node)
-                                .collect::<HashSet<u64>>();
+                                .collect::<BTreeSet<u64>>();
                             for doc_node_id in corpus_nodes.intersection(&nodes_with_doc_name) {
                                 let doc_name = node_annos
                                     .get_value_for_item(doc_node_id, &NODE_NAME_KEY)?
@@ -382,15 +356,14 @@ impl Merge {
     fn skip_components_from_prop(
         &self,
         graph: &AnnotationGraph,
-        property_val: Option<&String>,
-    ) -> HashSet<Component<AnnotationComponentType>> {
+    ) -> BTreeSet<Component<AnnotationComponentType>> {
         let autogenerated_components =
             AnnotationComponentType::update_graph_index_components(graph)
                 .into_iter()
-                .collect::<HashSet<AnnotationComponent>>();
+                .collect::<BTreeSet<AnnotationComponent>>();
         let mut skip_components = autogenerated_components;
-        if let Some(skip_component_spec) = property_val {
-            for spec in skip_component_spec.split(PROPVAL_SEP) {
+        if let Some(ref skip_component_spec) = self.skip_components {
+            for spec in skip_component_spec {
                 let split_spec = split_qname(spec);
                 let layer = match split_spec.0 {
                     None => "",
@@ -414,10 +387,10 @@ impl Merge {
 
 struct TextNodeMapper {
     module_name: String,
-    docs_with_errors: HashSet<String>,
+    docs_with_errors: BTreeSet<String>,
     target_key: AnnoKey,
-    optional_chars: HashSet<char>,
-    optionals: HashSet<String>,
+    optional_chars: BTreeSet<char>,
+    optionals: BTreeSet<String>,
 }
 
 impl TextNodeMapper {
@@ -425,10 +398,10 @@ impl TextNodeMapper {
         &mut self,
         graph: &AnnotationGraph,
         updates: &mut GraphUpdate,
-        ordered_items_by_doc: HashMap<String, HashMap<&str, NodeIdCollection>>,
+        ordered_items_by_doc: BTreeMap<String, BTreeMap<&str, NodeIdCollection>>,
         tx: &Option<StatusSender>,
-    ) -> Result<HashMap<u64, u64>, Box<dyn std::error::Error>> {
-        let mut node_map: HashMap<u64, u64> = HashMap::new();
+    ) -> Result<BTreeMap<u64, u64>, Box<dyn std::error::Error>> {
+        let mut node_map: BTreeMap<u64, u64> = BTreeMap::new();
         let node_annos = graph.get_node_annos();
         for (doc_name, mut ordered_items_by_name) in ordered_items_by_doc {
             let ordered_keep_items_opt =
@@ -445,11 +418,11 @@ impl TextNodeMapper {
                 continue;
             }
             let ordered_keep_items = ordered_keep_items_opt.unwrap();
-            let mut order_names = HashSet::new();
+            let mut order_names = BTreeSet::new();
             for k in ordered_items_by_name.keys() {
                 order_names.insert(k.to_string());
             }
-            let mut unused_by_name = HashMap::new();
+            let mut unused_by_name = BTreeMap::new();
             for item in ordered_keep_items {
                 let ref_val = match node_annos.get_value_for_item(&item, &self.target_key)? {
                     Some(v) => v,
@@ -573,7 +546,6 @@ impl Manipulator for Merge {
     fn manipulate_corpus(
         &self,
         graph: &mut AnnotationGraph,
-        properties: &BTreeMap<String, String>,
         _workflow_directory: Option<&Path>,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -581,61 +553,33 @@ impl Manipulator for Merge {
             sender.send(StatusMessage::Info(String::from("Starting merge")))?;
         }
         // read properties
-        let on_error =
-            ErrorPolicy::try_from(properties.get(&MergerProperties::OnError.to_string()))?;
-        let order_names = properties
-            .get(&MergerProperties::CheckNames.to_string())
-            .unwrap()
-            .split(PROPVAL_SEP)
-            .collect::<Vec<&str>>();
-        let keep_name = properties
-            .get(&MergerProperties::KeepName.to_string())
-            .unwrap();
+        let on_error = ErrorPolicy::try_from(&self.error_policy)?;
+        let order_names = &self.check_names;
+        let keep_name = self.keep_name.to_string();
         let keep_name_key = AnnoKey {
             ns: "".into(),
             name: keep_name.into(),
         };
-        let optional_toks = match properties.get(&MergerProperties::OptionalValues.to_string()) {
-            None => HashSet::new(),
-            Some(v) => v
-                .split("\",\"")
-                .map(|s| s.to_string().replace('"', ""))
-                .collect::<HashSet<String>>(),
-        };
-        let optional_chars = match properties.get(&MergerProperties::OptionalChars.to_string()) {
-            None => HashSet::new(),
-            Some(v) => v
-                .split("','")
-                .map(|s| s.to_string().replace('\'', "").parse::<char>().unwrap())
-                .collect::<HashSet<char>>(),
-        };
-        let silent = match properties.get(&MergerProperties::Silent.to_string()) {
-            None => false,
-            Some(v) => v.parse::<bool>()?,
-        };
-        let report_details = match properties.get(&MergerProperties::ReportDetails.to_string()) {
-            None => false,
-            Some(v) => v.parse::<bool>()?,
-        };
+        let optional_toks = self.optional_values.clone();
+        let optional_chars = self.optional_chars.clone();
+        let silent = self.silent;
+        let report_details = self.report_details;
         let sender_opt = if silent { None } else { tx };
         // init
         let mut updates = GraphUpdate::default();
         // merge
-        let ordered_items_by_doc = self.retrieve_ordered_nodes(graph, order_names.clone())?;
+        let ordered_items_by_doc = self.retrieve_ordered_nodes(graph, order_names)?;
         let reporter = if report_details { &sender_opt } else { &None };
         let mut mapper = TextNodeMapper {
             target_key: keep_name_key,
             module_name: self.module_name().to_string(),
-            docs_with_errors: HashSet::default(),
+            docs_with_errors: BTreeSet::default(),
             optional_chars,
             optionals: optional_toks,
         };
-        let node_map: HashMap<u64, u64> =
+        let node_map: BTreeMap<u64, u64> =
             mapper.map_text_nodes(graph, &mut updates, ordered_items_by_doc, reporter)?;
-        let skip_components = self.skip_components_from_prop(
-            graph,
-            properties.get(&MergerProperties::SkipComponents.to_string()),
-        );
+        let skip_components = self.skip_components_from_prop(graph);
         self.merge_all_components(graph, &mut updates, skip_components, node_map, &sender_opt)?;
         self.handle_document_errors(
             graph,
@@ -659,10 +603,10 @@ impl Module for Merge {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{BTreeMap, HashSet};
+    use std::collections::{BTreeMap, BTreeSet};
     use std::env::temp_dir;
 
-    use crate::manipulator::merge::{Merge, MergerProperties};
+    use crate::manipulator::merge::Merge;
     use crate::manipulator::Manipulator;
     use crate::Result;
 
@@ -689,22 +633,27 @@ mod tests {
 
     fn core_test(on_disk: bool) -> Result<()> {
         let mut g = input_graph(on_disk)?;
-        let mut properties = BTreeMap::new();
-        properties.insert(
-            MergerProperties::CheckNames.to_string(),
-            "norm,text,syntext".to_string(),
-        );
-        properties.insert(MergerProperties::KeepName.to_string(), "norm".to_string());
-        properties.insert(
-            MergerProperties::OptionalValues.to_string(),
-            "\"NOISE\"".to_string(),
-        );
-        let merger = Merge::default();
-        let merge_r = merger.manipulate_corpus(&mut g, &properties, None, None);
+        let merger = Merge {
+            check_names: vec![
+                "norm".to_string(),
+                "text".to_string(),
+                "syntext".to_string(),
+            ],
+            error_policy: "fail".to_string(),
+            keep_name: "norm".to_string(),
+            optional_chars: BTreeSet::new(),
+            optional_values: vec!["\"NOISE\"".to_string()]
+                .into_iter()
+                .collect::<BTreeSet<String>>(),
+            report_details: false,
+            silent: false,
+            skip_components: None,
+        };
+        let merge_r = merger.manipulate_corpus(&mut g, None, None);
         assert_eq!(merge_r.is_ok(), true, "Probing merge result {:?}", &merge_r);
         let mut e_g = expected_output_graph(on_disk)?;
         // corpus nodes
-        let e_corpus_nodes: HashSet<String> = e_g
+        let e_corpus_nodes: BTreeSet<String> = e_g
             .get_node_annos()
             .exact_anno_search(
                 Some(&NODE_TYPE_KEY.ns),
@@ -721,7 +670,7 @@ mod tests {
                     .to_string()
             })
             .collect();
-        let g_corpus_nodes: HashSet<String> = g
+        let g_corpus_nodes: BTreeSet<String> = g
             .get_node_annos()
             .exact_anno_search(
                 Some(&NODE_TYPE_KEY.ns),
@@ -826,16 +775,23 @@ mod tests {
 
     fn export_test(on_disk: bool) -> Result<()> {
         let mut g = input_graph(on_disk)?;
-        let mut properties = BTreeMap::new();
-        properties.insert("check.names".to_string(), "norm,text,syntext".to_string());
-        properties.insert("keep.name".to_string(), "norm".to_string());
-        let merger = Merge::default();
-        assert_eq!(
-            merger
-                .manipulate_corpus(&mut g, &properties, None, None)
-                .is_ok(),
-            true
-        );
+        let merger = Merge {
+            check_names: vec![
+                "norm".to_string(),
+                "text".to_string(),
+                "syntext".to_string(),
+            ],
+            error_policy: "fail".to_string(),
+            keep_name: "norm".to_string(),
+            optional_chars: BTreeSet::new(),
+            optional_values: vec!["\"NOISE\"".to_string()] // TODO this might have to be removed for this particular test
+                .into_iter()
+                .collect::<BTreeSet<String>>(),
+            report_details: false,
+            silent: false,
+            skip_components: None,
+        };
+        assert_eq!(merger.manipulate_corpus(&mut g, None, None).is_ok(), true);
         let tmp_file = tempfile()?;
         let export =
             graphannis_core::graph::serialization::graphml::export(&g, None, tmp_file, |_| {});

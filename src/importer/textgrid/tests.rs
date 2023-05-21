@@ -19,17 +19,15 @@ fn parse_tier_groups_param() {
 
 #[test]
 fn single_speaker() {
-    let mut properties: BTreeMap<String, String> = BTreeMap::new();
-    properties.insert(
-        "tier_groups".to_string(),
-        "tok={lemma,pos,Inf-Struct}".to_string(),
-    );
-    properties.insert("skip_timeline_generation".to_string(), "true".to_string());
-
     let actual = import_as_graphml_string(
-        TextgridImporter::default(),
+        TextgridImporter {
+            tier_groups: Some("tok={lemma,pos,Inf-Struct}".to_string()),
+            skip_timeline_generation: true,
+            skip_audio: false,
+            skip_time_annotations: false,
+            audio_extension: None,
+        },
         Path::new("tests/data/import/textgrid/singleSpeaker"),
-        properties,
         None,
     )
     .unwrap();
@@ -39,15 +37,15 @@ fn single_speaker() {
 
 #[test]
 fn two_speakers() {
-    let mut properties: BTreeMap<String, String> = BTreeMap::new();
-    properties.insert(
-        "tier_groups".to_string(),
-        "A={lemma,pos,Inf-Struct};B={}".to_string(),
-    );
     let actual = import_as_graphml_string(
-        TextgridImporter::default(),
+        TextgridImporter {
+            tier_groups: Some("A={lemma,pos,Inf-Struct};B={}".to_string()),
+            skip_timeline_generation: false,
+            skip_audio: false,
+            skip_time_annotations: false,
+            audio_extension: None,
+        },
         Path::new("tests/data/import/textgrid/twoSpeakers"),
-        properties,
         None,
     )
     .unwrap();
@@ -57,15 +55,15 @@ fn two_speakers() {
 
 #[test]
 fn misaligned_lemma_annotation() {
-    let mut properties: BTreeMap<String, String> = BTreeMap::new();
-    properties.insert(
-        "tier_groups".to_string(),
-        "A={lemma,pos,Inf-Struct};B={}".to_string(),
-    );
     let actual = import_as_graphml_string(
-        TextgridImporter::default(),
+        TextgridImporter {
+            tier_groups: Some("A={lemma,pos,Inf-Struct};B={}".to_string()),
+            skip_timeline_generation: false,
+            skip_audio: false,
+            skip_time_annotations: false,
+            audio_extension: None,
+        },
         Path::new("tests/data/import/textgrid/misalignedLemma"),
-        properties,
         None,
     )
     .unwrap();

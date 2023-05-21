@@ -39,12 +39,9 @@ visibility = "hidden"
 
 #[test]
 fn single_sentence() {
-    let properties: BTreeMap<String, String> = BTreeMap::new();
-
     let actual = import_as_graphml_string(
         PtbImporter::default(),
         Path::new("tests/data/import/ptb/single_sentence"),
-        properties,
         Some(PTB_DEFAULT_VIS_CONFIG),
     )
     .unwrap();
@@ -54,12 +51,9 @@ fn single_sentence() {
 
 #[test]
 fn brackets_in_value() {
-    let properties: BTreeMap<String, String> = BTreeMap::new();
-
     let actual = import_as_graphml_string(
         PtbImporter::default(),
         Path::new("tests/data/import/ptb/brackets_in_value"),
-        properties,
         Some(PTB_DEFAULT_VIS_CONFIG),
     )
     .unwrap();
@@ -69,12 +63,9 @@ fn brackets_in_value() {
 
 #[test]
 fn multiple_documents() {
-    let properties: BTreeMap<String, String> = BTreeMap::new();
-
     let actual = import_as_graphml_string(
         PtbImporter::default(),
         Path::new("tests/data/import/ptb/multiple_documents"),
-        properties,
         Some(PTB_DEFAULT_VIS_CONFIG),
     )
     .unwrap();

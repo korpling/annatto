@@ -9,6 +9,7 @@ use graphannis::{
 };
 use graphannis_core::{graph::ANNIS_NS, util::split_qname};
 use itertools::Itertools;
+use serde_derive::Deserialize;
 
 use crate::{
     error::AnnattoError,
@@ -20,8 +21,10 @@ use super::Importer;
 
 pub const MODULE_NAME: &str = "import_spreadsheet";
 
-#[derive(Default)]
-pub struct ImportSpreadsheet {}
+#[derive(Default, Deserialize)]
+pub struct ImportSpreadsheet {
+    column_map: String,
+}
 
 impl Module for ImportSpreadsheet {
     fn module_name(&self) -> &str {
@@ -196,53 +199,45 @@ fn import_workbook(
     Ok(())
 }
 
-fn get_column_map(
-    property_val: &String,
-) -> Result<BTreeMap<String, Vec<String>>, Box<dyn std::error::Error>> {
-    // TODO produce some errors
-    let mut column_map = BTreeMap::new();
-    for group in property_val.split(';') {
-        let (key, names) = match group.trim().split_once('=') {
-            None => {
-                let err = AnnattoError::InvalidPropertyValue {
-                    property: PROP_COLUMN_MAP.to_string(),
-                    value: property_val.to_string(),
-                };
-                return Err(Box::new(err));
-            }
-            Some((k, v)) => {
-                let anno_names = v
-                    .replace(['{', '}'], "")
-                    .split(',')
-                    .map(|name| name.trim().to_string())
-                    .collect_vec();
-                (k.to_string(), anno_names)
-            }
-        };
-        column_map.insert(key, names);
+impl ImportSpreadsheet {
+    fn parse_column_map(
+        &self,
+    ) -> Result<BTreeMap<String, Vec<String>>, Box<dyn std::error::Error>> {
+        // TODO produce some errors
+        let mut column_map = BTreeMap::new();
+        for group in self.column_map.split(';') {
+            let (key, names) = match group.trim().split_once('=') {
+                None => {
+                    let err = AnnattoError::Import {
+                        reason: "Could not read column map".to_string(),
+                        importer: self.module_name().to_string(),
+                        path: "".into(),
+                    };
+                    return Err(Box::new(err));
+                }
+                Some((k, v)) => {
+                    let anno_names = v
+                        .replace(['{', '}'], "")
+                        .split(',')
+                        .map(|name| name.trim().to_string())
+                        .collect_vec();
+                    (k.to_string(), anno_names)
+                }
+            };
+            column_map.insert(key, names);
+        }
+        Ok(column_map)
     }
-    Ok(column_map)
 }
-
-const PROP_COLUMN_MAP: &str = "column_map";
 
 impl Importer for ImportSpreadsheet {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
-        properties: &std::collections::BTreeMap<String, String>,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let column_map = if let Some(prop_val) = properties.get(&PROP_COLUMN_MAP.to_string()) {
-            get_column_map(prop_val)?
-        } else {
-            return Err(Box::new(AnnattoError::Import {
-                reason: "No column map provided.".to_string(),
-                importer: self.module_name().to_string(),
-                path: input_path.to_path_buf(),
-            }));
-        };
+        let column_map = self.parse_column_map()?;
         let all_files = get_all_files(input_path, vec!["xlsx"])?;
         all_files.into_iter().try_for_each(|pb| {
             import_workbook(&mut update, input_path, pb.as_path(), &column_map)
@@ -264,14 +259,11 @@ mod tests {
     use super::*;
 
     fn run_spreadsheet_import(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
-        let importer = ImportSpreadsheet::default();
-        let mut props = BTreeMap::default();
-        props.insert(
-            "column_map".to_string(),
-            "dipl={sentence,seg};norm={pos,lemma}".to_string(),
-        );
+        let importer = ImportSpreadsheet {
+            column_map: "dipl={sentence,seg};norm={pos,lemma}".to_string(),
+        };
         let path = Path::new("./tests/data/import/xlsx/");
-        let import = importer.import_corpus(path, &props, None);
+        let import = importer.import_corpus(path, None);
         let mut u = import?;
         let mut g = AnnotationGraph::new(on_disk)?;
         g.apply_update(&mut u, |_| {})?;

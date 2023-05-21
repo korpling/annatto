@@ -10,59 +10,101 @@ pub mod util;
 pub mod workflow;
 
 use std::{
-    collections::BTreeMap,
     fmt::Display,
     path::{Path, PathBuf},
 };
 
-use error::{AnnattoError, Result};
-use exporter::Exporter;
-use importer::Importer;
-use manipulator::Manipulator;
+use error::Result;
+use exporter::{graphml::GraphMLExporter, Exporter};
+use importer::{
+    conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, ptb::PtbImporter, textgrid::TextgridImporter,
+    CreateEmptyCorpus, Importer,
+};
+use manipulator::{check::Check, map_annos::MapAnnos, merge::Merge, re::Replace, Manipulator};
+use serde_derive::Deserialize;
 
-/// Retrieve a new instance of an importer using its module name
-pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
-    match name {
-        importer::graphml::MODULE_NAME => Ok(Box::<importer::graphml::GraphMLImporter>::default()),
-        importer::CREATE_EMPTY_CORPUS_MODULE_NAME => {
-            Ok(Box::<importer::CreateEmptyCorpus>::default())
+#[derive(Deserialize)]
+pub enum ExportDefinition {
+    ExportGraphML(GraphMLExporter),
+}
+
+impl ToString for ExportDefinition {
+    fn to_string(&self) -> String {
+        match self {
+            ExportDefinition::ExportGraphML(m) => m.module_name().to_string(),
         }
-        importer::textgrid::MODULE_NAME => {
-            Ok(Box::<importer::textgrid::TextgridImporter>::default())
-        }
-        importer::ptb::MODULE_NAME => Ok(Box::<importer::ptb::PtbImporter>::default()),
-        importer::corpus_annotations::MODULE_NAME => {
-            Ok(Box::<importer::corpus_annotations::AnnotateCorpus>::default())
-        }
-        importer::spreadsheet::MODULE_NAME => {
-            Ok(Box::<importer::spreadsheet::ImportSpreadsheet>::default())
-        }
-        importer::exmaralda::MODULE_NAME => {
-            Ok(Box::<importer::exmaralda::ImportEXMARaLDA>::default())
-        }
-        importer::conllu::MODULE_NAME => Ok(Box::<importer::conllu::ImportCoNLLU>::default()),
-        _ => Err(AnnattoError::NoSuchModule(name.to_string())),
     }
 }
 
-/// Retrieve a new instance of a manipulator using its module name
-pub fn manipulator_by_name(name: &str) -> Result<Box<dyn Manipulator>> {
-    match name {
-        manipulator::map_annos::MODULE_NAME => {
-            Ok(Box::<manipulator::map_annos::MapAnnos>::default())
+impl ExportDefinition {
+    // todo would it be (more) useful to actually implement deref?
+    fn exporter(&self) -> &dyn Exporter {
+        match self {
+            ExportDefinition::ExportGraphML(m) => m,
         }
-        manipulator::merge::MODULE_NAME => Ok(Box::<manipulator::merge::Merge>::default()),
-        manipulator::re::MODULE_NAME => Ok(Box::<manipulator::re::Replace>::default()),
-        manipulator::check::MODULE_NAME => Ok(Box::<manipulator::check::Check>::default()),
-        _ => Err(AnnattoError::NoSuchModule(name.to_string())),
     }
 }
 
-/// Retrieve a new instance of an exporter using its module name
-pub fn exporter_by_name(name: &str) -> Result<Box<dyn Exporter>> {
-    match name {
-        exporter::graphml::MODULE_NAME => Ok(Box::<exporter::graphml::GraphMLExporter>::default()),
-        _ => Err(AnnattoError::NoSuchModule(name.to_string())),
+#[derive(Deserialize)]
+pub enum ImportDefinition {
+    ImportCoNLLU(ImportCoNLLU),
+    ImportEXMARaLDA(ImportEXMARaLDA),
+    ImportPTB(PtbImporter),
+    ImportTextGrid(TextgridImporter),
+    InitEmptyCorpus(CreateEmptyCorpus),
+}
+
+impl ToString for ImportDefinition {
+    fn to_string(&self) -> String {
+        match self {
+            ImportDefinition::ImportCoNLLU(m) => m.module_name().to_string(),
+            ImportDefinition::ImportEXMARaLDA(m) => m.module_name().to_string(),
+            ImportDefinition::ImportPTB(m) => m.module_name().to_string(),
+            ImportDefinition::ImportTextGrid(m) => m.module_name().to_string(),
+            ImportDefinition::InitEmptyCorpus(m) => m.module_name().to_string(),
+        }
+    }
+}
+
+impl ImportDefinition {
+    fn importer(&self) -> &dyn Importer {
+        match self {
+            ImportDefinition::ImportCoNLLU(m) => m,
+            ImportDefinition::ImportEXMARaLDA(m) => m,
+            ImportDefinition::ImportPTB(m) => m,
+            ImportDefinition::ImportTextGrid(m) => m,
+            ImportDefinition::InitEmptyCorpus(m) => m,
+        }
+    }
+}
+
+#[derive(Deserialize)]
+pub enum ProcessingDefinition {
+    Check(Check),
+    Map(MapAnnos),
+    Merge(Merge),
+    Re(Replace),
+}
+
+impl ToString for ProcessingDefinition {
+    fn to_string(&self) -> String {
+        match self {
+            ProcessingDefinition::Check(m) => m.module_name().to_string(),
+            ProcessingDefinition::Map(m) => m.module_name().to_string(),
+            ProcessingDefinition::Merge(m) => m.module_name().to_string(),
+            ProcessingDefinition::Re(m) => m.module_name().to_string(),
+        }
+    }
+}
+
+impl ProcessingDefinition {
+    fn manipulator(&self) -> &dyn Manipulator {
+        match self {
+            ProcessingDefinition::Check(m) => m,
+            ProcessingDefinition::Map(m) => m,
+            ProcessingDefinition::Merge(m) => m,
+            ProcessingDefinition::Re(m) => m,
+        }
     }
 }
 
@@ -90,47 +132,46 @@ pub trait Step {
     fn get_step_id(&self) -> StepID;
 }
 
+#[derive(Deserialize)]
 struct ImporterStep {
-    module: Box<dyn Importer>,
+    module: ImportDefinition,
     corpus_path: PathBuf,
-    leak_path: Option<PathBuf>,
-    properties: BTreeMap<String, String>,
 }
 
 impl Step for ImporterStep {
     fn get_step_id(&self) -> StepID {
         StepID {
-            module_name: self.module.module_name().to_string(),
+            module_name: self.module.to_string(),
             path: Some(self.corpus_path.clone()),
         }
     }
 }
 
+#[derive(Deserialize)]
 struct ExporterStep {
-    module: Box<dyn Exporter>,
+    module: ExportDefinition,
     corpus_path: PathBuf,
-    properties: BTreeMap<String, String>,
 }
 
 impl Step for ExporterStep {
     fn get_step_id(&self) -> StepID {
         StepID {
-            module_name: self.module.module_name().to_string(),
+            module_name: self.module.to_string(),
             path: Some(self.corpus_path.clone()),
         }
     }
 }
 
+#[derive(Deserialize)]
 struct ManipulatorStep {
-    module: Box<dyn Manipulator>,
-    properties: BTreeMap<String, String>,
+    module: ProcessingDefinition,
     workflow_directory: Option<PathBuf>,
 }
 
 impl Step for ManipulatorStep {
     fn get_step_id(&self) -> StepID {
         StepID {
-            module_name: self.module.module_name().to_string(),
+            module_name: self.module.to_string(),
             path: None,
         }
     }

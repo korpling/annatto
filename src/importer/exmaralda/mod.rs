@@ -10,6 +10,7 @@ use graphannis::{
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
+use serde_derive::Deserialize;
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader, ParserConfig};
 
 use crate::{
@@ -23,7 +24,7 @@ use super::Importer;
 
 pub const MODULE_NAME: &str = "import_exmaralda";
 
-#[derive(Default)]
+#[derive(Default, Deserialize)]
 pub struct ImportEXMARaLDA {}
 
 impl Module for ImportEXMARaLDA {
@@ -36,7 +37,6 @@ impl Importer for ImportEXMARaLDA {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
-        _properties: &std::collections::BTreeMap<String, String>,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();

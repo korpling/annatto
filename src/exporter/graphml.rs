@@ -21,12 +21,15 @@ use graphannis_core::{
     util::{join_qname, split_qname},
 };
 use itertools::Itertools;
-use serde_derive::Serialize;
+use serde_derive::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &str = "export_graphml";
 
-#[derive(Default)]
-pub struct GraphMLExporter {}
+#[derive(Default, Deserialize)]
+pub struct GraphMLExporter {
+    add_vis: Option<String>,
+    guess_vis: bool,
+}
 
 impl Module for GraphMLExporter {
     fn module_name(&self) -> &str {
@@ -34,8 +37,6 @@ impl Module for GraphMLExporter {
     }
 }
 
-pub const PROPERTY_VIS: &str = "add.vis";
-const PROP_GUESS_VIS: &str = "guess.vis";
 const DEFAULT_VIS_STR: &str = "# configure visualizations here";
 
 #[derive(Serialize)]
@@ -346,7 +347,6 @@ impl Exporter for GraphMLExporter {
     fn export_corpus(
         &self,
         graph: &AnnotationGraph,
-        properties: &BTreeMap<String, String>,
         output_path: &Path,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -396,16 +396,14 @@ impl Exporter for GraphMLExporter {
             }
         };
         let output_file = File::create(output_file_path.clone())?;
-        let infered_vis = match properties.get(&PROP_GUESS_VIS.to_string()) {
-            None => None,
-            Some(bool_str) => match bool_str.parse::<bool>()? {
-                false => None,
-                true => Some(vis_from_graph(graph)?),
-            },
+        let infered_vis = if self.guess_vis {
+            Some(vis_from_graph(graph)?)
+        } else {
+            None
         };
-        let vis_str = match properties.get(&PROPERTY_VIS.to_string()) {
+        let vis_str = match self.add_vis {
             None => DEFAULT_VIS_STR.to_string(),
-            Some(visualisations) => visualisations.to_string(),
+            Some(ref visualisations) => visualisations.to_string(),
         };
         let vis = if let Some(vis_cfg) = infered_vis {
             [vis_str, vis_cfg].join("\n\n")

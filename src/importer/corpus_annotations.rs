@@ -9,6 +9,7 @@ use graphannis::{
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::{graph::ANNIS_NS, util::split_qname};
+use serde_derive::Deserialize;
 
 use crate::{util::get_all_files, workflow::StatusMessage, Module};
 
@@ -16,7 +17,7 @@ use super::Importer;
 
 pub const MODULE_NAME: &str = "annotate_corpus";
 
-#[derive(Default)]
+#[derive(Default, Deserialize)]
 pub struct AnnotateCorpus {}
 
 impl Module for AnnotateCorpus {
@@ -52,7 +53,6 @@ impl Importer for AnnotateCorpus {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
-        _properties: &std::collections::BTreeMap<String, String>,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
@@ -149,9 +149,7 @@ mod tests {
         std::fs::create_dir_all(metadata_file_path.parent().unwrap())?;
         let mut metadata_file = std::fs::File::create(metadata_file_path)?;
         metadata_file.write(metadata.join("\n").as_bytes())?;
-        let properties = BTreeMap::new();
-        let r =
-            add_metadata.import_corpus(temp_dir().join("metadata").as_path(), &properties, None);
+        let r = add_metadata.import_corpus(temp_dir().join("metadata").as_path(), None);
         assert_eq!(
             true,
             r.is_ok(),
