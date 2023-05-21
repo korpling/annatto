@@ -44,8 +44,8 @@ pub enum StatusMessage {
 #[derive(Deserialize)]
 pub struct Workflow {
     importer: Vec<ImporterStep>,
-    manipulator: Vec<ManipulatorStep>,
-    exporter: Vec<ExporterStep>,
+    manipulator: Option<Vec<ManipulatorStep>>,
+    exporter: Option<Vec<ExporterStep>>,
 }
 
 use std::convert::TryFrom;
@@ -79,12 +79,16 @@ impl Workflow {
             let mut steps: Vec<StepID> = Vec::default();
             steps.extend(self.importer.iter().map(|importer| importer.get_step_id()));
             // TODO: also add a step for importer that tracks applying the graph update
-            steps.extend(
-                self.manipulator
-                    .iter()
-                    .map(|manipulator| manipulator.get_step_id()),
-            );
-            steps.extend(self.exporter.iter().map(|exporter| exporter.get_step_id()));
+            if let Some(ref manipulators) = self.manipulator {
+                steps.extend(
+                    manipulators
+                        .iter()
+                        .map(|manipulator| manipulator.get_step_id()),
+                );
+            }
+            if let Some(ref exporters) = self.exporter {
+                steps.extend(exporters.iter().map(|exporter| exporter.get_step_id()));
+            }
             tx.send(StatusMessage::StepsCreated(steps))?;
         }
 
@@ -119,32 +123,34 @@ impl Workflow {
             .map_err(|reason| AnnattoError::UpdateGraph(reason.to_string()))?;
 
         // Execute all manipulators in sequence
-        for desc in self.manipulator.iter() {
-            let workflow_directory = desc.workflow_directory.as_ref();
-            desc.module
-                .manipulator()
-                .manipulate_corpus(&mut g, workflow_directory.map(|d| d.as_path()), tx.clone())
-                .map_err(|reason| AnnattoError::Manipulator {
-                    reason: reason.to_string(),
-                    manipulator: desc.module.to_string(),
-                })?;
-            if let Some(ref tx) = tx {
-                tx.send(crate::workflow::StatusMessage::StepDone {
-                    id: desc.module.manipulator().step_id(None),
-                })?;
+        if let Some(ref manipulators) = self.manipulator {
+            for desc in manipulators.iter() {
+                let workflow_directory = desc.workflow_directory.as_ref();
+                desc.module
+                    .manipulator()
+                    .manipulate_corpus(&mut g, workflow_directory.map(|d| d.as_path()), tx.clone())
+                    .map_err(|reason| AnnattoError::Manipulator {
+                        reason: reason.to_string(),
+                        manipulator: desc.module.to_string(),
+                    })?;
+                if let Some(ref tx) = tx {
+                    tx.send(crate::workflow::StatusMessage::StepDone {
+                        id: desc.module.manipulator().step_id(None),
+                    })?;
+                }
             }
         }
-
         // Execute all exporters in parallel
-        let export_result: Result<Vec<_>> = self
-            .exporter
-            .par_iter()
-            .map_with(tx, |tx, step| {
-                self.execute_single_exporter(&g, step, tx.clone())
-            })
-            .collect();
-        // Check for errors during export
-        export_result?;
+        if let Some(ref exporters) = self.exporter {
+            let export_result: Result<Vec<_>> = exporters
+                .par_iter()
+                .map_with(tx, |tx, step| {
+                    self.execute_single_exporter(&g, step, tx.clone())
+                })
+                .collect();
+            // Check for errors during export
+            export_result?;
+        }
         Ok(())
     }
 
@@ -195,11 +201,12 @@ impl Workflow {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
 
     #[test]
     fn no_export_step() {
         // This should not fail
-        execute_from_file(Path::new("tests/data/import/empty/empty.ato"), None).unwrap();
+        execute_from_file(Path::new("tests/data/import/empty/empty.toml"), None).unwrap();
     }
 }
