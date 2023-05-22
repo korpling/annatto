@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - not all modules have a default implementation anymore (path attributes have no default value that makes sense)
 - there is a default operation for each step type. Import: Create empty corpus, Manipulation: Do nothing, Export: Write GraphML
 - map properties of some modules (such as `tier_group` for importing Textgrid) are no longer String codings, since TOML supports providing maps directly
+- flattened TOML for workflow files
 
 ### Added
 
