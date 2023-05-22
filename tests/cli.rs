@@ -22,7 +22,7 @@ fn run_empty_conversion() {
 
     let output = cmd
         .arg("run")
-        .arg("tests/data/import/empty/empty.ato")
+        .arg("tests/data/import/empty/empty.toml")
         .output()
         .unwrap();
     cmd.assert().success();
