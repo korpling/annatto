@@ -2,7 +2,7 @@
 
 [[import]]
 path = "tests/data/import/empty"
-read_from = { format = "none" }
+config = { format = "none" }
 
 [[graph_op]]
-perform = { action = "check", query_list_path = "./check_empty_corpus.csv" }
+config = { action = "check", query_list_path = "./check_empty_corpus.csv" }

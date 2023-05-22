@@ -152,14 +152,14 @@ pub trait Step {
 
 #[derive(Deserialize)]
 struct ImporterStep {
-    read_from: ReadFrom,
+    config: ReadFrom,
     path: PathBuf,
 }
 
 impl Step for ImporterStep {
     fn get_step_id(&self) -> StepID {
         StepID {
-            module_name: self.read_from.to_string(),
+            module_name: self.config.to_string(),
             path: Some(self.path.clone()),
         }
     }
@@ -167,14 +167,14 @@ impl Step for ImporterStep {
 
 #[derive(Deserialize)]
 struct ExporterStep {
-    write_as: WriteAs,
+    config: WriteAs,
     path: PathBuf,
 }
 
 impl Step for ExporterStep {
     fn get_step_id(&self) -> StepID {
         StepID {
-            module_name: self.write_as.to_string(),
+            module_name: self.config.to_string(),
             path: Some(self.path.clone()),
         }
     }
@@ -182,14 +182,14 @@ impl Step for ExporterStep {
 
 #[derive(Deserialize)]
 struct ManipulatorStep {
-    perform: GraphOp,
+    config: GraphOp,
     workflow_directory: Option<PathBuf>,
 }
 
 impl Step for ManipulatorStep {
     fn get_step_id(&self) -> StepID {
         StepID {
-            module_name: self.perform.to_string(),
+            module_name: self.config.to_string(),
             path: None,
         }
     }
