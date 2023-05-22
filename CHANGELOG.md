@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - CLI binary renamed from `annatto-cli` to `annatto`
 - To execute a workflow file, use `annatto run <workflow-file>`
+- module properties are now struct attributes of the importer, manipulator, or exporter, which facilitates deserialization and also use (undefined properties are no longer accepted, required properties cannot be ommited)
+- only TOML workflow files are now supported, xml workflows can no longer be processed
+- TOML support adds a command `annatto validate <workflow-file>` that checks if a worklow description can be deserialized to an internal workflow
+- not all modules have a default implementation anymore (path attributes have no default value that makes sense)
+- there is a default operation for each step type. Import: Create empty corpus, Manipulation: Do nothing, Export: Write GraphML
+- map properties of some modules (such as `tier_group` for importing Textgrid) are no longer String codings, since TOML supports providing maps directly
 
 ### Added
 
