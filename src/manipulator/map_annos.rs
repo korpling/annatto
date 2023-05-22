@@ -1,4 +1,8 @@
-use std::{env::temp_dir, fs, path::Path};
+use std::{
+    env::temp_dir,
+    fs,
+    path::{Path, PathBuf},
+};
 
 use graphannis::{
     corpusstorage::{QueryLanguage, SearchQuery},
@@ -15,9 +19,9 @@ use super::Manipulator;
 
 pub const MODULE_NAME: &str = "map_annotations";
 
-#[derive(Default, Deserialize)]
+#[derive(Deserialize)]
 pub struct MapAnnos {
-    rule_file: String,
+    rule_file: PathBuf,
 }
 
 impl Module for MapAnnos {
@@ -175,7 +179,9 @@ mod tests {
             value = "PROPN"
         "#;
         let mapping: Mapping = toml::from_str(config)?;
-        let mapper = MapAnnos::default();
+        let mapper = MapAnnos {
+            rule_file: temp_dir().join("rule_file_test.toml"), // dummy path
+        };
         let (sender, _receiver) = mpsc::channel();
         let mut g = source_graph(on_disk)?;
         let tx = Some(sender);

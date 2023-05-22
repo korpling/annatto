@@ -30,8 +30,9 @@ pub const MODULE_NAME: &str = "import_textgrid";
 /// Documentation](https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html)
 /// for more information on the format itself.
 #[derive(Default, Deserialize)]
+#[serde(default)]
 pub struct TextgridImporter {
-    tier_groups: Option<String>,
+    tier_groups: Option<BTreeMap<String, BTreeSet<String>>>,
     skip_timeline_generation: bool,
     skip_audio: bool,
     skip_time_annotations: bool,
@@ -45,29 +46,11 @@ impl Module for TextgridImporter {
 }
 
 struct MapperParams<'a> {
-    tier_groups: BTreeMap<&'a str, BTreeSet<&'a str>>,
+    tier_groups: BTreeMap<String, BTreeSet<String>>,
     skip_timeline_generation: bool,
     audio_extension: &'a str,
     skip_audio: bool,
     skip_time_annotations: bool,
-}
-
-fn parse_tier_map(value: &str) -> BTreeMap<&str, BTreeSet<&str>> {
-    let mut tier_map = BTreeMap::new();
-    for group in value.split(';') {
-        if let Some((owner, objects)) = group.split_once("={") {
-            let owner = owner.trim();
-            if !objects.is_empty() {
-                let value: BTreeSet<_> = objects[0..(objects.len() - 1)]
-                    .split(',')
-                    .map(|e| e.trim())
-                    .filter(|e| !e.is_empty())
-                    .collect();
-                tier_map.insert(owner, value);
-            }
-        }
-    }
-    tier_map
 }
 
 struct DocumentMapper<'a> {
@@ -112,7 +95,12 @@ impl<'a> DocumentMapper<'a> {
         let mut time_to_id = if self.params.skip_timeline_generation {
             self.map_timeline_from_token_tier(u)?
         } else {
-            let token_tier_names: BTreeSet<_> = self.params.tier_groups.keys().copied().collect();
+            let token_tier_names: BTreeSet<_> = self
+                .params
+                .tier_groups
+                .keys()
+                .map(String::to_string)
+                .collect();
             let valid_tier_names = if token_tier_names.is_empty() {
                 // Add all tiers
                 None
@@ -138,7 +126,7 @@ impl<'a> DocumentMapper<'a> {
     fn map_timeline_from_timecode(
         &self,
         u: &mut GraphUpdate,
-        valid_tier_names: Option<&BTreeSet<&str>>,
+        valid_tier_names: Option<&BTreeSet<String>>,
     ) -> Result<BTreeMap<OrderedFloat<f64>, String>> {
         // Collect all points of time based on the intervals and points.
         let mut existing_points_of_times: BTreeSet<OrderedFloat<f64>> = BTreeSet::default();
@@ -411,10 +399,13 @@ impl Importer for TextgridImporter {
         tx: Option<crate::workflow::StatusSender>,
     ) -> result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut u = GraphUpdate::default();
-        let tier_groups =
-            parse_tier_map(self.tier_groups.as_ref().map_or_else(|| "", |s| s.as_str()));
+        let tier_groups = if let Some(ref tg) = self.tier_groups {
+            tg.clone()
+        } else {
+            BTreeMap::new()
+        };
         let params = MapperParams {
-            tier_groups,
+            tier_groups: tier_groups,
             skip_timeline_generation: self.skip_timeline_generation,
             skip_audio: self.skip_audio,
             skip_time_annotations: self.skip_time_annotations,

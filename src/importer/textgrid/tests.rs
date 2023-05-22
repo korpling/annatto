@@ -2,26 +2,23 @@ use crate::util::import_as_graphml_string;
 
 use super::*;
 use insta::assert_snapshot;
-use pretty_assertions::assert_eq;
-
-#[test]
-fn parse_tier_groups_param() {
-    let result = parse_tier_map("A={lemma,pos,Inf-Struct};B={}");
-    assert_eq!(2, result.len());
-    let a = result.get("A").unwrap();
-    assert_eq!(3, a.len());
-    assert!(a.contains("lemma"));
-    assert!(a.contains("pos"));
-    assert!(a.contains("Inf-Struct"));
-    let b = result.get("B").unwrap();
-    assert_eq!(0, b.len());
-}
 
 #[test]
 fn single_speaker() {
+    let mut tg = BTreeMap::new();
+    tg.insert(
+        "tok".to_string(),
+        vec![
+            "lemma".to_string(),
+            "pos".to_string(),
+            "Inf-Struct".to_string(),
+        ]
+        .into_iter()
+        .collect(),
+    );
     let actual = import_as_graphml_string(
         TextgridImporter {
-            tier_groups: Some("tok={lemma,pos,Inf-Struct}".to_string()),
+            tier_groups: Some(tg),
             skip_timeline_generation: true,
             skip_audio: false,
             skip_time_annotations: false,
@@ -37,9 +34,21 @@ fn single_speaker() {
 
 #[test]
 fn two_speakers() {
+    let mut tg = BTreeMap::new();
+    tg.insert(
+        "A".to_string(),
+        vec![
+            "lemma".to_string(),
+            "pos".to_string(),
+            "Inf-Struct".to_string(),
+        ]
+        .into_iter()
+        .collect(),
+    );
+    tg.insert("B".to_string(), BTreeSet::new());
     let actual = import_as_graphml_string(
         TextgridImporter {
-            tier_groups: Some("A={lemma,pos,Inf-Struct};B={}".to_string()),
+            tier_groups: Some(tg),
             skip_timeline_generation: false,
             skip_audio: false,
             skip_time_annotations: false,
@@ -55,9 +64,21 @@ fn two_speakers() {
 
 #[test]
 fn misaligned_lemma_annotation() {
+    let mut tg = BTreeMap::new();
+    tg.insert(
+        "A".to_string(),
+        vec![
+            "lemma".to_string(),
+            "pos".to_string(),
+            "Inf-Struct".to_string(),
+        ]
+        .into_iter()
+        .collect(),
+    );
+    tg.insert("B".to_string(), BTreeSet::new());
     let actual = import_as_graphml_string(
         TextgridImporter {
-            tier_groups: Some("A={lemma,pos,Inf-Struct};B={}".to_string()),
+            tier_groups: Some(tg),
             skip_timeline_generation: false,
             skip_audio: false,
             skip_time_annotations: false,

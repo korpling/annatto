@@ -26,6 +26,7 @@ use crate::{
 pub const MODULE_NAME: &str = "import_graphml";
 
 #[derive(Default, Deserialize)]
+#[serde(default)]
 pub struct GraphMLImporter {}
 
 fn add_node(

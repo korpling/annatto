@@ -22,8 +22,9 @@ use super::Importer;
 pub const MODULE_NAME: &str = "import_spreadsheet";
 
 #[derive(Default, Deserialize)]
+#[serde(default)]
 pub struct ImportSpreadsheet {
-    column_map: String,
+    column_map: BTreeMap<String, BTreeSet<String>>,
 }
 
 impl Module for ImportSpreadsheet {
@@ -36,7 +37,7 @@ fn import_workbook(
     update: &mut GraphUpdate,
     root_path: &Path,
     path: &Path,
-    column_map: &BTreeMap<String, Vec<String>>,
+    column_map: &BTreeMap<String, BTreeSet<String>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let doc_path = insert_corpus_nodes_from_path(update, root_path, path)?;
     let book = umya_spreadsheet::reader::xlsx::read(path)?;
@@ -199,37 +200,6 @@ fn import_workbook(
     Ok(())
 }
 
-impl ImportSpreadsheet {
-    fn parse_column_map(
-        &self,
-    ) -> Result<BTreeMap<String, Vec<String>>, Box<dyn std::error::Error>> {
-        // TODO produce some errors
-        let mut column_map = BTreeMap::new();
-        for group in self.column_map.split(';') {
-            let (key, names) = match group.trim().split_once('=') {
-                None => {
-                    let err = AnnattoError::Import {
-                        reason: "Could not read column map".to_string(),
-                        importer: self.module_name().to_string(),
-                        path: "".into(),
-                    };
-                    return Err(Box::new(err));
-                }
-                Some((k, v)) => {
-                    let anno_names = v
-                        .replace(['{', '}'], "")
-                        .split(',')
-                        .map(|name| name.trim().to_string())
-                        .collect_vec();
-                    (k.to_string(), anno_names)
-                }
-            };
-            column_map.insert(key, names);
-        }
-        Ok(column_map)
-    }
-}
-
 impl Importer for ImportSpreadsheet {
     fn import_corpus(
         &self,
@@ -237,10 +207,10 @@ impl Importer for ImportSpreadsheet {
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let column_map = self.parse_column_map()?;
+        let column_map = &self.column_map;
         let all_files = get_all_files(input_path, vec!["xlsx"])?;
         all_files.into_iter().try_for_each(|pb| {
-            import_workbook(&mut update, input_path, pb.as_path(), &column_map)
+            import_workbook(&mut update, input_path, pb.as_path(), column_map)
         })?;
         Ok(update)
     }
@@ -259,8 +229,21 @@ mod tests {
     use super::*;
 
     fn run_spreadsheet_import(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
+        let mut col_map = BTreeMap::new();
+        col_map.insert(
+            "dipl".to_string(),
+            vec!["sentence".to_string(), "seg".to_string()]
+                .into_iter()
+                .collect(),
+        );
+        col_map.insert(
+            "norm".to_string(),
+            vec!["pos".to_string(), "lemma".to_string()]
+                .into_iter()
+                .collect(),
+        );
         let importer = ImportSpreadsheet {
-            column_map: "dipl={sentence,seg};norm={pos,lemma}".to_string(),
+            column_map: col_map,
         };
         let path = Path::new("./tests/data/import/xlsx/");
         let import = importer.import_corpus(path, None);

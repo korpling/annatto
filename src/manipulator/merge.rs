@@ -22,17 +22,23 @@ use std::path::Path;
 
 #[derive(Default, Deserialize)]
 pub struct Merge {
-    error_policy: String,
+    #[serde(default)]
+    error_policy: ErrorPolicy,
     check_names: Vec<String>,
     keep_name: String,
+    #[serde(default)]
     optional_values: BTreeSet<String>,
+    #[serde(default)]
     optional_chars: BTreeSet<char>,
+    #[serde(default)]
     silent: bool,
+    #[serde(default)]
     report_details: bool,
+    #[serde(default)]
     skip_components: Option<Vec<String>>,
 }
 
-#[derive(Default)]
+#[derive(Default, Deserialize)]
 enum ErrorPolicy {
     #[default]
     Fail,
@@ -294,7 +300,7 @@ impl Merge {
         graph: &AnnotationGraph,
         updates: &mut GraphUpdate,
         docs_with_errors: BTreeSet<String>,
-        policy: ErrorPolicy,
+        policy: &ErrorPolicy,
         tx: &Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let node_annos = graph.get_node_annos();
@@ -553,7 +559,7 @@ impl Manipulator for Merge {
             sender.send(StatusMessage::Info(String::from("Starting merge")))?;
         }
         // read properties
-        let on_error = ErrorPolicy::try_from(&self.error_policy)?;
+        let on_error = &self.error_policy;
         let order_names = &self.check_names;
         let keep_name = self.keep_name.to_string();
         let keep_name_key = AnnoKey {
@@ -606,7 +612,7 @@ mod tests {
     use std::collections::BTreeSet;
     use std::env::temp_dir;
 
-    use crate::manipulator::merge::Merge;
+    use crate::manipulator::merge::{ErrorPolicy, Merge};
     use crate::manipulator::Manipulator;
     use crate::Result;
 
@@ -639,7 +645,7 @@ mod tests {
                 "text".to_string(),
                 "syntext".to_string(),
             ],
-            error_policy: "fail".to_string(),
+            error_policy: ErrorPolicy::default(),
             keep_name: "norm".to_string(),
             optional_chars: BTreeSet::new(),
             optional_values: vec!["NOISE".to_string()]
@@ -781,7 +787,7 @@ mod tests {
                 "text".to_string(),
                 "syntext".to_string(),
             ],
-            error_policy: "fail".to_string(),
+            error_policy: ErrorPolicy::default(),
             keep_name: "norm".to_string(),
             optional_chars: BTreeSet::new(),
             optional_values: BTreeSet::new(),

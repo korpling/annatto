@@ -1,4 +1,7 @@
-use std::{env::temp_dir, path::Path};
+use std::{
+    env::temp_dir,
+    path::{Path, PathBuf},
+};
 
 use csv::ReaderBuilder;
 use graphannis::{
@@ -13,9 +16,9 @@ use crate::{error::AnnattoError, Manipulator, Module};
 pub const MODULE_NAME: &str = "check";
 const CONFIG_FILE_ENTRY_SEP: u8 = b'\t';
 
-#[derive(Default, Deserialize)]
+#[derive(Deserialize)]
 pub struct Check {
-    config_path: String,
+    query_list_path: PathBuf,
 }
 
 impl Module for Check {
@@ -119,7 +122,7 @@ impl Manipulator for Check {
         workflow_directory: &Path,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let mut config_path = Path::new(&self.config_path).to_path_buf();
+        let mut config_path = Path::new(&self.query_list_path).to_path_buf();
         if config_path.is_relative() {
             // Resolve the config file path against the directory of the workflow file
             config_path = workflow_directory.join(config_path);

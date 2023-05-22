@@ -2,6 +2,7 @@
 pub mod check;
 pub mod map_annos;
 pub mod merge;
+pub mod no_op;
 pub mod re;
 
 use crate::{workflow::StatusSender, Module};

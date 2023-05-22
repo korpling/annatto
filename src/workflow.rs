@@ -43,9 +43,9 @@ pub enum StatusMessage {
 /// Last, all exporters are called with the now read-only annotation graph in parallel.
 #[derive(Deserialize)]
 pub struct Workflow {
-    importer: Vec<ImporterStep>,
-    manipulator: Option<Vec<ManipulatorStep>>,
-    exporter: Option<Vec<ExporterStep>>,
+    import: Vec<ImporterStep>,
+    graph_op: Option<Vec<ManipulatorStep>>,
+    export: Option<Vec<ExporterStep>>,
 }
 
 use std::convert::TryFrom;
@@ -86,16 +86,16 @@ impl Workflow {
         // Create a vector of all conversion steps and report these as current status
         if let Some(tx) = &tx {
             let mut steps: Vec<StepID> = Vec::default();
-            steps.extend(self.importer.iter().map(|importer| importer.get_step_id()));
+            steps.extend(self.import.iter().map(|importer| importer.get_step_id()));
             // TODO: also add a step for importer that tracks applying the graph update
-            if let Some(ref manipulators) = self.manipulator {
+            if let Some(ref manipulators) = self.graph_op {
                 steps.extend(
                     manipulators
                         .iter()
                         .map(|manipulator| manipulator.get_step_id()),
                 );
             }
-            if let Some(ref exporters) = self.exporter {
+            if let Some(ref exporters) = self.export {
                 steps.extend(exporters.iter().map(|exporter| exporter.get_step_id()));
             }
             tx.send(StatusMessage::StepsCreated(steps))?;
@@ -107,7 +107,7 @@ impl Workflow {
 
         // Execute all importers and store their graph updates in parallel
         let updates: Result<Vec<GraphUpdate>> = self
-            .importer
+            .import
             .par_iter()
             .map_with(tx.clone(), |tx, step| {
                 self.execute_single_importer(step, tx.clone())
@@ -132,11 +132,11 @@ impl Workflow {
             .map_err(|reason| AnnattoError::UpdateGraph(reason.to_string()))?;
 
         // Execute all manipulators in sequence
-        if let Some(ref manipulators) = self.manipulator {
+        if let Some(ref manipulators) = self.graph_op {
             for desc in manipulators.iter() {
                 let workflow_directory = &desc.workflow_directory;
-                desc.module
-                    .manipulator()
+                desc.perform
+                    .processor()
                     .manipulate_corpus(
                         &mut g,
                         workflow_directory
@@ -146,17 +146,17 @@ impl Workflow {
                     )
                     .map_err(|reason| AnnattoError::Manipulator {
                         reason: reason.to_string(),
-                        manipulator: desc.module.to_string(),
+                        manipulator: desc.perform.to_string(),
                     })?;
                 if let Some(ref tx) = tx {
                     tx.send(crate::workflow::StatusMessage::StepDone {
-                        id: desc.module.manipulator().step_id(None),
+                        id: desc.perform.processor().step_id(None),
                     })?;
                 }
             }
         }
         // Execute all exporters in parallel
-        if let Some(ref exporters) = self.exporter {
+        if let Some(ref exporters) = self.export {
             let export_result: Result<Vec<_>> = exporters
                 .par_iter()
                 .map_with(tx, |tx, step| {
@@ -175,17 +175,17 @@ impl Workflow {
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate> {
         let updates = step
-            .module
-            .importer()
-            .import_corpus(&step.corpus_path, tx.clone())
+            .read_from
+            .reader()
+            .import_corpus(&step.path, tx.clone())
             .map_err(|reason| AnnattoError::Import {
                 reason: reason.to_string(),
-                importer: step.module.to_string(),
-                path: step.corpus_path.to_path_buf(),
+                importer: step.read_from.to_string(),
+                path: step.path.to_path_buf(),
             })?;
         if let Some(ref tx) = tx {
             tx.send(crate::workflow::StatusMessage::StepDone {
-                id: step.module.importer().step_id(Some(&step.corpus_path)),
+                id: step.read_from.reader().step_id(Some(&step.path)),
             })?;
         }
         Ok(updates)
@@ -197,17 +197,17 @@ impl Workflow {
         step: &ExporterStep,
         tx: Option<StatusSender>,
     ) -> Result<()> {
-        step.module
-            .exporter()
-            .export_corpus(g, &step.corpus_path, tx.clone())
+        step.write_as
+            .writer()
+            .export_corpus(g, &step.path, tx.clone())
             .map_err(|reason| AnnattoError::Export {
                 reason: reason.to_string(),
-                exporter: step.module.to_string(),
-                path: step.corpus_path.clone(),
+                exporter: step.write_as.to_string(),
+                path: step.path.clone(),
             })?;
         if let Some(ref tx) = tx {
             tx.send(crate::workflow::StatusMessage::StepDone {
-                id: step.module.exporter().step_id(Some(&step.corpus_path)),
+                id: step.write_as.writer().step_id(Some(&step.path)),
             })?;
         }
         Ok(())

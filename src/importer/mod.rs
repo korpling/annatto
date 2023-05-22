@@ -34,6 +34,7 @@ pub trait Importer: Module {
 pub const CREATE_EMPTY_CORPUS_MODULE_NAME: &str = "create_empty_corpus";
 
 #[derive(Default, Deserialize)]
+#[serde(default)]
 pub struct CreateEmptyCorpus {}
 
 impl Importer for CreateEmptyCorpus {

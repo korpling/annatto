@@ -224,6 +224,7 @@ impl<'a> DocumentMapper {
 
 /// Importer the Penn Treebank Bracketed Text format (PTB)
 #[derive(Default, Deserialize)]
+#[serde(default)]
 pub struct PtbImporter {}
 
 impl Module for PtbImporter {

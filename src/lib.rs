@@ -17,93 +17,111 @@ use std::{
 use error::Result;
 use exporter::{graphml::GraphMLExporter, Exporter};
 use importer::{
-    conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, ptb::PtbImporter, textgrid::TextgridImporter,
-    CreateEmptyCorpus, Importer,
+    conllu::ImportCoNLLU, corpus_annotations::AnnotateCorpus, exmaralda::ImportEXMARaLDA,
+    graphml::GraphMLImporter, ptb::PtbImporter, spreadsheet::ImportSpreadsheet,
+    textgrid::TextgridImporter, CreateEmptyCorpus, Importer,
 };
-use manipulator::{check::Check, map_annos::MapAnnos, merge::Merge, re::Replace, Manipulator};
+use manipulator::{
+    check::Check, map_annos::MapAnnos, merge::Merge, no_op::NoOp, re::Replace, Manipulator,
+};
 use serde_derive::Deserialize;
 
 #[derive(Deserialize)]
-pub enum ExportDefinition {
-    ExportGraphML(GraphMLExporter),
+#[serde(tag = "format", rename_all = "lowercase")]
+pub enum WriteAs {
+    GraphML(GraphMLExporter),
 }
 
-impl ToString for ExportDefinition {
-    fn to_string(&self) -> String {
-        match self {
-            ExportDefinition::ExportGraphML(m) => m.module_name().to_string(),
-        }
+impl Default for WriteAs {
+    fn default() -> Self {
+        WriteAs::GraphML(GraphMLExporter::default())
     }
 }
 
-impl ExportDefinition {
-    // todo would it be (more) useful to actually implement deref?
-    fn exporter(&self) -> &dyn Exporter {
+impl ToString for WriteAs {
+    fn to_string(&self) -> String {
+        self.writer().module_name().to_string()
+    }
+}
+
+impl WriteAs {
+    fn writer(&self) -> &dyn Exporter {
         match self {
-            ExportDefinition::ExportGraphML(m) => m,
+            WriteAs::GraphML(m) => m,
         }
     }
 }
 
 #[derive(Deserialize)]
-pub enum ImportDefinition {
-    ImportCoNLLU(ImportCoNLLU),
-    ImportEXMARaLDA(ImportEXMARaLDA),
-    ImportPTB(PtbImporter),
-    ImportTextGrid(TextgridImporter),
-    InitEmptyCorpus(CreateEmptyCorpus),
+#[serde(tag = "format", rename_all = "lowercase")]
+pub enum ReadFrom {
+    CoNLLU(ImportCoNLLU),
+    EXMARaLDA(ImportEXMARaLDA),
+    GraphML(GraphMLImporter),
+    Meta(AnnotateCorpus),
+    None(CreateEmptyCorpus),
+    PTB(PtbImporter),
+    TextGrid(TextgridImporter),
+    Xlsx(ImportSpreadsheet),
 }
 
-impl ToString for ImportDefinition {
-    fn to_string(&self) -> String {
-        match self {
-            ImportDefinition::ImportCoNLLU(m) => m.module_name().to_string(),
-            ImportDefinition::ImportEXMARaLDA(m) => m.module_name().to_string(),
-            ImportDefinition::ImportPTB(m) => m.module_name().to_string(),
-            ImportDefinition::ImportTextGrid(m) => m.module_name().to_string(),
-            ImportDefinition::InitEmptyCorpus(m) => m.module_name().to_string(),
-        }
+impl Default for ReadFrom {
+    fn default() -> Self {
+        ReadFrom::None(CreateEmptyCorpus::default())
     }
 }
 
-impl ImportDefinition {
-    fn importer(&self) -> &dyn Importer {
+impl ToString for ReadFrom {
+    fn to_string(&self) -> String {
+        self.reader().module_name().to_string()
+    }
+}
+
+impl ReadFrom {
+    fn reader(&self) -> &dyn Importer {
         match self {
-            ImportDefinition::ImportCoNLLU(m) => m,
-            ImportDefinition::ImportEXMARaLDA(m) => m,
-            ImportDefinition::ImportPTB(m) => m,
-            ImportDefinition::ImportTextGrid(m) => m,
-            ImportDefinition::InitEmptyCorpus(m) => m,
+            ReadFrom::CoNLLU(m) => m,
+            ReadFrom::EXMARaLDA(m) => m,
+            ReadFrom::PTB(m) => m,
+            ReadFrom::TextGrid(m) => m,
+            ReadFrom::None(m) => m,
+            ReadFrom::Meta(m) => m,
+            ReadFrom::Xlsx(m) => m,
+            ReadFrom::GraphML(m) => m,
         }
     }
 }
 
 #[derive(Deserialize)]
-pub enum ProcessingDefinition {
+#[serde(tag = "action", rename_all = "lowercase")]
+pub enum GraphOp {
     Check(Check),
     Map(MapAnnos),
     Merge(Merge),
     Re(Replace),
+    None(NoOp),
 }
 
-impl ToString for ProcessingDefinition {
-    fn to_string(&self) -> String {
-        match self {
-            ProcessingDefinition::Check(m) => m.module_name().to_string(),
-            ProcessingDefinition::Map(m) => m.module_name().to_string(),
-            ProcessingDefinition::Merge(m) => m.module_name().to_string(),
-            ProcessingDefinition::Re(m) => m.module_name().to_string(),
-        }
+impl Default for GraphOp {
+    fn default() -> Self {
+        GraphOp::None(NoOp::default())
     }
 }
 
-impl ProcessingDefinition {
-    fn manipulator(&self) -> &dyn Manipulator {
+impl ToString for GraphOp {
+    fn to_string(&self) -> String {
+        self.processor().module_name().to_string()
+    }
+}
+
+impl GraphOp {
+    fn processor(&self) -> &dyn Manipulator {
         match self {
-            ProcessingDefinition::Check(m) => m,
-            ProcessingDefinition::Map(m) => m,
-            ProcessingDefinition::Merge(m) => m,
-            ProcessingDefinition::Re(m) => m,
+            GraphOp::Check(m) => m,
+            GraphOp::Map(m) => m,
+            GraphOp::Merge(m) => m,
+            GraphOp::Re(m) => m,
+            GraphOp::None(m) => m,
         }
     }
 }
@@ -134,44 +152,44 @@ pub trait Step {
 
 #[derive(Deserialize)]
 struct ImporterStep {
-    module: ImportDefinition,
-    corpus_path: PathBuf,
+    read_from: ReadFrom,
+    path: PathBuf,
 }
 
 impl Step for ImporterStep {
     fn get_step_id(&self) -> StepID {
         StepID {
-            module_name: self.module.to_string(),
-            path: Some(self.corpus_path.clone()),
+            module_name: self.read_from.to_string(),
+            path: Some(self.path.clone()),
         }
     }
 }
 
 #[derive(Deserialize)]
 struct ExporterStep {
-    module: ExportDefinition,
-    corpus_path: PathBuf,
+    write_as: WriteAs,
+    path: PathBuf,
 }
 
 impl Step for ExporterStep {
     fn get_step_id(&self) -> StepID {
         StepID {
-            module_name: self.module.to_string(),
-            path: Some(self.corpus_path.clone()),
+            module_name: self.write_as.to_string(),
+            path: Some(self.path.clone()),
         }
     }
 }
 
 #[derive(Deserialize)]
 struct ManipulatorStep {
-    module: ProcessingDefinition,
+    perform: GraphOp,
     workflow_directory: Option<PathBuf>,
 }
 
 impl Step for ManipulatorStep {
     fn get_step_id(&self) -> StepID {
         StepID {
-            module_name: self.module.to_string(),
+            module_name: self.perform.to_string(),
             path: None,
         }
     }

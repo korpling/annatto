@@ -26,6 +26,7 @@ use serde_derive::{Deserialize, Serialize};
 pub const MODULE_NAME: &str = "export_graphml";
 
 #[derive(Default, Deserialize)]
+#[serde(default)]
 pub struct GraphMLExporter {
     add_vis: Option<String>,
     guess_vis: bool,

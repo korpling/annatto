@@ -25,6 +25,7 @@ use super::Importer;
 pub const MODULE_NAME: &str = "import_exmaralda";
 
 #[derive(Default, Deserialize)]
+#[serde(default)]
 pub struct ImportEXMARaLDA {}
 
 impl Module for ImportEXMARaLDA {
