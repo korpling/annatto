@@ -59,7 +59,7 @@ fn load_complex_workflow() {
         .arg("tests/data/import/workflows/complex_all_attributes.toml")
         .output()
         .unwrap();
-    cmd.assert().failure();
+    cmd.assert().success();
 
     // Get output
     let output = std::str::from_utf8(&output.stderr).unwrap();
@@ -75,7 +75,7 @@ fn load_complex_workflow_attr_ommited() {
         .arg("tests/data/import/workflows/complex_some_attributes.toml")
         .output()
         .unwrap();
-    cmd.assert().failure();
+    cmd.assert().success();
 
     // Get output
     let output = std::str::from_utf8(&output.stderr).unwrap();
