@@ -8,16 +8,18 @@ use graphannis::{
     corpusstorage::{QueryLanguage, SearchQuery},
     AnnotationGraph, CorpusStorage,
 };
+use serde_derive::Deserialize;
 use tempfile::tempdir_in;
 
 use crate::{error::AnnattoError, Manipulator, Module};
 
 pub const MODULE_NAME: &str = "check";
-const PROP_CONFIG_PATH: &str = "config.path";
 const CONFIG_FILE_ENTRY_SEP: u8 = b'\t';
 
-#[derive(Default)]
-pub struct Check {}
+#[derive(Deserialize)]
+pub struct Check {
+    query_list_path: PathBuf,
+}
 
 impl Module for Check {
     fn module_name(&self) -> &str {
@@ -117,24 +119,13 @@ impl Manipulator for Check {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
-        properties: &std::collections::BTreeMap<String, String>,
-        workflow_directory: Option<&Path>,
+        workflow_directory: &Path,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let mut config_path = match properties.get(&PROP_CONFIG_PATH.to_string()) {
-            None => {
-                return Err(Box::new(AnnattoError::Manipulator {
-                    reason: "No test file path provided".to_string(),
-                    manipulator: self.module_name().to_string(),
-                }))
-            }
-            Some(path_spec) => PathBuf::from(path_spec),
-        };
+        let mut config_path = Path::new(&self.query_list_path).to_path_buf();
         if config_path.is_relative() {
-            if let Some(workflow_directory) = workflow_directory {
-                // Resolve the config file path against the directory of the workflow file
-                config_path = workflow_directory.join(config_path);
-            }
+            // Resolve the config file path against the directory of the workflow file
+            config_path = workflow_directory.join(config_path);
         }
         let checks = read_config_file(&config_path)?;
         run_checks(graph, checks)

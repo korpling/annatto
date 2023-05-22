@@ -1,4 +1,8 @@
-use std::{cmp::Ordering, collections::BTreeSet, path::Path};
+use std::{
+    cmp::Ordering,
+    collections::{BTreeMap, BTreeSet},
+    path::Path,
+};
 
 use graphannis::{
     graph::{AnnoKey, Edge, Match},
@@ -13,14 +17,22 @@ use graphannis_core::{
     graph::{ANNIS_NS, NODE_NAME_KEY},
 };
 use itertools::Itertools;
+use serde_derive::Deserialize;
 
 use crate::{
     error::{AnnattoError, StandardErrorResult},
     Manipulator, Module,
 };
 
-#[derive(Default)]
-pub struct Replace {}
+#[derive(Default, Deserialize)]
+#[serde(default)]
+pub struct Replace {
+    remove_nodes: Option<Vec<String>>,
+    move_node_annos: bool,
+    node_annos: Option<BTreeMap<String, String>>,
+    edge_annos: Option<BTreeMap<String, String>>,
+    namespaces: Option<BTreeMap<String, String>>,
+}
 
 pub const MODULE_NAME: &str = "replace";
 
@@ -30,17 +42,9 @@ impl Module for Replace {
     }
 }
 
-const PROP_NODE_ANNOS: &str = "node.annos";
-const PROP_NODE_NAMES: &str = "node.names";
-const PROP_EDGE_ANNOS: &str = "edge.annos";
-const PROP_ANNO_NAMESPACES: &str = "namespaces";
-const PROP_MOVE: &str = "move.node.annos";
-const PROPVAL_SEP: &str = ",";
-const PROPVAL_OLD_NEW_SEP: &str = ":=";
-
 fn remove_nodes(
     update: &mut GraphUpdate,
-    names: Vec<&str>,
+    names: &Vec<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     for name in names {
         update.add_event(UpdateEvent::DeleteNode {
@@ -405,22 +409,17 @@ fn ns_from_key(anno_key: &AnnoKey) -> Option<&str> {
 }
 
 fn read_replace_property_value(
-    value: &str,
+    value: &BTreeMap<String, String>,
 ) -> StandardErrorResult<Vec<(AnnoKey, Option<AnnoKey>)>> {
     let mut names = Vec::new();
-    for entry in value.split(PROPVAL_SEP) {
-        let old_new = entry.split_once(PROPVAL_OLD_NEW_SEP);
-        let key_and_opt = match old_new {
-            None => {
-                // only old name, i. e. remove
-                (key_from_qname(entry), None)
-            }
-            Some(tpl) => {
-                // new name specified, too
-                (key_from_qname(tpl.0), Some(key_from_qname(tpl.1)))
-            }
+    for (source_name, target_name) in value {
+        let src_key = key_from_qname(source_name);
+        let tgt_key = if target_name.trim().is_empty() {
+            None
+        } else {
+            Some(key_from_qname(target_name))
         };
-        names.push(key_and_opt);
+        names.push((src_key, tgt_key));
     }
     Ok(names)
 }
@@ -429,28 +428,23 @@ impl Manipulator for Replace {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
-        properties: &std::collections::BTreeMap<String, String>,
-        _workflow_directory: Option<&Path>,
+        _workflow_directory: &Path,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let move_by_ns = match properties.get(&PROP_MOVE.to_string()) {
-            None => false,
-            Some(v) => v.parse::<bool>()?,
-        };
-        if let Some(node_name_s) = properties.get(&PROP_NODE_NAMES.to_string()) {
-            let node_names = node_name_s.split(PROPVAL_SEP).collect_vec();
+        let move_by_ns = self.move_node_annos;
+        if let Some(ref node_names) = self.remove_nodes {
             remove_nodes(&mut update, node_names)?;
         }
-        if let Some(anno_name_s) = properties.get(&PROP_NODE_ANNOS.to_string()) {
+        if let Some(ref anno_name_s) = self.node_annos {
             let node_annos = read_replace_property_value(anno_name_s)?;
             replace_node_annos(graph, &mut update, node_annos, move_by_ns)?;
         }
-        if let Some(edge_name_s) = properties.get(&PROP_EDGE_ANNOS.to_string()) {
+        if let Some(ref edge_name_s) = self.edge_annos {
             let edge_annos = read_replace_property_value(edge_name_s)?;
             replace_edge_annos(graph, &mut update, edge_annos)?;
         }
-        if let Some(namespace_s) = properties.get(&PROP_ANNO_NAMESPACES.to_string()) {
+        if let Some(ref namespace_s) = self.namespaces {
             let namespaces = read_replace_property_value(namespace_s)?;
             let replacements = namespaces
                 .into_iter()
@@ -488,8 +482,6 @@ mod tests {
     use itertools::Itertools;
     use tempfile::{tempdir_in, tempfile};
 
-    use super::PROP_ANNO_NAMESPACES;
-
     #[test]
     fn test_remove_in_mem() {
         let r = core_test(false, false);
@@ -516,16 +508,21 @@ mod tests {
 
     fn core_test(on_disk: bool, rename: bool) -> Result<()> {
         let mut g = input_graph(on_disk, false)?;
-        let mut properties = BTreeMap::new();
         let (node_anno_prop_val, edge_anno_prop_val) = if rename {
-            ("pos:=upos".to_string(), "deprel:=func".to_string())
+            ("pos = \"upos\"", "deprel = \"func\"")
         } else {
-            ("pos".to_string(), "deprel".to_string())
+            ("pos = \"\"", "deprel = \"\"")
         };
-        properties.insert("node.annos".to_string(), node_anno_prop_val);
-        properties.insert("edge.annos".to_string(), edge_anno_prop_val);
-        let replace = Replace::default();
-        let result = replace.manipulate_corpus(&mut g, &properties, None, None);
+        let node_map: BTreeMap<String, String> = toml::from_str(node_anno_prop_val)?;
+        let edge_map: BTreeMap<String, String> = toml::from_str(edge_anno_prop_val)?;
+        let replace = Replace {
+            remove_nodes: None,
+            move_node_annos: false,
+            node_annos: Some(node_map),
+            edge_annos: Some(edge_map),
+            namespaces: None,
+        };
+        let result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), None);
         assert_eq!(result.is_ok(), true, "Probing merge result {:?}", &result);
         let mut e_g = if rename {
             input_graph(on_disk, true)?
@@ -646,14 +643,19 @@ mod tests {
 
     fn move_test(on_disk: bool) -> Result<()> {
         let mut g = input_graph_for_move(on_disk)?;
-        let mut properties = BTreeMap::new();
-        properties.insert(
-            "node.annos".to_string(),
-            "norm::pos:=dipl::derived_pos".to_string(),
-        );
-        properties.insert("move.node.annos".to_string(), "true".to_string());
-        let replace = Replace::default();
-        let result = replace.manipulate_corpus(&mut g, &properties, None, None);
+        let node_map: BTreeMap<String, String> = toml::from_str(
+            r#"
+            "norm::pos" = "dipl::derived_pos"
+        "#,
+        )?;
+        let replace = Replace {
+            move_node_annos: true,
+            namespaces: None,
+            node_annos: Some(node_map),
+            edge_annos: None,
+            remove_nodes: None,
+        };
+        let result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), None);
         assert_eq!(result.is_ok(), true, "Probing merge result {:?}", &result);
         let mut e_g = expected_output_for_move(on_disk)?;
         // corpus nodes
@@ -771,13 +773,26 @@ mod tests {
 
     fn export_test(on_disk: bool) -> Result<()> {
         let mut g = input_graph(on_disk, false)?;
-        let mut properties = BTreeMap::new();
-        properties.insert("edge.annos".to_string(), "deprel".to_string());
-        properties.insert("node.annos".to_string(), "pos".to_string());
-        let replace = Replace::default();
+        let node_map: BTreeMap<String, String> = toml::from_str(
+            r#"
+            pos = ""
+        "#,
+        )?;
+        let edge_map: BTreeMap<String, String> = toml::from_str(
+            r#"
+            deprel = ""
+        "#,
+        )?;
+        let replace = Replace {
+            move_node_annos: true,
+            namespaces: None,
+            node_annos: Some(node_map),
+            edge_annos: Some(edge_map),
+            remove_nodes: None,
+        };
         assert_eq!(
             replace
-                .manipulate_corpus(&mut g, &properties, None, None)
+                .manipulate_corpus(&mut g, temp_dir().as_path(), None)
                 .is_ok(),
             true
         );
@@ -812,16 +827,26 @@ mod tests {
 
     fn export_test_move_result(on_disk: bool) -> Result<()> {
         let mut g = input_graph_for_move(on_disk)?;
-        let mut properties = BTreeMap::new();
-        properties.insert(
-            "node.annos".to_string(),
-            "norm::pos:=dipl::derived_pos".to_string(),
-        );
-        properties.insert("move.node.annos".to_string(), "true".to_string());
-        let replace = Replace::default();
+        let node_map: BTreeMap<String, String> = toml::from_str(
+            r#"
+            "norm::pos" = "dipl::derived_pos"
+        "#,
+        )?;
+        let edge_map: BTreeMap<String, String> = toml::from_str(
+            r#"
+            deprel = ""
+        "#,
+        )?;
+        let replace = Replace {
+            move_node_annos: true,
+            namespaces: None,
+            node_annos: Some(node_map),
+            edge_annos: Some(edge_map),
+            remove_nodes: None,
+        };
         assert_eq!(
             replace
-                .manipulate_corpus(&mut g, &properties, None, None)
+                .manipulate_corpus(&mut g, temp_dir().as_path(), None)
                 .is_ok(),
             true
         );
@@ -846,13 +871,20 @@ mod tests {
 
     fn namespace_test(on_disk: bool) -> Result<()> {
         let mut g = namespace_test_graph(on_disk, false)?;
-        let replace = Replace::default();
-        let mut properties = BTreeMap::new();
-        properties.insert(
-            PROP_ANNO_NAMESPACES.to_string(),
-            "ud:=default_ns,:=default_ns".to_string(),
-        );
-        let op_result = replace.manipulate_corpus(&mut g, &properties, None, None);
+        let ns_map: BTreeMap<String, String> = toml::from_str(
+            r#"
+            ud = "default_ns"
+            "" = "default_ns"
+        "#,
+        )?;
+        let replace = Replace {
+            remove_nodes: None,
+            move_node_annos: false,
+            node_annos: None,
+            edge_annos: None,
+            namespaces: Some(ns_map),
+        };
+        let op_result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), None);
         assert_eq!(
             op_result.is_ok(),
             true,

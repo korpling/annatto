@@ -22,7 +22,7 @@ fn run_empty_conversion() {
 
     let output = cmd
         .arg("run")
-        .arg("tests/data/import/empty/empty.ato")
+        .arg("tests/data/import/empty/empty.toml")
         .output()
         .unwrap();
     cmd.assert().success();
@@ -48,4 +48,37 @@ fn run_failing_conversion() {
     let output = std::str::from_utf8(&output.stderr).unwrap();
 
     assert_snapshot!(output);
+}
+
+#[test]
+fn load_complex_workflow() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd
+        .arg("validate")
+        .arg("tests/data/import/workflows/complex_all_attributes.toml")
+        .output()
+        .unwrap();
+    cmd.assert().success();
+
+    // Get output
+    let output = std::str::from_utf8(&output.stderr).unwrap();
+    assert!(output.is_empty());
+}
+
+#[test]
+fn load_complex_workflow_attr_ommited() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd
+        .arg("validate")
+        .arg("tests/data/import/workflows/complex_some_attributes.toml")
+        .output()
+        .unwrap();
+    cmd.assert().success();
+
+    // Get output
+    let output = std::str::from_utf8(&output.stderr).unwrap();
+    dbg!(&output);
+    assert!(output.is_empty());
 }

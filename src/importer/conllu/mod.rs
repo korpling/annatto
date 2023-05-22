@@ -16,6 +16,7 @@ use pest::{
     Parser,
 };
 use pest_derive::Parser;
+use serde_derive::Deserialize;
 
 use crate::{
     error::AnnattoError,
@@ -28,7 +29,8 @@ use super::Importer;
 
 pub const MODULE_NAME: &str = "import_conllu";
 
-#[derive(Default)]
+#[derive(Default, Deserialize)]
+#[serde(default)]
 pub struct ImportCoNLLU {}
 
 impl Module for ImportCoNLLU {
@@ -41,7 +43,6 @@ impl Importer for ImportCoNLLU {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
-        _properties: &std::collections::BTreeMap<String, String>,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();

@@ -3,6 +3,7 @@ use quick_xml::{
     events::{attributes::Attributes, Event},
     Reader,
 };
+use serde_derive::Deserialize;
 use std::{
     collections::{BTreeMap, HashMap},
     fs::File,
@@ -24,7 +25,8 @@ use crate::{
 
 pub const MODULE_NAME: &str = "import_graphml";
 
-#[derive(Default)]
+#[derive(Default, Deserialize)]
+#[serde(default)]
 pub struct GraphMLImporter {}
 
 fn add_node(
@@ -268,7 +270,6 @@ impl Importer for GraphMLImporter {
     fn import_corpus(
         &self,
         path: &Path,
-        _properties: &BTreeMap<String, String>,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(path), 2)?;
@@ -303,7 +304,7 @@ impl Module for GraphMLImporter {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeMap, path::Path};
+    use std::path::Path;
 
     use insta::assert_snapshot;
 
@@ -314,7 +315,6 @@ mod tests {
         let actual = import_as_graphml_string(
             GraphMLImporter::default(),
             Path::new("tests/data/import/graphml/single_sentence/zossen.graphml"),
-            BTreeMap::default(),
             None,
         )
         .unwrap();

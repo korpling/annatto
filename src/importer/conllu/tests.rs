@@ -1,9 +1,4 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    env::temp_dir,
-    path::Path,
-    sync::mpsc,
-};
+use std::{collections::BTreeSet, env::temp_dir, path::Path, sync::mpsc};
 
 use graphannis::{
     corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
@@ -29,7 +24,7 @@ const TEST_PATH: &str = "tests/data/import/conll/valid";
 fn test_conll_fail_invalid() {
     let import = ImportCoNLLU::default();
     let import_path = Path::new("tests/data/import/conll/invalid");
-    let job = import.import_corpus(import_path, &BTreeMap::new(), None);
+    let job = import.import_corpus(import_path, None);
     assert!(job.is_ok());
     let mut u = GraphUpdate::default();
     assert!(import
@@ -47,7 +42,7 @@ fn test_conll_fail_invalid_heads() {
     let import = ImportCoNLLU::default();
     let import_path = Path::new("tests/data/import/conll/invalid-heads/");
     let (sender, receiver) = mpsc::channel();
-    let job = import.import_corpus(import_path, &BTreeMap::new(), Some(sender));
+    let job = import.import_corpus(import_path, Some(sender));
     assert!(job.is_ok());
     let fail_msgs = receiver.into_iter().filter(|s| match *s {
         StatusMessage::Failed(_) => true,
@@ -60,7 +55,7 @@ fn test_conll_fail_invalid_heads() {
 fn test_conll_fail_cyclic() -> Result<(), Box<dyn std::error::Error>> {
     let import = ImportCoNLLU::default();
     let import_path = Path::new("tests/data/import/conll/cyclic-deps/");
-    let job = import.import_corpus(import_path, &BTreeMap::new(), None);
+    let job = import.import_corpus(import_path, None);
     assert!(job.is_ok());
     Ok(())
 }
@@ -79,7 +74,7 @@ fn basic_test(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
     let mut e_g = target_graph(on_disk)?;
     let import = ImportCoNLLU::default();
     let import_path = Path::new(TEST_PATH);
-    let job = import.import_corpus(import_path, &BTreeMap::new(), None);
+    let job = import.import_corpus(import_path, None);
     assert!(job.is_ok());
     let mut u = job.unwrap();
     let mut g = AnnotationGraph::new(on_disk)?;

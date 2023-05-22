@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, io::Read, path::Path};
+use std::{io::Read, path::Path};
 
 use anyhow::anyhow;
 use encoding_rs_io::DecodeReaderBytes;
@@ -12,6 +12,7 @@ use pest::{
     Parser,
 };
 use pest_derive::Parser;
+use serde_derive::Deserialize;
 
 use crate::{progress::ProgressReporter, util::graphupdate::path_structure, Module};
 
@@ -222,7 +223,8 @@ impl<'a> DocumentMapper {
 }
 
 /// Importer the Penn Treebank Bracketed Text format (PTB)
-#[derive(Default)]
+#[derive(Default, Deserialize)]
+#[serde(default)]
 pub struct PtbImporter {}
 
 impl Module for PtbImporter {
@@ -235,7 +237,6 @@ impl Importer for PtbImporter {
     fn import_corpus(
         &self,
         input_path: &Path,
-        _properties: &BTreeMap<String, String>,
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut u = GraphUpdate::default();

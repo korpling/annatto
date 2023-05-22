@@ -2,11 +2,12 @@
 pub mod check;
 pub mod map_annos;
 pub mod merge;
+pub mod no_op;
 pub mod re;
 
 use crate::{workflow::StatusSender, Module};
 use graphannis::AnnotationGraph;
-use std::{collections::BTreeMap, path::Path};
+use std::path::Path;
 
 /// A a manipulator is a module that changes an annotation graph.
 /// Manipulators are applied in sequence to the same annotation graph instance.
@@ -22,8 +23,7 @@ pub trait Manipulator: Module {
     fn manipulate_corpus(
         &self,
         graph: &mut AnnotationGraph,
-        properties: &BTreeMap<String, String>,
-        workflow_directory: Option<&Path>,
+        workflow_directory: &Path,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>>;
 }

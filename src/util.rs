@@ -10,7 +10,6 @@ use graphannis::{
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use std::{
-    collections::BTreeMap,
     fs::File,
     io::{BufWriter, Write},
     path::{Path, PathBuf},
@@ -88,7 +87,6 @@ pub fn insert_corpus_nodes_from_path(
 pub fn import_as_graphml_string<I, P>(
     importer: I,
     path: P,
-    properties: BTreeMap<String, String>,
     graph_configuration: Option<&str>,
 ) -> Result<String>
 where
@@ -96,7 +94,7 @@ where
     P: AsRef<Path>,
 {
     let mut u = importer
-        .import_corpus(path.as_ref(), &properties, None)
+        .import_corpus(path.as_ref(), None)
         .map_err(|e| AnnattoError::Import {
             reason: e.to_string(),
             importer: importer.module_name().to_string(),
