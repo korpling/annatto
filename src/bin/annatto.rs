@@ -19,7 +19,7 @@ enum Cli {
         #[structopt(parse(from_os_str))]
         workflow_file: std::path::PathBuf,
     },
-    /// only checks if a workflow can be imported
+    /// Only check if a workflow files can be imported. Invalid workflow files will lead to a non-zero exit code.
     Validate {
         /// The path to the workflow file.
         #[structopt(parse(from_os_str))]
