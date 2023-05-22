@@ -353,7 +353,7 @@ impl Merge {
         Ok(())
     }
 
-    fn skip_components_from_prop(
+    fn collect_skip_components(
         &self,
         graph: &AnnotationGraph,
     ) -> BTreeSet<Component<AnnotationComponentType>> {
@@ -579,7 +579,7 @@ impl Manipulator for Merge {
         };
         let node_map: BTreeMap<u64, u64> =
             mapper.map_text_nodes(graph, &mut updates, ordered_items_by_doc, reporter)?;
-        let skip_components = self.skip_components_from_prop(graph);
+        let skip_components = self.collect_skip_components(graph);
         self.merge_all_components(graph, &mut updates, skip_components, node_map, &sender_opt)?;
         self.handle_document_errors(
             graph,
@@ -642,7 +642,7 @@ mod tests {
             error_policy: "fail".to_string(),
             keep_name: "norm".to_string(),
             optional_chars: BTreeSet::new(),
-            optional_values: vec!["\"NOISE\"".to_string()]
+            optional_values: vec!["NOISE".to_string()]
                 .into_iter()
                 .collect::<BTreeSet<String>>(),
             report_details: false,
