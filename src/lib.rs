@@ -152,6 +152,7 @@ pub trait Step {
 
 #[derive(Deserialize)]
 struct ImporterStep {
+    #[serde(flatten)]
     config: ReadFrom,
     path: PathBuf,
 }
@@ -167,6 +168,7 @@ impl Step for ImporterStep {
 
 #[derive(Deserialize)]
 struct ExporterStep {
+    #[serde(flatten)]
     config: WriteAs,
     path: PathBuf,
 }
@@ -182,6 +184,7 @@ impl Step for ExporterStep {
 
 #[derive(Deserialize)]
 struct ManipulatorStep {
+    #[serde(flatten)]
     config: GraphOp,
     workflow_directory: Option<PathBuf>,
 }

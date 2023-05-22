@@ -2,8 +2,9 @@
 
 [[import]]
 path = "tests/data/import/textgrid/singleSpeaker/"
-config = { format = "textgrid", audio_extension = "wav" }
+format = "textgrid"
+audio_extension = "wav"
 
 [[export]]
 path = "tests/test_out"
-config = { format = "graphml" }
+format = "graphml"
