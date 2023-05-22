@@ -405,7 +405,7 @@ impl Importer for TextgridImporter {
             BTreeMap::new()
         };
         let params = MapperParams {
-            tier_groups: tier_groups,
+            tier_groups,
             skip_timeline_generation: self.skip_timeline_generation,
             skip_audio: self.skip_audio,
             skip_time_annotations: self.skip_time_annotations,

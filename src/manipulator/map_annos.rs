@@ -40,7 +40,7 @@ impl Manipulator for MapAnnos {
         let read_from_path = {
             let p = Path::new(&self.rule_file).to_path_buf();
             if p.is_relative() {
-                workflow_directory.join(p).to_path_buf()
+                workflow_directory.join(p)
             } else {
                 p
             }
