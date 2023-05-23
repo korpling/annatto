@@ -4,6 +4,8 @@
 path = "tests/data/import/empty"
 format = "none"
 
+[import.config]
+
 [[graph_op]]
 action = "check"
 
