@@ -135,7 +135,7 @@ impl Workflow {
         if let Some(ref manipulators) = self.graph_op {
             for desc in manipulators.iter() {
                 let workflow_directory = &desc.workflow_directory;
-                desc.config
+                desc.module
                     .processor()
                     .manipulate_corpus(
                         &mut g,
@@ -146,11 +146,11 @@ impl Workflow {
                     )
                     .map_err(|reason| AnnattoError::Manipulator {
                         reason: reason.to_string(),
-                        manipulator: desc.config.to_string(),
+                        manipulator: desc.module.to_string(),
                     })?;
                 if let Some(ref tx) = tx {
                     tx.send(crate::workflow::StatusMessage::StepDone {
-                        id: desc.config.processor().step_id(None),
+                        id: desc.module.processor().step_id(None),
                     })?;
                 }
             }
@@ -175,17 +175,17 @@ impl Workflow {
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate> {
         let updates = step
-            .config
+            .module
             .reader()
             .import_corpus(&step.path, tx.clone())
             .map_err(|reason| AnnattoError::Import {
                 reason: reason.to_string(),
-                importer: step.config.to_string(),
+                importer: step.module.to_string(),
                 path: step.path.to_path_buf(),
             })?;
         if let Some(ref tx) = tx {
             tx.send(crate::workflow::StatusMessage::StepDone {
-                id: step.config.reader().step_id(Some(&step.path)),
+                id: step.module.reader().step_id(Some(&step.path)),
             })?;
         }
         Ok(updates)
@@ -197,17 +197,17 @@ impl Workflow {
         step: &ExporterStep,
         tx: Option<StatusSender>,
     ) -> Result<()> {
-        step.config
+        step.module
             .writer()
             .export_corpus(g, &step.path, tx.clone())
             .map_err(|reason| AnnattoError::Export {
                 reason: reason.to_string(),
-                exporter: step.config.to_string(),
+                exporter: step.module.to_string(),
                 path: step.path.clone(),
             })?;
         if let Some(ref tx) = tx {
             tx.send(crate::workflow::StatusMessage::StepDone {
-                id: step.config.writer().step_id(Some(&step.path)),
+                id: step.module.writer().step_id(Some(&step.path)),
             })?;
         }
         Ok(())

@@ -3,6 +3,8 @@
 [[import]]
 path = "tests/data/import/textgrid/singleSpeaker/"
 format = "textgrid"
+
+[import.config]
 audio_extension = "wav"
 
 [[export]]
