@@ -27,12 +27,13 @@ use manipulator::{
 use serde_derive::Deserialize;
 
 #[derive(Deserialize)]
-#[serde(tag = "format", rename_all = "lowercase")]
+#[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum WriteAs {
-    GraphML(GraphMLExporter),
+    GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
 }
 
 impl Default for WriteAs {
+    // the purpose of this default is to allow to omit `format` in an `[[export]]` table
     fn default() -> Self {
         WriteAs::GraphML(GraphMLExporter::default())
     }
@@ -53,19 +54,20 @@ impl WriteAs {
 }
 
 #[derive(Deserialize)]
-#[serde(tag = "format", rename_all = "lowercase")]
+#[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum ReadFrom {
-    CoNLLU(ImportCoNLLU),
-    EXMARaLDA(ImportEXMARaLDA),
-    GraphML(GraphMLImporter),
-    Meta(AnnotateCorpus),
-    None(CreateEmptyCorpus),
-    PTB(PtbImporter),
-    TextGrid(TextgridImporter),
-    Xlsx(ImportSpreadsheet),
+    CoNLLU(#[serde(default)] ImportCoNLLU),
+    EXMARaLDA(#[serde(default)] ImportEXMARaLDA),
+    GraphML(#[serde(default)] GraphMLImporter),
+    Meta(#[serde(default)] AnnotateCorpus),
+    None(#[serde(default)] CreateEmptyCorpus),
+    PTB(#[serde(default)] PtbImporter),
+    TextGrid(#[serde(default)] TextgridImporter),
+    Xlsx(#[serde(default)] ImportSpreadsheet),
 }
 
 impl Default for ReadFrom {
+    // the purpose of this default is to allow to omit `format` in an `[[import]]` table
     fn default() -> Self {
         ReadFrom::None(CreateEmptyCorpus::default())
     }
@@ -93,16 +95,17 @@ impl ReadFrom {
 }
 
 #[derive(Deserialize)]
-#[serde(tag = "action", rename_all = "lowercase")]
+#[serde(tag = "action", rename_all = "lowercase", content = "config")]
 pub enum GraphOp {
-    Check(Check),
-    Map(MapAnnos),
-    Merge(Merge),
-    Re(Replace),
-    None(NoOp),
+    Check(Check),                  // no default, has a (required) path attribute
+    Map(MapAnnos),                 // no default, has a (required) path attribute
+    Merge(Merge),                  // no default, has required attributes
+    Re(#[serde(default)] Replace), // does nothing on default
+    None(#[serde(default)] NoOp),  // has no attributes
 }
 
 impl Default for GraphOp {
+    // the purpose of this default is to allow to omit `format` in an `[[graph_op]]` table
     fn default() -> Self {
         GraphOp::None(NoOp::default())
     }
@@ -153,14 +156,14 @@ pub trait Step {
 #[derive(Deserialize)]
 struct ImporterStep {
     #[serde(flatten)]
-    config: ReadFrom,
+    module: ReadFrom,
     path: PathBuf,
 }
 
 impl Step for ImporterStep {
     fn get_step_id(&self) -> StepID {
         StepID {
-            module_name: self.config.to_string(),
+            module_name: self.module.to_string(),
             path: Some(self.path.clone()),
         }
     }
@@ -169,14 +172,14 @@ impl Step for ImporterStep {
 #[derive(Deserialize)]
 struct ExporterStep {
     #[serde(flatten)]
-    config: WriteAs,
+    module: WriteAs,
     path: PathBuf,
 }
 
 impl Step for ExporterStep {
     fn get_step_id(&self) -> StepID {
         StepID {
-            module_name: self.config.to_string(),
+            module_name: self.module.to_string(),
             path: Some(self.path.clone()),
         }
     }
@@ -185,14 +188,14 @@ impl Step for ExporterStep {
 #[derive(Deserialize)]
 struct ManipulatorStep {
     #[serde(flatten)]
-    config: GraphOp,
+    module: GraphOp,
     workflow_directory: Option<PathBuf>,
 }
 
 impl Step for ManipulatorStep {
     fn get_step_id(&self) -> StepID {
         StepID {
-            module_name: self.config.to_string(),
+            module_name: self.module.to_string(),
             path: None,
         }
     }
