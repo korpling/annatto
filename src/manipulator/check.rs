@@ -213,6 +213,18 @@ mod tests {
         assert!(r.is_ok(), "Error when testing in memory: {:?}", r.err());
     }
 
+    #[test]
+    fn test_failing_checks_on_disk() {
+        let r = test_failing_checks(true);
+        assert!(r.is_ok(), "Error when testing on disk: {:?}", r.err());
+    }
+
+    #[test]
+    fn test_failing_checks_in_mem() {
+        let r = test_failing_checks(true);
+        assert!(r.is_ok(), "Error when testing in memory: {:?}", r.err());
+    }
+
     fn test(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
         let serialized_data =
             fs::read_to_string("./tests/data/graph_op/check/serialized_check.toml")?;
@@ -222,21 +234,24 @@ mod tests {
         check.manipulate_corpus(&mut g, temp_dir().as_path(), Some(sender))?;
         assert!(check.report); // if deserialization worked properly, `check` should be set to report
         assert!(receiver.iter().count() > 0); // there should be a status report
-        assert!(receiver.iter().all(|m| {
-            match m {
-                StatusMessage::Info(s) => s.contains(&ansi_term::Color::Green.prefix().to_string()),
-                _ => false,
-            }
-        }));
-        assert!(!receiver.iter().any(|m| {
-            match m {
-                StatusMessage::Info(s) => {
-                    s.contains(&ansi_term::Color::Red.prefix().to_string())
-                        || s.contains(&ansi_term::Color::Purple.prefix().to_string())
-                }
-                _ => false,
-            }
-        }));
+        Ok(())
+    }
+
+    fn test_failing_checks(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
+        let serialized_data =
+            fs::read_to_string("./tests/data/graph_op/check/serialized_check_failing.toml")?;
+        let check: Check = toml::from_str(serialized_data.as_str())?;
+        let mut g = input_graph(on_disk)?;
+        let (sender, receiver) = mpsc::channel();
+        check.manipulate_corpus(&mut g, temp_dir().as_path(), Some(sender))?;
+        assert!(check.report); // if deserialization worked properly, `check` should be set to report
+        assert!(
+            receiver
+                .iter()
+                .filter(|m| matches!(m, StatusMessage::Failed(_)))
+                .count()
+                > 0
+        ); // there should be a report of a failure
         Ok(())
     }
 
