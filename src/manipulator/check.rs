@@ -20,7 +20,7 @@ pub const MODULE_NAME: &str = "check";
 #[derive(Deserialize)]
 pub struct Check {
     tests: Vec<Test>,
-    #[serde(default)]
+    #[serde(default)] // allows to drop report field
     report: bool,
 }
 
@@ -95,14 +95,19 @@ impl Check {
         let result = Check::run_query(cs, query_s);
         if let Ok(n) = result {
             let passes = match expected_result {
-                ExpectedQueryResult::Numeric(n_is) => &(n as usize) == n_is,
+                ExpectedQueryResult::Numeric(n_is) => &n == n_is,
                 ExpectedQueryResult::Query(alt_query) => {
                     let alt_result = Check::run_query(cs, &alt_query[..]);
                     alt_result.is_ok() && alt_result.unwrap() == n
                 }
-                ExpectedQueryResult::Interval(min_value, max_value) => {
-                    min_value.le(&(n as usize))
-                        && (max_value.is_none() || max_value.unwrap().gt(&(n as usize)))
+                ExpectedQueryResult::ClosedInterval(lower, upper) => n.ge(lower) && n.le(upper),
+                ExpectedQueryResult::SemiOpenInterval(lower, upper) => {
+                    if upper.is_infinite() || upper.is_nan() {
+                        n.ge(lower)
+                    } else {
+                        let u = upper.abs().ceil() as u64;
+                        n.ge(lower) && u.gt(&n)
+                    }
                 }
             };
             if passes {
@@ -162,14 +167,15 @@ struct TestTableEntry {
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum ExpectedQueryResult {
-    Numeric(usize),
+    Numeric(u64),
     Query(String),
-    Interval(usize, Option<usize>),
+    ClosedInterval(u64, u64),
+    SemiOpenInterval(u64, f64),
 }
 
 #[cfg(test)]
 mod tests {
-    use std::{env::temp_dir, sync::mpsc};
+    use std::{env::temp_dir, fs, sync::mpsc};
 
     use graphannis::{
         model::AnnotationComponentType,
@@ -183,41 +189,26 @@ mod tests {
 
     use super::Check;
 
+    #[test]
+    fn test_check_on_disk() {
+        let r = test(true);
+        assert!(r.is_ok(), "Error when testing on disk: {:?}", r.err());
+    }
+
+    #[test]
+    fn test_check_in_mem() {
+        let r = test(true);
+        assert!(r.is_ok(), "Error when testing in memory: {:?}", r.err());
+    }
+
     fn test(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
-        let check: Check = toml::from_str(
-            r#"
-            [check]
-            report = true
-
-            [[check.tests]]
-            query = "tok"
-            expected = (1, )
-            description = "There has to be at least one token"
-
-            [[check.tests]]
-            query = "pos"
-            expected = "tok"
-            description = "There has to be the same number of pos annotations and tokens"
-
-            [[check.tests]]
-            query = "pos _=_ tok"
-            expected = "tok"
-            description = "Every token has a part of speech annotation"
-
-            [[check.tests]]
-            query = "sentence"
-            expected = 1
-            description = "There is only one sentence"
-        "#,
-        )?;
+        let serialized_data =
+            fs::read_to_string("./tests/data/graph_op/check/serialized_check.toml")?;
+        let check: Check = toml::from_str(serialized_data.as_str())?;
         let mut g = input_graph(on_disk)?;
         let (sender, receiver) = mpsc::channel();
-        let r = check.manipulate_corpus(&mut g, temp_dir().as_path(), Some(sender));
-        assert!(
-            r.is_ok(),
-            "Could not test `check`, there was an error: {:?}",
-            r.err()
-        ); // all tests should pass w/o any error
+        check.manipulate_corpus(&mut g, temp_dir().as_path(), Some(sender))?;
+        assert!(check.report); // if deserialization worked properly, `check` should be set to report
         assert!(receiver.iter().count() > 0); // there should be a status report
         Ok(())
     }
@@ -260,7 +251,7 @@ mod tests {
             ("a", "DET"),
             ("test", "NOUN"),
         ]
-        .into_iter()
+        .iter()
         .enumerate()
         {
             let tok_node = format!("{doc_node}#t{}", &i + &1);
