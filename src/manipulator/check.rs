@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, env::temp_dir, path::Path};
+use std::{env::temp_dir, path::Path};
 
 use graphannis::{
     corpusstorage::{QueryLanguage, SearchQuery},
@@ -16,7 +16,6 @@ use crate::{
 };
 
 pub const MODULE_NAME: &str = "check";
-const CONFIG_FILE_ENTRY_SEP: u8 = b'\t';
 
 #[derive(Deserialize)]
 pub struct Check {
@@ -60,7 +59,7 @@ impl Manipulator for Check {
 impl Check {
     fn print_report(
         &self,
-        results: &Vec<(String, TestResult)>,
+        results: &[(String, TestResult)],
         sender: &StatusSender,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let table_data = results
@@ -93,12 +92,12 @@ impl Check {
     fn run_test(cs: &CorpusStorage, test: &Test) -> TestResult {
         let query_s = &test.query[..];
         let expected_result = &test.expected;
-        let result = Check::run_query(&cs, query_s);
+        let result = Check::run_query(cs, query_s);
         if let Ok(n) = result {
             let passes = match expected_result {
                 ExpectedQueryResult::Numeric(n_is) => &(n as usize) == n_is,
                 ExpectedQueryResult::Query(alt_query) => {
-                    let alt_result = Check::run_query(&cs, &alt_query[..]);
+                    let alt_result = Check::run_query(cs, &alt_query[..]);
                     alt_result.is_ok() && alt_result.unwrap() == n
                 }
                 ExpectedQueryResult::Interval(min_value, max_value) => {
