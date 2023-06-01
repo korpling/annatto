@@ -1,5 +1,3 @@
-[workflow]
-
 [[import]]
 path = "tests/data/import/textgrid/singleSpeaker/"
 format = "textgrid"
