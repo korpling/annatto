@@ -214,8 +214,12 @@ mod tests {
         let mut g = input_graph(on_disk)?;
         let (sender, receiver) = mpsc::channel();
         let r = check.manipulate_corpus(&mut g, temp_dir().as_path(), Some(sender));
-        assert!(r.is_ok(), "Could not test `check`, there was an error: {:?}", r.err());  // all tests should pass w/o any error
-        assert!(receiver.iter().count() > 0);  // there should be a status report
+        assert!(
+            r.is_ok(),
+            "Could not test `check`, there was an error: {:?}",
+            r.err()
+        ); // all tests should pass w/o any error
+        assert!(receiver.iter().count() > 0); // there should be a status report
         Ok(())
     }
 
