@@ -62,8 +62,8 @@ pub enum AnnattoError {
     Infallible(std::convert::Infallible),
     #[error("CSV error: {0}")]
     CSV(#[from] csv::Error),
-    #[error("Checks failed: {failed_checks}")]
-    ChecksFailed { failed_checks: String },
+    #[error("Checks failed:\n{}", failed_checks.iter().join("\n"))]
+    ChecksFailed { failed_checks: Vec<String> },
     #[error("Time for end of the token ({end}) is larger than for the start ({start})")]
     EndTokenTimeLargerThanStart { start: f64, end: f64 },
     #[error("Invalid Property value: {property}={value}")]
