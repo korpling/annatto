@@ -154,17 +154,17 @@ impl ToString for TestResult {
             TestResult::Passed => format!(
                 "{}+{}",
                 ansi_term::Color::Green.prefix(),
-                ansi_term::Color::suffix(ansi_term::Color::Green)
+                ansi_term::Color::Green.suffix()
             ),
             TestResult::Failed => format!(
                 "{}-{}",
                 ansi_term::Color::Red.prefix(),
-                ansi_term::Color::suffix(ansi_term::Color::Red)
+                ansi_term::Color::Red.suffix()
             ),
             TestResult::ProcessingError => format!(
                 "{}(bad){}",
                 ansi_term::Color::Purple.prefix(),
-                ansi_term::Color::suffix(ansi_term::Color::Purple)
+                ansi_term::Color::Purple.suffix()
             ),
         }
     }
@@ -197,7 +197,7 @@ mod tests {
     use graphannis_core::graph::ANNIS_NS;
     use toml;
 
-    use crate::manipulator::Manipulator;
+    use crate::{manipulator::Manipulator, workflow::StatusMessage};
 
     use super::Check;
 
@@ -222,6 +222,21 @@ mod tests {
         check.manipulate_corpus(&mut g, temp_dir().as_path(), Some(sender))?;
         assert!(check.report); // if deserialization worked properly, `check` should be set to report
         assert!(receiver.iter().count() > 0); // there should be a status report
+        assert!(receiver.iter().all(|m| {
+            match m {
+                StatusMessage::Info(s) => s.contains(&ansi_term::Color::Green.prefix().to_string()),
+                _ => false,
+            }
+        }));
+        assert!(!receiver.iter().any(|m| {
+            match m {
+                StatusMessage::Info(s) => {
+                    s.contains(&ansi_term::Color::Red.prefix().to_string())
+                        || s.contains(&ansi_term::Color::Purple.prefix().to_string())
+                }
+                _ => false,
+            }
+        }));
         Ok(())
     }
 
