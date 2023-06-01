@@ -9,6 +9,7 @@ repository = "https://github.com/korpling/annatto/"
 version = "0.2.0"
 
 [dependencies]
+ansi_term = "0.12"
 anyhow = "1.0"
 axum = {version = "0.6", optional = true}
 csv = "1.1"

@@ -151,9 +151,21 @@ enum TestResult {
 impl ToString for TestResult {
     fn to_string(&self) -> String {
         match self {
-            TestResult::Passed => r"\e[0;32m+\e[0m".to_string(),
-            TestResult::Failed => r"\e[0;31m-\e[0m".to_string(),
-            TestResult::ProcessingError => r"\e[0;35m(bad test)\e[0m".to_string(),
+            TestResult::Passed => format!(
+                "{}+{}",
+                ansi_term::Color::Green.prefix(),
+                ansi_term::Color::suffix(ansi_term::Color::Green)
+            ),
+            TestResult::Failed => format!(
+                "{}-{}",
+                ansi_term::Color::Red.prefix(),
+                ansi_term::Color::suffix(ansi_term::Color::Red)
+            ),
+            TestResult::ProcessingError => format!(
+                "{}(bad){}",
+                ansi_term::Color::Purple.prefix(),
+                ansi_term::Color::suffix(ansi_term::Color::Purple)
+            ),
         }
     }
 }
