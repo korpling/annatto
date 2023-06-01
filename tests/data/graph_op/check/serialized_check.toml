@@ -1,0 +1,28 @@
+# please note: This is NOT a workflow fragment, this is a serialization of `check`.
+# In an annatto workflow the structure will vary due to flattenings and re-arrangments of data.
+report = true
+
+[[tests]]
+query = "tok"
+expected =  [ 1, inf ]
+description = "There has to be at least one token"
+
+[[tests]]
+query = "pos"
+expected = "tok"
+description = "There has to be the same number of pos annotations and tokens"
+
+[[tests]]
+query = "pos _=_ tok"
+expected = "tok"
+description = "Every token has a part of speech annotation"
+
+[[tests]]
+query = "sentence"
+expected = 1
+description = "There is only one sentence"
+
+[[tests]]
+query = "sentence"
+expected = [1, 1]
+description = "There is between one and one sentence (closed interval type, boundaries included)"

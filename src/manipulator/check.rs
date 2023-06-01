@@ -1,24 +1,27 @@
-use std::{
-    env::temp_dir,
-    path::{Path, PathBuf},
-};
+use std::{env::temp_dir, path::Path};
 
-use csv::ReaderBuilder;
 use graphannis::{
     corpusstorage::{QueryLanguage, SearchQuery},
     AnnotationGraph, CorpusStorage,
 };
+use itertools::Itertools;
 use serde_derive::Deserialize;
+use tabled::{Table, Tabled};
 use tempfile::tempdir_in;
 
-use crate::{error::AnnattoError, Manipulator, Module};
+use crate::{
+    error::AnnattoError,
+    workflow::{StatusMessage, StatusSender},
+    Manipulator, Module,
+};
 
 pub const MODULE_NAME: &str = "check";
-const CONFIG_FILE_ENTRY_SEP: u8 = b'\t';
 
 #[derive(Deserialize)]
 pub struct Check {
-    query_list_path: PathBuf,
+    tests: Vec<Test>,
+    #[serde(default)] // allows to drop report field
+    report: bool,
 }
 
 impl Module for Check {
@@ -27,107 +30,265 @@ impl Module for Check {
     }
 }
 
-fn read_config_file(path: &Path) -> Result<Vec<(String, String)>, Box<dyn std::error::Error>> {
-    let mut reader = ReaderBuilder::new()
-        .delimiter(CONFIG_FILE_ENTRY_SEP)
-        .from_path(path)?;
-    let mut checks = Vec::new();
-    for (line_index, entry) in reader.records().enumerate() {
-        let record = entry?;
-        if record.len() != 2 {
-            let message = format!(
-                "Entry in line {} has invalid length ({} columns instead of 2).",
-                line_index,
-                record.len()
-            );
-            let err = AnnattoError::Manipulator {
-                reason: message,
-                manipulator: MODULE_NAME.to_string(),
-            };
-            return Err(Box::new(err));
-        }
-        checks.push((
-            record.get(0).unwrap().trim().to_string(),
-            record.get(1).unwrap().trim().to_string(),
-        ))
-    }
-    Ok(checks)
-}
-
-fn run_checks(
-    graph: &mut AnnotationGraph,
-    checks_and_results: Vec<(String, String)>,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut fails = Vec::new();
-    let corpus_name = "current";
-    let tmp_dir = tempdir_in(temp_dir())?;
-    graph.save_to(&tmp_dir.path().join(corpus_name))?;
-    let cs = CorpusStorage::with_auto_cache_size(tmp_dir.path(), true)?;
-    for (query_s, expected_result) in checks_and_results {
-        let result = run_query(&cs, &query_s[..]);
-        if let Ok(n) = result {
-            let passes = match expected_result.parse::<u64>() {
-                Ok(number) => number == n,
-                Err(_) => {
-                    match &expected_result[..] {
-                        "*" => n.ge(&0),
-                        "+" => n.ge(&1),
-                        "?" => n.ge(&0) && n.le(&1),
-                        _ => {
-                            // interpret numeric digit as query as well
-                            let second_result = run_query(&cs, &expected_result);
-                            if let Ok(second_result) = second_result {
-                                second_result == n
-                            } else {
-                                false
-                            }
-                        }
-                    }
-                }
-            };
-            if !passes {
-                fails.push(query_s.to_string());
-            }
-        } else {
-            fails.push(format!(
-                "Could not be processed: {},{}",
-                query_s, &expected_result
-            ));
-        }
-    }
-    if fails.is_empty() {
-        Ok(())
-    } else {
-        Err(Box::new(AnnattoError::ChecksFailed {
-            failed_checks: fails.join("\n"),
-        }))
-    }
-}
-
-fn run_query(storage: &CorpusStorage, query_s: &str) -> Result<u64, Box<dyn std::error::Error>> {
-    let query = SearchQuery {
-        corpus_names: &["current"],
-        query: query_s,
-        query_language: QueryLanguage::AQL,
-        timeout: None,
-    };
-    let c = storage.count(query)?;
-    Ok(c)
-}
-
 impl Manipulator for Check {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
-        workflow_directory: &Path,
-        _tx: Option<crate::workflow::StatusSender>,
+        _workflow_directory: &Path,
+        tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let mut config_path = Path::new(&self.query_list_path).to_path_buf();
-        if config_path.is_relative() {
-            // Resolve the config file path against the directory of the workflow file
-            config_path = workflow_directory.join(config_path);
+        let r = self.run_tests(graph)?;
+        if self.report && tx.is_some() {
+            self.print_report(&r, tx.as_ref().unwrap())?;
         }
-        let checks = read_config_file(&config_path)?;
-        run_checks(graph, checks)
+        let failed_checks = r
+            .into_iter()
+            .filter(|(_, r)| !matches!(r, TestResult::Passed))
+            .map(|(d, _)| d)
+            .collect_vec();
+        if !failed_checks.is_empty() {
+            let msg = StatusMessage::Failed(AnnattoError::ChecksFailed { failed_checks });
+            if let Some(ref sender) = tx {
+                sender.send(msg)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl Check {
+    fn print_report(
+        &self,
+        results: &[(String, TestResult)],
+        sender: &StatusSender,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let table_data = results
+            .iter()
+            .map(|r| TestTableEntry {
+                test_description: r.0.to_string(),
+                test_result: r.1.to_string(),
+            })
+            .collect_vec();
+        let table = Table::new(table_data).to_string();
+        sender.send(StatusMessage::Info(table))?;
+        Ok(())
+    }
+
+    fn run_tests(
+        &self,
+        graph: &mut AnnotationGraph,
+    ) -> Result<Vec<(String, TestResult)>, Box<dyn std::error::Error>> {
+        let corpus_name = "current";
+        let tmp_dir = tempdir_in(temp_dir())?;
+        graph.save_to(&tmp_dir.path().join(corpus_name))?;
+        let cs = CorpusStorage::with_auto_cache_size(tmp_dir.path(), true)?;
+        let mut results = Vec::new();
+        for test in &self.tests {
+            results.push((test.description.to_string(), Check::run_test(&cs, test)));
+        }
+        Ok(results)
+    }
+
+    fn run_test(cs: &CorpusStorage, test: &Test) -> TestResult {
+        let query_s = &test.query[..];
+        let expected_result = &test.expected;
+        let result = Check::run_query(cs, query_s);
+        if let Ok(n) = result {
+            let passes = match expected_result {
+                ExpectedQueryResult::Numeric(n_is) => &n == n_is,
+                ExpectedQueryResult::Query(alt_query) => {
+                    let alt_result = Check::run_query(cs, &alt_query[..]);
+                    alt_result.is_ok() && alt_result.unwrap() == n
+                }
+                ExpectedQueryResult::ClosedInterval(lower, upper) => n.ge(lower) && n.le(upper),
+                ExpectedQueryResult::SemiOpenInterval(lower, upper) => {
+                    if upper.is_infinite() || upper.is_nan() {
+                        n.ge(lower)
+                    } else {
+                        let u = upper.abs().ceil() as u64;
+                        n.ge(lower) && u.gt(&n)
+                    }
+                }
+            };
+            if passes {
+                TestResult::Passed
+            } else {
+                TestResult::Failed
+            }
+        } else {
+            TestResult::ProcessingError
+        }
+    }
+
+    fn run_query(
+        storage: &CorpusStorage,
+        query_s: &str,
+    ) -> Result<u64, Box<dyn std::error::Error>> {
+        let query = SearchQuery {
+            corpus_names: &["current"],
+            query: query_s,
+            query_language: QueryLanguage::AQL,
+            timeout: None,
+        };
+        let c = storage.count(query)?;
+        Ok(c)
+    }
+}
+
+#[derive(Deserialize)]
+struct Test {
+    query: String,
+    expected: ExpectedQueryResult,
+    description: String,
+}
+
+enum TestResult {
+    Passed,
+    Failed,
+    ProcessingError,
+}
+
+impl ToString for TestResult {
+    fn to_string(&self) -> String {
+        match self {
+            TestResult::Passed => r"\e[0;32m+\e[0m".to_string(),
+            TestResult::Failed => r"\e[0;31m-\e[0m".to_string(),
+            TestResult::ProcessingError => r"\e[0;35m(bad test)\e[0m".to_string(),
+        }
+    }
+}
+
+#[derive(Tabled)]
+struct TestTableEntry {
+    test_description: String,
+    test_result: String,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum ExpectedQueryResult {
+    Numeric(u64),
+    Query(String),
+    ClosedInterval(u64, u64),
+    SemiOpenInterval(u64, f64),
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{env::temp_dir, fs, sync::mpsc};
+
+    use graphannis::{
+        model::AnnotationComponentType,
+        update::{GraphUpdate, UpdateEvent},
+        AnnotationGraph,
+    };
+    use graphannis_core::graph::ANNIS_NS;
+    use toml;
+
+    use crate::manipulator::Manipulator;
+
+    use super::Check;
+
+    #[test]
+    fn test_check_on_disk() {
+        let r = test(true);
+        assert!(r.is_ok(), "Error when testing on disk: {:?}", r.err());
+    }
+
+    #[test]
+    fn test_check_in_mem() {
+        let r = test(true);
+        assert!(r.is_ok(), "Error when testing in memory: {:?}", r.err());
+    }
+
+    fn test(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
+        let serialized_data =
+            fs::read_to_string("./tests/data/graph_op/check/serialized_check.toml")?;
+        let check: Check = toml::from_str(serialized_data.as_str())?;
+        let mut g = input_graph(on_disk)?;
+        let (sender, receiver) = mpsc::channel();
+        check.manipulate_corpus(&mut g, temp_dir().as_path(), Some(sender))?;
+        assert!(check.report); // if deserialization worked properly, `check` should be set to report
+        assert!(receiver.iter().count() > 0); // there should be a status report
+        Ok(())
+    }
+
+    fn input_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
+        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut u = GraphUpdate::default();
+        let root_corpus = "corpus";
+        let doc_name = "doc";
+        let doc_node = format!("{root_corpus}/{doc_name}");
+        u.add_event(UpdateEvent::AddNode {
+            node_name: root_corpus.to_string(),
+            node_type: "corpus".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNode {
+            node_name: doc_node.to_string(),
+            node_type: "corpus".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: doc_node.to_string(),
+            target_node: root_corpus.to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
+        let s_node = format!("{doc_node}#s1");
+        u.add_event(UpdateEvent::AddNode {
+            node_name: s_node.to_string(),
+            node_type: "node".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: s_node.to_string(),
+            anno_ns: "".to_string(),
+            anno_name: "sentence".to_string(),
+            anno_value: "1".to_string(),
+        })?;
+        for (i, (text_value, pos_value)) in [
+            ("This", "PRON"),
+            ("is", "VERB"),
+            ("a", "DET"),
+            ("test", "NOUN"),
+        ]
+        .iter()
+        .enumerate()
+        {
+            let tok_node = format!("{doc_node}#t{}", &i + &1);
+            u.add_event(UpdateEvent::AddNode {
+                node_name: tok_node.to_string(),
+                node_type: "node".to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddNodeLabel {
+                node_name: tok_node.to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "tok".to_string(),
+                anno_value: text_value.to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddNodeLabel {
+                node_name: tok_node.to_string(),
+                anno_ns: "".to_string(),
+                anno_name: "pos".to_string(),
+                anno_value: pos_value.to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddEdge {
+                source_node: s_node.to_string(),
+                target_node: tok_node.to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::Coverage.to_string(),
+                component_name: "".to_string(),
+            })?;
+            if i > 0 {
+                u.add_event(UpdateEvent::AddEdge {
+                    source_node: format!("{doc_node}#t{}", &i),
+                    target_node: tok_node.to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::Ordering.to_string(),
+                    component_name: "".to_string(),
+                })?;
+            }
+        }
+        g.apply_update(&mut u, |_| {})?;
+        Ok(g)
     }
 }

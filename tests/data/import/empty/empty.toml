@@ -1,5 +1,3 @@
-[workflow]
-
 [[import]]
 path = "tests/data/import/empty"
 format = "none"
@@ -10,4 +8,4 @@ format = "none"
 action = "check"
 
 [graph_op.config]
-query_list_path = "./check_empty_corpus.csv"
+tests = []

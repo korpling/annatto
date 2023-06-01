@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - map properties of some modules (such as `tier_group` for importing Textgrid) are no longer String codings, since TOML supports providing maps directly
 - flattened TOML for workflow files
 - TOML workflows: module config has to be singled out in separate table
+- `check` tests are now configured in main workflow as TOML fragment
 
 ### Added
 
@@ -26,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   AQL for defining target nodes
 - New command `show-documentation` for CLI, which starts a browser with the user
   guide.
+- after running `check`, the the test results can be printed as a table (default: off)
 
 ### Fixed
 
