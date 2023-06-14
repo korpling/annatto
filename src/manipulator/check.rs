@@ -20,7 +20,7 @@ pub const MODULE_NAME: &str = "check";
 #[derive(Deserialize)]
 pub struct Check {
     tests: Vec<Test>,
-    #[serde(default)] // allows to drop report field
+    #[serde(default)] // allows to drop report field when report is not required
     report: bool,
 }
 
@@ -248,16 +248,20 @@ mod tests {
         assert!(
             receiver
                 .iter()
-                .filter(|m| matches!(m, StatusMessage::Failed(_)))
+                .map(|m| matches!(m, StatusMessage::Failed(_)))
                 .count()
                 > 0
         ); // there should be a report of a failure
         let r = check.run_tests(&mut g)?;
-        assert!(r.into_iter().any(|(_, tr)| match tr {
-            crate::manipulator::check::TestResult::Passed => false,
-            crate::manipulator::check::TestResult::Failed(_) => true,
-            crate::manipulator::check::TestResult::ProcessingError => false,
-        }));
+        assert!(
+            r.into_iter()
+                .map(|(_, tr)| match tr {
+                    crate::manipulator::check::TestResult::Failed(n) => n,
+                    _ => 0,
+                })
+                .sum::<u64>()
+                > 0
+        );
         Ok(())
     }
 
