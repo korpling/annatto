@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - flattened TOML for workflow files
 - TOML workflows: module config has to be singled out in separate table
 - `check` tests are now configured in main workflow as TOML fragment
+- `check` report table contains number of matches in case of failure
 
 ### Added
 

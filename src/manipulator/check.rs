@@ -20,7 +20,7 @@ pub const MODULE_NAME: &str = "check";
 #[derive(Deserialize)]
 pub struct Check {
     tests: Vec<Test>,
-    #[serde(default)] // allows to drop report field
+    #[serde(default)] // allows to drop report field when report is not required
     report: bool,
 }
 
@@ -65,8 +65,8 @@ impl Check {
         let table_data = results
             .iter()
             .map(|r| TestTableEntry {
-                test_description: r.0.to_string(),
-                test_result: r.1.to_string(),
+                description: r.0.to_string(),
+                result: r.1.to_string(),
             })
             .collect_vec();
         let table = Table::new(table_data).to_string();
@@ -113,7 +113,7 @@ impl Check {
             if passes {
                 TestResult::Passed
             } else {
-                TestResult::Failed
+                TestResult::Failed(n)
             }
         } else {
             TestResult::ProcessingError
@@ -144,7 +144,7 @@ struct Test {
 
 enum TestResult {
     Passed,
-    Failed,
+    Failed(u64),
     ProcessingError,
 }
 
@@ -156,8 +156,8 @@ impl ToString for TestResult {
                 ansi_term::Color::Green.prefix(),
                 ansi_term::Color::Green.suffix()
             ),
-            TestResult::Failed => format!(
-                "{}-{}",
+            TestResult::Failed(n) => format!(
+                "{}{n}{}",
                 ansi_term::Color::Red.prefix(),
                 ansi_term::Color::Red.suffix()
             ),
@@ -172,8 +172,8 @@ impl ToString for TestResult {
 
 #[derive(Tabled)]
 struct TestTableEntry {
-    test_description: String,
-    test_result: String,
+    description: String,
+    result: String,
 }
 
 #[derive(Deserialize)]
@@ -248,10 +248,20 @@ mod tests {
         assert!(
             receiver
                 .iter()
-                .filter(|m| matches!(m, StatusMessage::Failed(_)))
+                .map(|m| matches!(m, StatusMessage::Failed(_)))
                 .count()
                 > 0
         ); // there should be a report of a failure
+        let r = check.run_tests(&mut g)?;
+        assert!(
+            r.into_iter()
+                .map(|(_, tr)| match tr {
+                    crate::manipulator::check::TestResult::Failed(n) => n,
+                    _ => 0,
+                })
+                .sum::<u64>()
+                > 0
+        );
         Ok(())
     }
 
