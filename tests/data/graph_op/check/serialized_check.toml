@@ -1,6 +1,6 @@
 # please note: This is NOT a workflow fragment, this is a serialization of `check`.
 # In an annatto workflow the structure will vary due to flattenings and re-arrangments of data.
-report = true
+report = "list"
 
 [[tests]]
 query = "tok"

@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New command `show-documentation` for CLI, which starts a browser with the user
   guide.
 - after running `check`, the the test results can be printed as a table (default: off)
+- `check` displays matching nodes for tests in new verbose mode
 
 ### Fixed
 
