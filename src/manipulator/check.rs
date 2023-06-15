@@ -1,7 +1,7 @@
 use std::{env::temp_dir, path::Path};
 
 use graphannis::{
-    corpusstorage::{QueryLanguage, SearchQuery},
+    corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
     AnnotationGraph, CorpusStorage,
 };
 use itertools::Itertools;
@@ -21,7 +21,14 @@ pub const MODULE_NAME: &str = "check";
 pub struct Check {
     tests: Vec<Test>,
     #[serde(default)] // allows to drop report field when report is not required
-    report: bool,
+    report: Option<ReportLevel>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum ReportLevel {
+    List,
+    Verbose,
 }
 
 impl Module for Check {
@@ -38,8 +45,8 @@ impl Manipulator for Check {
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let r = self.run_tests(graph)?;
-        if self.report && tx.is_some() {
-            self.print_report(&r, tx.as_ref().unwrap())?;
+        if self.report.is_some() && tx.is_some() {
+            self.print_report(self.report.as_ref().unwrap(), &r, tx.as_ref().unwrap())?;
         }
         let failed_checks = r
             .into_iter()
@@ -59,6 +66,7 @@ impl Manipulator for Check {
 impl Check {
     fn print_report(
         &self,
+        level: &ReportLevel,
         results: &[(String, TestResult)],
         sender: &StatusSender,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -67,6 +75,14 @@ impl Check {
             .map(|r| TestTableEntry {
                 description: r.0.to_string(),
                 result: r.1.to_string(),
+                details: match level {
+                    ReportLevel::List => "".to_string(),
+                    ReportLevel::Verbose => match &r.1 {
+                        TestResult::Passed => "".to_string(),
+                        TestResult::Failed(v) => v.join("\n"),
+                        TestResult::ProcessingError(e) => e.to_string(),
+                    },
+                },
             })
             .collect_vec();
         let table = Table::new(table_data).to_string();
@@ -93,19 +109,20 @@ impl Check {
         let query_s = &test.query[..];
         let expected_result = &test.expected;
         let result = Check::run_query(cs, query_s);
-        if let Ok(n) = result {
+        if let Ok(r) = result {
+            let n = r.len();
             let passes = match expected_result {
                 ExpectedQueryResult::Numeric(n_is) => &n == n_is,
                 ExpectedQueryResult::Query(alt_query) => {
                     let alt_result = Check::run_query(cs, &alt_query[..]);
-                    alt_result.is_ok() && alt_result.unwrap() == n
+                    alt_result.is_ok() && alt_result.unwrap().len() == n
                 }
                 ExpectedQueryResult::ClosedInterval(lower, upper) => n.ge(lower) && n.le(upper),
                 ExpectedQueryResult::SemiOpenInterval(lower, upper) => {
                     if upper.is_infinite() || upper.is_nan() {
                         n.ge(lower)
                     } else {
-                        let u = upper.abs().ceil() as u64;
+                        let u = upper.abs().ceil() as usize;
                         n.ge(lower) && u.gt(&n)
                     }
                 }
@@ -113,25 +130,25 @@ impl Check {
             if passes {
                 TestResult::Passed
             } else {
-                TestResult::Failed(n)
+                TestResult::Failed(r)
             }
         } else {
-            TestResult::ProcessingError
+            TestResult::ProcessingError(result.err().unwrap())
         }
     }
 
     fn run_query(
         storage: &CorpusStorage,
         query_s: &str,
-    ) -> Result<u64, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
         let query = SearchQuery {
             corpus_names: &["current"],
             query: query_s,
             query_language: QueryLanguage::AQL,
             timeout: None,
         };
-        let c = storage.count(query)?;
-        Ok(c)
+        let results = storage.find(query, 0, None, ResultOrder::Normal)?;
+        Ok(results)
     }
 }
 
@@ -144,8 +161,8 @@ struct Test {
 
 enum TestResult {
     Passed,
-    Failed(u64),
-    ProcessingError,
+    Failed(Vec<String>),
+    ProcessingError(Box<dyn std::error::Error>),
 }
 
 impl ToString for TestResult {
@@ -156,12 +173,13 @@ impl ToString for TestResult {
                 ansi_term::Color::Green.prefix(),
                 ansi_term::Color::Green.suffix()
             ),
-            TestResult::Failed(n) => format!(
-                "{}{n}{}",
+            TestResult::Failed(v) => format!(
+                "{}{}{}",
                 ansi_term::Color::Red.prefix(),
+                v.len(),
                 ansi_term::Color::Red.suffix()
             ),
-            TestResult::ProcessingError => format!(
+            TestResult::ProcessingError(_) => format!(
                 "{}(bad){}",
                 ansi_term::Color::Purple.prefix(),
                 ansi_term::Color::Purple.suffix()
@@ -174,15 +192,16 @@ impl ToString for TestResult {
 struct TestTableEntry {
     description: String,
     result: String,
+    details: String,
 }
 
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum ExpectedQueryResult {
-    Numeric(u64),
+    Numeric(usize),
     Query(String),
-    ClosedInterval(u64, u64),
-    SemiOpenInterval(u64, f64),
+    ClosedInterval(usize, usize),
+    SemiOpenInterval(usize, f64),
 }
 
 #[cfg(test)]
@@ -197,7 +216,13 @@ mod tests {
     use graphannis_core::graph::ANNIS_NS;
     use toml;
 
-    use crate::{manipulator::Manipulator, workflow::StatusMessage};
+    use crate::{
+        manipulator::{
+            check::{ReportLevel, TestResult},
+            Manipulator,
+        },
+        workflow::StatusMessage,
+    };
 
     use super::Check;
 
@@ -215,13 +240,25 @@ mod tests {
 
     #[test]
     fn test_failing_checks_on_disk() {
-        let r = test_failing_checks(true);
+        let r = test_failing_checks(true, false);
         assert!(r.is_ok(), "Error when testing on disk: {:?}", r.err());
     }
 
     #[test]
     fn test_failing_checks_in_mem() {
-        let r = test_failing_checks(true);
+        let r = test_failing_checks(true, false);
+        assert!(r.is_ok(), "Error when testing in memory: {:?}", r.err());
+    }
+
+    #[test]
+    fn test_failing_checks_with_nodes_on_disk() {
+        let r = test_failing_checks(true, true);
+        assert!(r.is_ok(), "Error when testing on disk: {:?}", r.err());
+    }
+
+    #[test]
+    fn test_failing_checks_with_nodes_in_mem() {
+        let r = test_failing_checks(true, true);
         assert!(r.is_ok(), "Error when testing in memory: {:?}", r.err());
     }
 
@@ -232,19 +269,35 @@ mod tests {
         let mut g = input_graph(on_disk)?;
         let (sender, receiver) = mpsc::channel();
         check.manipulate_corpus(&mut g, temp_dir().as_path(), Some(sender))?;
-        assert!(check.report); // if deserialization worked properly, `check` should be set to report
+        assert!(check.report.is_some()); // if deserialization worked properly, `check` should be set to report
+        assert!(matches!(check.report.as_ref().unwrap(), &ReportLevel::List));
         assert!(receiver.iter().count() > 0); // there should be a status report
         Ok(())
     }
 
-    fn test_failing_checks(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
-        let serialized_data =
-            fs::read_to_string("./tests/data/graph_op/check/serialized_check_failing.toml")?;
+    fn test_failing_checks(
+        on_disk: bool,
+        with_nodes: bool,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let toml_path = if with_nodes {
+            "./tests/data/graph_op/check/serialized_check_failing_with_nodes.toml"
+        } else {
+            "./tests/data/graph_op/check/serialized_check_failing.toml"
+        };
+        let serialized_data = fs::read_to_string(toml_path)?;
         let check: Check = toml::from_str(serialized_data.as_str())?;
         let mut g = input_graph(on_disk)?;
         let (sender, receiver) = mpsc::channel();
         check.manipulate_corpus(&mut g, temp_dir().as_path(), Some(sender))?;
-        assert!(check.report); // if deserialization worked properly, `check` should be set to report
+        assert!(check.report.is_some());
+        if with_nodes {
+            assert!(matches!(
+                check.report.as_ref().unwrap(),
+                ReportLevel::Verbose
+            ));
+        } else {
+            assert!(matches!(check.report.as_ref().unwrap(), ReportLevel::List));
+        }
         assert!(
             receiver
                 .iter()
@@ -254,14 +307,21 @@ mod tests {
         ); // there should be a report of a failure
         let r = check.run_tests(&mut g)?;
         assert!(
-            r.into_iter()
+            r.iter()
                 .map(|(_, tr)| match tr {
-                    crate::manipulator::check::TestResult::Failed(n) => n,
+                    TestResult::Failed(v) => v.len(),
+                    TestResult::ProcessingError(_) => 1,
                     _ => 0,
                 })
-                .sum::<u64>()
+                .sum::<usize>()
                 > 0
         );
+        if with_nodes {
+            assert!(r.iter().any(|(_, tr)| matches!(tr, TestResult::Failed(_))));
+            assert!(r
+                .iter()
+                .any(|(_, tr)| matches!(tr, TestResult::ProcessingError(_))));
+        }
         Ok(())
     }
 

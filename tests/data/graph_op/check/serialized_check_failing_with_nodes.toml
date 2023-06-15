@@ -1,6 +1,6 @@
 # please note: This is NOT a workflow fragment, this is a serialization of `check`.
 # In an annatto workflow the structure will vary due to flattenings and re-arrangments of data.
-report = "list"
+report = "verbose"
 
 [[tests]]
 query = "tok"
@@ -23,6 +23,6 @@ expected = 0
 description = "There are no sentences"
 
 [[tests]]
-query = "sentence"
+query = "sentence _=_"
 expected = [ 4, inf ]
-description = "There are at least 4 sentences."
+description = "This is an invalid query."
