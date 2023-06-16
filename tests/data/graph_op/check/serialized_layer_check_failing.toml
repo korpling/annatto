@@ -1,0 +1,11 @@
+# please note: This is NOT a workflow fragment, this is a serialization of `check`.
+# In an annatto workflow the structure will vary due to flattenings and re-arrangments of data.
+report = "list"
+
+[[tests]]
+layers = { pos = [ "PRON" ] }  # this test should fail, because pos uses other values then just the mentioned one
+
+[[tests]]
+query = "sentence"
+expected = 1
+description = "There is exactly one sentence."

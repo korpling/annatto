@@ -1,4 +1,4 @@
-use std::{env::temp_dir, path::Path};
+use std::{collections::BTreeMap, env::temp_dir, path::Path};
 
 use graphannis::{
     corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
@@ -100,12 +100,16 @@ impl Check {
         let cs = CorpusStorage::with_auto_cache_size(tmp_dir.path(), true)?;
         let mut results = Vec::new();
         for test in &self.tests {
-            results.push((test.description.to_string(), Check::run_test(&cs, test)));
+            let aql_test = AQLTest::from(test);
+            results.push((
+                aql_test.description.to_string(),
+                Check::run_test(&cs, &aql_test),
+            ));
         }
         Ok(results)
     }
 
-    fn run_test(cs: &CorpusStorage, test: &Test) -> TestResult {
+    fn run_test(cs: &CorpusStorage, test: &AQLTest) -> TestResult {
         let query_s = &test.query[..];
         let expected_result = &test.expected;
         let result = Check::run_query(cs, query_s);
@@ -152,11 +156,68 @@ impl Check {
     }
 }
 
-#[derive(Deserialize)]
-struct Test {
+struct AQLTest {
     query: String,
     expected: ExpectedQueryResult,
     description: String,
+}
+
+impl From<&Test> for AQLTest {
+    fn from(value: &Test) -> Self {
+        match value {
+            Test::QueryTest {
+                query,
+                expected,
+                description,
+            } => AQLTest {
+                query: query.to_string(),
+                expected: match expected {
+                    ExpectedQueryResult::Numeric(n) => ExpectedQueryResult::Numeric(*n),
+                    ExpectedQueryResult::Query(q) => ExpectedQueryResult::Query(q.to_string()),
+                    ExpectedQueryResult::ClosedInterval(a, b) => {
+                        ExpectedQueryResult::ClosedInterval(*a, *b)
+                    }
+                    ExpectedQueryResult::SemiOpenInterval(a, b) => {
+                        ExpectedQueryResult::SemiOpenInterval(*a, *b)
+                    }
+                },
+                description: description.to_string(),
+            },
+            Test::LayerTest { layers, target } => {
+                let mut test_terms = Vec::new();
+                for (anno_qname, list_of_values) in layers {
+                    let joint_values = list_of_values.join("|");
+                    let inner_query_frag = format!("{anno_qname}!=/{joint_values}/");
+                    let query_frag = if let Some(edge_name) = target {
+                        format!("node ->{edge_name}[{inner_query_frag}] node")
+                    } else {
+                        inner_query_frag
+                    };
+                    test_terms.push(query_frag);
+                }
+                let query = test_terms.join(" | ");
+                AQLTest {
+                    query,
+                    expected: ExpectedQueryResult::Numeric(0),
+                    description: format!("Layer check: {}", layers.keys().join(",")),
+                }
+            }
+        }
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum Test {
+    QueryTest {
+        query: String,
+        expected: ExpectedQueryResult,
+        description: String,
+    },
+    LayerTest {
+        layers: BTreeMap<String, Vec<String>>,
+        target: Option<String>,
+    },
 }
 
 enum TestResult {
@@ -322,6 +383,54 @@ mod tests {
                 .iter()
                 .any(|(_, tr)| matches!(tr, TestResult::ProcessingError(_))));
         }
+        Ok(())
+    }
+
+    #[test]
+    fn test_layer_check_in_mem() {
+        let r = test_layer_check(false);
+        assert!(r.is_ok(), "{:?}", r.err());
+    }
+
+    #[test]
+    fn test_layer_check_on_disk() {
+        let r = test_layer_check(true);
+        assert!(r.is_ok(), "{:?}", r.err());
+    }
+
+    #[test]
+    fn test_layer_check_fail_in_mem() {
+        let r = test_layer_check_fail(false);
+        assert!(r.is_ok(), "{:?}", r.err());
+    }
+
+    #[test]
+    fn test_layer_check_fail_on_disk() {
+        let r = test_layer_check_fail(true);
+        assert!(r.is_ok(), "{:?}", r.err());
+    }
+
+    fn test_layer_check(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
+        let mut g = input_graph(on_disk)?;
+        let toml_path = "./tests/data/graph_op/check/serialized_layer_check.toml";
+        let s = fs::read_to_string(toml_path)?;
+        let check: Check = toml::from_str(s.as_str())?;
+        let results = check.run_tests(&mut g)?;
+        assert!(results
+            .iter()
+            .all(|(_, tr)| matches!(tr, TestResult::Passed)));
+        Ok(())
+    }
+
+    fn test_layer_check_fail(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
+        let mut g = input_graph(on_disk)?;
+        let toml_path = "./tests/data/graph_op/check/serialized_layer_check_failing.toml";
+        let s = fs::read_to_string(toml_path)?;
+        let check: Check = toml::from_str(s.as_str())?;
+        let results = check.run_tests(&mut g)?;
+        assert!(results
+            .iter()
+            .any(|(_, tr)| !matches!(tr, TestResult::Passed)));
         Ok(())
     }
 
