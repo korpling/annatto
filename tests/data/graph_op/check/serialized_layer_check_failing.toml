@@ -3,9 +3,12 @@
 report = "list"
 
 [[tests]]
-layers = { pos = [ "PRON" ] }  # this test should fail, because pos uses other values then just the mentioned one
+layers = { pos = [ "PRON" ], cat = [ "NP" ] }
 
 [[tests]]
-query = "sentence"
-expected = 1
-description = "There is exactly one sentence."
+layers = { deprel = ["subj"] }
+edge = "->dep"
+
+[[tests]]
+layers = { func = ["D0"] }
+edge = ">"
