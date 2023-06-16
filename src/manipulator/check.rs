@@ -83,13 +83,13 @@ impl Check {
                 };
                 let verbose_details = match result {
                     TestResult::Passed => "".to_string(),
-                    TestResult::Failed { matches, .. } => matches.into_iter().join("\n"),
+                    TestResult::Failed { matches, .. } => matches.join("\n"),
                     TestResult::ProcessingError { error } => error.to_string(),
                 };
                 TestTableEntry {
-                    description: verbose_desc.to_string(),
+                    description: verbose_desc,
                     result: result.to_string(),
-                    details: verbose_details.to_string(),
+                    details: verbose_details,
                 }
             }
         }
