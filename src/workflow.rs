@@ -52,7 +52,7 @@ pub struct Workflow {
 use std::convert::TryFrom;
 use toml;
 
-fn contained_variables<'a>(workflow: &'a String) -> Result<Vec<(i32, &'a str)>> {
+fn contained_variables(workflow: &'_ str) -> Result<Vec<(i32, &'_ str)>> {
     let pattern = Regex::new("[$][^\\s\\-/\"'.;,?!]+")?;
     let mut variables = Vec::new();
     for m in pattern.find_iter(workflow) {
