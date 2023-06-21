@@ -18,6 +18,9 @@ enum Cli {
         /// The path to the workflow file.
         #[structopt(parse(from_os_str))]
         workflow_file: std::path::PathBuf,
+        /// Adding this argument resolves environmental variables in the provided workflow file.
+        #[structopt(long)]
+        env: bool,
     },
     /// Only check if a workflow files can be imported. Invalid workflow files will lead to a non-zero exit code.
     Validate {
@@ -35,21 +38,21 @@ pub fn main() -> anyhow::Result<()> {
 
     let args = Cli::from_args();
     match args {
-        Cli::Run { workflow_file } => convert(workflow_file)?,
+        Cli::Run { workflow_file, env } => convert(workflow_file, env)?,
         #[cfg(feature = "embed-documentation")]
         Cli::ShowDocumentation => documentation_server::start_server()?,
         Cli::Validate { workflow_file } => {
-            Workflow::try_from(workflow_file)?;
+            Workflow::try_from((workflow_file, false))?;
         }
     };
     Ok(())
 }
 
 /// Execute the conversion in the background and show the status to the user
-fn convert(workflow_file: PathBuf) -> Result<(), AnnattoError> {
+fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
     let (tx, rx) = mpsc::channel();
     thread::spawn(
-        move || match execute_from_file(&workflow_file, Some(tx.clone())) {
+        move || match execute_from_file(&workflow_file, read_env, Some(tx.clone())) {
             Ok(_) => {}
             Err(e) => tx
                 .send(StatusMessage::Failed(e))

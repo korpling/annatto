@@ -5,6 +5,7 @@ use std::{
 };
 
 use graphannis::{update::GraphUpdate, AnnotationGraph};
+use regex::Regex;
 use serde_derive::Deserialize;
 
 use crate::{
@@ -51,11 +52,57 @@ pub struct Workflow {
 use std::convert::TryFrom;
 use toml;
 
-impl TryFrom<PathBuf> for Workflow {
+fn contained_variables<'a>(workflow: &'a String) -> Result<Vec<(i32, &'a str)>> {
+    let pattern = Regex::new("[$][^\\s\\-/\"'.;,?!]+")?;
+    let mut variables = Vec::new();
+    for m in pattern.find_iter(workflow) {
+        variables.push((m.start() as i32, m.as_str()))
+    }
+    Ok(variables)
+}
+
+fn parse_variables(workflow: String, buf: &mut String) -> Result<()> {
+    let vars = contained_variables(&workflow)?;
+    let content = workflow.as_bytes();
+    let mut p = 0;
+    for (start_index, var) in vars {
+        for ci in p..start_index {
+            buf.push(content[ci as usize] as char);
+        }
+        p = start_index + var.len() as i32;
+        if let Ok(value) = std::env::var(&var[1..]) {
+            for c in value.chars() {
+                buf.push(c);
+            }
+        } else {
+            for ci in start_index..start_index + var.len() as i32 {
+                buf.push(content[ci as usize] as char);
+            }
+        }
+    }
+    for remain_i in p..workflow.len() as i32 {
+        buf.push(content[remain_i as usize] as char);
+    }
+    Ok(())
+}
+
+fn read_workflow(path: PathBuf, read_env: bool) -> Result<String> {
+    let toml_content = fs::read_to_string(path.as_path())?;
+    if read_env {
+        let mut buf = String::new();
+        parse_variables(toml_content, &mut buf)?;
+        Ok(buf)
+    } else {
+        Ok(toml_content)
+    }
+}
+
+impl TryFrom<(PathBuf, bool)> for Workflow {
     type Error = AnnattoError;
-    fn try_from(workflow_file: PathBuf) -> Result<Workflow> {
-        let toml_content = fs::read_to_string(workflow_file.as_path())?;
-        let workflow: Workflow = toml::from_str(toml_content.as_str())?;
+    fn try_from(workflow_config: (PathBuf, bool)) -> Result<Workflow> {
+        let (workflow_file, read_env) = workflow_config;
+        let final_content = read_workflow(workflow_file, read_env)?;
+        let workflow: Workflow = toml::from_str(final_content.as_str())?;
         Ok(workflow)
     }
 }
@@ -64,8 +111,12 @@ impl TryFrom<PathBuf> for Workflow {
 ///
 /// * `workflow_file` - The TOML workflow file.
 /// * `tx` - If supported by the caller, this is a sender object that allows to send [status updates](enum.StatusMessage.html) (like information messages, warnings and module progress) to the calling entity.
-pub fn execute_from_file(workflow_file: &Path, tx: Option<Sender<StatusMessage>>) -> Result<()> {
-    let wf = Workflow::try_from(workflow_file.to_path_buf())?;
+pub fn execute_from_file(
+    workflow_file: &Path,
+    read_env: bool,
+    tx: Option<Sender<StatusMessage>>,
+) -> Result<()> {
+    let wf = Workflow::try_from((workflow_file.to_path_buf(), read_env))?;
     let parent_dir = if let Some(directory) = workflow_file.parent() {
         directory
     } else {
@@ -222,6 +273,36 @@ mod tests {
     #[test]
     fn no_export_step() {
         // This should not fail
-        execute_from_file(Path::new("./tests/data/import/empty/empty.toml"), None).unwrap();
+        execute_from_file(
+            Path::new("./tests/data/import/empty/empty.toml"),
+            false,
+            None,
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn with_env() {
+        let k1 = "TEST_VAR_FORMAT_NAME";
+        let k2 = "TEST_VAR_GRAPH_OP_NAME";
+        std::env::set_var(k1, "none");
+        std::env::set_var(k2, "check");
+        let read_result = read_workflow(
+            Path::new("./tests/data/import/empty/empty_with_vars.toml").to_path_buf(),
+            true,
+        );
+        assert!(
+            read_result.is_ok(),
+            "Failed to read variable workflow with error {:?}",
+            read_result.err()
+        );
+        if let Ok(workflow_with_vars) = read_result {
+            let workflow_no_vars = read_workflow(
+                Path::new("./tests/data/import/empty/empty.toml").to_path_buf(),
+                false,
+            )
+            .unwrap();
+            assert_eq!(workflow_with_vars, workflow_no_vars);
+        }
     }
 }
