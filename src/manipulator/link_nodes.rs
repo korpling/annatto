@@ -1,5 +1,8 @@
-use std::{collections::BTreeMap, env::temp_dir};
-
+use crate::{
+    error::AnnattoError,
+    workflow::{StatusMessage, StatusSender},
+    Module,
+};
 use graphannis::{
     corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
     model::AnnotationComponentType,
@@ -9,28 +12,21 @@ use graphannis::{
 use graphannis_core::{types::AnnoKey, util::split_qname};
 use itertools::Itertools;
 use serde_derive::Deserialize;
+use std::{collections::BTreeMap, env::temp_dir};
 use tempfile::tempdir_in;
-
-use crate::{
-    error::AnnattoError,
-    workflow::{StatusMessage, StatusSender},
-    Module,
-};
 
 use super::Manipulator;
 
 #[derive(Deserialize)]
-struct LinkNodes {
+pub struct LinkNodes {
     source_query: String,
     #[serde(default)]
     source_node: usize,
-    #[serde(default)]
-    source_value: usize,
+    source_value: Vec<usize>,
     target_query: String,
     #[serde(default)]
     target_node: usize,
-    #[serde(default)]
-    target_value: usize,
+    target_value: Vec<usize>,
     link_type: AnnotationComponentType, // which edge type to use to link resources
     #[serde(default)]
     link_layer: String,
@@ -60,16 +56,16 @@ impl Manipulator for LinkNodes {
             graph,
             &cs,
             self.source_query.to_string(),
-            self.source_node - 1,
-            self.source_value - 1,
+            self.source_node,
+            &self.source_value,
             &tx,
         )?;
         let link_targets = gather_link_data(
             graph,
             &cs,
             self.target_query.to_string(),
-            self.target_node - 1,
-            self.target_value - 1,
+            self.target_node,
+            &self.target_value,
             &tx,
         )?;
         let mut update = self.link_nodes(link_sources, link_targets)?;
@@ -122,33 +118,40 @@ fn gather_link_data(
     cs: &CorpusStorage,
     query: String,
     node_index: usize,
-    value_index: usize,
+    value_indices: &[usize],
     tx: &Option<StatusSender>,
 ) -> Result<BTreeMap<String, Vec<String>>, Box<dyn std::error::Error>> {
     let mut data: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let node_annos = graph.get_node_annos();
     for group_of_bundles in retrieve_nodes_with_values(cs, query.to_string())? {
-        if let Some((_, link_node_name)) = group_of_bundles.get(node_index) {
-            if let Some((anno_key, carrying_node_name)) = group_of_bundles.get(value_index) {
-                let node_id_o = graph.get_node_id_from_name(carrying_node_name)?;
-                let value_node_id = node_id_o.unwrap();
-                let anno_value = node_annos
-                    .get_value_for_item(&value_node_id, anno_key)?
-                    .unwrap(); // this CANNOT be None
-                if let Some(node_name_list) = data.get_mut(&*anno_value) {
+        if let Some((_, link_node_name)) = group_of_bundles.get(node_index - 1) {
+            for value_index in value_indices {
+                let mut total_value = String::new();
+                if let Some((anno_key, carrying_node_name)) = group_of_bundles.get(*value_index - 1)
+                {
+                    let node_id_o = graph.get_node_id_from_name(carrying_node_name)?;
+                    let value_node_id = node_id_o.unwrap();
+                    let anno_value = node_annos
+                        .get_value_for_item(&value_node_id, anno_key)?
+                        .unwrap() // this CANNOT be None
+                        .trim()
+                        .to_lowercase();
+                    total_value.push_str(&anno_value); // simply concatenate values
+                } else if let Some(sender) = tx {
+                    let message = StatusMessage::Failed(AnnattoError::Manipulator {
+                        reason: format!(
+                            "Could not extract node with value index {value_index} from query `{}`",
+                            &query
+                        ),
+                        manipulator: MODULE_NAME.to_string(),
+                    });
+                    sender.send(message)?;
+                }
+                if let Some(node_name_list) = data.get_mut(&total_value) {
                     node_name_list.push(link_node_name.to_string());
                 } else {
-                    data.insert(anno_value.to_string(), vec![link_node_name.to_string()]);
+                    data.insert(total_value, vec![link_node_name.to_string()]);
                 }
-            } else if let Some(sender) = tx {
-                let message = StatusMessage::Failed(AnnattoError::Manipulator {
-                    reason: format!(
-                        "Could not extract node with value index {value_index} from query `{}`",
-                        &query
-                    ),
-                    manipulator: MODULE_NAME.to_string(),
-                });
-                sender.send(message)?;
             }
         } else if let Some(sender) = tx {
             let message = StatusMessage::Failed(AnnattoError::Manipulator {
@@ -225,12 +228,12 @@ mod tests {
         let linker = LinkNodes {
             source_query: "norm _=_ lemma".to_string(),
             source_node: 1,
-            source_value: 2,
+            source_value: vec![2],
             target_query: "morph & node? !> #1".to_string(),
             target_node: 1,
-            target_value: 1,
+            target_value: vec![1],
             link_type: AnnotationComponentType::Pointing,
-            link_layer: String::default(),
+            link_layer: "".to_string(),
             link_name: "morphology".to_string(),
         };
         let dummy_dir = tempdir_in(temp_dir())?;
