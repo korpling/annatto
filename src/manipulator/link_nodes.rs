@@ -140,29 +140,25 @@ fn gather_link_data(
                 } else {
                     data.insert(anno_value.to_string(), vec![link_node_name.to_string()]);
                 }
-            } else {
-                if let Some(sender) = tx {
-                    let message = StatusMessage::Failed(AnnattoError::Manipulator {
-                        reason: format!(
-                            "Could not extract node with value index {value_index} from query `{}`",
-                            &query
-                        ),
-                        manipulator: MODULE_NAME.to_string(),
-                    });
-                    sender.send(message)?;
-                }
-            }
-        } else {
-            if let Some(sender) = tx {
+            } else if let Some(sender) = tx {
                 let message = StatusMessage::Failed(AnnattoError::Manipulator {
                     reason: format!(
-                        "Could not extract node with node index {node_index} from query `{}`",
+                        "Could not extract node with value index {value_index} from query `{}`",
                         &query
                     ),
                     manipulator: MODULE_NAME.to_string(),
                 });
                 sender.send(message)?;
             }
+        } else if let Some(sender) = tx {
+            let message = StatusMessage::Failed(AnnattoError::Manipulator {
+                reason: format!(
+                    "Could not extract node with node index {node_index} from query `{}`",
+                    &query
+                ),
+                manipulator: MODULE_NAME.to_string(),
+            });
+            sender.send(message)?;
         }
     }
     Ok(data)
