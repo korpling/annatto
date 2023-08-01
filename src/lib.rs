@@ -22,7 +22,8 @@ use importer::{
     textgrid::TextgridImporter, CreateEmptyCorpus, Importer,
 };
 use manipulator::{
-    check::Check, map_annos::MapAnnos, merge::Merge, no_op::NoOp, re::Replace, Manipulator,
+    check::Check, link_nodes::LinkNodes, map_annos::MapAnnos, merge::Merge, no_op::NoOp,
+    re::Replace, Manipulator,
 };
 use serde_derive::Deserialize;
 
@@ -98,6 +99,7 @@ impl ReadFrom {
 #[serde(tag = "action", rename_all = "lowercase", content = "config")]
 pub enum GraphOp {
     Check(Check),                  // no default, has a (required) path attribute
+    Link(LinkNodes),               // no default, has required attributes
     Map(MapAnnos),                 // no default, has a (required) path attribute
     Merge(Merge),                  // no default, has required attributes
     Re(#[serde(default)] Replace), // does nothing on default
@@ -121,6 +123,7 @@ impl GraphOp {
     fn processor(&self) -> &dyn Manipulator {
         match self {
             GraphOp::Check(m) => m,
+            GraphOp::Link(m) => m,
             GraphOp::Map(m) => m,
             GraphOp::Merge(m) => m,
             GraphOp::Re(m) => m,
