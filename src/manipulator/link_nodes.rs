@@ -136,7 +136,7 @@ fn gather_link_data(
                         .unwrap() // this CANNOT be None
                         .trim()
                         .to_lowercase();
-                    total_value.extend(anno_value.chars()); // simply concatenate values
+                    total_value.push_str(&anno_value); // simply concatenate values
                 } else if let Some(sender) = tx {
                     let message = StatusMessage::Failed(AnnattoError::Manipulator {
                         reason: format!(
