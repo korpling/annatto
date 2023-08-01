@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `check` displays matching nodes for tests in new verbose mode
 - `check` now comes with a higher level test ("Layer test") that is internally converted into atomic aql tests. The test can be applied to nodes and edges. It tests if a layer exists and only valid annotation values have been used.
 - using flag `--env` allows to resolve environmental variables in workflow definitions which enables the use of template workflow definitions
+- node linker: with two queries the resulting nodes can be linked via edges of a configurable type, layer, and name
 
 ### Fixed
 
