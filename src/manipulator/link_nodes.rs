@@ -1,0 +1,645 @@
+use std::{collections::BTreeMap, env::temp_dir};
+
+use graphannis::{
+    corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
+    model::AnnotationComponentType,
+    update::{GraphUpdate, UpdateEvent},
+    AnnotationGraph, CorpusStorage,
+};
+use graphannis_core::{types::AnnoKey, util::split_qname};
+use itertools::Itertools;
+use serde_derive::Deserialize;
+use tempfile::tempdir_in;
+
+use crate::{
+    error::AnnattoError,
+    workflow::{StatusMessage, StatusSender},
+    Module,
+};
+
+use super::Manipulator;
+
+#[derive(Deserialize)]
+struct LinkNodes {
+    source_query: String,
+    #[serde(default)]
+    source_node: usize,
+    #[serde(default)]
+    source_value: usize,
+    target_query: String,
+    #[serde(default)]
+    target_node: usize,
+    #[serde(default)]
+    target_value: usize,
+    link_type: AnnotationComponentType, // which edge type to use to link resources
+    #[serde(default)]
+    link_layer: String,
+    #[serde(default)]
+    link_name: String,
+}
+
+pub const MODULE_NAME: &str = "link_nodes";
+
+impl Module for LinkNodes {
+    fn module_name(&self) -> &str {
+        MODULE_NAME
+    }
+}
+
+impl Manipulator for LinkNodes {
+    fn manipulate_corpus(
+        &self,
+        graph: &mut graphannis::AnnotationGraph,
+        _workflow_directory: &std::path::Path,
+        tx: Option<crate::workflow::StatusSender>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let db_dir = tempdir_in(temp_dir())?;
+        graph.save_to(db_dir.path().join("current").as_path())?;
+        let cs = CorpusStorage::with_auto_cache_size(db_dir.path(), true)?;
+        let link_sources = gather_link_data(
+            graph,
+            &cs,
+            self.source_query.to_string(),
+            self.source_node - 1,
+            self.source_value - 1,
+            &tx,
+        )?;
+        let link_targets = gather_link_data(
+            graph,
+            &cs,
+            self.target_query.to_string(),
+            self.target_node - 1,
+            self.target_value - 1,
+            &tx,
+        )?;
+        let mut update = self.link_nodes(link_sources, link_targets)?;
+        graph.apply_update(&mut update, |_| {})?;
+        Ok(())
+    }
+}
+
+type NodeBundle = Vec<(AnnoKey, String)>;
+
+fn retrieve_nodes_with_values(
+    cs: &CorpusStorage,
+    query: String,
+) -> Result<Vec<NodeBundle>, Box<dyn std::error::Error>> {
+    let mut node_bundles = Vec::new();
+    for m in cs.find(
+        SearchQuery {
+            corpus_names: &["current"],
+            query: query.as_str(),
+            query_language: QueryLanguage::AQL,
+            timeout: None,
+        },
+        0,
+        None,
+        ResultOrder::Normal,
+    )? {
+        node_bundles.push(
+            m.split(' ')
+                .filter_map(|s| s.rsplit_once("::"))
+                .map(|(name, node)| (anno_key(name), node.to_string()))
+                .collect_vec(),
+        );
+    }
+    Ok(node_bundles)
+}
+
+fn anno_key(qname: &str) -> AnnoKey {
+    let (ns, name) = split_qname(qname);
+    AnnoKey {
+        name: name.into(),
+        ns: match ns {
+            None => "".into(),
+            Some(v) => v.into(),
+        },
+    }
+}
+
+fn gather_link_data(
+    graph: &AnnotationGraph,
+    cs: &CorpusStorage,
+    query: String,
+    node_index: usize,
+    value_index: usize,
+    tx: &Option<StatusSender>,
+) -> Result<BTreeMap<String, Vec<String>>, Box<dyn std::error::Error>> {
+    let mut data: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    let node_annos = graph.get_node_annos();
+    for group_of_bundles in retrieve_nodes_with_values(cs, query.to_string())? {
+        if let Some((_, link_node_name)) = group_of_bundles.get(node_index) {
+            if let Some((anno_key, carrying_node_name)) = group_of_bundles.get(value_index) {
+                let node_id_o = graph.get_node_id_from_name(carrying_node_name)?;
+                let value_node_id = node_id_o.unwrap();
+                let anno_value = node_annos
+                    .get_value_for_item(&value_node_id, anno_key)?
+                    .unwrap(); // this CANNOT be None
+                if let Some(node_name_list) = data.get_mut(&*anno_value) {
+                    node_name_list.push(link_node_name.to_string());
+                } else {
+                    data.insert(anno_value.to_string(), vec![link_node_name.to_string()]);
+                }
+            } else if let Some(sender) = tx {
+                let message = StatusMessage::Failed(AnnattoError::Manipulator {
+                    reason: format!(
+                        "Could not extract node with value index {value_index} from query `{}`",
+                        &query
+                    ),
+                    manipulator: MODULE_NAME.to_string(),
+                });
+                sender.send(message)?;
+            }
+        } else if let Some(sender) = tx {
+            let message = StatusMessage::Failed(AnnattoError::Manipulator {
+                reason: format!(
+                    "Could not extract node with node index {node_index} from query `{}`",
+                    &query
+                ),
+                manipulator: MODULE_NAME.to_string(),
+            });
+            sender.send(message)?;
+        }
+    }
+    Ok(data)
+}
+
+impl LinkNodes {
+    fn link_nodes(
+        &self,
+        sources: BTreeMap<String, Vec<String>>,
+        targets: BTreeMap<String, Vec<String>>,
+    ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
+        let mut update = GraphUpdate::default();
+        for (anno_value, node_list) in sources {
+            if let Some(target_node_list) = targets.get(&anno_value) {
+                for (source, target) in node_list.iter().cartesian_product(target_node_list) {
+                    update.add_event(UpdateEvent::AddEdge {
+                        source_node: source.to_string(),
+                        target_node: target.to_string(),
+                        layer: self.link_layer.to_string(),
+                        component_type: self.link_type.to_string(),
+                        component_name: self.link_name.to_string(),
+                    })?;
+                }
+            }
+        }
+        Ok(update)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{collections::BTreeSet, env::temp_dir, sync::mpsc};
+
+    use graphannis::{
+        corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
+        model::AnnotationComponentType,
+        update::{GraphUpdate, UpdateEvent},
+        AnnotationGraph, CorpusStorage,
+    };
+    use graphannis_core::{
+        annostorage::ValueSearch,
+        graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY},
+        util::join_qname,
+    };
+    use itertools::Itertools;
+    use tempfile::tempdir_in;
+
+    use crate::manipulator::{link_nodes::LinkNodes, Manipulator};
+
+    #[test]
+    fn test_linker_on_disk() {
+        assert!(main_test(true).is_ok());
+    }
+
+    #[test]
+    fn test_linker_in_mem() {
+        assert!(main_test(false).is_ok());
+    }
+
+    fn main_test(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
+        let mut e_g = target_graph(on_disk)?;
+        let (sender, receiver) = mpsc::channel();
+        let mut g = source_graph(on_disk)?;
+        let linker = LinkNodes {
+            source_query: "norm _=_ lemma".to_string(),
+            source_node: 1,
+            source_value: 2,
+            target_query: "morph & node? !> #1".to_string(),
+            target_node: 1,
+            target_value: 1,
+            link_type: AnnotationComponentType::Pointing,
+            link_layer: String::default(),
+            link_name: "morphology".to_string(),
+        };
+        let dummy_dir = tempdir_in(temp_dir())?;
+        let dummy_path = dummy_dir.path();
+        let link = linker.manipulate_corpus(&mut g, dummy_path, Some(sender));
+        assert!(
+            link.is_ok(),
+            "Importer update failed with error: {:?}",
+            link.err()
+        );
+        // corpus nodes
+        let e_corpus_nodes: BTreeSet<String> = e_g
+            .get_node_annos()
+            .exact_anno_search(
+                Some(&NODE_TYPE_KEY.ns),
+                &NODE_TYPE_KEY.name,
+                ValueSearch::Some("corpus"),
+            )
+            .into_iter()
+            .map(|r| r.unwrap().node)
+            .map(|id_| {
+                e_g.get_node_annos()
+                    .get_value_for_item(&id_, &NODE_NAME_KEY)
+                    .unwrap()
+                    .unwrap()
+                    .to_string()
+            })
+            .collect();
+        let g_corpus_nodes: BTreeSet<String> = g
+            .get_node_annos()
+            .exact_anno_search(
+                Some(&NODE_TYPE_KEY.ns),
+                &NODE_TYPE_KEY.name,
+                ValueSearch::Some("corpus"),
+            )
+            .into_iter()
+            .map(|r| r.unwrap().node)
+            .map(|id_| {
+                g.get_node_annos()
+                    .get_value_for_item(&id_, &NODE_NAME_KEY)
+                    .unwrap()
+                    .unwrap()
+                    .to_string()
+            })
+            .collect();
+        assert_eq!(e_corpus_nodes, g_corpus_nodes);
+        // anno names
+        let e_anno_names = e_g.get_node_annos().annotation_keys()?;
+        let g_anno_names = g.get_node_annos().annotation_keys()?;
+        let e_name_iter = e_anno_names
+            .iter()
+            .sorted_by(|a, b| join_qname(&a.ns, &a.name).cmp(&join_qname(&b.ns, &b.name)));
+        let g_name_iter = g_anno_names
+            .iter()
+            .sorted_by(|a, b| join_qname(&a.ns, &a.name).cmp(&join_qname(&b.ns, &b.name)));
+        for (e_qname, g_qname) in e_name_iter.zip(g_name_iter) {
+            assert_eq!(
+                e_qname, g_qname,
+                "Differing annotation keys between expected and generated graph: `{:?}` vs. `{:?}`",
+                e_qname, g_qname
+            );
+        }
+        assert_eq!(
+            e_anno_names.len(),
+            g_anno_names.len(),
+            "Expected graph and generated graph do not contain the same number of annotation keys."
+        );
+        let e_c_list = e_g
+            .get_all_components(None, None)
+            .into_iter()
+            .filter(|c| e_g.get_graphstorage(c).unwrap().source_nodes().count() > 0)
+            .collect_vec();
+        let g_c_list = g
+            .get_all_components(None, None)
+            .into_iter()
+            .filter(|c| g.get_graphstorage(c).unwrap().source_nodes().count() > 0) // graph might contain empty components after merge
+            .collect_vec();
+        assert_eq!(
+            e_c_list.len(),
+            g_c_list.len(),
+            "components expected:\n{:?};\ncomponents are:\n{:?}",
+            &e_c_list,
+            &g_c_list
+        );
+        for c in e_c_list {
+            let candidates = g.get_all_components(Some(c.get_type()), Some(c.name.as_str()));
+            assert_eq!(candidates.len(), 1);
+            let c_o = candidates.get(0);
+            assert_eq!(&c, c_o.unwrap());
+        }
+        //test with queries
+        let queries = [
+            ("norm:norm ->morphology node", 2),
+            ("node ->morphology node", 2),
+            ("node ->morphology morph", 2),
+            ("norm:norm ->morphology morph=/New York/", 1),
+            ("norm:norm ->morphology morph=/New York/ > node", 2),
+            ("norm:norm ->morphology morph=/New York/ > morph=/New/", 1),
+            ("norm:norm ->morphology morph=/New York/ > morph=/York/", 1),
+            ("norm:norm ->morphology morph=/I/", 1),
+        ];
+        let corpus_name = "current";
+        let tmp_dir_e = tempdir_in(temp_dir())?;
+        let tmp_dir_g = tempdir_in(temp_dir())?;
+        e_g.save_to(&tmp_dir_e.path().join(corpus_name))?;
+        g.save_to(&tmp_dir_g.path().join(corpus_name))?;
+        let cs_e = CorpusStorage::with_auto_cache_size(&tmp_dir_e.path(), true)?;
+        let cs_g = CorpusStorage::with_auto_cache_size(&tmp_dir_g.path(), true)?;
+        for (query_s, expected_n) in queries {
+            let query = SearchQuery {
+                corpus_names: &[corpus_name],
+                query: query_s,
+                query_language: QueryLanguage::AQL,
+                timeout: None,
+            };
+            let matches_e = cs_e.find(query.clone(), 0, None, ResultOrder::Normal)?;
+            let matches_g = cs_g.find(query, 0, None, ResultOrder::Normal)?;
+            assert_eq!(
+                matches_e.len(),
+                expected_n,
+                "Number of results for query `{}` does not match for expected graph. Expected:{} vs. Is:{}",
+                query_s,
+                expected_n,
+                matches_e.len()
+            );
+            assert_eq!(
+                matches_e.len(),
+                matches_g.len(),
+                "Failed with query: {}",
+                query_s
+            );
+            for (match_g, match_e) in matches_g.iter().zip(&matches_e) {
+                assert_eq!(match_g, match_e);
+            }
+        }
+        let message_count = receiver.into_iter().count();
+        assert_eq!(0, message_count);
+        Ok(())
+    }
+
+    fn source_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
+        // copied this from exmaralda test
+        let mut graph = AnnotationGraph::new(on_disk)?;
+        let mut u = GraphUpdate::default();
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "import".to_string(),
+            node_type: "corpus".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "import/exmaralda".to_string(),
+            node_type: "corpus".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "import/exmaralda".to_string(),
+            target_node: "import".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "import/exmaralda/test_doc".to_string(),
+            node_type: "corpus".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "import/exmaralda/test_doc".to_string(),
+            target_node: "import/exmaralda".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
+        let tlis = ["T286", "T0", "T1", "T2", "T3", "T4"];
+        let times = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
+        for tli in tlis {
+            let node_name = format!("import/exmaralda/test_doc#{}", tli);
+            u.add_event(UpdateEvent::AddNode {
+                node_name: node_name.to_string(),
+                node_type: "node".to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddNodeLabel {
+                node_name: node_name.to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "tok".to_string(),
+                anno_value: " ".to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddNodeLabel {
+                node_name: node_name.to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "layer".to_string(),
+                anno_value: "default_layer".to_string(),
+            })?;
+        }
+        for window in tlis.windows(2) {
+            let tli0 = window[0];
+            let tli1 = window[1];
+            let source = format!("import/exmaralda/test_doc#{}", tli0);
+            let target = format!("import/exmaralda/test_doc#{}", tli1);
+            u.add_event(UpdateEvent::AddEdge {
+                source_node: source,
+                target_node: target,
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::Ordering.to_string(),
+                component_name: "".to_string(),
+            })?;
+        }
+        let mut prev: Option<String> = None;
+        for (tpe, spk, name, value, start, end, reset_after) in [
+            ("t", "dipl", "dipl", "I'm", 0, 2, false),
+            ("t", "dipl", "dipl", "in", 2, 3, false),
+            ("t", "dipl", "dipl", "New", 3, 4, false),
+            ("t", "dipl", "dipl", "York", 4, 5, true),
+            ("a", "dipl", "sentence", "1", 0, 5, true),
+            ("t", "norm", "norm", "I", 0, 1, false),
+            ("t", "norm", "norm", "am", 1, 2, false),
+            ("t", "norm", "norm", "in", 2, 3, false),
+            ("t", "norm", "norm", "New York", 3, 5, true),
+            ("a", "norm", "lemma", "I", 0, 1, true),
+            ("a", "norm", "lemma", "be", 1, 2, true),
+            ("a", "norm", "lemma", "in", 2, 3, true),
+            ("a", "norm", "lemma", "New York", 3, 5, true),
+            ("a", "norm", "pos", "PRON", 0, 1, true),
+            ("a", "norm", "pos", "VERB", 1, 2, true),
+            ("a", "norm", "pos", "ADP", 2, 3, true),
+            ("a", "norm", "pos", "PROPN", 3, 5, true),
+        ] {
+            let node_name = format!(
+                "{}#{}_{}_{}-{}",
+                "import/exmaralda/test_doc", tpe, spk, tlis[start], tlis[end]
+            );
+            let start_time = times[start];
+            let end_time = times[end];
+            u.add_event(UpdateEvent::AddNode {
+                node_name: node_name.to_string(),
+                node_type: "node".to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddNodeLabel {
+                node_name: node_name.to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "time".to_string(),
+                anno_value: format!("{}-{}", start_time, end_time),
+            })?;
+            u.add_event(UpdateEvent::AddNodeLabel {
+                node_name: node_name.to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "layer".to_string(),
+                anno_value: spk.to_string(),
+            })?;
+            if tpe == "t" {
+                u.add_event(UpdateEvent::AddNodeLabel {
+                    node_name: node_name.to_string(),
+                    anno_ns: ANNIS_NS.to_string(),
+                    anno_name: "tok".to_string(),
+                    anno_value: "value".to_string(),
+                })?;
+                if let Some(other_name) = prev {
+                    u.add_event(UpdateEvent::AddEdge {
+                        source_node: other_name,
+                        target_node: node_name.to_string(),
+                        layer: ANNIS_NS.to_string(),
+                        component_type: AnnotationComponentType::Ordering.to_string(),
+                        component_name: spk.to_string(),
+                    })?;
+                }
+                prev = if reset_after {
+                    None
+                } else {
+                    Some(node_name.to_string())
+                }
+            }
+            u.add_event(UpdateEvent::AddNodeLabel {
+                node_name: node_name.to_string(),
+                anno_ns: spk.to_string(),
+                anno_name: name.to_string(),
+                anno_value: value.to_string(),
+            })?;
+            for i in start..end {
+                u.add_event(UpdateEvent::AddEdge {
+                    source_node: node_name.to_string(),
+                    target_node: format!("import/exmaralda/test_doc#{}", tlis[i]),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::Coverage.to_string(),
+                    component_name: "".to_string(),
+                })?;
+            }
+        }
+        // add unlinked corpus nodes
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "import/lex".to_string(),
+            node_type: "corpus".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "import/lex/new_york".to_string(),
+            node_type: "corpus".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "import/lex/i".to_string(),
+            node_type: "corpus".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "import/lex".to_string(),
+            target_node: "import".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "import/lex/new_york".to_string(),
+            target_node: "import/lex".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "import/lex/i".to_string(),
+            target_node: "import/lex".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
+        // add unlinked data nodes
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "import/lex/new_york#root".to_string(),
+            node_type: "node".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "import/lex/new_york#root".to_string(),
+            anno_ns: "".to_string(),
+            anno_name: "morph".to_string(),
+            anno_value: "New York".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "import/lex/new_york#root".to_string(),
+            target_node: "import/lex/new_york".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "import/lex/new_york#m1".to_string(),
+            node_type: "node".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "import/lex/new_york#m1".to_string(),
+            anno_ns: "".to_string(),
+            anno_name: "morph".to_string(),
+            anno_value: "New".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "import/lex/new_york#m2".to_string(),
+            node_type: "node".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "import/lex/new_york#m2".to_string(),
+            anno_ns: "".to_string(),
+            anno_name: "morph".to_string(),
+            anno_value: "York".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "import/lex/new_york#root".to_string(),
+            target_node: "import/lex/new_york#m1".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::Dominance.to_string(),
+            component_name: "".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "import/lex/new_york#root".to_string(),
+            target_node: "import/lex/new_york#m2".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::Dominance.to_string(),
+            component_name: "".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "import/lex/i#root".to_string(),
+            node_type: "node".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "import/lex/i#root".to_string(),
+            anno_ns: "".to_string(),
+            anno_name: "morph".to_string(),
+            anno_value: "I".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "import/lex/i#root".to_string(),
+            target_node: "import/lex/i".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
+        graph.apply_update(&mut u, |_| {})?;
+        Ok(graph)
+    }
+
+    fn target_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
+        let mut u = GraphUpdate::default();
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "import/exmaralda/test_doc#t_norm_T2-T4".to_string(),
+            target_node: "import/lex/new_york#root".to_string(),
+            layer: "".to_string(),
+            component_type: AnnotationComponentType::Pointing.to_string(),
+            component_name: "morphology".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "import/exmaralda/test_doc#t_norm_T286-T0".to_string(),
+            target_node: "import/lex/i#root".to_string(),
+            layer: "".to_string(),
+            component_type: AnnotationComponentType::Pointing.to_string(),
+            component_name: "morphology".to_string(),
+        })?;
+        let mut g = source_graph(on_disk)?;
+        g.apply_update(&mut u, |_| {})?;
+        Ok(g)
+    }
+}
