@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `check` now comes with a higher level test ("Layer test") that is internally converted into atomic aql tests. The test can be applied to nodes and edges. It tests if a layer exists and only valid annotation values have been used.
 - using flag `--env` allows to resolve environmental variables in workflow definitions which enables the use of template workflow definitions
 - node linker: with two queries the resulting nodes can be linked via edges of a configurable type, layer, and name
+- boolean environment variable `ANNATTO_IN_MEM` influences whether or not graphs will be stored on disk or in memory
 
 ### Fixed
 

@@ -9,7 +9,8 @@ use regex::Regex;
 use serde_derive::Deserialize;
 
 use crate::{
-    error::AnnattoError, error::Result, ExporterStep, ImporterStep, ManipulatorStep, Step, StepID,
+    error::AnnattoError, error::Result, runtime, ExporterStep, ImporterStep, ManipulatorStep, Step,
+    StepID,
 };
 use rayon::prelude::*;
 
@@ -153,8 +154,7 @@ impl Workflow {
         }
 
         // Create a new empty annotation graph
-        let mut g = AnnotationGraph::with_default_graphstorages(true)
-            .map_err(|e| AnnattoError::CreateGraph(e.to_string()))?;
+        let mut g = runtime::initialize_graph(&tx)?;
 
         // Execute all importers and store their graph updates in parallel
         let updates: Result<Vec<GraphUpdate>> = self
