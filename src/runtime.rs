@@ -23,7 +23,7 @@ pub fn initialize_graph(tx: &Option<StatusSender>) -> Result<AnnotationGraph> {
     let on_disk = match std::env::var(env_var) {
         Ok(value) => match value.parse::<bool>() {
             Ok(v) => !v,
-            Err(_) => on_error_default_storage(&tx)?,
+            Err(_) => on_error_default_storage(tx)?,
         },
         Err(_) => on_error_default_storage(&None)?, // silent, because not setting the env var is not a user error
     };
