@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.0] - 2023-08-04
 
-## Changes
+### Changed
 
 - CLI binary renamed from `annatto-cli` to `annatto`
 - To execute a workflow file, use `annatto run <workflow-file>`
