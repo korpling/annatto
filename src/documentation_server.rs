@@ -95,11 +95,16 @@ mod tests {
     use tower::util::ServiceExt;
 
     #[tokio::test]
-    async fn index_found() {
+    async fn compile_instructions_found() {
         let app = app().unwrap();
 
         let response = app
-            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+            .oneshot(
+                Request::builder()
+                    .uri("/compile.txt")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
             .await
             .unwrap();
 
