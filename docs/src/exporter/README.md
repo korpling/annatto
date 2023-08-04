@@ -2,6 +2,6 @@
 
 ## GraphML
 
-Module name: `export_graphml`
+Format name: `graphml`
 
-TODO
+Exports files as [GraphML](http://graphml.graphdrawing.org/) files which conform to the [graphANNIS data model].
