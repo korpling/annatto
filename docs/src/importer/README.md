@@ -2,9 +2,9 @@
 
 ## GraphML
 
-Module name: `import_graphml`
+Format name: `graphml`
 
-TOOD
+Imports files in the graphANNIS 
 
 ## CONLL-U
 
