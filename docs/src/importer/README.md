@@ -21,7 +21,7 @@ editor](https://exmaralda.org/en/partitur-editor-en/) (`.exb`) files.
 Format name: `graphml`
 
 Imports files in the [GraphML](http://graphml.graphdrawing.org/) file which have
-to conform to the [graphANNIS data model].
+to conform to the [graphANNIS data model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
 
 ## Meta
 
