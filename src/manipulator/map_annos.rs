@@ -77,7 +77,10 @@ impl MapAnnos {
                 graphannis::corpusstorage::ResultOrder::NotSorted,
             )?;
             for m in search_results {
-                let matching_nodes = m.split(' ').map(|s| s.to_string()).collect_vec();
+                let matching_nodes = m
+                    .split(' ')
+                    .filter_map(|s| s.rsplit("::").last())
+                    .collect_vec();
                 let target = rule.target - 1;
                 if let Some(node_name) = matching_nodes.get(target) {
                     update.add_event(UpdateEvent::AddNodeLabel {

@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- mapping annotations now correctly extracts the id of the node to apply a new annotation to
+
 ## [0.3.1] - 2023-08-04
 
 ### Fixed
