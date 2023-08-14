@@ -64,6 +64,7 @@ impl MapAnnos {
         graph.save_to(&tmp_dir.path().join(corpus_name))?;
         let cs = CorpusStorage::with_auto_cache_size(tmp_dir.path(), true)?;
         for rule in mapping.rules {
+            dbg!(&rule.query);
             let query = SearchQuery {
                 corpus_names: &["current"],
                 query: rule.query.as_str(),
@@ -76,13 +77,15 @@ impl MapAnnos {
                 None,
                 graphannis::corpusstorage::ResultOrder::NotSorted,
             )?;
+            dbg!(&search_results);
             for m in search_results {
                 let matching_nodes = m
                     .split(' ')
-                    .filter_map(|s| s.rsplit("::").last())
+                    .filter_map(|s| s.split("::").last())
                     .collect_vec();
                 let target = rule.target - 1;
                 if let Some(node_name) = matching_nodes.get(target) {
+                    dbg!(&node_name);
                     update.add_event(UpdateEvent::AddNodeLabel {
                         node_name: node_name.to_string(),
                         anno_ns: rule.ns.to_string(),
