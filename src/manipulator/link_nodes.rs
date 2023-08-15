@@ -74,7 +74,7 @@ impl Manipulator for LinkNodes {
     }
 }
 
-type NodeBundle = Vec<(AnnoKey, String)>;
+type NodeBundle = Vec<(Option<AnnoKey>, String)>;
 
 fn retrieve_nodes_with_values(
     cs: &CorpusStorage,
@@ -94,8 +94,13 @@ fn retrieve_nodes_with_values(
     )? {
         node_bundles.push(
             m.split(' ')
-                .filter_map(|s| s.rsplit_once("::"))
-                .map(|(name, node)| (anno_key(name), node.to_string()))
+                .map(|match_member| {
+                    match_member
+                        .rsplit_once("::")
+                        .map_or((None, match_member.to_string()), |(pref, suff)| {
+                            (Some(anno_key(pref)), suff.to_string())
+                        })
+                })
                 .collect_vec(),
         );
     }
@@ -127,7 +132,8 @@ fn gather_link_data(
         if let Some((_, link_node_name)) = group_of_bundles.get(node_index - 1) {
             for value_index in value_indices {
                 let mut total_value = String::new();
-                if let Some((anno_key, carrying_node_name)) = group_of_bundles.get(*value_index - 1)
+                if let Some((Some(anno_key), carrying_node_name)) =
+                    group_of_bundles.get(*value_index - 1)
                 {
                     let node_id_o = graph.get_node_id_from_name(carrying_node_name)?;
                     let value_node_id = node_id_o.unwrap();
