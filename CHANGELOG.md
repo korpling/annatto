@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - mapping annotations now correctly extracts the id of the node to apply a new annotation to
+- linking nodes failed to extract node names when graphANNIS responded with a node name only (e. g. in case of "tok" or "node" in a query)
 
 ## [0.3.1] - 2023-08-04
 
