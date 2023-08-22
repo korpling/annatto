@@ -130,8 +130,9 @@ fn gather_link_data(
     let node_annos = graph.get_node_annos();
     for group_of_bundles in retrieve_nodes_with_values(cs, query.to_string())? {
         if let Some((_, link_node_name)) = group_of_bundles.get(node_index - 1) {
+            let mut target_data = Vec::new();
+            let mut total_value = String::new();
             for value_index in value_indices {
-                let mut total_value = String::new();
                 if let Some((Some(anno_key), carrying_node_name)) =
                     group_of_bundles.get(*value_index - 1)
                 {
@@ -153,12 +154,9 @@ fn gather_link_data(
                     });
                     sender.send(message)?;
                 }
-                if let Some(node_name_list) = data.get_mut(&total_value) {
-                    node_name_list.push(link_node_name.to_string());
-                } else {
-                    data.insert(total_value, vec![link_node_name.to_string()]);
-                }
+                target_data.push(link_node_name.to_string());
             }
+            data.insert(total_value, target_data);
         } else if let Some(sender) = tx {
             let message = StatusMessage::Failed(AnnattoError::Manipulator {
                 reason: format!(
