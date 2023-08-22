@@ -32,6 +32,8 @@ pub struct LinkNodes {
     link_layer: String,
     #[serde(default)]
     link_name: String,
+    #[serde(default)]
+    value_sep: String,
 }
 
 pub const MODULE_NAME: &str = "link_nodes";
@@ -58,6 +60,7 @@ impl Manipulator for LinkNodes {
             self.source_query.to_string(),
             self.source_node,
             &self.source_value,
+            &self.value_sep,
             &tx,
         )?;
         let link_targets = gather_link_data(
@@ -66,6 +69,7 @@ impl Manipulator for LinkNodes {
             self.target_query.to_string(),
             self.target_node,
             &self.target_value,
+            &self.value_sep,
             &tx,
         )?;
         let mut update = self.link_nodes(link_sources, link_targets)?;
@@ -124,6 +128,7 @@ fn gather_link_data(
     query: String,
     node_index: usize,
     value_indices: &[usize],
+    sep: &String,
     tx: &Option<StatusSender>,
 ) -> Result<BTreeMap<String, Vec<String>>, Box<dyn std::error::Error>> {
     let mut data: BTreeMap<String, Vec<String>> = BTreeMap::new();
@@ -131,7 +136,7 @@ fn gather_link_data(
     for group_of_bundles in retrieve_nodes_with_values(cs, query.to_string())? {
         if let Some((_, link_node_name)) = group_of_bundles.get(node_index - 1) {
             let mut target_data = Vec::new();
-            let mut total_value = String::new();
+            let mut value_segments = Vec::new();
             for value_index in value_indices {
                 if let Some((Some(anno_key), carrying_node_name)) =
                     group_of_bundles.get(*value_index - 1)
@@ -143,7 +148,7 @@ fn gather_link_data(
                         .unwrap() // this CANNOT be None
                         .trim()
                         .to_lowercase();
-                    total_value.push_str(&anno_value); // simply concatenate values
+                    value_segments.push(anno_value); // simply concatenate values
                 } else if let Some(sender) = tx {
                     let message = StatusMessage::Failed(AnnattoError::Manipulator {
                         reason: format!(
@@ -156,7 +161,8 @@ fn gather_link_data(
                 }
                 target_data.push(link_node_name.to_string());
             }
-            data.insert(total_value, target_data);
+            let joined_value = value_segments.join(sep);
+            data.insert(joined_value, target_data);
         } else if let Some(sender) = tx {
             let message = StatusMessage::Failed(AnnattoError::Manipulator {
                 reason: format!(
@@ -239,6 +245,7 @@ mod tests {
             link_type: AnnotationComponentType::Pointing,
             link_layer: "".to_string(),
             link_name: "morphology".to_string(),
+            value_sep: "".to_string(),
         };
         let dummy_dir = tempdir_in(temp_dir())?;
         let dummy_path = dummy_dir.path();

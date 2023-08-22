@@ -5,10 +5,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- a separator for joining node values in `link` can be set with attribute `value_sep`
+
 ### Fixed
 
 - mapping annotations now correctly extracts the id of the node to apply a new annotation to
 - linking nodes failed to extract node names when graphANNIS responded with a node name only (e. g. in case of "tok" or "node" in a query)
+- linking nodes did not concatenate the values of multiple nodes properly, this is now fixed
 
 ## [0.3.1] - 2023-08-04
 
