@@ -401,4 +401,29 @@ mod tests {
         assert!(import.is_err());
         assert_ne!(receiver.into_iter().count(), 0);
     }
+
+    #[test]
+    fn spreadsheet_import_dirty_passes_with_warnings() {
+        let mut col_map = BTreeMap::new();
+        col_map.insert(
+            "dipl".to_string(),
+            vec!["sentence".to_string(), "seg".to_string()]
+                .into_iter()
+                .collect(),
+        );
+        col_map.insert(
+            "norm".to_string(),
+            vec!["pos".to_string(), "lemma".to_string()]
+                .into_iter()
+                .collect(),
+        );
+        let importer = ImportSpreadsheet {
+            column_map: col_map,
+        };
+        let path = Path::new("./tests/data/import/xlsx/warnings/xlsx/");
+        let (sender, receiver) = mpsc::channel();
+        let import = importer.import_corpus(path, Some(sender));
+        assert!(import.is_ok());
+        assert_ne!(receiver.into_iter().count(), 0);
+    }
 }
