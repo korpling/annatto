@@ -50,7 +50,9 @@ fn import_workbook(
         let header_row = sheet.get_collection_by_row(&1);
         for cell in header_row {
             let name = cell.get_cell_value().get_value().trim().to_string();
-            m.insert(name, cell.get_coordinate().get_col_num() - 1);
+            if !name.is_empty() {
+                m.insert(name, cell.get_coordinate().get_col_num() - 1);
+            }
         }
         m
     };
@@ -79,7 +81,16 @@ fn import_workbook(
             let col_1i = start_col.get_num();
             let end_col = match cell_range.get_coordinate_end_col().as_ref() {
                 Some(c) => c,
-                None => start_col,
+                None => {
+                    if let Some(sender) = tx {
+                        let message = StatusMessage::Info(format!(
+                            "Could not parse end column of merged cell {}, using start column value",
+                            cell_range.get_range()
+                        ));
+                        sender.send(message)?;
+                    }
+                    start_col
+                }
             };
             if col_1i != end_col.get_num() {
                 // cannot handle that kind of stuff
@@ -106,13 +117,30 @@ fn import_workbook(
             let start_1i = start_row.get_num();
             let end_row = match cell_range.get_coordinate_end_row().as_ref() {
                 Some(r) => r,
-                None => start_row,
+                None => {
+                    if let Some(sender) = tx {
+                        let message = StatusMessage::Info(format!(
+                            "Could not parse end row of merged cell {}, using start row value",
+                            cell_range.get_range()
+                        ));
+                        sender.send(message)?;
+                    }
+                    start_row
+                }
             };
             let end_1i = end_row.get_num();
-            let obsolete_indices = (*start_1i + 1..*end_1i + 1).collect::<BTreeSet<u32>>();
-            obsolete_indices.iter().for_each(|e| {
-                m.get_mut(&(col_1i - 1)).unwrap().remove(e);
-            });
+            if let Some(row_set) = m.get_mut(&(col_1i - 1)) {
+                let obsolete_indices = (*start_1i + 1..*end_1i + 1).collect::<BTreeSet<u32>>();
+                obsolete_indices.iter().for_each(|e| {
+                    row_set.remove(e);
+                });
+            } else if let Some(sender) = tx {
+                let message = StatusMessage::Warning(format!(
+                    "Merged cells {} could not be mapped to a known column",
+                    cell_range.get_range()
+                ));
+                sender.send(message)?;
+            }
         }
         m
     };
@@ -253,7 +281,7 @@ impl Importer for ImportSpreadsheet {
 
 #[cfg(test)]
 mod tests {
-    use std::env::temp_dir;
+    use std::{env::temp_dir, sync::mpsc};
 
     use graphannis::{
         corpusstorage::{QueryLanguage, SearchQuery},
@@ -280,7 +308,7 @@ mod tests {
         let importer = ImportSpreadsheet {
             column_map: col_map,
         };
-        let path = Path::new("./tests/data/import/xlsx/");
+        let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
         let import = importer.import_corpus(path, None);
         let mut u = import?;
         let mut g = AnnotationGraph::new(on_disk)?;
@@ -347,5 +375,30 @@ mod tests {
             "Spreadsheet import failed with error: {:?}",
             import.err()
         );
+    }
+
+    #[test]
+    fn spreadsheet_import_dirty_fails_and_raises_warnings() {
+        let mut col_map = BTreeMap::new();
+        col_map.insert(
+            "dipl".to_string(),
+            vec!["sentence".to_string(), "seg".to_string()]
+                .into_iter()
+                .collect(),
+        );
+        col_map.insert(
+            "norm".to_string(),
+            vec!["pos".to_string(), "lemma".to_string()]
+                .into_iter()
+                .collect(),
+        );
+        let importer = ImportSpreadsheet {
+            column_map: col_map,
+        };
+        let path = Path::new("./tests/data/import/xlsx/dirty/xlsx/");
+        let (sender, receiver) = mpsc::channel();
+        let import = importer.import_corpus(path, Some(sender));
+        assert!(import.is_err());
+        assert_ne!(receiver.into_iter().count(), 0);
     }
 }
