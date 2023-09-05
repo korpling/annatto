@@ -14,6 +14,7 @@ use serde_derive::Deserialize;
 use crate::{
     error::AnnattoError,
     util::{get_all_files, insert_corpus_nodes_from_path},
+    workflow::{StatusMessage, StatusSender},
     Module,
 };
 
@@ -38,6 +39,7 @@ fn import_workbook(
     root_path: &Path,
     path: &Path,
     column_map: &BTreeMap<String, BTreeSet<String>>,
+    tx: &Option<StatusSender>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let doc_path = insert_corpus_nodes_from_path(update, root_path, path)?;
     let book = umya_spreadsheet::reader::xlsx::read(path)?;
@@ -48,7 +50,9 @@ fn import_workbook(
         let header_row = sheet.get_collection_by_row(&1);
         for cell in header_row {
             let name = cell.get_cell_value().get_value().trim().to_string();
-            m.insert(name, cell.get_coordinate().get_col_num() - 1);
+            if !name.is_empty() {
+                m.insert(name, cell.get_coordinate().get_col_num() - 1);
+            }
         }
         m
     };
@@ -61,9 +65,33 @@ fn import_workbook(
             );
         }
         for cell_range in merged_cells {
-            let start_col = cell_range.get_coordinate_start_col().as_ref().unwrap();
+            let start_col = match cell_range.get_coordinate_start_col().as_ref() {
+                Some(c) => c,
+                None => {
+                    if let Some(sender) = tx {
+                        let message = StatusMessage::Warning(format!(
+                            "Could not parse start column of merged cell {}",
+                            cell_range.get_range()
+                        ));
+                        sender.send(message)?;
+                    }
+                    continue;
+                }
+            };
             let col_1i = start_col.get_num();
-            let end_col = cell_range.get_coordinate_end_col().as_ref().unwrap();
+            let end_col = match cell_range.get_coordinate_end_col().as_ref() {
+                Some(c) => c,
+                None => {
+                    if let Some(sender) = tx {
+                        let message = StatusMessage::Info(format!(
+                            "Could not parse end column of merged cell {}, using start column value",
+                            cell_range.get_range()
+                        ));
+                        sender.send(message)?;
+                    }
+                    start_col
+                }
+            };
             if col_1i != end_col.get_num() {
                 // cannot handle that kind of stuff
                 let err = AnnattoError::Import {
@@ -73,14 +101,46 @@ fn import_workbook(
                 };
                 return Err(Box::new(err));
             }
-            let start_row = cell_range.get_coordinate_start_row().as_ref().unwrap();
+            let start_row = match cell_range.get_coordinate_start_row().as_ref() {
+                Some(r) => r,
+                None => {
+                    if let Some(sender) = tx {
+                        let message = StatusMessage::Warning(format!(
+                            "Could not parse start row of merged cell {}",
+                            cell_range.get_range()
+                        ));
+                        sender.send(message)?;
+                    }
+                    continue;
+                }
+            };
             let start_1i = start_row.get_num();
-            let end_row = cell_range.get_coordinate_end_row().as_ref().unwrap();
+            let end_row = match cell_range.get_coordinate_end_row().as_ref() {
+                Some(r) => r,
+                None => {
+                    if let Some(sender) = tx {
+                        let message = StatusMessage::Info(format!(
+                            "Could not parse end row of merged cell {}, using start row value",
+                            cell_range.get_range()
+                        ));
+                        sender.send(message)?;
+                    }
+                    start_row
+                }
+            };
             let end_1i = end_row.get_num();
-            let obsolete_indices = (*start_1i + 1..*end_1i + 1).collect::<BTreeSet<u32>>();
-            obsolete_indices.iter().for_each(|e| {
-                m.get_mut(&(col_1i - 1)).unwrap().remove(e);
-            });
+            if let Some(row_set) = m.get_mut(&(col_1i - 1)) {
+                let obsolete_indices = (*start_1i + 1..*end_1i + 1).collect::<BTreeSet<u32>>();
+                obsolete_indices.iter().for_each(|e| {
+                    row_set.remove(e);
+                });
+            } else if let Some(sender) = tx {
+                let message = StatusMessage::Warning(format!(
+                    "Merged cells {} could not be mapped to a known column",
+                    cell_range.get_range()
+                ));
+                sender.send(message)?;
+            }
         }
         m
     };
@@ -134,7 +194,10 @@ fn import_workbook(
                 row_nums.sort();
                 let mut nodes = Vec::new();
                 for (start_row, end_row_excl) in row_nums.into_iter().tuple_windows() {
-                    let cell = sheet.get_cell(((col_0i + 1), *start_row)).unwrap();
+                    let cell = match sheet.get_cell(((col_0i + 1), *start_row)) {
+                        Some(cl) => cl,
+                        None => continue,
+                    };
                     let cell_value = cell.get_value();
                     let value = cell_value.trim();
                     if value.is_empty() {
@@ -204,13 +267,13 @@ impl Importer for ImportSpreadsheet {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
-        _tx: Option<crate::workflow::StatusSender>,
+        tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
         let column_map = &self.column_map;
         let all_files = get_all_files(input_path, vec!["xlsx"])?;
         all_files.into_iter().try_for_each(|pb| {
-            import_workbook(&mut update, input_path, pb.as_path(), column_map)
+            import_workbook(&mut update, input_path, pb.as_path(), column_map, &tx)
         })?;
         Ok(update)
     }
@@ -218,7 +281,7 @@ impl Importer for ImportSpreadsheet {
 
 #[cfg(test)]
 mod tests {
-    use std::env::temp_dir;
+    use std::{env::temp_dir, sync::mpsc};
 
     use graphannis::{
         corpusstorage::{QueryLanguage, SearchQuery},
@@ -245,7 +308,7 @@ mod tests {
         let importer = ImportSpreadsheet {
             column_map: col_map,
         };
-        let path = Path::new("./tests/data/import/xlsx/");
+        let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
         let import = importer.import_corpus(path, None);
         let mut u = import?;
         let mut g = AnnotationGraph::new(on_disk)?;
@@ -274,7 +337,9 @@ mod tests {
         let corpus_name = "current";
         let tmp_dir = tempdir_in(temp_dir())?;
         g.save_to(&tmp_dir.path().join(corpus_name))?;
-        let cs = CorpusStorage::with_auto_cache_size(&tmp_dir.path(), true).unwrap();
+        let cs_r = CorpusStorage::with_auto_cache_size(&tmp_dir.path(), true);
+        assert!(cs_r.is_ok());
+        let cs = cs_r.unwrap();
         for (query_s, expected_result) in queries_and_results {
             let query = SearchQuery {
                 corpus_names: &[corpus_name],
@@ -310,5 +375,55 @@ mod tests {
             "Spreadsheet import failed with error: {:?}",
             import.err()
         );
+    }
+
+    #[test]
+    fn spreadsheet_import_dirty_fails_and_raises_warnings() {
+        let mut col_map = BTreeMap::new();
+        col_map.insert(
+            "dipl".to_string(),
+            vec!["sentence".to_string(), "seg".to_string()]
+                .into_iter()
+                .collect(),
+        );
+        col_map.insert(
+            "norm".to_string(),
+            vec!["pos".to_string(), "lemma".to_string()]
+                .into_iter()
+                .collect(),
+        );
+        let importer = ImportSpreadsheet {
+            column_map: col_map,
+        };
+        let path = Path::new("./tests/data/import/xlsx/dirty/xlsx/");
+        let (sender, receiver) = mpsc::channel();
+        let import = importer.import_corpus(path, Some(sender));
+        assert!(import.is_err());
+        assert_ne!(receiver.into_iter().count(), 0);
+    }
+
+    #[test]
+    fn spreadsheet_import_dirty_passes_with_warnings() {
+        let mut col_map = BTreeMap::new();
+        col_map.insert(
+            "dipl".to_string(),
+            vec!["sentence".to_string(), "seg".to_string()]
+                .into_iter()
+                .collect(),
+        );
+        col_map.insert(
+            "norm".to_string(),
+            vec!["pos".to_string(), "lemma".to_string()]
+                .into_iter()
+                .collect(),
+        );
+        let importer = ImportSpreadsheet {
+            column_map: col_map,
+        };
+        let path = Path::new("./tests/data/import/xlsx/warnings/xlsx/");
+        let (sender, receiver) = mpsc::channel();
+        let import = importer.import_corpus(path, Some(sender));
+        assert!(import.is_ok());
+        assert_ne!(receiver.into_iter().count(), 0);
     }
 }
