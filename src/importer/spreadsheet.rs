@@ -520,4 +520,34 @@ mod tests {
             import.err()
         );
     }
+
+    #[test]
+    fn spreadsheet_invalid_fallback_value() {
+        let import = run_spreadsheet_import(false, Some("tok".to_string()));
+        assert!(
+            import.is_ok(),
+            "Spreadsheet import failed with error: {:?}",
+            import.err()
+        );
+        let mut col_map = BTreeMap::new();
+        col_map.insert(
+            "dipl".to_string(),
+            vec!["sentence".to_string(), "seg".to_string()]
+                .into_iter()
+                .collect(),
+        );
+        col_map.insert(
+            "norm".to_string(),
+            vec!["pos".to_string()].into_iter().collect(),
+        );
+        let importer = ImportSpreadsheet {
+            column_map: col_map,
+            fallback: Some("tok".to_string()),
+        };
+        let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
+        let (sender, receiver) = mpsc::channel();
+        let import = importer.import_corpus(path, Some(sender));
+        assert!(import.is_ok());
+        assert_ne!(receiver.into_iter().count(), 0);
+    }
 }
