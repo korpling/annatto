@@ -358,6 +358,13 @@ mod tests {
         let mut u = import?;
         let mut g = AnnotationGraph::new(on_disk)?;
         g.apply_update(&mut u, |_| {})?;
+        let lemma_count = match &importer.fallback {
+            Some(v) => match &v[..] {
+                "norm" => 4,
+                _ => 0,
+            },
+            _ => 4,
+        };
         let queries_and_results: [(&str, u64); 19] = [
             ("dipl", 4),
             ("norm", 4),
@@ -375,9 +382,9 @@ mod tests {
             ("dipl:seg _l_ dipl", 2),
             ("dipl:seg _r_ dipl", 2),
             ("norm:pos", 4),
-            ("norm:lemma", 4),
+            ("norm:lemma", lemma_count),
             ("norm:pos _=_ norm", 4),
-            ("norm:lemma _=_ norm", 4),
+            ("norm:lemma _=_ norm", lemma_count),
         ];
         let corpus_name = "current";
         let tmp_dir = tempdir_in(temp_dir())?;
@@ -487,6 +494,26 @@ mod tests {
     #[test]
     fn spreadsheet_fallback_value_on_disk() {
         let import = run_spreadsheet_import(false, Some("norm".to_string()));
+        assert!(
+            import.is_ok(),
+            "Spreadsheet import failed with error: {:?}",
+            import.err()
+        );
+    }
+
+    #[test]
+    fn spreadsheet_empty_fallback_value_in_mem() {
+        let import = run_spreadsheet_import(true, Some("".to_string()));
+        assert!(
+            import.is_ok(),
+            "Spreadsheet import failed with error: {:?}",
+            import.err()
+        );
+    }
+
+    #[test]
+    fn spreadsheet_empty_fallback_value_on_disk() {
+        let import = run_spreadsheet_import(false, Some("".to_string()));
         assert!(
             import.is_ok(),
             "Spreadsheet import failed with error: {:?}",
