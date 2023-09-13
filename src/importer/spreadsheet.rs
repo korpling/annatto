@@ -26,6 +26,7 @@ pub const MODULE_NAME: &str = "import_spreadsheet";
 #[serde(default)]
 pub struct ImportSpreadsheet {
     column_map: BTreeMap<String, BTreeSet<String>>,
+    fallback: Option<String>,
 }
 
 impl Module for ImportSpreadsheet {
@@ -39,19 +40,37 @@ fn import_workbook(
     root_path: &Path,
     path: &Path,
     column_map: &BTreeMap<String, BTreeSet<String>>,
+    fallback: &Option<String>,
     tx: &Option<StatusSender>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let doc_path = insert_corpus_nodes_from_path(update, root_path, path)?;
     let book = umya_spreadsheet::reader::xlsx::read(path)?;
     let sheet = book.get_sheet(&0)?;
     let merged_cells = sheet.get_merge_cells();
+    let mut fullmap = column_map.clone();
+    let known_names = column_map.values().flatten().collect::<BTreeSet<&String>>();
+    if let Some(fallback_name) = &fallback {
+        if fallback_name.is_empty() {
+            fullmap.insert("".to_string(), BTreeSet::new());
+        }
+    }
     let name_to_col_0index = {
         let mut m = BTreeMap::new();
         let header_row = sheet.get_collection_by_row(&1);
         for cell in header_row {
             let name = cell.get_cell_value().get_value().trim().to_string();
             if !name.is_empty() {
-                m.insert(name, cell.get_coordinate().get_col_num() - 1);
+                m.insert(name.to_string(), cell.get_coordinate().get_col_num() - 1);
+                if let Some(fallback_name) = &fallback {
+                    if !known_names.contains(&name) && !fullmap.contains_key(&name) {
+                        if let Some(anno_names) = fullmap.get_mut(fallback_name) {
+                            anno_names.insert(name);
+                        } else if let Some(sender) = tx {
+                            let message = StatusMessage::Warning(format!("`{fallback_name}` is not a valid fallback. Only empty string and keys of the column map are allowed. Column `{name}` will be ignored."));
+                            sender.send(message)?;
+                        }
+                    }
+                }
             }
         }
         m
@@ -178,8 +197,12 @@ fn import_workbook(
             })?;
             Ok::<(), Box<dyn std::error::Error>>(())
         })?;
-    for (tok_name, anno_names) in column_map {
-        let mut names = vec![tok_name];
+    for (tok_name, anno_names) in &fullmap {
+        let mut names = if tok_name.is_empty() {
+            vec![]
+        } else {
+            vec![tok_name]
+        };
         names.extend(anno_names);
         for name in names {
             let index_opt = match name_to_col_0index.get(name) {
@@ -211,18 +234,22 @@ fn import_workbook(
                         node_name: node_name.to_string(),
                         node_type: "node".to_string(),
                     })?;
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: ANNIS_NS.to_string(),
-                        anno_name: "tok".to_string(),
-                        anno_value: value.to_string(),
-                    })?;
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: ANNIS_NS.to_string(),
-                        anno_name: "layer".to_string(),
-                        anno_value: tok_name.to_string(),
-                    })?;
+                    if name == tok_name {
+                        update.add_event(UpdateEvent::AddNodeLabel {
+                            node_name: node_name.to_string(),
+                            anno_ns: ANNIS_NS.to_string(),
+                            anno_name: "tok".to_string(),
+                            anno_value: value.to_string(),
+                        })?;
+                    }
+                    if !tok_name.is_empty() {
+                        update.add_event(UpdateEvent::AddNodeLabel {
+                            node_name: node_name.to_string(),
+                            anno_ns: ANNIS_NS.to_string(),
+                            anno_name: "layer".to_string(),
+                            anno_value: tok_name.to_string(),
+                        })?;
+                    }
                     update.add_event(UpdateEvent::AddNodeLabel {
                         node_name: node_name.to_string(),
                         anno_ns: tok_name.to_string(),
@@ -254,9 +281,11 @@ fn import_workbook(
                         },
                     )?;
                 }
-            } else {
-                // TODO warning
-                continue; // no tokenization, no mapping of dependent annotations
+            } else if let Some(sender) = tx {
+                let message =
+                    StatusMessage::Info(format!("No column `{name}` in file {}", &doc_path));
+                sender.send(message)?;
+                continue;
             }
         }
     }
@@ -273,7 +302,14 @@ impl Importer for ImportSpreadsheet {
         let column_map = &self.column_map;
         let all_files = get_all_files(input_path, vec!["xlsx"])?;
         all_files.into_iter().try_for_each(|pb| {
-            import_workbook(&mut update, input_path, pb.as_path(), column_map, &tx)
+            import_workbook(
+                &mut update,
+                input_path,
+                pb.as_path(),
+                column_map,
+                &self.fallback,
+                &tx,
+            )
         })?;
         Ok(update)
     }
@@ -291,7 +327,10 @@ mod tests {
 
     use super::*;
 
-    fn run_spreadsheet_import(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
+    fn run_spreadsheet_import(
+        on_disk: bool,
+        fallback: Option<String>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let mut col_map = BTreeMap::new();
         col_map.insert(
             "dipl".to_string(),
@@ -301,18 +340,31 @@ mod tests {
         );
         col_map.insert(
             "norm".to_string(),
-            vec!["pos".to_string(), "lemma".to_string()]
-                .into_iter()
-                .collect(),
+            {
+                match fallback {
+                    None => vec!["pos".to_string(), "lemma".to_string()],
+                    Some(_) => vec!["pos".to_string()],
+                }
+            }
+            .into_iter()
+            .collect(),
         );
         let importer = ImportSpreadsheet {
             column_map: col_map,
+            fallback: fallback,
         };
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
         let import = importer.import_corpus(path, None);
         let mut u = import?;
         let mut g = AnnotationGraph::new(on_disk)?;
         g.apply_update(&mut u, |_| {})?;
+        let lemma_count = match &importer.fallback {
+            Some(v) => match &v[..] {
+                "norm" => 4,
+                _ => 0,
+            },
+            _ => 4,
+        };
         let queries_and_results: [(&str, u64); 19] = [
             ("dipl", 4),
             ("norm", 4),
@@ -330,9 +382,9 @@ mod tests {
             ("dipl:seg _l_ dipl", 2),
             ("dipl:seg _r_ dipl", 2),
             ("norm:pos", 4),
-            ("norm:lemma", 4),
+            ("norm:lemma", lemma_count),
             ("norm:pos _=_ norm", 4),
-            ("norm:lemma _=_ norm", 4),
+            ("norm:lemma _=_ norm", lemma_count),
         ];
         let corpus_name = "current";
         let tmp_dir = tempdir_in(temp_dir())?;
@@ -359,7 +411,7 @@ mod tests {
 
     #[test]
     fn spreadsheet_import_in_mem() {
-        let import = run_spreadsheet_import(false);
+        let import = run_spreadsheet_import(false, None);
         assert!(
             import.is_ok(),
             "Spreadsheet import failed with error: {:?}",
@@ -369,7 +421,7 @@ mod tests {
 
     #[test]
     fn spreadsheet_import_on_disk() {
-        let import = run_spreadsheet_import(true);
+        let import = run_spreadsheet_import(true, None);
         assert!(
             import.is_ok(),
             "Spreadsheet import failed with error: {:?}",
@@ -394,6 +446,7 @@ mod tests {
         );
         let importer = ImportSpreadsheet {
             column_map: col_map,
+            fallback: None,
         };
         let path = Path::new("./tests/data/import/xlsx/dirty/xlsx/");
         let (sender, receiver) = mpsc::channel();
@@ -419,8 +472,79 @@ mod tests {
         );
         let importer = ImportSpreadsheet {
             column_map: col_map,
+            fallback: None,
         };
         let path = Path::new("./tests/data/import/xlsx/warnings/xlsx/");
+        let (sender, receiver) = mpsc::channel();
+        let import = importer.import_corpus(path, Some(sender));
+        assert!(import.is_ok());
+        assert_ne!(receiver.into_iter().count(), 0);
+    }
+
+    #[test]
+    fn spreadsheet_fallback_value_in_mem() {
+        let import = run_spreadsheet_import(true, Some("norm".to_string()));
+        assert!(
+            import.is_ok(),
+            "Spreadsheet import failed with error: {:?}",
+            import.err()
+        );
+    }
+
+    #[test]
+    fn spreadsheet_fallback_value_on_disk() {
+        let import = run_spreadsheet_import(false, Some("norm".to_string()));
+        assert!(
+            import.is_ok(),
+            "Spreadsheet import failed with error: {:?}",
+            import.err()
+        );
+    }
+
+    #[test]
+    fn spreadsheet_empty_fallback_value_in_mem() {
+        let import = run_spreadsheet_import(true, Some("".to_string()));
+        assert!(
+            import.is_ok(),
+            "Spreadsheet import failed with error: {:?}",
+            import.err()
+        );
+    }
+
+    #[test]
+    fn spreadsheet_empty_fallback_value_on_disk() {
+        let import = run_spreadsheet_import(false, Some("".to_string()));
+        assert!(
+            import.is_ok(),
+            "Spreadsheet import failed with error: {:?}",
+            import.err()
+        );
+    }
+
+    #[test]
+    fn spreadsheet_invalid_fallback_value() {
+        let import = run_spreadsheet_import(false, Some("tok".to_string()));
+        assert!(
+            import.is_ok(),
+            "Spreadsheet import failed with error: {:?}",
+            import.err()
+        );
+        let mut col_map = BTreeMap::new();
+        col_map.insert(
+            "dipl".to_string(),
+            vec!["sentence".to_string(), "seg".to_string()]
+                .into_iter()
+                .collect(),
+        );
+        col_map.insert(
+            "norm".to_string(),
+            vec!["pos".to_string()].into_iter().collect(),
+        );
+        let importer = ImportSpreadsheet {
+            column_map: col_map,
+            fallback: Some("tok".to_string()),
+        };
+        let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
         let (sender, receiver) = mpsc::channel();
         let import = importer.import_corpus(path, Some(sender));
         assert!(import.is_ok());

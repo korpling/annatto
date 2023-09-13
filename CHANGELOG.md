@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - a separator for joining node values in `link` can be set with attribute `value_sep`
+- spreadsheet imports can now be configured with a fallback token column for annotation names not mentioned in a column map, an empty string means map to timeline directly
 
 ### Fixed
 
