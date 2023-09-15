@@ -21,6 +21,16 @@ pub const MODULE_NAME: &str = "check";
 pub struct Check {
     tests: Vec<Test>,
     report: Option<ReportLevel>,
+    #[serde(default)]
+    policy: FailurePolicy,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum FailurePolicy {
+    Warn,
+    #[default]
+    Fail,
 }
 
 #[derive(Deserialize)]
@@ -53,7 +63,15 @@ impl Manipulator for Check {
             .map(|(d, _)| d)
             .collect_vec();
         if !failed_checks.is_empty() {
-            let msg = StatusMessage::Failed(AnnattoError::ChecksFailed { failed_checks });
+            let msg = match self.policy {
+                FailurePolicy::Warn => StatusMessage::Warning(format!(
+                    "One or more checks failed:\n{}",
+                    failed_checks.join("\n")
+                )),
+                FailurePolicy::Fail => {
+                    StatusMessage::Failed(AnnattoError::ChecksFailed { failed_checks })
+                }
+            };
             if let Some(ref sender) = tx {
                 sender.send(msg)?;
             }
@@ -491,6 +509,47 @@ mod tests {
         }
         assert_eq!(passing, failing);
         Ok(())
+    }
+
+    #[test]
+    fn test_layer_check_fail_policy_warn() {
+        let gr = input_graph(false);
+        assert!(gr.is_ok());
+        let mut g = gr.unwrap();
+        let toml_path = "./tests/data/graph_op/check/serialized_layer_check_failing_warn.toml";
+        if let Ok(s) = fs::read_to_string(toml_path) {
+            let processor_opt: Result<Check, _> = toml::from_str(s.as_str());
+            assert!(processor_opt.is_ok());
+            let check = processor_opt.unwrap();
+            let (sender, receiver) = mpsc::channel();
+            let dummy_value = temp_dir();
+            let run = check.manipulate_corpus(&mut g, dummy_value.as_path(), Some(sender));
+            assert!(run.is_ok());
+            assert_eq!(
+                receiver
+                    .into_iter()
+                    .filter(|msg| matches!(msg, StatusMessage::Warning { .. }))
+                    .count(),
+                1
+            );
+        }
+        let toml_path_fail = "./tests/data/graph_op/check/serialized_layer_check_failing.toml";
+        if let Ok(s) = fs::read_to_string(toml_path_fail) {
+            let processor_opt: Result<Check, _> = toml::from_str(s.as_str());
+            assert!(processor_opt.is_ok());
+            let check = processor_opt.unwrap();
+            let (sender, receiver) = mpsc::channel();
+            let dummy_value = temp_dir();
+            let run = check.manipulate_corpus(&mut g, dummy_value.as_path(), Some(sender));
+            assert!(run.is_ok());
+            assert_eq!(
+                receiver
+                    .into_iter()
+                    .filter(|msg| matches!(msg, StatusMessage::Failed { .. }))
+                    .count(),
+                1
+            );
+        }
     }
 
     #[test]
