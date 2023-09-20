@@ -306,15 +306,6 @@ impl Importer for ImportSpreadsheet {
             .into_iter()
             .enumerate()
             .try_for_each(|(job_nr, pb)| {
-                let result = import_workbook(
-                    &mut update,
-                    input_path,
-                    pb.as_path(),
-                    column_map,
-                    &self.fallback,
-                    &tx,
-                );
-
                 if let Some(tx) = &tx {
                     tx.send(StatusMessage::Progress {
                         id: self.step_id(Some(&pb)),
@@ -322,7 +313,14 @@ impl Importer for ImportSpreadsheet {
                         finished_work: job_nr,
                     })?;
                 }
-                result
+                import_workbook(
+                    &mut update,
+                    input_path,
+                    pb.as_path(),
+                    column_map,
+                    &self.fallback,
+                    &tx,
+                )
             })?;
         Ok(update)
     }
