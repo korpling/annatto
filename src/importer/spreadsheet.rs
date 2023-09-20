@@ -301,16 +301,27 @@ impl Importer for ImportSpreadsheet {
         let mut update = GraphUpdate::default();
         let column_map = &self.column_map;
         let all_files = get_all_files(input_path, vec!["xlsx"])?;
-        all_files.into_iter().try_for_each(|pb| {
-            import_workbook(
-                &mut update,
-                input_path,
-                pb.as_path(),
-                column_map,
-                &self.fallback,
-                &tx,
-            )
-        })?;
+        let number_of_files = all_files.len();
+        all_files
+            .into_iter()
+            .enumerate()
+            .try_for_each(|(job_nr, pb)| {
+                if let Some(tx) = &tx {
+                    tx.send(StatusMessage::Progress {
+                        id: self.step_id(Some(&pb)),
+                        total_work: number_of_files,
+                        finished_work: job_nr,
+                    })?;
+                }
+                import_workbook(
+                    &mut update,
+                    input_path,
+                    pb.as_path(),
+                    column_map,
+                    &self.fallback,
+                    &tx,
+                )
+            })?;
         Ok(update)
     }
 }

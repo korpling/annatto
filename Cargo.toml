@@ -56,12 +56,13 @@ tower = {version = "0.4", features = ["util"]}
 default = ["embed-documentation"]
 embed-documentation = ["dep:include_dir", "dep:axum", "dep:tokio", "dep:mime_guess", "dep:portpicker", "dep:open"]
 
-# Compile some of the dev dependencies in release mode
-[profile.dev.package.insta]
-opt-level = 3
-
-[profile.dev.package.similar]
-opt-level = 3
+# Compile some of the dependencies in release mode if when we are ourself in
+# "dev" mode (like building debug binaries or running tests)
+[profile.dev.package]
+graphannis-core.opt-level = 3
+graphannis.opt-level = 3
+insta.opt-level = 3
+similar.opt-level = 3
 
 [profile.release]
 panic = 'abort'
