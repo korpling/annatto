@@ -13,8 +13,8 @@ use serde_derive::Deserialize;
 
 use crate::{
     error::AnnattoError,
+    progress::ProgressReporter,
     util::{get_all_files, insert_corpus_nodes_from_path},
-    workflow::{StatusMessage, StatusSender},
     Module,
 };
 
@@ -41,11 +41,15 @@ fn import_workbook(
     path: &Path,
     column_map: &BTreeMap<String, BTreeSet<String>>,
     fallback: &Option<String>,
-    tx: &Option<StatusSender>,
-) -> Result<(), Box<dyn std::error::Error>> {
+    progress_reporter: &ProgressReporter,
+) -> Result<(), AnnattoError> {
     let doc_path = insert_corpus_nodes_from_path(update, root_path, path)?;
     let book = umya_spreadsheet::reader::xlsx::read(path)?;
-    let sheet = book.get_sheet(&0)?;
+    let sheet = book.get_sheet(&0).map_err(|e| AnnattoError::Import {
+        reason: e.to_string(),
+        importer: MODULE_NAME.to_string(),
+        path: path.to_path_buf(),
+    })?;
     let merged_cells = sheet.get_merge_cells();
     let mut fullmap = column_map.clone();
     let known_names = column_map.values().flatten().collect::<BTreeSet<&String>>();
@@ -65,9 +69,9 @@ fn import_workbook(
                     if !known_names.contains(&name) && !fullmap.contains_key(&name) {
                         if let Some(anno_names) = fullmap.get_mut(fallback_name) {
                             anno_names.insert(name);
-                        } else if let Some(sender) = tx {
-                            let message = StatusMessage::Warning(format!("`{fallback_name}` is not a valid fallback. Only empty string and keys of the column map are allowed. Column `{name}` will be ignored."));
-                            sender.send(message)?;
+                        } else {
+                            progress_reporter.warn(&format!(
+                                "`{fallback_name}` is not a valid fallback. Only empty string and keys of the column map are allowed. Column `{name}` will be ignored."))?;
                         }
                     }
                 }
@@ -87,13 +91,10 @@ fn import_workbook(
             let start_col = match cell_range.get_coordinate_start_col().as_ref() {
                 Some(c) => c,
                 None => {
-                    if let Some(sender) = tx {
-                        let message = StatusMessage::Warning(format!(
-                            "Could not parse start column of merged cell {}",
-                            cell_range.get_range()
-                        ));
-                        sender.send(message)?;
-                    }
+                    progress_reporter.warn(&format!(
+                        "Could not parse start column of merged cell {}",
+                        cell_range.get_range()
+                    ))?;
                     continue;
                 }
             };
@@ -101,13 +102,10 @@ fn import_workbook(
             let end_col = match cell_range.get_coordinate_end_col().as_ref() {
                 Some(c) => c,
                 None => {
-                    if let Some(sender) = tx {
-                        let message = StatusMessage::Info(format!(
-                            "Could not parse end column of merged cell {}, using start column value",
-                            cell_range.get_range()
-                        ));
-                        sender.send(message)?;
-                    }
+                    progress_reporter.info(&format!(
+                        "Could not parse end column of merged cell {}, using start column value",
+                        cell_range.get_range()
+                    ))?;
                     start_col
                 }
             };
@@ -118,18 +116,15 @@ fn import_workbook(
                     importer: MODULE_NAME.to_string(),
                     path: path.into(),
                 };
-                return Err(Box::new(err));
+                return Err(err);
             }
             let start_row = match cell_range.get_coordinate_start_row().as_ref() {
                 Some(r) => r,
                 None => {
-                    if let Some(sender) = tx {
-                        let message = StatusMessage::Warning(format!(
-                            "Could not parse start row of merged cell {}",
-                            cell_range.get_range()
-                        ));
-                        sender.send(message)?;
-                    }
+                    progress_reporter.warn(&format!(
+                        "Could not parse start row of merged cell {}",
+                        cell_range.get_range()
+                    ))?;
                     continue;
                 }
             };
@@ -137,13 +132,11 @@ fn import_workbook(
             let end_row = match cell_range.get_coordinate_end_row().as_ref() {
                 Some(r) => r,
                 None => {
-                    if let Some(sender) = tx {
-                        let message = StatusMessage::Info(format!(
-                            "Could not parse end row of merged cell {}, using start row value",
-                            cell_range.get_range()
-                        ));
-                        sender.send(message)?;
-                    }
+                    progress_reporter.info(&format!(
+                        "Could not parse end row of merged cell {}, using start row value",
+                        cell_range.get_range()
+                    ))?;
+
                     start_row
                 }
             };
@@ -153,12 +146,11 @@ fn import_workbook(
                 obsolete_indices.iter().for_each(|e| {
                     row_set.remove(e);
                 });
-            } else if let Some(sender) = tx {
-                let message = StatusMessage::Warning(format!(
+            } else {
+                progress_reporter.warn(&format!(
                     "Merged cells {} could not be mapped to a known column",
                     cell_range.get_range()
-                ));
-                sender.send(message)?;
+                ))?;
             }
         }
         m
@@ -195,7 +187,7 @@ fn import_workbook(
                 component_type: AnnotationComponentType::Ordering.to_string(),
                 component_name: "".to_string(),
             })?;
-            Ok::<(), Box<dyn std::error::Error>>(())
+            Ok::<(), AnnattoError>(())
         })?;
     for (tok_name, anno_names) in &fullmap {
         let mut names = if tok_name.is_empty() {
@@ -277,14 +269,12 @@ fn import_workbook(
                                 component_type: AnnotationComponentType::Ordering.to_string(),
                                 component_name: tok_name.to_string(),
                             })?;
-                            Ok::<(), Box<dyn std::error::Error>>(())
+                            Ok::<(), AnnattoError>(())
                         },
                     )?;
                 }
-            } else if let Some(sender) = tx {
-                let message =
-                    StatusMessage::Info(format!("No column `{name}` in file {}", &doc_path));
-                sender.send(message)?;
+            } else {
+                progress_reporter.info(&format!("No column `{name}` in file {}", &doc_path))?;
                 continue;
             }
         }
@@ -298,31 +288,29 @@ impl Importer for ImportSpreadsheet {
         input_path: &std::path::Path,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = GraphUpdate::default();
         let column_map = &self.column_map;
         let all_files = get_all_files(input_path, vec!["xlsx"])?;
         let number_of_files = all_files.len();
-        all_files
-            .into_iter()
-            .enumerate()
-            .try_for_each(|(job_nr, pb)| {
-                if let Some(tx) = &tx {
-                    tx.send(StatusMessage::Progress {
-                        id: self.step_id(Some(&pb)),
-                        total_work: number_of_files,
-                        finished_work: job_nr,
-                    })?;
-                }
-                import_workbook(
-                    &mut update,
-                    input_path,
-                    pb.as_path(),
-                    column_map,
-                    &self.fallback,
-                    &tx,
-                )
-            })?;
-        Ok(update)
+        // Each file is a work step
+        let reporter =
+            ProgressReporter::new(tx, self as &dyn Module, Some(input_path), number_of_files)?;
+        let mut updates = GraphUpdate::default();
+
+        all_files.into_iter().try_for_each(|pb| {
+            reporter.info(&format!("Importing {}", pb.to_string_lossy()))?;
+            import_workbook(
+                &mut updates,
+                input_path,
+                pb.as_path(),
+                column_map,
+                &self.fallback,
+                &reporter,
+            )?;
+            reporter.worked(1)?;
+            Ok::<(), AnnattoError>(())
+        })?;
+
+        Ok(updates)
     }
 }
 
