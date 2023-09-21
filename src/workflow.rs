@@ -261,6 +261,7 @@ impl Workflow {
         } else {
             step.path.normalize()?
         };
+
         step.module
             .writer()
             .export_corpus(g, resolved_output_path.as_path(), tx.clone())
