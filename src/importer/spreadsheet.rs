@@ -10,6 +10,7 @@ use graphannis::{
 use graphannis_core::{graph::ANNIS_NS, util::split_qname};
 use itertools::Itertools;
 use serde_derive::Deserialize;
+use umya_spreadsheet::Cell;
 
 use crate::{
     error::AnnattoError,
@@ -322,14 +323,16 @@ impl ImportSpreadsheet {
         doc_path: &String,
         sheet: &umya_spreadsheet::Worksheet,
         update: &mut GraphUpdate,
-        progress_reporter: &ProgressReporter,
     ) -> Result<(), AnnattoError> {
         let max_row_num = sheet.get_highest_row(); // 1-based
-        progress_reporter.info("Importing metadata from separate sheet.")?;
         for row_num in 1..max_row_num + 1 {
-            let entries = sheet.get_collection_by_row(&row_num);
-            if let Some(key_cell) = entries.get(0) {
-                if let Some(value_cell) = entries.get(1) {
+            let entries = sheet.get_collection_by_row(&row_num); // sorting not necessarily by col number
+            let entry_map = entries
+                .into_iter()
+                .map(|c| (*c.get_coordinate().get_col_num(), c))
+                .collect::<BTreeMap<u32, &Cell>>();
+            if let Some(key_cell) = entry_map.get(&1) {
+                if let Some(value_cell) = entry_map.get(&2) {
                     let kv = key_cell.get_value();
                     let key = kv.trim();
                     let (ns, name) = split_qname(key);
@@ -375,7 +378,7 @@ impl ImportSpreadsheet {
                 path: path.into(),
             })?
         {
-            self.import_metasheet(&doc_path, sheet, update, progress_reporter)?;
+            self.import_metasheet(&doc_path, sheet, update)?;
         }
         Ok(())
     }
@@ -413,6 +416,7 @@ mod tests {
         corpusstorage::{QueryLanguage, SearchQuery},
         AnnotationGraph, CorpusStorage,
     };
+    use graphannis_core::{annostorage::ValueSearch, types::AnnoKey};
     use tempfile::tempdir_in;
 
     use super::*;
@@ -647,5 +651,105 @@ mod tests {
         let import = importer.import_corpus(path, Some(sender));
         assert!(import.is_ok());
         assert_ne!(receiver.into_iter().count(), 0);
+    }
+
+    fn test_with_address(
+        book: &umya_spreadsheet::Spreadsheet,
+        addr: Option<SheetAddress>,
+        default: Option<usize>,
+        delivers: bool,
+    ) {
+        let sh = sheet_from_address(&book, &addr, default);
+        assert_eq!(sh.is_ok() && sh.unwrap().is_some(), delivers);
+    }
+
+    #[test]
+    fn test_get_sheet_from_name() {
+        let path = Path::new("./tests/data/import/xlsx/clean/xlsx/test_file.xlsx");
+        let book = umya_spreadsheet::reader::xlsx::read::<&Path>(path);
+        assert!(book.is_ok());
+        let b = book.unwrap();
+        test_with_address(&b, Some(SheetAddress::Name("data".to_string())), None, true);
+        test_with_address(&b, None, Some(0), true);
+        test_with_address(
+            &b,
+            Some(SheetAddress::Name("data_".to_string())),
+            Some(0),
+            false,
+        );
+        test_with_address(
+            &b,
+            Some(SheetAddress::Name("data_".to_string())),
+            None,
+            false,
+        );
+        test_with_address(&b, None, None, false);
+    }
+
+    #[test]
+    fn test_get_sheet_from_index() {
+        let path = Path::new("./tests/data/import/xlsx/clean/xlsx/test_file.xlsx");
+        let book = umya_spreadsheet::reader::xlsx::read::<&Path>(path);
+        assert!(book.is_ok());
+        let b = book.unwrap();
+        test_with_address(&b, Some(SheetAddress::Numeric(0)), None, true);
+        test_with_address(&b, None, Some(0), true);
+        test_with_address(&b, Some(SheetAddress::Numeric(4)), None, false);
+        test_with_address(&b, Some(SheetAddress::Numeric(4)), Some(0), false);
+        test_with_address(&b, None, Some(4), false);
+    }
+
+    #[test]
+    fn test_metadata_in_mem() {
+        let r = test_metadata(false);
+        assert!(r.is_ok(), "Failed with error: {:?}", r.err());
+    }
+
+    #[test]
+    fn test_metadata_in_on_disk() {
+        let r = test_metadata(true);
+        assert!(r.is_ok(), "Failed with error: {:?}", r.err());
+    }
+
+    fn test_metadata(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
+        let mut col_map = BTreeMap::new();
+        col_map.insert(
+            "dipl".to_string(),
+            vec!["sentence".to_string(), "seg".to_string()]
+                .into_iter()
+                .collect(),
+        );
+        col_map.insert(
+            "norm".to_string(),
+            vec!["pos".to_string(), "lemma".to_string()]
+                .into_iter()
+                .collect(),
+        );
+        let importer = ImportSpreadsheet {
+            column_map: col_map,
+            fallback: None,
+            datasheet: None,
+            metasheet: Some(SheetAddress::Name("meta".to_string())),
+        };
+        let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
+        let import = importer.import_corpus(path, None);
+        let mut g = AnnotationGraph::new(on_disk)?;
+        g.apply_update(&mut import?, |_| {})?;
+        let node_annos = g.get_node_annos();
+        for (meta_name, exp_value) in [("date", "today"), ("author", "me"), ("key", "value")] {
+            let mut matches = node_annos
+                .exact_anno_search(None, meta_name, ValueSearch::Any)
+                .collect_vec();
+            assert_eq!(matches.len(), 1);
+            let m = matches.remove(0).unwrap();
+            let k = AnnoKey {
+                name: meta_name.into(),
+                ns: "".into(),
+            };
+            let value = node_annos.get_value_for_item(&m.node, &k)?;
+            assert!(value.is_some());
+            assert_eq!(value.unwrap().to_string(), exp_value.to_string());
+        }
+        Ok(())
     }
 }
