@@ -1,5 +1,5 @@
 [[import]]
-path = "tests/data/import/empty"
+path = "."
 format = "none"
 
 [import.config]

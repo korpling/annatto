@@ -1,0 +1,5 @@
+[[import]]
+path = "doesnotexist.graphml"
+format = "graphml"
+
+[import.config]

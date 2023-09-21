@@ -39,7 +39,7 @@ fn run_failing_conversion() {
 
     let output = cmd
         .arg("run")
-        .arg("tests/data/import/empty_failing/failing.ato")
+        .arg("tests/data/import/failing/failing.toml")
         .output()
         .unwrap();
     cmd.assert().failure();

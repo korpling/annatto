@@ -1,11 +1,10 @@
 ---
 source: tests/cli.rs
-assertion_line: 33
 expression: output
 ---
 Conversion starts with 2 steps
 -------------------------------
-create_empty_corpus [tests/data/import/empty]
+create_empty_corpus [.]
 check
 -------------------------------
 Applying importer updates ...

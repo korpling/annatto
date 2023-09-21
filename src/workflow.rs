@@ -12,6 +12,7 @@ use crate::{
     error::AnnattoError, error::Result, runtime, ExporterStep, ImporterStep, ManipulatorStep, Step,
     StepID,
 };
+use normpath::PathExt;
 use rayon::prelude::*;
 
 /// Status updates are send as single messages when the workflow is executed.
@@ -161,7 +162,7 @@ impl Workflow {
             .import
             .par_iter()
             .map_with(tx.clone(), |tx, step| {
-                self.execute_single_importer(step, tx.clone())
+                self.execute_single_importer(step, default_workflow_directory, tx.clone())
             })
             .collect();
         if let Some(sender) = &tx {
@@ -211,7 +212,7 @@ impl Workflow {
             let export_result: Result<Vec<_>> = exporters
                 .par_iter()
                 .map_with(tx, |tx, step| {
-                    self.execute_single_exporter(&g, step, tx.clone())
+                    self.execute_single_exporter(&g, step, default_workflow_directory, tx.clone())
                 })
                 .collect();
             // Check for errors during export
@@ -223,12 +224,18 @@ impl Workflow {
     fn execute_single_importer(
         &self,
         step: &ImporterStep,
+        default_workflow_directory: &Path,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate> {
+        let resolved_import_path = if step.path.is_relative() {
+            default_workflow_directory.join(&step.path).normalize()?
+        } else {
+            step.path.normalize()?
+        };
         let updates = step
             .module
             .reader()
-            .import_corpus(&step.path, tx.clone())
+            .import_corpus(resolved_import_path.as_path(), tx.clone())
             .map_err(|reason| AnnattoError::Import {
                 reason: reason.to_string(),
                 importer: step.module.to_string(),
@@ -246,11 +253,17 @@ impl Workflow {
         &self,
         g: &AnnotationGraph,
         step: &ExporterStep,
+        default_workflow_directory: &Path,
         tx: Option<StatusSender>,
     ) -> Result<()> {
+        let resolved_output_path = if step.path.is_relative() {
+            default_workflow_directory.join(&step.path).normalize()?
+        } else {
+            step.path.normalize()?
+        };
         step.module
             .writer()
-            .export_corpus(g, &step.path, tx.clone())
+            .export_corpus(g, resolved_output_path.as_path(), tx.clone())
             .map_err(|reason| AnnattoError::Export {
                 reason: reason.to_string(),
                 exporter: step.module.to_string(),

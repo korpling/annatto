@@ -1,5 +1,5 @@
 [[import]]
-path = "tests/data/import/empty"
+path = "."
 format = "$TEST_VAR_FORMAT_NAME"
 
 [import.config]

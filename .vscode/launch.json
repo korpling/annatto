@@ -7,20 +7,22 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'annatto-cli'",
+            "name": "Debug executable 'annatto'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=annatto-cli",
+                    "--bin=annatto",
                     "--package=annatto"
                 ],
                 "filter": {
-                    "name": "annatto-cli",
+                    "name": "annatto",
                     "kind": "bin"
                 },
-                "env": {"PYO3_CONFIG_FILE": "${workspaceFolder}/pyembedded/pyo3-build-config-file.txt"}
             },
-            "args": ["${input:workflow_file}"],
+            "args": [
+                "run",
+                "${input:workflow_file}"
+            ],
             "cwd": "${workspaceFolder}"
         }
     ],
