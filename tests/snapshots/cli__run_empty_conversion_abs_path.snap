@@ -1,0 +1,11 @@
+---
+source: tests/cli.rs
+expression: output
+---
+Conversion starts with 2 steps
+-------------------------------
+create_empty_corpus [.]
+check
+-------------------------------
+Applying importer updates ...
+

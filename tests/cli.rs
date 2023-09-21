@@ -1,6 +1,6 @@
 use assert_cmd::prelude::*;
 use insta::assert_snapshot;
-use std::process::Command;
+use std::{path::PathBuf, process::Command};
 
 #[test]
 fn show_help() {
@@ -23,6 +23,31 @@ fn run_empty_conversion() {
     let output = cmd
         .arg("run")
         .arg("tests/data/import/empty/empty.toml")
+        .output()
+        .unwrap();
+    cmd.assert().success();
+
+    // Get output
+    let output = std::str::from_utf8(&output.stderr).unwrap();
+
+    assert_snapshot!(output);
+}
+
+#[test]
+fn run_empty_conversion_abs_path() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let workflow_file = PathBuf::from("tests/data/import/empty/empty.toml");
+
+    let output = cmd
+        .arg("run")
+        .arg(
+            workflow_file
+                .canonicalize()
+                .unwrap()
+                .to_string_lossy()
+                .as_ref(),
+        )
         .output()
         .unwrap();
     cmd.assert().success();
