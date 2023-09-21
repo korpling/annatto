@@ -1,11 +1,10 @@
 [[import]]
-path = "tests/data/import/textgrid/singleSpeaker/"
-format = "textgrid"
+path = "../data/import/graphml/single_sentence/zossen.graphml"
+format = "graphml"
 
 [import.config]
-audio_extension = "wav"
 
 [[export]]
-path = "tests/test_out"
+path = "$TEST_OUTPUT"
 format = "graphml"
 config = {}  # as alternative to "[export.config] with no keys"

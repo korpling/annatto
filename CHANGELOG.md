@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - linking nodes failed to extract node names when graphANNIS responded with a node name only (e. g. in case of "tok" or "node" in a query)
 - linking nodes did not concatenate the values of multiple nodes properly, this is now fixed
 - fixed code of spreadsheet import (merged cells might not have an end column reference)
+- relative import and export paths are interpreted as relative to the parent directory of the workflow file
 
 ## [0.3.1] - 2023-08-04
 
