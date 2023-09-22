@@ -5,6 +5,8 @@ use annatto::{
     workflow::{execute_from_file, StatusMessage, Workflow},
     StepID,
 };
+#[cfg(feature = "embed-documentation")]
+use anyhow::anyhow;
 use indicatif::{ProgressBar, ProgressStyle};
 
 use std::{collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread};
@@ -40,7 +42,12 @@ pub fn main() -> anyhow::Result<()> {
     match args {
         Cli::Run { workflow_file, env } => convert(workflow_file, env)?,
         #[cfg(feature = "embed-documentation")]
-        Cli::ShowDocumentation => documentation_server::start_server()?,
+        Cli::ShowDocumentation => {
+            let (_, _, handle) = documentation_server::start_server(true)?;
+            handle
+                .join()
+                .map_err(|_e| anyhow!("Waiting for documentation server thread failed"))??;
+        }
         Cli::Validate { workflow_file } => {
             Workflow::try_from((workflow_file, false))?;
         }

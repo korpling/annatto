@@ -12,10 +12,11 @@ export CARGO_INCREMENTAL=0
 # the build artifacts into a different directory.
 export CARGO_TARGET_DIR='target/coverage/'
 
-# Clean and create build folder for coverage.
-# If we don't clean the folder, there might be a mixup between previous runs
+# Create build folder for coverage. Remove some old coverage files.
+# If we remove these files, there might be a mixup between previous runs
 # and the reported coverage is incosistent
-rm -rf target/coverage
+rm -f target/coverage/tests.lcov
+rm -rf target/coverage/html/
 mkdir -p target/coverage/
 
 # Run all tests
