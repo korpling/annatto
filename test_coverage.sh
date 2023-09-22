@@ -16,6 +16,7 @@ export CARGO_TARGET_DIR='target/coverage/'
 # If we remove these files, there might be a mixup between previous runs
 # and the reported coverage is incosistent
 rm -f target/coverage/tests.lcov
+rm -rf target/coverage/html
 mkdir -p target/coverage/
 
 # Run all tests

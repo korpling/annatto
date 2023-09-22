@@ -94,4 +94,12 @@ mod tests {
 
         assert_eq!(response.status(), 404);
     }
+
+    #[test]
+    fn test_get_path_with_index() {
+        assert_eq!(get_path_with_index(""), "/index.html");
+        assert_eq!(get_path_with_index("/"), "/index.html");
+        assert_eq!(get_path_with_index("/mydir/"), "/mydir/index.html");
+        assert_eq!(get_path_with_index("/mydir/file.txt"), "/mydir/file.txt");
+    }
 }
