@@ -31,14 +31,12 @@ pub const MODULE_NAME: &str = "import_spreadsheet";
 pub struct ImportSpreadsheet {
     column_map: BTreeMap<String, BTreeSet<String>>,
     fallback: Option<String>,
-    #[serde(flatten)]
     datasheet: Option<SheetAddress>,
-    #[serde(flatten)]
     metasheet: Option<SheetAddress>,
 }
 
-#[derive(Deserialize)]
-#[serde(untagged, rename_all = "snake_case")]
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
 enum SheetAddress {
     Numeric(usize),
     Name(String),

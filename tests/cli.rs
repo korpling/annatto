@@ -127,6 +127,5 @@ fn load_complex_workflow_attr_ommited() {
 
     // Get output
     let output = std::str::from_utf8(&output.stderr).unwrap();
-    dbg!(&output);
     assert!(output.is_empty());
 }
