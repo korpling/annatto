@@ -40,7 +40,10 @@ pub fn main() -> anyhow::Result<()> {
     match args {
         Cli::Run { workflow_file, env } => convert(workflow_file, env)?,
         #[cfg(feature = "embed-documentation")]
-        Cli::ShowDocumentation => documentation_server::start_server()?,
+        Cli::ShowDocumentation => documentation_server::start_server(
+            portpicker::pick_unused_port().unwrap_or(3000),
+            true,
+        )?,
         Cli::Validate { workflow_file } => {
             Workflow::try_from((workflow_file, false))?;
         }
