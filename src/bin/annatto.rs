@@ -5,6 +5,7 @@ use annatto::{
     workflow::{execute_from_file, StatusMessage, Workflow},
     StepID,
 };
+#[cfg(feature = "embed-documentation")]
 use anyhow::anyhow;
 use indicatif::{ProgressBar, ProgressStyle};
 
