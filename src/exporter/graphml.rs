@@ -71,74 +71,80 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
     let mut visualizers = Vec::new();
     let node_annos = graph.get_node_annos();
     for c in graph.get_all_components(Some(AnnotationComponentType::Dominance), None) {
-        let mut mappings = BTreeMap::new();
-        let storage = graph.get_graphstorage(&c).unwrap();
-        let random_struct = storage.source_nodes().last();
-        {
-            // determine terminal name
-            if let Some(Ok(ref start_node)) = random_struct {
-                let dfs = CycleSafeDFS::new(storage.as_edgecontainer(), *start_node, 1, usize::MAX);
-                let terminal = dfs
+        if !c.name.is_empty() {
+            let mut mappings = BTreeMap::new();
+            let storage = graph.get_graphstorage(&c).unwrap();
+            let random_struct = storage.source_nodes().last();
+            {
+                // determine terminal name
+                if let Some(Ok(ref start_node)) = random_struct {
+                    let dfs =
+                        CycleSafeDFS::new(storage.as_edgecontainer(), *start_node, 1, usize::MAX);
+                    let terminal = dfs
+                        .into_iter()
+                        .find(|nr| {
+                            let n = nr.as_ref().unwrap().node;
+                            let t = storage.has_outgoing_edges(n);
+                            t.is_ok() && !t.unwrap()
+                        })
+                        .unwrap()?
+                        .node;
+                    let terminal_name = get_terminal_name(graph, terminal)?;
+                    if !terminal_name.is_empty() {
+                        mappings.insert("terminal_name".to_string(), terminal_name);
+                    }
+                } else {
+                    // node nodes, no visualization required
+                    continue;
+                }
+            }
+            let all_keys = storage.get_anno_storage().annotation_keys()?;
+            if let Some(first_key) = all_keys.get(0) {
+                if !first_key.ns.is_empty() {
+                    mappings.insert("edge_anno_ns".to_string(), first_key.ns.to_string());
+                }
+                mappings.insert("edge_key".to_string(), first_key.name.to_string());
+            }
+            mappings.insert("edge_type".to_string(), c.name.to_string());
+
+            let mut node_names: BTreeMap<String, i32> = BTreeMap::new();
+            for node_r in storage.source_nodes() {
+                let node = node_r?;
+                for k in node_annos.get_all_keys_for_item(&node, None, None)? {
+                    let qname = join_qname(k.ns.as_str(), k.name.as_str());
+                    node_names.entry(qname).and_modify(|e| *e += 1).or_insert(1);
+                }
+            }
+            let (_, most_frequent_name) = itertools::max(
+                node_names
                     .into_iter()
-                    .find(|nr| {
-                        let n = nr.as_ref().unwrap().node;
-                        let t = storage.has_outgoing_edges(n);
-                        t.is_ok() && !t.unwrap()
-                    })
-                    .unwrap()?
-                    .node;
-                let terminal_name = get_terminal_name(graph, terminal)?;
-                mappings.insert("terminal_name".to_string(), terminal_name);
-            } else {
-                // node nodes, no visualization required
-                continue;
+                    .map(|(name, count)| (count, name))
+                    .collect_vec(),
+            )
+            .unwrap();
+            let (ns_opt, name) = split_qname(most_frequent_name.as_str());
+            if let Some(ns) = ns_opt {
+                mappings.insert("node_anno_ns".to_string(), ns.to_string());
             }
+            mappings.insert("node_key".to_string(), name.to_string());
+            let layer = node_annos
+                .get_value_for_item(
+                    &random_struct.unwrap()?,
+                    &AnnoKey {
+                        ns: ANNIS_NS.into(),
+                        name: "layer".into(),
+                    },
+                )?
+                .map(|v| v.to_string());
+            visualizers.push(Visualizer {
+                element: "node".to_string(),
+                layer,
+                vis_type: "tree".to_string(),
+                display_name: "dominance".to_string(),
+                visibility: "hidden".to_string(),
+                mappings: Some(mappings),
+            });
         }
-        let all_keys = storage.get_anno_storage().annotation_keys()?;
-        if let Some(first_key) = all_keys.get(0) {
-            if !first_key.ns.is_empty() {
-                mappings.insert("edge_anno_ns".to_string(), first_key.ns.to_string());
-            }
-            mappings.insert("edge_key".to_string(), first_key.name.to_string());
-        }
-        mappings.insert("edge_type".to_string(), c.name.to_string());
-        let mut node_names: BTreeMap<String, i32> = BTreeMap::new();
-        for node_r in storage.source_nodes() {
-            let node = node_r?;
-            for k in node_annos.get_all_keys_for_item(&node, None, None)? {
-                let qname = join_qname(k.ns.as_str(), k.name.as_str());
-                node_names.entry(qname).and_modify(|e| *e += 1).or_insert(1);
-            }
-        }
-        let (_, most_frequent_name) = itertools::max(
-            node_names
-                .into_iter()
-                .map(|(name, count)| (count, name))
-                .collect_vec(),
-        )
-        .unwrap();
-        let (ns_opt, name) = split_qname(most_frequent_name.as_str());
-        if let Some(ns) = ns_opt {
-            mappings.insert("node_anno_ns".to_string(), ns.to_string());
-        }
-        mappings.insert("node_key".to_string(), name.to_string());
-        let layer = node_annos
-            .get_value_for_item(
-                &random_struct.unwrap()?,
-                &AnnoKey {
-                    ns: ANNIS_NS.into(),
-                    name: "layer".into(),
-                },
-            )?
-            .map(|v| v.to_string());
-        visualizers.push(Visualizer {
-            element: "node".to_string(),
-            layer,
-            vis_type: "tree".to_string(),
-            display_name: "dominance".to_string(),
-            visibility: "hidden".to_string(),
-            mappings: Some(mappings),
-        });
     }
     Ok(visualizers)
 }

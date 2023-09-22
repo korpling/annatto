@@ -26,23 +26,9 @@ display_name = "dominance"
 visibility = "hidden"
 
 [visualizers.mappings]
-edge_type = ""
-node_anno_ns = "syntax"
-node_key = "cat"
-terminal_name = ""
-
-[[visualizers]]
-element = "node"
-layer = "syntax"
-vis_type = "tree"
-display_name = "dominance"
-visibility = "hidden"
-
-[visualizers.mappings]
 edge_type = "edge"
 node_anno_ns = "syntax"
 node_key = "cat"
-terminal_name = ""
 
 [[visualizers]]
 element = "node"
