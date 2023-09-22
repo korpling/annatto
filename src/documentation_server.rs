@@ -70,7 +70,7 @@ mod tests {
     #[test]
     fn compile_instructions_found() {
         let port = portpicker::pick_unused_port().unwrap_or(3000);
-        std::thread::spawn(move || start_server(port, false).unwrap());
+        let _join_handle = std::thread::spawn(move || start_server(port, false).unwrap());
 
         let response = ureq::get(&format!("http://localhost:{port}/compile.txt"))
             .call()
@@ -81,7 +81,7 @@ mod tests {
     #[test]
     fn missing_static_resource() {
         let port = portpicker::pick_unused_port().unwrap_or(3000);
-        std::thread::spawn(move || start_server(port, false).unwrap());
+        let _join_handle = std::thread::spawn(move || start_server(port, false).unwrap());
 
         let response = ureq::get(&format!(
             "http://localhost:{port}/THIS_FILE_DOES_NOT_EXIST.html"
