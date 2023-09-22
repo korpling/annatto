@@ -7,7 +7,10 @@ use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
 };
-use graphannis_core::{graph::ANNIS_NS, util::split_qname};
+use graphannis_core::{
+    graph::{ANNIS_NS, DEFAULT_NS},
+    util::split_qname,
+};
 use itertools::Itertools;
 use serde_derive::Deserialize;
 use umya_spreadsheet::Cell;
@@ -301,7 +304,7 @@ impl ImportSpreadsheet {
                                 update.add_event(UpdateEvent::AddEdge {
                                     source_node: first_name.to_string(),
                                     target_node: second_name.to_string(),
-                                    layer: ANNIS_NS.to_string(),
+                                    layer: DEFAULT_NS.to_string(),
                                     component_type: AnnotationComponentType::Ordering.to_string(),
                                     component_name: tok_name.to_string(),
                                 })?;
