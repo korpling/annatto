@@ -11,6 +11,51 @@
     <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
         <data key="k0"><![CDATA[
 # configure visualizations here
+
+[[visualizers]]
+element = "node"
+vis_type = "kwic"
+display_name = "Key Word in Context"
+visibility = "permanent"
+
+[[visualizers]]
+element = "node"
+layer = "syntax"
+vis_type = "tree"
+display_name = "dominance"
+visibility = "hidden"
+
+[visualizers.mappings]
+edge_type = ""
+node_anno_ns = "syntax"
+node_key = "cat"
+terminal_name = ""
+
+[[visualizers]]
+element = "node"
+layer = "syntax"
+vis_type = "tree"
+display_name = "dominance"
+visibility = "hidden"
+
+[visualizers.mappings]
+edge_type = "edge"
+node_anno_ns = "syntax"
+node_key = "cat"
+terminal_name = ""
+
+[[visualizers]]
+element = "node"
+vis_type = "grid"
+display_name = "annotations"
+visibility = "hidden"
+
+[visualizers.mappings]
+annos = "/default_ns::pos/,/syntax::cat/"
+escape_html = "false"
+hide_tok = "true"
+show_ns = "false"
+
 ]]></data>
         <node id="single_sentence">
             <data key="k4">corpus</data>

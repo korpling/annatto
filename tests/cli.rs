@@ -50,7 +50,7 @@ fn convert_to_itself() {
     cmd.assert().success();
 
     // Input and output files should be the same
-    let original = include_str!("data/import/graphml/single_sentence/zossen.graphml");
+    let original = include_str!("data/import/graphml/single_sentence.graphml");
     let converted =
         std::fs::read_to_string(tmp_out.path().join("single_sentence.graphml")).unwrap();
     pretty_assertions::assert_str_eq!(original, converted);

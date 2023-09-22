@@ -315,7 +315,7 @@ mod tests {
     fn single_sentence() {
         let actual = import_as_graphml_string(
             GraphMLImporter::default(),
-            Path::new("tests/data/import/graphml/single_sentence/zossen.graphml"),
+            Path::new("tests/data/import/graphml/single_sentence.graphml"),
             None,
         )
         .unwrap();
