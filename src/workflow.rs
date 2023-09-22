@@ -137,10 +137,14 @@ impl Workflow {
         default_workflow_directory: &Path,
     ) -> Result<()> {
         // Create a vector of all conversion steps and report these as current status
+        let apply_update_step_id = StepID {
+            module_name: "create_annotation_graph".to_string(),
+            path: None,
+        };
         if let Some(tx) = &tx {
             let mut steps: Vec<StepID> = Vec::default();
             steps.extend(self.import.iter().map(|importer| importer.get_step_id()));
-            // TODO: also add a step for importer that tracks applying the graph update
+            steps.push(apply_update_step_id.clone());
             if let Some(ref manipulators) = self.graph_op {
                 steps.extend(
                     manipulators
@@ -167,7 +171,7 @@ impl Workflow {
             .collect();
         if let Some(sender) = &tx {
             sender.send(StatusMessage::Info(String::from(
-                "Applying importer updates ...",
+                "Creating annotation graph by applying the updates from the import steps...",
             )))?;
         }
         // collect all updates in a single update to only have a single call to `apply_update`
@@ -182,6 +186,11 @@ impl Workflow {
         // Apply super update
         g.apply_update(&mut super_update, |_msg| {})
             .map_err(|reason| AnnattoError::UpdateGraph(reason.to_string()))?;
+        if let Some(ref tx) = tx {
+            tx.send(crate::workflow::StatusMessage::StepDone {
+                id: apply_update_step_id,
+            })?;
+        }
 
         // Execute all manipulators in sequence
         if let Some(ref manipulators) = self.graph_op {

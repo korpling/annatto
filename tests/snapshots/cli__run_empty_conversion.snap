@@ -2,10 +2,11 @@
 source: tests/cli.rs
 expression: output
 ---
-Conversion starts with 2 steps
+Conversion starts with 3 steps
 -------------------------------
 create_empty_corpus [.]
+create_annotation_graph
 check
 -------------------------------
-Applying importer updates ...
+Creating annotation graph by applying the updates from the import steps...
 
