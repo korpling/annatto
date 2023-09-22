@@ -1,26 +1,34 @@
-use std::{borrow::Cow, net::SocketAddr};
+use std::{borrow::Cow, net::SocketAddr, sync::Arc};
 
 use anyhow::{anyhow, Context, Result};
 
 use include_dir::{include_dir, Dir};
 use log::info;
-use tiny_http::{Header, Response, ResponseBox};
+use tiny_http::{Header, Response, ResponseBox, Server};
 use url::Url;
 static DOC_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/docs/book/");
 
-pub fn start_server(port: u16, open_browser: bool) -> anyhow::Result<()> {
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+pub fn start_server() -> anyhow::Result<()> {
+    let (server, base_url) = create_server()?;
 
+    info!("Opening {base_url} in your browser. Press CTRL-C to stop the server.");
+    open::that(base_url.to_string())?;
+
+    handle_requests(server, base_url)?;
+    Ok(())
+}
+
+fn create_server() -> anyhow::Result<(Arc<Server>, Url)> {
+    let port = portpicker::pick_unused_port().unwrap_or(3000);
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    let base_url = Url::parse(&format!("http://{addr}"))?;
     let server = tiny_http::Server::http(addr)
         .map_err(|e| anyhow!("{e}"))
         .context("Could not start documentation server.")?;
+    Ok((Arc::new(server), base_url))
+}
 
-    let base_url = Url::parse(&format!("http://{addr}"))?;
-
-    if open_browser {
-        info!("Opening {base_url} in your browser. Press CTRL-C to stop the server.");
-        open::that(base_url.to_string())?;
-    }
+fn handle_requests(server: Arc<Server>, base_url: Url) -> Result<()> {
     for request in server.incoming_requests() {
         if let Ok(request_url) = base_url.join(request.url()) {
             let path = get_path_with_index(request_url.path());
@@ -28,7 +36,6 @@ pub fn start_server(port: u16, open_browser: bool) -> anyhow::Result<()> {
             request.respond(response)?
         }
     }
-
     Ok(())
 }
 
@@ -69,30 +76,40 @@ mod tests {
 
     #[test]
     fn compile_instructions_found() {
-        let port = portpicker::pick_unused_port().unwrap_or(3000);
-        let _join_handle = std::thread::spawn(move || start_server(port, false).unwrap());
+        let (server, base_url) = create_server().unwrap();
 
-        let response = ureq::get(&format!("http://localhost:{port}/compile.txt"))
-            .call()
-            .unwrap();
+        let server_for_handle = server.clone();
+        let base_url_for_handle = base_url.clone();
+
+        let handle =
+            std::thread::spawn(move || handle_requests(server_for_handle, base_url_for_handle));
+
+        let response = ureq::get(&format!("{base_url}compile.txt")).call().unwrap();
         assert_eq!(response.status(), 200);
+
+        server.unblock();
+        handle.join().unwrap().unwrap();
     }
 
     #[test]
     fn missing_static_resource() {
-        let port = portpicker::pick_unused_port().unwrap_or(3000);
-        let _join_handle = std::thread::spawn(move || start_server(port, false).unwrap());
+        let (server, base_url) = create_server().unwrap();
 
-        let response = ureq::get(&format!(
-            "http://localhost:{port}/THIS_FILE_DOES_NOT_EXIST.html"
-        ))
-        .call();
+        let server_for_handle = server.clone();
+        let base_url_for_handle = base_url.clone();
+        let handle =
+            std::thread::spawn(move || handle_requests(server_for_handle, base_url_for_handle));
+
+        let response = ureq::get(&format!("{base_url}THIS_FILE_DOES_NOT_EXIST.html")).call();
         let response = response
             .expect_err("Call should return 404 error")
             .into_response()
             .unwrap();
 
         assert_eq!(response.status(), 404);
+
+        server.unblock();
+        handle.join().unwrap().unwrap();
     }
 
     #[test]
