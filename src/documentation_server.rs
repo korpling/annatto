@@ -34,7 +34,7 @@ pub fn start_server(port: u16, open_browser: bool) -> anyhow::Result<()> {
 
 /// For paths that end in "/", append the default index.html
 fn get_path_with_index(path: &str) -> Cow<str> {
-    if path.ends_with("/") {
+    if path.ends_with('/') {
         format!("{path}index.html").into()
     } else if path.is_empty() {
         "/index.html".into()
@@ -47,7 +47,7 @@ fn get_response_from_file(path: &str) -> Result<ResponseBox> {
     let mime_type = mime_guess::from_path(path).first_or_text_plain();
 
     let response = match DOC_DIR.get_file(path.trim_start_matches('/')) {
-        None => Response::from_string(&format!("{path} not found"))
+        None => Response::from_string(format!("{path} not found"))
             .with_status_code(404)
             .boxed(),
         Some(file) => {
