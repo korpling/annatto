@@ -253,6 +253,43 @@ fn collect_qnames(
     Ok(key_set)
 }
 
+fn kwic_vis(graph: &AnnotationGraph) -> Result<Visualizer, Box<dyn std::error::Error>> {
+    let mut segmentation_names: Vec<_> = get_orderings(graph)
+        .into_iter()
+        .filter(|c| !c.name.is_empty())
+        .map(|c| c.name.to_string())
+        .collect();
+    segmentation_names.sort();
+
+    let vis = if segmentation_names.is_empty() {
+        Visualizer {
+            element: "node".to_string(),
+            layer: None,
+            vis_type: "kwic".to_string(),
+            display_name: "Key Word in Context".to_string(),
+            visibility: "permanent".to_string(),
+            mappings: None,
+        }
+    } else {
+        let annos_value = segmentation_names
+            .iter()
+            .map(|name| format!("/{name}::{name}/"))
+            .join(",");
+        let mut mappings = BTreeMap::new();
+        mappings.insert("annos".to_string(), annos_value);
+        mappings.insert("hide_tok".to_string(), "true".to_string());
+        Visualizer {
+            element: "node".to_string(),
+            layer: None,
+            vis_type: "grid".to_string(),
+            display_name: "Key Word in Context".to_string(),
+            visibility: "permanent".to_string(),
+            mappings: Some(mappings),
+        }
+    };
+    Ok(vis)
+}
+
 fn node_annos_vis(graph: &AnnotationGraph) -> Result<Visualizer, Box<dyn std::error::Error>> {
     let order_names: Vec<_> = get_orderings(graph)
         .into_iter()
@@ -290,7 +327,8 @@ fn node_annos_vis(graph: &AnnotationGraph) -> Result<Visualizer, Box<dyn std::er
     let mut mappings = BTreeMap::new();
     mappings.insert("annos".to_string(), node_names);
     mappings.insert("escape_html".to_string(), "false".to_string());
-    let more_than_one_ordering = !order_names.is_empty(); // reminder: order_names does not contain the unnamed ordering, therefore !is_empty is the way to go
+
+    let more_than_one_ordering = order_names.len() > 1;
     let ordered_nodes_are_identical = {
         more_than_one_ordering && {
             let ordering_components =
@@ -332,6 +370,8 @@ fn node_annos_vis(graph: &AnnotationGraph) -> Result<Visualizer, Box<dyn std::er
 
 fn vis_from_graph(graph: &AnnotationGraph) -> Result<String, Box<dyn std::error::Error>> {
     let mut vis_list = Vec::new();
+    // KWIC view/and or grid for segmentations
+    vis_list.push(kwic_vis(graph)?);
     // edge annos
     vis_list.extend(tree_vis(graph)?);
     vis_list.extend(arch_vis(graph)?);
