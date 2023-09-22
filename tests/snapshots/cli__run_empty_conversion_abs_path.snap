@@ -8,5 +8,5 @@ create_empty_corpus [.]
 create_annotation_graph
 check
 -------------------------------
-Creating annotation graph by applying the updates from the import steps...
+Creating annotation graph by applying the updates from the import steps
 
