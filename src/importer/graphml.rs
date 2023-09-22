@@ -20,7 +20,7 @@ use graphannis::{
 
 use crate::{
     error::AnnattoError, importer::Importer, progress::ProgressReporter, workflow::StatusSender,
-    Module,
+    Module, StepID,
 };
 
 pub const MODULE_NAME: &str = "import_graphml";
@@ -270,9 +270,10 @@ impl Importer for GraphMLImporter {
     fn import_corpus(
         &self,
         path: &Path,
+        step_id: StepID,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
-        let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(path), 2)?;
+        let reporter = ProgressReporter::new(tx, step_id, 2)?;
 
         // TODO: support multiple GraphML and connected binary files
         // TODO: refactor the graphannis_core create to expose the needed functionality directly

@@ -14,7 +14,7 @@ use pest::{
 use pest_derive::Parser;
 use serde_derive::Deserialize;
 
-use crate::{progress::ProgressReporter, util::graphupdate::path_structure, Module};
+use crate::{progress::ProgressReporter, util::graphupdate::path_structure, Module, StepID};
 
 use super::Importer;
 
@@ -237,14 +237,14 @@ impl Importer for PtbImporter {
     fn import_corpus(
         &self,
         input_path: &Path,
+        step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut u = GraphUpdate::default();
 
         let documents = path_structure(&mut u, input_path, &["ptb"])?;
 
-        let reporter =
-            ProgressReporter::new(tx, self as &dyn Module, Some(input_path), documents.len())?;
+        let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
 
         for (file_path, doc_path) in documents {
             reporter.info(&format!("Processing {}", &file_path.to_string_lossy()))?;

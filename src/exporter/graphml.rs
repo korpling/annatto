@@ -7,7 +7,7 @@ use std::{
 
 use crate::{
     error::AnnattoError, exporter::Exporter, progress::ProgressReporter, workflow::StatusSender,
-    Module,
+    Module, StepID,
 };
 use graphannis::AnnotationGraph;
 use graphannis::{
@@ -349,9 +349,10 @@ impl Exporter for GraphMLExporter {
         &self,
         graph: &AnnotationGraph,
         output_path: &Path,
+        step_id: StepID,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(output_path), 1)?;
+        let reporter = ProgressReporter::new(tx, step_id, 1)?;
         let file_name;
         if let Some(part_of_c) = graph
             .get_all_components(Some(AnnotationComponentType::PartOf), None)

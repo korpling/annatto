@@ -19,7 +19,7 @@ use crate::{
     error::AnnattoError,
     progress::ProgressReporter,
     util::{get_all_files, insert_corpus_nodes_from_path},
-    Module,
+    Module, StepID,
 };
 
 use super::Importer;
@@ -391,13 +391,13 @@ impl Importer for ImportSpreadsheet {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
+        step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let all_files = get_all_files(input_path, vec!["xlsx"])?;
         let number_of_files = all_files.len();
         // Each file is a work step
-        let reporter =
-            ProgressReporter::new(tx, self as &dyn Module, Some(input_path), number_of_files)?;
+        let reporter = ProgressReporter::new(tx, step_id, number_of_files)?;
         let mut updates = GraphUpdate::default();
 
         all_files.into_iter().try_for_each(|pb| {
@@ -453,7 +453,7 @@ mod tests {
             metasheet: None,
         };
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
-        let import = importer.import_corpus(path, None);
+        let import = importer.import_corpus(path, importer.step_id(None), None);
         let mut u = import?;
         let mut g = AnnotationGraph::new(on_disk)?;
         g.apply_update(&mut u, |_| {})?;
@@ -551,7 +551,7 @@ mod tests {
         };
         let path = Path::new("./tests/data/import/xlsx/dirty/xlsx/");
         let (sender, receiver) = mpsc::channel();
-        let import = importer.import_corpus(path, Some(sender));
+        let import = importer.import_corpus(path, importer.step_id(None), Some(sender));
         assert!(import.is_err());
         assert_ne!(receiver.into_iter().count(), 0);
     }
@@ -579,7 +579,7 @@ mod tests {
         };
         let path = Path::new("./tests/data/import/xlsx/warnings/xlsx/");
         let (sender, receiver) = mpsc::channel();
-        let import = importer.import_corpus(path, Some(sender));
+        let import = importer.import_corpus(path, importer.step_id(None), Some(sender));
         assert!(import.is_ok());
         assert_ne!(receiver.into_iter().count(), 0);
     }
@@ -651,7 +651,7 @@ mod tests {
         };
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
         let (sender, receiver) = mpsc::channel();
-        let import = importer.import_corpus(path, Some(sender));
+        let import = importer.import_corpus(path, importer.step_id(None), Some(sender));
         assert!(import.is_ok());
         assert_ne!(receiver.into_iter().count(), 0);
     }
@@ -735,7 +735,7 @@ mod tests {
             metasheet: Some(SheetAddress::Name("meta".to_string())),
         };
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
-        let import = importer.import_corpus(path, None);
+        let import = importer.import_corpus(path, importer.step_id(None), None);
         let mut g = AnnotationGraph::new(on_disk)?;
         g.apply_update(&mut import?, |_| {})?;
         let node_annos = g.get_node_annos();

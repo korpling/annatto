@@ -10,7 +10,7 @@ use crate::util::graphupdate::{
     add_order_relations, map_annotations, map_audio_source, map_token, path_structure,
     root_corpus_from_path, NodeInfo,
 };
-use crate::Module;
+use crate::{Module, StepID};
 use anyhow::{anyhow, Result};
 use encoding_rs_io::DecodeReaderBytes;
 use graphannis::update::{GraphUpdate, UpdateEvent};
@@ -396,6 +396,7 @@ impl Importer for TextgridImporter {
     fn import_corpus(
         &self,
         input_path: &Path,
+        step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut u = GraphUpdate::default();
@@ -416,8 +417,7 @@ impl Importer for TextgridImporter {
         };
 
         let documents = path_structure(&mut u, input_path, &FILE_ENDINGS)?;
-        let reporter =
-            ProgressReporter::new(tx, self as &dyn Module, Some(input_path), documents.len())?;
+        let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
         for (file_path, doc_path) in documents {
             reporter.info(&format!("Processing {}", &file_path.to_string_lossy()))?;
 
