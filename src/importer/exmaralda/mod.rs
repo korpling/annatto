@@ -17,7 +17,7 @@ use crate::{
     error::AnnattoError,
     util::{get_all_files, graphupdate::map_audio_source, insert_corpus_nodes_from_path},
     workflow::StatusMessage,
-    Module,
+    Module, StepID,
 };
 
 use super::Importer;
@@ -38,8 +38,10 @@ impl Importer for ImportEXMARaLDA {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
+        _step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
+        // TODO use ProgressReporter
         let mut update = GraphUpdate::default();
         let all_files = get_all_files(input_path, vec!["exb", "xml"])?;
         all_files

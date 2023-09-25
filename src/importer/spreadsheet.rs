@@ -7,7 +7,10 @@ use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
 };
-use graphannis_core::{graph::ANNIS_NS, util::split_qname};
+use graphannis_core::{
+    graph::{ANNIS_NS, DEFAULT_NS},
+    util::split_qname,
+};
 use itertools::Itertools;
 use serde_derive::Deserialize;
 use umya_spreadsheet::Cell;
@@ -16,7 +19,7 @@ use crate::{
     error::AnnattoError,
     progress::ProgressReporter,
     util::{get_all_files, insert_corpus_nodes_from_path},
-    Module,
+    Module, StepID,
 };
 
 use super::Importer;
@@ -28,14 +31,12 @@ pub const MODULE_NAME: &str = "import_spreadsheet";
 pub struct ImportSpreadsheet {
     column_map: BTreeMap<String, BTreeSet<String>>,
     fallback: Option<String>,
-    #[serde(flatten)]
     datasheet: Option<SheetAddress>,
-    #[serde(flatten)]
     metasheet: Option<SheetAddress>,
 }
 
-#[derive(Deserialize)]
-#[serde(untagged, rename_all = "snake_case")]
+#[derive(Debug, Deserialize, PartialEq)]
+#[serde(untagged)]
 enum SheetAddress {
     Numeric(usize),
     Name(String),
@@ -301,7 +302,7 @@ impl ImportSpreadsheet {
                                 update.add_event(UpdateEvent::AddEdge {
                                     source_node: first_name.to_string(),
                                     target_node: second_name.to_string(),
-                                    layer: ANNIS_NS.to_string(),
+                                    layer: DEFAULT_NS.to_string(),
                                     component_type: AnnotationComponentType::Ordering.to_string(),
                                     component_name: tok_name.to_string(),
                                 })?;
@@ -388,13 +389,13 @@ impl Importer for ImportSpreadsheet {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
+        step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let all_files = get_all_files(input_path, vec!["xlsx"])?;
         let number_of_files = all_files.len();
         // Each file is a work step
-        let reporter =
-            ProgressReporter::new(tx, self as &dyn Module, Some(input_path), number_of_files)?;
+        let reporter = ProgressReporter::new(tx, step_id, number_of_files)?;
         let mut updates = GraphUpdate::default();
 
         all_files.into_iter().try_for_each(|pb| {
@@ -418,6 +419,8 @@ mod tests {
     };
     use graphannis_core::{annostorage::ValueSearch, types::AnnoKey};
     use tempfile::tempdir_in;
+
+    use crate::{workflow::Workflow, ReadFrom};
 
     use super::*;
 
@@ -450,7 +453,7 @@ mod tests {
             metasheet: None,
         };
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
-        let import = importer.import_corpus(path, None);
+        let import = importer.import_corpus(path, importer.step_id(None), None);
         let mut u = import?;
         let mut g = AnnotationGraph::new(on_disk)?;
         g.apply_update(&mut u, |_| {})?;
@@ -548,7 +551,7 @@ mod tests {
         };
         let path = Path::new("./tests/data/import/xlsx/dirty/xlsx/");
         let (sender, receiver) = mpsc::channel();
-        let import = importer.import_corpus(path, Some(sender));
+        let import = importer.import_corpus(path, importer.step_id(None), Some(sender));
         assert!(import.is_err());
         assert_ne!(receiver.into_iter().count(), 0);
     }
@@ -576,7 +579,7 @@ mod tests {
         };
         let path = Path::new("./tests/data/import/xlsx/warnings/xlsx/");
         let (sender, receiver) = mpsc::channel();
-        let import = importer.import_corpus(path, Some(sender));
+        let import = importer.import_corpus(path, importer.step_id(None), Some(sender));
         assert!(import.is_ok());
         assert_ne!(receiver.into_iter().count(), 0);
     }
@@ -648,7 +651,7 @@ mod tests {
         };
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
         let (sender, receiver) = mpsc::channel();
-        let import = importer.import_corpus(path, Some(sender));
+        let import = importer.import_corpus(path, importer.step_id(None), Some(sender));
         assert!(import.is_ok());
         assert_ne!(receiver.into_iter().count(), 0);
     }
@@ -732,7 +735,7 @@ mod tests {
             metasheet: Some(SheetAddress::Name("meta".to_string())),
         };
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
-        let import = importer.import_corpus(path, None);
+        let import = importer.import_corpus(path, importer.step_id(None), None);
         let mut g = AnnotationGraph::new(on_disk)?;
         g.apply_update(&mut import?, |_| {})?;
         let node_annos = g.get_node_annos();
@@ -751,5 +754,39 @@ mod tests {
             assert_eq!(value.unwrap().to_string(), exp_value.to_string());
         }
         Ok(())
+    }
+
+    #[test]
+    fn parse_spreadsheet_workflow() {
+        let workflow: Workflow = toml::from_str(
+            r#"
+[[import]]
+path = "dummy_path"
+format = "xlsx"
+
+
+[import.config]
+datasheet = 2
+metasheet = "meta"
+
+        "#,
+        )
+        .unwrap();
+        assert_eq!(workflow.import_steps().len(), 1);
+        assert_eq!(
+            workflow.import_steps()[0].path.to_string_lossy().as_ref(),
+            "dummy_path"
+        );
+        assert!(matches!(
+            workflow.import_steps()[0].module,
+            ReadFrom::Xlsx(..)
+        ));
+        if let ReadFrom::Xlsx(importer) = &workflow.import_steps()[0].module {
+            assert_eq!(
+                importer.metasheet,
+                Some(SheetAddress::Name("meta".to_string()))
+            );
+            assert_eq!(importer.datasheet, Some(SheetAddress::Numeric(2)));
+        }
     }
 }

@@ -2,7 +2,7 @@
 
 pub mod graphml;
 
-use crate::{workflow::StatusSender, Module};
+use crate::{workflow::StatusSender, Module, StepID};
 use graphannis::AnnotationGraph;
 use std::path::Path;
 
@@ -21,6 +21,7 @@ pub trait Exporter: Module {
         &self,
         graph: &AnnotationGraph,
         output_path: &Path,
+        step_id: StepID,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>>;
 }
