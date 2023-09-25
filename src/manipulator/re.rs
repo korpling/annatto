@@ -32,7 +32,7 @@ pub struct Replace {
     node_annos: Option<BTreeMap<String, String>>,
     edge_annos: Option<BTreeMap<String, String>>,
     namespaces: Option<BTreeMap<String, String>>,
-    components: Option<BTreeMap<AnnotationComponent, AnnotationComponent>>,
+    components: Option<BTreeMap<String, String>>,
 }
 
 pub const MODULE_NAME: &str = "revise"; // deprecate feature MODULE_NAME soon
@@ -41,6 +41,24 @@ impl Module for Replace {
     fn module_name(&self) -> &str {
         MODULE_NAME
     }
+}
+
+const DELIMITER: &str = "::";
+
+fn parse_component_string(value: &str) -> Result<(AnnotationComponentType, String, String), Box<dyn std::error::Error>> {
+    if let Some((ctype_str, remainder)) = value.split_once(DELIMITER) {
+
+    } else {
+        
+    }
+}
+
+fn to_component_map(str_map: &BTreeMap<String, String>) -> Result<BTreeMap<AnnotationComponent, AnnotationComponent>, Box<dyn std::error::Error>> {
+    let mut component_map = BTreeMap::new();
+    for (old, new) in str_map {
+
+    }
+    Ok(component_map)
 }
 
 fn revise_components() -> Result<(), Box<dyn std::error::Error>> {
@@ -477,6 +495,8 @@ impl Manipulator for Replace {
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
     use std::env::temp_dir;
+    use std::fs;
+    use std::path::Path;
 
     use crate::manipulator::re::Replace;
     use crate::manipulator::Manipulator;
@@ -1668,5 +1688,15 @@ mod tests {
         }
         g.apply_update(&mut u, |_| {})?;
         Ok(g)
+    }
+
+    #[test]
+    fn test_deserialize_map_components() {
+        let path = Path::new("./tests/data/graph_op/re/map_component.toml");
+        let toml_string = fs::read_to_string(path);
+        assert!(toml_string.is_ok(), "Could not read test file: {:?}", path);
+        let r: std::result::Result<BTreeMap<String, String>, toml::de::Error> =
+            toml::from_str(toml_string.unwrap().as_str());
+        assert!(r.is_ok(), "Could not parse test file: {:?}", &r.err());
     }
 }
