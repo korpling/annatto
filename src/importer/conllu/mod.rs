@@ -22,7 +22,7 @@ use crate::{
     error::AnnattoError,
     util::graphupdate::path_structure,
     workflow::{StatusMessage, StatusSender},
-    Module,
+    Module, StepID,
 };
 
 use super::Importer;
@@ -43,8 +43,10 @@ impl Importer for ImportCoNLLU {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
+        _step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
+        // TODO use ProgressReporter
         let mut update = GraphUpdate::default();
         let paths_and_node_names = path_structure(&mut update, input_path, &["conll", "conllu"])?;
         for (pathbuf, doc_node_name) in paths_and_node_names {

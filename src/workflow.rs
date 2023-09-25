@@ -9,8 +9,8 @@ use regex::Regex;
 use serde_derive::Deserialize;
 
 use crate::{
-    error::AnnattoError, error::Result, runtime, ExporterStep, ImporterStep, ManipulatorStep, Step,
-    StepID,
+    error::AnnattoError, error::Result, progress::ProgressReporter, runtime, ExporterStep,
+    ImporterStep, ManipulatorStep, Step, StepID,
 };
 use normpath::PathExt;
 use rayon::prelude::*;
@@ -137,10 +137,14 @@ impl Workflow {
         default_workflow_directory: &Path,
     ) -> Result<()> {
         // Create a vector of all conversion steps and report these as current status
+        let apply_update_step_id = StepID {
+            module_name: "create_annotation_graph".to_string(),
+            path: None,
+        };
         if let Some(tx) = &tx {
             let mut steps: Vec<StepID> = Vec::default();
             steps.extend(self.import.iter().map(|importer| importer.get_step_id()));
-            // TODO: also add a step for importer that tracks applying the graph update
+            steps.push(apply_update_step_id.clone());
             if let Some(ref manipulators) = self.graph_op {
                 steps.extend(
                     manipulators
@@ -154,9 +158,6 @@ impl Workflow {
             tx.send(StatusMessage::StepsCreated(steps))?;
         }
 
-        // Create a new empty annotation graph
-        let mut g = runtime::initialize_graph(&tx)?;
-
         // Execute all importers and store their graph updates in parallel
         let updates: Result<Vec<GraphUpdate>> = self
             .import
@@ -165,11 +166,13 @@ impl Workflow {
                 self.execute_single_importer(step, default_workflow_directory, tx.clone())
             })
             .collect();
-        if let Some(sender) = &tx {
-            sender.send(StatusMessage::Info(String::from(
-                "Applying importer updates ...",
-            )))?;
-        }
+        // Create a new empty annotation graph and apply updates
+        let apply_update_reporter =
+            ProgressReporter::new(tx.clone(), apply_update_step_id.clone(), 2)?;
+        apply_update_reporter
+            .info("Creating annotation graph by applying the updates from the import steps")?;
+        let mut g = runtime::initialize_graph(&tx)?;
+
         // collect all updates in a single update to only have a single call to `apply_update`
         let mut super_update = GraphUpdate::new();
         for u in updates? {
@@ -179,9 +182,17 @@ impl Workflow {
                 super_update.add_event(event)?;
             }
         }
+        apply_update_reporter.worked(1)?;
+
         // Apply super update
         g.apply_update(&mut super_update, |_msg| {})
             .map_err(|reason| AnnattoError::UpdateGraph(reason.to_string()))?;
+        apply_update_reporter.worked(1)?;
+        if let Some(ref tx) = tx {
+            tx.send(crate::workflow::StatusMessage::StepDone {
+                id: apply_update_step_id,
+            })?;
+        }
 
         // Execute all manipulators in sequence
         if let Some(ref manipulators) = self.graph_op {
@@ -221,6 +232,18 @@ impl Workflow {
         Ok(())
     }
 
+    pub fn import_steps(&self) -> &Vec<ImporterStep> {
+        &self.import
+    }
+
+    pub fn export_steps(&self) -> Option<&Vec<ExporterStep>> {
+        self.export.as_ref()
+    }
+
+    pub fn graph_op_steps(&self) -> Option<&Vec<ManipulatorStep>> {
+        self.graph_op.as_ref()
+    }
+
     fn execute_single_importer(
         &self,
         step: &ImporterStep,
@@ -235,7 +258,11 @@ impl Workflow {
         let updates = step
             .module
             .reader()
-            .import_corpus(resolved_import_path.as_path(), tx.clone())
+            .import_corpus(
+                resolved_import_path.as_path(),
+                step.get_step_id(),
+                tx.clone(),
+            )
             .map_err(|reason| AnnattoError::Import {
                 reason: reason.to_string(),
                 importer: step.module.to_string(),
@@ -243,7 +270,7 @@ impl Workflow {
             })?;
         if let Some(ref tx) = tx {
             tx.send(crate::workflow::StatusMessage::StepDone {
-                id: step.module.reader().step_id(Some(&step.path)),
+                id: step.get_step_id(),
             })?;
         }
         Ok(updates)
@@ -264,7 +291,12 @@ impl Workflow {
 
         step.module
             .writer()
-            .export_corpus(g, resolved_output_path.as_path(), tx.clone())
+            .export_corpus(
+                g,
+                resolved_output_path.as_path(),
+                step.get_step_id(),
+                tx.clone(),
+            )
             .map_err(|reason| AnnattoError::Export {
                 reason: reason.to_string(),
                 exporter: step.module.to_string(),
@@ -272,7 +304,7 @@ impl Workflow {
             })?;
         if let Some(ref tx) = tx {
             tx.send(crate::workflow::StatusMessage::StepDone {
-                id: step.module.writer().step_id(Some(&step.path)),
+                id: step.get_step_id(),
             })?;
         }
         Ok(())

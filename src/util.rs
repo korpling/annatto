@@ -94,7 +94,7 @@ where
     P: AsRef<Path>,
 {
     let mut u = importer
-        .import_corpus(path.as_ref(), None)
+        .import_corpus(path.as_ref(), importer.step_id(None), None)
         .map_err(|e| AnnattoError::Import {
             reason: e.to_string(),
             importer: importer.module_name().to_string(),

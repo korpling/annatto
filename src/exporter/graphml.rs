@@ -7,7 +7,7 @@ use std::{
 
 use crate::{
     error::AnnattoError, exporter::Exporter, progress::ProgressReporter, workflow::StatusSender,
-    Module,
+    Module, StepID,
 };
 use graphannis::AnnotationGraph;
 use graphannis::{
@@ -71,74 +71,80 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
     let mut visualizers = Vec::new();
     let node_annos = graph.get_node_annos();
     for c in graph.get_all_components(Some(AnnotationComponentType::Dominance), None) {
-        let mut mappings = BTreeMap::new();
-        let storage = graph.get_graphstorage(&c).unwrap();
-        let random_struct = storage.source_nodes().last();
-        {
-            // determine terminal name
-            if let Some(Ok(ref start_node)) = random_struct {
-                let dfs = CycleSafeDFS::new(storage.as_edgecontainer(), *start_node, 1, usize::MAX);
-                let terminal = dfs
+        if !c.name.is_empty() {
+            let mut mappings = BTreeMap::new();
+            let storage = graph.get_graphstorage(&c).unwrap();
+            let random_struct = storage.source_nodes().last();
+            {
+                // determine terminal name
+                if let Some(Ok(ref start_node)) = random_struct {
+                    let dfs =
+                        CycleSafeDFS::new(storage.as_edgecontainer(), *start_node, 1, usize::MAX);
+                    let terminal = dfs
+                        .into_iter()
+                        .find(|nr| {
+                            let n = nr.as_ref().unwrap().node;
+                            let t = storage.has_outgoing_edges(n);
+                            t.is_ok() && !t.unwrap()
+                        })
+                        .unwrap()?
+                        .node;
+                    let terminal_name = get_terminal_name(graph, terminal)?;
+                    if !terminal_name.is_empty() {
+                        mappings.insert("terminal_name".to_string(), terminal_name);
+                    }
+                } else {
+                    // node nodes, no visualization required
+                    continue;
+                }
+            }
+            let all_keys = storage.get_anno_storage().annotation_keys()?;
+            if let Some(first_key) = all_keys.get(0) {
+                if !first_key.ns.is_empty() {
+                    mappings.insert("edge_anno_ns".to_string(), first_key.ns.to_string());
+                }
+                mappings.insert("edge_key".to_string(), first_key.name.to_string());
+            }
+            mappings.insert("edge_type".to_string(), c.name.to_string());
+
+            let mut node_names: BTreeMap<String, i32> = BTreeMap::new();
+            for node_r in storage.source_nodes() {
+                let node = node_r?;
+                for k in node_annos.get_all_keys_for_item(&node, None, None)? {
+                    let qname = join_qname(k.ns.as_str(), k.name.as_str());
+                    node_names.entry(qname).and_modify(|e| *e += 1).or_insert(1);
+                }
+            }
+            let (_, most_frequent_name) = itertools::max(
+                node_names
                     .into_iter()
-                    .find(|nr| {
-                        let n = nr.as_ref().unwrap().node;
-                        let t = storage.has_outgoing_edges(n);
-                        t.is_ok() && !t.unwrap()
-                    })
-                    .unwrap()?
-                    .node;
-                let terminal_name = get_terminal_name(graph, terminal)?;
-                mappings.insert("terminal_name".to_string(), terminal_name);
-            } else {
-                // node nodes, no visualization required
-                continue;
+                    .map(|(name, count)| (count, name))
+                    .collect_vec(),
+            )
+            .unwrap();
+            let (ns_opt, name) = split_qname(most_frequent_name.as_str());
+            if let Some(ns) = ns_opt {
+                mappings.insert("node_anno_ns".to_string(), ns.to_string());
             }
+            mappings.insert("node_key".to_string(), name.to_string());
+            let layer = node_annos
+                .get_value_for_item(
+                    &random_struct.unwrap()?,
+                    &AnnoKey {
+                        ns: ANNIS_NS.into(),
+                        name: "layer".into(),
+                    },
+                )?
+                .map(|v| v.to_string());
+            visualizers.push(Visualizer {
+                element: "node".to_string(),
+                layer,
+                vis_type: "tree".to_string(),
+                display_name: "dominance".to_string(),
+                visibility: "hidden".to_string(),
+                mappings: Some(mappings),
+            });
         }
-        let all_keys = storage.get_anno_storage().annotation_keys()?;
-        if let Some(first_key) = all_keys.get(0) {
-            if !first_key.ns.is_empty() {
-                mappings.insert("edge_anno_ns".to_string(), first_key.ns.to_string());
-            }
-            mappings.insert("edge_key".to_string(), first_key.name.to_string());
-        }
-        mappings.insert("edge_type".to_string(), c.name.to_string());
-        let mut node_names: BTreeMap<String, i32> = BTreeMap::new();
-        for node_r in storage.source_nodes() {
-            let node = node_r?;
-            for k in node_annos.get_all_keys_for_item(&node, None, None)? {
-                let qname = join_qname(k.ns.as_str(), k.name.as_str());
-                node_names.entry(qname).and_modify(|e| *e += 1).or_insert(1);
-            }
-        }
-        let (_, most_frequent_name) = itertools::max(
-            node_names
-                .into_iter()
-                .map(|(name, count)| (count, name))
-                .collect_vec(),
-        )
-        .unwrap();
-        let (ns_opt, name) = split_qname(most_frequent_name.as_str());
-        if let Some(ns) = ns_opt {
-            mappings.insert("node_anno_ns".to_string(), ns.to_string());
-        }
-        mappings.insert("node_key".to_string(), name.to_string());
-        let layer = node_annos
-            .get_value_for_item(
-                &random_struct.unwrap()?,
-                &AnnoKey {
-                    ns: ANNIS_NS.into(),
-                    name: "layer".into(),
-                },
-            )?
-            .map(|v| v.to_string());
-        visualizers.push(Visualizer {
-            element: "node".to_string(),
-            layer,
-            vis_type: "tree".to_string(),
-            display_name: "dominance".to_string(),
-            visibility: "hidden".to_string(),
-            mappings: Some(mappings),
-        });
     }
     Ok(visualizers)
 }
@@ -253,6 +259,43 @@ fn collect_qnames(
     Ok(key_set)
 }
 
+fn kwic_vis(graph: &AnnotationGraph) -> Result<Visualizer, Box<dyn std::error::Error>> {
+    let mut segmentation_names: Vec<_> = get_orderings(graph)
+        .into_iter()
+        .filter(|c| !c.name.is_empty())
+        .map(|c| c.name.to_string())
+        .collect();
+    segmentation_names.sort();
+
+    let vis = if segmentation_names.is_empty() {
+        Visualizer {
+            element: "node".to_string(),
+            layer: None,
+            vis_type: "kwic".to_string(),
+            display_name: "Key Word in Context".to_string(),
+            visibility: "permanent".to_string(),
+            mappings: None,
+        }
+    } else {
+        let annos_value = segmentation_names
+            .iter()
+            .map(|name| format!("/{name}::{name}/"))
+            .join(",");
+        let mut mappings = BTreeMap::new();
+        mappings.insert("annos".to_string(), annos_value);
+        mappings.insert("hide_tok".to_string(), "true".to_string());
+        Visualizer {
+            element: "node".to_string(),
+            layer: None,
+            vis_type: "grid".to_string(),
+            display_name: "Key Word in Context".to_string(),
+            visibility: "permanent".to_string(),
+            mappings: Some(mappings),
+        }
+    };
+    Ok(vis)
+}
+
 fn node_annos_vis(graph: &AnnotationGraph) -> Result<Visualizer, Box<dyn std::error::Error>> {
     let order_names: Vec<_> = get_orderings(graph)
         .into_iter()
@@ -290,7 +333,8 @@ fn node_annos_vis(graph: &AnnotationGraph) -> Result<Visualizer, Box<dyn std::er
     let mut mappings = BTreeMap::new();
     mappings.insert("annos".to_string(), node_names);
     mappings.insert("escape_html".to_string(), "false".to_string());
-    let more_than_one_ordering = !order_names.is_empty(); // reminder: order_names does not contain the unnamed ordering, therefore !is_empty is the way to go
+
+    let more_than_one_ordering = order_names.len() > 1;
     let ordered_nodes_are_identical = {
         more_than_one_ordering && {
             let ordering_components =
@@ -332,6 +376,8 @@ fn node_annos_vis(graph: &AnnotationGraph) -> Result<Visualizer, Box<dyn std::er
 
 fn vis_from_graph(graph: &AnnotationGraph) -> Result<String, Box<dyn std::error::Error>> {
     let mut vis_list = Vec::new();
+    // KWIC view/and or grid for segmentations
+    vis_list.push(kwic_vis(graph)?);
     // edge annos
     vis_list.extend(tree_vis(graph)?);
     vis_list.extend(arch_vis(graph)?);
@@ -349,9 +395,10 @@ impl Exporter for GraphMLExporter {
         &self,
         graph: &AnnotationGraph,
         output_path: &Path,
+        step_id: StepID,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(output_path), 1)?;
+        let reporter = ProgressReporter::new(tx, step_id, 1)?;
         let file_name;
         if let Some(part_of_c) = graph
             .get_all_components(Some(AnnotationComponentType::PartOf), None)

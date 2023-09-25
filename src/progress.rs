@@ -1,9 +1,6 @@
-use crate::{error::AnnattoError, workflow::StatusMessage, workflow::StatusSender, Module, StepID};
+use crate::{error::AnnattoError, workflow::StatusMessage, workflow::StatusSender, StepID};
 use log::{info, warn};
-use std::{
-    path::Path,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 struct ProgressState {
     tx: Option<StatusSender>,
@@ -19,11 +16,9 @@ pub struct ProgressReporter {
 impl ProgressReporter {
     pub fn new(
         tx: Option<StatusSender>,
-        module: &dyn Module,
-        path: Option<&Path>,
+        step_id: StepID,
         total_work: usize,
     ) -> Result<ProgressReporter, AnnattoError> {
-        let step_id = module.step_id(path);
         let state = ProgressState {
             tx,
             accumulated_finished_work: 0,

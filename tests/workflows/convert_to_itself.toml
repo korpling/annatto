@@ -1,5 +1,5 @@
 [[import]]
-path = "../data/import/graphml/single_sentence/zossen.graphml"
+path = "../data/import/graphml/single_sentence.graphml"
 format = "graphml"
 
 [import.config]
@@ -7,4 +7,4 @@ format = "graphml"
 [[export]]
 path = "$TEST_OUTPUT"
 format = "graphml"
-config = {}  # as alternative to "[export.config] with no keys"
+config = {guess_vis = true}  # as alternative to "[export.config]""
