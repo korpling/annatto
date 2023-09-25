@@ -35,7 +35,7 @@ pub struct ImportSpreadsheet {
     metasheet: Option<SheetAddress>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(untagged)]
 enum SheetAddress {
     Numeric(usize),
@@ -420,6 +420,8 @@ mod tests {
     use graphannis_core::{annostorage::ValueSearch, types::AnnoKey};
     use tempfile::tempdir_in;
 
+    use crate::{workflow::Workflow, ReadFrom};
+
     use super::*;
 
     fn run_spreadsheet_import(
@@ -752,5 +754,39 @@ mod tests {
             assert_eq!(value.unwrap().to_string(), exp_value.to_string());
         }
         Ok(())
+    }
+
+    #[test]
+    fn parse_spreadsheet_workflow() {
+        let workflow: Workflow = toml::from_str(
+            r#"
+[[import]]
+path = "dummy_path"
+format = "xlsx"
+
+
+[import.config]
+datasheet = 2
+metasheet = "meta"
+
+        "#,
+        )
+        .unwrap();
+        assert_eq!(workflow.import_steps().len(), 1);
+        assert_eq!(
+            workflow.import_steps()[0].path.to_string_lossy().as_ref(),
+            "dummy_path"
+        );
+        assert!(matches!(
+            workflow.import_steps()[0].module,
+            ReadFrom::Xlsx(..)
+        ));
+        if let ReadFrom::Xlsx(importer) = &workflow.import_steps()[0].module {
+            assert_eq!(
+                importer.metasheet,
+                Some(SheetAddress::Name("meta".to_string()))
+            );
+            assert_eq!(importer.datasheet, Some(SheetAddress::Numeric(2)));
+        }
     }
 }

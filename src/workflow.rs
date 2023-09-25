@@ -232,6 +232,18 @@ impl Workflow {
         Ok(())
     }
 
+    pub fn import_steps(&self) -> &Vec<ImporterStep> {
+        &self.import
+    }
+
+    pub fn export_steps(&self) -> Option<&Vec<ExporterStep>> {
+        self.export.as_ref()
+    }
+
+    pub fn graph_op_steps(&self) -> Option<&Vec<ManipulatorStep>> {
+        self.graph_op.as_ref()
+    }
+
     fn execute_single_importer(
         &self,
         step: &ImporterStep,
