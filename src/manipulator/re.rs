@@ -32,7 +32,7 @@ pub struct Replace {
     node_annos: Option<BTreeMap<String, String>>,
     edge_annos: Option<BTreeMap<String, String>>,
     namespaces: Option<BTreeMap<String, String>>,
-    components: Option<BTreeMap<String, String>>,
+    components: Option<BTreeMap<AnnotationComponent, AnnotationComponent>>,
 }
 
 pub const MODULE_NAME: &str = "revise"; // deprecate feature MODULE_NAME soon
@@ -41,6 +41,14 @@ impl Module for Replace {
     fn module_name(&self) -> &str {
         MODULE_NAME
     }
+}
+
+fn revise_components() -> Result<(), Box<dyn std::error::Error>> {
+    Ok(())
+}
+
+fn revise_component() -> Result<(), Box<dyn std::error::Error>> {
+    Ok(())
 }
 
 fn remove_nodes(
@@ -522,6 +530,7 @@ mod tests {
             node_annos: Some(node_map),
             edge_annos: Some(edge_map),
             namespaces: None,
+            components: None,
         };
         let result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), None);
         assert_eq!(result.is_ok(), true, "Probing merge result {:?}", &result);
@@ -655,6 +664,7 @@ mod tests {
             node_annos: Some(node_map),
             edge_annos: None,
             remove_nodes: None,
+            components: None,
         };
         let result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), None);
         assert_eq!(result.is_ok(), true, "Probing merge result {:?}", &result);
@@ -790,6 +800,7 @@ mod tests {
             node_annos: Some(node_map),
             edge_annos: Some(edge_map),
             remove_nodes: None,
+            components: None,
         };
         assert_eq!(
             replace
@@ -844,6 +855,7 @@ mod tests {
             node_annos: Some(node_map),
             edge_annos: Some(edge_map),
             remove_nodes: None,
+            components: None,
         };
         assert_eq!(
             replace
@@ -884,6 +896,7 @@ mod tests {
             node_annos: None,
             edge_annos: None,
             namespaces: Some(ns_map),
+            components: None,
         };
         let op_result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), None);
         assert_eq!(
