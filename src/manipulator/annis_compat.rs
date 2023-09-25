@@ -33,14 +33,18 @@ impl Manipulator for AnnisCompatibility {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let progress = ProgressReporter::new(tx, self.step_id(None), 1)?;
 
-        self.annis_doc_metadata(graph)?;
+        self.annis_doc_metadata(graph, &progress)?;
         progress.worked(1)?;
         Ok(())
     }
 }
 impl AnnisCompatibility {
     /// Each document should have an "annis::doc" annotation with its document name as value.
-    fn annis_doc_metadata(&self, graph: &mut graphannis::AnnotationGraph) -> crate::Result<()> {
+    fn annis_doc_metadata(
+        &self,
+        graph: &mut graphannis::AnnotationGraph,
+        progress: &ProgressReporter,
+    ) -> crate::Result<()> {
         if let Some(part_of_gs) = graph.get_graphstorage(&Component::new(
             AnnotationComponentType::PartOf,
             ANNIS_NS.into(),
@@ -58,32 +62,43 @@ impl AnnisCompatibility {
             let node_annos = graph.get_node_annos_mut();
             for n in part_of_gs.source_nodes() {
                 let n = n?;
-                // Leaf nodes are the ones with no outgoging PartOf edge
-                if part_of_gs.has_outgoing_edges(n)? == false {
-                    // Leaf nodes can be either document or datasources (like
-                    // texts). Find the ones that are documents and get the
-                    // parent nodes for the datasources.
-                    if node_annos
-                        .get_value_for_item(&n, &datasource_key)?
-                        .is_some()
-                    {
-                        // Parent node of this datasource is a document
-                        if let Some(parent) = part_of_gs.get_ingoing_edges(n).next() {
-                            let parent = parent?;
-                            document_nodes.insert(parent);
+                for n in part_of_gs.get_outgoing_edges(n) {
+                    let n = n?;
+                    // Leaf nodes are the ones with no outgoging PartOf edge
+                    if part_of_gs.has_outgoing_edges(n)? == false {
+                        progress.info(&format!("Found possible document node {n}"))?;
+                        // Leaf nodes can be either document or datasources (like
+                        // texts). Find the ones that are documents and get the
+                        // parent nodes for the datasources.
+                        if node_annos
+                            .get_value_for_item(&n, &datasource_key)?
+                            .is_some()
+                        {
+                            // Parent node of this datasource is a document
+                            if let Some(parent) = part_of_gs.get_ingoing_edges(n).next() {
+                                let parent = parent?;
+                                document_nodes.insert(parent);
+                            }
+                        } else {
+                            // The node itself is  document
+                            document_nodes.insert(n);
                         }
-                    } else {
-                        // The node itself is  document
-                        document_nodes.insert(n);
                     }
                 }
             }
+            progress.info(&format!("Found {} document nodes-", document_nodes.len()))?;
             for doc_node_id in document_nodes {
                 // Only add annotation if it does not exist yet
                 if node_annos
                     .get_value_for_item(&doc_node_id, &anno_doc_key)?
                     .is_none()
                 {
+                    progress.info(&format!(
+                        "Document {} has no annis::doc anno",
+                        node_annos
+                            .get_value_for_item(&doc_node_id, &NODE_NAME_KEY)?
+                            .unwrap_or_default(),
+                    ))?;
                     // The node name can be a simple string or an URI, parse as
                     // URI and use the last part of the path as document name.
 
@@ -96,6 +111,7 @@ impl AnnisCompatibility {
                             .path_segments()
                             .and_then(|p| p.last())
                             .unwrap_or_else(|| &node_name);
+                        dbg!(doc_name);
                         node_annos.insert(
                             doc_node_id,
                             Annotation {
