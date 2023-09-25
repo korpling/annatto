@@ -32,9 +32,10 @@ pub struct Replace {
     node_annos: Option<BTreeMap<String, String>>,
     edge_annos: Option<BTreeMap<String, String>>,
     namespaces: Option<BTreeMap<String, String>>,
+    components: Option<BTreeMap<String, String>>,
 }
 
-pub const MODULE_NAME: &str = "replace";
+pub const MODULE_NAME: &str = "revise"; // deprecate feature MODULE_NAME soon
 
 impl Module for Replace {
     fn module_name(&self) -> &str {
