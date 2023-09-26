@@ -18,7 +18,7 @@ use umya_spreadsheet::Cell;
 use crate::{
     error::AnnattoError,
     progress::ProgressReporter,
-    util::{get_all_files, insert_corpus_nodes_from_path},
+    util::{self},
     Module, StepID,
 };
 
@@ -77,7 +77,7 @@ fn sheet_from_address<'a>(
 impl ImportSpreadsheet {
     fn import_datasheet(
         &self,
-        doc_path: &String,
+        doc_path: &str,
         sheet: &umya_spreadsheet::Worksheet,
         update: &mut GraphUpdate,
         progress_reporter: &ProgressReporter,
@@ -321,7 +321,7 @@ impl ImportSpreadsheet {
 
     fn import_metasheet(
         &self,
-        doc_path: &String,
+        doc_path: &str,
         sheet: &umya_spreadsheet::Worksheet,
         update: &mut GraphUpdate,
     ) -> Result<(), AnnattoError> {
@@ -354,11 +354,10 @@ impl ImportSpreadsheet {
     fn import_workbook(
         &self,
         update: &mut GraphUpdate,
-        root_path: &Path,
         path: &Path,
+        doc_node_name: &str,
         progress_reporter: &ProgressReporter,
     ) -> Result<(), AnnattoError> {
-        let doc_path = insert_corpus_nodes_from_path(update, root_path, path)?;
         let book = umya_spreadsheet::reader::xlsx::read(path)?;
         if let Some(sheet) = sheet_from_address(&book, &self.datasheet, Some(0)).map_err(|e| {
             AnnattoError::Import {
@@ -367,7 +366,7 @@ impl ImportSpreadsheet {
                 path: path.to_path_buf(),
             }
         })? {
-            self.import_datasheet(&doc_path, sheet, update, progress_reporter)?;
+            self.import_datasheet(doc_node_name, sheet, update, progress_reporter)?;
         }
         if let Some(sheet) =
             sheet_from_address(&book, &self.metasheet, None).map_err(|_| AnnattoError::Import {
@@ -379,7 +378,7 @@ impl ImportSpreadsheet {
                 path: path.into(),
             })?
         {
-            self.import_metasheet(&doc_path, sheet, update)?;
+            self.import_metasheet(doc_node_name, sheet, update)?;
         }
         Ok(())
     }
@@ -392,15 +391,17 @@ impl Importer for ImportSpreadsheet {
         step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let all_files = get_all_files(input_path, vec!["xlsx"])?;
+        let mut updates = GraphUpdate::default();
+
+        let all_files =
+            util::graphupdate::import_corpus_graph_from_files(&mut updates, input_path, &["xlsx"])?;
         let number_of_files = all_files.len();
         // Each file is a work step
         let reporter = ProgressReporter::new(tx, step_id, number_of_files)?;
-        let mut updates = GraphUpdate::default();
 
-        all_files.into_iter().try_for_each(|pb| {
+        all_files.into_iter().try_for_each(|(pb, doc_node_name)| {
             reporter.info(&format!("Importing {}", pb.to_string_lossy()))?;
-            self.import_workbook(&mut updates, input_path, pb.as_path(), &reporter)?;
+            self.import_workbook(&mut updates, &pb, &doc_node_name, &reporter)?;
             reporter.worked(1)?;
             Ok::<(), AnnattoError>(())
         })?;
@@ -464,7 +465,7 @@ mod tests {
             },
             _ => 4,
         };
-        let queries_and_results: [(&str, u64); 19] = [
+        let queries_and_results = vec![
             ("dipl", 4),
             ("norm", 4),
             ("dipl _=_ norm", 1),
@@ -484,6 +485,8 @@ mod tests {
             ("norm:lemma", lemma_count),
             ("norm:pos _=_ norm", 4),
             ("norm:lemma _=_ norm", lemma_count),
+            ("annis:doc", 1),
+            ("annis:doc=\"test_file\"", 1),
         ];
         let corpus_name = "current";
         let tmp_dir = tempdir_in(temp_dir())?;

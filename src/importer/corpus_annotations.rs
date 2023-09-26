@@ -11,7 +11,7 @@ use graphannis::{
 use graphannis_core::{graph::ANNIS_NS, util::split_qname};
 use serde_derive::Deserialize;
 
-use crate::{util::get_all_files, workflow::StatusMessage, Module, StepID};
+use crate::{progress::ProgressReporter, util::get_all_files, Module, StepID};
 
 use super::Importer;
 
@@ -31,7 +31,7 @@ const KV_SEPARATOR: &str = "=";
 
 fn read_annotations(
     path: &Path,
-    tx: &Option<crate::workflow::StatusSender>,
+    progress: &ProgressReporter,
 ) -> Result<BTreeMap<String, String>, Box<dyn std::error::Error>> {
     let anno_file = std::fs::File::open(path)?;
     let mut anno_map = BTreeMap::new();
@@ -39,12 +39,12 @@ fn read_annotations(
         let line = line_r?;
         if let Some((k, v)) = line.split_once(KV_SEPARATOR) {
             anno_map.insert(k.to_string(), v.to_string());
-        } else if let Some(sender) = tx {
-            sender.send(StatusMessage::Warning(format!(
+        } else {
+            progress.warn(&format!(
                 "Could not read data `{}` in file {}",
                 &line,
                 path.display()
-            )))?;
+            ))?;
         }
     }
     Ok(anno_map)
@@ -54,12 +54,13 @@ impl Importer for AnnotateCorpus {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
-        _step_id: StepID,
+        step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        // TODO use ProgressReporter
         let mut update = GraphUpdate::default();
-        for file_path in get_all_files(input_path, vec!["meta"])? {
+        let all_files = get_all_files(input_path, vec!["meta"])?;
+        let progress = ProgressReporter::new(tx, step_id, all_files.len())?;
+        for file_path in all_files {
             let mut corpus_nodes = Vec::new();
             for ancestor in file_path.ancestors() {
                 if ancestor == input_path {
@@ -96,7 +97,7 @@ impl Importer for AnnotateCorpus {
             }
             if let Some(corpus_doc_path) = previous {
                 let path = file_path.as_path();
-                let annotations = read_annotations(path, &tx)?;
+                let annotations = read_annotations(path, &progress)?;
                 for (k, v) in annotations {
                     let (anno_ns, anno_name) = match split_qname(k.as_str()) {
                         (None, name) => ("", name),
@@ -110,6 +111,7 @@ impl Importer for AnnotateCorpus {
                     })?;
                 }
             }
+            progress.worked(1)?;
         }
         Ok(update)
     }

@@ -14,7 +14,9 @@ use pest::{
 use pest_derive::Parser;
 use serde_derive::Deserialize;
 
-use crate::{progress::ProgressReporter, util::graphupdate::path_structure, Module, StepID};
+use crate::{
+    progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files, Module, StepID,
+};
 
 use super::Importer;
 
@@ -242,7 +244,7 @@ impl Importer for PtbImporter {
     ) -> std::result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut u = GraphUpdate::default();
 
-        let documents = path_structure(&mut u, input_path, &["ptb"])?;
+        let documents = import_corpus_graph_from_files(&mut u, input_path, &["ptb"])?;
 
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
 

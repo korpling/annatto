@@ -91,7 +91,14 @@ pub fn root_corpus_from_path(root_path: &Path) -> Result<String> {
     Ok(root_name.to_string())
 }
 
-pub fn path_structure(
+/// Finds all files with a given ending in a directory and map the corpus
+/// structure according to the file/directory structure.
+///
+/// The root directory is mapped as root corpus, sub-directories as sub-corpora
+/// and files as documents. The found documents are returned with the
+/// corresponding file path and the document node ID as string.
+
+pub fn import_corpus_graph_from_files(
     u: &mut GraphUpdate,
     root_path: &Path,
     file_endings: &[&str],
