@@ -99,12 +99,12 @@ impl ReadFrom {
 #[derive(Deserialize)]
 #[serde(tag = "action", rename_all = "lowercase", content = "config")]
 pub enum GraphOp {
-    Check(Check),                 // no default, has a (required) path attribute
-    Link(LinkNodes),              // no default, has required attributes
-    Map(MapAnnos),                // no default, has a (required) path attribute
-    Merge(Merge),                 // no default, has required attributes
+    Check(Check),                     // no default, has a (required) path attribute
+    Link(LinkNodes),                  // no default, has required attributes
+    Map(MapAnnos),                    // no default, has a (required) path attribute
+    Merge(Merge),                     // no default, has required attributes
     Revise(#[serde(default)] Revise), // does nothing on default
-    None(#[serde(default)] NoOp), // has no attributes
+    None(#[serde(default)] NoOp),     // has no attributes
 }
 
 impl Default for GraphOp {
