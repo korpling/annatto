@@ -103,7 +103,7 @@ pub enum GraphOp {
     Link(LinkNodes),              // no default, has required attributes
     Map(MapAnnos),                // no default, has a (required) path attribute
     Merge(Merge),                 // no default, has required attributes
-    Re(#[serde(default)] Revise), // does nothing on default
+    Revise(#[serde(default)] Revise), // does nothing on default
     None(#[serde(default)] NoOp), // has no attributes
 }
 
@@ -127,7 +127,7 @@ impl GraphOp {
             GraphOp::Link(m) => m,
             GraphOp::Map(m) => m,
             GraphOp::Merge(m) => m,
-            GraphOp::Re(m) => m,
+            GraphOp::Revise(m) => m,
             GraphOp::None(m) => m,
         }
     }
