@@ -1,5 +1,4 @@
 //! Contains manipulators and their traits.
-pub mod annis_compat;
 pub mod check;
 pub mod link_nodes;
 pub mod map_annos;
