@@ -7,8 +7,8 @@ use std::*;
 use crate::models::textgrid::{Interval, TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{
-    add_order_relations, map_annotations, map_audio_source, map_token, path_structure,
-    root_corpus_from_path, NodeInfo,
+    add_order_relations, import_corpus_graph_from_files, map_annotations, map_audio_source,
+    map_token, root_corpus_from_path, NodeInfo,
 };
 use crate::{Module, StepID};
 use anyhow::{anyhow, Result};
@@ -416,7 +416,7 @@ impl Importer for TextgridImporter {
                 .map_or("wav", |ext| ext.as_str()),
         };
 
-        let documents = path_structure(&mut u, input_path, &FILE_ENDINGS)?;
+        let documents = import_corpus_graph_from_files(&mut u, input_path, &FILE_ENDINGS)?;
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
         for (file_path, doc_path) in documents {
             reporter.info(&format!("Processing {}", &file_path.to_string_lossy()))?;
