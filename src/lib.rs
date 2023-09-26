@@ -24,7 +24,7 @@ use importer::{
 };
 use manipulator::{
     check::Check, link_nodes::LinkNodes, map_annos::MapAnnos, merge::Merge, no_op::NoOp,
-    re::Replace, Manipulator,
+    re::Revise, Manipulator,
 };
 use serde_derive::Deserialize;
 
@@ -99,12 +99,12 @@ impl ReadFrom {
 #[derive(Deserialize)]
 #[serde(tag = "action", rename_all = "lowercase", content = "config")]
 pub enum GraphOp {
-    Check(Check),                  // no default, has a (required) path attribute
-    Link(LinkNodes),               // no default, has required attributes
-    Map(MapAnnos),                 // no default, has a (required) path attribute
-    Merge(Merge),                  // no default, has required attributes
-    Re(#[serde(default)] Replace), // does nothing on default
-    None(#[serde(default)] NoOp),  // has no attributes
+    Check(Check),                 // no default, has a (required) path attribute
+    Link(LinkNodes),              // no default, has required attributes
+    Map(MapAnnos),                // no default, has a (required) path attribute
+    Merge(Merge),                 // no default, has required attributes
+    Re(#[serde(default)] Revise), // does nothing on default
+    None(#[serde(default)] NoOp), // has no attributes
 }
 
 impl Default for GraphOp {

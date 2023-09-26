@@ -21,12 +21,13 @@ use serde_derive::Deserialize;
 
 use crate::{
     error::{AnnattoError, StandardErrorResult},
+    progress::ProgressReporter,
     Manipulator, Module,
 };
 
 #[derive(Default, Deserialize)]
 #[serde(default)]
-pub struct Replace {
+pub struct Revise {
     remove_nodes: Option<Vec<String>>,
     move_node_annos: bool,
     node_annos: Option<BTreeMap<String, String>>,
@@ -37,7 +38,7 @@ pub struct Replace {
 
 pub const MODULE_NAME: &str = "revise"; // deprecate feature MODULE_NAME soon
 
-impl Module for Replace {
+impl Module for Revise {
     fn module_name(&self) -> &str {
         MODULE_NAME
     }
@@ -45,27 +46,156 @@ impl Module for Replace {
 
 const DELIMITER: &str = "::";
 
-fn parse_component_string(value: &str) -> Result<(AnnotationComponentType, String, String), Box<dyn std::error::Error>> {
-    if let Some((ctype_str, remainder)) = value.split_once(DELIMITER) {
-
+fn parse_component_string(value: &str) -> Result<Option<AnnotationComponent>, AnnattoError> {
+    if value.trim().is_empty() {
+        return Ok(None);
+    }
+    let annatto_err = AnnattoError::Manipulator {
+        reason: format!("Could not map component configuration `{value}`"),
+        manipulator: MODULE_NAME.to_string(),
+    };
+    if let Some((ctype_str, layer, name)) = value.splitn(3, DELIMITER).collect_tuple() {
+        let ctype = match ctype_str.to_lowercase().as_str() {
+            "partof" => AnnotationComponentType::PartOf,
+            "ordering" => AnnotationComponentType::Ordering,
+            "coverage" => AnnotationComponentType::Coverage,
+            "dominance" => AnnotationComponentType::Dominance,
+            "pointing" => AnnotationComponentType::Dominance,
+            "l" => AnnotationComponentType::LeftToken,
+            "r" => AnnotationComponentType::RightToken,
+            _ => return Err(annatto_err),
+        };
+        Ok(Some(AnnotationComponent::new(
+            ctype,
+            layer.into(),
+            name.into(),
+        )))
     } else {
-        
+        Err(annatto_err)
     }
 }
 
-fn to_component_map(str_map: &BTreeMap<String, String>) -> Result<BTreeMap<AnnotationComponent, AnnotationComponent>, Box<dyn std::error::Error>> {
+fn to_component_map(
+    str_map: &BTreeMap<String, String>,
+) -> Result<BTreeMap<AnnotationComponent, Option<AnnotationComponent>>, AnnattoError> {
     let mut component_map = BTreeMap::new();
     for (old, new) in str_map {
-
+        if let Some(source) = parse_component_string(old)? {
+            component_map.insert(source, parse_component_string(new)?);
+        } else {
+            return Err(AnnattoError::Manipulator {
+                reason: format!("Could not parse source component: {old}"),
+                manipulator: MODULE_NAME.to_string(),
+            })?;
+        }
     }
     Ok(component_map)
 }
 
-fn revise_components() -> Result<(), Box<dyn std::error::Error>> {
+fn revise_components(
+    graph: &AnnotationGraph,
+    component_config: &BTreeMap<String, String>,
+    update: &mut GraphUpdate,
+    progress_reporter: &ProgressReporter,
+) -> Result<(), AnnattoError> {
+    let component_map = to_component_map(component_config)?;
+    for (source, target) in component_map {
+        revise_component(graph, source, target, update, progress_reporter)?;
+    }
     Ok(())
 }
 
-fn revise_component() -> Result<(), Box<dyn std::error::Error>> {
+fn revise_component(
+    graph: &AnnotationGraph,
+    source_component: AnnotationComponent,
+    target_component: Option<AnnotationComponent>,
+    update: &mut GraphUpdate,
+    progress_reporter: &ProgressReporter,
+) -> Result<(), AnnattoError> {
+    if let Some(source_storage) = graph.get_graphstorage(&source_component) {
+        let node_annos = graph.get_node_annos();
+        let edge_anno_storage = source_storage.get_anno_storage();
+        for node in source_storage.as_edgecontainer().source_nodes() {
+            if let Ok(node_id) = node {
+                let source_node_name = node_annos
+                    .get_value_for_item(&node_id, &NODE_NAME_KEY)?
+                    .unwrap();
+                for reachable_target in
+                    source_storage.find_connected(node_id, 1, std::ops::Bound::Included(1))
+                {
+                    if let Ok(target_id) = reachable_target {
+                        let edge = Edge {
+                            source: node_id,
+                            target: target_id,
+                        };
+                        let target_node_name = node_annos
+                            .get_value_for_item(&target_id, &NODE_NAME_KEY)?
+                            .unwrap();
+                        update.add_event(UpdateEvent::DeleteEdge {
+                            source_node: source_node_name.to_string(),
+                            target_node: target_node_name.to_string(),
+                            layer: source_component.layer.to_string(),
+                            component_type: source_component.get_type().to_string(),
+                            component_name: source_component.name.to_string(),
+                        })?;
+                        if let Some(target_c) = &target_component {
+                            update.add_event(UpdateEvent::AddEdge {
+                                source_node: source_node_name.to_string(),
+                                target_node: target_node_name.to_string(),
+                                layer: target_c.layer.to_string(),
+                                component_type: target_c.get_type().to_string(),
+                                component_name: target_c.name.to_string(),
+                            })?;
+                            for anno_key in
+                                edge_anno_storage.get_all_keys_for_item(&edge, None, None)?
+                            {
+                                if anno_key.ns == ANNIS_NS {
+                                    continue;
+                                }
+                                let edge_anno_value = edge_anno_storage
+                                    .get_value_for_item(&edge, &anno_key)?
+                                    .unwrap();
+                                update.add_event(UpdateEvent::AddEdgeLabel {
+                                    source_node: source_node_name.to_string(),
+                                    target_node: target_node_name.to_string(),
+                                    layer: target_c.layer.to_string(),
+                                    component_type: target_c.get_type().to_string(),
+                                    component_name: target_c.name.to_string(),
+                                    anno_ns: anno_key.ns.to_string(),
+                                    anno_name: anno_key.name.to_string(),
+                                    anno_value: edge_anno_value.to_string(),
+                                })?;
+                            }
+                        }
+                    } else {
+                        progress_reporter.warn(
+                            format!(
+                                "Could not retrieve target node for source node in component {}",
+                                source_component
+                            )
+                            .as_str(),
+                        )?;
+                    }
+                }
+            } else {
+                progress_reporter.warn(
+                    format!(
+                        "Could not obtain node from source nodes in component {}.",
+                        source_component
+                    )
+                    .as_str(),
+                )?;
+            }
+        }
+    } else {
+        progress_reporter.warn(
+            format!(
+                "Component {} does not exist and will not be mapped",
+                source_component
+            )
+            .as_str(),
+        )?;
+    }
     Ok(())
 }
 
@@ -451,26 +581,37 @@ fn read_replace_property_value(
     Ok(names)
 }
 
-impl Manipulator for Replace {
+impl Manipulator for Revise {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
         _workflow_directory: &Path,
-        _tx: Option<crate::workflow::StatusSender>,
+        tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        let progress_reporter = ProgressReporter::new(
+            tx,
+            crate::StepID {
+                module_name: MODULE_NAME.to_string(),
+                path: None,
+            },
+            6,
+        )?;
         let mut update = GraphUpdate::default();
         let move_by_ns = self.move_node_annos;
         if let Some(ref node_names) = self.remove_nodes {
             remove_nodes(&mut update, node_names)?;
         }
+        progress_reporter.worked(1)?;
         if let Some(ref anno_name_s) = self.node_annos {
             let node_annos = read_replace_property_value(anno_name_s)?;
             replace_node_annos(graph, &mut update, node_annos, move_by_ns)?;
         }
+        progress_reporter.worked(1)?;
         if let Some(ref edge_name_s) = self.edge_annos {
             let edge_annos = read_replace_property_value(edge_name_s)?;
             replace_edge_annos(graph, &mut update, edge_annos)?;
         }
+        progress_reporter.worked(1)?;
         if let Some(ref namespace_s) = self.namespaces {
             let namespaces = read_replace_property_value(namespace_s)?;
             let replacements = namespaces
@@ -486,7 +627,13 @@ impl Manipulator for Replace {
                 .collect_vec();
             replace_namespaces(graph, &mut update, replacements)?;
         }
+        progress_reporter.worked(1)?;
+        if let Some(component_config) = &self.components {
+            revise_components(graph, component_config, &mut update, &progress_reporter)?;
+        }
+        progress_reporter.worked(1)?;
         graph.apply_update(&mut update, |_| {})?;
+        progress_reporter.worked(1)?;
         Ok(())
     }
 }
@@ -498,12 +645,12 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use crate::manipulator::re::Replace;
+    use crate::manipulator::re::Revise;
     use crate::manipulator::Manipulator;
     use crate::Result;
 
     use graphannis::corpusstorage::{QueryLanguage, ResultOrder, SearchQuery};
-    use graphannis::model::AnnotationComponentType;
+    use graphannis::model::{AnnotationComponent, AnnotationComponentType};
     use graphannis::update::{GraphUpdate, UpdateEvent};
     use graphannis::{AnnotationGraph, CorpusStorage};
     use graphannis_core::annostorage::ValueSearch;
@@ -544,7 +691,7 @@ mod tests {
         };
         let node_map: BTreeMap<String, String> = toml::from_str(node_anno_prop_val)?;
         let edge_map: BTreeMap<String, String> = toml::from_str(edge_anno_prop_val)?;
-        let replace = Replace {
+        let replace = Revise {
             remove_nodes: None,
             move_node_annos: false,
             node_annos: Some(node_map),
@@ -678,7 +825,7 @@ mod tests {
             "norm::pos" = "dipl::derived_pos"
         "#,
         )?;
-        let replace = Replace {
+        let replace = Revise {
             move_node_annos: true,
             namespaces: None,
             node_annos: Some(node_map),
@@ -814,7 +961,7 @@ mod tests {
             deprel = ""
         "#,
         )?;
-        let replace = Replace {
+        let replace = Revise {
             move_node_annos: true,
             namespaces: None,
             node_annos: Some(node_map),
@@ -869,7 +1016,7 @@ mod tests {
             deprel = ""
         "#,
         )?;
-        let replace = Replace {
+        let replace = Revise {
             move_node_annos: true,
             namespaces: None,
             node_annos: Some(node_map),
@@ -910,7 +1057,7 @@ mod tests {
             "" = "default_ns"
         "#,
         )?;
-        let replace = Replace {
+        let replace = Revise {
             remove_nodes: None,
             move_node_annos: false,
             node_annos: None,
@@ -1698,5 +1845,83 @@ mod tests {
         let r: std::result::Result<BTreeMap<String, String>, toml::de::Error> =
             toml::from_str(toml_string.unwrap().as_str());
         assert!(r.is_ok(), "Could not parse test file: {:?}", &r.err());
+    }
+
+    #[test]
+    fn test_modify_component_in_mem() {
+        let r = test_modify_component(false);
+        assert!(r.is_ok(), "Error occured: {:?}", r.err());
+    }
+
+    #[test]
+    fn test_modify_component_on_disk() {
+        let r = test_modify_component(true);
+        assert!(r.is_ok(), "Error occured: {:?}", r.err());
+    }
+
+    fn test_modify_component(on_disk: bool) -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let mut g = input_graph_for_move(on_disk)
+            .map_err(|_| assert!(false))
+            .unwrap();
+        let previous_components = g.get_all_components(None, None);
+        let mut erased_components = Vec::new();
+        let mut new_components = Vec::new();
+        let mut component_mod_config = BTreeMap::new();
+        for existing_component in previous_components {
+            let (old_ctype_str, new_ctype_str, new_ctype) = match existing_component.get_type() {
+                AnnotationComponentType::Coverage => continue,
+                AnnotationComponentType::Dominance => {
+                    ("dominance", "pointing", AnnotationComponentType::Pointing)
+                }
+                AnnotationComponentType::Pointing => {
+                    ("pointing", "dominance", AnnotationComponentType::Dominance)
+                }
+                AnnotationComponentType::Ordering => {
+                    ("ordering", "ordering", AnnotationComponentType::Ordering)
+                }
+                AnnotationComponentType::LeftToken => continue,
+                AnnotationComponentType::RightToken => continue,
+                AnnotationComponentType::PartOf => continue,
+            };
+            let key_str = format!(
+                "{old_ctype_str}::{}::{}",
+                existing_component.layer.to_string(),
+                existing_component.name.to_string()
+            );
+            let val_str = format!(
+                "{new_ctype_str}::::moved_{}",
+                existing_component.name.to_string()
+            );
+            component_mod_config.insert(key_str, val_str);
+            let new_c = AnnotationComponent::new(
+                new_ctype,
+                "".into(),
+                format!("moved_{}", existing_component.name).into(),
+            );
+            new_components.push(new_c);
+            erased_components.push(existing_component);
+        }
+        let op = Revise {
+            remove_nodes: None,
+            move_node_annos: false,
+            node_annos: None,
+            edge_annos: None,
+            namespaces: None,
+            components: Some(component_mod_config),
+        };
+        let r = op.manipulate_corpus(&mut g, Path::new("./"), None);
+        assert!(r.is_ok(), "graph op returned error: {:?}", r.err());
+        let current_components = g.get_all_components(None, None);
+        for ec in erased_components {
+            let storage = g.get_graphstorage(&ec);
+            assert!(
+                !current_components.contains(&ec)
+                    || (storage.is_some() && storage.unwrap().source_nodes().count() == 0)
+            );
+        }
+        for nc in new_components {
+            assert!(current_components.contains(&nc));
+        }
+        Ok(())
     }
 }
