@@ -10,19 +10,23 @@ use graphannis::{
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
+use serde_derive::Deserialize;
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader, ParserConfig};
 
 use crate::{
-    util::{get_all_files, graphupdate::map_audio_source, insert_corpus_nodes_from_path},
+    error::AnnattoError,
+    progress::ProgressReporter,
+    util::graphupdate::{import_corpus_graph_from_files, map_audio_source},
     workflow::StatusMessage,
-    Module,
+    Module, StepID,
 };
 
 use super::Importer;
 
 pub const MODULE_NAME: &str = "import_exmaralda";
 
-#[derive(Default)]
+#[derive(Default, Deserialize)]
+#[serde(default)]
 pub struct ImportEXMARaLDA {}
 
 impl Module for ImportEXMARaLDA {
@@ -35,14 +39,34 @@ impl Importer for ImportEXMARaLDA {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
-        _properties: &std::collections::BTreeMap<String, String>,
+        step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let all_files = get_all_files(input_path, vec!["exb", "xml"])?;
+        let all_files = import_corpus_graph_from_files(&mut update, input_path, &["exb", "xml"])?;
+        let progress = ProgressReporter::new(tx.clone(), step_id, all_files.len())?;
         all_files
             .into_iter()
-            .try_for_each(|pb| self.import_document(input_path, pb.as_path(), &mut update, &tx))?;
+            .map(|(fp, doc_node_name)| {
+                self.import_document(
+                    &doc_node_name,
+                    fp.as_path(),
+                    input_path,
+                    &mut update,
+                    &progress,
+                    &tx,
+                )
+            })
+            .filter_map(|r| match r {
+                Ok(_) => None,
+                Err(e) => Some(e),
+            })
+            .try_for_each(|e| {
+                if let Some(ref sender) = tx {
+                    sender.send(StatusMessage::Failed(e))?
+                }
+                Ok::<(), Box<dyn std::error::Error>>(())
+            })?;
         Ok(update)
     }
 }
@@ -57,13 +81,14 @@ fn attr_vec_to_map(attributes: &[OwnedAttribute]) -> BTreeMap<String, String> {
 impl ImportEXMARaLDA {
     fn import_document(
         &self,
-        corpus_path: &std::path::Path,
+        doc_node_name: &str,
         document_path: &std::path::Path,
+        corpus_path: &std::path::Path,
         update: &mut GraphUpdate,
+        progress: &ProgressReporter,
         tx: &Option<crate::workflow::StatusSender>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> crate::error::Result<()> {
         // buffers
-        let mut doc_node_name = String::new();
         let mut char_buf = String::new();
         let mut timeline = BTreeMap::new();
         let mut ordered_tl_nodes: Vec<String> = Vec::new();
@@ -81,10 +106,7 @@ impl ImportEXMARaLDA {
         loop {
             match reader.next() {
                 Ok(XmlEvent::EndDocument) => break,
-                Ok(XmlEvent::StartDocument { .. }) => {
-                    doc_node_name =
-                        insert_corpus_nodes_from_path(update, corpus_path, document_path)?;
-                }
+                Ok(XmlEvent::StartDocument { .. }) => {}
                 Ok(XmlEvent::Characters(value)) => char_buf.push_str(value.as_str()),
                 Ok(XmlEvent::StartElement {
                     name, attributes, ..
@@ -100,18 +122,28 @@ impl ImportEXMARaLDA {
                                             update,
                                             audio_path.as_path(),
                                             corpus_path.to_str().unwrap(),
-                                            &doc_node_name,
+                                            doc_node_name,
                                         )?;
-                                    } else if let Some(sender) = tx {
+                                    } else {
                                         let msg = format!("Linked file {} could not be found to be linked in document {}", audio_path.as_path().to_string_lossy(), &doc_node_name);
-                                        sender.send(StatusMessage::Warning(msg))?;
+                                        progress.warn(&msg)?;
                                     }
                                 };
                             }
                         }
                         "tli" => {
                             let attr_map = attr_vec_to_map(&attributes);
-                            let time = attr_map["time"].parse::<OrderedFloat<f64>>()?;
+                            let time =
+                                if let Ok(t_val) = attr_map["time"].parse::<OrderedFloat<f64>>() {
+                                    t_val
+                                } else {
+                                    let err = AnnattoError::Import {
+                                        reason: "Failed to parse tli time value.".to_string(),
+                                        importer: self.module_name().to_string(),
+                                        path: document_path.to_path_buf(),
+                                    };
+                                    return Err(err);
+                                };
                             time_to_tli_attrs
                                 .entry(time)
                                 .or_insert_with(Vec::default)
@@ -180,49 +212,123 @@ impl ImportEXMARaLDA {
                         "event" => {
                             let text = char_buf.to_string();
                             let tier_info = parent_map.get("tier").unwrap();
-                            let speaker_id = tier_info.get("speaker").unwrap();
-                            let speaker_name = speaker_map.get(speaker_id).unwrap();
-                            let anno_name = tier_info.get("category").unwrap();
-                            let tier_type = if let Some(tpe) = tier_info.get("type") {
-                                tpe
+                            let speaker_id_opt = tier_info.get("speaker");
+                            let speaker_id = if let Some(speaker_id_val) = speaker_id_opt {
+                                speaker_id_val
                             } else {
-                                if let Some(sender) = tx {
-                                    let msg = format!(
-                                        "Could not determine tier type for {}::{}. Tier will be skipped.",
-                                        &speaker_id, &anno_name
-                                    );
-                                    sender.send(StatusMessage::Warning(msg))?;
-                                }
-                                continue;
+                                let rs = "Undefined speaker (not defined in tier attributes).";
+                                let err = AnnattoError::Import {
+                                    reason: rs.to_string(),
+                                    importer: self.module_name().to_string(),
+                                    path: document_path.to_path_buf(),
+                                };
+                                return Err(err);
+                            };
+                            let speaker_name_opt = speaker_map.get(speaker_id);
+                            let speaker_name = if let Some(speaker_name_value) = speaker_name_opt {
+                                speaker_name_value
+                            } else {
+                                let rs = format!(
+                                    "Speaker `{speaker_id}` has not been defined in speaker-table."
+                                );
+                                let err = AnnattoError::Import {
+                                    reason: rs,
+                                    importer: self.module_name().to_string(),
+                                    path: document_path.to_path_buf(),
+                                };
+                                return Err(err);
+                            };
+                            let anno_name_opt = tier_info.get("category");
+                            let anno_name = if let Some(anno_name_value) = anno_name_opt {
+                                anno_name_value
+                            } else {
+                                let rs = "Tier encountered with undefined category attribute.";
+                                let err = AnnattoError::Import {
+                                    reason: rs.to_string(),
+                                    importer: self.module_name().to_string(),
+                                    path: document_path.to_path_buf(),
+                                };
+                                return Err(err);
+                            };
+                            let tier_type = if let Some(tpe) = tier_info.get("type") {
+                                tpe.as_str()
+                            } else {
+                                let msg = format!(
+                                    "Could not determine tier type for {}::{}. Tier will be treated as annotation tier.",
+                                    &speaker_id, &anno_name
+                                );
+                                progress.warn(&msg)?;
+                                "a"
                             };
                             let event_info = parent_map.get("event").unwrap();
                             let start_id = if let Some(id) = event_info.get("start") {
                                 id
                             } else {
+                                // send "Failed", but continue to collect potential further errors in the file
                                 if let Some(sender) = tx {
                                     let msg = format!(
-                                            "Could not determine start id of currently processed event `{}`. Event will be skipped.",
+                                            "Could not determine start id of currently processed event `{}`. Event will be skipped. Import will fail.",
                                             text
                                         );
-                                    sender.send(StatusMessage::Warning(msg))?;
+                                    let err = AnnattoError::Import {
+                                        reason: msg,
+                                        importer: self.module_name().to_string(),
+                                        path: document_path.to_path_buf(),
+                                    };
+                                    sender.send(StatusMessage::Failed(err))?;
                                 }
                                 continue;
                             };
                             let end_id = if let Some(id) = event_info.get("end") {
                                 id
                             } else {
+                                // send "Failed", but continue to collect potential further errors in the file
                                 if let Some(sender) = tx {
                                     let msg = format!(
-                                            "Could not determine end id of currently processed event `{}`. Event will be skipped.",
+                                            "Could not determine end id of currently processed event `{}`. Event will be skipped. Import will fail.",
                                             text
                                         );
-                                    sender.send(StatusMessage::Warning(msg))?;
+                                    let err = AnnattoError::Import {
+                                        reason: msg,
+                                        importer: self.module_name().to_string(),
+                                        path: document_path.to_path_buf(),
+                                    };
+                                    sender.send(StatusMessage::Failed(err))?;
                                 }
                                 continue;
                             };
-                            let start_i =
-                                ordered_tl_nodes.iter().position(|e| e == start_id).unwrap();
-                            let end_i = ordered_tl_nodes.iter().position(|e| e == end_id).unwrap();
+                            let start_i = if let Some(i_val) =
+                                ordered_tl_nodes.iter().position(|e| e == start_id)
+                            {
+                                i_val
+                            } else {
+                                let err = AnnattoError::Import {
+                                    reason: format!("Unknown time line item: {start_id}"),
+                                    importer: self.module_name().to_string(),
+                                    path: document_path.to_path_buf(),
+                                };
+                                return Err(err);
+                            };
+                            let end_i = if let Some(i_val) =
+                                ordered_tl_nodes.iter().position(|e| e == end_id)
+                            {
+                                i_val
+                            } else {
+                                let err = AnnattoError::Import {
+                                    reason: format!("Unknown time line item: {start_id}"),
+                                    importer: self.module_name().to_string(),
+                                    path: document_path.to_path_buf(),
+                                };
+                                return Err(err);
+                            };
+                            if start_i >= end_i {
+                                let err_msg = format!("Start time is bigger than end time for ids: {start_id}--{end_id} ");
+                                return Err(AnnattoError::Import {
+                                    reason: err_msg,
+                                    importer: self.module_name().to_string(),
+                                    path: document_path.to_path_buf(),
+                                });
+                            }
                             let overlapped = &ordered_tl_nodes[start_i..end_i];
                             if overlapped.is_empty() {
                                 if let Some(sender) = tx {
@@ -282,7 +388,7 @@ impl ImportEXMARaLDA {
                                 anno_name: "layer".to_string(),
                                 anno_value: speaker_name.to_string(),
                             })?;
-                            if tier_type.as_str() == "t" {
+                            if tier_type == "t" {
                                 // tokenization
                                 update.add_event(UpdateEvent::AddNodeLabel {
                                     node_name: node_name.to_string(),
@@ -310,7 +416,13 @@ impl ImportEXMARaLDA {
                     }
                     parent_map.remove(&name.to_string());
                 }
-                Err(_) => break,
+                Err(_) => {
+                    return Err(AnnattoError::Import {
+                        reason: "Failed parsing EXMARaLDA XML.".to_string(),
+                        importer: self.module_name().to_string(),
+                        path: document_path.to_path_buf(),
+                    })
+                }
                 _ => continue,
             }
         }

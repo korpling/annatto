@@ -1,0 +1,11 @@
+[[import]]
+path = "../data/import/textgrid/singleSpeaker/"
+format = "textgrid"
+
+[import.config]
+audio_extension = "wav"
+
+[[export]]
+path = "tests/test_out"
+format = "graphml"
+config = {}  # as alternative to "[export.config] with no keys"

@@ -2,9 +2,9 @@
 
 pub mod graphml;
 
-use crate::{workflow::StatusSender, Module};
+use crate::{workflow::StatusSender, Module, StepID};
 use graphannis::AnnotationGraph;
-use std::{collections::BTreeMap, path::Path};
+use std::path::Path;
 
 /// An exporter is a module that takes and existing annotation graph and writes out the content into the given path in a specific format.
 pub trait Exporter: Module {
@@ -20,8 +20,8 @@ pub trait Exporter: Module {
     fn export_corpus(
         &self,
         graph: &AnnotationGraph,
-        properties: &BTreeMap<String, String>,
         output_path: &Path,
+        step_id: StepID,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>>;
 }

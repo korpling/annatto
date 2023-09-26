@@ -3,6 +3,7 @@ use quick_xml::{
     events::{attributes::Attributes, Event},
     Reader,
 };
+use serde_derive::Deserialize;
 use std::{
     collections::{BTreeMap, HashMap},
     fs::File,
@@ -19,12 +20,13 @@ use graphannis::{
 
 use crate::{
     error::AnnattoError, importer::Importer, progress::ProgressReporter, workflow::StatusSender,
-    Module,
+    Module, StepID,
 };
 
 pub const MODULE_NAME: &str = "import_graphml";
 
-#[derive(Default)]
+#[derive(Default, Deserialize)]
+#[serde(default)]
 pub struct GraphMLImporter {}
 
 fn add_node(
@@ -268,10 +270,10 @@ impl Importer for GraphMLImporter {
     fn import_corpus(
         &self,
         path: &Path,
-        _properties: &BTreeMap<String, String>,
+        step_id: StepID,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
-        let reporter = ProgressReporter::new(tx, self as &dyn Module, Some(path), 2)?;
+        let reporter = ProgressReporter::new(tx, step_id, 2)?;
 
         // TODO: support multiple GraphML and connected binary files
         // TODO: refactor the graphannis_core create to expose the needed functionality directly
@@ -303,7 +305,7 @@ impl Module for GraphMLImporter {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeMap, path::Path};
+    use std::path::Path;
 
     use insta::assert_snapshot;
 
@@ -313,8 +315,7 @@ mod tests {
     fn single_sentence() {
         let actual = import_as_graphml_string(
             GraphMLImporter::default(),
-            Path::new("tests/data/import/graphml/single_sentence/zossen.graphml"),
-            BTreeMap::default(),
+            Path::new("tests/data/import/graphml/single_sentence.graphml"),
             None,
         )
         .unwrap();

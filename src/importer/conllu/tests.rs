@@ -1,8 +1,4 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    env::temp_dir,
-    path::Path,
-};
+use std::{collections::BTreeSet, env::temp_dir, path::Path, sync::mpsc};
 
 use graphannis::{
     corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
@@ -18,11 +14,51 @@ use graphannis_core::{
 use itertools::Itertools;
 use tempfile::tempdir_in;
 
-use crate::importer::Importer;
+use crate::{importer::Importer, workflow::StatusMessage, Module};
 
 use super::ImportCoNLLU;
 
-const TEST_FILE: &str = "tests/data/import/conll/";
+const TEST_PATH: &str = "tests/data/import/conll/valid";
+
+#[test]
+fn test_conll_fail_invalid() {
+    let import = ImportCoNLLU::default();
+    let import_path = Path::new("tests/data/import/conll/invalid");
+    let job = import.import_corpus(import_path, import.step_id(Some(import_path)), None);
+    assert!(job.is_ok());
+    let mut u = GraphUpdate::default();
+    assert!(import
+        .import_document(
+            &mut u,
+            import_path.join("test_file.conllu").as_path(),
+            import_path.join("test_file").to_str().unwrap().to_string(),
+            &None
+        )
+        .is_err());
+}
+
+#[test]
+fn test_conll_fail_invalid_heads() {
+    let import = ImportCoNLLU::default();
+    let import_path = Path::new("tests/data/import/conll/invalid-heads/");
+    let (sender, receiver) = mpsc::channel();
+    let job = import.import_corpus(import_path, import.step_id(None), Some(sender));
+    assert!(job.is_ok());
+    let fail_msgs = receiver.into_iter().filter(|s| match *s {
+        StatusMessage::Failed(_) => true,
+        _ => false,
+    });
+    assert!(fail_msgs.count() > 0);
+}
+
+#[test]
+fn test_conll_fail_cyclic() -> Result<(), Box<dyn std::error::Error>> {
+    let import = ImportCoNLLU::default();
+    let import_path = Path::new("tests/data/import/conll/cyclic-deps/");
+    let job = import.import_corpus(import_path, import.step_id(None), None);
+    assert!(job.is_ok());
+    Ok(())
+}
 
 #[test]
 fn test_conll_in_mem() {
@@ -37,8 +73,8 @@ fn test_conll_on_disk() {
 fn basic_test(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
     let mut e_g = target_graph(on_disk)?;
     let import = ImportCoNLLU::default();
-    let import_path = Path::new(TEST_FILE);
-    let job = import.import_corpus(import_path, &BTreeMap::new(), None);
+    let import_path = Path::new(TEST_PATH);
+    let job = import.import_corpus(import_path, import.step_id(None), None);
     assert!(job.is_ok());
     let mut u = job.unwrap();
     let mut g = AnnotationGraph::new(on_disk)?;
@@ -195,55 +231,55 @@ fn target_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Er
     let text = "text";
     // corpus nodes
     u.add_event(UpdateEvent::AddNode {
-        node_name: "conll".to_string(),
+        node_name: "valid".to_string(),
         node_type: "corpus".to_string(),
     })?;
     u.add_event(UpdateEvent::AddNode {
-        node_name: "conll/website_example".to_string(),
+        node_name: "valid/website_example".to_string(),
         node_type: "corpus".to_string(),
     })?;
     u.add_event(UpdateEvent::AddNodeLabel {
-        node_name: "conll/website_example".to_string(),
+        node_name: "valid/website_example".to_string(),
         anno_ns: ANNIS_NS.to_string(),
         anno_name: "doc".to_string(),
         anno_value: "website_example".to_string(),
     })?;
     u.add_event(UpdateEvent::AddEdge {
-        source_node: "conll/website_example".to_string(),
-        target_node: "conll".to_string(),
+        source_node: "valid/website_example".to_string(),
+        target_node: "valid".to_string(),
         layer: ANNIS_NS.to_string(),
         component_type: AnnotationComponentType::PartOf.to_string(),
         component_name: "".to_string(),
     })?;
     // sentence_spans
     u.add_event(UpdateEvent::AddNode {
-        node_name: "conll/website_example#s1".to_string(),
+        node_name: "valid/website_example#s1".to_string(),
         node_type: "node".to_string(),
     })?;
     u.add_event(UpdateEvent::AddNodeLabel {
-        node_name: "conll/website_example#s1".to_string(),
+        node_name: "valid/website_example#s1".to_string(),
         anno_ns: "".to_string(),
         anno_name: sent_id.to_string(),
         anno_value: "1".to_string(),
     })?;
     u.add_event(UpdateEvent::AddNodeLabel {
-        node_name: "conll/website_example#s1".to_string(),
+        node_name: "valid/website_example#s1".to_string(),
         anno_ns: "".to_string(),
         anno_name: text.to_string(),
         anno_value: "They buy and sell books.".to_string(),
     })?;
     u.add_event(UpdateEvent::AddNode {
-        node_name: "conll/website_example#s2".to_string(),
+        node_name: "valid/website_example#s2".to_string(),
         node_type: "node".to_string(),
     })?;
     u.add_event(UpdateEvent::AddNodeLabel {
-        node_name: "conll/website_example#s2".to_string(),
+        node_name: "valid/website_example#s2".to_string(),
         anno_ns: "".to_string(),
         anno_name: sent_id.to_string(),
         anno_value: "2".to_string(),
     })?;
     u.add_event(UpdateEvent::AddNodeLabel {
-        node_name: "conll/website_example#s2".to_string(),
+        node_name: "valid/website_example#s2".to_string(),
         anno_ns: "".to_string(),
         anno_name: text.to_string(),
         anno_value: "I have no clue.".to_string(),
@@ -383,7 +419,7 @@ fn target_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Er
     .enumerate()
     {
         let i = j + 1;
-        let node_name = format!("conll/website_example#t{i}");
+        let node_name = format!("valid/website_example#t{i}");
         u.add_event(UpdateEvent::AddNode {
             node_name: node_name.to_string(),
             node_type: "node".to_string(),
@@ -440,14 +476,14 @@ fn target_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Er
         }
         if j > 0 {
             u.add_event(UpdateEvent::AddEdge {
-                source_node: format!("conll/website_example#t{j}"),
+                source_node: format!("valid/website_example#t{j}"),
                 target_node: node_name.to_string(),
                 layer: ANNIS_NS.to_string(),
                 component_type: AnnotationComponentType::Ordering.to_string(),
                 component_name: "".to_string(),
             })?;
         }
-        let span_name = format!("conll/website_example#s{s_id}");
+        let span_name = format!("valid/website_example#s{s_id}");
         u.add_event(UpdateEvent::AddEdge {
             source_node: span_name,
             target_node: node_name.to_string(),
@@ -468,8 +504,8 @@ fn target_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Er
         (8, 10, "obj"),
         (8, 11, "punct"),
     ] {
-        let source_node = format!("conll/website_example#t{governor}");
-        let target_node = format!("conll/website_example#t{dependent}");
+        let source_node = format!("valid/website_example#t{governor}");
+        let target_node = format!("valid/website_example#t{dependent}");
         u.add_event(UpdateEvent::AddEdge {
             source_node: source_node.to_string(),
             target_node: target_node.to_string(),

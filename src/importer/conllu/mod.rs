@@ -16,19 +16,21 @@ use pest::{
     Parser,
 };
 use pest_derive::Parser;
+use serde_derive::Deserialize;
 
 use crate::{
     error::AnnattoError,
-    util::graphupdate::path_structure,
+    util::graphupdate::import_corpus_graph_from_files,
     workflow::{StatusMessage, StatusSender},
-    Module,
+    Module, StepID,
 };
 
 use super::Importer;
 
 pub const MODULE_NAME: &str = "import_conllu";
 
-#[derive(Default)]
+#[derive(Default, Deserialize)]
+#[serde(default)]
 pub struct ImportCoNLLU {}
 
 impl Module for ImportCoNLLU {
@@ -41,13 +43,25 @@ impl Importer for ImportCoNLLU {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
-        _properties: &std::collections::BTreeMap<String, String>,
+        _step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
+        // TODO use ProgressReporter
         let mut update = GraphUpdate::default();
-        let paths_and_node_names = path_structure(&mut update, input_path, &["conll", "conllu"])?;
+        let paths_and_node_names =
+            import_corpus_graph_from_files(&mut update, input_path, &["conll", "conllu"])?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
-            self.import_document(&mut update, pathbuf.as_path(), doc_node_name, &tx)?;
+            if let Err(e) = self.import_document(&mut update, pathbuf.as_path(), doc_node_name, &tx)
+            {
+                if let Some(ref sender) = tx {
+                    let reason = e.to_string();
+                    sender.send(StatusMessage::Failed(AnnattoError::Import {
+                        reason,
+                        importer: self.module_name().to_string(),
+                        path: input_path.to_path_buf(),
+                    }))?;
+                }
+            }
         }
         Ok(update)
     }
@@ -226,8 +240,13 @@ impl ImportCoNLLU {
                         }
                     } else if let Some(sender) = tx {
                         let msg =
-                            format!("{document_node_name}: Unknown head id `{head_id}` ({l}, {c})");
-                        sender.send(StatusMessage::Warning(msg))?;
+                            format!("Failed to build dependency tree: Unknown head id `{head_id}` ({l}, {c})");
+                        let err = AnnattoError::Import {
+                            reason: msg,
+                            importer: self.module_name().to_string(),
+                            path: Path::new(document_node_name).to_path_buf(),
+                        };
+                        sender.send(StatusMessage::Failed(err))?;
                     }
                 }
             }

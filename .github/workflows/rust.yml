@@ -1,4 +1,6 @@
-on: push
+on:
+  push:
+  merge_group:
 
 name: Rust
 
@@ -7,12 +9,8 @@ jobs:
     name: Format Code
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          components: rustfmt
-          override: true
+      - uses: actions/checkout@v3
+      - uses: actions-rust-lang/setup-rust-toolchain@v1.4.4
       - uses: mbrobbel/rustfmt-check@0.5.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -21,9 +19,20 @@ jobs:
     needs: format
     runs-on: ubuntu-latest
     steps:
-      - run: rustup component add clippy rustfmt
-      - uses: actions/checkout@v1
-      - uses: actions-rs/clippy-check@v1.0.7
+      - uses: actions-rust-lang/setup-rust-toolchain@v1.4.4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features -- -D warnings
+          components: clippy
+      - uses: actions/checkout@v3
+      - name: Check code without default features
+        run: cargo check --no-default-features
+      - name: Check with clippy with all features enabled
+        run: cargo clippy --all-features -- -D warnings
+  unit-tests:
+    name: Unit tests
+    needs: static_code_analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions-rust-lang/setup-rust-toolchain@v1.4.4
+      - uses: actions/checkout@v3
+      - name: Run unit tests
+        run: cargo test

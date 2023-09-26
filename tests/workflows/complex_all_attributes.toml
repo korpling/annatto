@@ -1,0 +1,18 @@
+[[import]]
+path = "../data/import/textgrid/singleSpeaker/"
+format = "textgrid"
+
+[import.config]
+tier_groups = { tok = [ "pos", "lemma", "Inf-Struct" ] }
+skip_timeline_generation = true
+skip_audio = true
+skip_time_annotations = true
+audio_extension = "wav"
+
+[[export]]
+path = "tests/test_out"
+format = "graphml"
+
+[export.config]
+add_vis = "# no vis"
+guess_vis = true

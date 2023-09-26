@@ -1,9 +1,4 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    env::temp_dir,
-    path::Path,
-    sync::mpsc,
-};
+use std::{collections::BTreeSet, env::temp_dir, path::Path, sync::mpsc};
 
 use graphannis::{
     corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
@@ -18,47 +13,260 @@ use graphannis_core::{
 };
 use tempfile::tempdir_in;
 
-use crate::{importer::Importer, util::graphupdate::map_audio_source};
+use crate::{
+    importer::Importer, progress::ProgressReporter, util::graphupdate::map_audio_source,
+    workflow::StatusMessage, Module,
+};
 
 use super::ImportEXMARaLDA;
 
 use itertools::Itertools;
 
 #[test]
+fn test_exb_fail_for_timeline() {
+    let import = ImportEXMARaLDA::default();
+    let import_path = "./tests/data/import/exmaralda/fail-corrupt_timeline/import/";
+    let (sender, receiver) = mpsc::channel();
+    let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
+    assert!(r.is_ok());
+    assert!(receiver.into_iter().count() > 0);
+    let document_path = "./tests/data/import/exmaralda/fail-corrupt_timeline/import/test_doc.exb";
+    let mut u = GraphUpdate::default();
+    assert!(import
+        .import_document(
+            "import/test_doc",
+            Path::new(import_path),
+            Path::new(document_path),
+            &mut u,
+            &ProgressReporter::new(None, import.step_id(None), 1).unwrap(),
+            &None,
+        )
+        .is_err());
+}
+
+#[test]
+fn test_exb_fail_for_no_category() {
+    let import = ImportEXMARaLDA::default();
+    let import_path = "./tests/data/import/exmaralda/fail-no_category/";
+    let (sender, receiver) = mpsc::channel();
+    let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
+    assert!(r.is_ok());
+    assert!(receiver.into_iter().count() > 0);
+    let document_path = Path::new(import_path).join("test_doc.exb");
+    let mut u = GraphUpdate::default();
+    assert!(import
+        .import_document(
+            "fail-no_category/test_doc",
+            Path::new(import_path),
+            document_path.as_path(),
+            &mut u,
+            &ProgressReporter::new(None, import.step_id(None), 1).unwrap(),
+            &None
+        )
+        .is_err());
+}
+
+#[test]
+fn test_exb_fail_for_no_speaker() {
+    let import = ImportEXMARaLDA::default();
+    let import_path = "./tests/data/import/exmaralda/fail-no_speaker/";
+    let (sender, receiver) = mpsc::channel();
+    let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
+    assert!(r.is_ok());
+    assert!(receiver.into_iter().count() > 0);
+    let document_path = Path::new(import_path).join("test_doc.exb");
+    let mut u = GraphUpdate::default();
+    assert!(import
+        .import_document(
+            "fail-no_speaker/test_doc",
+            Path::new(import_path),
+            document_path.as_path(),
+            &mut u,
+            &ProgressReporter::new(None, import.step_id(None), 1).unwrap(),
+            &None
+        )
+        .is_err());
+}
+
+#[test]
+fn test_exb_fail_for_undefined_speaker() {
+    let import = ImportEXMARaLDA::default();
+    let import_path = "./tests/data/import/exmaralda/fail-undefined_speaker/";
+    let (sender, receiver) = mpsc::channel();
+    let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
+    assert!(r.is_ok());
+    assert!(receiver.into_iter().count() > 0);
+    let document_path = Path::new(import_path).join("test_doc.exb");
+    let mut u = GraphUpdate::default();
+    assert!(import
+        .import_document(
+            "fail-undefined_speaker/test_doc",
+            Path::new(import_path),
+            document_path.as_path(),
+            &mut u,
+            &ProgressReporter::new(None, import.step_id(None), 1).unwrap(),
+            &None
+        )
+        .is_err());
+}
+
+#[test]
+fn test_exb_fail_for_unknown_tli() {
+    let import = ImportEXMARaLDA::default();
+    let import_path = "./tests/data/import/exmaralda/fail-unknown_tli/";
+    let (sender, receiver) = mpsc::channel();
+    let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
+    assert!(r.is_ok());
+    assert!(receiver.into_iter().count() > 0);
+    let document_path = Path::new(import_path).join("test_doc.exb");
+    let mut u = GraphUpdate::default();
+    assert!(import
+        .import_document(
+            "fail-unknown_tli/test_doc",
+            Path::new(import_path),
+            document_path.as_path(),
+            &mut u,
+            &ProgressReporter::new(None, import.step_id(None), 1).unwrap(),
+            &None
+        )
+        .is_err());
+}
+
+#[test]
+fn test_exb_fail_for_bad_timevalue() {
+    let import = ImportEXMARaLDA::default();
+    let import_path = "./tests/data/import/exmaralda/fail-bad_timevalue/";
+    let (sender, receiver) = mpsc::channel();
+    let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
+    assert!(r.is_ok());
+    assert!(receiver.into_iter().count() > 0);
+    let document_path = Path::new(import_path).join("test_doc.exb");
+    let mut u = GraphUpdate::default();
+    assert!(import
+        .import_document(
+            "fail-bad_timevalue/test_doc",
+            Path::new(import_path),
+            document_path.as_path(),
+            &mut u,
+            &ProgressReporter::new(None, import.step_id(None), 1).unwrap(),
+            &None
+        )
+        .is_err());
+}
+
+#[test]
+fn test_exb_fail_no_start_no_end() {
+    let import = ImportEXMARaLDA::default();
+    let import_path = "./tests/data/import/exmaralda/fail-no_start_no_end/";
+    let (sender, receiver) = mpsc::channel();
+    let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
+    assert!(r.is_ok());
+    assert_eq!(
+        receiver
+            .iter()
+            .filter(|m| match m {
+                StatusMessage::Failed(_) => true,
+                _ => false,
+            })
+            .count(),
+        3
+    );
+}
+
+#[test]
+fn test_fail_invalid() {
+    let import = ImportEXMARaLDA::default();
+    let import_path = "./tests/data/import/exmaralda/fail-invalid/import/";
+    let (sender, receiver) = mpsc::channel();
+    let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
+    assert!(r.is_ok());
+    assert!(receiver.into_iter().count() > 0);
+    let document_path = "./tests/data/import/exmaralda/fail-invalid/import/test_doc_invalid.exb";
+    let mut u = GraphUpdate::default();
+    assert!(import
+        .import_document(
+            "import/test_doc_invalid",
+            Path::new(import_path),
+            Path::new(document_path),
+            &mut u,
+            &ProgressReporter::new(None, import.step_id(None), 1).unwrap(),
+            &None
+        )
+        .is_err());
+}
+
+#[test]
 fn test_exb_in_mem() {
-    let r = test_exb(false, true);
+    let r = test_exb(
+        false,
+        "./tests/data/import/exmaralda/clean/import/",
+        true,
+        0,
+    );
     assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
 }
 
 #[test]
 fn test_exb_on_disk() {
-    let r = test_exb(true, true);
+    let r = test_exb(true, "./tests/data/import/exmaralda/clean/import/", true, 0);
     assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
 }
 
 #[test]
 fn test_exb_broken_audio_in_mem() {
-    let r = test_exb(false, false);
+    let r = test_exb(
+        false,
+        "./tests/data/import/exmaralda/broken_audio/import/",
+        false,
+        1,
+    );
     assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
 }
 
 #[test]
 fn test_exb_broken_audio_on_disk() {
-    let r = test_exb(true, false);
+    let r = test_exb(
+        true,
+        "./tests/data/import/exmaralda/broken_audio/import/",
+        false,
+        1,
+    );
     assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
 }
 
-fn test_exb(on_disk: bool, with_audio: bool) -> Result<(), Box<dyn std::error::Error>> {
-    let mut e_g = target_graph(on_disk, with_audio)?;
+#[test]
+fn test_exb_pass_missing_type_attr_in_mem() {
+    let r = test_exb(
+        false,
+        "./tests/data/import/exmaralda/pass-no_tier_type/import/",
+        true,
+        9,
+    );
+    assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
+}
+
+#[test]
+fn test_exb_pass_missing_type_attr_on_disk() {
+    let r = test_exb(
+        true,
+        "./tests/data/import/exmaralda/pass-no_tier_type/import/",
+        true,
+        9,
+    );
+    assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
+}
+
+fn test_exb(
+    on_disk: bool,
+    import_path: &str,
+    with_audio: bool,
+    expected_warnings_count: usize,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut expected_graph = target_graph(on_disk, with_audio)?;
     let import = ImportEXMARaLDA::default();
-    let import_path = if with_audio {
-        "./tests/data/import/exmaralda/clean/import/"
-    } else {
-        "./tests/data/import/exmaralda/broken_audio/import/"
-    };
     let (sender, receiver) = mpsc::channel();
     let mut update =
-        import.import_corpus(Path::new(import_path), &BTreeMap::new(), Some(sender))?;
+        import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender))?;
     let mut g = AnnotationGraph::new(on_disk)?;
     let update_app = g.apply_update(&mut update, |_| {});
     assert!(
@@ -67,7 +275,7 @@ fn test_exb(on_disk: bool, with_audio: bool) -> Result<(), Box<dyn std::error::E
         update_app.err()
     );
     // corpus nodes
-    let e_corpus_nodes: BTreeSet<String> = e_g
+    let e_corpus_nodes: BTreeSet<String> = expected_graph
         .get_node_annos()
         .exact_anno_search(
             Some(&NODE_TYPE_KEY.ns),
@@ -77,7 +285,8 @@ fn test_exb(on_disk: bool, with_audio: bool) -> Result<(), Box<dyn std::error::E
         .into_iter()
         .map(|r| r.unwrap().node)
         .map(|id_| {
-            e_g.get_node_annos()
+            expected_graph
+                .get_node_annos()
                 .get_value_for_item(&id_, &NODE_NAME_KEY)
                 .unwrap()
                 .unwrap()
@@ -103,7 +312,7 @@ fn test_exb(on_disk: bool, with_audio: bool) -> Result<(), Box<dyn std::error::E
         .collect();
     assert_eq!(e_corpus_nodes, g_corpus_nodes);
     // anno names
-    let e_anno_names = e_g.get_node_annos().annotation_keys()?;
+    let e_anno_names = expected_graph.get_node_annos().annotation_keys()?;
     let g_anno_names = g.get_node_annos().annotation_keys()?;
     let e_name_iter = e_anno_names
         .iter()
@@ -123,10 +332,17 @@ fn test_exb(on_disk: bool, with_audio: bool) -> Result<(), Box<dyn std::error::E
         g_anno_names.len(),
         "Expected graph and generated graph do not contain the same number of annotation keys."
     );
-    let e_c_list = e_g
+    let e_c_list = expected_graph
         .get_all_components(None, None)
         .into_iter()
-        .filter(|c| e_g.get_graphstorage(c).unwrap().source_nodes().count() > 0)
+        .filter(|c| {
+            expected_graph
+                .get_graphstorage(c)
+                .unwrap()
+                .source_nodes()
+                .count()
+                > 0
+        })
         .collect_vec();
     let g_c_list = g
         .get_all_components(None, None)
@@ -160,7 +376,7 @@ fn test_exb(on_disk: bool, with_audio: bool) -> Result<(), Box<dyn std::error::E
     let corpus_name = "current";
     let tmp_dir_e = tempdir_in(temp_dir())?;
     let tmp_dir_g = tempdir_in(temp_dir())?;
-    e_g.save_to(&tmp_dir_e.path().join(corpus_name))?;
+    expected_graph.save_to(&tmp_dir_e.path().join(corpus_name))?;
     g.save_to(&tmp_dir_g.path().join(corpus_name))?;
     let cs_e = CorpusStorage::with_auto_cache_size(&tmp_dir_e.path(), true)?;
     let cs_g = CorpusStorage::with_auto_cache_size(&tmp_dir_g.path(), true)?;
@@ -191,12 +407,12 @@ fn test_exb(on_disk: bool, with_audio: bool) -> Result<(), Box<dyn std::error::E
             assert_eq!(match_g, match_e);
         }
     }
-    // if with_audio is false, it means we are testing with a broken audio link
-    // which is supposed to be reported and leave a trace in the receiver
-    let message_count = receiver.into_iter().count();
-    assert_eq!(!with_audio, message_count > 0);
-    // also, there should be no warnings for the regular test case
-    assert_eq!(with_audio, message_count == 0);
+    let warning_messages: Vec<_> = receiver
+        .into_iter()
+        .filter(|msg| matches!(msg, StatusMessage::Warning(..)))
+        .collect();
+    let message_count = warning_messages.len();
+    assert_eq!(expected_warnings_count, message_count);
     Ok(())
 }
 
@@ -224,6 +440,12 @@ fn target_graph(
     u.add_event(UpdateEvent::AddNode {
         node_name: "import/exmaralda/test_doc".to_string(),
         node_type: "corpus".to_string(),
+    })?;
+    u.add_event(UpdateEvent::AddNodeLabel {
+        node_name: "import/exmaralda/test_doc".to_string(),
+        anno_ns: ANNIS_NS.to_string(),
+        anno_name: "doc".to_string(),
+        anno_value: "test_doc".to_string(),
     })?;
     u.add_event(UpdateEvent::AddEdge {
         source_node: "import/exmaralda/test_doc".to_string(),

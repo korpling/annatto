@@ -1,65 +1,137 @@
 #![warn(clippy::unwrap_used)]
 
+#[cfg(feature = "embed-documentation")]
+pub mod documentation_server;
 pub mod error;
 pub mod exporter;
 pub mod importer;
 pub mod manipulator;
 pub mod models;
 pub mod progress;
+pub mod runtime;
 pub mod util;
 pub mod workflow;
 
 use std::{
-    collections::BTreeMap,
     fmt::Display,
     path::{Path, PathBuf},
 };
 
-use error::{AnnattoError, Result};
-use exporter::Exporter;
-use importer::Importer;
-use manipulator::Manipulator;
+use error::Result;
+use exporter::{graphml::GraphMLExporter, Exporter};
+use importer::{
+    conllu::ImportCoNLLU, corpus_annotations::AnnotateCorpus, exmaralda::ImportEXMARaLDA,
+    graphml::GraphMLImporter, ptb::PtbImporter, spreadsheet::ImportSpreadsheet,
+    textgrid::TextgridImporter, CreateEmptyCorpus, Importer,
+};
+use manipulator::{
+    check::Check, link_nodes::LinkNodes, map_annos::MapAnnos, merge::Merge, no_op::NoOp,
+    re::Replace, Manipulator,
+};
+use serde_derive::Deserialize;
 
-/// Retrieve a new instance of an importer using its module name
-pub fn importer_by_name(name: &str) -> Result<Box<dyn Importer>> {
-    match name {
-        importer::graphml::MODULE_NAME => Ok(Box::<importer::graphml::GraphMLImporter>::default()),
-        importer::CREATE_EMPTY_CORPUS_MODULE_NAME => {
-            Ok(Box::<importer::CreateEmptyCorpus>::default())
-        }
-        importer::textgrid::MODULE_NAME => {
-            Ok(Box::<importer::textgrid::TextgridImporter>::default())
-        }
-        importer::ptb::MODULE_NAME => Ok(Box::<importer::ptb::PtbImporter>::default()),
-        importer::corpus_annotations::MODULE_NAME => {
-            Ok(Box::<importer::corpus_annotations::AnnotateCorpus>::default())
-        }
-        importer::spreadsheet::MODULE_NAME => {
-            Ok(Box::<importer::spreadsheet::ImportSpreadsheet>::default())
-        }
-        importer::exmaralda::MODULE_NAME => {
-            Ok(Box::<importer::exmaralda::ImportEXMARaLDA>::default())
-        }
-        importer::conllu::MODULE_NAME => Ok(Box::<importer::conllu::ImportCoNLLU>::default()),
-        _ => Err(AnnattoError::NoSuchModule(name.to_string())),
+#[derive(Deserialize)]
+#[serde(tag = "format", rename_all = "lowercase", content = "config")]
+pub enum WriteAs {
+    GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
+}
+
+impl Default for WriteAs {
+    // the purpose of this default is to allow to omit `format` in an `[[export]]` table
+    fn default() -> Self {
+        WriteAs::GraphML(GraphMLExporter::default())
     }
 }
 
-/// Retrieve a new instance of a manipulator using its module name
-pub fn manipulator_by_name(name: &str) -> Result<Box<dyn Manipulator>> {
-    match name {
-        manipulator::merge::MODULE_NAME => Ok(Box::<manipulator::merge::Merge>::default()),
-        manipulator::re::MODULE_NAME => Ok(Box::<manipulator::re::Replace>::default()),
-        manipulator::check::MODULE_NAME => Ok(Box::<manipulator::check::Check>::default()),
-        _ => Err(AnnattoError::NoSuchModule(name.to_string())),
+impl ToString for WriteAs {
+    fn to_string(&self) -> String {
+        self.writer().module_name().to_string()
     }
 }
 
-/// Retrieve a new instance of an exporter using its module name
-pub fn exporter_by_name(name: &str) -> Result<Box<dyn Exporter>> {
-    match name {
-        exporter::graphml::MODULE_NAME => Ok(Box::<exporter::graphml::GraphMLExporter>::default()),
-        _ => Err(AnnattoError::NoSuchModule(name.to_string())),
+impl WriteAs {
+    fn writer(&self) -> &dyn Exporter {
+        match self {
+            WriteAs::GraphML(m) => m,
+        }
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(tag = "format", rename_all = "lowercase", content = "config")]
+pub enum ReadFrom {
+    CoNLLU(#[serde(default)] ImportCoNLLU),
+    EXMARaLDA(#[serde(default)] ImportEXMARaLDA),
+    GraphML(#[serde(default)] GraphMLImporter),
+    Meta(#[serde(default)] AnnotateCorpus),
+    None(#[serde(default)] CreateEmptyCorpus),
+    PTB(#[serde(default)] PtbImporter),
+    TextGrid(#[serde(default)] TextgridImporter),
+    Xlsx(#[serde(default)] ImportSpreadsheet),
+}
+
+impl Default for ReadFrom {
+    // the purpose of this default is to allow to omit `format` in an `[[import]]` table
+    fn default() -> Self {
+        ReadFrom::None(CreateEmptyCorpus::default())
+    }
+}
+
+impl ToString for ReadFrom {
+    fn to_string(&self) -> String {
+        self.reader().module_name().to_string()
+    }
+}
+
+impl ReadFrom {
+    fn reader(&self) -> &dyn Importer {
+        match self {
+            ReadFrom::CoNLLU(m) => m,
+            ReadFrom::EXMARaLDA(m) => m,
+            ReadFrom::PTB(m) => m,
+            ReadFrom::TextGrid(m) => m,
+            ReadFrom::None(m) => m,
+            ReadFrom::Meta(m) => m,
+            ReadFrom::Xlsx(m) => m,
+            ReadFrom::GraphML(m) => m,
+        }
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(tag = "action", rename_all = "lowercase", content = "config")]
+pub enum GraphOp {
+    Check(Check),                  // no default, has a (required) path attribute
+    Link(LinkNodes),               // no default, has required attributes
+    Map(MapAnnos),                 // no default, has a (required) path attribute
+    Merge(Merge),                  // no default, has required attributes
+    Re(#[serde(default)] Replace), // does nothing on default
+    None(#[serde(default)] NoOp),  // has no attributes
+}
+
+impl Default for GraphOp {
+    // the purpose of this default is to allow to omit `format` in an `[[graph_op]]` table
+    fn default() -> Self {
+        GraphOp::None(NoOp::default())
+    }
+}
+
+impl ToString for GraphOp {
+    fn to_string(&self) -> String {
+        self.processor().module_name().to_string()
+    }
+}
+
+impl GraphOp {
+    fn processor(&self) -> &dyn Manipulator {
+        match self {
+            GraphOp::Check(m) => m,
+            GraphOp::Link(m) => m,
+            GraphOp::Map(m) => m,
+            GraphOp::Merge(m) => m,
+            GraphOp::Re(m) => m,
+            GraphOp::None(m) => m,
+        }
     }
 }
 
@@ -87,47 +159,49 @@ pub trait Step {
     fn get_step_id(&self) -> StepID;
 }
 
-struct ImporterStep {
-    module: Box<dyn Importer>,
-    corpus_path: PathBuf,
-    leak_path: Option<PathBuf>,
-    properties: BTreeMap<String, String>,
+#[derive(Deserialize)]
+pub struct ImporterStep {
+    #[serde(flatten)]
+    module: ReadFrom,
+    path: PathBuf,
 }
 
 impl Step for ImporterStep {
     fn get_step_id(&self) -> StepID {
         StepID {
-            module_name: self.module.module_name().to_string(),
-            path: Some(self.corpus_path.clone()),
+            module_name: self.module.to_string(),
+            path: Some(self.path.clone()),
         }
     }
 }
 
-struct ExporterStep {
-    module: Box<dyn Exporter>,
-    corpus_path: PathBuf,
-    properties: BTreeMap<String, String>,
+#[derive(Deserialize)]
+pub struct ExporterStep {
+    #[serde(flatten)]
+    module: WriteAs,
+    path: PathBuf,
 }
 
 impl Step for ExporterStep {
     fn get_step_id(&self) -> StepID {
         StepID {
-            module_name: self.module.module_name().to_string(),
-            path: Some(self.corpus_path.clone()),
+            module_name: self.module.to_string(),
+            path: Some(self.path.clone()),
         }
     }
 }
 
-struct ManipulatorStep {
-    module: Box<dyn Manipulator>,
-    properties: BTreeMap<String, String>,
+#[derive(Deserialize)]
+pub struct ManipulatorStep {
+    #[serde(flatten)]
+    module: GraphOp,
     workflow_directory: Option<PathBuf>,
 }
 
 impl Step for ManipulatorStep {
     fn get_step_id(&self) -> StepID {
         StepID {
-            module_name: self.module.module_name().to_string(),
+            module_name: self.module.to_string(),
             path: None,
         }
     }

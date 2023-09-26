@@ -1,0 +1,28 @@
+# please note: This is NOT a workflow fragment, this is a serialization of `check`.
+# In an annatto workflow the structure will vary due to flattenings and re-arrangments of data.
+report = "verbose"
+
+[[tests]]
+query = "tok"
+expected =  [ 1, inf ]
+description = "There is at least one token."
+
+[[tests]]
+query = "pos"
+expected = 0
+description = "There are no part of speech annotations."
+
+[[tests]]
+query = "pos _=_ tok"
+expected = [ 1, 2 ]
+description = "One or two tokens have a part of speech annotation."
+
+[[tests]]
+query = "sentence"
+expected = 0
+description = "There are no sentences"
+
+[[tests]]
+query = "sentence _=_"
+expected = [ 4, inf ]
+description = "This is an invalid query."

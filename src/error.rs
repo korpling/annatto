@@ -2,6 +2,7 @@ use std::{io::BufWriter, path::PathBuf, string::FromUtf8Error, sync::mpsc::SendE
 
 use graphannis::errors::GraphAnnisError;
 use graphannis_core::errors::GraphAnnisCoreError;
+use itertools::Itertools;
 use thiserror::Error;
 
 use crate::workflow::StatusMessage;
@@ -12,6 +13,8 @@ pub type StandardErrorResult<T> = std::result::Result<T, Box<dyn std::error::Err
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum AnnattoError {
+    #[error("Conversion failed with errors: {}", errors.iter().map(|e| e.to_string()).join("\n"))]
+    ConversionFailed { errors: Vec<AnnattoError> },
     #[error("Error during exporting corpus from {path} with {exporter:?}: {reason:?}")]
     Export {
         reason: String,
@@ -59,8 +62,8 @@ pub enum AnnattoError {
     Infallible(std::convert::Infallible),
     #[error("CSV error: {0}")]
     CSV(#[from] csv::Error),
-    #[error("Checks failed: {failed_checks}")]
-    ChecksFailed { failed_checks: String },
+    #[error("Checks failed:\n{}", failed_checks.iter().join("\n"))]
+    ChecksFailed { failed_checks: Vec<String> },
     #[error("Time for end of the token ({end}) is larger than for the start ({start})")]
     EndTokenTimeLargerThanStart { start: f64, end: f64 },
     #[error("Invalid Property value: {property}={value}")]
@@ -69,6 +72,10 @@ pub enum AnnattoError {
     ConvertBufWriterAsByteVector(#[from] std::io::IntoInnerError<BufWriter<Vec<u8>>>),
     #[error(transparent)]
     InvalidUtf8(#[from] FromUtf8Error),
+    #[error("Could not parse TOML workflow file: {error}")]
+    TOMLError { error: String },
+    #[error("Could not read XSLS file: {0}")]
+    XlsxRead(#[from] umya_spreadsheet::reader::xlsx::XlsxError),
 }
 
 impl<T> From<std::sync::PoisonError<T>> for AnnattoError {
@@ -80,5 +87,13 @@ impl<T> From<std::sync::PoisonError<T>> for AnnattoError {
 impl From<SendError<StatusMessage>> for AnnattoError {
     fn from(e: SendError<StatusMessage>) -> Self {
         AnnattoError::SendingStatusMessageFailed(e.to_string())
+    }
+}
+
+impl From<toml::de::Error> for AnnattoError {
+    fn from(value: toml::de::Error) -> Self {
+        AnnattoError::TOMLError {
+            error: value.to_string(),
+        }
     }
 }

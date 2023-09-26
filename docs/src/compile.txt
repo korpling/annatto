@@ -1,0 +1,2 @@
+This file is only included to make sure the automatic tests can be executed
+whether the documentation has been compiled or not.

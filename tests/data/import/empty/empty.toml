@@ -1,0 +1,11 @@
+[[import]]
+path = "."
+format = "none"
+
+[import.config]
+
+[[graph_op]]
+action = "check"
+
+[graph_op.config]
+tests = []

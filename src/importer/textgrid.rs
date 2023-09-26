@@ -7,24 +7,20 @@ use std::*;
 use crate::models::textgrid::{Interval, TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{
-    add_order_relations, map_annotations, map_audio_source, map_token, path_structure,
-    root_corpus_from_path, NodeInfo,
+    add_order_relations, import_corpus_graph_from_files, map_annotations, map_audio_source,
+    map_token, root_corpus_from_path, NodeInfo,
 };
-use crate::Module;
+use crate::{Module, StepID};
 use anyhow::{anyhow, Result};
 use encoding_rs_io::DecodeReaderBytes;
 use graphannis::update::{GraphUpdate, UpdateEvent};
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
+use serde_derive::Deserialize;
 
 use super::Importer;
 const FILE_ENDINGS: [&str; 3] = ["textgrid", "TextGrid", "textGrid"];
-const PROP_TIER_GROUPS: &str = "tier_groups";
-const PROP_SKIP_TIMELINE_GENERATION: &str = "skip_timeline_generation";
-const PROP_AUDIO_EXTENSION: &str = "audio_extension";
-const PROP_SKIP_AUDIO: &str = "skip_audio";
-const PROP_SKIP_TIME_ANNOS: &str = "skip_time_annotations";
 
 pub const MODULE_NAME: &str = "import_textgrid";
 
@@ -33,8 +29,15 @@ pub const MODULE_NAME: &str = "import_textgrid";
 /// See the [Praat
 /// Documentation](https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html)
 /// for more information on the format itself.
-#[derive(Default)]
-pub struct TextgridImporter {}
+#[derive(Default, Deserialize)]
+#[serde(default)]
+pub struct TextgridImporter {
+    tier_groups: Option<BTreeMap<String, BTreeSet<String>>>,
+    skip_timeline_generation: bool,
+    skip_audio: bool,
+    skip_time_annotations: bool,
+    audio_extension: Option<String>,
+}
 
 impl Module for TextgridImporter {
     fn module_name(&self) -> &str {
@@ -43,29 +46,11 @@ impl Module for TextgridImporter {
 }
 
 struct MapperParams<'a> {
-    tier_groups: BTreeMap<&'a str, BTreeSet<&'a str>>,
+    tier_groups: BTreeMap<String, BTreeSet<String>>,
     skip_timeline_generation: bool,
     audio_extension: &'a str,
     skip_audio: bool,
     skip_time_annotations: bool,
-}
-
-fn parse_tier_map(value: &str) -> BTreeMap<&str, BTreeSet<&str>> {
-    let mut tier_map = BTreeMap::new();
-    for group in value.split(';') {
-        if let Some((owner, objects)) = group.split_once("={") {
-            let owner = owner.trim();
-            if !objects.is_empty() {
-                let value: BTreeSet<_> = objects[0..(objects.len() - 1)]
-                    .split(',')
-                    .map(|e| e.trim())
-                    .filter(|e| !e.is_empty())
-                    .collect();
-                tier_map.insert(owner, value);
-            }
-        }
-    }
-    tier_map
 }
 
 struct DocumentMapper<'a> {
@@ -110,7 +95,12 @@ impl<'a> DocumentMapper<'a> {
         let mut time_to_id = if self.params.skip_timeline_generation {
             self.map_timeline_from_token_tier(u)?
         } else {
-            let token_tier_names: BTreeSet<_> = self.params.tier_groups.keys().copied().collect();
+            let token_tier_names: BTreeSet<_> = self
+                .params
+                .tier_groups
+                .keys()
+                .map(String::to_string)
+                .collect();
             let valid_tier_names = if token_tier_names.is_empty() {
                 // Add all tiers
                 None
@@ -136,7 +126,7 @@ impl<'a> DocumentMapper<'a> {
     fn map_timeline_from_timecode(
         &self,
         u: &mut GraphUpdate,
-        valid_tier_names: Option<&BTreeSet<&str>>,
+        valid_tier_names: Option<&BTreeSet<String>>,
     ) -> Result<BTreeMap<OrderedFloat<f64>, String>> {
         // Collect all points of time based on the intervals and points.
         let mut existing_points_of_times: BTreeSet<OrderedFloat<f64>> = BTreeSet::default();
@@ -406,34 +396,28 @@ impl Importer for TextgridImporter {
     fn import_corpus(
         &self,
         input_path: &Path,
-        properties: &collections::BTreeMap<String, String>,
+        step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut u = GraphUpdate::default();
-        let tier_groups = parse_tier_map(
-            properties
-                .get(PROP_TIER_GROUPS)
-                .map_or_else(|| "", |s| s.as_str()),
-        );
+        let tier_groups = if let Some(ref tg) = self.tier_groups {
+            tg.clone()
+        } else {
+            BTreeMap::new()
+        };
         let params = MapperParams {
             tier_groups,
-            skip_timeline_generation: properties
-                .get(PROP_SKIP_TIMELINE_GENERATION)
-                .map_or(false, |v| v.trim().eq_ignore_ascii_case("true")),
-            skip_audio: properties
-                .get(PROP_SKIP_AUDIO)
-                .map_or(false, |v| v.trim().eq_ignore_ascii_case("true")),
-            skip_time_annotations: properties
-                .get(PROP_SKIP_TIME_ANNOS)
-                .map_or(false, |v| v.trim().eq_ignore_ascii_case("true")),
-            audio_extension: properties
-                .get(PROP_AUDIO_EXTENSION)
+            skip_timeline_generation: self.skip_timeline_generation,
+            skip_audio: self.skip_audio,
+            skip_time_annotations: self.skip_time_annotations,
+            audio_extension: self
+                .audio_extension
+                .as_ref()
                 .map_or("wav", |ext| ext.as_str()),
         };
 
-        let documents = path_structure(&mut u, input_path, &FILE_ENDINGS)?;
-        let reporter =
-            ProgressReporter::new(tx, self as &dyn Module, Some(input_path), documents.len())?;
+        let documents = import_corpus_graph_from_files(&mut u, input_path, &FILE_ENDINGS)?;
+        let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
         for (file_path, doc_path) in documents {
             reporter.info(&format!("Processing {}", &file_path.to_string_lossy()))?;
 

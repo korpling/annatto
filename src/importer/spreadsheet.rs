@@ -7,21 +7,49 @@ use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
 };
-use graphannis_core::{graph::ANNIS_NS, util::split_qname};
+use graphannis_core::{
+    graph::{ANNIS_NS, DEFAULT_NS},
+    util::split_qname,
+};
 use itertools::Itertools;
+use serde_derive::Deserialize;
+use umya_spreadsheet::Cell;
 
 use crate::{
     error::AnnattoError,
-    util::{get_all_files, insert_corpus_nodes_from_path},
-    Module,
+    progress::ProgressReporter,
+    util::{self},
+    Module, StepID,
 };
 
 use super::Importer;
 
 pub const MODULE_NAME: &str = "import_spreadsheet";
 
-#[derive(Default)]
-pub struct ImportSpreadsheet {}
+#[derive(Default, Deserialize)]
+#[serde(default)]
+pub struct ImportSpreadsheet {
+    column_map: BTreeMap<String, BTreeSet<String>>,
+    fallback: Option<String>,
+    datasheet: Option<SheetAddress>,
+    metasheet: Option<SheetAddress>,
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+#[serde(untagged)]
+enum SheetAddress {
+    Numeric(usize),
+    Name(String),
+}
+
+impl ToString for SheetAddress {
+    fn to_string(&self) -> String {
+        match self {
+            SheetAddress::Numeric(n) => n.to_string(),
+            SheetAddress::Name(s) => s.to_string(),
+        }
+    }
+}
 
 impl Module for ImportSpreadsheet {
     fn module_name(&self) -> &str {
@@ -29,253 +57,415 @@ impl Module for ImportSpreadsheet {
     }
 }
 
-fn import_workbook(
-    update: &mut GraphUpdate,
-    root_path: &Path,
-    path: &Path,
-    column_map: &BTreeMap<String, Vec<String>>,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let doc_path = insert_corpus_nodes_from_path(update, root_path, path)?;
-    let book = umya_spreadsheet::reader::xlsx::read(path)?;
-    let sheet = book.get_sheet(&0)?;
-    let merged_cells = sheet.get_merge_cells();
-    let name_to_col_0index = {
-        let mut m = BTreeMap::new();
-        let header_row = sheet.get_collection_by_row(&1);
-        for cell in header_row {
-            let name = cell.get_cell_value().get_value().trim().to_string();
-            m.insert(name, cell.get_coordinate().get_col_num() - 1);
-        }
-        m
-    };
-    let rownums_by_col0i = {
-        let mut m = BTreeMap::new();
-        for col_0i in name_to_col_0index.values() {
-            m.insert(
-                *col_0i,
-                (2..sheet.get_highest_row() + 2).collect::<BTreeSet<u32>>(),
-            );
-        }
-        for cell_range in merged_cells {
-            let start_col = cell_range.get_coordinate_start_col().as_ref().unwrap();
-            let col_1i = start_col.get_num();
-            let end_col = cell_range.get_coordinate_end_col().as_ref().unwrap();
-            if col_1i != end_col.get_num() {
-                // cannot handle that kind of stuff
-                let err = AnnattoError::Import {
-                    reason: "Merged cells across multiple columns cannot be mapped.".to_string(),
-                    importer: MODULE_NAME.to_string(),
-                    path: path.into(),
-                };
-                return Err(Box::new(err));
+fn sheet_from_address<'a>(
+    book: &'a umya_spreadsheet::Spreadsheet,
+    address: &Option<SheetAddress>,
+    default: Option<usize>,
+) -> Result<Option<&'a umya_spreadsheet::Worksheet>, Box<dyn std::error::Error>> {
+    Ok(if let Some(addr) = &address {
+        Some(match addr {
+            SheetAddress::Numeric(n) => book.get_sheet(n)?,
+            SheetAddress::Name(s) => book.get_sheet_by_name(s)?,
+        })
+    } else if let Some(default_addr) = &default {
+        Some(book.get_sheet(default_addr)?)
+    } else {
+        None
+    })
+}
+
+impl ImportSpreadsheet {
+    fn import_datasheet(
+        &self,
+        doc_path: &str,
+        sheet: &umya_spreadsheet::Worksheet,
+        update: &mut GraphUpdate,
+        progress_reporter: &ProgressReporter,
+    ) -> Result<(), AnnattoError> {
+        let merged_cells = sheet.get_merge_cells();
+        let mut fullmap = self.column_map.clone();
+        let known_names = self
+            .column_map
+            .values()
+            .flatten()
+            .collect::<BTreeSet<&String>>();
+        if let Some(fallback_name) = &self.fallback {
+            if fallback_name.is_empty() {
+                fullmap.insert("".to_string(), BTreeSet::new());
             }
-            let start_row = cell_range.get_coordinate_start_row().as_ref().unwrap();
-            let start_1i = start_row.get_num();
-            let end_row = cell_range.get_coordinate_end_row().as_ref().unwrap();
-            let end_1i = end_row.get_num();
-            let obsolete_indices = (*start_1i + 1..*end_1i + 1).collect::<BTreeSet<u32>>();
-            obsolete_indices.iter().for_each(|e| {
-                m.get_mut(&(col_1i - 1)).unwrap().remove(e);
-            });
         }
-        m
-    };
-    let mut base_tokens = Vec::new();
-    for i in 2..sheet.get_highest_row() + 1 {
-        let tok_id = format!("{}#t{}", &doc_path, i - 1);
-        update.add_event(UpdateEvent::AddNode {
-            node_name: tok_id.to_string(),
-            node_type: "node".to_string(),
-        })?;
-        update.add_event(UpdateEvent::AddNodeLabel {
-            node_name: tok_id.to_string(),
-            anno_ns: ANNIS_NS.to_string(),
-            anno_name: "tok".to_string(),
-            anno_value: " ".to_string(),
-        })?;
-        update.add_event(UpdateEvent::AddNodeLabel {
-            node_name: tok_id.to_string(),
-            anno_ns: ANNIS_NS.to_string(),
-            anno_name: "layer".to_string(),
-            anno_value: "default_layer".to_string(),
-        })?;
-        base_tokens.push(tok_id);
-    }
-    base_tokens
-        .iter()
-        .tuple_windows()
-        .try_for_each(|(first, second)| {
-            update.add_event(UpdateEvent::AddEdge {
-                source_node: first.to_string(),
-                target_node: second.to_string(),
-                layer: ANNIS_NS.to_string(),
-                component_type: AnnotationComponentType::Ordering.to_string(),
-                component_name: "".to_string(),
-            })?;
-            Ok::<(), Box<dyn std::error::Error>>(())
-        })?;
-    for (tok_name, anno_names) in column_map {
-        let mut names = vec![tok_name];
-        names.extend(anno_names);
-        for name in names {
-            let index_opt = match name_to_col_0index.get(name) {
-                Some(v) => Some(v),
-                None => {
-                    let k = split_qname(name).1;
-                    name_to_col_0index.get(k)
+        let name_to_col_0index = {
+            let mut m = BTreeMap::new();
+            let header_row = sheet.get_collection_by_row(&1);
+            for cell in header_row {
+                let name = cell.get_cell_value().get_value().trim().to_string();
+                if !name.is_empty() {
+                    m.insert(name.to_string(), cell.get_coordinate().get_col_num() - 1);
+                    if let Some(fallback_name) = &self.fallback {
+                        if !known_names.contains(&name) && !fullmap.contains_key(&name) {
+                            if let Some(anno_names) = fullmap.get_mut(fallback_name) {
+                                anno_names.insert(name);
+                            } else {
+                                progress_reporter.warn(&format!(
+                                    "`{fallback_name}` is not a valid fallback. Only empty string and keys of the column map are allowed. Column `{name}` will be ignored."))?;
+                            }
+                        }
+                    }
                 }
-            };
-            if let Some(col_0i) = index_opt {
-                let mut row_nums = rownums_by_col0i.get(col_0i).unwrap().iter().collect_vec();
-                row_nums.sort();
-                let mut nodes = Vec::new();
-                for (start_row, end_row_excl) in row_nums.into_iter().tuple_windows() {
-                    let cell = sheet.get_cell(((col_0i + 1), *start_row)).unwrap();
-                    let cell_value = cell.get_value();
-                    let value = cell_value.trim();
-                    if value.is_empty() {
+            }
+            m
+        };
+        let rownums_by_col0i = {
+            let mut m = BTreeMap::new();
+            for col_0i in name_to_col_0index.values() {
+                m.insert(
+                    *col_0i,
+                    (2..sheet.get_highest_row() + 2).collect::<BTreeSet<u32>>(),
+                );
+            }
+            for cell_range in merged_cells {
+                let start_col = match cell_range.get_coordinate_start_col().as_ref() {
+                    Some(c) => c,
+                    None => {
+                        progress_reporter.warn(&format!(
+                            "Could not parse start column of merged cell {}",
+                            cell_range.get_range()
+                        ))?;
                         continue;
                     }
-                    let overlapped_tokens: &[String] =
-                        &base_tokens[*start_row as usize - 2..*end_row_excl as usize - 2]; // TODO check indices
-                    let node_name =
-                        format!("{}#{}_{}-{}", &doc_path, tok_name, start_row, end_row_excl);
-                    update.add_event(UpdateEvent::AddNode {
-                        node_name: node_name.to_string(),
-                        node_type: "node".to_string(),
-                    })?;
+                };
+                let col_1i = start_col.get_num();
+                let end_col = match cell_range.get_coordinate_end_col().as_ref() {
+                    Some(c) => c,
+                    None => {
+                        progress_reporter.info(&format!(
+                            "Could not parse end column of merged cell {}, using start column value",
+                            cell_range.get_range()
+                        ))?;
+                        start_col
+                    }
+                };
+                if col_1i != end_col.get_num() {
+                    // cannot handle that kind of stuff
+                    let err = AnnattoError::Import {
+                        reason: "Merged cells across multiple columns cannot be mapped."
+                            .to_string(),
+                        importer: MODULE_NAME.to_string(),
+                        path: doc_path.into(),
+                    };
+                    return Err(err);
+                }
+                let start_row = match cell_range.get_coordinate_start_row().as_ref() {
+                    Some(r) => r,
+                    None => {
+                        progress_reporter.warn(&format!(
+                            "Could not parse start row of merged cell {}",
+                            cell_range.get_range()
+                        ))?;
+                        continue;
+                    }
+                };
+                let start_1i = start_row.get_num();
+                let end_row = match cell_range.get_coordinate_end_row().as_ref() {
+                    Some(r) => r,
+                    None => {
+                        progress_reporter.info(&format!(
+                            "Could not parse end row of merged cell {}, using start row value",
+                            cell_range.get_range()
+                        ))?;
+
+                        start_row
+                    }
+                };
+                let end_1i = end_row.get_num();
+                if let Some(row_set) = m.get_mut(&(col_1i - 1)) {
+                    let obsolete_indices = (*start_1i + 1..*end_1i + 1).collect::<BTreeSet<u32>>();
+                    obsolete_indices.iter().for_each(|e| {
+                        row_set.remove(e);
+                    });
+                } else {
+                    progress_reporter.warn(&format!(
+                        "Merged cells {} could not be mapped to a known column",
+                        cell_range.get_range()
+                    ))?;
+                }
+            }
+            m
+        };
+        let mut base_tokens = Vec::new();
+        for i in 2..sheet.get_highest_row() + 1 {
+            let tok_id = format!("{}#t{}", &doc_path, i - 1);
+            update.add_event(UpdateEvent::AddNode {
+                node_name: tok_id.to_string(),
+                node_type: "node".to_string(),
+            })?;
+            update.add_event(UpdateEvent::AddNodeLabel {
+                node_name: tok_id.to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "tok".to_string(),
+                anno_value: " ".to_string(),
+            })?;
+            update.add_event(UpdateEvent::AddNodeLabel {
+                node_name: tok_id.to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "layer".to_string(),
+                anno_value: "default_layer".to_string(),
+            })?;
+            base_tokens.push(tok_id);
+        }
+        base_tokens
+            .iter()
+            .tuple_windows()
+            .try_for_each(|(first, second)| {
+                update.add_event(UpdateEvent::AddEdge {
+                    source_node: first.to_string(),
+                    target_node: second.to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::Ordering.to_string(),
+                    component_name: "".to_string(),
+                })?;
+                Ok::<(), AnnattoError>(())
+            })?;
+        for (tok_name, anno_names) in &fullmap {
+            let mut names = if tok_name.is_empty() {
+                vec![]
+            } else {
+                vec![tok_name]
+            };
+            names.extend(anno_names);
+            for name in names {
+                let index_opt = match name_to_col_0index.get(name) {
+                    Some(v) => Some(v),
+                    None => {
+                        let k = split_qname(name).1;
+                        name_to_col_0index.get(k)
+                    }
+                };
+                if let Some(col_0i) = index_opt {
+                    let mut row_nums = rownums_by_col0i.get(col_0i).unwrap().iter().collect_vec();
+                    row_nums.sort();
+                    let mut nodes = Vec::new();
+                    for (start_row, end_row_excl) in row_nums.into_iter().tuple_windows() {
+                        let cell = match sheet.get_cell(((col_0i + 1), *start_row)) {
+                            Some(cl) => cl,
+                            None => continue,
+                        };
+                        let cell_value = cell.get_value();
+                        let value = cell_value.trim();
+                        if value.is_empty() {
+                            continue;
+                        }
+                        let overlapped_tokens: &[String] =
+                            &base_tokens[*start_row as usize - 2..*end_row_excl as usize - 2]; // TODO check indices
+                        let node_name =
+                            format!("{}#{}_{}-{}", &doc_path, tok_name, start_row, end_row_excl);
+                        update.add_event(UpdateEvent::AddNode {
+                            node_name: node_name.to_string(),
+                            node_type: "node".to_string(),
+                        })?;
+                        if name == tok_name {
+                            update.add_event(UpdateEvent::AddNodeLabel {
+                                node_name: node_name.to_string(),
+                                anno_ns: ANNIS_NS.to_string(),
+                                anno_name: "tok".to_string(),
+                                anno_value: value.to_string(),
+                            })?;
+                        }
+                        if !tok_name.is_empty() {
+                            update.add_event(UpdateEvent::AddNodeLabel {
+                                node_name: node_name.to_string(),
+                                anno_ns: ANNIS_NS.to_string(),
+                                anno_name: "layer".to_string(),
+                                anno_value: tok_name.to_string(),
+                            })?;
+                        }
+                        update.add_event(UpdateEvent::AddNodeLabel {
+                            node_name: node_name.to_string(),
+                            anno_ns: tok_name.to_string(),
+                            anno_name: name.to_string(),
+                            anno_value: value.to_string(),
+                        })?;
+                        for target_id in overlapped_tokens {
+                            update.add_event(UpdateEvent::AddEdge {
+                                source_node: node_name.to_string(),
+                                target_node: target_id.to_string(),
+                                layer: ANNIS_NS.to_string(),
+                                component_type: AnnotationComponentType::Coverage.to_string(),
+                                component_name: "".to_string(),
+                            })?;
+                        }
+                        nodes.push(node_name);
+                    }
+                    if name == tok_name {
+                        nodes.iter().sorted().tuple_windows().try_for_each(
+                            |(first_name, second_name)| {
+                                update.add_event(UpdateEvent::AddEdge {
+                                    source_node: first_name.to_string(),
+                                    target_node: second_name.to_string(),
+                                    layer: DEFAULT_NS.to_string(),
+                                    component_type: AnnotationComponentType::Ordering.to_string(),
+                                    component_name: tok_name.to_string(),
+                                })?;
+                                Ok::<(), AnnattoError>(())
+                            },
+                        )?;
+                    }
+                } else {
+                    progress_reporter.info(&format!("No column `{name}` in file {}", &doc_path))?;
+                    continue;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn import_metasheet(
+        &self,
+        doc_path: &str,
+        sheet: &umya_spreadsheet::Worksheet,
+        update: &mut GraphUpdate,
+    ) -> Result<(), AnnattoError> {
+        let max_row_num = sheet.get_highest_row(); // 1-based
+        for row_num in 1..max_row_num + 1 {
+            let entries = sheet.get_collection_by_row(&row_num); // sorting not necessarily by col number
+            let entry_map = entries
+                .into_iter()
+                .map(|c| (*c.get_coordinate().get_col_num(), c))
+                .collect::<BTreeMap<u32, &Cell>>();
+            if let Some(key_cell) = entry_map.get(&1) {
+                if let Some(value_cell) = entry_map.get(&2) {
+                    let kv = key_cell.get_value();
+                    let key = kv.trim();
+                    let (ns, name) = split_qname(key);
+                    let vv = value_cell.get_value();
+                    let value = vv.trim();
                     update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: ANNIS_NS.to_string(),
-                        anno_name: "tok".to_string(),
-                        anno_value: value.to_string(),
-                    })?;
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: ANNIS_NS.to_string(),
-                        anno_name: "layer".to_string(),
-                        anno_value: tok_name.to_string(),
-                    })?;
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: tok_name.to_string(),
+                        node_name: doc_path.to_string(),
+                        anno_ns: ns.map_or("".to_string(), str::to_string),
                         anno_name: name.to_string(),
                         anno_value: value.to_string(),
                     })?;
-                    for target_id in overlapped_tokens {
-                        update.add_event(UpdateEvent::AddEdge {
-                            source_node: node_name.to_string(),
-                            target_node: target_id.to_string(),
-                            layer: ANNIS_NS.to_string(),
-                            component_type: AnnotationComponentType::Coverage.to_string(),
-                            component_name: "".to_string(),
-                        })?;
-                    }
-                    nodes.push(node_name);
                 }
-                if name == tok_name {
-                    nodes.iter().sorted().tuple_windows().try_for_each(
-                        |(first_name, second_name)| {
-                            update.add_event(UpdateEvent::AddEdge {
-                                source_node: first_name.to_string(),
-                                target_node: second_name.to_string(),
-                                layer: ANNIS_NS.to_string(),
-                                component_type: AnnotationComponentType::Ordering.to_string(),
-                                component_name: tok_name.to_string(),
-                            })?;
-                            Ok::<(), Box<dyn std::error::Error>>(())
-                        },
-                    )?;
-                }
-            } else {
-                // TODO warning
-                continue; // no tokenization, no mapping of dependent annotations
             }
         }
+        Ok(())
     }
-    Ok(())
-}
 
-fn get_column_map(
-    property_val: &String,
-) -> Result<BTreeMap<String, Vec<String>>, Box<dyn std::error::Error>> {
-    // TODO produce some errors
-    let mut column_map = BTreeMap::new();
-    for group in property_val.split(';') {
-        let (key, names) = match group.trim().split_once('=') {
-            None => {
-                let err = AnnattoError::InvalidPropertyValue {
-                    property: PROP_COLUMN_MAP.to_string(),
-                    value: property_val.to_string(),
-                };
-                return Err(Box::new(err));
+    fn import_workbook(
+        &self,
+        update: &mut GraphUpdate,
+        path: &Path,
+        doc_node_name: &str,
+        progress_reporter: &ProgressReporter,
+    ) -> Result<(), AnnattoError> {
+        let book = umya_spreadsheet::reader::xlsx::read(path)?;
+        if let Some(sheet) = sheet_from_address(&book, &self.datasheet, Some(0)).map_err(|e| {
+            AnnattoError::Import {
+                reason: e.to_string(),
+                importer: MODULE_NAME.to_string(),
+                path: path.to_path_buf(),
             }
-            Some((k, v)) => {
-                let anno_names = v
-                    .replace(['{', '}'], "")
-                    .split(',')
-                    .map(|name| name.trim().to_string())
-                    .collect_vec();
-                (k.to_string(), anno_names)
-            }
-        };
-        column_map.insert(key, names);
+        })? {
+            self.import_datasheet(doc_node_name, sheet, update, progress_reporter)?;
+        }
+        if let Some(sheet) =
+            sheet_from_address(&book, &self.metasheet, None).map_err(|_| AnnattoError::Import {
+                reason: format!(
+                    "Could not find sheet {}",
+                    &self.metasheet.as_ref().unwrap().to_string()
+                ),
+                importer: self.module_name().to_string(),
+                path: path.into(),
+            })?
+        {
+            self.import_metasheet(doc_node_name, sheet, update)?;
+        }
+        Ok(())
     }
-    Ok(column_map)
 }
-
-const PROP_COLUMN_MAP: &str = "column_map";
 
 impl Importer for ImportSpreadsheet {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
-        properties: &std::collections::BTreeMap<String, String>,
-        _tx: Option<crate::workflow::StatusSender>,
+        step_id: StepID,
+        tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = GraphUpdate::default();
-        let column_map = if let Some(prop_val) = properties.get(&PROP_COLUMN_MAP.to_string()) {
-            get_column_map(prop_val)?
-        } else {
-            return Err(Box::new(AnnattoError::Import {
-                reason: "No column map provided.".to_string(),
-                importer: self.module_name().to_string(),
-                path: input_path.to_path_buf(),
-            }));
-        };
-        let all_files = get_all_files(input_path, vec!["xlsx"])?;
-        all_files.into_iter().try_for_each(|pb| {
-            import_workbook(&mut update, input_path, pb.as_path(), &column_map)
+        let mut updates = GraphUpdate::default();
+
+        let all_files =
+            util::graphupdate::import_corpus_graph_from_files(&mut updates, input_path, &["xlsx"])?;
+        let number_of_files = all_files.len();
+        // Each file is a work step
+        let reporter = ProgressReporter::new(tx, step_id, number_of_files)?;
+
+        all_files.into_iter().try_for_each(|(pb, doc_node_name)| {
+            reporter.info(&format!("Importing {}", pb.to_string_lossy()))?;
+            self.import_workbook(&mut updates, &pb, &doc_node_name, &reporter)?;
+            reporter.worked(1)?;
+            Ok::<(), AnnattoError>(())
         })?;
-        Ok(update)
+
+        Ok(updates)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::env::temp_dir;
+    use std::{env::temp_dir, sync::mpsc};
 
     use graphannis::{
         corpusstorage::{QueryLanguage, SearchQuery},
         AnnotationGraph, CorpusStorage,
     };
+    use graphannis_core::{annostorage::ValueSearch, types::AnnoKey};
     use tempfile::tempdir_in;
+
+    use crate::{workflow::Workflow, ReadFrom};
 
     use super::*;
 
-    fn run_spreadsheet_import(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
-        let importer = ImportSpreadsheet::default();
-        let mut props = BTreeMap::default();
-        props.insert(
-            "column_map".to_string(),
-            "dipl={sentence,seg};norm={pos,lemma}".to_string(),
+    fn run_spreadsheet_import(
+        on_disk: bool,
+        fallback: Option<String>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let mut col_map = BTreeMap::new();
+        col_map.insert(
+            "dipl".to_string(),
+            vec!["sentence".to_string(), "seg".to_string()]
+                .into_iter()
+                .collect(),
         );
-        let path = Path::new("./tests/data/import/xlsx/");
-        let import = importer.import_corpus(path, &props, None);
+        col_map.insert(
+            "norm".to_string(),
+            {
+                match fallback {
+                    None => vec!["pos".to_string(), "lemma".to_string()],
+                    Some(_) => vec!["pos".to_string()],
+                }
+            }
+            .into_iter()
+            .collect(),
+        );
+        let importer = ImportSpreadsheet {
+            column_map: col_map,
+            fallback: fallback,
+            datasheet: None,
+            metasheet: None,
+        };
+        let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
+        let import = importer.import_corpus(path, importer.step_id(None), None);
         let mut u = import?;
         let mut g = AnnotationGraph::new(on_disk)?;
         g.apply_update(&mut u, |_| {})?;
-        let queries_and_results: [(&str, u64); 19] = [
+        let lemma_count = match &importer.fallback {
+            Some(v) => match &v[..] {
+                "norm" => 4,
+                _ => 0,
+            },
+            _ => 4,
+        };
+        let queries_and_results = vec![
             ("dipl", 4),
             ("norm", 4),
             ("dipl _=_ norm", 1),
@@ -292,14 +482,18 @@ mod tests {
             ("dipl:seg _l_ dipl", 2),
             ("dipl:seg _r_ dipl", 2),
             ("norm:pos", 4),
-            ("norm:lemma", 4),
+            ("norm:lemma", lemma_count),
             ("norm:pos _=_ norm", 4),
-            ("norm:lemma _=_ norm", 4),
+            ("norm:lemma _=_ norm", lemma_count),
+            ("annis:doc", 1),
+            ("annis:doc=\"test_file\"", 1),
         ];
         let corpus_name = "current";
         let tmp_dir = tempdir_in(temp_dir())?;
         g.save_to(&tmp_dir.path().join(corpus_name))?;
-        let cs = CorpusStorage::with_auto_cache_size(&tmp_dir.path(), true).unwrap();
+        let cs_r = CorpusStorage::with_auto_cache_size(&tmp_dir.path(), true);
+        assert!(cs_r.is_ok());
+        let cs = cs_r.unwrap();
         for (query_s, expected_result) in queries_and_results {
             let query = SearchQuery {
                 corpus_names: &[corpus_name],
@@ -319,7 +513,7 @@ mod tests {
 
     #[test]
     fn spreadsheet_import_in_mem() {
-        let import = run_spreadsheet_import(false);
+        let import = run_spreadsheet_import(false, None);
         assert!(
             import.is_ok(),
             "Spreadsheet import failed with error: {:?}",
@@ -329,11 +523,273 @@ mod tests {
 
     #[test]
     fn spreadsheet_import_on_disk() {
-        let import = run_spreadsheet_import(true);
+        let import = run_spreadsheet_import(true, None);
         assert!(
             import.is_ok(),
             "Spreadsheet import failed with error: {:?}",
             import.err()
         );
+    }
+
+    #[test]
+    fn spreadsheet_import_dirty_fails_and_raises_warnings() {
+        let mut col_map = BTreeMap::new();
+        col_map.insert(
+            "dipl".to_string(),
+            vec!["sentence".to_string(), "seg".to_string()]
+                .into_iter()
+                .collect(),
+        );
+        col_map.insert(
+            "norm".to_string(),
+            vec!["pos".to_string(), "lemma".to_string()]
+                .into_iter()
+                .collect(),
+        );
+        let importer = ImportSpreadsheet {
+            column_map: col_map,
+            fallback: None,
+            datasheet: None,
+            metasheet: None,
+        };
+        let path = Path::new("./tests/data/import/xlsx/dirty/xlsx/");
+        let (sender, receiver) = mpsc::channel();
+        let import = importer.import_corpus(path, importer.step_id(None), Some(sender));
+        assert!(import.is_err());
+        assert_ne!(receiver.into_iter().count(), 0);
+    }
+
+    #[test]
+    fn spreadsheet_import_dirty_passes_with_warnings() {
+        let mut col_map = BTreeMap::new();
+        col_map.insert(
+            "dipl".to_string(),
+            vec!["sentence".to_string(), "seg".to_string()]
+                .into_iter()
+                .collect(),
+        );
+        col_map.insert(
+            "norm".to_string(),
+            vec!["pos".to_string(), "lemma".to_string()]
+                .into_iter()
+                .collect(),
+        );
+        let importer = ImportSpreadsheet {
+            column_map: col_map,
+            fallback: None,
+            datasheet: None,
+            metasheet: None,
+        };
+        let path = Path::new("./tests/data/import/xlsx/warnings/xlsx/");
+        let (sender, receiver) = mpsc::channel();
+        let import = importer.import_corpus(path, importer.step_id(None), Some(sender));
+        assert!(import.is_ok());
+        assert_ne!(receiver.into_iter().count(), 0);
+    }
+
+    #[test]
+    fn spreadsheet_fallback_value_in_mem() {
+        let import = run_spreadsheet_import(true, Some("norm".to_string()));
+        assert!(
+            import.is_ok(),
+            "Spreadsheet import failed with error: {:?}",
+            import.err()
+        );
+    }
+
+    #[test]
+    fn spreadsheet_fallback_value_on_disk() {
+        let import = run_spreadsheet_import(false, Some("norm".to_string()));
+        assert!(
+            import.is_ok(),
+            "Spreadsheet import failed with error: {:?}",
+            import.err()
+        );
+    }
+
+    #[test]
+    fn spreadsheet_empty_fallback_value_in_mem() {
+        let import = run_spreadsheet_import(true, Some("".to_string()));
+        assert!(
+            import.is_ok(),
+            "Spreadsheet import failed with error: {:?}",
+            import.err()
+        );
+    }
+
+    #[test]
+    fn spreadsheet_empty_fallback_value_on_disk() {
+        let import = run_spreadsheet_import(false, Some("".to_string()));
+        assert!(
+            import.is_ok(),
+            "Spreadsheet import failed with error: {:?}",
+            import.err()
+        );
+    }
+
+    #[test]
+    fn spreadsheet_invalid_fallback_value() {
+        let import = run_spreadsheet_import(false, Some("tok".to_string()));
+        assert!(
+            import.is_ok(),
+            "Spreadsheet import failed with error: {:?}",
+            import.err()
+        );
+        let mut col_map = BTreeMap::new();
+        col_map.insert(
+            "dipl".to_string(),
+            vec!["sentence".to_string(), "seg".to_string()]
+                .into_iter()
+                .collect(),
+        );
+        col_map.insert(
+            "norm".to_string(),
+            vec!["pos".to_string()].into_iter().collect(),
+        );
+        let importer = ImportSpreadsheet {
+            column_map: col_map,
+            fallback: Some("tok".to_string()),
+            datasheet: None,
+            metasheet: None,
+        };
+        let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
+        let (sender, receiver) = mpsc::channel();
+        let import = importer.import_corpus(path, importer.step_id(None), Some(sender));
+        assert!(import.is_ok());
+        assert_ne!(receiver.into_iter().count(), 0);
+    }
+
+    fn test_with_address(
+        book: &umya_spreadsheet::Spreadsheet,
+        addr: Option<SheetAddress>,
+        default: Option<usize>,
+        delivers: bool,
+    ) {
+        let sh = sheet_from_address(&book, &addr, default);
+        assert_eq!(sh.is_ok() && sh.unwrap().is_some(), delivers);
+    }
+
+    #[test]
+    fn test_get_sheet_from_name() {
+        let path = Path::new("./tests/data/import/xlsx/clean/xlsx/test_file.xlsx");
+        let book = umya_spreadsheet::reader::xlsx::read::<&Path>(path);
+        assert!(book.is_ok());
+        let b = book.unwrap();
+        test_with_address(&b, Some(SheetAddress::Name("data".to_string())), None, true);
+        test_with_address(&b, None, Some(0), true);
+        test_with_address(
+            &b,
+            Some(SheetAddress::Name("data_".to_string())),
+            Some(0),
+            false,
+        );
+        test_with_address(
+            &b,
+            Some(SheetAddress::Name("data_".to_string())),
+            None,
+            false,
+        );
+        test_with_address(&b, None, None, false);
+    }
+
+    #[test]
+    fn test_get_sheet_from_index() {
+        let path = Path::new("./tests/data/import/xlsx/clean/xlsx/test_file.xlsx");
+        let book = umya_spreadsheet::reader::xlsx::read::<&Path>(path);
+        assert!(book.is_ok());
+        let b = book.unwrap();
+        test_with_address(&b, Some(SheetAddress::Numeric(0)), None, true);
+        test_with_address(&b, None, Some(0), true);
+        test_with_address(&b, Some(SheetAddress::Numeric(4)), None, false);
+        test_with_address(&b, Some(SheetAddress::Numeric(4)), Some(0), false);
+        test_with_address(&b, None, Some(4), false);
+    }
+
+    #[test]
+    fn test_metadata_in_mem() {
+        let r = test_metadata(false);
+        assert!(r.is_ok(), "Failed with error: {:?}", r.err());
+    }
+
+    #[test]
+    fn test_metadata_in_on_disk() {
+        let r = test_metadata(true);
+        assert!(r.is_ok(), "Failed with error: {:?}", r.err());
+    }
+
+    fn test_metadata(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
+        let mut col_map = BTreeMap::new();
+        col_map.insert(
+            "dipl".to_string(),
+            vec!["sentence".to_string(), "seg".to_string()]
+                .into_iter()
+                .collect(),
+        );
+        col_map.insert(
+            "norm".to_string(),
+            vec!["pos".to_string(), "lemma".to_string()]
+                .into_iter()
+                .collect(),
+        );
+        let importer = ImportSpreadsheet {
+            column_map: col_map,
+            fallback: None,
+            datasheet: None,
+            metasheet: Some(SheetAddress::Name("meta".to_string())),
+        };
+        let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
+        let import = importer.import_corpus(path, importer.step_id(None), None);
+        let mut g = AnnotationGraph::new(on_disk)?;
+        g.apply_update(&mut import?, |_| {})?;
+        let node_annos = g.get_node_annos();
+        for (meta_name, exp_value) in [("date", "today"), ("author", "me"), ("key", "value")] {
+            let mut matches = node_annos
+                .exact_anno_search(None, meta_name, ValueSearch::Any)
+                .collect_vec();
+            assert_eq!(matches.len(), 1);
+            let m = matches.remove(0).unwrap();
+            let k = AnnoKey {
+                name: meta_name.into(),
+                ns: "".into(),
+            };
+            let value = node_annos.get_value_for_item(&m.node, &k)?;
+            assert!(value.is_some());
+            assert_eq!(value.unwrap().to_string(), exp_value.to_string());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn parse_spreadsheet_workflow() {
+        let workflow: Workflow = toml::from_str(
+            r#"
+[[import]]
+path = "dummy_path"
+format = "xlsx"
+
+
+[import.config]
+datasheet = 2
+metasheet = "meta"
+
+        "#,
+        )
+        .unwrap();
+        assert_eq!(workflow.import_steps().len(), 1);
+        assert_eq!(
+            workflow.import_steps()[0].path.to_string_lossy().as_ref(),
+            "dummy_path"
+        );
+        assert!(matches!(
+            workflow.import_steps()[0].module,
+            ReadFrom::Xlsx(..)
+        ));
+        if let ReadFrom::Xlsx(importer) = &workflow.import_steps()[0].module {
+            assert_eq!(
+                importer.metasheet,
+                Some(SheetAddress::Name("meta".to_string()))
+            );
+            assert_eq!(importer.datasheet, Some(SheetAddress::Numeric(2)));
+        }
     }
 }
