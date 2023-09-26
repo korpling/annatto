@@ -23,8 +23,8 @@ use importer::{
     textgrid::TextgridImporter, CreateEmptyCorpus, Importer,
 };
 use manipulator::{
-    annis_compat::AnnisCompatibility, check::Check, link_nodes::LinkNodes, map_annos::MapAnnos,
-    merge::Merge, no_op::NoOp, re::Replace, Manipulator,
+    check::Check, link_nodes::LinkNodes, map_annos::MapAnnos, merge::Merge, no_op::NoOp,
+    re::Replace, Manipulator,
 };
 use serde_derive::Deserialize;
 
@@ -104,8 +104,7 @@ pub enum GraphOp {
     Map(MapAnnos),                 // no default, has a (required) path attribute
     Merge(Merge),                  // no default, has required attributes
     Re(#[serde(default)] Replace), // does nothing on default
-    AnnisCompat(AnnisCompatibility),
-    None(#[serde(default)] NoOp), // has no attributes
+    None(#[serde(default)] NoOp),  // has no attributes
 }
 
 impl Default for GraphOp {
@@ -129,7 +128,6 @@ impl GraphOp {
             GraphOp::Map(m) => m,
             GraphOp::Merge(m) => m,
             GraphOp::Re(m) => m,
-            GraphOp::AnnisCompat(m) => m,
             GraphOp::None(m) => m,
         }
     }
