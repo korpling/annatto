@@ -1957,6 +1957,7 @@ mod tests {
             "ordering::annis::".to_string(),
             "ordering::::default_ordering".to_string(),
         );
+        name_map.insert("dominance::annis::syntax".to_string(), "".to_string());
         assert_eq!(Some(name_map), revise.components);
         let component_map = to_component_map(revise.components.as_ref().unwrap())
             .map_err(|_| assert!(false))
@@ -1985,6 +1986,14 @@ mod tests {
                 "".into(),
                 "default_ordering".into(),
             )),
+        );
+        target_map.insert(
+            AnnotationComponent::new(
+                AnnotationComponentType::Dominance,
+                ANNIS_NS.into(),
+                "syntax".into(),
+            ),
+            None,
         );
         assert_eq!(target_map, component_map);
     }

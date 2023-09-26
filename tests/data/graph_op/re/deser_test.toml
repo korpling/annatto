@@ -10,3 +10,4 @@ move_node_annos = true
 [components]
 "ordering::annis::text" = "ordering::default_ns::text"
 "ordering::annis::" = "ordering::::default_ordering"
+"dominance::annis::syntax" = ""
