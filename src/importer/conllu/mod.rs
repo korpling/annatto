@@ -20,7 +20,7 @@ use serde_derive::Deserialize;
 
 use crate::{
     error::AnnattoError,
-    util::graphupdate::path_structure,
+    util::graphupdate::import_corpus_graph_from_files,
     workflow::{StatusMessage, StatusSender},
     Module, StepID,
 };
@@ -48,7 +48,8 @@ impl Importer for ImportCoNLLU {
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         // TODO use ProgressReporter
         let mut update = GraphUpdate::default();
-        let paths_and_node_names = path_structure(&mut update, input_path, &["conll", "conllu"])?;
+        let paths_and_node_names =
+            import_corpus_graph_from_files(&mut update, input_path, &["conll", "conllu"])?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
             if let Err(e) = self.import_document(&mut update, pathbuf.as_path(), doc_node_name, &tx)
             {
