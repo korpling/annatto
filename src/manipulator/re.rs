@@ -645,7 +645,7 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use crate::manipulator::re::Revise;
+    use crate::manipulator::re::{to_component_map, Revise};
     use crate::manipulator::Manipulator;
     use crate::Result;
 
@@ -1923,5 +1923,69 @@ mod tests {
             assert!(current_components.contains(&nc));
         }
         Ok(())
+    }
+
+    #[test]
+    fn deserialization_test() {
+        let toml_str = fs::read_to_string("tests/data/graph_op/re/deser_test.toml")
+            .map_err(|_| assert!(false))
+            .unwrap();
+        let revise: Revise = toml::from_str(toml_str.as_str())
+            .map_err(|e| assert!(false, "{:?}", e))
+            .unwrap();
+        assert_eq!(
+            Some(vec!["any_weird_node_address".to_string()]),
+            revise.remove_nodes
+        );
+        assert!(revise.move_node_annos);
+        let mut name_map = BTreeMap::new();
+        name_map.insert("norm::pos".to_string(), "norm::POS".to_string());
+        name_map.insert("norm::lemma".to_string(), "norm::LEMMA".to_string());
+        assert_eq!(Some(name_map), revise.node_annos);
+        name_map = BTreeMap::new();
+        name_map.insert("deprel".to_string(), "func".to_string());
+        assert_eq!(Some(name_map), revise.edge_annos);
+        name_map = BTreeMap::new();
+        name_map.insert("default_ns".to_string(), "".to_string());
+        assert_eq!(Some(name_map), revise.namespaces);
+        name_map = BTreeMap::new();
+        name_map.insert(
+            "ordering::annis::text".to_string(),
+            "ordering::default_ns::text".to_string(),
+        );
+        name_map.insert(
+            "ordering::annis::".to_string(),
+            "ordering::::default_ordering".to_string(),
+        );
+        assert_eq!(Some(name_map), revise.components);
+        let component_map = to_component_map(revise.components.as_ref().unwrap())
+            .map_err(|_| assert!(false))
+            .unwrap();
+        let mut target_map = BTreeMap::new();
+        target_map.insert(
+            AnnotationComponent::new(
+                AnnotationComponentType::Ordering,
+                ANNIS_NS.into(),
+                "text".into(),
+            ),
+            Some(AnnotationComponent::new(
+                AnnotationComponentType::Ordering,
+                "default_ns".into(),
+                "text".into(),
+            )),
+        );
+        target_map.insert(
+            AnnotationComponent::new(
+                AnnotationComponentType::Ordering,
+                ANNIS_NS.into(),
+                "".into(),
+            ),
+            Some(AnnotationComponent::new(
+                AnnotationComponentType::Ordering,
+                "".into(),
+                "default_ordering".into(),
+            )),
+        );
+        assert_eq!(target_map, component_map);
     }
 }
