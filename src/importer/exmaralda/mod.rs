@@ -15,7 +15,8 @@ use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader, ParserConfig
 
 use crate::{
     error::AnnattoError,
-    util::{get_all_files, graphupdate::map_audio_source, insert_corpus_nodes_from_path},
+    progress::ProgressReporter,
+    util::graphupdate::{import_corpus_graph_from_files, map_audio_source},
     workflow::StatusMessage,
     Module, StepID,
 };
@@ -38,15 +39,24 @@ impl Importer for ImportEXMARaLDA {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
-        _step_id: StepID,
+        step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        // TODO use ProgressReporter
         let mut update = GraphUpdate::default();
-        let all_files = get_all_files(input_path, vec!["exb", "xml"])?;
+        let all_files = import_corpus_graph_from_files(&mut update, input_path, &["exb", "xml"])?;
+        let progress = ProgressReporter::new(tx.clone(), step_id, all_files.len())?;
         all_files
             .into_iter()
-            .map(|fp| self.import_document(input_path, fp.as_path(), &mut update, &tx))
+            .map(|(fp, doc_node_name)| {
+                self.import_document(
+                    &doc_node_name,
+                    fp.as_path(),
+                    input_path,
+                    &mut update,
+                    &progress,
+                    &tx,
+                )
+            })
             .filter_map(|r| match r {
                 Ok(_) => None,
                 Err(e) => Some(e),
@@ -71,13 +81,14 @@ fn attr_vec_to_map(attributes: &[OwnedAttribute]) -> BTreeMap<String, String> {
 impl ImportEXMARaLDA {
     fn import_document(
         &self,
-        corpus_path: &std::path::Path,
+        doc_node_name: &str,
         document_path: &std::path::Path,
+        corpus_path: &std::path::Path,
         update: &mut GraphUpdate,
+        progress: &ProgressReporter,
         tx: &Option<crate::workflow::StatusSender>,
     ) -> crate::error::Result<()> {
         // buffers
-        let mut doc_node_name = String::new();
         let mut char_buf = String::new();
         let mut timeline = BTreeMap::new();
         let mut ordered_tl_nodes: Vec<String> = Vec::new();
@@ -95,10 +106,7 @@ impl ImportEXMARaLDA {
         loop {
             match reader.next() {
                 Ok(XmlEvent::EndDocument) => break,
-                Ok(XmlEvent::StartDocument { .. }) => {
-                    doc_node_name =
-                        insert_corpus_nodes_from_path(update, corpus_path, document_path)?;
-                }
+                Ok(XmlEvent::StartDocument { .. }) => {}
                 Ok(XmlEvent::Characters(value)) => char_buf.push_str(value.as_str()),
                 Ok(XmlEvent::StartElement {
                     name, attributes, ..
@@ -114,11 +122,11 @@ impl ImportEXMARaLDA {
                                             update,
                                             audio_path.as_path(),
                                             corpus_path.to_str().unwrap(),
-                                            &doc_node_name,
+                                            doc_node_name,
                                         )?;
-                                    } else if let Some(sender) = tx {
+                                    } else {
                                         let msg = format!("Linked file {} could not be found to be linked in document {}", audio_path.as_path().to_string_lossy(), &doc_node_name);
-                                        sender.send(StatusMessage::Warning(msg))?;
+                                        progress.warn(&msg)?;
                                     }
                                 };
                             }
@@ -245,13 +253,11 @@ impl ImportEXMARaLDA {
                             let tier_type = if let Some(tpe) = tier_info.get("type") {
                                 tpe.as_str()
                             } else {
-                                if let Some(sender) = tx {
-                                    let msg = format!(
-                                        "Could not determine tier type for {}::{}. Tier will be treated as annotation tier.",
-                                        &speaker_id, &anno_name
-                                    );
-                                    sender.send(StatusMessage::Warning(msg))?;
-                                }
+                                let msg = format!(
+                                    "Could not determine tier type for {}::{}. Tier will be treated as annotation tier.",
+                                    &speaker_id, &anno_name
+                                );
+                                progress.warn(&msg)?;
                                 "a"
                             };
                             let event_info = parent_map.get("event").unwrap();
