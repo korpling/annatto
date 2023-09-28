@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - graph_op `check` can now be configured to not let the entire processing chain fail, when a test fails, by setting `policy = "warn"` (default is `fail`)
 - metadata can be imported from spreadsheets alongside the linguistic data in the workbook, a data and a metadata spreadsheet name or number can now be specified for importing xlsx
 - add heuristic for KWIC visualizer in graphml export
+- `re` is now `revise`
+- `revise` can modify components
 
 ### Fixed
 

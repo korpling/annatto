@@ -1,0 +1,3 @@
+"ordering::annis::" = "ordering::::default_ordering"
+"ordering::annis::norm" = "ordering::::norm"
+"partof::annis::" = "dominance::document_structure::contains"
