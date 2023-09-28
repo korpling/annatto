@@ -647,7 +647,8 @@ mod tests {
 
     use crate::manipulator::re::{parse_component_string, to_component_map, Revise};
     use crate::manipulator::Manipulator;
-    use crate::Result;
+    use crate::progress::ProgressReporter;
+    use crate::{Result, StepID};
 
     use graphannis::corpusstorage::{QueryLanguage, ResultOrder, SearchQuery};
     use graphannis::model::{AnnotationComponent, AnnotationComponentType};
@@ -657,6 +658,8 @@ mod tests {
     use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY};
     use itertools::Itertools;
     use tempfile::{tempdir_in, tempfile};
+
+    use super::revise_components;
 
     #[test]
     fn test_remove_in_mem() {
@@ -2010,5 +2013,136 @@ mod tests {
         assert!(parse_component_string("l::layer::name").is_ok());
         assert!(parse_component_string("r::layer::name").is_ok());
         assert!(parse_component_string("partof::::").is_ok());
+    }
+
+    #[test]
+    fn test_component_updates_in_mem() {
+        let r = test_component_updates(false);
+        assert!(r.is_ok());
+    }
+
+    #[test]
+    fn test_component_updates_on_disk() {
+        let r = test_component_updates(true);
+        assert!(r.is_ok());
+    }
+
+    fn test_component_updates(
+        on_disk: bool,
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let source_node_name = "node_a";
+        let target_node_name = "node_b";
+        let source_component = AnnotationComponent::new(
+            AnnotationComponentType::Ordering,
+            ANNIS_NS.into(),
+            "".into(),
+        );
+        let target_component = AnnotationComponent::new(
+            AnnotationComponentType::Ordering,
+            "".into(),
+            "default_ordering".into(),
+        );
+        let mut build_update = GraphUpdate::default();
+        build_update.add_event(UpdateEvent::AddNode {
+            node_name: "document".to_string(),
+            node_type: "corpus".to_string(),
+        })?;
+        build_update.add_event(UpdateEvent::AddNode {
+            node_name: source_node_name.to_string(),
+            node_type: "node".to_string(),
+        })?;
+        build_update.add_event(UpdateEvent::AddNode {
+            node_name: target_node_name.to_string(),
+            node_type: "node".to_string(),
+        })?;
+        build_update.add_event(UpdateEvent::AddEdge {
+            source_node: source_node_name.to_string(),
+            target_node: "document".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
+        build_update.add_event(UpdateEvent::AddEdge {
+            source_node: target_node_name.to_string(),
+            target_node: "document".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
+        build_update.add_event(UpdateEvent::AddEdge {
+            source_node: source_node_name.to_string(),
+            target_node: target_node_name.to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::Ordering.to_string(),
+            component_name: "".to_string(),
+        })?;
+        build_update.add_event(UpdateEvent::AddEdgeLabel {
+            source_node: source_node_name.to_string(),
+            target_node: target_node_name.to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::Ordering.to_string(),
+            component_name: "".to_string(),
+            anno_ns: "".to_string(),
+            anno_name: "info".to_string(),
+            anno_value: "note this info".to_string(),
+        })?;
+        let mut g = AnnotationGraph::new(on_disk)?;
+        g.apply_update(&mut build_update, |_| {})?;
+        let mut expected_update = GraphUpdate::default();
+        expected_update.add_event(UpdateEvent::DeleteEdge {
+            source_node: source_node_name.to_string(),
+            target_node: target_node_name.to_string(),
+            layer: source_component.layer.to_string(),
+            component_type: source_component.get_type().to_string(),
+            component_name: source_component.name.to_string(),
+        })?;
+        expected_update.add_event(UpdateEvent::AddEdge {
+            source_node: source_node_name.to_string(),
+            target_node: target_node_name.to_string(),
+            layer: target_component.layer.to_string(),
+            component_type: target_component.get_type().to_string(),
+            component_name: target_component.name.to_string(),
+        })?;
+        expected_update.add_event(UpdateEvent::AddEdgeLabel {
+            source_node: source_node_name.to_string(),
+            target_node: target_node_name.to_string(),
+            layer: target_component.layer.to_string(),
+            component_type: target_component.get_type().to_string(),
+            component_name: target_component.name.to_string(),
+            anno_ns: "".to_string(),
+            anno_name: "info".to_string(),
+            anno_value: "note this info".to_string(),
+        })?;
+        let mut test_update = GraphUpdate::default();
+        let pg = ProgressReporter::new(
+            None,
+            StepID {
+                module_name: "test_revise".to_string(),
+                path: None,
+            },
+            1,
+        )?;
+        let mut component_config = BTreeMap::new();
+        component_config.insert(
+            "ordering::annis::".to_string(),
+            "ordering::::default_ordering".to_string(),
+        );
+        revise_components(&g, &component_config, &mut test_update, &pg)?;
+        let mut ti = test_update.iter()?;
+        for e in expected_update.iter()? {
+            let (_, ue) = e?;
+            let (_, ue_) = ti.next().unwrap()?;
+            match ue {
+                UpdateEvent::AddEdge { .. } => assert!(matches!(ue_, UpdateEvent::AddEdge { .. })),
+                UpdateEvent::DeleteEdge { .. } => {
+                    assert!(matches!(ue_, UpdateEvent::DeleteEdge { .. }))
+                }
+                UpdateEvent::AddEdgeLabel { .. } => {
+                    assert!(matches!(ue_, UpdateEvent::AddEdgeLabel { .. }))
+                }
+                _ => assert!(false),
+            };
+        }
+        Ok(())
     }
 }
