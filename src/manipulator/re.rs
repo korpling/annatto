@@ -645,7 +645,7 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use crate::manipulator::re::{to_component_map, Revise};
+    use crate::manipulator::re::{parse_component_string, to_component_map, Revise};
     use crate::manipulator::Manipulator;
     use crate::Result;
 
@@ -1996,5 +1996,19 @@ mod tests {
             None,
         );
         assert_eq!(target_map, component_map);
+    }
+
+    #[test]
+    fn test_parse_component_string() {
+        assert!(parse_component_string("no_delimiter").is_err());
+        assert!(parse_component_string("invalid_type::layer::name").is_err());
+        assert!(parse_component_string("partof::layer::name").is_ok());
+        assert!(parse_component_string("ordering::layer::name").is_ok());
+        assert!(parse_component_string("coverage::layer::name").is_ok());
+        assert!(parse_component_string("dominance::layer::name").is_ok());
+        assert!(parse_component_string("pointing::layer::name").is_ok());
+        assert!(parse_component_string("l::layer::name").is_ok());
+        assert!(parse_component_string("r::layer::name").is_ok());
+        assert!(parse_component_string("partof::::").is_ok());
     }
 }
