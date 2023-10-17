@@ -70,7 +70,11 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
     let mut steps_progress: HashMap<StepID, f32> = HashMap::new();
 
     let bar = ProgressBar::new(1000);
-    bar.set_style(ProgressStyle::default_bar().template("[{elapsed}] [{bar:40}] {percent}% {msg}"));
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}/≈{duration}] [{wide_bar:.blue.bold}] {percent}% {msg}")
+            .expect("Could not parse progress bar template"),
+    );
     let mut errors = Vec::new();
     for status_update in rx {
         match status_update {
