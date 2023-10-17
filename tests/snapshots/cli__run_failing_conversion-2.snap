@@ -1,0 +1,11 @@
+---
+source: tests/cli.rs
+expression: output
+---
+Conversion starts with 2 steps
+-------------------------------
+import_graphml [doesnotexist.graphml]
+create_annotation_graph
+-------------------------------
+
+

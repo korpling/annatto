@@ -81,20 +81,23 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
             StatusMessage::Failed(e) => {
                 errors.push(e);
             }
+
             StatusMessage::StepsCreated(steps) => {
-                if steps.is_empty() {
-                    bar.println("No steps in workflow file")
-                } else {
-                    // Print all steps and insert empty progress for each step
-                    bar.println(format!("Conversion starts with {} steps", steps.len()));
-                    bar.println("-------------------------------");
-                    for s in steps {
-                        bar.println(format!("{}", &s));
-                        steps_progress.entry(s).or_default();
+                bar.suspend(|| {
+                    if steps.is_empty() {
+                        println!("No steps in workflow file")
+                    } else {
+                        // Print all steps and insert empty progress for each step
+                        println!("Conversion starts with {} steps", steps.len());
+                        println!("-------------------------------");
+                        for s in steps {
+                            println!("{}", &s);
+                            steps_progress.entry(s).or_default();
+                        }
+                        println!("-------------------------------");
                     }
-                    bar.println("-------------------------------");
-                }
-                bar.println("");
+                    println!("");
+                });
             }
             StatusMessage::Info(msg) => {
                 bar.println(msg);
