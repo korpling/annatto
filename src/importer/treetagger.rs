@@ -24,16 +24,16 @@ pub const MODULE_NAME: &str = "import_textgrid";
 pub struct TreeTaggerParser;
 
 enum Column {
-    TOKEN,
-    ANNO(String),
+    Token,
+    Anno(String),
 }
 
 impl From<String> for Column {
     fn from(value: String) -> Self {
         if value == "tok" {
-            Self::TOKEN
+            Self::Token
         } else {
-            Self::ANNO(value)
+            Self::Anno(value)
         }
     }
 }
@@ -141,7 +141,7 @@ impl<'a> DocumentMapper<'a> {
             if let Some(column_value) = token_line.next() {
                 if column_value.as_rule() == Rule::column_value {
                     match column_def {
-                        Column::TOKEN => {
+                        Column::Token => {
                             u.add_event(UpdateEvent::AddNodeLabel {
                                 node_name: tok_id.to_string(),
                                 anno_ns: ANNIS_NS.to_string(),
@@ -149,7 +149,7 @@ impl<'a> DocumentMapper<'a> {
                                 anno_value: column_value.as_str().to_string(),
                             })?;
                         }
-                        Column::ANNO(anno_name) => {
+                        Column::Anno(anno_name) => {
                             u.add_event(UpdateEvent::AddNodeLabel {
                                 node_name: tok_id.to_string(),
                                 anno_ns: DEFAULT_NS.to_string(),
@@ -201,9 +201,9 @@ impl Importer for TreeTaggerImporter {
         };
         // Set a default column configuration when nothing configured
         if params.column_names.is_empty() {
-            params.column_names.push(Column::TOKEN);
-            params.column_names.push(Column::ANNO("pos".into()));
-            params.column_names.push(Column::ANNO("lemma".into()));
+            params.column_names.push(Column::Token);
+            params.column_names.push(Column::Anno("pos".into()));
+            params.column_names.push(Column::Anno("lemma".into()));
         }
 
         for (file_path, doc_path) in documents {
