@@ -1,0 +1,6 @@
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+
+treetagger = {
+    SOI ~ 
+    EOI 
+}
