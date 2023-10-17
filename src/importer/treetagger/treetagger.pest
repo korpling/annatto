@@ -1,6 +1,18 @@
-WHITESPACE = _{ " " | "\t" | NEWLINE }
+TAB        = _{ "\t" }
+WHITESPACE = _{ " " | TAB | NEWLINE }
 
-treetagger = {
-    SOI ~ 
-    EOI 
+COLUMN_VALUE_CHAR = ${ !(TAB | NEWLINE) ~ ANY }
+
+column_value = { COLUMN_VALUE_CHAR+ }
+
+token_line = ${
+    column_value ~ &(NEWLINE | EOI)
+}
+
+tag_line = ${
+    "<" ~ ".*" ~ &(NEWLINE | EOI)
+}
+
+treetagger = ${
+    SOI ~ ((token_line | tag_line) ~ NEWLINE?)+ ~ EOI
 }
