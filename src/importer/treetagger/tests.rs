@@ -29,3 +29,15 @@ fn simple_token() {
 
     assert_snapshot!(actual);
 }
+
+#[test]
+fn default_pos_lemma() {
+    let actual = import_as_graphml_string(
+        TreeTaggerImporter::default(),
+        Path::new("tests/data/import/treetagger/single_sentence"),
+        Some(TT_DEFAULT_VIS_CONFIG),
+    )
+    .unwrap();
+
+    assert_snapshot!(actual);
+}

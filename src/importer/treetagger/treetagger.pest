@@ -6,7 +6,7 @@ COLUMN_VALUE_CHAR = ${ !(TAB | NEWLINE) ~ ANY }
 column_value = { COLUMN_VALUE_CHAR+ }
 
 token_line = ${
-    column_value ~ &(NEWLINE | EOI)
+    column_value ~ (TAB ~ column_value)* ~ &(NEWLINE | EOI)
 }
 
 tag_line = ${
