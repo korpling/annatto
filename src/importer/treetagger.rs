@@ -5,7 +5,8 @@ use crate::{
 };
 
 use super::Importer;
-use encoding_rs_io::DecodeReaderBytes;
+use encoding_rs::Encoding;
+use encoding_rs_io::DecodeReaderBytesBuilder;
 use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
@@ -17,7 +18,7 @@ use serde::Deserialize;
 
 const FILE_ENDINGS: [&str; 5] = ["treetagger", "tab", "tt", "txt", "xml"];
 
-pub const MODULE_NAME: &str = "import_textgrid";
+pub const MODULE_NAME: &str = "import_treetagger";
 
 #[derive(Parser)]
 #[grammar = "importer/treetagger/treetagger.pest"]
@@ -171,6 +172,8 @@ impl<'a> DocumentMapper<'a> {
 #[serde(default)]
 pub struct TreeTaggerImporter {
     column_names: Vec<String>,
+    /// The encoding to use when for the input files. Defaults to UTF-8.
+    encoding: Option<String>,
 }
 
 impl Module for TreeTaggerImporter {
@@ -206,13 +209,23 @@ impl Importer for TreeTaggerImporter {
             params.column_names.push(Column::Anno("lemma".into()));
         }
 
+        let decoder_builder = if let Some(encoding) = &self.encoding {
+            DecodeReaderBytesBuilder::new()
+                .encoding(Encoding::for_label(encoding.as_bytes()))
+                .clone()
+        } else {
+            DecodeReaderBytesBuilder::new()
+        };
+
         for (file_path, doc_path) in documents {
             reporter.info(&format!("Processing {}", &file_path.to_string_lossy()))?;
 
             let f = std::fs::File::open(&file_path)?;
-            let mut decoder = DecodeReaderBytes::new(f);
             let mut file_content = String::new();
-            decoder.read_to_string(&mut file_content)?;
+
+            decoder_builder
+                .build(&f)
+                .read_to_string(&mut file_content)?;
 
             let tt: Pairs<Rule> = TreeTaggerParser::parse(Rule::treetagger, &file_content)?;
 

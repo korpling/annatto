@@ -20,7 +20,7 @@ use exporter::{graphml::GraphMLExporter, Exporter};
 use importer::{
     conllu::ImportCoNLLU, corpus_annotations::AnnotateCorpus, exmaralda::ImportEXMARaLDA,
     graphml::GraphMLImporter, ptb::PtbImporter, spreadsheet::ImportSpreadsheet,
-    textgrid::TextgridImporter, CreateEmptyCorpus, Importer,
+    textgrid::TextgridImporter, treetagger::TreeTaggerImporter, CreateEmptyCorpus, Importer,
 };
 use manipulator::{
     check::Check, link_nodes::LinkNodes, map_annos::MapAnnos, merge::Merge, no_op::NoOp,
@@ -65,6 +65,7 @@ pub enum ReadFrom {
     None(#[serde(default)] CreateEmptyCorpus),
     PTB(#[serde(default)] PtbImporter),
     TextGrid(#[serde(default)] TextgridImporter),
+    TreeTagger(#[serde(default)] TreeTaggerImporter),
     Xlsx(#[serde(default)] ImportSpreadsheet),
 }
 
@@ -88,6 +89,7 @@ impl ReadFrom {
             ReadFrom::EXMARaLDA(m) => m,
             ReadFrom::PTB(m) => m,
             ReadFrom::TextGrid(m) => m,
+            ReadFrom::TreeTagger(m) => m,
             ReadFrom::None(m) => m,
             ReadFrom::Meta(m) => m,
             ReadFrom::Xlsx(m) => m,
