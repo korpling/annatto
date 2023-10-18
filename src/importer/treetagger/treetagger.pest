@@ -9,10 +9,13 @@ token_line = ${
     column_value ~ (TAB ~ column_value)* ~ &(NEWLINE | EOI)
 }
 
+TAG_VALUE_CHAR = ${ !(NEWLINE) ~ ANY }
+tag_value      =  { TAG_VALUE_CHAR+ }
+
 tag_line = ${
-    "<" ~ ".*" ~ &(NEWLINE | EOI)
+    "<" ~ tag_value ~ &(NEWLINE | EOI)
 }
 
 treetagger = ${
-    SOI ~ ((token_line | tag_line) ~ NEWLINE?)+ ~ EOI
+    SOI ~ ((tag_line | token_line) ~ NEWLINE?)+ ~ EOI
 }

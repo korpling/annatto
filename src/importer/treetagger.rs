@@ -85,7 +85,7 @@ impl<'a> DocumentMapper<'a> {
                 Rule::tag_line => {
                     let _tag_line = line.into_inner();
 
-                    todo!()
+                    todo!("Implement adding TreeTagger spans")
                 }
                 _ => {}
             }
