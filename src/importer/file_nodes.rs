@@ -1,4 +1,5 @@
 use graphannis::update::{GraphUpdate, UpdateEvent};
+use graphannis_core::graph::ANNIS_NS;
 use normpath::PathExt;
 use serde_derive::Deserialize;
 
@@ -26,8 +27,14 @@ impl Importer for CreateFileNodes {
             let node_name = path.to_str().unwrap()[start_index..].to_string();
             if path.is_file() {
                 update.add_event(UpdateEvent::AddNode {
-                    node_name,
+                    node_name: node_name.to_string(),
                     node_type: "file".to_string(),
+                })?;
+                update.add_event(UpdateEvent::AddNodeLabel {
+                    node_name: node_name.to_string(),
+                    anno_ns: ANNIS_NS.to_string(),
+                    anno_name: "file".to_string(),
+                    anno_value: node_name.to_string(),
                 })?;
             }
         }
@@ -51,6 +58,8 @@ mod tests {
         update::{GraphUpdate, UpdateEvent},
         AnnotationGraph,
     };
+    use graphannis_core::graph::ANNIS_NS;
+    use itertools::Itertools;
 
     use crate::{importer::Importer, StepID};
 
@@ -75,6 +84,12 @@ mod tests {
             node_name: "xlsx/test_file.xlsx".to_string(),
             node_type: "file".to_string(),
         })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "xlsx/test_file.xlsx".to_string(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "file".to_string(),
+            anno_value: "xlsx/test_file.xlsx".to_string(),
+        })?;
         let eur = expected_g.apply_update(&mut u, |_| {});
         assert!(eur.is_err()); // ordering component is missing, so this should be an error
         let mut test_g = AnnotationGraph::new(on_disk)?;
@@ -94,6 +109,26 @@ mod tests {
         let test_id = test_g.get_node_id_from_name("xlsx/test_file.xlsx")?;
         assert!(test_id.is_some());
         assert_eq!(expected_id.unwrap(), test_id.unwrap());
+        let expected_matches = expected_g
+            .get_node_annos()
+            .exact_anno_search(
+                Some(ANNIS_NS),
+                "file",
+                graphannis_core::annostorage::ValueSearch::Any,
+            )
+            .collect_vec();
+        let test_matches = test_g
+            .get_node_annos()
+            .exact_anno_search(
+                Some(ANNIS_NS),
+                "file",
+                graphannis_core::annostorage::ValueSearch::Any,
+            )
+            .collect_vec();
+        assert_eq!(expected_matches.len(), test_matches.len());
+        for (me, mt) in expected_matches.into_iter().zip(test_matches) {
+            assert_eq!(me?, mt?);
+        }
         Ok(())
     }
 }
