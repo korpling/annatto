@@ -51,7 +51,6 @@ mod tests {
         update::{GraphUpdate, UpdateEvent},
         AnnotationGraph,
     };
-    use graphannis_core::{annostorage::ValueSearch, graph::NODE_NAME_KEY};
 
     use crate::{importer::Importer, StepID};
 
