@@ -146,7 +146,7 @@ impl ImportEXMARaLDA {
                                 };
                             time_to_tli_attrs
                                 .entry(time)
-                                .or_insert_with(Vec::default)
+                                .or_default()
                                 .push(attr_map["id"].to_string());
                         }
                         "event" | "abbreviation" => char_buf.clear(),

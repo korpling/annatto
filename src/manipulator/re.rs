@@ -86,7 +86,7 @@ fn to_component_map(
             return Err(AnnattoError::Manipulator {
                 reason: format!("Could not parse source component: {old}"),
                 manipulator: MODULE_NAME.to_string(),
-            })?;
+            });
         }
     }
     Ok(component_map)
