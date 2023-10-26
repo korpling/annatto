@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add heuristic for KWIC visualizer in graphml export
 - `re` is now `revise`
 - `revise` can modify components
+- `path` as a import format now triggers the embedding of path names as nodes into the graph; this is supposed to help to represent configuration files for ANNIS
 
 ### Fixed
 
