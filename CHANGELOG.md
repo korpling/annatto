@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fixed code of spreadsheet import (merged cells might not have an end column reference)
 - relative import and export paths are interpreted as relative to the parent directory of the workflow file
 - the spreadsheet importer will use the correct namespace `default_ns` for segmentation ordering relations
+- fixed ordering of token nodes in spreadsheet import
 
 ## [0.3.1] - 2023-08-04
 
