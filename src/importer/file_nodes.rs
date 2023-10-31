@@ -48,10 +48,6 @@ impl Importer for CreateFileNodes {
                     anno_value: node_name.to_string(),
                 })?;
                 if let Some(link_target) = &self.corpus_name {
-                    dbg!(&format!(
-                        "adding part of edge from {} to {}",
-                        &node_name, link_target
-                    ));
                     update.add_event(UpdateEvent::AddEdge {
                         source_node: node_name,
                         target_node: link_target.to_string(),
