@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `revise` can modify components
 - `path` as a import format now triggers the embedding of path names as nodes into the graph; this is supposed to help to represent configuration files for ANNIS
 - import `path` adds an `annis::file` annotation
+- import `path` adds part-of edges
 
 ### Fixed
 

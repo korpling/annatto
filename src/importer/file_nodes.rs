@@ -1,4 +1,7 @@
-use graphannis::update::{GraphUpdate, UpdateEvent};
+use graphannis::{
+    model::AnnotationComponentType,
+    update::{GraphUpdate, UpdateEvent},
+};
 use graphannis_core::graph::ANNIS_NS;
 use normpath::PathExt;
 use serde_derive::Deserialize;
@@ -8,7 +11,9 @@ use crate::Module;
 use super::Importer;
 
 #[derive(Deserialize, Default)]
-pub struct CreateFileNodes {}
+pub struct CreateFileNodes {
+    corpus_name: Option<String>,
+}
 
 impl Importer for CreateFileNodes {
     fn import_corpus(
@@ -21,6 +26,12 @@ impl Importer for CreateFileNodes {
         let base_dir = input_path.normalize()?;
         let base_dir_name = base_dir.file_name().unwrap();
         let start_index = base_dir.as_path().to_string_lossy().len() - base_dir_name.len();
+        if let Some(link_target) = &self.corpus_name {
+            update.add_event(UpdateEvent::AddNode {
+                node_name: link_target.to_string(),
+                node_type: "corpus".to_string(),
+            })?;
+        }
         for path_r in glob::glob(format!("{}/**/*", base_dir.as_path().to_string_lossy()).as_str())?
         {
             let path = path_r?;
@@ -36,6 +47,19 @@ impl Importer for CreateFileNodes {
                     anno_name: "file".to_string(),
                     anno_value: node_name.to_string(),
                 })?;
+                if let Some(link_target) = &self.corpus_name {
+                    dbg!(&format!(
+                        "adding part of edge from {} to {}",
+                        &node_name, link_target
+                    ));
+                    update.add_event(UpdateEvent::AddEdge {
+                        source_node: node_name,
+                        target_node: link_target.to_string(),
+                        layer: ANNIS_NS.to_string(),
+                        component_type: AnnotationComponentType::PartOf.to_string(),
+                        component_name: "".to_string(),
+                    })?;
+                }
             }
         }
         Ok(update)
@@ -55,6 +79,7 @@ mod tests {
     use std::path::Path;
 
     use graphannis::{
+        model::{AnnotationComponent, AnnotationComponentType},
         update::{GraphUpdate, UpdateEvent},
         AnnotationGraph,
     };
@@ -81,6 +106,10 @@ mod tests {
         let mut expected_g = AnnotationGraph::new(on_disk)?;
         let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode {
+            node_name: "xlsx".to_string(),
+            node_type: "corpus".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNode {
             node_name: "xlsx/test_file.xlsx".to_string(),
             node_type: "file".to_string(),
         })?;
@@ -90,10 +119,19 @@ mod tests {
             anno_name: "file".to_string(),
             anno_value: "xlsx/test_file.xlsx".to_string(),
         })?;
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: "xlsx/test_file.xlsx".to_string(),
+            target_node: "xlsx".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
         let eur = expected_g.apply_update(&mut u, |_| {});
         assert!(eur.is_err()); // ordering component is missing, so this should be an error
         let mut test_g = AnnotationGraph::new(on_disk)?;
-        let import = CreateFileNodes::default();
+        let import = CreateFileNodes {
+            corpus_name: Some("xlsx".to_string()),
+        };
         let mut test_u = import.import_corpus(
             Path::new("tests/data/import/xlsx/clean/xlsx/"),
             StepID {
@@ -129,6 +167,42 @@ mod tests {
         for (me, mt) in expected_matches.into_iter().zip(test_matches) {
             assert_eq!(me?, mt?);
         }
+        let test_part_of_comp = test_g.get_graphstorage(&AnnotationComponent::new(
+            AnnotationComponentType::PartOf,
+            ANNIS_NS.into(),
+            "".into(),
+        ));
+        assert!(test_part_of_comp.is_some());
+        let test_root_node_id = test_g.get_node_id_from_name("xlsx")?;
+        assert!(test_root_node_id.is_some());
+        let expected_part_of_comp = expected_g.get_graphstorage(&AnnotationComponent::new(
+            AnnotationComponentType::PartOf,
+            ANNIS_NS.into(),
+            "".into(),
+        ));
+        assert!(expected_part_of_comp.is_some());
+        let expected_root_node_id = expected_g.get_node_id_from_name("xlsx")?;
+        assert!(expected_root_node_id.is_some());
+        assert_eq!(
+            expected_part_of_comp
+                .unwrap()
+                .get_ingoing_edges(expected_root_node_id.unwrap())
+                .count(),
+            test_part_of_comp
+                .clone()
+                .unwrap()
+                .get_ingoing_edges(test_root_node_id.unwrap())
+                .count()
+        );
+        assert_eq!(
+            test_part_of_comp
+                .unwrap()
+                .get_ingoing_edges(test_root_node_id.unwrap())
+                .count(),
+            glob::glob("tests/data/import/xlsx/clean/xlsx/*.*")
+                .into_iter()
+                .count()
+        );
         Ok(())
     }
 }
