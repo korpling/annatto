@@ -117,12 +117,14 @@ impl ImportSpreadsheet {
         };
         let rownums_by_col0i = {
             let mut m = BTreeMap::new();
+            // pre-fill values for each column
             for col_0i in name_to_col_0index.values() {
                 m.insert(
                     *col_0i,
                     (2..sheet.get_highest_row() + 2).collect::<BTreeSet<u32>>(),
                 );
             }
+            // remove obselete indices of merged cells
             for cell_range in merged_cells {
                 let start_col = match cell_range.get_coordinate_start_col().as_ref() {
                     Some(c) => c,
@@ -241,10 +243,10 @@ impl ImportSpreadsheet {
                         name_to_col_0index.get(k)
                     }
                 };
+                let mut nodes = Vec::new();
                 if let Some(col_0i) = index_opt {
                     let mut row_nums = rownums_by_col0i.get(col_0i).unwrap().iter().collect_vec();
-                    row_nums.sort();
-                    let mut nodes = Vec::new();
+                    row_nums.sort_unstable();
                     for (start_row, end_row_excl) in row_nums.into_iter().tuple_windows() {
                         let cell = match sheet.get_cell(((col_0i + 1), *start_row)) {
                             Some(cl) => cl,
@@ -294,10 +296,12 @@ impl ImportSpreadsheet {
                                 component_name: "".to_string(),
                             })?;
                         }
-                        nodes.push(node_name);
+                        if !name.is_empty() && name == tok_name {
+                            nodes.push(node_name);
+                        }
                     }
-                    if name == tok_name {
-                        nodes.iter().sorted().tuple_windows().try_for_each(
+                    if !nodes.is_empty() {
+                        nodes.iter().tuple_windows().try_for_each(
                             |(first_name, second_name)| {
                                 update.add_event(UpdateEvent::AddEdge {
                                     source_node: first_name.to_string(),
@@ -309,6 +313,7 @@ impl ImportSpreadsheet {
                                 Ok::<(), AnnattoError>(())
                             },
                         )?;
+                        nodes.clear();
                     }
                 } else {
                     progress_reporter.info(&format!("No column `{name}` in file {}", &doc_path))?;
@@ -487,6 +492,8 @@ mod tests {
             ("norm:lemma _=_ norm", lemma_count),
             ("annis:doc", 1),
             ("annis:doc=\"test_file\"", 1),
+            ("dipl .dipl dipl .dipl dipl .dipl dipl", 1),
+            ("norm .norm norm .norm norm .norm norm", 1),
         ];
         let corpus_name = "current";
         let tmp_dir = tempdir_in(temp_dir())?;
