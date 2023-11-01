@@ -1,4 +1,4 @@
-use std::{io::Read, path::Path};
+use std::{collections::BTreeMap, io::Read, path::Path};
 
 use crate::{
     progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files, Module, StepID,
@@ -48,6 +48,7 @@ struct DocumentMapper<'a> {
     text_node_name: String,
     last_token_id: Option<String>,
     number_of_token: usize,
+    tag_stack: BTreeMap<String, Vec<String>>,
     params: &'a MapperParams,
 }
 
@@ -81,11 +82,6 @@ impl<'a> DocumentMapper<'a> {
                 Rule::token_line => {
                     let token_line = line.into_inner();
                     self.consume_token_line(u, token_line)?;
-                }
-                Rule::tag_line => {
-                    let _tag_line = line.into_inner();
-
-                    todo!("Implement adding TreeTagger spans")
                 }
                 _ => {}
             }
@@ -237,6 +233,7 @@ impl Importer for TreeTaggerImporter {
                 params: &params,
                 last_token_id: None,
                 number_of_token: 0,
+                tag_stack: BTreeMap::new(),
             };
 
             doc_mapper.map(&mut u, tt)?;

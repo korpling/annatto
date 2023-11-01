@@ -1,21 +1,27 @@
+treetagger = {
+    SOI ~ ((end_tag | start_tag | token_line) ~ NEWLINE?)+ ~ EOI
+}
+
 TAB        = _{ "\t" }
 WHITESPACE = _{ " " | TAB | NEWLINE }
 
-COLUMN_VALUE_CHAR = ${ !(TAB | NEWLINE) ~ ANY }
-
-column_value = { COLUMN_VALUE_CHAR+ }
+column_value = { (!(TAB | NEWLINE) ~ ANY)+ }
 
 token_line = ${
     column_value ~ (TAB ~ column_value)* ~ &(NEWLINE | EOI)
 }
 
-TAG_VALUE_CHAR = ${ !(NEWLINE) ~ ANY }
-tag_value      =  { TAG_VALUE_CHAR+ }
+tag_name = @{ !(">" | "<") ~ ASCII_ALPHANUMERIC+ }
+attr_id  = @{ ASCII_ALPHANUMERIC+ }
+string   = @{ "\"" ~ inner ~ "\"" }
+inner    = @{ (!("\"" | "\\") ~ ANY)* ~ (escape ~ inner)? }
+escape   = @{ "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t" | unicode) }
+unicode  = @{ "u" ~ ASCII_HEX_DIGIT{4} }
 
-tag_line = ${
-    "<" ~ tag_value ~ &(NEWLINE | EOI)
+start_tag = {
+    "<" ~ tag_name ~ (attr_id ~ "=" ~ string)* ~ ">"
 }
 
-treetagger = ${
-    SOI ~ ((tag_line | token_line) ~ NEWLINE?)+ ~ EOI
+end_tag = {
+    "</" ~ tag_name ~ ">"
 }
