@@ -2,8 +2,9 @@ treetagger = {
     SOI ~ ((end_tag | start_tag | token_line) ~ NEWLINE?)+ ~ EOI
 }
 
-TAB        = _{ "\t" }
-WHITESPACE = _{ " " | TAB | NEWLINE }
+TAB          = _{ "\t" }
+WHITESPACE   = _{ " " | TAB | NEWLINE }
+DOUBLE_QUOTE = _{ "\"" }
 
 column_value = { (!(TAB | NEWLINE) ~ ANY)+ }
 
@@ -11,12 +12,12 @@ token_line = ${
     column_value ~ (TAB ~ column_value)* ~ &(NEWLINE | EOI)
 }
 
-tag_name = @{ !(">" | "<") ~ ASCII_ALPHANUMERIC+ }
-attr_id  = @{ ASCII_ALPHANUMERIC+ }
-string   = @{ "\"" ~ inner ~ "\"" }
-inner    = @{ (!("\"" | "\\") ~ ANY)* ~ (escape ~ inner)? }
-escape   = @{ "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t" | unicode) }
-unicode  = @{ "u" ~ ASCII_HEX_DIGIT{4} }
+tag_name     = @{ !(">" | "<") ~ ASCII_ALPHANUMERIC+ }
+attr_id      = @{ ASCII_ALPHANUMERIC+ }
+string       = _{ DOUBLE_QUOTE ~ string_value ~ DOUBLE_QUOTE }
+string_value = @{ (!("\"" | "\\") ~ ANY)* ~ (escape ~ string_value)? }
+escape       = @{ "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t" | unicode) }
+unicode      = @{ "u" ~ ASCII_HEX_DIGIT{4} }
 
 start_tag = {
     "<" ~ tag_name ~ (attr_id ~ "=" ~ string)* ~ ">"
