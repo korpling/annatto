@@ -19,8 +19,9 @@ use error::Result;
 use exporter::{graphml::GraphMLExporter, Exporter};
 use importer::{
     conllu::ImportCoNLLU, corpus_annotations::AnnotateCorpus, exmaralda::ImportEXMARaLDA,
-    graphml::GraphMLImporter, ptb::PtbImporter, spreadsheet::ImportSpreadsheet,
-    textgrid::TextgridImporter, treetagger::TreeTaggerImporter, CreateEmptyCorpus, Importer,
+    file_nodes::CreateFileNodes, graphml::GraphMLImporter, ptb::PtbImporter,
+    spreadsheet::ImportSpreadsheet, textgrid::TextgridImporter, treetagger::TreeTaggerImporter,
+    CreateEmptyCorpus, Importer,
 };
 use manipulator::{
     check::Check, link_nodes::LinkNodes, map_annos::MapAnnos, merge::Merge, no_op::NoOp,
@@ -63,6 +64,7 @@ pub enum ReadFrom {
     GraphML(#[serde(default)] GraphMLImporter),
     Meta(#[serde(default)] AnnotateCorpus),
     None(#[serde(default)] CreateEmptyCorpus),
+    Path(#[serde(default)] CreateFileNodes),
     PTB(#[serde(default)] PtbImporter),
     TextGrid(#[serde(default)] TextgridImporter),
     TreeTagger(#[serde(default)] TreeTaggerImporter),
@@ -94,6 +96,7 @@ impl ReadFrom {
             ReadFrom::Meta(m) => m,
             ReadFrom::Xlsx(m) => m,
             ReadFrom::GraphML(m) => m,
+            ReadFrom::Path(m) => m,
         }
     }
 }

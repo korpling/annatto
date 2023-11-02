@@ -48,7 +48,7 @@ struct DocumentMapper<'a> {
     text_node_name: String,
     last_token_id: Option<String>,
     number_of_token: usize,
-    tag_stack: BTreeMap<String, Vec<String>>,
+    _tag_stack: BTreeMap<String, Vec<String>>,
     params: &'a MapperParams,
 }
 
@@ -233,7 +233,7 @@ impl Importer for TreeTaggerImporter {
                 params: &params,
                 last_token_id: None,
                 number_of_token: 0,
-                tag_stack: BTreeMap::new(),
+                _tag_stack: BTreeMap::new(),
             };
 
             doc_mapper.map(&mut u, tt)?;

@@ -3,6 +3,7 @@
 pub mod conllu;
 pub mod corpus_annotations;
 pub mod exmaralda;
+pub mod file_nodes;
 pub mod graphml;
 pub mod ptb;
 pub mod spreadsheet;

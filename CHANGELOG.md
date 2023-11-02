@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add heuristic for KWIC visualizer in graphml export
 - `re` is now `revise`
 - `revise` can modify components
+- `path` as a import format now triggers the embedding of path names as nodes into the graph; this is supposed to help to represent configuration files for ANNIS
+- import `path` adds an `annis::file` annotation
+- import `path` adds part-of edges
 
 ### Fixed
 
@@ -23,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fixed code of spreadsheet import (merged cells might not have an end column reference)
 - relative import and export paths are interpreted as relative to the parent directory of the workflow file
 - the spreadsheet importer will use the correct namespace `default_ns` for segmentation ordering relations
+- fixed ordering of token nodes in spreadsheet import
 
 ## [0.3.1] - 2023-08-04
 
