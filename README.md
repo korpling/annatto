@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/korpling/annatto/graph/badge.svg?token=51VXZ3IJPA)](https://codecov.io/gh/korpling/annatto)
+
 # Annatto
 
 This software aims to test and convert data within the [RUEG](https://hu.berlin/rueg)
