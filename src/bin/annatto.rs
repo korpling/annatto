@@ -96,7 +96,7 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
                         }
                         println!("-------------------------------");
                     }
-                    println!("");
+                    println!();
                 });
             }
             StatusMessage::Info(msg) => {

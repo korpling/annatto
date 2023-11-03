@@ -78,12 +78,9 @@ impl<'a> DocumentMapper<'a> {
 
     fn map_tt_rule(&mut self, u: &mut GraphUpdate, tt: Pairs<'a, Rule>) -> anyhow::Result<()> {
         for line in tt {
-            match line.as_rule() {
-                Rule::token_line => {
-                    let token_line = line.into_inner();
-                    self.consume_token_line(u, token_line)?;
-                }
-                _ => {}
+            if line.as_rule() == Rule::token_line {
+                let token_line = line.into_inner();
+                self.consume_token_line(u, token_line)?;
             }
         }
         Ok(())
