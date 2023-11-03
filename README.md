@@ -19,7 +19,8 @@ We recommend installing the following Cargo subcommands for developing annis-web
 - [cargo-about](https://crates.io/crates/cargo-about) for re-generating the
   third party license file
 - [cargo-llvm-cov](https://crates.io/crates/cargo-llvm-cov) for determining the code coverage
-- [cargo-insta](https://crates.io/crates/cargo-insta) allows reviewing the test snapshot files.
+- [cargo-insta](https://crates.io/crates/cargo-insta) allows reviewing the test snapshot files
+- [cargo-dist](https://crates.io/crates/cargo-dist) for configuring the GitHub actions that create the release binaries.
 
 ### Execute tests
 
