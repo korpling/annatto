@@ -8,6 +8,7 @@ pub mod graphml;
 pub mod ptb;
 pub mod spreadsheet;
 pub mod textgrid;
+pub mod xml;
 
 use crate::{progress::ProgressReporter, workflow::StatusSender, Module, StepID};
 use graphannis::update::GraphUpdate;

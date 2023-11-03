@@ -20,7 +20,8 @@ use exporter::{graphml::GraphMLExporter, Exporter};
 use importer::{
     conllu::ImportCoNLLU, corpus_annotations::AnnotateCorpus, exmaralda::ImportEXMARaLDA,
     file_nodes::CreateFileNodes, graphml::GraphMLImporter, ptb::PtbImporter,
-    spreadsheet::ImportSpreadsheet, textgrid::TextgridImporter, CreateEmptyCorpus, Importer,
+    spreadsheet::ImportSpreadsheet, textgrid::TextgridImporter, xml::ImportXML, CreateEmptyCorpus,
+    Importer,
 };
 use manipulator::{
     check::Check, link_nodes::LinkNodes, map_annos::MapAnnos, merge::Merge, no_op::NoOp,
@@ -67,6 +68,7 @@ pub enum ReadFrom {
     PTB(#[serde(default)] PtbImporter),
     TextGrid(#[serde(default)] TextgridImporter),
     Xlsx(#[serde(default)] ImportSpreadsheet),
+    Xml(ImportXML),
 }
 
 impl Default for ReadFrom {
@@ -94,6 +96,7 @@ impl ReadFrom {
             ReadFrom::Xlsx(m) => m,
             ReadFrom::GraphML(m) => m,
             ReadFrom::Path(m) => m,
+            ReadFrom::Xml(m) => m,
         }
     }
 }
