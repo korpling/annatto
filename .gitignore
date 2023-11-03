@@ -3,3 +3,4 @@
 /pyembedded
 *.log
 py/__pycache__
+lcov.info

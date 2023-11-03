@@ -16,7 +16,24 @@
       "group": {
         "kind": "none"
       },
-      "label": "Code Coverage"
+      "label": "Code Coverage (open report in browser)"
+    },
+    {
+      "type": "cargo",
+      "command": "llvm-cov",
+      "args": [
+        "--all-features",
+        "--ignore-filename-regex",
+        "tests?.rs",
+        "--lcov",
+        "--output-path",
+        "lcov.info"
+      ],
+      "problemMatcher": ["$rustc"],
+      "group": {
+        "kind": "none"
+      },
+      "label": "Code Coverage (create lcov.info report file)"
     }
   ]
 }
