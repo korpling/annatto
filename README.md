@@ -27,7 +27,7 @@ You can run the tests with the default `cargo test` command.
 To calculate the code coverage, you can use `cargo-llvm-cov`:
 
 ```bash
-cargo llvm-cov --open --ignore-filename-regex 'tests?\.rs'
+cargo llvm-cov --open --all-features --ignore-filename-regex 'tests?\.rs'
 ```
 
 
