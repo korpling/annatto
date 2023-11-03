@@ -11,7 +11,6 @@ version = "0.3.1"
 [dependencies]
 ansi_term = "0.12"
 anyhow = "1.0"
-tiny_http = {version = "0.12", optional = true}
 csv = "1.1"
 encoding_rs_io = "0.1.7"
 encoding_rs = "0.8"
@@ -38,17 +37,18 @@ structopt = "0.3"
 tabled = "0.12"
 tempfile = "3"
 thiserror = "1.0"
+tiny_http = {version = "0.12", optional = true}
 toml = "0.8.0"
 tracing-subscriber = "0.3"
 umya-spreadsheet = "1.0"
-xml-rs = "0.8"
 url = {version = "2", optional = true}
+xml-rs = "0.8"
 
 [dev-dependencies]
 assert_cmd = "2.0.11"
 insta = {version = "1.26.0", features = ["toml", "redactions"]}
 pretty_assertions = "1.3"
-ureq = { version = "2.7.1", default-features = false }
+ureq = {version = "2.7.1", default-features = false}
 
 [features]
 default = ["embed-documentation"]
@@ -76,13 +76,13 @@ split-debuginfo = "packed"
 
 # Config for 'cargo dist'
 [workspace.metadata.dist]
-# The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
-cargo-dist-version = "0.0.7"
-# The preferred Rust toolchain to use in CI (rustup toolchain syntax)
-rust-toolchain-version = "1.67.1"
-# CI backends to support (see 'cargo dist generate-ci')
+# CI backends to support
 ci = ["github"]
 # The installers to generate for each app
 installers = []
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["x86_64-unknown-linux-gnu", "x86_64-apple-darwin", "x86_64-pc-windows-msvc", "aarch64-apple-darwin"]
+targets = ["x86_64-unknown-linux-gnu", "aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-pc-windows-msvc"]
+# The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
+cargo-dist-version = "0.3.1"
+# Publish jobs to run in CI
+pr-run-mode = "plan"

@@ -10,7 +10,29 @@ and integration.
 For efficiency annatto relies on the [graphANNIS representation](https://korpling.github.io/graphANNIS/docs/v2.2/data-model.html)
 and already provides a basic set of data handling modules.
 
-## Performing a release
+## Developing annatto
+
+You need to install Rust to compile the project.
+We recommend installing the following Cargo subcommands for developing annis-web:
+
+- [cargo-release](https://crates.io/crates/cargo-release) for creating releases
+- [cargo-about](https://crates.io/crates/cargo-about) for re-generating the
+  third party license file
+- [cargo-llvm-cov](https://crates.io/crates/cargo-llvm-cov) for determining the code coverage
+- [cargo-insta](https://crates.io/crates/cargo-insta) allows reviewing the test snapshot files
+- [cargo-dist](https://crates.io/crates/cargo-dist) for configuring the GitHub actions that create the release binaries.
+
+### Execute tests
+
+You can run the tests with the default `cargo test` command.
+To calculate the code coverage, you can use `cargo-llvm-cov`:
+
+```bash
+cargo llvm-cov --open --all-features --ignore-filename-regex 'tests?\.rs'
+```
+
+
+### Performing a release
 
 You need to have [`cargo-release`](https://crates.io/crates/cargo-release)
 installed to perform a release. Execute the follwing `cargo` command once to
