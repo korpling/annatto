@@ -19,13 +19,13 @@ use error::Result;
 use exporter::{graphml::GraphMLExporter, Exporter};
 use importer::{
     conllu::ImportCoNLLU, corpus_annotations::AnnotateCorpus, exmaralda::ImportEXMARaLDA,
-    file_nodes::CreateFileNodes, graphml::GraphMLImporter, ptb::PtbImporter,
+    file_nodes::CreateFileNodes, graphml::GraphMLImporter, opus::ImportOpusLinks, ptb::PtbImporter,
     spreadsheet::ImportSpreadsheet, textgrid::TextgridImporter, xml::ImportXML, CreateEmptyCorpus,
     Importer,
 };
 use manipulator::{
-    check::Check, link_nodes::LinkNodes, map_annos::MapAnnos, merge::Merge, no_op::NoOp,
-    re::Revise, Manipulator,
+    check::Check, enumerate::EnumerateMatches, link_nodes::LinkNodes, map_annos::MapAnnos,
+    merge::Merge, no_op::NoOp, re::Revise, Manipulator,
 };
 use serde_derive::Deserialize;
 
@@ -64,6 +64,7 @@ pub enum ReadFrom {
     GraphML(#[serde(default)] GraphMLImporter),
     Meta(#[serde(default)] AnnotateCorpus),
     None(#[serde(default)] CreateEmptyCorpus),
+    Opus(#[serde(default)] ImportOpusLinks),
     Path(#[serde(default)] CreateFileNodes),
     PTB(#[serde(default)] PtbImporter),
     TextGrid(#[serde(default)] TextgridImporter),
@@ -97,6 +98,7 @@ impl ReadFrom {
             ReadFrom::GraphML(m) => m,
             ReadFrom::Path(m) => m,
             ReadFrom::Xml(m) => m,
+            ReadFrom::Opus(m) => m,
         }
     }
 }
@@ -104,7 +106,8 @@ impl ReadFrom {
 #[derive(Deserialize)]
 #[serde(tag = "action", rename_all = "lowercase", content = "config")]
 pub enum GraphOp {
-    Check(Check),                     // no default, has a (required) path attribute
+    Check(Check), // no default, has a (required) path attribute
+    Enumerate(#[serde(default)] EnumerateMatches),
     Link(LinkNodes),                  // no default, has required attributes
     Map(MapAnnos),                    // no default, has a (required) path attribute
     Merge(Merge),                     // no default, has required attributes
@@ -134,6 +137,7 @@ impl GraphOp {
             GraphOp::Merge(m) => m,
             GraphOp::Revise(m) => m,
             GraphOp::None(m) => m,
+            GraphOp::Enumerate(m) => m,
         }
     }
 }

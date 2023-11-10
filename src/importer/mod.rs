@@ -1,10 +1,10 @@
 //! Contains importers and their traits.
-
 pub mod conllu;
 pub mod corpus_annotations;
 pub mod exmaralda;
 pub mod file_nodes;
 pub mod graphml;
+pub mod opus;
 pub mod ptb;
 pub mod spreadsheet;
 pub mod textgrid;
