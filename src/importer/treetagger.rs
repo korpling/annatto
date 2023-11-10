@@ -12,7 +12,7 @@ use graphannis::{
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
-use pest::{iterators::Pairs, Parser};
+use pest::{iterators::Pairs, Parser, RuleType};
 use pest_derive::Parser;
 use serde::Deserialize;
 
@@ -48,7 +48,7 @@ struct DocumentMapper<'a> {
     text_node_name: String,
     last_token_id: Option<String>,
     number_of_token: usize,
-    _tag_stack: BTreeMap<String, Vec<String>>,
+    tag_stack: BTreeMap<String, Vec<String>>,
     params: &'a MapperParams,
 }
 
@@ -78,10 +78,24 @@ impl<'a> DocumentMapper<'a> {
 
     fn map_tt_rule(&mut self, u: &mut GraphUpdate, tt: Pairs<'a, Rule>) -> anyhow::Result<()> {
         for line in tt {
-            if line.as_rule() == Rule::token_line {
-                let token_line = line.into_inner();
-                self.consume_token_line(u, token_line)?;
-            }
+            match line.as_rule() {
+                Rule::token_line => {
+                    let token_line = line.into_inner();
+                    self.consume_token_line(u, token_line)?;
+                }
+                Rule::start_tag => {
+                    let start_tag = line.into_inner();
+                    self.consume_start_tag(u, start_tag)?;
+                }
+                Rule::end_tag => {
+                    let end_tag = line.into_inner();
+                    self.consume_end_tag(u, end_tag)?;
+                }
+                Rule::EOI => {
+                    // TODO: check if the last tag should be a meta data entry instead of a span
+                }
+                _ => {}
+            };
         }
         Ok(())
     }
@@ -158,6 +172,22 @@ impl<'a> DocumentMapper<'a> {
 
         Ok(())
     }
+
+    fn consume_start_tag(
+        &mut self,
+        u: &mut GraphUpdate,
+        mut start_tag: Pairs<'a, Rule>,
+    ) -> anyhow::Result<()> {
+        todo!()
+    }
+
+    fn consume_end_tag(
+        &mut self,
+        u: &mut GraphUpdate,
+        mut start_tag: Pairs<'a, Rule>,
+    ) -> anyhow::Result<()> {
+        todo!()
+    }
 }
 
 /// Importer for the file format used by the TreeTagger.
@@ -230,7 +260,7 @@ impl Importer for TreeTaggerImporter {
                 params: &params,
                 last_token_id: None,
                 number_of_token: 0,
-                _tag_stack: BTreeMap::new(),
+                tag_stack: BTreeMap::new(),
             };
 
             doc_mapper.map(&mut u, tt)?;
