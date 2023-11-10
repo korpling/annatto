@@ -94,14 +94,14 @@ impl ImportXML {
                         continue;
                     }
                     ignore_chars = false;
-                    let generic_id = format!("{}#n{node_count}", doc_node_id.to_string());
+                    let generic_id = format!("{}#n{node_count}", doc_node_id);
                     let node_id = if self.use_ids {
                         if let Some(attr) = attributes
                             .iter()
                             .filter(|a| a.name.to_string().as_str() == "id")
                             .last()
                         {
-                            format!("{}#{}", doc_node_id.to_string(), attr.value.to_string())
+                            format!("{}#{}", doc_node_id, attr.value)
                         } else {
                             generic_id
                         }
@@ -130,7 +130,7 @@ impl ImportXML {
                             anno_value: GENERIC_NS.to_string(),
                         })?;
                     } else if node_stack.len() > 1 {
-                        let empty_node = (&node_id).replace("#", "#t_");
+                        let empty_node = node_id.replace('#', "#t_");
                         update.add_event(UpdateEvent::AddNode {
                             node_name: empty_node.to_string(),
                             node_type: "node".to_string(),
@@ -212,7 +212,7 @@ impl ImportXML {
                         let lookup = name.to_string();
                         if self.default_ordering == lookup {
                             update.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: node_id.replace("#", "#t_"),
+                                node_name: node_id.replace('#', "#t_"),
                                 anno_ns: ANNIS_NS.to_string(),
                                 anno_name: "tok".to_string(),
                                 anno_value: value,
