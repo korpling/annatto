@@ -23,6 +23,13 @@ page_size = 10
 vis_type = "kwic"
 display_name = "kwic"
 visibility = "permanent"
+
+[[visualizers]]
+vis_type = "grid"
+display_name = "grid"
+
+[visualizers.mappings]
+annos = "lb, highlighted"
 ]]></data>
         <node id="token_only">
             <data key="k3">corpus</data>

@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, io::Read, path::Path};
+use std::{io::Read, path::Path};
 
 use crate::{
     progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files, Module, StepID,
@@ -12,7 +12,7 @@ use graphannis::{
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
-use pest::{iterators::Pairs, Parser, RuleType};
+use pest::{iterators::Pairs, Parser};
 use pest_derive::Parser;
 use serde::Deserialize;
 
@@ -43,12 +43,18 @@ struct MapperParams {
     column_names: Vec<Column>,
 }
 
+struct TagStackEntry {
+    anno_name: String,
+    covered_token: Vec<String>,
+}
+
 struct DocumentMapper<'a> {
     doc_path: String,
     text_node_name: String,
     last_token_id: Option<String>,
     number_of_token: usize,
-    tag_stack: BTreeMap<String, Vec<String>>,
+    number_of_spans: usize,
+    tag_stack: Vec<TagStackEntry>,
     params: &'a MapperParams,
 }
 
@@ -85,7 +91,7 @@ impl<'a> DocumentMapper<'a> {
                 }
                 Rule::start_tag => {
                     let start_tag = line.into_inner();
-                    self.consume_start_tag(u, start_tag)?;
+                    self.consume_start_tag(start_tag)?;
                 }
                 Rule::end_tag => {
                     let end_tag = line.into_inner();
@@ -126,6 +132,11 @@ impl<'a> DocumentMapper<'a> {
             component_type: AnnotationComponentType::PartOf.to_string(),
             component_name: "".to_string(),
         })?;
+
+        // Remember this token as covered for all spans on the stack
+        for e in self.tag_stack.iter_mut() {
+            e.covered_token.push(tok_id.clone());
+        }
 
         if let Some(last_token_id) = &self.last_token_id {
             u.add_event(UpdateEvent::AddNodeLabel {
@@ -173,20 +184,56 @@ impl<'a> DocumentMapper<'a> {
         Ok(())
     }
 
-    fn consume_start_tag(
-        &mut self,
-        u: &mut GraphUpdate,
-        mut start_tag: Pairs<'a, Rule>,
-    ) -> anyhow::Result<()> {
-        todo!()
+    fn consume_start_tag(&mut self, mut start_tag: Pairs<'a, Rule>) -> anyhow::Result<()> {
+        if let Some(tag_name) = start_tag.next() {
+            if tag_name.as_rule() == Rule::tag_name {
+                self.tag_stack.push(TagStackEntry {
+                    anno_name: tag_name.as_str().to_string(),
+                    covered_token: Vec::new(),
+                });
+            }
+        }
+        Ok(())
     }
 
     fn consume_end_tag(
         &mut self,
         u: &mut GraphUpdate,
-        mut start_tag: Pairs<'a, Rule>,
+        mut end_tag: Pairs<'a, Rule>,
     ) -> anyhow::Result<()> {
-        todo!()
+        // Get the tag name and the nearest matching tag from stack
+        if let Some(tag_name) = end_tag.next() {
+            if tag_name.as_rule() == Rule::tag_name {
+                let tag_name = tag_name.as_str();
+                if let Some(idx) = self.tag_stack.iter().position(|t| t.anno_name == tag_name) {
+                    let entry = self.tag_stack.remove(idx);
+                    // Add a node update for the span
+                    self.number_of_spans += 1;
+                    let span_id = format!("{}#span{}", self.doc_path, self.number_of_spans);
+                    u.add_event(UpdateEvent::AddNode {
+                        node_name: span_id.clone(),
+                        node_type: "node".into(),
+                    })?;
+                    u.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: span_id.clone(),
+                        anno_ns: "".into(),
+                        anno_name: tag_name.into(),
+                        anno_value: tag_name.into(),
+                    })?;
+                    // Add coverage edges for all covered token
+                    for t in entry.covered_token {
+                        u.add_event(UpdateEvent::AddEdge {
+                            source_node: span_id.clone(),
+                            target_node: t.into(),
+                            layer: ANNIS_NS.into(),
+                            component_type: "Coverage".into(),
+                            component_name: "".into(),
+                        })?;
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 }
 
@@ -260,7 +307,8 @@ impl Importer for TreeTaggerImporter {
                 params: &params,
                 last_token_id: None,
                 number_of_token: 0,
-                tag_stack: BTreeMap::new(),
+                number_of_spans: 0,
+                tag_stack: Vec::new(),
             };
 
             doc_mapper.map(&mut u, tt)?;

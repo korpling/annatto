@@ -16,6 +16,13 @@ page_size = 10
 vis_type = "kwic"
 display_name = "kwic"
 visibility = "permanent"
+
+[[visualizers]]
+vis_type = "grid"
+display_name = "grid"
+
+[visualizers.mappings]
+annos = "lb, highlighted"
 "#;
 
 #[test]
@@ -31,7 +38,7 @@ fn simple_token() {
 }
 
 #[test]
-fn default_pos_lemma() {
+fn single_sentence() {
     let actual = import_as_graphml_string(
         TreeTaggerImporter::default(),
         Path::new("tests/data/import/treetagger/single_sentence"),
