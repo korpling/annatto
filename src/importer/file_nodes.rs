@@ -122,8 +122,16 @@ mod tests {
             component_type: AnnotationComponentType::PartOf.to_string(),
             component_name: "".to_string(),
         })?;
+        u.add_event(UpdateEvent::AddEdge {
+            // dummy edge to pass model check
+            source_node: "xlsx/test_file.xlsx".to_string(),
+            target_node: "xlsx/test_file.xlsx".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::Ordering.to_string(),
+            component_name: "".to_string(),
+        })?;
         let eur = expected_g.apply_update(&mut u, |_| {});
-        assert!(eur.is_err()); // ordering component is missing, so this should be an error
+        assert!(eur.is_ok()); // ordering component is missing, so this should be an error
         let mut test_g = AnnotationGraph::new(on_disk)?;
         let import = CreateFileNodes {
             corpus_name: Some("xlsx".to_string()),
@@ -136,8 +144,21 @@ mod tests {
             },
             None,
         )?;
+        // add dummy node and dummy ordering edge to pass model checks when applying the update to the graph
+        test_u.add_event(UpdateEvent::AddNode {
+            node_name: "dummy_node".to_string(),
+            node_type: "node".to_string(),
+        })?;
+        test_u.add_event(UpdateEvent::AddEdge {
+            source_node: "dummy_node".to_string(),
+            target_node: "dummy_node".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::Ordering.to_string(),
+            component_name: "".to_string(),
+        })?;
+        // apply
         let ur = test_g.apply_update(&mut test_u, |_| {});
-        assert!(ur.is_err()); // ordering component is missing, so this should be an error
+        assert!(ur.is_ok());
         let expected_id = expected_g.get_node_id_from_name("xlsx/test_file.xlsx")?;
         assert!(expected_id.is_some());
         let test_id = test_g.get_node_id_from_name("xlsx/test_file.xlsx")?;
@@ -171,7 +192,7 @@ mod tests {
         assert!(test_part_of_comp.is_some());
         let test_root_node_id = test_g.get_node_id_from_name("xlsx")?;
         assert!(test_root_node_id.is_some());
-        let expected_part_of_comp = expected_g.get_graphstorage(&AnnotationComponent::new(
+        let expected_part_of_comp = expected_g.get_graphstorage_as_ref(&AnnotationComponent::new(
             AnnotationComponentType::PartOf,
             ANNIS_NS.into(),
             "".into(),
