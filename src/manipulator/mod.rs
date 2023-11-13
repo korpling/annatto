@@ -1,4 +1,4 @@
-//! Contains manipulators and their traits.
+//! Graph operation modules change the imported corpus data.
 pub mod check;
 pub mod enumerate;
 pub mod link_nodes;

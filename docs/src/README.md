@@ -1,6 +1,5 @@
 # Introduction
 
-
 ## Modules
 
 Annatto comes with a number of modules, which have different types:

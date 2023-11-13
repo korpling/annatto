@@ -1,4 +1,4 @@
-//! Contains importers and their traits.
+//! Importer modules allow importing files from different formats.
 pub mod conllu;
 pub mod corpus_annotations;
 pub mod exmaralda;
