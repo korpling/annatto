@@ -7,15 +7,18 @@ expression: actual
     <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>
     <key id="k1" for="node" attr.name="doc" attr.type="string"/>
     <key id="k2" for="node" attr.name="annis::doc" attr.type="string"/>
-    <key id="k3" for="node" attr.name="highlighted" attr.type="string"/>
-    <key id="k4" for="node" attr.name="annis::layer" attr.type="string"/>
-    <key id="k5" for="node" attr.name="lb" attr.type="string"/>
-    <key id="k6" for="node" attr.name="default_ns::lemma" attr.type="string"/>
-    <key id="k7" for="node" attr.name="annis::node_type" attr.type="string"/>
-    <key id="k8" for="node" attr.name="default_ns::pos" attr.type="string"/>
-    <key id="k9" for="node" attr.name="s" attr.type="string"/>
-    <key id="k10" for="node" attr.name="annis::tok" attr.type="string"/>
-    <key id="k11" for="node" attr.name="annis::tok-whitespace-before" attr.type="string"/>
+    <key id="k3" for="node" attr.name="doc_id" attr.type="string"/>
+    <key id="k4" for="node" attr.name="highlighted" attr.type="string"/>
+    <key id="k5" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k6" for="node" attr.name="lb" attr.type="string"/>
+    <key id="k7" for="node" attr.name="lb_comment" attr.type="string"/>
+    <key id="k8" for="node" attr.name="default_ns::lemma" attr.type="string"/>
+    <key id="k9" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k10" for="node" attr.name="default_ns::pos" attr.type="string"/>
+    <key id="k11" for="node" attr.name="s" attr.type="string"/>
+    <key id="k12" for="node" attr.name="s_n" attr.type="string"/>
+    <key id="k13" for="node" attr.name="annis::tok" attr.type="string"/>
+    <key id="k14" for="node" attr.name="annis::tok-whitespace-before" attr.type="string"/>
     <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
         <data key="k0"><![CDATA[
 [context]
@@ -35,102 +38,105 @@ vis_type = "grid"
 display_name = "grid"
 ]]></data>
         <node id="single_sentence">
-            <data key="k7">corpus</data>
+            <data key="k9">corpus</data>
         </node>
         <node id="single_sentence/zossen">
             <data key="k2">zossen</data>
-            <data key="k7">corpus</data>
+            <data key="k9">corpus</data>
         </node>
         <node id="single_sentence/zossen#text">
-            <data key="k7">datasource</data>
+            <data key="k9">datasource</data>
         </node>
         <node id="single_sentence/zossen#t1">
-            <data key="k10">Die</data>
-            <data key="k4">default_layer</data>
-            <data key="k6">der</data>
-            <data key="k7">node</data>
-            <data key="k8">ART</data>
+            <data key="k10">ART</data>
+            <data key="k13">Die</data>
+            <data key="k5">default_layer</data>
+            <data key="k8">der</data>
+            <data key="k9">node</data>
         </node>
         <node id="single_sentence/zossen#t2">
-            <data key="k10">Jugendlichen</data>
-            <data key="k11"> </data>
-            <data key="k4">default_layer</data>
-            <data key="k6">Jugendliche</data>
-            <data key="k7">node</data>
-            <data key="k8">NN</data>
+            <data key="k10">NN</data>
+            <data key="k13">Jugendlichen</data>
+            <data key="k14"> </data>
+            <data key="k5">default_layer</data>
+            <data key="k8">Jugendliche</data>
+            <data key="k9">node</data>
         </node>
         <node id="single_sentence/zossen#t3">
-            <data key="k10">in</data>
-            <data key="k11"> </data>
-            <data key="k4">default_layer</data>
-            <data key="k6">in</data>
-            <data key="k7">node</data>
-            <data key="k8">APPR</data>
+            <data key="k10">APPR</data>
+            <data key="k13">in</data>
+            <data key="k14"> </data>
+            <data key="k5">default_layer</data>
+            <data key="k8">in</data>
+            <data key="k9">node</data>
         </node>
         <node id="single_sentence/zossen#span1">
-            <data key="k4">default_layer</data>
-            <data key="k5">lb</data>
-            <data key="k7">node</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">lb</data>
+            <data key="k7">There are several &quot;unreadable&quot; characters in that line.</data>
+            <data key="k9">node</data>
         </node>
         <node id="single_sentence/zossen#t4">
-            <data key="k10">Zossen</data>
-            <data key="k11"> </data>
-            <data key="k4">default_layer</data>
-            <data key="k6">Zossen</data>
-            <data key="k7">node</data>
-            <data key="k8">NE</data>
+            <data key="k10">NE</data>
+            <data key="k13">Zossen</data>
+            <data key="k14"> </data>
+            <data key="k5">default_layer</data>
+            <data key="k8">Zossen</data>
+            <data key="k9">node</data>
         </node>
         <node id="single_sentence/zossen#span2">
-            <data key="k3">highlighted</data>
-            <data key="k4">default_layer</data>
-            <data key="k7">node</data>
+            <data key="k4">highlighted</data>
+            <data key="k5">default_layer</data>
+            <data key="k9">node</data>
         </node>
         <node id="single_sentence/zossen#t5">
-            <data key="k10">wollen</data>
-            <data key="k11"> </data>
-            <data key="k4">default_layer</data>
-            <data key="k6">wollen</data>
-            <data key="k7">node</data>
-            <data key="k8">VMFIN</data>
+            <data key="k10">VMFIN</data>
+            <data key="k13">wollen</data>
+            <data key="k14"> </data>
+            <data key="k5">default_layer</data>
+            <data key="k8">wollen</data>
+            <data key="k9">node</data>
         </node>
         <node id="single_sentence/zossen#t6">
-            <data key="k10">ein</data>
-            <data key="k11"> </data>
-            <data key="k4">default_layer</data>
-            <data key="k6">ein</data>
-            <data key="k7">node</data>
-            <data key="k8">ART</data>
+            <data key="k10">ART</data>
+            <data key="k13">ein</data>
+            <data key="k14"> </data>
+            <data key="k5">default_layer</data>
+            <data key="k8">ein</data>
+            <data key="k9">node</data>
         </node>
         <node id="single_sentence/zossen#t7">
-            <data key="k10">Musikcafé</data>
-            <data key="k11"> </data>
-            <data key="k4">default_layer</data>
-            <data key="k6">Musikcafé</data>
-            <data key="k7">node</data>
-            <data key="k8">NN</data>
+            <data key="k10">NN</data>
+            <data key="k13">Musikcafé</data>
+            <data key="k14"> </data>
+            <data key="k5">default_layer</data>
+            <data key="k8">Musikcafé</data>
+            <data key="k9">node</data>
         </node>
         <node id="single_sentence/zossen#t8">
-            <data key="k10">.</data>
-            <data key="k11"> </data>
-            <data key="k4">default_layer</data>
-            <data key="k6">.</data>
-            <data key="k7">node</data>
-            <data key="k8">$.</data>
+            <data key="k10">$.</data>
+            <data key="k13">.</data>
+            <data key="k14"> </data>
+            <data key="k5">default_layer</data>
+            <data key="k8">.</data>
+            <data key="k9">node</data>
         </node>
         <node id="single_sentence/zossen#span3">
-            <data key="k4">default_layer</data>
-            <data key="k5">lb</data>
-            <data key="k7">node</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">lb</data>
+            <data key="k9">node</data>
         </node>
         <node id="single_sentence/zossen#span4">
-            <data key="k4">default_layer</data>
-            <data key="k7">node</data>
-            <data key="k9">s</data>
+            <data key="k11">s</data>
+            <data key="k12">1</data>
+            <data key="k5">default_layer</data>
+            <data key="k9">node</data>
         </node>
         <node id="single_sentence/zossen#span5">
             <data key="k1">doc</data>
-            <data key="k4">default_layer</data>
-            <data key="k7">node</data>
+            <data key="k3">example</data>
+            <data key="k5">default_layer</data>
+            <data key="k9">node</data>
         </node>
         <edge id="e0" source="single_sentence/zossen#span2" target="single_sentence/zossen#t3" label="Coverage/annis/">
         </edge>

@@ -1,4 +1,4 @@
-use std::{io::Read, path::Path};
+use std::{collections::HashMap, io::Read, path::Path};
 
 use crate::{
     progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files, Module, StepID,
@@ -47,6 +47,7 @@ struct MapperParams {
 struct TagStackEntry {
     anno_name: String,
     covered_token: Vec<String>,
+    attributes: HashMap<String, String>,
 }
 
 struct DocumentMapper<'a> {
@@ -188,13 +189,32 @@ impl<'a> DocumentMapper<'a> {
     fn consume_start_tag(&mut self, mut start_tag: Pairs<'a, Rule>) -> anyhow::Result<()> {
         if let Some(tag_name) = start_tag.next() {
             if tag_name.as_rule() == Rule::tag_name {
+                let attributes = self.consume_tag_attribute(start_tag)?;
                 self.tag_stack.push(TagStackEntry {
                     anno_name: tag_name.as_str().to_string(),
                     covered_token: Vec::new(),
+                    attributes,
                 });
             }
         }
+
         Ok(())
+    }
+
+    fn consume_tag_attribute(
+        &mut self,
+        mut start_tag: Pairs<'a, Rule>,
+    ) -> anyhow::Result<HashMap<String, String>> {
+        let mut result = HashMap::new();
+        // All tag attributes must be tuples of attribute IDs and string values
+
+        if let (Some(attr_id), Some(string_value)) = (start_tag.next(), start_tag.next()) {
+            if attr_id.as_rule() == Rule::attr_id && string_value.as_rule() == Rule::string_value {
+                let unescaped_string = quick_xml::escape::unescape(string_value.as_str())?;
+                result.insert(attr_id.as_str().to_string(), unescaped_string.to_string());
+            }
+        }
+        Ok(result)
     }
 
     fn consume_end_tag(
@@ -216,6 +236,7 @@ impl<'a> DocumentMapper<'a> {
                         node_name: span_id.clone(),
                         node_type: "node".into(),
                     })?;
+                    // TODO: support namespaces in span annotation name
                     u.add_event(UpdateEvent::AddNodeLabel {
                         node_name: span_id.clone(),
                         anno_ns: "".into(),
@@ -228,6 +249,18 @@ impl<'a> DocumentMapper<'a> {
                         anno_name: "layer".to_string(),
                         anno_value: "default_layer".to_string(),
                     })?;
+                    // Add all attributes as node annotations
+                    for (anno_name, anno_value) in entry.attributes {
+                        // TODO: allow to configure not to prepend the tag name to the annotation
+                        let anno_name = format!("{tag_name}_{anno_name}");
+                        // TODO: support namespaces as annotation names
+                        u.add_event(UpdateEvent::AddNodeLabel {
+                            node_name: span_id.clone(),
+                            anno_ns: "".into(),
+                            anno_name,
+                            anno_value,
+                        })?;
+                    }
                     // Add coverage edges for all covered token
                     for t in entry.covered_token {
                         u.add_event(UpdateEvent::AddEdge {
