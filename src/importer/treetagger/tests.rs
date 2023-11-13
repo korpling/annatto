@@ -37,7 +37,7 @@ fn simple_token() {
 #[test]
 fn encoding_latin() {
     let mut importer = TreeTaggerImporter::default();
-    importer.encoding = Some("Latin1".into());
+    importer.file_encoding = Some("Latin1".into());
     let actual = import_as_graphml_string(
         importer,
         Path::new("tests/data/import/treetagger/latin1"),
