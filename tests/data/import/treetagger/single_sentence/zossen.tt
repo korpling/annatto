@@ -1,0 +1,18 @@
+<doc id="example" lang="deu">
+<s n="1" complexity="low">
+<lb comment="There are several &quot;unreadable&quot; characters in that line.">
+Die	ART	der
+Jugendlichen	NN	Jugendliche
+<highlighted>
+in	APPR	in
+</lb>
+<lb>
+Zossen	NE	Zossen
+</highlighted>
+wollen	VMFIN	wollen
+ein	ART	ein
+Musikcafé	NN	Musikcafé
+.	$.	.
+</lb>
+</s>
+</doc>

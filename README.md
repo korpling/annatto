@@ -4,7 +4,7 @@
 
 This software aims to test and convert data within the [RUEG](https://hu.berlin/rueg)
 research group at Humboldt-Universität zu Berlin. Tests aim at 
-continuouly evaluating the state of the [RUEG corpus data](https://zenodo.org/record/3236068)
+continuously evaluating the state of the [RUEG corpus data](https://zenodo.org/record/3236068)
 to early identify issues regarding compatibility, consistency, and 
 integrity to facilitate data handling with regard to annotation, releases
 and integration. 

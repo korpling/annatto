@@ -1,6 +1,5 @@
 ---
 source: tests/cli.rs
-assertion_line: 16
 expression: output
 ---
 annatto <version>

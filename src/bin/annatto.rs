@@ -70,27 +70,34 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
     let mut steps_progress: HashMap<StepID, f32> = HashMap::new();
 
     let bar = ProgressBar::new(1000);
-    bar.set_style(ProgressStyle::default_bar().template("[{elapsed}] [{bar:40}] {percent}% {msg}"));
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}/≈{duration}] {wide_bar:.blue.bold} {percent}% {msg}")
+            .expect("Could not parse progress bar template"),
+    );
     let mut errors = Vec::new();
     for status_update in rx {
         match status_update {
             StatusMessage::Failed(e) => {
                 errors.push(e);
             }
+
             StatusMessage::StepsCreated(steps) => {
-                if steps.is_empty() {
-                    bar.println("No steps in workflow file")
-                } else {
-                    // Print all steps and insert empty progress for each step
-                    bar.println(format!("Conversion starts with {} steps", steps.len()));
-                    bar.println("-------------------------------");
-                    for s in steps {
-                        bar.println(format!("{}", &s));
-                        steps_progress.entry(s).or_default();
+                bar.suspend(|| {
+                    if steps.is_empty() {
+                        println!("No steps in workflow file")
+                    } else {
+                        // Print all steps and insert empty progress for each step
+                        println!("Conversion starts with {} steps", steps.len());
+                        println!("-------------------------------");
+                        for s in steps {
+                            println!("{}", &s);
+                            steps_progress.entry(s).or_default();
+                        }
+                        println!("-------------------------------");
                     }
-                    bar.println("-------------------------------");
-                }
-                bar.println("");
+                    println!();
+                });
             }
             StatusMessage::Info(msg) => {
                 bar.println(msg);

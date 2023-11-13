@@ -8,6 +8,7 @@ pub mod opus;
 pub mod ptb;
 pub mod spreadsheet;
 pub mod textgrid;
+pub mod treetagger;
 pub mod xml;
 
 use crate::{progress::ProgressReporter, workflow::StatusSender, Module, StepID};

@@ -13,18 +13,19 @@ ansi_term = "0.12"
 anyhow = "1.0"
 csv = "1.1"
 encoding_rs_io = "0.1.7"
+encoding_rs = "0.8"
 glob = "0.3"
 graphannis = "2.4"
 graphannis-core = "2.4"
 include_dir = {version = "0.7", optional = true}
-indicatif = "0.16"
+indicatif = "0.17"
 itertools = "0.11"
 log = "0.4"
 mime_guess = {version = "2", optional = true}
 normpath = "1.1"
 open = {version = "5", optional = true}
 ordered-float = {version = "3.4.0", default-features = false}
-pest = "2.0"
+pest = "2.7"
 pest_derive = "2.0"
 portpicker = {version = "0.1.1", optional = true}
 quick-xml = "0.28"
