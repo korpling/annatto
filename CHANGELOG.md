@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - very basic implementation of a generic xml importer
 - import opus sentence alignments
 - graph op `enumerate` to enumerate nodes, i. e., add numeric annotations to results of one or multiple queries
+- add importer for the format used by the [TreeTagger](https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/)
 
 ### Fixed
 
