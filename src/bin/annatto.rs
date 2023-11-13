@@ -3,7 +3,7 @@ use annatto::{
     workflow::{execute_from_file, StatusMessage, Workflow},
     StepID,
 };
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
 use std::{collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread};
 use structopt::StructOpt;
@@ -53,14 +53,13 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
         },
     );
 
-    let mut steps_progress: HashMap<StepID, f32> = HashMap::new();
+    let mut all_bars: HashMap<StepID, ProgressBar> = HashMap::new();
 
-    let bar = ProgressBar::new(1000);
-    bar.set_style(
-        ProgressStyle::default_bar()
-            .template("[{elapsed_precise}/est. {duration}] {wide_bar:.blue.bold} {percent}% {msg}")
-            .expect("Could not parse progress bar template"),
-    );
+    let progress_style = ProgressStyle::default_bar()
+        .template("{msg}  {wide_bar:.blue.bold} {percent}% [{elapsed_precise}/est. {duration}]")
+        .expect("Could not parse progress bar template");
+    let multi_bar = MultiProgress::new();
+
     let mut errors = Vec::new();
     for status_update in rx {
         match status_update {
@@ -69,55 +68,56 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
             }
 
             StatusMessage::StepsCreated(steps) => {
-                bar.suspend(|| {
-                    if steps.is_empty() {
-                        println!("No steps in workflow file")
-                    } else {
-                        // Print all steps and insert empty progress for each step
-                        println!("Conversion starts with {} steps", steps.len());
-                        println!("-------------------------------");
-                        for s in steps {
-                            println!("{}", &s);
-                            steps_progress.entry(s).or_default();
-                        }
-                        println!("-------------------------------");
+                let mut message = String::new();
+
+                if steps.is_empty() {
+                    message.push_str("No steps in workflow file");
+                } else {
+                    // Print all steps and insert empty progress for each step
+                    let number_of_steps = steps.len();
+                    message.push_str(&format!("Conversion starts with {number_of_steps} steps\n"));
+                    message.push_str("-------------------------------\n");
+                    for (idx, s) in steps.into_iter().enumerate() {
+                        let idx = idx + 1;
+                        message.push_str(&s.to_string());
+                        message.push('\n');
+
+                        let p = multi_bar.insert_from_back(0, ProgressBar::new(100));
+                        p.set_style(progress_style.clone());
+                        p.set_position(0);
+                        p.set_message(format!("step {idx}/{number_of_steps} {s}"));
+                        all_bars.insert(s, p);
                     }
-                    println!();
-                });
+                    message.push_str("-------------------------------\n");
+                }
+                multi_bar.println(message)?;
             }
             StatusMessage::Info(msg) => {
-                bar.println(msg);
+                multi_bar.println(msg)?;
             }
             StatusMessage::Warning(msg) => {
-                bar.println(format!("[WARNING] {}", &msg));
+                multi_bar.println(format!("[WARNING] {}", &msg))?;
             }
             StatusMessage::Progress {
                 id,
                 total_work,
                 finished_work,
             } => {
-                let progress: f32 = finished_work as f32 / total_work as f32;
-                *steps_progress.entry(id.clone()).or_default() = progress;
-                // Sum up all steps
-                let progress_sum: f32 = steps_progress.values().sum();
-                let num_entries: f32 = steps_progress.len() as f32;
-                let progress_percent = (progress_sum / num_entries) * 100.0;
-                bar.set_position((progress_percent * 10.0) as u64);
-                bar.set_message(format!("Running {}", id));
+                if let Some(pb) = all_bars.get(&id) {
+                    let progress: f32 = (finished_work as f32 / total_work as f32) * 100.0;
+                    let pos = progress.round() as u64;
+                    pb.set_position(pos);
+                }
             }
             StatusMessage::StepDone { id } => {
-                *steps_progress.entry(id.clone()).or_default() = 1.0;
-                // Sum up all steps
-                let progress_sum: f32 = steps_progress.values().sum();
-                let num_entries: f32 = steps_progress.len() as f32;
-                let progress_percent = (progress_sum / num_entries) * 100.0;
-                bar.set_position((progress_percent * 10.0) as u64);
-                bar.set_message(format!("Finished {}", id));
+                if let Some(pb) = all_bars.get(&id) {
+                    pb.finish();
+                }
             }
         }
     }
     if errors.is_empty() {
-        bar.finish_with_message("Conversion successful");
+        multi_bar.println("Conversion successful")?;
         Ok(())
     } else {
         Err(AnnattoError::ConversionFailed { errors })
