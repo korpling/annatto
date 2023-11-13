@@ -20,9 +20,6 @@ visibility = "permanent"
 [[visualizers]]
 vis_type = "grid"
 display_name = "grid"
-
-[visualizers.mappings]
-annos = "lb, highlighted"
 "#;
 
 #[test]

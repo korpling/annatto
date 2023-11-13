@@ -43,6 +43,7 @@ struct MapperParams {
     column_names: Vec<Column>,
 }
 
+#[derive(Debug)]
 struct TagStackEntry {
     anno_name: String,
     covered_token: Vec<String>,
@@ -205,6 +206,7 @@ impl<'a> DocumentMapper<'a> {
         if let Some(tag_name) = end_tag.next() {
             if tag_name.as_rule() == Rule::tag_name {
                 let tag_name = tag_name.as_str();
+
                 if let Some(idx) = self.tag_stack.iter().position(|t| t.anno_name == tag_name) {
                     let entry = self.tag_stack.remove(idx);
                     // Add a node update for the span
@@ -219,6 +221,12 @@ impl<'a> DocumentMapper<'a> {
                         anno_ns: "".into(),
                         anno_name: tag_name.into(),
                         anno_value: tag_name.into(),
+                    })?;
+                    u.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: span_id.clone(),
+                        anno_ns: ANNIS_NS.to_string(),
+                        anno_name: "layer".to_string(),
+                        anno_value: "default_layer".to_string(),
                     })?;
                     // Add coverage edges for all covered token
                     for t in entry.covered_token {
