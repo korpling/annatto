@@ -1,3 +1,4 @@
+//! Creates new annotations based on existing annotation values.
 use std::{
     env::temp_dir,
     fs,

@@ -12,36 +12,30 @@ version = "0.3.1"
 ansi_term = "0.12"
 anyhow = "1.0"
 csv = "1.1"
-encoding_rs_io = "0.1.7"
 encoding_rs = "0.8"
+encoding_rs_io = "0.1.7"
 glob = "0.3"
 graphannis = "2.4"
 graphannis-core = "2.4"
-include_dir = {version = "0.7", optional = true}
 indicatif = "0.17"
 itertools = "0.11"
 log = "0.4"
-mime_guess = {version = "2", optional = true}
 normpath = "1.1"
-open = {version = "5", optional = true}
-ordered-float = {version = "3.4.0", default-features = false}
+ordered-float = {version = "4.1", default-features = false}
 pest = "2.7"
 pest_derive = "2.0"
-portpicker = {version = "0.1.1", optional = true}
-quick-xml = "0.28"
+quick-xml = "0.31"
 rayon = "1.1"
 regex = "1.4"
 serde = "1.0"
 serde_derive = "1.0"
 structopt = "0.3"
-tabled = "0.12"
+tabled = "0.14"
 tempfile = "3"
 thiserror = "1.0"
-tiny_http = {version = "0.12", optional = true}
 toml = "0.8.0"
 tracing-subscriber = "0.3"
 umya-spreadsheet = "1.0"
-url = {version = "2", optional = true}
 xml-rs = "0.8"
 
 [dev-dependencies]
@@ -49,10 +43,6 @@ assert_cmd = "2.0.11"
 insta = {version = "1.26.0", features = ["toml", "redactions"]}
 pretty_assertions = "1.3"
 ureq = {version = "2.7.1", default-features = false}
-
-[features]
-default = ["embed-documentation"]
-embed-documentation = ["dep:include_dir", "dep:tiny_http", "dep:mime_guess", "dep:portpicker", "dep:open", "dep:url"]
 
 # Compile some of the dependencies in release mode if when we are ourself in
 # "dev" mode (like building debug binaries or running tests)

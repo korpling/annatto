@@ -1,3 +1,4 @@
+//! Imports files in the Penn Treebank (bracket) format.
 use std::{io::Read, path::Path};
 
 use anyhow::anyhow;

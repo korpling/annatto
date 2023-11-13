@@ -1,3 +1,4 @@
+//! Created edges between nodes based on their annotation value.
 use crate::{
     error::AnnattoError,
     workflow::{StatusMessage, StatusSender},
@@ -219,7 +220,7 @@ mod tests {
     use itertools::Itertools;
     use tempfile::tempdir_in;
 
-    use crate::manipulator::{link_nodes::LinkNodes, Manipulator};
+    use crate::manipulator::{link::LinkNodes, Manipulator};
 
     #[test]
     fn test_linker_on_disk() {

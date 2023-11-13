@@ -1,3 +1,4 @@
+//! Merge multiple imported corpora into one corpus.
 use crate::error::{AnnattoError, StandardErrorResult};
 use crate::workflow::{StatusMessage, StatusSender};
 use crate::{Manipulator, Module};

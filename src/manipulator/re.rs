@@ -1,3 +1,4 @@
+//! Manipulate annotations, like deleting or renaming them.
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet},
