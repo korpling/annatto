@@ -29,8 +29,6 @@
 //! When running a workflow, the exporters are executed last and in parallel.
 //!
 
-#[cfg(feature = "embed-documentation")]
-pub mod documentation_server;
 pub mod error;
 pub mod exporter;
 pub mod importer;
