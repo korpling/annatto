@@ -1,3 +1,6 @@
+//! Imports files in the [GraphML](http://graphml.graphdrawing.org/) file which
+//! have to conform to the
+//! [graphANNIS data model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
 use graphannis_core::{graph::NODE_TYPE_KEY, util::split_qname};
 use quick_xml::{
     events::{attributes::Attributes, Event},

@@ -49,14 +49,14 @@ use std::{
 use error::Result;
 use exporter::{graphml::GraphMLExporter, Exporter};
 use importer::{
-    conllu::ImportCoNLLU, corpus_annotations::AnnotateCorpus, exmaralda::ImportEXMARaLDA,
-    file_nodes::CreateFileNodes, graphml::GraphMLImporter, opus::ImportOpusLinks, ptb::PtbImporter,
-    spreadsheet::ImportSpreadsheet, textgrid::TextgridImporter, treetagger::TreeTaggerImporter,
-    xml::ImportXML, CreateEmptyCorpus, Importer,
+    conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
+    graphml::GraphMLImporter, meta::AnnotateCorpus, none::CreateEmptyCorpus, opus::ImportOpusLinks,
+    ptb::PtbImporter, textgrid::TextgridImporter, treetagger::TreeTaggerImporter,
+    xlsx::ImportSpreadsheet, xml::ImportXML, Importer,
 };
 use manipulator::{
-    check::Check, enumerate::EnumerateMatches, link_nodes::LinkNodes, map_annos::MapAnnos,
-    merge::Merge, no_op::NoOp, re::Revise, Manipulator,
+    check::Check, enumerate::EnumerateMatches, link::LinkNodes, map::MapAnnos, merge::Merge,
+    no_op::NoOp, re::Revise, Manipulator,
 };
 use serde_derive::Deserialize;
 

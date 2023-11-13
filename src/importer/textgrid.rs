@@ -1,3 +1,5 @@
+//! Imports [Praat TextGrid text file format](https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html).
+//!
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::Read;
 use std::path::Path;

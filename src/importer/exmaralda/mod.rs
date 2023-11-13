@@ -1,3 +1,5 @@
+//! Import [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
+//! (`.exb`) files.
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs::File,

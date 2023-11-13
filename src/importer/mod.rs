@@ -1,19 +1,19 @@
 //! Importer modules allow importing files from different formats.
 pub mod conllu;
-pub mod corpus_annotations;
 pub mod exmaralda;
 pub mod file_nodes;
 pub mod graphml;
+pub mod meta;
+pub mod none;
 pub mod opus;
 pub mod ptb;
-pub mod spreadsheet;
 pub mod textgrid;
 pub mod treetagger;
+pub mod xlsx;
 pub mod xml;
 
-use crate::{progress::ProgressReporter, workflow::StatusSender, Module, StepID};
+use crate::{workflow::StatusSender, Module, StepID};
 use graphannis::update::GraphUpdate;
-use serde_derive::Deserialize;
 use std::path::Path;
 
 /// An importer is a module that takes a path and produces a list of graph update events.
@@ -34,30 +34,4 @@ pub trait Importer: Module {
         step_id: StepID,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>>;
-}
-
-pub const CREATE_EMPTY_CORPUS_MODULE_NAME: &str = "create_empty_corpus";
-
-#[derive(Default, Deserialize)]
-#[serde(default)]
-pub struct CreateEmptyCorpus {}
-
-impl Importer for CreateEmptyCorpus {
-    fn import_corpus(
-        &self,
-        _path: &Path,
-        step_id: StepID,
-        tx: Option<StatusSender>,
-    ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
-        let progress_reporter = ProgressReporter::new(tx, step_id, 1)?;
-        let graph_update = GraphUpdate::default();
-        progress_reporter.worked(1)?;
-        Ok(graph_update)
-    }
-}
-
-impl Module for CreateEmptyCorpus {
-    fn module_name(&self) -> &str {
-        CREATE_EMPTY_CORPUS_MODULE_NAME
-    }
 }
