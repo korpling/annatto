@@ -270,7 +270,7 @@ impl<'a> DocumentMapper<'a> {
                         for t in entry.covered_token {
                             u.add_event(UpdateEvent::AddEdge {
                                 source_node: span_id.clone(),
-                                target_node: t.into(),
+                                target_node: t,
                                 layer: ANNIS_NS.into(),
                                 component_type: "Coverage".into(),
                                 component_name: "".into(),
