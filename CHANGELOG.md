@@ -32,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the spreadsheet importer will use the correct namespace `default_ns` for segmentation ordering relations
 - fixed ordering of token nodes in spreadsheet import
 
+### Removed
+
+- removed `show-documentation` subcommand and moved the documentation from mdBook to the crate documentation in the source code
+
 ## [0.3.1] - 2023-08-04
 
 ### Fixed
