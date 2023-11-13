@@ -72,7 +72,7 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
     let bar = ProgressBar::new(1000);
     bar.set_style(
         ProgressStyle::default_bar()
-            .template("[{elapsed_precise}/≈{duration}] {wide_bar:.blue.bold} {percent}% {msg}")
+            .template("[{elapsed_precise}/est. {duration}] {wide_bar:.blue.bold} {percent}% {msg}")
             .expect("Could not parse progress bar template"),
     );
     let mut errors = Vec::new();

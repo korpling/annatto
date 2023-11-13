@@ -41,6 +41,7 @@ impl From<String> for Column {
 
 struct MapperParams {
     column_names: Vec<Column>,
+    attribute_decoding: AttributeDecoding,
 }
 
 #[derive(Debug)]
@@ -218,7 +219,13 @@ impl<'a> DocumentMapper<'a> {
         // All tag attributes must be tuples of attribute IDs and string values
         while let (Some(attr_id), Some(string_value)) = (start_tag.next(), start_tag.next()) {
             if attr_id.as_rule() == Rule::attr_id && string_value.as_rule() == Rule::string_value {
-                let unescaped_string = quick_xml::escape::unescape(string_value.as_str())?;
+                let unescaped_string = match self.params.attribute_decoding {
+                    AttributeDecoding::Entitites => {
+                        quick_xml::escape::unescape(string_value.as_str())?
+                    }
+                    AttributeDecoding::None => string_value.as_str().into(),
+                };
+
                 result.insert(attr_id.as_str().to_string(), unescaped_string.to_string());
             }
         }
@@ -303,13 +310,21 @@ impl<'a> DocumentMapper<'a> {
     }
 }
 
+#[derive(Default, Deserialize, Debug, Clone, Copy)]
+pub enum AttributeDecoding {
+    #[default]
+    Entitites,
+    None,
+}
+
 /// Importer for the file format used by the TreeTagger.
 #[derive(Default, Deserialize)]
 #[serde(default)]
 pub struct TreeTaggerImporter {
     column_names: Vec<String>,
     /// The encoding to use when for the input files. Defaults to UTF-8.
-    encoding: Option<String>,
+    file_encoding: Option<String>,
+    attribute_decoding: AttributeDecoding,
 }
 
 impl Module for TreeTaggerImporter {
@@ -337,6 +352,7 @@ impl Importer for TreeTaggerImporter {
                 .iter()
                 .map(|c| Column::from(c.clone()))
                 .collect(),
+            attribute_decoding: self.attribute_decoding,
         };
         // Set a default column configuration when nothing configured
         if params.column_names.is_empty() {
@@ -345,7 +361,7 @@ impl Importer for TreeTaggerImporter {
             params.column_names.push(Column::Anno("lemma".into()));
         }
 
-        let decoder_builder = if let Some(encoding) = &self.encoding {
+        let decoder_builder = if let Some(encoding) = &self.file_encoding {
             DecodeReaderBytesBuilder::new()
                 .encoding(Encoding::for_label(encoding.as_bytes()))
                 .clone()

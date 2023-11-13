@@ -2,7 +2,10 @@ use std::path::Path;
 
 use insta::assert_snapshot;
 
-use crate::{importer::treetagger::TreeTaggerImporter, util::import_as_graphml_string};
+use crate::{
+    importer::treetagger::{AttributeDecoding, TreeTaggerImporter},
+    util::import_as_graphml_string,
+};
 
 const TT_DEFAULT_VIS_CONFIG: &str = r#"
 [context]
@@ -37,10 +40,33 @@ fn simple_token() {
 #[test]
 fn encoding_latin() {
     let mut importer = TreeTaggerImporter::default();
-    importer.encoding = Some("Latin1".into());
+    importer.file_encoding = Some("Latin1".into());
     let actual = import_as_graphml_string(
         importer,
         Path::new("tests/data/import/treetagger/latin1"),
+        Some(TT_DEFAULT_VIS_CONFIG),
+    )
+    .unwrap();
+
+    assert_snapshot!(actual);
+}
+
+#[test]
+fn disable_attribute_encoding() {
+    let mut importer = TreeTaggerImporter::default();
+    importer.attribute_decoding = AttributeDecoding::Entitites;
+    let should_fail = import_as_graphml_string(
+        importer,
+        Path::new("tests/data/import/treetagger/unescaped_attribute/"),
+        Some(TT_DEFAULT_VIS_CONFIG),
+    );
+    assert!(should_fail.is_err());
+
+    let mut importer = TreeTaggerImporter::default();
+    importer.attribute_decoding = AttributeDecoding::None;
+    let actual = import_as_graphml_string(
+        importer,
+        Path::new("tests/data/import/treetagger/unescaped_attribute/"),
         Some(TT_DEFAULT_VIS_CONFIG),
     )
     .unwrap();
