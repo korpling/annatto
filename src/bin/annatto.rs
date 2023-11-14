@@ -69,7 +69,8 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
 
     let in_progress_spinner_style = ProgressStyle::default_bar()
         .template("{prefix} [{spinner:^30}] {msg}  [{elapsed_precise}]")
-        .expect("Could not parse progress bar template");
+        .expect("Could not parse progress bar template")
+        .tick_strings(&["∙∙∙", "●∙∙", "∙●∙", "∙∙●", " "]);
 
     let finished_style = ProgressStyle::default_bar()
         .template("{prefix} [{bar:30.blue}] {percent}% {msg}  [{elapsed_precise}]")
