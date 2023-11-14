@@ -401,7 +401,7 @@ impl Exporter for GraphMLExporter {
         step_id: StepID,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let reporter = ProgressReporter::new(tx, step_id, 1)?;
+        let reporter = ProgressReporter::new_unknown_total_work(tx, step_id)?;
         let file_name;
         if let Some(part_of_c) = graph
             .get_all_components(Some(AnnotationComponentType::PartOf), None)
@@ -470,7 +470,6 @@ impl Exporter for GraphMLExporter {
                 reporter.info(msg).expect("Could not send status message");
             },
         )?;
-        reporter.worked(1)?;
         Ok(())
     }
 }
