@@ -294,18 +294,25 @@ impl Workflow {
             .info("Creating annotation graph by applying the updates from the import steps")?;
         let mut g = runtime::initialize_graph(&tx)?;
 
-        // collect all updates in a single update to only have a single call to `apply_update`
-        let mut super_update = GraphUpdate::new();
-        for u in updates? {
-            for uer in u.iter()? {
-                let ue = uer?;
-                let event = ue.1;
-                super_update.add_event(event)?;
+        // collect all updates in a single update to only have a single atomic
+        // call to `apply_update`
+        let mut updates = updates?;
+        let mut combined_updates = if updates.len() == 1 {
+            updates.remove(0)
+        } else {
+            let mut super_update = GraphUpdate::new();
+            for u in updates {
+                for uer in u.iter()? {
+                    let ue = uer?;
+                    let event = ue.1;
+                    super_update.add_event(event)?;
+                }
             }
-        }
+            super_update
+        };
 
         // Apply super update
-        g.apply_update(&mut super_update, |msg| {
+        g.apply_update(&mut combined_updates, |msg| {
             if let Err(e) = apply_update_reporter.info(msg) {
                 error!("{e}");
             }
