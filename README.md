@@ -1,16 +1,24 @@
+![docs.rs](https://img.shields.io/docsrs/annatto)
 [![codecov](https://codecov.io/gh/korpling/annatto/graph/badge.svg?token=51VXZ3IJPA)](https://codecov.io/gh/korpling/annatto)
 
 # Annatto
 
 This software aims to test and convert data within the [RUEG](https://hu.berlin/rueg)
 research group at Humboldt-Universität zu Berlin. Tests aim at 
-continuouly evaluating the state of the [RUEG corpus data](https://zenodo.org/record/3236068)
+continuously evaluating the state of the [RUEG corpus data](https://zenodo.org/record/3236068)
 to early identify issues regarding compatibility, consistency, and 
 integrity to facilitate data handling with regard to annotation, releases
 and integration. 
 
 For efficiency annatto relies on the [graphANNIS representation](https://korpling.github.io/graphANNIS/docs/v2.2/data-model.html)
 and already provides a basic set of data handling modules.
+
+## Installing and running annatto
+
+Annatto is a command line program, which is available pre-compiled for Linux, Windows and macOS.
+Download and extratc the [latest release file](https://github.com/korpling/annatto/releases/latest) for your platform. 
+
+See the [documentation](https://docs.rs/annatto/latest/) for more information.
 
 ## Developing annatto
 

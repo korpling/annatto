@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2023-11-13
+
 ### Added
 
 - a separator for joining node values in `link` can be set with attribute `value_sep`
@@ -20,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - very basic implementation of a generic xml importer
 - import opus sentence alignments
 - graph op `enumerate` to enumerate nodes, i. e., add numeric annotations to results of one or multiple queries
+- add importer for the format used by the [TreeTagger](https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/)
 
 ### Fixed
 
@@ -30,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - relative import and export paths are interpreted as relative to the parent directory of the workflow file
 - the spreadsheet importer will use the correct namespace `default_ns` for segmentation ordering relations
 - fixed ordering of token nodes in spreadsheet import
+
+### Removed
+
+- removed `show-documentation` subcommand and moved the documentation from mdBook to the crate documentation in the source code
 
 ## [0.3.1] - 2023-08-04
 

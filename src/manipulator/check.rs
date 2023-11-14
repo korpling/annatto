@@ -1,3 +1,5 @@
+//! Runs AQL queries on the corpus and checks for constraints on the result.
+// Can fail the workflow when one of the checks fail
 use std::{collections::BTreeMap, env::temp_dir, path::Path};
 
 use graphannis::{

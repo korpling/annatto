@@ -1,0 +1,10 @@
+<document url="http://example.com/?a=test&b=notest">
+Die
+Jugendlichen
+in
+Zossen
+wollen
+ein
+Musikcafé
+.
+</document>

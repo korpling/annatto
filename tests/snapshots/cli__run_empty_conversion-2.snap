@@ -1,0 +1,12 @@
+---
+source: tests/cli.rs
+expression: output
+---
+Conversion starts with 3 steps
+-------------------------------
+create_empty_corpus [.]
+create_annotation_graph
+check
+-------------------------------
+
+

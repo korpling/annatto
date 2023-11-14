@@ -1,3 +1,5 @@
+//! Imports Excel Spreadsheets where each line is a token, the other columns are
+// spans and merged cells can be used for spans that cover more than one token.
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::Path,

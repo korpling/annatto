@@ -28,8 +28,9 @@ fn run_empty_conversion() {
     cmd.assert().success();
 
     // Get output
-    let output = std::str::from_utf8(&output.stderr).unwrap();
-
+    let output_err = std::str::from_utf8(&output.stderr).unwrap();
+    assert_snapshot!(output_err);
+    let output = std::str::from_utf8(&output.stdout).unwrap();
     assert_snapshot!(output);
 }
 
@@ -76,8 +77,9 @@ fn run_empty_conversion_abs_path() {
     cmd.assert().success();
 
     // Get output
-    let output = std::str::from_utf8(&output.stderr).unwrap();
-
+    let output_err = std::str::from_utf8(&output.stderr).unwrap();
+    assert_snapshot!(output_err);
+    let output = std::str::from_utf8(&output.stdout).unwrap();
     assert_snapshot!(output);
 }
 
@@ -93,8 +95,9 @@ fn run_failing_conversion() {
     cmd.assert().failure();
 
     // Get output
-    let output = std::str::from_utf8(&output.stderr).unwrap();
-
+    let output_err = std::str::from_utf8(&output.stderr).unwrap();
+    assert_snapshot!(output_err);
+    let output = std::str::from_utf8(&output.stdout).unwrap();
     assert_snapshot!(output);
 }
 
@@ -110,8 +113,10 @@ fn load_complex_workflow() {
     cmd.assert().success();
 
     // Get output
-    let output = std::str::from_utf8(&output.stderr).unwrap();
-    assert!(output.is_empty());
+    let output_err = std::str::from_utf8(&output.stderr).unwrap();
+    assert_snapshot!(output_err);
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+    assert_snapshot!(output);
 }
 
 #[test]
@@ -126,6 +131,8 @@ fn load_complex_workflow_attr_ommited() {
     cmd.assert().success();
 
     // Get output
-    let output = std::str::from_utf8(&output.stderr).unwrap();
-    assert!(output.is_empty());
+    let output_err = std::str::from_utf8(&output.stderr).unwrap();
+    assert_snapshot!(output_err);
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+    assert_snapshot!(output);
 }

@@ -1,4 +1,4 @@
-//! Contains exporters and their traits.
+//! Exporter modules export the data into different formats.
 
 pub mod graphml;
 
