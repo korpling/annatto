@@ -69,7 +69,8 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
 
     let in_progress_spinner_style = ProgressStyle::default_bar()
         .template("{prefix} [{spinner:^30}] {msg}  [{elapsed_precise}]")
-        .expect("Could not parse progress bar template");
+        .expect("Could not parse progress bar template")
+        .tick_strings(&["∙∙∙", "●∙∙", "∙●∙", "∙∙●", " "]);
 
     let finished_style = ProgressStyle::default_bar()
         .template("{prefix} [{bar:30.blue}] {percent}% {msg}  [{elapsed_precise}]")
@@ -93,13 +94,12 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
                     for (idx, s) in steps.into_iter().enumerate() {
                         let idx = idx + 1;
 
-                        let p = multi_bar.insert_from_back(0, ProgressBar::new(100));
-                        p.set_style(not_started_style.clone());
-                        p.set_position(0);
-                        p.set_prefix(format!("#{idx:<2}"));
-                        p.set_message(s.to_string());
-                        p.enable_steady_tick(Duration::from_millis(250));
-                        all_bars.insert(s, p);
+                        let pb = multi_bar.insert_from_back(0, ProgressBar::new(100));
+                        pb.set_style(not_started_style.clone());
+                        pb.set_prefix(format!("#{idx:<2}"));
+                        pb.set_message(s.to_string());
+                        pb.enable_steady_tick(Duration::from_millis(250));
+                        all_bars.insert(s, pb);
                     }
                 }
             }
@@ -119,7 +119,6 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
                     if let Some(total_work) = total_work {
                         let progress: f32 = (finished_work as f32 / total_work as f32) * 100.0;
                         let pos = progress.round() as u64;
-
                         pb.set_style(in_progress_bar_style.clone());
                         pb.set_position(pos);
                     } else {
@@ -129,9 +128,14 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
                 }
             }
             StatusMessage::StepDone { id } => {
-                if let Some(pb) = all_bars.get(&id) {
-                    pb.set_style(finished_style.clone());
-                    pb.finish();
+                // Finish this progress bar and reset all other non-finished ones
+                for (pb_id, pb) in all_bars.iter() {
+                    if pb_id == &id {
+                        pb.set_style(finished_style.clone());
+                        pb.finish();
+                    } else if !pb.is_finished() {
+                        pb.reset_elapsed();
+                    }
                 }
             }
         }
