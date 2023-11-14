@@ -5,7 +5,9 @@ use annatto::{
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
-use std::{collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread};
+use std::{
+    collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread, time::Duration,
+};
 use structopt::StructOpt;
 
 /// Define a conversion operation
@@ -55,10 +57,25 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
 
     let mut all_bars: HashMap<StepID, ProgressBar> = HashMap::new();
 
-    let progress_style = ProgressStyle::default_bar()
+    let not_started_style = ProgressStyle::default_bar()
+        .template("{prefix} [{bar:30.blue}] {percent}% {msg}")
+        .expect("Could not parse progress bar template")
+        .progress_chars("=> ");
+
+    let in_progress_bar_style = ProgressStyle::default_bar()
         .template("{prefix} [{bar:30.blue}] {percent}% {msg}  [{elapsed_precise}/est. {duration}]")
         .expect("Could not parse progress bar template")
         .progress_chars("=> ");
+
+    let in_progress_spinner_style = ProgressStyle::default_bar()
+        .template("{prefix} [{spinner:30}] {msg}  [{elapsed_precise}]")
+        .expect("Could not parse progress bar template");
+
+    let finished_style = ProgressStyle::default_bar()
+        .template("{prefix} [{bar:30.blue}] {percent}% {msg}  [{elapsed_precise}]")
+        .expect("Could not parse progress bar template")
+        .progress_chars("=> ");
+
     let multi_bar = MultiProgress::new();
 
     let mut errors = Vec::new();
@@ -77,10 +94,11 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
                         let idx = idx + 1;
 
                         let p = multi_bar.insert_from_back(0, ProgressBar::new(100));
-                        p.set_style(progress_style.clone());
+                        p.set_style(not_started_style.clone());
                         p.set_position(0);
                         p.set_prefix(format!("#{idx:<2}"));
                         p.set_message(s.to_string());
+                        p.enable_steady_tick(Duration::from_millis(250));
                         all_bars.insert(s, p);
                     }
                 }
@@ -89,7 +107,8 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
                 multi_bar.println(msg)?;
             }
             StatusMessage::Warning(msg) => {
-                multi_bar.println(format!("[WARNING] {}", &msg))?;
+                let msg = format!("[WARNING] {}", &msg);
+                multi_bar.println(console::style(msg).red().to_string())?;
             }
             StatusMessage::Progress {
                 id,
@@ -97,13 +116,21 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
                 finished_work,
             } => {
                 if let Some(pb) = all_bars.get(&id) {
-                    let progress: f32 = (finished_work as f32 / total_work as f32) * 100.0;
-                    let pos = progress.round() as u64;
-                    pb.set_position(pos);
+                    if let Some(total_work) = total_work {
+                        let progress: f32 = (finished_work as f32 / total_work as f32) * 100.0;
+                        let pos = progress.round() as u64;
+
+                        pb.set_style(in_progress_bar_style.clone());
+                        pb.set_position(pos);
+                    } else {
+                        pb.set_style(in_progress_spinner_style.clone());
+                        pb.tick();
+                    }
                 }
             }
             StatusMessage::StepDone { id } => {
                 if let Some(pb) = all_bars.get(&id) {
+                    pb.set_style(finished_style.clone());
                     pb.finish();
                 }
             }
