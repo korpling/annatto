@@ -1,5 +1,6 @@
 //! Contains manipulators and their traits.
 pub mod check;
+pub mod collapse;
 pub mod enumerate;
 pub mod link_nodes;
 pub mod map_annos;
