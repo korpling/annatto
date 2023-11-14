@@ -185,7 +185,7 @@ pub struct StepID {
 impl Display for StepID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(path) = &self.path {
-            write!(f, "{} [{}]", self.module_name, path.to_string_lossy())
+            write!(f, "{} ({})", self.module_name, path.to_string_lossy())
         } else {
             write!(f, "{}", self.module_name)
         }

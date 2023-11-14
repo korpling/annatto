@@ -56,8 +56,9 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
     let mut all_bars: HashMap<StepID, ProgressBar> = HashMap::new();
 
     let progress_style = ProgressStyle::default_bar()
-        .template("{msg}  {wide_bar:.blue.bold} {percent}% [{elapsed_precise}/est. {duration}]")
-        .expect("Could not parse progress bar template");
+        .template("{prefix} [{bar:30.blue}] {percent}% {msg}  [{elapsed_precise}/est. {duration}]")
+        .expect("Could not parse progress bar template")
+        .progress_chars("=> ");
     let multi_bar = MultiProgress::new();
 
     let mut errors = Vec::new();
@@ -68,29 +69,21 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
             }
 
             StatusMessage::StepsCreated(steps) => {
-                let mut message = String::new();
-
                 if steps.is_empty() {
-                    message.push_str("No steps in workflow file");
+                    multi_bar.println("No steps in workflow file")?;
                 } else {
-                    // Print all steps and insert empty progress for each step
-                    let number_of_steps = steps.len();
-                    message.push_str(&format!("Conversion starts with {number_of_steps} steps\n"));
-                    message.push_str("-------------------------------\n");
+                    // Add a progress bar for all steps
                     for (idx, s) in steps.into_iter().enumerate() {
                         let idx = idx + 1;
-                        message.push_str(&s.to_string());
-                        message.push('\n');
 
                         let p = multi_bar.insert_from_back(0, ProgressBar::new(100));
                         p.set_style(progress_style.clone());
                         p.set_position(0);
-                        p.set_message(format!("step {idx}/{number_of_steps} {s}"));
+                        p.set_prefix(format!("#{idx:<2}"));
+                        p.set_message(s.to_string());
                         all_bars.insert(s, p);
                     }
-                    message.push_str("-------------------------------\n");
                 }
-                multi_bar.println(message)?;
             }
             StatusMessage::Info(msg) => {
                 multi_bar.println(msg)?;
