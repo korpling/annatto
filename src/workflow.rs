@@ -132,6 +132,7 @@ use crate::{
     error::AnnattoError, error::Result, progress::ProgressReporter, runtime, ExporterStep,
     ImporterStep, ManipulatorStep, Step, StepID,
 };
+use log::error;
 use normpath::PathExt;
 use rayon::prelude::*;
 
@@ -149,7 +150,7 @@ pub enum StatusMessage {
         /// Determines which step the progress is reported for.
         id: StepID,
         /// Estimated total needed steps to complete conversion
-        total_work: usize,
+        total_work: Option<usize>,
         /// Number of steps finished. Should never be larger than `total_work`.
         finished_work: usize,
     },
@@ -288,7 +289,7 @@ impl Workflow {
             .collect();
         // Create a new empty annotation graph and apply updates
         let apply_update_reporter =
-            ProgressReporter::new(tx.clone(), apply_update_step_id.clone(), 2)?;
+            ProgressReporter::new_unknown_total_work(tx.clone(), apply_update_step_id.clone())?;
         apply_update_reporter
             .info("Creating annotation graph by applying the updates from the import steps")?;
         let mut g = runtime::initialize_graph(&tx)?;
@@ -302,12 +303,14 @@ impl Workflow {
                 super_update.add_event(event)?;
             }
         }
-        apply_update_reporter.worked(1)?;
 
         // Apply super update
-        g.apply_update(&mut super_update, |_msg| {})
-            .map_err(|reason| AnnattoError::UpdateGraph(reason.to_string()))?;
-        apply_update_reporter.worked(1)?;
+        g.apply_update(&mut super_update, |msg| {
+            if let Err(e) = apply_update_reporter.info(msg) {
+                error!("{e}");
+            }
+        })
+        .map_err(|reason| AnnattoError::UpdateGraph(reason.to_string()))?;
         if let Some(ref tx) = tx {
             tx.send(crate::workflow::StatusMessage::StepDone {
                 id: apply_update_step_id,

@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- improve progress reporting by reporting each conversion step separately
+
 ## [0.4.0] - 2023-11-13
 
 ### Added
