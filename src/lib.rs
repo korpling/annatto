@@ -53,8 +53,8 @@ use importer::{
     xlsx::ImportSpreadsheet, xml::ImportXML, Importer,
 };
 use manipulator::{
-    check::Check, enumerate::EnumerateMatches, link::LinkNodes, map::MapAnnos, merge::Merge,
-    no_op::NoOp, re::Revise, Manipulator,
+    check::Check, collapse::Collapse, enumerate::EnumerateMatches, link::LinkNodes, map::MapAnnos,
+    merge::Merge, no_op::NoOp, re::Revise, Manipulator,
 };
 use serde_derive::Deserialize;
 
@@ -137,7 +137,8 @@ impl ReadFrom {
 #[derive(Deserialize)]
 #[serde(tag = "action", rename_all = "lowercase", content = "config")]
 pub enum GraphOp {
-    Check(Check), // no default, has a (required) path attribute
+    Check(Check),       // no default, has a (required) path attribute
+    Collapse(Collapse), // no default, there is no such thing as a default component
     Enumerate(#[serde(default)] EnumerateMatches),
     Link(LinkNodes),                  // no default, has required attributes
     Map(MapAnnos),                    // no default, has a (required) path attribute
@@ -163,6 +164,7 @@ impl GraphOp {
     fn processor(&self) -> &dyn Manipulator {
         match self {
             GraphOp::Check(m) => m,
+            GraphOp::Collapse(m) => m,
             GraphOp::Link(m) => m,
             GraphOp::Map(m) => m,
             GraphOp::Merge(m) => m,
