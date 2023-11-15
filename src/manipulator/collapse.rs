@@ -78,7 +78,7 @@ impl Collapse {
                     hypernode_map.insert(m, name);
                     let node_name = graph
                         .get_node_annos()
-                        .get_value_for_item(&m, &NODE_NAME_KEY)?
+                        .get_value_for_item(m, &NODE_NAME_KEY)?
                         .unwrap();
                     update.add_event(UpdateEvent::DeleteNode {
                         node_name: node_name.to_string(),
@@ -163,8 +163,8 @@ impl Collapse {
         let random_node = hyperedge.iter().last().unwrap();
         let target_node_name = hypernode_map.get(random_node).unwrap();
         for node_id in hyperedge {
-            self.transfer_node_annos(node_id, &target_node_name, graph, update)?;
-            self.reconnect_components(node_id, &target_node_name, hypernode_map, graph, update)?;
+            self.transfer_node_annos(node_id, target_node_name, graph, update)?;
+            self.reconnect_components(node_id, target_node_name, hypernode_map, graph, update)?;
         }
         Ok(())
     }
