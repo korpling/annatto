@@ -395,7 +395,9 @@ mod tests {
     }
 
     fn test(on_disk: bool, disjoint: bool) -> Result<(), Box<dyn std::error::Error>> {
-        let mut g = input_graph(on_disk, disjoint)?;
+        let g_ = input_graph(on_disk, disjoint);
+        assert!(g_.is_ok());
+        let mut g = g_?;
         let collapse = Collapse {
             ctype: AnnotationComponentType::Pointing,
             layer: "".to_string(),
@@ -409,16 +411,21 @@ mod tests {
         assert!(msg_receiver.into_iter().count() > 0);
         let eg = target_graph(on_disk, disjoint);
         assert!(eg.is_ok());
-        let mut expected_g = eg.unwrap();
-        let toml_str = if disjoint {
-            fs::read_to_string("tests/data/graph_op/collapse/test_check_disjoint.toml")?
+        let mut expected_g = eg?;
+        let toml_str_r = if disjoint {
+            fs::read_to_string("tests/data/graph_op/collapse/test_check_disjoint.toml")
         } else {
-            fs::read_to_string("tests/data/graph_op/collapse/test_check.toml")?
+            fs::read_to_string("tests/data/graph_op/collapse/test_check.toml")
         };
-        let check: Check = toml::from_str(toml_str.as_str())?;
+        assert!(toml_str_r.is_ok());
+        let toml_str = toml_str_r?;
+        let check_r: Result<Check, _> = toml::from_str(toml_str.as_str());
+        assert!(check_r.is_ok());
+        let check = check_r?;
         let dummy_path = Path::new("./");
         let (sender_e, receiver_e) = mpsc::channel();
-        check.manipulate_corpus(&mut expected_g, dummy_path, Some(sender_e))?;
+        let r = check.manipulate_corpus(&mut expected_g, dummy_path, Some(sender_e));
+        assert!(r.is_ok());
         let mut failed_tests = receiver_e
             .into_iter()
             .filter(|m| matches!(m, StatusMessage::Failed { .. }))
@@ -429,7 +436,8 @@ mod tests {
             }
         }
         let (sender, receiver) = mpsc::channel();
-        check.manipulate_corpus(&mut g, dummy_path, Some(sender))?;
+        let cr = check.manipulate_corpus(&mut g, dummy_path, Some(sender));
+        assert!(cr.is_ok());
         failed_tests = receiver
             .into_iter()
             .filter(|m| matches!(m, StatusMessage::Failed { .. }))
