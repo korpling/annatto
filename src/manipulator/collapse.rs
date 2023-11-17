@@ -14,13 +14,14 @@ use graphannis_core::{
     graph::{ANNIS_NS, NODE_NAME_KEY},
     types::Edge,
 };
+use itertools::Itertools;
 use serde_derive::Deserialize;
 
 use crate::{
     error::AnnattoError,
     progress::ProgressReporter,
     workflow::{StatusMessage, StatusSender},
-    Module,
+    Module, StepID,
 };
 
 use super::Manipulator;
@@ -30,6 +31,8 @@ pub struct Collapse {
     ctype: AnnotationComponentType,
     layer: String,
     name: String,
+    #[serde(default)]
+    disjoint: bool, // performance boost -> if you know all edges are already disjoint, an expensive step can be skipped
 }
 
 const MODULE_NAME: &str = "collapse_component";
@@ -52,6 +55,8 @@ impl Manipulator for Collapse {
         Ok(())
     }
 }
+
+type EdgeUId = (u64, u64, AnnotationComponent);
 
 impl Collapse {
     fn collapse(
@@ -87,8 +92,15 @@ impl Collapse {
             }
             // collapse hyperedges
             let progress = ProgressReporter::new(tx, self.step_id(None), hyperedges.len())?;
+            let mut processed_edges = BTreeSet::new();
             for hyperedge in &hyperedges {
-                self.collapse_hyperedge(hyperedge, &hypernode_map, graph, &mut update)?;
+                self.collapse_hyperedge(
+                    hyperedge,
+                    &hypernode_map,
+                    graph,
+                    &mut update,
+                    &mut processed_edges,
+                )?;
                 progress.worked(1)?;
             }
         } else if let Some(sender) = &tx {
@@ -111,7 +123,16 @@ impl Collapse {
         component_storage: Arc<dyn GraphStorage>,
     ) -> Result<Vec<BTreeSet<u64>>, Box<dyn std::error::Error>> {
         let mut hyperedges = Vec::new();
-        for sn in component_storage.source_nodes() {
+        let source_nodes = component_storage.source_nodes().collect_vec();
+        let progress = ProgressReporter::new(
+            None,
+            StepID {
+                module_name: format!("{MODULE_NAME}: collecting hyperedges"),
+                path: None,
+            },
+            source_nodes.len(),
+        )?;
+        for sn in source_nodes {
             let source_node = sn?;
             let dfs = CycleSafeDFS::new(
                 component_storage.as_edgecontainer(),
@@ -127,28 +148,39 @@ impl Collapse {
                 .collect();
             hyperedge.insert(source_node);
             hyperedges.push(hyperedge);
+            progress.worked(1)?;
         }
-        // make sure hyperedges are disjoint
-        let mut repeat = true;
-        while repeat {
-            let mut disjoint_hyperedges = Vec::new();
-            let mut skip = BTreeSet::new();
-            let n = hyperedges.len();
-            for (i, query_edge) in hyperedges.iter().enumerate() {
-                if skip.contains(&i) {
-                    continue;
-                }
-                let mut joint_edge = query_edge.clone();
-                for (j, probe_edge) in (hyperedges[i..]).iter().enumerate() {
-                    if joint_edge.intersection(probe_edge).count() > 0 {
-                        joint_edge.extend(probe_edge);
-                        skip.insert(j + i);
+        if !self.disjoint {
+            // make sure hyperedges are disjoint
+            let progress_disjoint = ProgressReporter::new_unknown_total_work(
+                None,
+                StepID {
+                    module_name: format!("{MODULE_NAME}: Joining connected hyperedges"),
+                    path: None,
+                },
+            )?;
+            let mut repeat = true;
+            while repeat {
+                let mut disjoint_hyperedges = Vec::new();
+                let mut skip = BTreeSet::new();
+                let n = hyperedges.len();
+                for (i, query_edge) in hyperedges.iter().enumerate() {
+                    if skip.contains(&i) {
+                        continue;
                     }
+                    let mut joint_edge = query_edge.clone();
+                    for (j, probe_edge) in (hyperedges[i..]).iter().enumerate() {
+                        if joint_edge.intersection(probe_edge).count() > 0 {
+                            joint_edge.extend(probe_edge);
+                            skip.insert(j + i);
+                        }
+                    }
+                    disjoint_hyperedges.push(joint_edge);
                 }
-                disjoint_hyperedges.push(joint_edge);
+                repeat = n > disjoint_hyperedges.len();
+                hyperedges = disjoint_hyperedges;
+                progress_disjoint.worked(1)?;
             }
-            repeat = n > disjoint_hyperedges.len();
-            hyperedges = disjoint_hyperedges;
         }
         Ok(hyperedges)
     }
@@ -159,12 +191,20 @@ impl Collapse {
         hypernode_map: &BTreeMap<&u64, String>,
         graph: &AnnotationGraph,
         update: &mut GraphUpdate,
+        skip_edges: &mut BTreeSet<EdgeUId>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let random_node = hyperedge.iter().last().unwrap();
         let target_node_name = hypernode_map.get(random_node).unwrap();
         for node_id in hyperedge {
             self.transfer_node_annos(node_id, target_node_name, graph, update)?;
-            self.reconnect_components(node_id, target_node_name, hypernode_map, graph, update)?;
+            self.reconnect_components(
+                node_id,
+                target_node_name,
+                hypernode_map,
+                graph,
+                update,
+                skip_edges,
+            )?;
         }
         Ok(())
     }
@@ -206,6 +246,7 @@ impl Collapse {
         hypernode_map: &BTreeMap<&u64, String>,
         graph: &AnnotationGraph,
         update: &mut GraphUpdate,
+        skip_edges: &mut BTreeSet<EdgeUId>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         for component in graph.get_all_components(None, None) {
             if component.get_type() == self.ctype
@@ -219,6 +260,10 @@ impl Collapse {
             let annos = storage.get_anno_storage();
             for tn in storage.get_outgoing_edges(*from_node) {
                 let target_node = tn?;
+                let edge_id: EdgeUId = (*from_node, target_node, component.clone());
+                if skip_edges.contains(&edge_id) {
+                    continue;
+                }
                 let new_target_node_name = match hypernode_map.get(&target_node) {
                     Some(name) => name.to_string(),
                     None => graph
@@ -251,9 +296,14 @@ impl Collapse {
                         anno_value: anno_val.to_string(),
                     })?;
                 }
+                skip_edges.insert(edge_id);
             }
             for sn in storage.get_ingoing_edges(*from_node) {
                 let source_node = sn?;
+                let edge_id: EdgeUId = (source_node, *from_node, component.clone());
+                if skip_edges.contains(&edge_id) {
+                    continue;
+                }
                 let new_source_node_name = match hypernode_map.get(&source_node) {
                     Some(name) => name.to_string(),
                     None => graph
@@ -286,6 +336,7 @@ impl Collapse {
                         anno_value: anno_val.to_string(),
                     })?;
                 }
+                skip_edges.insert(edge_id);
             }
         }
         Ok(())
@@ -313,28 +364,45 @@ mod tests {
 
     #[test]
     fn test_collapse_in_mem() {
-        let r = test(false);
+        let r = test(false, false);
         assert!(r.is_ok(), "Test in mem failed: {:?}", r.err());
     }
 
     #[test]
     fn test_collapse_on_disk() {
-        let r = test(true);
+        let r = test(true, false);
         assert!(r.is_ok(), "Test in mem failed: {:?}", r.err());
     }
 
-    fn test(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
-        let mut g = input_graph(on_disk)?;
+    #[test]
+    fn test_collapse_disjoint_in_mem() {
+        let r = test(false, true);
+        assert!(r.is_ok(), "Test in mem failed: {:?}", r.err());
+    }
+
+    #[test]
+    fn test_collapse_disjoint_on_disk() {
+        let r = test(true, true);
+        assert!(r.is_ok(), "Test in mem failed: {:?}", r.err());
+    }
+
+    fn test(on_disk: bool, disjoint: bool) -> Result<(), Box<dyn std::error::Error>> {
+        let mut g = input_graph(on_disk, disjoint)?;
         let collapse = Collapse {
             ctype: AnnotationComponentType::Pointing,
             layer: "".to_string(),
             name: "align".to_string(),
+            disjoint,
         };
         assert!(collapse
             .manipulate_corpus(&mut g, Path::new("./"), None)
             .is_ok());
-        let mut expected_g = target_graph(on_disk)?;
-        let toml_str = fs::read_to_string("tests/data/graph_op/collapse/test_check.toml")?;
+        let mut expected_g = target_graph(on_disk, disjoint)?;
+        let toml_str = if disjoint {
+            fs::read_to_string("tests/data/graph_op/collapse/test_check_disjoint.toml")?
+        } else {
+            fs::read_to_string("tests/data/graph_op/collapse/test_check.toml")?
+        };
         let check: Check = toml::from_str(toml_str.as_str())?;
         let dummy_path = Path::new("./");
         let (sender_e, receiver_e) = mpsc::channel();
@@ -362,7 +430,10 @@ mod tests {
         Ok(())
     }
 
-    fn input_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
+    fn input_graph(
+        on_disk: bool,
+        disjoint: bool,
+    ) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
         let mut g = AnnotationGraph::new(on_disk)?;
         let mut u = GraphUpdate::default();
         let corpus = "corpus";
@@ -430,31 +501,33 @@ mod tests {
                 })?;
             }
         }
-        u.add_event(UpdateEvent::AddNode {
-            node_name: format!("{corpus}#b5"),
-            node_type: "node".to_string(),
-        })?; // make second ordering one node longer
-        u.add_event(UpdateEvent::AddEdge {
-            source_node: format!("{corpus}#b4"),
-            target_node: format!("{corpus}#b5"),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::Ordering.to_string(),
-            component_name: "b".to_string(),
-        })?;
-        u.add_event(UpdateEvent::AddEdge {
-            source_node: format!("{corpus}#b5"),
-            target_node: format!("{corpus}#a4"),
-            layer: "".to_string(),
-            component_type: AnnotationComponentType::Pointing.to_string(),
-            component_name: "align".to_string(),
-        })?;
-        u.add_event(UpdateEvent::AddEdge {
-            source_node: format!("{corpus}#b5"),
-            target_node: corpus.to_string(),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::PartOf.to_string(),
-            component_name: "".to_string(),
-        })?;
+        if !disjoint {
+            u.add_event(UpdateEvent::AddNode {
+                node_name: format!("{corpus}#b5"),
+                node_type: "node".to_string(),
+            })?; // make second ordering one node longer
+            u.add_event(UpdateEvent::AddEdge {
+                source_node: format!("{corpus}#b4"),
+                target_node: format!("{corpus}#b5"),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::Ordering.to_string(),
+                component_name: "b".to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddEdge {
+                source_node: format!("{corpus}#b5"),
+                target_node: format!("{corpus}#a4"),
+                layer: "".to_string(),
+                component_type: AnnotationComponentType::Pointing.to_string(),
+                component_name: "align".to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddEdge {
+                source_node: format!("{corpus}#b5"),
+                target_node: corpus.to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".to_string(),
+            })?;
+        }
         // syntax
         u.add_event(UpdateEvent::AddEdge {
             source_node: format!("{corpus}#b1"),
@@ -627,7 +700,10 @@ mod tests {
         Ok(g)
     }
 
-    fn target_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
+    fn target_graph(
+        on_disk: bool,
+        disjoint: bool,
+    ) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
         let mut g = AnnotationGraph::new(on_disk)?;
         let mut u = GraphUpdate::default();
         let corpus = "corpus";
@@ -814,7 +890,8 @@ mod tests {
             component_name: "constituents".to_string(),
         })?;
         // ordered empty nodes
-        for i in 0..12 {
+        let max_t = if disjoint { 10 } else { 12 };
+        for i in 0..max_t {
             let r = i / 2;
             u.add_event(UpdateEvent::AddNode {
                 node_name: format!("{corpus}#t{i}"),
