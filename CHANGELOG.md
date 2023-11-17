@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - graph op `enumerate` to enumerate nodes, i. e., add numeric annotations to results of one or multiple queries
 - add importer for the format used by the [TreeTagger](https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/)
 - graph_op `collapse` can collapse an edge component, i. e., it merges all nodes in a connected subgraph in said component
+- `collapse` can be accelerated when all edges of the component to be collapsed are known to be disjoint by providing `disjoint = true` in the step config
+- `collapse` provides more feedback on current process
 
 ### Fixed
 
