@@ -397,7 +397,7 @@ mod tests {
     fn test(on_disk: bool, disjoint: bool) -> Result<(), Box<dyn std::error::Error>> {
         let g_ = input_graph(on_disk, disjoint);
         assert!(g_.is_ok());
-        let mut g = g_?;
+        let mut g = g_.unwrap();
         let collapse = Collapse {
             ctype: AnnotationComponentType::Pointing,
             layer: "".to_string(),
@@ -411,17 +411,17 @@ mod tests {
         assert!(msg_receiver.into_iter().count() > 0);
         let eg = target_graph(on_disk, disjoint);
         assert!(eg.is_ok());
-        let mut expected_g = eg?;
+        let mut expected_g = eg.unwrap();
         let toml_str_r = if disjoint {
             fs::read_to_string("tests/data/graph_op/collapse/test_check_disjoint.toml")
         } else {
             fs::read_to_string("tests/data/graph_op/collapse/test_check.toml")
         };
         assert!(toml_str_r.is_ok());
-        let toml_str = toml_str_r?;
+        let toml_str = toml_str_r.unwrap();
         let check_r: Result<Check, _> = toml::from_str(toml_str.as_str());
         assert!(check_r.is_ok());
-        let check = check_r?;
+        let check = check_r.unwrap();
         let dummy_path = Path::new("./");
         let (sender_e, receiver_e) = mpsc::channel();
         let r = check.manipulate_corpus(&mut expected_g, dummy_path, Some(sender_e));
