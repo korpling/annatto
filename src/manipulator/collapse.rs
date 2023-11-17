@@ -21,7 +21,7 @@ use crate::{
     error::AnnattoError,
     progress::ProgressReporter,
     workflow::{StatusMessage, StatusSender},
-    Module, StepID,
+    Module,
 };
 
 use super::Manipulator;
@@ -71,7 +71,7 @@ impl Collapse {
             (&self.name).into(),
         );
         if let Some(component_storage) = graph.get_graphstorage(&component) {
-            let hyperedges = self.collect_hyperedges(component_storage)?;
+            let hyperedges = self.collect_hyperedges(component_storage, tx.clone())?;
             let mut hypernode_map = BTreeMap::new();
             for (id, hyperedge) in hyperedges.iter().enumerate() {
                 for m in hyperedge {
@@ -121,17 +121,11 @@ impl Collapse {
     fn collect_hyperedges(
         &self,
         component_storage: Arc<dyn GraphStorage>,
+        tx: Option<StatusSender>,
     ) -> Result<Vec<BTreeSet<u64>>, Box<dyn std::error::Error>> {
         let mut hyperedges = Vec::new();
         let source_nodes = component_storage.source_nodes().collect_vec();
-        let progress = ProgressReporter::new(
-            None,
-            StepID {
-                module_name: format!("{MODULE_NAME}: collecting hyperedges"),
-                path: None,
-            },
-            source_nodes.len(),
-        )?;
+        let progress = ProgressReporter::new(tx.clone(), self.step_id(None), source_nodes.len())?;
         for sn in source_nodes {
             let source_node = sn?;
             let dfs = CycleSafeDFS::new(
@@ -152,13 +146,8 @@ impl Collapse {
         }
         if !self.disjoint {
             // make sure hyperedges are disjoint
-            let progress_disjoint = ProgressReporter::new_unknown_total_work(
-                None,
-                StepID {
-                    module_name: format!("{MODULE_NAME}: Joining connected hyperedges"),
-                    path: None,
-                },
-            )?;
+            let progress_disjoint =
+                ProgressReporter::new_unknown_total_work(tx, self.step_id(None))?;
             let mut repeat = true;
             while repeat {
                 let mut disjoint_hyperedges = Vec::new();
@@ -354,6 +343,7 @@ mod tests {
     };
     use graphannis_core::graph::ANNIS_NS;
     use itertools::Itertools;
+    use serde_derive::Deserialize;
 
     use crate::{
         manipulator::{check::Check, Manipulator},
@@ -361,6 +351,24 @@ mod tests {
     };
 
     use super::Collapse;
+
+    #[test]
+    fn test_deser() {
+        #[derive(Deserialize)]
+        struct Container {
+            _graph_op: Vec<Collapse>,
+        }
+        let sp = fs::read_to_string("tests/data/graph_op/collapse/serialized_pass.toml")
+            .map_err(|_| assert!(false))
+            .unwrap();
+        let pass: Result<Container, _> = toml::from_str(&sp);
+        assert!(pass.is_ok(), "{:?}", pass.err());
+        let sf = fs::read_to_string("tests/data/graph_op/collapse/serialized_fail.toml")
+            .map_err(|_| assert!(false))
+            .unwrap();
+        let fail: Result<Collapse, _> = toml::from_str(&sf);
+        assert!(fail.is_err());
+    }
 
     #[test]
     fn test_collapse_in_mem() {
@@ -387,26 +395,37 @@ mod tests {
     }
 
     fn test(on_disk: bool, disjoint: bool) -> Result<(), Box<dyn std::error::Error>> {
-        let mut g = input_graph(on_disk, disjoint)?;
+        let g_ = input_graph(on_disk, disjoint);
+        assert!(g_.is_ok());
+        let mut g = g_.unwrap();
         let collapse = Collapse {
             ctype: AnnotationComponentType::Pointing,
             layer: "".to_string(),
             name: "align".to_string(),
             disjoint,
         };
+        let (msg_sender, msg_receiver) = mpsc::channel();
         assert!(collapse
-            .manipulate_corpus(&mut g, Path::new("./"), None)
+            .manipulate_corpus(&mut g, Path::new("./"), Some(msg_sender))
             .is_ok());
-        let mut expected_g = target_graph(on_disk, disjoint)?;
-        let toml_str = if disjoint {
-            fs::read_to_string("tests/data/graph_op/collapse/test_check_disjoint.toml")?
+        assert!(msg_receiver.into_iter().count() > 0);
+        let eg = target_graph(on_disk, disjoint);
+        assert!(eg.is_ok());
+        let mut expected_g = eg.unwrap();
+        let toml_str_r = if disjoint {
+            fs::read_to_string("tests/data/graph_op/collapse/test_check_disjoint.toml")
         } else {
-            fs::read_to_string("tests/data/graph_op/collapse/test_check.toml")?
+            fs::read_to_string("tests/data/graph_op/collapse/test_check.toml")
         };
-        let check: Check = toml::from_str(toml_str.as_str())?;
+        assert!(toml_str_r.is_ok());
+        let toml_str = toml_str_r.unwrap();
+        let check_r: Result<Check, _> = toml::from_str(toml_str.as_str());
+        assert!(check_r.is_ok());
+        let check = check_r.unwrap();
         let dummy_path = Path::new("./");
         let (sender_e, receiver_e) = mpsc::channel();
-        check.manipulate_corpus(&mut expected_g, dummy_path, Some(sender_e))?;
+        let r = check.manipulate_corpus(&mut expected_g, dummy_path, Some(sender_e));
+        assert!(r.is_ok());
         let mut failed_tests = receiver_e
             .into_iter()
             .filter(|m| matches!(m, StatusMessage::Failed { .. }))
@@ -417,7 +436,8 @@ mod tests {
             }
         }
         let (sender, receiver) = mpsc::channel();
-        check.manipulate_corpus(&mut g, dummy_path, Some(sender))?;
+        let cr = check.manipulate_corpus(&mut g, dummy_path, Some(sender));
+        assert!(cr.is_ok());
         failed_tests = receiver
             .into_iter()
             .filter(|m| matches!(m, StatusMessage::Failed { .. }))
