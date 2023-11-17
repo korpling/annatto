@@ -343,6 +343,7 @@ mod tests {
     };
     use graphannis_core::graph::ANNIS_NS;
     use itertools::Itertools;
+    use serde_derive::Deserialize;
 
     use crate::{
         manipulator::{check::Check, Manipulator},
@@ -350,6 +351,24 @@ mod tests {
     };
 
     use super::Collapse;
+
+    #[test]
+    fn test_deser() {
+        #[derive(Deserialize)]
+        struct Container {
+            _graph_op: Vec<Collapse>,
+        }
+        let sp = fs::read_to_string("tests/data/graph_op/collapse/serialized_pass.toml")
+            .map_err(|_| assert!(false))
+            .unwrap();
+        let pass: Result<Container, _> = toml::from_str(&sp);
+        assert!(pass.is_ok(), "{:?}", pass.err());
+        let sf = fs::read_to_string("tests/data/graph_op/collapse/serialized_fail.toml")
+            .map_err(|_| assert!(false))
+            .unwrap();
+        let fail: Result<Collapse, _> = toml::from_str(&sf);
+        assert!(fail.is_err());
+    }
 
     #[test]
     fn test_collapse_in_mem() {
