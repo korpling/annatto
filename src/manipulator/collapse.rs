@@ -21,7 +21,7 @@ use crate::{
     error::AnnattoError,
     progress::ProgressReporter,
     workflow::{StatusMessage, StatusSender},
-    Module, StepID,
+    Module,
 };
 
 use super::Manipulator;
@@ -71,7 +71,7 @@ impl Collapse {
             (&self.name).into(),
         );
         if let Some(component_storage) = graph.get_graphstorage(&component) {
-            let hyperedges = self.collect_hyperedges(component_storage)?;
+            let hyperedges = self.collect_hyperedges(component_storage, tx.clone())?;
             let mut hypernode_map = BTreeMap::new();
             for (id, hyperedge) in hyperedges.iter().enumerate() {
                 for m in hyperedge {
@@ -121,17 +121,11 @@ impl Collapse {
     fn collect_hyperedges(
         &self,
         component_storage: Arc<dyn GraphStorage>,
+        tx: Option<StatusSender>,
     ) -> Result<Vec<BTreeSet<u64>>, Box<dyn std::error::Error>> {
         let mut hyperedges = Vec::new();
         let source_nodes = component_storage.source_nodes().collect_vec();
-        let progress = ProgressReporter::new(
-            None,
-            StepID {
-                module_name: format!("{MODULE_NAME}: collecting hyperedges"),
-                path: None,
-            },
-            source_nodes.len(),
-        )?;
+        let progress = ProgressReporter::new(tx.clone(), self.step_id(None), source_nodes.len())?;
         for sn in source_nodes {
             let source_node = sn?;
             let dfs = CycleSafeDFS::new(
@@ -152,13 +146,8 @@ impl Collapse {
         }
         if !self.disjoint {
             // make sure hyperedges are disjoint
-            let progress_disjoint = ProgressReporter::new_unknown_total_work(
-                None,
-                StepID {
-                    module_name: format!("{MODULE_NAME}: Joining connected hyperedges"),
-                    path: None,
-                },
-            )?;
+            let progress_disjoint =
+                ProgressReporter::new_unknown_total_work(tx, self.step_id(None))?;
             let mut repeat = true;
             while repeat {
                 let mut disjoint_hyperedges = Vec::new();
