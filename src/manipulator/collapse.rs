@@ -407,7 +407,9 @@ mod tests {
             .manipulate_corpus(&mut g, Path::new("./"), Some(msg_sender))
             .is_ok());
         assert!(msg_receiver.into_iter().count() > 0);
-        let mut expected_g = target_graph(on_disk, disjoint)?;
+        let eg = target_graph(on_disk, disjoint);
+        assert!(eg.is_ok());
+        let mut expected_g = eg.unwrap();
         let toml_str = if disjoint {
             fs::read_to_string("tests/data/graph_op/collapse/test_check_disjoint.toml")?
         } else {
