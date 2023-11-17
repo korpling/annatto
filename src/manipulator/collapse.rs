@@ -383,9 +383,11 @@ mod tests {
             name: "align".to_string(),
             disjoint,
         };
+        let (msg_sender, msg_receiver) = mpsc::channel();
         assert!(collapse
-            .manipulate_corpus(&mut g, Path::new("./"), None)
+            .manipulate_corpus(&mut g, Path::new("./"), Some(msg_sender))
             .is_ok());
+        assert!(msg_receiver.into_iter().count() > 0);
         let mut expected_g = target_graph(on_disk, disjoint)?;
         let toml_str = if disjoint {
             fs::read_to_string("tests/data/graph_op/collapse/test_check_disjoint.toml")?
