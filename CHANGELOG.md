@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - relative import and export paths are interpreted as relative to the parent directory of the workflow file
 - the spreadsheet importer will use the correct namespace `default_ns` for segmentation ordering relations
 - fixed ordering of token nodes in spreadsheet import
+- `link` now considers all matching nodes for the same value, so the correct amount of edges is created
 
 ### Removed
 
