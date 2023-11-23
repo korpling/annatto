@@ -1,4 +1,9 @@
 [[tests]]
+query = "node_name=/corpus#hypernode.*/"
+expected = 5
+description = "Hypernodes were successfully created"
+
+[[tests]]
 query = "a:anno"
 expected = 5
 description = "There are five nodes with anno a"
