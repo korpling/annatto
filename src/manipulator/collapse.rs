@@ -11,7 +11,7 @@ use graphannis::{
 };
 use graphannis_core::{
     dfs::CycleSafeDFS,
-    graph::{ANNIS_NS, NODE_NAME_KEY},
+    graph::{ANNIS_NS, NODE_NAME, NODE_NAME_KEY},
     types::Edge,
 };
 use itertools::Itertools;
@@ -58,6 +58,35 @@ impl Manipulator for Collapse {
 
 type EdgeUId = (u64, u64, AnnotationComponent);
 
+fn parent_node(
+    graph: &AnnotationGraph,
+    node_id: &u64,
+) -> Result<String, Box<dyn std::error::Error>> {
+    let component =
+        AnnotationComponent::new(AnnotationComponentType::PartOf, ANNIS_NS.into(), "".into());
+    let parent_name = if let Some(storage) = graph.get_graphstorage(&component) {
+        let mut out_edges = storage.get_outgoing_edges(*node_id).collect_vec();
+        if out_edges.len() != 1 {
+            "".to_string()
+        } else {
+            let parent = out_edges.remove(0)?;
+            if let Some(name) = graph
+                .get_node_annos()
+                .get_value_for_item(&parent, &NODE_NAME_KEY)?
+            {
+                name.to_string()
+            } else {
+                "".to_string()
+            }
+        }
+    } else {
+        "".to_string()
+    };
+    Ok(parent_name)
+}
+
+const HYPERNODE_NAME_STEM: &str = "#hypernode";
+
 impl Collapse {
     fn collapse(
         &self,
@@ -73,9 +102,20 @@ impl Collapse {
         if let Some(component_storage) = graph.get_graphstorage(&component) {
             let hyperedges = self.collect_hyperedges(component_storage, tx.clone())?;
             let mut hypernode_map = BTreeMap::new();
-            for (id, hyperedge) in hyperedges.iter().enumerate() {
+            let offset = graph
+                .get_node_annos()
+                .regex_anno_search(
+                    Some(ANNIS_NS),
+                    NODE_NAME,
+                    format!(".*{HYPERNODE_NAME_STEM}.*").as_str(),
+                    false,
+                )
+                .count();
+            for (mut id, hyperedge) in hyperedges.iter().enumerate() {
+                id += offset;
                 for m in hyperedge {
-                    let name = format!("hypernode#{id}");
+                    let parent = parent_node(graph, m)?;
+                    let name = format!("{parent}{HYPERNODE_NAME_STEM}{id}");
                     update.add_event(UpdateEvent::AddNode {
                         node_name: name.to_string(),
                         node_type: "node".to_string(),
@@ -350,7 +390,7 @@ mod tests {
         workflow::StatusMessage,
     };
 
-    use super::Collapse;
+    use super::{Collapse, HYPERNODE_NAME_STEM};
 
     #[test]
     fn test_deser() {
@@ -405,9 +445,8 @@ mod tests {
             disjoint,
         };
         let (msg_sender, msg_receiver) = mpsc::channel();
-        assert!(collapse
-            .manipulate_corpus(&mut g, Path::new("./"), Some(msg_sender))
-            .is_ok());
+        let application = collapse.manipulate_corpus(&mut g, Path::new("./"), Some(msg_sender));
+        assert!(application.is_ok(), "not Ok: {:?}", application.err());
         assert!(msg_receiver.into_iter().count() > 0);
         let eg = target_graph(on_disk, disjoint);
         assert!(eg.is_ok());
@@ -732,24 +771,25 @@ mod tests {
             node_type: corpus.to_string(),
         })?;
         for i in 0..5 {
+            let node_id = format!("{corpus}{HYPERNODE_NAME_STEM}{i}");
             u.add_event(UpdateEvent::AddNode {
-                node_name: format!("{corpus}#a{i}"),
+                node_name: node_id.to_string(),
                 node_type: "node".to_string(),
             })?;
             u.add_event(UpdateEvent::AddNodeLabel {
-                node_name: format!("{corpus}#a{i}"),
+                node_name: node_id.to_string(),
                 anno_ns: "a".to_string(),
                 anno_name: "anno".to_string(),
                 anno_value: "a".to_string(),
             })?;
             u.add_event(UpdateEvent::AddNodeLabel {
-                node_name: format!("{corpus}#a{i}"),
+                node_name: node_id.to_string(),
                 anno_ns: "b".to_string(),
                 anno_name: "anno".to_string(),
                 anno_value: "b".to_string(),
             })?;
             u.add_event(UpdateEvent::AddEdge {
-                source_node: format!("{corpus}#a{i}"),
+                source_node: node_id.to_string(),
                 target_node: corpus.to_string(),
                 layer: ANNIS_NS.to_string(),
                 component_type: AnnotationComponentType::PartOf.to_string(),
@@ -758,8 +798,8 @@ mod tests {
             if i > 0 {
                 let j = i - 1;
                 u.add_event(UpdateEvent::AddEdge {
-                    source_node: format!("{corpus}#a{j}"),
-                    target_node: format!("{corpus}#a{i}"),
+                    source_node: format!("{corpus}{HYPERNODE_NAME_STEM}{j}"),
+                    target_node: node_id.to_string(),
                     layer: ANNIS_NS.to_string(),
                     component_type: AnnotationComponentType::Ordering.to_string(),
                     component_name: "a".to_string(),
@@ -768,15 +808,15 @@ mod tests {
         }
         // syntax
         u.add_event(UpdateEvent::AddEdge {
-            source_node: format!("{corpus}#a1"),
-            target_node: format!("{corpus}#a0"),
+            source_node: format!("{corpus}{HYPERNODE_NAME_STEM}1"),
+            target_node: format!("{corpus}{HYPERNODE_NAME_STEM}0"),
             layer: "".to_string(),
             component_type: AnnotationComponentType::Pointing.to_string(),
             component_name: "dep".to_string(),
         })?;
         u.add_event(UpdateEvent::AddEdgeLabel {
-            source_node: format!("{corpus}#a1"),
-            target_node: format!("{corpus}#a0"),
+            source_node: format!("{corpus}{HYPERNODE_NAME_STEM}1"),
+            target_node: format!("{corpus}{HYPERNODE_NAME_STEM}0"),
             layer: "".to_string(),
             component_type: AnnotationComponentType::Pointing.to_string(),
             component_name: "dep".to_string(),
@@ -785,15 +825,15 @@ mod tests {
             anno_value: "det".to_string(),
         })?;
         u.add_event(UpdateEvent::AddEdge {
-            source_node: format!("{corpus}#a2"),
-            target_node: format!("{corpus}#a1"),
+            source_node: format!("{corpus}{HYPERNODE_NAME_STEM}2"),
+            target_node: format!("{corpus}{HYPERNODE_NAME_STEM}1"),
             layer: "".to_string(),
             component_type: AnnotationComponentType::Pointing.to_string(),
             component_name: "dep".to_string(),
         })?;
         u.add_event(UpdateEvent::AddEdgeLabel {
-            source_node: format!("{corpus}#a2"),
-            target_node: format!("{corpus}#a1"),
+            source_node: format!("{corpus}{HYPERNODE_NAME_STEM}2"),
+            target_node: format!("{corpus}{HYPERNODE_NAME_STEM}1"),
             layer: "".to_string(),
             component_type: AnnotationComponentType::Pointing.to_string(),
             component_name: "dep".to_string(),
@@ -802,15 +842,15 @@ mod tests {
             anno_value: "subj".to_string(),
         })?;
         u.add_event(UpdateEvent::AddEdge {
-            source_node: format!("{corpus}#a2"),
-            target_node: format!("{corpus}#a4"),
+            source_node: format!("{corpus}{HYPERNODE_NAME_STEM}2"),
+            target_node: format!("{corpus}{HYPERNODE_NAME_STEM}4"),
             layer: "".to_string(),
             component_type: AnnotationComponentType::Pointing.to_string(),
             component_name: "dep".to_string(),
         })?;
         u.add_event(UpdateEvent::AddEdgeLabel {
-            source_node: format!("{corpus}#a2"),
-            target_node: format!("{corpus}#a4"),
+            source_node: format!("{corpus}{HYPERNODE_NAME_STEM}2"),
+            target_node: format!("{corpus}{HYPERNODE_NAME_STEM}4"),
             layer: "".to_string(),
             component_type: AnnotationComponentType::Pointing.to_string(),
             component_name: "dep".to_string(),
@@ -819,15 +859,15 @@ mod tests {
             anno_value: "comp:obj".to_string(),
         })?;
         u.add_event(UpdateEvent::AddEdge {
-            source_node: format!("{corpus}#a4"),
-            target_node: format!("{corpus}#a3"),
+            source_node: format!("{corpus}{HYPERNODE_NAME_STEM}4"),
+            target_node: format!("{corpus}{HYPERNODE_NAME_STEM}3"),
             layer: "".to_string(),
             component_type: AnnotationComponentType::Pointing.to_string(),
             component_name: "dep".to_string(),
         })?;
         u.add_event(UpdateEvent::AddEdgeLabel {
-            source_node: format!("{corpus}#a4"),
-            target_node: format!("{corpus}#a3"),
+            source_node: format!("{corpus}{HYPERNODE_NAME_STEM}4"),
+            target_node: format!("{corpus}{HYPERNODE_NAME_STEM}3"),
             layer: "".to_string(),
             component_type: AnnotationComponentType::Pointing.to_string(),
             component_name: "dep".to_string(),
@@ -876,35 +916,35 @@ mod tests {
         })?;
         u.add_event(UpdateEvent::AddEdge {
             source_node: format!("{corpus}#s1"),
-            target_node: format!("{corpus}#a0"),
+            target_node: format!("{corpus}{HYPERNODE_NAME_STEM}0"),
             layer: "".to_string(),
             component_type: AnnotationComponentType::Dominance.to_string(),
             component_name: "constituents".to_string(),
         })?;
         u.add_event(UpdateEvent::AddEdge {
             source_node: format!("{corpus}#s1"),
-            target_node: format!("{corpus}#a1"),
+            target_node: format!("{corpus}{HYPERNODE_NAME_STEM}1"),
             layer: "".to_string(),
             component_type: AnnotationComponentType::Dominance.to_string(),
             component_name: "constituents".to_string(),
         })?;
         u.add_event(UpdateEvent::AddEdge {
             source_node: format!("{corpus}#s2"),
-            target_node: format!("{corpus}#a2"),
+            target_node: format!("{corpus}{HYPERNODE_NAME_STEM}2"),
             layer: "".to_string(),
             component_type: AnnotationComponentType::Dominance.to_string(),
             component_name: "constituents".to_string(),
         })?;
         u.add_event(UpdateEvent::AddEdge {
             source_node: format!("{corpus}#s2"),
-            target_node: format!("{corpus}#a3"),
+            target_node: format!("{corpus}{HYPERNODE_NAME_STEM}3"),
             layer: "".to_string(),
             component_type: AnnotationComponentType::Dominance.to_string(),
             component_name: "constituents".to_string(),
         })?;
         u.add_event(UpdateEvent::AddEdge {
             source_node: format!("{corpus}#s2"),
-            target_node: format!("{corpus}#a4"),
+            target_node: format!("{corpus}{HYPERNODE_NAME_STEM}4"),
             layer: "".to_string(),
             component_type: AnnotationComponentType::Dominance.to_string(),
             component_name: "constituents".to_string(),
@@ -918,7 +958,7 @@ mod tests {
                 node_type: "node".to_string(),
             })?;
             u.add_event(UpdateEvent::AddEdge {
-                source_node: format!("{corpus}#a{r}"),
+                source_node: format!("{corpus}{HYPERNODE_NAME_STEM}{r}"),
                 target_node: format!("{corpus}#t{i}"),
                 layer: ANNIS_NS.to_string(),
                 component_type: AnnotationComponentType::Coverage.to_string(),
