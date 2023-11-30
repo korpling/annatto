@@ -14,7 +14,7 @@ use graphannis::{
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use pest::{iterators::Pairs, Parser};
 use pest_derive::Parser;
-use serde::Deserialize;
+use serde_derive::Deserialize;
 
 const FILE_ENDINGS: [&str; 5] = ["treetagger", "tab", "tt", "txt", "xml"];
 

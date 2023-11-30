@@ -159,9 +159,13 @@ mod tests {
         // apply
         let ur = test_g.apply_update(&mut test_u, |_| {});
         assert!(ur.is_ok());
-        let expected_id = expected_g.get_node_id_from_name("xlsx/test_file.xlsx")?;
+        let expected_id = expected_g
+            .get_node_annos()
+            .get_node_id_from_name("xlsx/test_file.xlsx")?;
         assert!(expected_id.is_some());
-        let test_id = test_g.get_node_id_from_name("xlsx/test_file.xlsx")?;
+        let test_id = test_g
+            .get_node_annos()
+            .get_node_id_from_name("xlsx/test_file.xlsx")?;
         assert!(test_id.is_some());
         assert_eq!(expected_id.unwrap(), test_id.unwrap());
         let expected_matches = expected_g
@@ -190,7 +194,7 @@ mod tests {
             "".into(),
         ));
         assert!(test_part_of_comp.is_some());
-        let test_root_node_id = test_g.get_node_id_from_name("xlsx")?;
+        let test_root_node_id = test_g.get_node_annos().get_node_id_from_name("xlsx")?;
         assert!(test_root_node_id.is_some());
         let expected_part_of_comp = expected_g.get_graphstorage_as_ref(&AnnotationComponent::new(
             AnnotationComponentType::PartOf,
@@ -198,7 +202,7 @@ mod tests {
             "".into(),
         ));
         assert!(expected_part_of_comp.is_some());
-        let expected_root_node_id = expected_g.get_node_id_from_name("xlsx")?;
+        let expected_root_node_id = expected_g.get_node_annos().get_node_id_from_name("xlsx")?;
         assert!(expected_root_node_id.is_some());
         assert_eq!(
             expected_part_of_comp
