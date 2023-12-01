@@ -9,7 +9,7 @@ use std::{
     collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread, time::Duration,
 };
 use structopt::StructOpt;
-use tracing_subscriber::{filter::LevelFilter, EnvFilter};
+use tracing_subscriber::filter::EnvFilter;
 
 /// Define a conversion operation
 #[derive(StructOpt)]
@@ -32,10 +32,7 @@ enum Cli {
 }
 
 pub fn main() -> anyhow::Result<()> {
-    let filter = EnvFilter::builder()
-        .with_default_directive(LevelFilter::INFO.into())
-        .from_env()?
-        .add_directive("annatto=trace".parse()?);
+    let filter = EnvFilter::from_default_env().add_directive("annatto=trace".parse()?);
     tracing_subscriber::fmt()
         .with_env_filter(filter)
         .compact()
