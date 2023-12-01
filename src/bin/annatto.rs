@@ -9,6 +9,7 @@ use std::{
     collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread, time::Duration,
 };
 use structopt::StructOpt;
+use tracing_subscriber::{filter::LevelFilter, EnvFilter};
 
 /// Define a conversion operation
 #[derive(StructOpt)]
@@ -22,7 +23,7 @@ enum Cli {
         #[structopt(long)]
         env: bool,
     },
-    /// Only check if a workflow files can be imported. Invalid workflow files will lead to a non-zero exit code.
+    /// Only check if a workflow file can be imported. Invalid workflow files will lead to a non-zero exit code.
     Validate {
         /// The path to the workflow file.
         #[structopt(parse(from_os_str))]
@@ -31,8 +32,14 @@ enum Cli {
 }
 
 pub fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
-
+    let filter = EnvFilter::builder()
+        .with_default_directive(LevelFilter::INFO.into())
+        .from_env()?
+        .add_directive("annatto=trace".parse()?);
+    tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .compact()
+        .init();
     let args = Cli::from_args();
     match args {
         Cli::Run { workflow_file, env } => convert(workflow_file, env)?,
