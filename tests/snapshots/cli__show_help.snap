@@ -1,5 +1,6 @@
 ---
 source: tests/cli.rs
+assertion_line: 16
 expression: output
 ---
 annatto <version>
@@ -15,6 +16,6 @@ FLAGS:
 SUBCOMMANDS:
     help        Prints this message or the help of the given subcommand(s)
     run         Run a conversion pipeline from a workflow file
-    validate    Only check if a workflow files can be imported. Invalid workflow files will lead to a non-zero exit
+    validate    Only check if a workflow file can be imported. Invalid workflow files will lead to a non-zero exit
                 code
 
