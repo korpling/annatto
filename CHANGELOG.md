@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `collapse` can be accelerated when all edges of the component to be collapsed are known to be disjoint by providing `disjoint = true` in the step config
 - `collapse` provides more feedback on current process
 - `collapse` gives hypernodes proper names that allow to identify the subgraph they belong to. Furthermore already existing hypernode ids are not reused (in case multiple collapse operations are run on a graph).
+- `CorpusStorage` is now quiet
 
 ### Fixed
 
