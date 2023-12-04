@@ -26,7 +26,7 @@ use crate::{
 
 use super::Importer;
 
-pub const MODULE_NAME: &str = "import_spreadsheet";
+pub const MODULE_NAME: &str = "import_xlsx";
 
 #[derive(Default, Deserialize)]
 #[serde(default)]

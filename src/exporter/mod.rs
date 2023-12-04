@@ -1,6 +1,7 @@
 //! Exporter modules export the data into different formats.
 
 pub mod graphml;
+pub mod xlsx;
 
 use crate::{workflow::StatusSender, Module, StepID};
 use graphannis::AnnotationGraph;

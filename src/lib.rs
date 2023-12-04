@@ -45,7 +45,7 @@ use std::{
 };
 
 use error::Result;
-use exporter::{graphml::GraphMLExporter, Exporter};
+use exporter::{graphml::GraphMLExporter, xlsx::XlsxExporter, Exporter};
 use importer::{
     conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
     graphml::GraphMLImporter, meta::AnnotateCorpus, none::CreateEmptyCorpus, opus::ImportOpusLinks,
@@ -62,6 +62,7 @@ use serde_derive::Deserialize;
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum WriteAs {
     GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
+    Xlsx(#[serde(default)] XlsxExporter),
 }
 
 impl Default for WriteAs {
@@ -81,6 +82,7 @@ impl WriteAs {
     fn writer(&self) -> &dyn Exporter {
         match self {
             WriteAs::GraphML(m) => m,
+            WriteAs::Xlsx(m) => m,
         }
     }
 }
