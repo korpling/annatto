@@ -6,12 +6,17 @@ on:
       - main
   pull_request:
   merge_group:
-off:
-  patch
 
 jobs:
   coverage:
     name: Execute tests with code coverage
+    status:
+      patch: off
+      project:
+        default:
+          target: auto
+          threshold: 0%
+          base: auto          
     runs-on: ubuntu-latest
     env:
       CARGO_TERM_COLOR: always
