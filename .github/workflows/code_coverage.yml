@@ -26,7 +26,7 @@ jobs:
           - name: Generate code coverage
             run: cargo llvm-cov --all-features --ignore-filename-regex 'tests?\.rs'  --codecov --output-path codecov.json
           - name: Upload coverage to Codecov
-              uses: codecov/codecov-action@v3
+            uses: codecov/codecov-action@v3
             with:
               token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
               files: codecov.json
