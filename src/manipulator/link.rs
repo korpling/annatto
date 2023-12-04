@@ -146,7 +146,7 @@ fn gather_link_data(
                 if let Some((Some(anno_key), carrying_node_name)) =
                     group_of_bundles.get(*value_index - 1)
                 {
-                    let node_id_o = graph.get_node_id_from_name(carrying_node_name)?;
+                    let node_id_o = node_annos.get_node_id_from_name(carrying_node_name)?;
                     let value_node_id = node_id_o.unwrap();
                     let anno_value = node_annos
                         .get_value_for_item(&value_node_id, anno_key)?
