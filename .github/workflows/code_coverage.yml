@@ -6,6 +6,8 @@ on:
       - main
   pull_request:
   merge_group:
+off:
+  patch
 
 jobs:
   coverage:
