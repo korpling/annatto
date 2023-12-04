@@ -6,28 +6,27 @@ on:
       - main
   pull_request:
   merge_group:
+off:
+  patch
 
 jobs:
   coverage:
-    status:
-      patch: off
-      project:
-        name: Execute tests with code coverage
-        runs-on: ubuntu-latest
-        env:
-          CARGO_TERM_COLOR: always
-        steps:
-          - uses: actions/checkout@v4
-          - uses: actions-rust-lang/setup-rust-toolchain@v1.4.4
-            with:
-              toolchain: stable
-          - name: Install cargo-llvm-cov
-            uses: taiki-e/install-action@cargo-llvm-cov
-          - name: Generate code coverage
-            run: cargo llvm-cov --all-features --ignore-filename-regex 'tests?\.rs'  --codecov --output-path codecov.json
-          - name: Upload coverage to Codecov
-            uses: codecov/codecov-action@v3
-            with:
-              token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
-              files: codecov.json
-              fail_ci_if_error: true
+    name: Execute tests with code coverage
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1.4.4
+        with:
+          toolchain: stable
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Generate code coverage
+        run: cargo llvm-cov --all-features --ignore-filename-regex 'tests?\.rs'  --codecov --output-path codecov.json
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+          files: codecov.json
+          fail_ci_if_error: true
