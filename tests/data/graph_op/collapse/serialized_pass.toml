@@ -1,0 +1,29 @@
+[[_graph_op]]
+ctype = "Pointing"
+layer = ""
+name = "align"
+disjoint = true
+
+[[_graph_op]]
+ctype = "Dominance"
+layer = "default_ns"
+name = ""
+disjoint = false
+
+[[_graph_op]]
+ctype = "Coverage"
+layer = "annis"
+name = "VIRTUAL"
+disjoint = false
+
+[[_graph_op]]
+ctype = "Ordering"
+layer = ""
+name = "norm"
+disjoint = false
+
+[[_graph_op]]
+ctype = "PartOf"
+layer = "annis"
+name = ""
+disjoint = false

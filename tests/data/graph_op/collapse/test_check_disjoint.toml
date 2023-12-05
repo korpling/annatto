@@ -1,0 +1,39 @@
+[[tests]]
+query = "node_name=/.*hypernode.*/"
+expected = 5
+description = "Hypernodes were successfully created"
+
+[[tests]]
+query = "a:anno"
+expected = 5
+description = "There are five nodes with anno a"
+
+[[tests]]
+query = "b:anno"
+expected = 5
+description = "There are five nodes with anno b"
+
+[[tests]]
+query = "node ->align node"
+expected = 0
+description = "There are no more alignment edges"
+
+[[tests]]
+query = "node ->dep node"
+expected = 4
+description = "There are four dependency edges"
+
+[[tests]]
+query = "s#node >constituents sbj#cat=/subj/ & #s >constituents obj#cat=/obj/"
+expected = 1
+description = "Dominance syntax still intact (i)"
+
+[[tests]]
+query = "node >constituents cat >constituents node _ident_ a:anno"
+expected = 5
+description = "Dominance syntax still intact (ii)"
+
+[[tests]]
+query = "node >constituents cat >constituents node _ident_ b:anno"
+expected = 5
+description = "Dominance syntax still intact (iii)"

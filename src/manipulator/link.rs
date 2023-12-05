@@ -81,6 +81,8 @@ impl Manipulator for LinkNodes {
 
 type NodeBundle = Vec<(Option<AnnoKey>, String)>;
 
+/// This function executes a single query and returns bundled results or an error.
+/// A bundled result is the annotation key the node has a match for and the matching node itself.
 fn retrieve_nodes_with_values(
     cs: &CorpusStorage,
     query: String,
@@ -123,6 +125,8 @@ fn anno_key(qname: &str) -> AnnoKey {
     }
 }
 
+/// This function queries the corpus graph and returns the relevant match data.
+/// The returned data maps an annotation value or a joint value (value) to the nodes holding said value.
 fn gather_link_data(
     graph: &AnnotationGraph,
     cs: &CorpusStorage,
@@ -142,7 +146,7 @@ fn gather_link_data(
                 if let Some((Some(anno_key), carrying_node_name)) =
                     group_of_bundles.get(*value_index - 1)
                 {
-                    let node_id_o = graph.get_node_id_from_name(carrying_node_name)?;
+                    let node_id_o = node_annos.get_node_id_from_name(carrying_node_name)?;
                     let value_node_id = node_id_o.unwrap();
                     let anno_value = node_annos
                         .get_value_for_item(&value_node_id, anno_key)?
@@ -162,8 +166,12 @@ fn gather_link_data(
                 }
                 target_data.push(link_node_name.to_string());
             }
-            let joined_value = value_segments.join(sep);
-            data.insert(joined_value, target_data);
+            let joint_value = value_segments.join(sep);
+            if let Some(nodes_with_value) = data.get_mut(&joint_value) {
+                nodes_with_value.extend(target_data);
+            } else {
+                data.insert(joint_value, target_data);
+            }
         } else if let Some(sender) = tx {
             let message = StatusMessage::Failed(AnnattoError::Manipulator {
                 reason: format!(
@@ -204,7 +212,11 @@ impl LinkNodes {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeSet, env::temp_dir, sync::mpsc};
+    use std::{
+        collections::{BTreeMap, BTreeSet},
+        env::temp_dir,
+        sync::mpsc,
+    };
 
     use graphannis::{
         corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
@@ -218,18 +230,23 @@ mod tests {
         util::join_qname,
     };
     use itertools::Itertools;
-    use tempfile::tempdir_in;
+    use tempfile::{tempdir_in, TempDir};
 
-    use crate::manipulator::{link::LinkNodes, Manipulator};
+    use crate::manipulator::{
+        link::{gather_link_data, retrieve_nodes_with_values, LinkNodes},
+        Manipulator,
+    };
 
     #[test]
     fn test_linker_on_disk() {
-        assert!(main_test(true).is_ok());
+        let r = main_test(true);
+        assert!(r.is_ok(), "Error in main test: {:?}", r.err());
     }
 
     #[test]
     fn test_linker_in_mem() {
-        assert!(main_test(false).is_ok());
+        let r = main_test(false);
+        assert!(r.is_ok(), "Error in main test: {:?}", r.err());
     }
 
     fn main_test(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
@@ -348,12 +365,8 @@ mod tests {
             ("norm:norm ->morphology morph=/I/", 1),
         ];
         let corpus_name = "current";
-        let tmp_dir_e = tempdir_in(temp_dir())?;
-        let tmp_dir_g = tempdir_in(temp_dir())?;
-        e_g.save_to(&tmp_dir_e.path().join(corpus_name))?;
-        g.save_to(&tmp_dir_g.path().join(corpus_name))?;
-        let cs_e = CorpusStorage::with_auto_cache_size(&tmp_dir_e.path(), true)?;
-        let cs_g = CorpusStorage::with_auto_cache_size(&tmp_dir_g.path(), true)?;
+        let (cs_e, _tmpe) = store_corpus(&mut e_g, corpus_name)?;
+        let (cs_g, _tmpg) = store_corpus(&mut g, corpus_name)?;
         for (query_s, expected_n) in queries {
             let query = SearchQuery {
                 corpus_names: &[corpus_name],
@@ -384,6 +397,176 @@ mod tests {
         let message_count = receiver.into_iter().count();
         assert_eq!(0, message_count);
         Ok(())
+    }
+
+    fn store_corpus(
+        graph: &mut AnnotationGraph,
+        corpus_name: &str,
+    ) -> Result<(CorpusStorage, TempDir), Box<dyn std::error::Error>> {
+        let tmp_dir = tempdir_in(temp_dir())?;
+        graph.save_to(&tmp_dir.path().join(corpus_name))?;
+        Ok((
+            CorpusStorage::with_auto_cache_size(&tmp_dir.path(), true)?,
+            tmp_dir,
+        ))
+    }
+
+    #[test]
+    fn test_retrieve_nodes_with_values() {
+        let g = source_graph(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let corpus_name = "current";
+        let cs_r = store_corpus(&mut graph, corpus_name);
+        assert!(cs_r.is_ok());
+        let (cs, _tmp) = cs_r.unwrap();
+        // 1
+        let r1 = retrieve_nodes_with_values(&cs, "tok=/.*/".to_string());
+        assert!(r1.is_ok(), "not Ok: {:?}", r1.err());
+        let results_1 = r1.unwrap();
+        assert_eq!(6, results_1.len());
+        for match_v in results_1 {
+            assert_eq!(1, match_v.len());
+            assert!(match_v.get(0).unwrap().0.is_none());
+        }
+        // 2
+        let r2 = retrieve_nodes_with_values(&cs, "norm _=_ pos".to_string());
+        assert!(r2.is_ok(), "not Ok: {:?}", r2.err());
+        let results_2 = r2.unwrap();
+        assert_eq!(4, results_2.len());
+        for match_v in results_2 {
+            assert_eq!(2, match_v.len());
+            assert!(match_v.get(0).unwrap().0.is_some());
+        }
+    }
+
+    #[test]
+    fn test_gather_link_data() {
+        let g = source_graph(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let corpus_name = "current";
+        let cs_r = store_corpus(&mut graph, corpus_name);
+        assert!(cs_r.is_ok());
+        let (cs, _tmp) = cs_r.unwrap();
+        let ldr = gather_link_data(
+            &graph,
+            &cs,
+            "norm _=_ pos".to_string(),
+            1,
+            &[1, 2],
+            &" ".to_string(),
+            &None,
+        );
+        assert!(ldr.is_ok(), "not Ok: {:?}", ldr.err());
+        let link_data = ldr.unwrap();
+        let expected_link_data: BTreeMap<String, Vec<String>> = vec![
+            (
+                "i pron".to_string(),
+                vec![
+                    "import/exmaralda/test_doc#t_norm_T286-T0".to_string(),
+                    "import/exmaralda/test_doc#t_norm_T286-T0".to_string(),
+                ],
+            ),
+            (
+                "am verb".to_string(),
+                vec![
+                    "import/exmaralda/test_doc#t_norm_T0-T1".to_string(),
+                    "import/exmaralda/test_doc#t_norm_T0-T1".to_string(),
+                ],
+            ),
+            (
+                "in adp".to_string(),
+                vec![
+                    "import/exmaralda/test_doc#t_norm_T1-T2".to_string(),
+                    "import/exmaralda/test_doc#t_norm_T1-T2".to_string(),
+                ],
+            ),
+            (
+                "new york propn".to_string(),
+                vec![
+                    "import/exmaralda/test_doc#t_norm_T2-T4".to_string(),
+                    "import/exmaralda/test_doc#t_norm_T2-T4".to_string(),
+                ],
+            ),
+        ]
+        .into_iter()
+        .collect();
+        assert_eq!(expected_link_data, link_data);
+    }
+
+    #[test]
+    fn test_link_nodes() {
+        let g = source_graph(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let linker = LinkNodes {
+            source_query: "dummy query -- value not used".to_string(),
+            source_node: 1,        // dummy value
+            source_value: vec![1], // dummy value
+            target_query: "dummy query -- value not used".to_string(),
+            target_node: 1,        // dummy value
+            target_value: vec![1], // dummy value
+            link_type: AnnotationComponentType::Pointing,
+            link_layer: "".to_string(),
+            link_name: "link".to_string(),
+            value_sep: "dummy value".to_string(),
+        };
+        let source_map = vec![
+            (
+                "i_am_im".to_string(),
+                vec!["import/exmaralda/test_doc#t_dipl_T286-T1".to_string()],
+            ),
+            (
+                "New_York".to_string(),
+                vec![
+                    "import/exmaralda/test_doc#t_dipl_T2-T3".to_string(),
+                    "import/exmaralda/test_doc#t_dipl_T3-T4".to_string(),
+                ],
+            ),
+        ]
+        .into_iter()
+        .collect();
+        let target_map = vec![
+            (
+                "i_am_im".to_string(),
+                vec![
+                    "import/exmaralda/test_doc#t_norm_T286-T0".to_string(),
+                    "import/exmaralda/test_doc#t_norm_T0-T1".to_string(),
+                ],
+            ),
+            (
+                "New_York".to_string(),
+                vec!["import/exmaralda/test_doc#t_norm_T2-T4".to_string()],
+            ),
+        ]
+        .into_iter()
+        .collect();
+        let r = linker.link_nodes(source_map, target_map);
+        assert!(r.is_ok());
+        let mut u = r.unwrap();
+        assert!(graph.apply_update(&mut u, |_| {}).is_ok());
+        let storage_bundle = store_corpus(&mut graph, "current");
+        assert!(storage_bundle.is_ok());
+        let (cs, _tmp) = storage_bundle.unwrap();
+        let queries_with_results = [
+            ("dipl=/I'm/ ->link norm=/I/ . norm=/am/ & #1 ->link #3", 1),
+            (
+                "dipl=/New/ . dipl=/York/ & #1 ->link norm=/New York/ & #2 ->link #3",
+                1,
+            ),
+        ];
+        for (q, n) in queries_with_results {
+            let query = SearchQuery {
+                corpus_names: &["current"],
+                query: q,
+                query_language: QueryLanguage::AQL,
+                timeout: None,
+            };
+            let c = cs.count(query);
+            assert!(c.is_ok());
+            assert_eq!(n, c.unwrap());
+        }
     }
 
     fn source_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
@@ -497,7 +680,14 @@ mod tests {
                     node_name: node_name.to_string(),
                     anno_ns: ANNIS_NS.to_string(),
                     anno_name: "tok".to_string(),
-                    anno_value: "value".to_string(),
+                    anno_value: value.to_string(),
+                })?;
+                u.add_event(UpdateEvent::AddEdge {
+                    source_node: node_name.to_string(),
+                    target_node: "import/exmaralda/test_doc".to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::PartOf.to_string(),
+                    component_name: "".to_string(),
                 })?;
                 if let Some(other_name) = prev {
                     u.add_event(UpdateEvent::AddEdge {

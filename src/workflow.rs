@@ -94,7 +94,7 @@
 //! action = "check"
 //!
 //! [graph_op.config]
-//! report = true
+//! report = "list"
 //!
 //! [[graph_op.config.tests]]
 //! query = "tok"
