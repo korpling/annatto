@@ -135,21 +135,31 @@ impl ImportEXMARaLDA {
                         }
                         "tli" => {
                             let attr_map = attr_vec_to_map(&attributes);
-                            let time =
-                                if let Ok(t_val) = attr_map["time"].parse::<OrderedFloat<f64>>() {
-                                    t_val
-                                } else {
-                                    let err = AnnattoError::Import {
-                                        reason: "Failed to parse tli time value.".to_string(),
-                                        importer: self.module_name().to_string(),
-                                        path: document_path.to_path_buf(),
+                            if let Some(time_value) = attr_map.get("time") {
+                                let time =
+                                    if let Ok(t_val) = time_value.parse::<OrderedFloat<f64>>() {
+                                        t_val
+                                    } else {
+                                        let err = AnnattoError::Import {
+                                            reason: "Failed to parse tli time value.".to_string(),
+                                            importer: self.module_name().to_string(),
+                                            path: document_path.to_path_buf(),
+                                        };
+                                        return Err(err);
                                     };
-                                    return Err(err);
+                                time_to_tli_attrs
+                                    .entry(time)
+                                    .or_default()
+                                    .push(attr_map["id"].to_string());
+                            } else {
+                                let err = AnnattoError::Import {
+                                    reason: "A timeline item does not have a time value."
+                                        .to_string(),
+                                    importer: self.module_name().to_string(),
+                                    path: document_path.to_path_buf(),
                                 };
-                            time_to_tli_attrs
-                                .entry(time)
-                                .or_default()
-                                .push(attr_map["id"].to_string());
+                                return Err(err);
+                            }
                         }
                         "event" | "abbreviation" => char_buf.clear(),
                         _ => {}
