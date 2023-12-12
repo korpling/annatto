@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the spreadsheet importer will use the correct namespace `default_ns` for segmentation ordering relations
 - fixed ordering of token nodes in spreadsheet import
 - `link` now considers all matching nodes for the same value, so the correct amount of edges is created
+- `exmaralda` returns error when there is no time value for a timeline item
 
 ### Removed
 
