@@ -50,14 +50,8 @@ pub fn main() -> anyhow::Result<()> {
 /// Execute the conversion in the background and show the status to the user
 fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
     let (tx, rx) = mpsc::channel();
-    thread::spawn(
-        move || match execute_from_file(&workflow_file, read_env, Some(tx.clone())) {
-            Ok(_) => {}
-            Err(e) => tx
-                .send(StatusMessage::Failed(e))
-                .expect("Could not send failure message"),
-        },
-    );
+    let result =
+        thread::spawn(move || execute_from_file(&workflow_file, read_env, Some(tx.clone())));
 
     let mut all_bars: HashMap<StepID, ProgressBar> = HashMap::new();
 
@@ -83,13 +77,8 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
 
     let multi_bar = MultiProgress::new();
 
-    let mut errors = Vec::new();
     for status_update in rx {
         match status_update {
-            StatusMessage::Failed(e) => {
-                errors.push(e);
-            }
-
             StatusMessage::StepsCreated(steps) => {
                 if steps.is_empty() {
                     multi_bar.println("No steps in workflow file")?;
@@ -144,10 +133,13 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
             }
         }
     }
-    if errors.is_empty() {
-        multi_bar.println("Conversion successful")?;
-        Ok(())
-    } else {
-        Err(AnnattoError::ConversionFailed { errors })
+    // Join the finished thread
+    let result = result.join().map_err(|_e| AnnattoError::JoinHandle)?;
+    match result {
+        Ok(_) => {
+            multi_bar.println("Conversion successful")?;
+            Ok(())
+        }
+        Err(e) => Err(e),
     }
 }

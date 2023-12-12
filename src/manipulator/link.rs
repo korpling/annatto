@@ -1,9 +1,5 @@
 //! Created edges between nodes based on their annotation value.
-use crate::{
-    error::AnnattoError,
-    workflow::{StatusMessage, StatusSender},
-    Module,
-};
+use crate::{error::AnnattoError, Module};
 use graphannis::{
     corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
     model::AnnotationComponentType,
@@ -50,7 +46,7 @@ impl Manipulator for LinkNodes {
         &self,
         graph: &mut graphannis::AnnotationGraph,
         _workflow_directory: &std::path::Path,
-        tx: Option<crate::workflow::StatusSender>,
+        _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let db_dir = tempdir_in(temp_dir())?;
         graph.save_to(db_dir.path().join("current").as_path())?;
@@ -62,7 +58,6 @@ impl Manipulator for LinkNodes {
             self.source_node,
             &self.source_value,
             &self.value_sep,
-            &tx,
         )?;
         let link_targets = gather_link_data(
             graph,
@@ -71,7 +66,6 @@ impl Manipulator for LinkNodes {
             self.target_node,
             &self.target_value,
             &self.value_sep,
-            &tx,
         )?;
         let mut update = self.link_nodes(link_sources, link_targets)?;
         graph.apply_update(&mut update, |_| {})?;
@@ -134,7 +128,6 @@ fn gather_link_data(
     node_index: usize,
     value_indices: &[usize],
     sep: &String,
-    tx: &Option<StatusSender>,
 ) -> Result<BTreeMap<String, Vec<String>>, Box<dyn std::error::Error>> {
     let mut data: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let node_annos = graph.get_node_annos();
@@ -146,7 +139,7 @@ fn gather_link_data(
                 if let Some((Some(anno_key), carrying_node_name)) =
                     group_of_bundles.get(*value_index - 1)
                 {
-                    let node_id_o = graph.get_node_id_from_name(carrying_node_name)?;
+                    let node_id_o = node_annos.get_node_id_from_name(carrying_node_name)?;
                     let value_node_id = node_id_o.unwrap();
                     let anno_value = node_annos
                         .get_value_for_item(&value_node_id, anno_key)?
@@ -154,15 +147,15 @@ fn gather_link_data(
                         .trim()
                         .to_lowercase();
                     value_segments.push(anno_value); // simply concatenate values
-                } else if let Some(sender) = tx {
-                    let message = StatusMessage::Failed(AnnattoError::Manipulator {
+                } else {
+                    return Err(AnnattoError::Manipulator {
                         reason: format!(
                             "Could not extract node with value index {value_index} from query `{}`",
                             &query
                         ),
                         manipulator: MODULE_NAME.to_string(),
-                    });
-                    sender.send(message)?;
+                    }
+                    .into());
                 }
                 target_data.push(link_node_name.to_string());
             }
@@ -172,15 +165,15 @@ fn gather_link_data(
             } else {
                 data.insert(joint_value, target_data);
             }
-        } else if let Some(sender) = tx {
-            let message = StatusMessage::Failed(AnnattoError::Manipulator {
+        } else {
+            return Err(AnnattoError::Manipulator {
                 reason: format!(
                     "Could not extract node with node index {node_index} from query `{}`",
                     &query
                 ),
                 manipulator: MODULE_NAME.to_string(),
-            });
-            sender.send(message)?;
+            }
+            .into());
         }
     }
     Ok(data)
@@ -456,7 +449,6 @@ mod tests {
             1,
             &[1, 2],
             &" ".to_string(),
-            &None,
         );
         assert!(ldr.is_ok(), "not Ok: {:?}", ldr.err());
         let link_data = ldr.unwrap();

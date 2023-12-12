@@ -11,10 +11,11 @@ use graphannis_core::{
     graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY},
     util::join_qname,
 };
+use insta::assert_display_snapshot;
 use itertools::Itertools;
 use tempfile::tempdir_in;
 
-use crate::{importer::Importer, workflow::StatusMessage, Module};
+use crate::{importer::Importer, Module};
 
 use super::ImportCoNLLU;
 
@@ -25,7 +26,8 @@ fn test_conll_fail_invalid() {
     let import = ImportCoNLLU::default();
     let import_path = Path::new("tests/data/import/conll/invalid");
     let job = import.import_corpus(import_path, import.step_id(Some(import_path)), None);
-    assert!(job.is_ok());
+    assert!(job.is_err());
+    assert_display_snapshot!(job.err().unwrap());
     let mut u = GraphUpdate::default();
     assert!(import
         .import_document(
@@ -41,14 +43,10 @@ fn test_conll_fail_invalid() {
 fn test_conll_fail_invalid_heads() {
     let import = ImportCoNLLU::default();
     let import_path = Path::new("tests/data/import/conll/invalid-heads/");
-    let (sender, receiver) = mpsc::channel();
+    let (sender, _receiver) = mpsc::channel();
     let job = import.import_corpus(import_path, import.step_id(None), Some(sender));
-    assert!(job.is_ok());
-    let fail_msgs = receiver.into_iter().filter(|s| match *s {
-        StatusMessage::Failed(_) => true,
-        _ => false,
-    });
-    assert!(fail_msgs.count() > 0);
+    assert!(job.is_err());
+    assert_display_snapshot!(job.err().unwrap());
 }
 
 #[test]
