@@ -20,6 +20,7 @@ graphannis = "3"
 graphannis-core = "3"
 indicatif = "0.17"
 itertools = "0.12"
+lazy_static = "1.4.0"
 log = "0.4"
 normpath = "1.1"
 ordered-float = {version = "4.1", default-features = false}
