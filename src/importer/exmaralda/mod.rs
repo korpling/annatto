@@ -452,7 +452,7 @@ impl ImportEXMARaLDA {
         if errors.is_empty() {
             Ok(())
         } else {
-            Err(AnnattoError::ConversionFailed { errors: errors })
+            Err(AnnattoError::ConversionFailed { errors })
         }
     }
 }
