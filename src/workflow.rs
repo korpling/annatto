@@ -481,4 +481,15 @@ mod tests {
             assert_eq!(workflow_with_vars, workflow_no_vars);
         }
     }
+
+    #[test]
+    fn multiple_importers() {
+        // The workflow contains a check for the number of corpora
+        execute_from_file(
+            Path::new("./tests/workflows/multiple_importer.toml"),
+            false,
+            None,
+        )
+        .unwrap();
+    }
 }

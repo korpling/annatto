@@ -1,0 +1,32 @@
+[[import]]
+path = "../data/import/graphml/single_sentence.graphml"
+format = "graphml"
+
+[import.config]
+
+[[import]]
+path = "../data/import/graphml/single_sentence.graphml"
+format = "graphml"
+
+[import.config]
+
+[[import]]
+path = "../data/import/graphml/single_sentence.graphml"
+format = "graphml"
+
+[import.config]
+
+
+[[graph_op]]
+action = "check"
+
+[graph_op.config]
+
+report = "list"
+policy = "fail"
+
+[[graph_op.config.tests]]
+query = "annis:doc"
+expected = 100000
+description = "The number of documents should be XXX"
+
