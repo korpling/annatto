@@ -91,6 +91,7 @@ impl XlsxExporter {
         let roots = find_token_roots(g, &cov_edges, ordering_gs)?;
         let mut row_index = 1;
         let mut token = roots.iter().next().copied();
+        let mut only_empty_token = true;
 
         let mut token_to_row = HashMap::new();
 
@@ -104,6 +105,9 @@ impl XlsxExporter {
                 .get_node_annos()
                 .get_value_for_item(&current_token, &token_value_key)?
             {
+                if !val.trim().is_empty() {
+                    only_empty_token = false;
+                }
                 worksheet
                     .get_cell_mut((1, row_index))
                     .set_value(val.to_string());
@@ -141,7 +145,7 @@ impl XlsxExporter {
                     .get_node_annos()
                     .get_value_for_item(&span.node, &span.anno_key)?
                     .unwrap_or_default();
-                dbg!(&span);
+
                 let mut spanned_rows = BTreeSet::new();
                 // Find all token covered by the span
                 for gs in cov_edges.iter() {
@@ -163,14 +167,16 @@ impl XlsxExporter {
                     worksheet
                         .get_cell_mut(first_cell.clone())
                         .set_value_string(span_val);
-                    worksheet.add_merge_cells(format!(
-                        "{}:{}{}",
-                        first_cell,
-                        name_to_column.get(span_name).unwrap_or(&"A"),
-                        last
-                    ));
+                    let last_cell =
+                        format!("{}{}", name_to_column.get(span_name).unwrap_or(&"A"), last);
+                    worksheet.add_merge_cells(format!("{}:{}", first_cell, last_cell));
                 }
             }
+        }
+
+        if only_empty_token {
+            // Remove the token column
+            worksheet.remove_column_by_index(&1, &1);
         }
 
         let output_path = output_path.join(format!("{}.xlsx", doc_name));
