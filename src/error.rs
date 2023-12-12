@@ -76,6 +76,8 @@ pub enum AnnattoError {
     TOMLError { error: String },
     #[error("Could not read XSLS file: {0}")]
     XlsxRead(#[from] umya_spreadsheet::reader::xlsx::XlsxError),
+    #[error("Error waiting for finished conversion thread")]
+    JoinHandle,
 }
 
 impl<T> From<std::sync::PoisonError<T>> for AnnattoError {

@@ -47,7 +47,7 @@ impl Importer for ImportEXMARaLDA {
         let mut update = GraphUpdate::default();
         let all_files = import_corpus_graph_from_files(&mut update, input_path, &["exb", "xml"])?;
         let progress = ProgressReporter::new(tx.clone(), step_id, all_files.len())?;
-        all_files
+        let document_status: Result<Vec<()>, AnnattoError> = all_files
             .into_iter()
             .map(|(fp, doc_node_name)| {
                 self.import_document(
@@ -59,16 +59,9 @@ impl Importer for ImportEXMARaLDA {
                     &tx,
                 )
             })
-            .filter_map(|r| match r {
-                Ok(_) => None,
-                Err(e) => Some(e),
-            })
-            .try_for_each(|e| {
-                if let Some(ref sender) = tx {
-                    sender.send(StatusMessage::Failed(e))?
-                }
-                Ok::<(), Box<dyn std::error::Error>>(())
-            })?;
+            .collect();
+        // Check for any errors
+        document_status?;
         Ok(update)
     }
 }
@@ -105,6 +98,7 @@ impl ImportEXMARaLDA {
         let mut parser_cfg = ParserConfig::new();
         parser_cfg.trim_whitespace = true;
         let mut reader = EventReader::new_with_config(f, parser_cfg);
+        let mut errors = Vec::default();
         loop {
             match reader.next() {
                 Ok(XmlEvent::EndDocument) => break,
@@ -277,36 +271,33 @@ impl ImportEXMARaLDA {
                                 id
                             } else {
                                 // send "Failed", but continue to collect potential further errors in the file
-                                if let Some(sender) = tx {
-                                    let msg = format!(
-                                            "Could not determine start id of currently processed event `{}`. Event will be skipped. Import will fail.",
-                                            text
-                                        );
-                                    let err = AnnattoError::Import {
-                                        reason: msg,
-                                        importer: self.module_name().to_string(),
-                                        path: document_path.to_path_buf(),
-                                    };
-                                    sender.send(StatusMessage::Failed(err))?;
-                                }
+                                let msg = format!(
+                                    "Could not determine start id of currently processed event `{}`. Event will be skipped. Import will fail.",
+                                    text
+                                );
+                                let err = AnnattoError::Import {
+                                    reason: msg,
+                                    importer: self.module_name().to_string(),
+                                    path: document_path.to_path_buf(),
+                                };
+                                errors.push(err);
+
                                 continue;
                             };
                             let end_id = if let Some(id) = event_info.get("end") {
                                 id
                             } else {
                                 // send "Failed", but continue to collect potential further errors in the file
-                                if let Some(sender) = tx {
-                                    let msg = format!(
+                                let msg = format!(
                                             "Could not determine end id of currently processed event `{}`. Event will be skipped. Import will fail.",
                                             text
                                         );
-                                    let err = AnnattoError::Import {
-                                        reason: msg,
-                                        importer: self.module_name().to_string(),
-                                        path: document_path.to_path_buf(),
-                                    };
-                                    sender.send(StatusMessage::Failed(err))?;
-                                }
+                                let err = AnnattoError::Import {
+                                    reason: msg,
+                                    importer: self.module_name().to_string(),
+                                    path: document_path.to_path_buf(),
+                                };
+                                errors.push(err);
                                 continue;
                             };
                             let start_i = if let Some(i_val) =
@@ -457,7 +448,12 @@ impl ImportEXMARaLDA {
                 prev = Some(node_name);
             }
         }
-        Ok(())
+
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(AnnattoError::ConversionFailed { errors: errors })
+        }
     }
 }
 

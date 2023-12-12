@@ -306,58 +306,70 @@ impl Merge {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let node_annos = graph.get_node_annos();
         let n = docs_with_errors.len();
+        let mut collected_errors = Vec::new();
         if n > 0 {
             let docs_s = docs_with_errors.iter().sorted().join("\n");
-            if let Some(sender) = &tx {
-                let message = match policy {
-                    ErrorPolicy::Fail => {
-                        let msg = format!("{n} documents with ill-merged tokens:\n{docs_s}");
-                        let err = AnnattoError::Manipulator {
-                            reason: msg,
-                            manipulator: self.module_name().to_string(),
-                        };
-                        StatusMessage::Failed(err)
-                    }
-                    ErrorPolicy::Drop => {
-                        for doc_node_name in docs_with_errors {
-                            // get all doc nodes with doc_id
-                            let corpus_nodes = node_annos
-                                .exact_anno_search(
-                                    Some(NODE_TYPE_KEY.ns.as_str()),
-                                    NODE_TYPE_KEY.name.as_str(),
-                                    ValueSearch::Some("corpus"),
-                                )
-                                .map(|m| m.unwrap().node)
-                                .collect::<BTreeSet<u64>>();
-                            let nodes_with_doc_name = node_annos
-                                .exact_anno_search(
-                                    Some(NODE_NAME_KEY.ns.as_str()),
-                                    NODE_NAME_KEY.name.as_str(),
-                                    ValueSearch::Some(doc_node_name.as_str()),
-                                )
-                                .map(|m| m.unwrap().node)
-                                .collect::<BTreeSet<u64>>();
-                            for doc_node_id in corpus_nodes.intersection(&nodes_with_doc_name) {
-                                let doc_name = node_annos
-                                    .get_value_for_item(doc_node_id, &NODE_NAME_KEY)?
-                                    .unwrap();
-                                updates.add_event(UpdateEvent::DeleteNode {
-                                    node_name: doc_name.to_string(),
-                                })?;
-                            }
+
+            match policy {
+                ErrorPolicy::Fail => {
+                    let msg = format!("{n} documents with ill-merged tokens:\n{docs_s}");
+                    let err = AnnattoError::Manipulator {
+                        reason: msg,
+                        manipulator: self.module_name().to_string(),
+                    };
+                    collected_errors.push(err);
+                }
+                ErrorPolicy::Drop => {
+                    for doc_node_name in docs_with_errors {
+                        // get all doc nodes with doc_id
+                        let corpus_nodes = node_annos
+                            .exact_anno_search(
+                                Some(NODE_TYPE_KEY.ns.as_str()),
+                                NODE_TYPE_KEY.name.as_str(),
+                                ValueSearch::Some("corpus"),
+                            )
+                            .map(|m| m.unwrap().node)
+                            .collect::<BTreeSet<u64>>();
+                        let nodes_with_doc_name = node_annos
+                            .exact_anno_search(
+                                Some(NODE_NAME_KEY.ns.as_str()),
+                                NODE_NAME_KEY.name.as_str(),
+                                ValueSearch::Some(doc_node_name.as_str()),
+                            )
+                            .map(|m| m.unwrap().node)
+                            .collect::<BTreeSet<u64>>();
+                        for doc_node_id in corpus_nodes.intersection(&nodes_with_doc_name) {
+                            let doc_name = node_annos
+                                .get_value_for_item(doc_node_id, &NODE_NAME_KEY)?
+                                .unwrap();
+                            updates.add_event(UpdateEvent::DeleteNode {
+                                node_name: doc_name.to_string(),
+                            })?;
                         }
+                    }
+
+                    if let Some(tx) = tx {
                         let msg = format!("{n} documents with ill-merged tokens will be dropped from the corpus:\n{docs_s}");
-                        StatusMessage::Warning(msg)
+                        tx.send(StatusMessage::Warning(msg))?;
                     }
-                    _ => {
+                }
+                _ => {
+                    if let Some(tx) = tx {
                         let msg = format!("BE AWARE that the corpus contains severe merging issues in the following {n} documents:\n{docs_s}");
-                        StatusMessage::Warning(msg)
+                        tx.send(StatusMessage::Warning(msg))?;
                     }
-                };
-                sender.send(message)?;
-            }
+                }
+            };
         }
-        Ok(())
+
+        if collected_errors.is_empty() {
+            Ok(())
+        } else {
+            Err(AnnattoError::ConversionFailed {
+                errors: collected_errors,
+            }
+            .into())
+        }
     }
 
     fn collect_skip_components(
@@ -788,7 +800,7 @@ mod tests {
                 "text".to_string(),
                 "syntext".to_string(),
             ],
-            error_policy: ErrorPolicy::default(),
+            error_policy: ErrorPolicy::Drop,
             keep_name: "norm".to_string(),
             optional_chars: BTreeSet::new(),
             optional_values: BTreeSet::new(),

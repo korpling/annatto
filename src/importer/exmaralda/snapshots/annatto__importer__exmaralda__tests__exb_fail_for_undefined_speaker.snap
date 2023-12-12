@@ -1,0 +1,5 @@
+---
+source: src/importer/exmaralda/tests.rs
+expression: r.err().unwrap()
+---
+Error during importing corpus to ./tests/data/import/exmaralda/fail-undefined_speaker/test_doc.exb with "import_exmaralda": "Speaker `dipl` has not been defined in speaker-table."

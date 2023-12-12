@@ -156,8 +156,6 @@ pub enum StatusMessage {
     },
     /// Indicates a step has finished.
     StepDone { id: StepID },
-    /// Send when some error occurred in the pipeline. Any error will stop the conversion.
-    Failed(AnnattoError),
 }
 
 /// A workflow describes the steps in the conversion pipeline process. It can be represented as TOML file.

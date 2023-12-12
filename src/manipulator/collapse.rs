@@ -17,12 +17,7 @@ use graphannis_core::{
 use itertools::Itertools;
 use serde_derive::Deserialize;
 
-use crate::{
-    error::AnnattoError,
-    progress::ProgressReporter,
-    workflow::{StatusMessage, StatusSender},
-    Module,
-};
+use crate::{error::AnnattoError, progress::ProgressReporter, workflow::StatusSender, Module};
 
 use super::Manipulator;
 
@@ -143,8 +138,8 @@ impl Collapse {
                 )?;
                 progress.worked(1)?;
             }
-        } else if let Some(sender) = &tx {
-            let msg = StatusMessage::Failed(AnnattoError::Manipulator {
+        } else {
+            return Err(AnnattoError::Manipulator {
                 reason: format!(
                     "No component {}::{}::{} found.",
                     component.get_type(),
@@ -152,8 +147,8 @@ impl Collapse {
                     component.name
                 ),
                 manipulator: MODULE_NAME.to_string(),
-            });
-            sender.send(msg)?;
+            }
+            .into());
         }
         Ok(update)
     }
@@ -382,13 +377,10 @@ mod tests {
         AnnotationGraph,
     };
     use graphannis_core::graph::ANNIS_NS;
-    use itertools::Itertools;
+
     use serde_derive::Deserialize;
 
-    use crate::{
-        manipulator::{check::Check, Manipulator},
-        workflow::StatusMessage,
-    };
+    use crate::manipulator::{check::Check, Manipulator};
 
     use super::{Collapse, HYPERNODE_NAME_STEM};
 
@@ -462,30 +454,16 @@ mod tests {
         assert!(check_r.is_ok());
         let check = check_r.unwrap();
         let dummy_path = Path::new("./");
-        let (sender_e, receiver_e) = mpsc::channel();
-        let r = check.manipulate_corpus(&mut expected_g, dummy_path, Some(sender_e));
-        assert!(r.is_ok());
-        let mut failed_tests = receiver_e
-            .into_iter()
-            .filter(|m| matches!(m, StatusMessage::Failed { .. }))
-            .collect_vec();
-        if !failed_tests.is_empty() {
-            if let Some(StatusMessage::Failed(e)) = failed_tests.pop() {
-                return Err(Box::new(e));
-            }
+        let (sender_e, _receiver_e) = mpsc::channel();
+        if let Err(e) = check.manipulate_corpus(&mut expected_g, dummy_path, Some(sender_e)) {
+            return Err(e);
         }
-        let (sender, receiver) = mpsc::channel();
-        let cr = check.manipulate_corpus(&mut g, dummy_path, Some(sender));
-        assert!(cr.is_ok());
-        failed_tests = receiver
-            .into_iter()
-            .filter(|m| matches!(m, StatusMessage::Failed { .. }))
-            .collect_vec();
-        if !failed_tests.is_empty() {
-            if let Some(StatusMessage::Failed(e)) = failed_tests.pop() {
-                return Err(Box::new(e));
-            }
+
+        let (sender, _receiver) = mpsc::channel();
+        if let Err(e) = check.manipulate_corpus(&mut g, dummy_path, Some(sender)) {
+            return Err(e);
         }
+
         Ok(())
     }
 

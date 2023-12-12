@@ -21,9 +21,7 @@ use pest_derive::Parser;
 use serde_derive::Deserialize;
 
 use crate::{
-    error::AnnattoError,
-    util::graphupdate::import_corpus_graph_from_files,
-    workflow::{StatusMessage, StatusSender},
+    error::AnnattoError, util::graphupdate::import_corpus_graph_from_files, workflow::StatusSender,
     Module, StepID,
 };
 
@@ -53,17 +51,7 @@ impl Importer for ImportCoNLLU {
         let paths_and_node_names =
             import_corpus_graph_from_files(&mut update, input_path, &["conll", "conllu"])?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
-            if let Err(e) = self.import_document(&mut update, pathbuf.as_path(), doc_node_name, &tx)
-            {
-                if let Some(ref sender) = tx {
-                    let reason = e.to_string();
-                    sender.send(StatusMessage::Failed(AnnattoError::Import {
-                        reason,
-                        importer: self.module_name().to_string(),
-                        path: input_path.to_path_buf(),
-                    }))?;
-                }
-            }
+            self.import_document(&mut update, pathbuf.as_path(), doc_node_name, &tx)?;
         }
         Ok(update)
     }
@@ -123,14 +111,14 @@ impl ImportCoNLLU {
                     }
                 }
             }
-        } else if let Some(sender) = tx {
+        } else {
             let msg = format!("Could not parse file as conllu: {document_node_name}");
             let err = AnnattoError::Import {
                 reason: msg,
                 importer: self.module_name().to_string(),
                 path: PathBuf::from(document_node_name),
             };
-            sender.send(crate::workflow::StatusMessage::Failed(err))?;
+            return Err(err.into());
         }
         for (source, target) in token_names.iter().tuple_windows() {
             update.add_event(UpdateEvent::AddEdge {
@@ -150,7 +138,7 @@ impl ImportCoNLLU {
         document_node_name: &str,
         sentence: Pair<Rule>,
         tx: &Option<StatusSender>,
-    ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    ) -> anyhow::Result<Vec<String>> {
         let mut id_to_tok_name = BTreeMap::new();
         let mut dependencies = Vec::new();
         let mut s_annos = Vec::new();
@@ -240,7 +228,7 @@ impl ImportCoNLLU {
                                 anno_value: deprel_value.to_string(),
                             })?;
                         }
-                    } else if let Some(sender) = tx {
+                    } else {
                         let msg =
                             format!("Failed to build dependency tree: Unknown head id `{head_id}` ({l}, {c})");
                         let err = AnnattoError::Import {
@@ -248,7 +236,7 @@ impl ImportCoNLLU {
                             importer: self.module_name().to_string(),
                             path: Path::new(document_node_name).to_path_buf(),
                         };
-                        sender.send(StatusMessage::Failed(err))?;
+                        return Err(err.into());
                     }
                 }
             }
@@ -262,7 +250,7 @@ impl ImportCoNLLU {
         document_node_name: &str,
         token: Pair<Rule>,
         _tx: &Option<StatusSender>,
-    ) -> Result<(String, usize, Option<DepSpec>), Box<dyn std::error::Error>> {
+    ) -> anyhow::Result<(String, usize, Option<DepSpec>)> {
         let (l, c) = token.line_col();
         let line = token.as_str().to_string();
         let node_name = format!("{document_node_name}#t{l}_{c}");
@@ -350,11 +338,13 @@ impl ImportCoNLLU {
         } else {
             // by grammar spec this branch should never be possible
             let reason = format!("Token `{line}` ({l}, {c}) has no id which is invalid.");
-            Err(Box::new(AnnattoError::Import {
+
+            Err(AnnattoError::Import {
                 reason,
                 importer: self.module_name().to_string(),
                 path: document_node_name.into(),
-            }))
+            }
+            .into())
         }
     }
 }
