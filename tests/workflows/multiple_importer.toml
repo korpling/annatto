@@ -1,0 +1,36 @@
+[[import]]
+path = "../data/import/graphml/single_sentence.graphml"
+format = "graphml"
+
+[import.config]
+
+[[import]]
+path = "../data/import/ptb/brackets_in_value/"
+format = "ptb"
+
+[import.config]
+
+
+[[graph_op]]
+action = "check"
+
+[graph_op.config]
+
+report = "list"
+policy = "fail"
+
+[[graph_op.config.tests]]
+query = "annis:doc"
+expected = 2
+description = "2 documents should be imported"
+
+[[graph_op.config.tests]]
+query = "annis:node_name=/single_sentence/ _ident_ annis:node_type=/corpus/"
+expected = 1
+description = "Root corpus 'single_sentence' must exist"
+
+[[graph_op.config.tests]]
+query = "annis:node_name=/brackets_in_value/ _ident_ annis:node_type=/corpus/"
+expected = 1
+description = "Root corpus 'brackets_in_value' must exist"
+

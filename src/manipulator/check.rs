@@ -71,7 +71,7 @@ impl Manipulator for Check {
                     failed_checks.join("\n")
                 )),
                 FailurePolicy::Fail => {
-                    StatusMessage::Failed(AnnattoError::ChecksFailed { failed_checks })
+                    return Err(AnnattoError::ChecksFailed { failed_checks }.into());
                 }
             };
             if let Some(ref sender) = tx {
@@ -337,6 +337,7 @@ mod tests {
         AnnotationGraph,
     };
     use graphannis_core::graph::ANNIS_NS;
+    use insta::assert_display_snapshot;
     use toml;
 
     use crate::{
@@ -410,8 +411,9 @@ mod tests {
         let serialized_data = fs::read_to_string(toml_path)?;
         let check: Check = toml::from_str(serialized_data.as_str())?;
         let mut g = input_graph(on_disk)?;
-        let (sender, receiver) = mpsc::channel();
-        check.manipulate_corpus(&mut g, temp_dir().as_path(), Some(sender))?;
+        let (sender, _receiver) = mpsc::channel();
+        let result = check.manipulate_corpus(&mut g, temp_dir().as_path(), Some(sender));
+        assert!(result.is_err());
         assert!(check.report.is_some());
         if with_nodes {
             assert!(matches!(
@@ -421,13 +423,7 @@ mod tests {
         } else {
             assert!(matches!(check.report.as_ref().unwrap(), ReportLevel::List));
         }
-        assert!(
-            receiver
-                .iter()
-                .map(|m| matches!(m, StatusMessage::Failed(_)))
-                .count()
-                > 0
-        ); // there should be a report of a failure
+
         let r = check.run_tests(&mut g)?;
         assert!(
             r.iter()
@@ -540,17 +536,11 @@ mod tests {
             let processor_opt: Result<Check, _> = toml::from_str(s.as_str());
             assert!(processor_opt.is_ok());
             let check = processor_opt.unwrap();
-            let (sender, receiver) = mpsc::channel();
+            let (sender, _receiver) = mpsc::channel();
             let dummy_value = temp_dir();
             let run = check.manipulate_corpus(&mut g, dummy_value.as_path(), Some(sender));
-            assert!(run.is_ok());
-            assert_eq!(
-                receiver
-                    .into_iter()
-                    .filter(|msg| matches!(msg, StatusMessage::Failed { .. }))
-                    .count(),
-                1
-            );
+            assert!(run.is_err());
+            assert_display_snapshot!(run.err().unwrap());
         }
     }
 

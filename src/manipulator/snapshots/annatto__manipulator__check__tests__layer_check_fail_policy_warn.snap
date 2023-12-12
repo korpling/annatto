@@ -1,0 +1,9 @@
+---
+source: src/manipulator/check.rs
+expression: run.err().unwrap()
+---
+Checks failed:
+Check layer `cat` for invalid values.
+Check layer `pos` for invalid values.
+Check layer `deprel` for invalid values.
+Check layer `func` for invalid values.

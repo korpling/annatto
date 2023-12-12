@@ -1,0 +1,10 @@
+---
+source: src/importer/conllu/tests.rs
+expression: job.err().unwrap()
+---
+ --> 1:1
+  |
+1 | a	_
+  | ^---
+  |
+  = expected sentence
