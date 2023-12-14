@@ -120,19 +120,31 @@ mod tests {
     }
 
     fn test_metadata(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
-        let mut e_g = target_graph(on_disk)?;
+        let mut e_g = target_graph(on_disk).map_err(|_| assert!(false)).unwrap();
         let add_metadata = AnnotateCorpus::default();
         // document-level metadata
         let doc_metadata = ["language=unknown", "date=yesterday"];
         let metadata_file_path = temp_dir().join("metadata").join("corpus").join("doc.meta");
-        std::fs::create_dir_all(metadata_file_path.parent().unwrap())?;
-        let mut metadata_file = std::fs::File::create(metadata_file_path)?;
-        metadata_file.write(doc_metadata.join("\n").as_bytes())?;
+        std::fs::create_dir_all(metadata_file_path.parent().unwrap())
+            .map_err(|_| assert!(false))
+            .unwrap();
+        let mut metadata_file = std::fs::File::create(metadata_file_path)
+            .map_err(|_| assert!(false))
+            .unwrap();
+        metadata_file
+            .write(doc_metadata.join("\n").as_bytes())
+            .map_err(|_| assert!(false))
+            .unwrap();
         // corpus-level metadata
         let corpus_metadata = ["version=1.0", "doi=is a secret"];
         let cmetadata_file_path = temp_dir().join("metadata").join("corpus.meta");
-        let mut cmetadata_file = std::fs::File::create(cmetadata_file_path)?;
-        cmetadata_file.write(corpus_metadata.join("\n").as_bytes())?;
+        let mut cmetadata_file = std::fs::File::create(cmetadata_file_path)
+            .map_err(|_| assert!(false))
+            .unwrap();
+        cmetadata_file
+            .write(corpus_metadata.join("\n").as_bytes())
+            .map_err(|_| assert!(false))
+            .unwrap();
         let r = add_metadata.import_corpus(
             temp_dir().join("metadata").as_path(),
             add_metadata.step_id(None),
@@ -145,8 +157,12 @@ mod tests {
             r.err().unwrap()
         );
         let mut u = r?;
-        external_updates(&mut u)?;
-        let mut g = AnnotationGraph::new(on_disk)?;
+        external_updates(&mut u)
+            .map_err(|_| assert!(false))
+            .unwrap();
+        let mut g = AnnotationGraph::new(on_disk)
+            .map_err(|_| assert!(false))
+            .unwrap();
         let apu = g.apply_update(&mut u, |_| {});
         assert!(
             apu.is_ok(),
@@ -162,12 +178,16 @@ mod tests {
             "annis:node_name=\"corpus/doc\" _ident_ language=/unknown/ _ident_ date=/yesterday/",
         ];
         let corpus_name = "current";
-        let tmp_dir_e = tempdir_in(temp_dir())?;
-        let tmp_dir_g = tempdir_in(temp_dir())?;
-        e_g.save_to(&tmp_dir_e.path().join(corpus_name))?;
-        g.save_to(&tmp_dir_g.path().join(corpus_name))?;
-        let cs_e = CorpusStorage::with_auto_cache_size(&tmp_dir_e.path(), true)?;
-        let cs_g = CorpusStorage::with_auto_cache_size(&tmp_dir_g.path(), true)?;
+        let tmp_dir_e = tempdir_in(temp_dir()).map_err(|_| assert!(false)).unwrap();
+        let tmp_dir_g = tempdir_in(temp_dir()).map_err(|_| assert!(false)).unwrap();
+        assert!(e_g.save_to(&tmp_dir_e.path().join(corpus_name)).is_ok());
+        assert!(g.save_to(&tmp_dir_g.path().join(corpus_name)).is_ok());
+        let cs_e = CorpusStorage::with_auto_cache_size(&tmp_dir_e.path(), true)
+            .map_err(|_| assert!(false))
+            .unwrap();
+        let cs_g = CorpusStorage::with_auto_cache_size(&tmp_dir_g.path(), true)
+            .map_err(|_| assert!(false))
+            .unwrap();
         for query_s in queries {
             let query = SearchQuery {
                 corpus_names: &[corpus_name],
@@ -175,8 +195,14 @@ mod tests {
                 query_language: QueryLanguage::AQL,
                 timeout: None,
             };
-            let matches_e = cs_e.find(query.clone(), 0, None, ResultOrder::Normal)?;
-            let matches_g = cs_g.find(query, 0, None, ResultOrder::Normal)?;
+            let matches_e = cs_e
+                .find(query.clone(), 0, None, ResultOrder::Normal)
+                .map_err(|_| assert!(false))
+                .unwrap();
+            let matches_g = cs_g
+                .find(query, 0, None, ResultOrder::Normal)
+                .map_err(|_| assert!(false))
+                .unwrap();
             assert!(matches_e.len() > 0, "No matches for query: {}", query_s);
             assert_eq!(
                 matches_e.len(),
