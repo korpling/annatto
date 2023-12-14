@@ -159,7 +159,7 @@ mod tests {
             "version",
             "doi",
             "annis:node_name=/corpus/ _ident_ version=/1.0/ _ident_ doi=/is a secret/",
-            "annis:node_name=\"corpus/doc\" _ident_ language=/unknown/ _ident_ date=/yesterday/"
+            "annis:node_name=\"corpus/doc\" _ident_ language=/unknown/ _ident_ date=/yesterday/",
         ];
         let corpus_name = "current";
         let tmp_dir_e = tempdir_in(temp_dir())?;
