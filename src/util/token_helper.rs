@@ -7,7 +7,6 @@ use graphannis_core::{
 };
 
 use lazy_static::lazy_static;
-use std::collections::HashSet;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -37,16 +36,6 @@ lazy_static! {
         ns: ANNIS_NS.into(),
         name: "tok".into(),
     });
-}
-
-pub fn necessary_components(db: &AnnotationGraph) -> HashSet<Component<AnnotationComponentType>> {
-    let mut result = HashSet::default();
-    result.insert(COMPONENT_LEFT.clone());
-    result.insert(COMPONENT_RIGHT.clone());
-    // we need all coverage components
-    result.extend(db.get_all_components(Some(AnnotationComponentType::Coverage), None));
-
-    result
 }
 
 impl<'a> TokenHelper<'a> {
@@ -107,49 +96,5 @@ impl<'a> TokenHelper<'a> {
             }
         }
         Ok(false)
-    }
-
-    pub fn right_token_for(&self, n: NodeID) -> anyhow::Result<Option<NodeID>> {
-        if self.is_token(n)? {
-            Ok(Some(n))
-        } else {
-            let mut out = self.right_edges.get_outgoing_edges(n);
-            match out.next() {
-                Some(out) => Ok(Some(out?)),
-                None => Ok(None),
-            }
-        }
-    }
-
-    pub fn left_token_for(&self, n: NodeID) -> anyhow::Result<Option<NodeID>> {
-        if self.is_token(n)? {
-            Ok(Some(n))
-        } else {
-            let mut out = self.left_edges.get_outgoing_edges(n);
-            match out.next() {
-                Some(out) => Ok(Some(out?)),
-                None => Ok(None),
-            }
-        }
-    }
-
-    pub fn left_right_token_for(
-        &self,
-        n: NodeID,
-    ) -> anyhow::Result<(Option<NodeID>, Option<NodeID>)> {
-        if self.is_token(n)? {
-            Ok((Some(n), Some(n)))
-        } else {
-            let out_left = match self.left_edges.get_outgoing_edges(n).next() {
-                Some(out) => Some(out?),
-                None => None,
-            };
-            let out_right = match self.right_edges.get_outgoing_edges(n).next() {
-                Some(out) => Some(out?),
-                None => None,
-            };
-
-            Ok((out_left, out_right))
-        }
     }
 }

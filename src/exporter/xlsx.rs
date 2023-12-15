@@ -6,6 +6,7 @@ use graphannis_core::{
     graph::ANNIS_NS,
     types::{Component, NodeID},
 };
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::Deserialize;
 use umya_spreadsheet::Worksheet;
 
@@ -138,7 +139,7 @@ impl XlsxExporter {
         let ordering_gs = g.get_graphstorage_as_ref(&ordering_component);
 
         // Output all token in the first column
-        let roots = find_token_roots(g, &token_helper, ordering_gs)?;
+        let roots = find_token_roots(g, token_helper, ordering_gs)?;
         let mut row_index = 1;
         let mut token = roots.iter().next().copied();
         let mut has_only_empty_token = true;
@@ -206,10 +207,15 @@ impl Exporter for XlsxExporter {
 
         std::fs::create_dir_all(output_path)?;
 
-        for doc in document_names {
-            self.export_document(&doc, graph, output_path)?;
-            reporter.worked(1)?;
-        }
+        let results: anyhow::Result<Vec<_>> = document_names
+            .par_iter()
+            .map(|doc| {
+                self.export_document(&doc, graph, output_path)?;
+                reporter.worked(1)?;
+                Ok(())
+            })
+            .collect();
+        results?;
         Ok(())
     }
 }
