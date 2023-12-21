@@ -3,9 +3,11 @@ use crate::{
     importer::Importer,
 };
 use graphannis::{
+    model::AnnotationComponent,
     update::{GraphUpdate, UpdateEvent},
     AnnotationGraph,
 };
+use graphannis_core::types::{Edge, NodeID};
 use std::{
     fs::File,
     io::{BufWriter, Write},
@@ -76,4 +78,31 @@ where
     let actual = String::from_utf8(bytes)?;
 
     Ok(actual)
+}
+
+pub trait Traverse<N, E> {
+    /// A node has been reached traversing the given component.
+    fn node(
+        &self,
+        graph: &AnnotationGraph,
+        node: NodeID,
+        component: &AnnotationComponent,
+        buffer: &mut N,
+    ) -> Result<()>;
+
+    /// An edge is being processed while traversing the graph in the given component.
+    fn edge(
+        &self,
+        graph: &AnnotationGraph,
+        edge: Edge,
+        component: &AnnotationComponent,
+        buffer: &mut E,
+    ) -> Result<()>;
+
+    fn traverse(
+        &self,
+        graph: &AnnotationGraph,
+        node_buffer: &mut N,
+        edge_buffer: &mut E,
+    ) -> Result<()>;
 }

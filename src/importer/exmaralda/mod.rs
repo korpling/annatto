@@ -190,6 +190,13 @@ impl ImportEXMARaLDA {
                                         (*time_value, node_name.to_string()),
                                     );
                                 }
+                                update.add_event(UpdateEvent::AddEdge {
+                                    source_node: node_name.to_string(),
+                                    target_node: doc_node_name.to_string(),
+                                    layer: ANNIS_NS.to_string(),
+                                    component_type: AnnotationComponentType::PartOf.to_string(),
+                                    component_name: "".to_string(),
+                                })?;
                             }
                             // order timeline elements / empty toks
                             ordered_tl_nodes.extend(
