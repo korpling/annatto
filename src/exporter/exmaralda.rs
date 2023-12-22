@@ -50,7 +50,8 @@ impl Exporter for ExportExmaralda {
         let mut node_buffer = NodeData::default();
         let mut edge_buffer = EdgeData::default();
         self.traverse(graph, &mut node_buffer, &mut edge_buffer)?;
-        let (start_data, end_data, timeline_data, anno_data, ordering_data) = node_buffer;
+        let (start_data, end_data, timeline_data, anno_data) = node_buffer;
+        let ordering_data = edge_buffer;
         let doc_nodes = start_data.iter().map(|((d, _), _)| d).collect_vec();
         let node_annos = graph.get_node_annos();
         for doc_node_id in doc_nodes {
@@ -79,30 +80,52 @@ impl Exporter for ExportExmaralda {
             writer.write_event(Event::End(BytesEnd::new("transcription-convention")))?;
             writer.write_event(Event::End(BytesEnd::new("meta-information")))?;
             writer.write_event(Event::Start(BytesStart::new("speakertable")))?;
-            for speaker_name_and_id in anno_data.keys().map(|(_, (ns, _))| ns) {
-                if speaker_name_and_id == ANNIS_NS {
+            for speaker_name in anno_data
+                .keys()
+                .filter(|(d, (_, _))| d == doc_node_id)
+                .map(|(_, (ns, _))| ns)
+                .collect::<BTreeSet<&String>>()
+            {
+                if speaker_name == ANNIS_NS {
                     continue;
                 }
                 let mut speaker = BytesStart::new("speaker");
-                speaker.push_attribute(("id", speaker_name_and_id.as_str()));
+                speaker.push_attribute(("id", speaker_name.as_str()));
                 writer.write_event(Event::Start(speaker))?;
                 writer.write_event(Event::Start(BytesStart::new("abbreviation")))?;
-                writer.write_event(Event::Text(BytesText::new(&speaker_name_and_id)))?;
+                writer.write_event(Event::Text(BytesText::new(&speaker_name)))?;
                 writer.write_event(Event::End(BytesEnd::new("abbreviation")))?;
                 let mut sex = BytesStart::new("sex");
-                sex.push_attribute(("value", "u"));
+                let sex_val = if let Some(v) = node_annos.get_value_for_item(
+                    doc_node_id,
+                    &AnnoKey {
+                        name: "sex".into(),
+                        ns: speaker_name.into(),
+                    },
+                )? {
+                    v.to_string()
+                } else {
+                    "u".to_string()
+                };
+                sex.push_attribute(("value", sex_val.as_str()));
                 writer.write_event(Event::Start(sex))?;
                 writer.write_event(Event::End(BytesEnd::new("sex")))?;
-                writer.write_event(Event::Start(BytesStart::new("languages-used")))?;
-                writer.write_event(Event::End(BytesEnd::new("languages-used")))?;
-                writer.write_event(Event::Start(BytesStart::new("l1")))?;
-                writer.write_event(Event::End(BytesEnd::new("l1")))?;
-                writer.write_event(Event::Start(BytesStart::new("l2")))?;
-                writer.write_event(Event::End(BytesEnd::new("l2")))?;
+                for meta_key in ["languages-used", "l1", "l2", "comment"] {
+                    // TODO `languages-used` is not mapped correctly, it requires children of type "language"
+                    writer.write_event(Event::Start(BytesStart::new(meta_key)))?;
+                    if let Some(v) = node_annos.get_value_for_item(
+                        doc_node_id,
+                        &AnnoKey {
+                            name: meta_key.into(),
+                            ns: speaker_name.into(),
+                        },
+                    )? {
+                        writer.write_event(Event::Text(BytesText::new(&v)))?;
+                    }
+                    writer.write_event(Event::End(BytesEnd::new(meta_key)))?;
+                }
                 writer.write_event(Event::Start(BytesStart::new("ud-speaker-information")))?;
                 writer.write_event(Event::End(BytesEnd::new("ud-speaker-information")))?;
-                writer.write_event(Event::Start(BytesStart::new("comment")))?;
-                writer.write_event(Event::End(BytesEnd::new("comment")))?;
                 writer.write_event(Event::End(BytesEnd::new("speaker")))?;
             }
             writer.write_event(Event::End(BytesEnd::new("speakertable")))?;
@@ -176,12 +199,12 @@ impl Exporter for ExportExmaralda {
     }
 }
 
-type NodeData = (TimeData, TimeData, TimelineData, AnnoData, OrderingData);
+type NodeData = (TimeData, TimeData, TimelineData, AnnoData);
 type TimeData = BTreeMap<(u64, u64), String>;
 type AnnoData = BTreeMap<(u64, (String, String)), Vec<(u64, String)>>;
 type OrderingData = BTreeSet<u64>; // node ids in this set are member of an ordering (relevant to determine tier type)
 type TimelineData = BTreeMap<(u64, String), OrderedFloat<f32>>;
-type EdgeData = ();
+type EdgeData = OrderingData;
 
 impl Traverse<NodeData, EdgeData> for ExportExmaralda {
     fn node(
@@ -210,7 +233,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
         &self,
         graph: &AnnotationGraph,
         node_buffer: &mut NodeData,
-        _edge_buffer: &mut EdgeData,
+        edge_buffer: &mut EdgeData,
     ) -> crate::error::Result<()> {
         let base_ordering_c = AnnotationComponent::new(
             AnnotationComponentType::Ordering,
@@ -241,7 +264,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
             };
             // note: the following produces multiple entries for the same document node
             // in case this exporter gets a graph that cannot be represented in EXMARaLDA
-            // (e. g., multiple ordering roots in one document)
+            // (e. g., multiple ordering roots in one document for the same named ordering)
             let document_with_ordering_root = base_ordering_root_nodes
                 .iter()
                 .filter_map(|n| {
@@ -268,14 +291,22 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                 .iter()
                 .filter_map(|c| graph.get_graphstorage(c))
                 .collect_vec();
-            let (start_at_tli, end_at_tli, tli2time, anno_data, ordering_data) = node_buffer;
+            let (start_at_tli, end_at_tli, tli2time, anno_data) = node_buffer;
+            let ordering_data = edge_buffer;
             let mut processed_nodes = BTreeSet::default();
+            let time_key = AnnoKey {
+                ns: ANNIS_NS.into(),
+                name: "time".into(),
+            };
             for (doc_node, ordering_root) in document_with_ordering_root {
                 let order_dfs =
                     CycleSafeDFS::new(storage.as_edgecontainer(), ordering_root, 0, usize::MAX);
+                let mut time_values = BTreeSet::new();
+                let mut max_dist = 0;
                 for s in order_dfs {
                     let step = s?;
                     let timeline_token = step.node;
+                    max_dist += 1;
                     let naive_time_value = OrderedFloat(step.distance as f32);
                     let tli_id = format!("T{}", step.distance);
                     tli2time.insert((doc_node, tli_id.to_string()), naive_time_value);
@@ -284,7 +315,6 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                     let mut covering_nodes = BTreeSet::default();
                     reachable_nodes(
                         timeline_token,
-                        graph,
                         &vertical_storages,
                         &mut covering_nodes,
                         &mut cache,
@@ -311,6 +341,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                                 })?
                                 .into_iter()
                                 .for_each(|a| {
+                                    // collect annotations
                                     let anno_k =
                                         (doc_node, (a.key.ns.to_string(), a.key.name.to_string()));
                                     if !anno_data.contains_key(&anno_k) {
@@ -322,8 +353,30 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                                             .push((*n, a.val.to_string()));
                                     }
                                 });
+                            // check for interval annotations
+                            if let Ok(Some(interval)) =
+                                graph.get_node_annos().get_value_for_item(n, &time_key)
+                            {
+                                if let Some(tpl) = interval.split_once("-") {
+                                    for time_string in [tpl.0, tpl.1] {
+                                        let time = time_string
+                                            .parse::<OrderedFloat<f32>>()
+                                            .map_err(|_| AnnattoError::Export {
+                                                reason: format!("Failed to parse time value {time_string} of interval {interval}"),
+                                                exporter: self.module_name().to_string(),
+                                                path: Path::new("./").to_path_buf(),
+                                            })?;
+                                        time_values.insert(time);
+                                    }
+                                }
+                            }
                             processed_nodes.insert(*n);
                         }
+                    }
+                }
+                if time_values.len() > 0 {
+                    for (i, t) in (0..max_dist + 2).zip(time_values.into_iter().sorted()) {
+                        tli2time.insert((doc_node, format!("T{i}")), t);
                     }
                 }
             }
@@ -338,7 +391,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                     storages.push(storage);
                 }
             }
-            // this might be a rather expensive approach
+            // (this might be a rather expensive approach to) mark nodes as members of an ordering
             let node_range: Range<u64> = 0..graph.get_node_annos().get_largest_item()?.unwrap();
             let node_annos = graph.get_node_annos();
             for node_id in node_range.filter(|n| {
@@ -351,7 +404,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
             }) {
                 for storage in &storages {
                     if storage.has_outgoing_edges(node_id)?
-                        || storage.get_ingoing_edges(node_id).count() > 0
+                        || storage.get_ingoing_edges(node_id).next().is_some()
                     {
                         ordering_data.insert(node_id);
                         break;
@@ -373,7 +426,6 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
 /// but can operate on multiple graph storages.
 fn reachable_nodes(
     from_node: u64,
-    graph: &AnnotationGraph,
     storages: &Vec<Arc<dyn GraphStorage>>,
     retrieved: &mut BTreeSet<u64>,
     cache: &mut BTreeMap<u64, BTreeSet<u64>>,
@@ -388,7 +440,7 @@ fn reachable_nodes(
         for storage in storages {
             for in_going in storage.get_ingoing_edges(from_node) {
                 let node = in_going?;
-                reachable_nodes(node, graph, storages, retrieved, cache)?;
+                reachable_nodes(node, storages, retrieved, cache)?;
             }
         }
     }

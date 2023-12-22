@@ -155,17 +155,31 @@ impl ImportEXMARaLDA {
                                 return Err(err);
                             }
                         }
-                        "event" | "abbreviation" => char_buf.clear(),
+                        "event" | "abbreviation" | "languages-used" | "l1" | "l2" | "comment" => {
+                            char_buf.clear()
+                        }
                         _ => {}
                     }
                 }
                 Ok(XmlEvent::EndElement { name }) => {
-                    match name.to_string().as_str() {
-                        "abbreviation" => {
-                            // write speaker name to speaker table
-                            let speaker_id = parent_map.get("speaker").unwrap()["id"].to_string();
-                            let speaker_name = char_buf.to_string();
-                            speaker_map.insert(speaker_id, speaker_name);
+                    let str_tag_name = name.to_string();
+                    match str_tag_name.as_str() {
+                        "abbreviation" | "languages-used" | "l1" | "l2" | "comment" => {
+                            if let Some(parent) = parent_map.get("speaker") {
+                                let speaker_id = parent["id"].to_string();
+                                if str_tag_name.as_str() == "abbreviation" {
+                                    // write speaker name to speaker table
+                                    let speaker_name = char_buf.to_string();
+                                    speaker_map.insert(speaker_id.to_string(), speaker_name);
+                                }
+                                update.add_event(UpdateEvent::AddNodeLabel {
+                                    // speaker table data as document meta annotation
+                                    node_name: doc_node_name.to_string(),
+                                    anno_ns: speaker_id.to_string(),
+                                    anno_name: str_tag_name,
+                                    anno_value: char_buf.to_string(),
+                                })?;
+                            }
                         }
                         "common-timeline" => {
                             // build empty toks
@@ -382,8 +396,21 @@ impl ImportEXMARaLDA {
                                         component_name: "".to_string(),
                                     })?;
                                 }
-                                let (end_time, _) =
-                                    timeline.get(overlapped.last().unwrap()).unwrap();
+                                let (end_time, _) = if let Some(t_name) =
+                                    ordered_tl_nodes.get(end_i)
+                                {
+                                    // timeline and ordered tl nodes are directly dependent on each other, so we can safely unwrap
+                                    timeline.get(t_name).unwrap()
+                                } else {
+                                    if let Some(sender) = tx {
+                                        let msg = format!(
+                                                "Could not determine end time of event {}::{}:{}-{}. Event will be skipped.",
+                                                &speaker_id, &anno_name, &start_id, &end_id
+                                            );
+                                        sender.send(StatusMessage::Warning(msg))?;
+                                    }
+                                    continue;
+                                };
                                 update.add_event(UpdateEvent::AddNodeLabel {
                                     node_name: node_name.to_string(),
                                     anno_ns: ANNIS_NS.to_string(),
