@@ -2,6 +2,7 @@
 //! (`.exb`) files.
 use std::{
     collections::{BTreeMap, BTreeSet},
+    env,
     fs::File,
 };
 
@@ -50,14 +51,7 @@ impl Importer for ImportEXMARaLDA {
         let document_status: Result<Vec<()>, AnnattoError> = all_files
             .into_iter()
             .map(|(fp, doc_node_name)| {
-                self.import_document(
-                    &doc_node_name,
-                    fp.as_path(),
-                    input_path,
-                    &mut update,
-                    &progress,
-                    &tx,
-                )
+                self.import_document(&doc_node_name, fp.as_path(), &mut update, &progress, &tx)
             })
             .collect();
         // Check for any errors
@@ -73,12 +67,13 @@ fn attr_vec_to_map(attributes: &[OwnedAttribute]) -> BTreeMap<String, String> {
         .collect::<BTreeMap<String, String>>()
 }
 
+pub const LANGUAGE_SEP: &str = ",";
+
 impl ImportEXMARaLDA {
     fn import_document(
         &self,
         doc_node_name: &str,
         document_path: &std::path::Path,
-        corpus_path: &std::path::Path,
         update: &mut GraphUpdate,
         progress: &ProgressReporter,
         tx: &Option<crate::workflow::StatusSender>,
@@ -108,16 +103,18 @@ impl ImportEXMARaLDA {
                     name, attributes, ..
                 }) => {
                     parent_map.insert(name.to_string(), attr_vec_to_map(&attributes));
+                    let attr_map = parent_map.get(&name.to_string()).unwrap();
                     match name.to_string().as_str() {
                         "referenced-file" => {
                             if let Some(file_url) = attr_vec_to_map(&attributes).get("url") {
                                 if let Some(parent_path) = document_path.parent() {
                                     let audio_path = parent_path.join(file_url);
                                     if audio_path.exists() {
+                                        let rel_path = audio_path.strip_prefix(env::current_dir()?).map_err(|_| AnnattoError::Import { reason: format!("Could not obtain relative path of linked file {:?}", audio_path), importer: self.module_name().to_string(), path: document_path.to_path_buf() })?;
                                         map_audio_source(
                                             update,
-                                            audio_path.as_path(),
-                                            corpus_path.to_str().unwrap(),
+                                            rel_path,
+                                            doc_node_name.rsplit_once("/").unwrap().0,
                                             doc_node_name,
                                         )?;
                                     } else {
@@ -128,7 +125,6 @@ impl ImportEXMARaLDA {
                             }
                         }
                         "tli" => {
-                            let attr_map = attr_vec_to_map(&attributes);
                             if let Some(time_value) = attr_map.get("time") {
                                 let time =
                                     if let Ok(t_val) = time_value.parse::<OrderedFloat<f64>>() {
@@ -155,16 +151,23 @@ impl ImportEXMARaLDA {
                                 return Err(err);
                             }
                         }
-                        "event" | "abbreviation" | "languages-used" | "l1" | "l2" | "comment" => {
-                            char_buf.clear()
+                        "language" => {
+                            if !char_buf.is_empty() {
+                                char_buf.push_str(LANGUAGE_SEP);
+                            }
+                            if let Some(lang_value) = attr_map.get("lang") {
+                                char_buf.push_str(lang_value);
+                            }
                         }
+                        "event" | "abbreviation" | "l1" | "l2" | "comment" | "languages-used"
+                        | "ud-information" => char_buf.clear(),
                         _ => {}
                     }
                 }
                 Ok(XmlEvent::EndElement { name }) => {
                     let str_tag_name = name.to_string();
                     match str_tag_name.as_str() {
-                        "abbreviation" | "languages-used" | "l1" | "l2" | "comment" => {
+                        "abbreviation" | "l1" | "l2" | "comment" | "languages-used" => {
                             if let Some(parent) = parent_map.get("speaker") {
                                 let speaker_id = parent["id"].to_string();
                                 if str_tag_name.as_str() == "abbreviation" {
@@ -448,6 +451,29 @@ impl ImportEXMARaLDA {
                                 anno_name: anno_name.to_string(),
                                 anno_value: text.to_string(),
                             })?;
+                        }
+                        "ud-information" => {
+                            if let Some(anno_name) = parent_map
+                                .get("ud-information")
+                                .unwrap()
+                                .get("attribute-name")
+                            {
+                                let ns = if let Some(parent) = parent_map.get("speaker") {
+                                    if let Some(speaker_id) = parent.get("id") {
+                                        speaker_id.as_str()
+                                    } else {
+                                        ""
+                                    }
+                                } else {
+                                    ""
+                                };
+                                update.add_event(UpdateEvent::AddNodeLabel {
+                                    node_name: doc_node_name.to_string(),
+                                    anno_ns: ns.to_string(),
+                                    anno_name: anno_name.to_string(),
+                                    anno_value: char_buf.to_string(),
+                                })?;
+                            }
                         }
                         _ => {}
                     }

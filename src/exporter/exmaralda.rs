@@ -1,13 +1,13 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
-    fs,
+    env, fs,
     io::{BufWriter, Write},
     ops::Range,
-    path::Path,
+    path::{Path, PathBuf},
     sync::Arc,
 };
 
-use crate::{error::AnnattoError, util::Traverse, Module};
+use crate::{error::AnnattoError, importer::exmaralda::LANGUAGE_SEP, util::Traverse, Module};
 use graphannis::{
     graph::GraphStorage,
     model::{AnnotationComponent, AnnotationComponentType},
@@ -29,7 +29,10 @@ use serde_derive::Deserialize;
 use super::Exporter;
 
 #[derive(Default, Deserialize)]
-pub struct ExportExmaralda {}
+pub struct ExportExmaralda {
+    #[serde(default)]
+    copy_media: bool,
+}
 
 const MODULE_NAME: &str = "export_exmaralda";
 
@@ -38,6 +41,17 @@ impl Module for ExportExmaralda {
         MODULE_NAME
     }
 }
+
+const MEDIA_DIR_NAME: &str = "media";
+const SPEAKER_ANNO_NAMES: [&str; 7] = [
+    "abbreviation",
+    "sex",
+    "id",
+    "languages-used",
+    "l1",
+    "l2",
+    "comment",
+];
 
 impl Exporter for ExportExmaralda {
     fn export_corpus(
@@ -51,14 +65,24 @@ impl Exporter for ExportExmaralda {
         let mut edge_buffer = EdgeData::default();
         self.traverse(graph, &mut node_buffer, &mut edge_buffer)?;
         let (start_data, end_data, timeline_data, anno_data) = node_buffer;
-        let ordering_data = edge_buffer;
+        let (ordering_data, media_data) = edge_buffer;
         let doc_nodes = start_data.iter().map(|((d, _), _)| d).collect_vec();
         let node_annos = graph.get_node_annos();
+        let media_dir = if !media_data.is_empty() & self.copy_media {
+            let d = output_path.join(MEDIA_DIR_NAME);
+            fs::create_dir_all(d.clone())?;
+            Some(d)
+        } else {
+            None
+        };
         for doc_node_id in doc_nodes {
             let doc_name = node_annos
                 .get_value_for_item(doc_node_id, &NODE_NAME_KEY)?
                 .unwrap();
-            let doc_path = output_path.join(format!("{}.exb", doc_name.to_string()));
+            let doc_path = output_path.join(format!(
+                "{}.exb",
+                doc_name.split("/").last().unwrap().to_string()
+            ));
             fs::create_dir_all(doc_path.as_path().parent().unwrap())?;
             let file = fs::File::create(doc_path.as_path())?;
             let mut writer = Writer::new_with_indent(BufWriter::new(file), b' ', 2);
@@ -68,10 +92,42 @@ impl Exporter for ExportExmaralda {
             writer.write_event(Event::Start(BytesStart::new("meta-information")))?;
             writer.write_event(Event::Start(BytesStart::new("transcription-name")))?;
             writer.write_event(Event::End(BytesEnd::new("transcription-name")))?;
-            let mut ref_file = BytesStart::new("referenced-file");
-            ref_file.push_attribute(("url", ""));
-            writer.write_event(Event::Start(ref_file))?;
-            writer.write_event(Event::End(BytesEnd::new("referenced-file")))?;
+            if let Some(paths) = media_data.get(doc_node_id) {
+                for ref_path in paths {
+                    let mut ref_file = BytesStart::new("referenced-file");
+                    let url = if self.copy_media {
+                        let target = media_dir
+                            .as_ref()
+                            .unwrap()
+                            .join(ref_path.file_name().unwrap());
+                        fs::copy(ref_path, target)?;
+                        Path::new(MEDIA_DIR_NAME)
+                            .join(ref_path.file_name().unwrap())
+                            .to_string_lossy()
+                            .to_string()
+                    } else {
+                        // express path to original media file relative to newly created exmaralda file
+                        if let Some(relative_path) = pathdiff::diff_paths(
+                            env::current_dir()?.join(ref_path),
+                            output_path.to_path_buf(),
+                        ) {
+                            relative_path.to_string_lossy().to_string()
+                        } else {
+                            return Err(Box::new(AnnattoError::Export {
+                                reason: format!(
+                                    "Could not derive relative path to media file {:?}",
+                                    ref_path
+                                ),
+                                exporter: self.module_name().to_string(),
+                                path: doc_path.to_path_buf(),
+                            }));
+                        }
+                    };
+                    ref_file.push_attribute(("url", url.as_str()));
+                    writer.write_event(Event::Start(ref_file))?;
+                    writer.write_event(Event::End(BytesEnd::new("referenced-file")))?;
+                }
+            };
             writer.write_event(Event::Start(BytesStart::new("ud-meta-information")))?;
             writer.write_event(Event::End(BytesEnd::new("ud-meta-information")))?;
             writer.write_event(Event::Start(BytesStart::new("comment")))?;
@@ -80,6 +136,8 @@ impl Exporter for ExportExmaralda {
             writer.write_event(Event::End(BytesEnd::new("transcription-convention")))?;
             writer.write_event(Event::End(BytesEnd::new("meta-information")))?;
             writer.write_event(Event::Start(BytesStart::new("speakertable")))?;
+            // note: speaker id and speaker name are derived from namespaces,
+            // since this is most compatible what most imported graphs will look like
             for speaker_name in anno_data
                 .keys()
                 .filter(|(d, (_, _))| d == doc_node_id)
@@ -110,22 +168,68 @@ impl Exporter for ExportExmaralda {
                 sex.push_attribute(("value", sex_val.as_str()));
                 writer.write_event(Event::Start(sex))?;
                 writer.write_event(Event::End(BytesEnd::new("sex")))?;
-                for meta_key in ["languages-used", "l1", "l2", "comment"] {
-                    // TODO `languages-used` is not mapped correctly, it requires children of type "language"
-                    writer.write_event(Event::Start(BytesStart::new(meta_key)))?;
+                writer.write_event(Event::Start(BytesStart::new("languages-used")))?;
+                if let Some(v) = node_annos.get_value_for_item(
+                    doc_node_id,
+                    &AnnoKey {
+                        name: "languages-used".into(),
+                        ns: speaker_name.into(),
+                    },
+                )? {
+                    for entry in v.split(LANGUAGE_SEP) {
+                        let mut lang = BytesStart::new("language");
+                        lang.push_attribute(("lang", entry.trim()));
+                        writer.write_event(Event::Start(lang))?;
+                        writer.write_event(Event::End(BytesEnd::new("language")))?;
+                    }
+                }
+                writer.write_event(Event::End(BytesEnd::new("languages-used")))?;
+                for lang_key in ["l1", "l2"] {
+                    // TODO `languages-used` is not mapped correctly, it requires children of name "language"
+                    writer.write_event(Event::Start(BytesStart::new(lang_key)))?;
                     if let Some(v) = node_annos.get_value_for_item(
                         doc_node_id,
                         &AnnoKey {
-                            name: meta_key.into(),
+                            name: lang_key.into(),
                             ns: speaker_name.into(),
                         },
                     )? {
-                        writer.write_event(Event::Text(BytesText::new(&v)))?;
+                        let mut lang = BytesStart::new("language");
+                        lang.push_attribute(("lang", v.trim()));
+                        writer.write_event(Event::Start(lang))?;
+                        writer.write_event(Event::End(BytesEnd::new("language")))?;
                     }
-                    writer.write_event(Event::End(BytesEnd::new(meta_key)))?;
+                    writer.write_event(Event::End(BytesEnd::new(lang_key)))?;
                 }
                 writer.write_event(Event::Start(BytesStart::new("ud-speaker-information")))?;
+                for anno_key in node_annos.get_all_keys_for_item(&doc_node_id, None, None)? {
+                    if anno_key.ns.as_str() == ANNIS_NS
+                        || anno_key.ns.as_str() != speaker_name
+                        || SPEAKER_ANNO_NAMES.contains(&anno_key.name.as_str())
+                    {
+                        continue;
+                    }
+                    if let Some(v) = node_annos.get_value_for_item(doc_node_id, &anno_key)? {
+                        let mut user_defined_attr = BytesStart::new("ud-information");
+                        user_defined_attr
+                            .push_attribute(("attribute-name", anno_key.name.as_str()));
+                        writer.write_event(Event::Start(user_defined_attr))?;
+                        writer.write_event(Event::Text(BytesText::new(&*v)))?;
+                        writer.write_event(Event::End(BytesEnd::new("ud-information")))?;
+                    }
+                }
                 writer.write_event(Event::End(BytesEnd::new("ud-speaker-information")))?;
+                writer.write_event(Event::Start(BytesStart::new("comment")))?;
+                if let Some(v) = node_annos.get_value_for_item(
+                    doc_node_id,
+                    &AnnoKey {
+                        name: "comment".into(),
+                        ns: speaker_name.into(),
+                    },
+                )? {
+                    writer.write_event(Event::Text(BytesText::new(&v)))?;
+                }
+                writer.write_event(Event::End(BytesEnd::new("comment")))?;
                 writer.write_event(Event::End(BytesEnd::new("speaker")))?;
             }
             writer.write_event(Event::End(BytesEnd::new("speakertable")))?;
@@ -177,6 +281,10 @@ impl Exporter for ExportExmaralda {
                     tier.push_attribute(("category", anno_key.name.as_str()));
                     tier.push_attribute(("type", tier_type));
                     tier.push_attribute(("id", format!("TIER{i}").as_str()));
+                    tier.push_attribute((
+                        "display-name",
+                        format!("{}[{}]", anno_key.ns.as_str(), anno_key.name.as_str()).as_str(),
+                    ));
                     writer.write_event(Event::Start(tier))?;
                     for (node_id, anno_value) in sorted_entries {
                         let start = start_data.get(&(*doc_node_id, *node_id)).unwrap();
@@ -202,9 +310,10 @@ impl Exporter for ExportExmaralda {
 type NodeData = (TimeData, TimeData, TimelineData, AnnoData);
 type TimeData = BTreeMap<(u64, u64), String>;
 type AnnoData = BTreeMap<(u64, (String, String)), Vec<(u64, String)>>;
-type OrderingData = BTreeSet<u64>; // node ids in this set are member of an ordering (relevant to determine tier type)
 type TimelineData = BTreeMap<(u64, String), OrderedFloat<f32>>;
-type EdgeData = OrderingData;
+type OrderingData = BTreeSet<u64>; // node ids in this set are member of an ordering (relevant to determine tier type)
+type AudioData = BTreeMap<u64, Vec<PathBuf>>; // maps document nodes to linked files
+type EdgeData = (OrderingData, AudioData);
 
 impl Traverse<NodeData, EdgeData> for ExportExmaralda {
     fn node(
@@ -292,7 +401,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                 .filter_map(|c| graph.get_graphstorage(c))
                 .collect_vec();
             let (start_at_tli, end_at_tli, tli2time, anno_data) = node_buffer;
-            let ordering_data = edge_buffer;
+            let (ordering_data, audio_data) = edge_buffer;
             let mut processed_nodes = BTreeSet::default();
             let time_key = AnnoKey {
                 ns: ANNIS_NS.into(),
@@ -379,6 +488,29 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                         tli2time.insert((doc_node, format!("T{i}")), t);
                     }
                 }
+                // find potentially linked audio file
+                let mut media_vec = Vec::new();
+                for sn in part_of_storage.get_ingoing_edges(doc_node) {
+                    let source_node_id = sn?;
+                    if let Some(node_type_value) = graph
+                        .get_node_annos()
+                        .get_value_for_item(&source_node_id, &NODE_TYPE_KEY)?
+                    {
+                        if node_type_value == "file" {
+                            if let Some(path_value) = graph.get_node_annos().get_value_for_item(
+                                &source_node_id,
+                                &AnnoKey {
+                                    name: "file".into(),
+                                    ns: ANNIS_NS.into(),
+                                },
+                            )? {
+                                let path = Path::new(&*path_value);
+                                media_vec.push(path.to_path_buf());
+                            }
+                        }
+                    }
+                }
+                audio_data.insert(doc_node, media_vec);
             }
             // collecting ordering data
             let mut storages = Vec::new();

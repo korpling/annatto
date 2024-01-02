@@ -14,19 +14,28 @@
       <speaker id="dipl">
         <abbreviation>dipl</abbreviation>
         <sex value="u" />
-        <languages-used />
-        <l1>en</l1>
-        <l2>de</l2>
+        <languages-used>
+			<language lang="eng"/>			
+			<language lang="eng"/>
+        </languages-used>
+        <l1><language lang="eng"/></l1>
+        <l2><language lang="deu"/></l2>
         <ud-speaker-information />
         <comment>was late for elicitation</comment>
       </speaker>
       <speaker id="norm">
         <abbreviation>norm</abbreviation>
-        <sex value="u" />
-        <languages-used />
-        <l1>en</l1>
-        <l2>de</l2>
-        <ud-speaker-information />
+        <sex value="u" />        
+        <languages-used>
+			<language lang="eng"/>			
+			<language lang="eng"/>
+        </languages-used>
+        <l1><language lang="eng"/></l1>
+        <l2><language lang="deu"/></l2>
+        <ud-speaker-information>
+			<ud-information attribute-name="personal-anno-key-1">personal-anno-value-1</ud-information>
+			<ud-information attribute-name="personal-anno-key-2">personal-anno-value-2</ud-information>
+		</ud-speaker-information>
         <comment>was on time</comment>
       </speaker>
     </speakertable>
