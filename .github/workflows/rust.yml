@@ -28,6 +28,8 @@ jobs:
       - name: Check with clippy with all features enabled
         run: cargo clippy --all-features -- -D warnings
   unit-tests:
+    env:
+      RUST_BACKTRACE: 0
     name: Unit tests
     needs: static_code_analysis
     runs-on: ubuntu-latest

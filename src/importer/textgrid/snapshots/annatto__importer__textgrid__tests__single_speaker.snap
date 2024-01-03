@@ -221,71 +221,71 @@ expression: actual
             <data key="k4">node</data>
             <data key="k5">.</data>
         </node>
-        <edge id="e0" source="singleSpeaker/doc1#sSpan19" target="singleSpeaker/doc1#t6" label="Coverage/annis/">
+        <edge id="e0" source="singleSpeaker/doc1#sSpan1" target="singleSpeaker/doc1#t1" label="Coverage/annis/">
         </edge>
-        <edge id="e1" source="singleSpeaker/doc1#sSpan16" target="singleSpeaker/doc1#t3" label="Coverage/annis/">
+        <edge id="e1" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#t2" label="Coverage/annis/">
         </edge>
-        <edge id="e2" source="singleSpeaker/doc1#sSpan13" target="singleSpeaker/doc1#t11" label="Coverage/annis/">
+        <edge id="e2" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#t3" label="Coverage/annis/">
         </edge>
-        <edge id="e3" source="singleSpeaker/doc1#sSpan10" target="singleSpeaker/doc1#t8" label="Coverage/annis/">
+        <edge id="e3" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#t4" label="Coverage/annis/">
         </edge>
-        <edge id="e4" source="singleSpeaker/doc1#sSpan7" target="singleSpeaker/doc1#t5" label="Coverage/annis/">
+        <edge id="e4" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#t5" label="Coverage/annis/">
         </edge>
-        <edge id="e5" source="singleSpeaker/doc1#sSpan4" target="singleSpeaker/doc1#t2" label="Coverage/annis/">
+        <edge id="e5" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#t6" label="Coverage/annis/">
         </edge>
-        <edge id="e6" source="singleSpeaker/doc1#sSpan1" target="singleSpeaker/doc1#t1" label="Coverage/annis/">
+        <edge id="e6" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#t7" label="Coverage/annis/">
         </edge>
-        <edge id="e7" source="singleSpeaker/doc1#sSpan24" target="singleSpeaker/doc1#t11" label="Coverage/annis/">
+        <edge id="e7" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#t8" label="Coverage/annis/">
         </edge>
-        <edge id="e8" source="singleSpeaker/doc1#sSpan21" target="singleSpeaker/doc1#t8" label="Coverage/annis/">
+        <edge id="e8" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#t9" label="Coverage/annis/">
         </edge>
-        <edge id="e9" source="singleSpeaker/doc1#sSpan18" target="singleSpeaker/doc1#t5" label="Coverage/annis/">
+        <edge id="e9" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#t10" label="Coverage/annis/">
         </edge>
-        <edge id="e10" source="singleSpeaker/doc1#sSpan15" target="singleSpeaker/doc1#t2" label="Coverage/annis/">
+        <edge id="e10" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#t11" label="Coverage/annis/">
         </edge>
-        <edge id="e11" source="singleSpeaker/doc1#sSpan12" target="singleSpeaker/doc1#t10" label="Coverage/annis/">
+        <edge id="e11" source="singleSpeaker/doc1#sSpan3" target="singleSpeaker/doc1#t1" label="Coverage/annis/">
         </edge>
-        <edge id="e12" source="singleSpeaker/doc1#sSpan9" target="singleSpeaker/doc1#t7" label="Coverage/annis/">
+        <edge id="e12" source="singleSpeaker/doc1#sSpan4" target="singleSpeaker/doc1#t2" label="Coverage/annis/">
         </edge>
-        <edge id="e13" source="singleSpeaker/doc1#sSpan6" target="singleSpeaker/doc1#t4" label="Coverage/annis/">
+        <edge id="e13" source="singleSpeaker/doc1#sSpan5" target="singleSpeaker/doc1#t3" label="Coverage/annis/">
         </edge>
-        <edge id="e14" source="singleSpeaker/doc1#sSpan3" target="singleSpeaker/doc1#t1" label="Coverage/annis/">
+        <edge id="e14" source="singleSpeaker/doc1#sSpan6" target="singleSpeaker/doc1#t4" label="Coverage/annis/">
         </edge>
-        <edge id="e15" source="singleSpeaker/doc1#sSpan23" target="singleSpeaker/doc1#t10" label="Coverage/annis/">
+        <edge id="e15" source="singleSpeaker/doc1#sSpan7" target="singleSpeaker/doc1#t5" label="Coverage/annis/">
         </edge>
-        <edge id="e16" source="singleSpeaker/doc1#sSpan20" target="singleSpeaker/doc1#t7" label="Coverage/annis/">
+        <edge id="e16" source="singleSpeaker/doc1#sSpan8" target="singleSpeaker/doc1#t6" label="Coverage/annis/">
         </edge>
-        <edge id="e17" source="singleSpeaker/doc1#sSpan17" target="singleSpeaker/doc1#t4" label="Coverage/annis/">
+        <edge id="e17" source="singleSpeaker/doc1#sSpan9" target="singleSpeaker/doc1#t7" label="Coverage/annis/">
         </edge>
-        <edge id="e18" source="singleSpeaker/doc1#sSpan14" target="singleSpeaker/doc1#t1" label="Coverage/annis/">
+        <edge id="e18" source="singleSpeaker/doc1#sSpan10" target="singleSpeaker/doc1#t8" label="Coverage/annis/">
         </edge>
         <edge id="e19" source="singleSpeaker/doc1#sSpan11" target="singleSpeaker/doc1#t9" label="Coverage/annis/">
         </edge>
-        <edge id="e20" source="singleSpeaker/doc1#sSpan8" target="singleSpeaker/doc1#t6" label="Coverage/annis/">
+        <edge id="e20" source="singleSpeaker/doc1#sSpan12" target="singleSpeaker/doc1#t10" label="Coverage/annis/">
         </edge>
-        <edge id="e21" source="singleSpeaker/doc1#sSpan5" target="singleSpeaker/doc1#t3" label="Coverage/annis/">
+        <edge id="e21" source="singleSpeaker/doc1#sSpan13" target="singleSpeaker/doc1#t11" label="Coverage/annis/">
         </edge>
-        <edge id="e22" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#t2" label="Coverage/annis/">
+        <edge id="e22" source="singleSpeaker/doc1#sSpan14" target="singleSpeaker/doc1#t1" label="Coverage/annis/">
         </edge>
-        <edge id="e23" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#t3" label="Coverage/annis/">
+        <edge id="e23" source="singleSpeaker/doc1#sSpan15" target="singleSpeaker/doc1#t2" label="Coverage/annis/">
         </edge>
-        <edge id="e24" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#t4" label="Coverage/annis/">
+        <edge id="e24" source="singleSpeaker/doc1#sSpan16" target="singleSpeaker/doc1#t3" label="Coverage/annis/">
         </edge>
-        <edge id="e25" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#t5" label="Coverage/annis/">
+        <edge id="e25" source="singleSpeaker/doc1#sSpan17" target="singleSpeaker/doc1#t4" label="Coverage/annis/">
         </edge>
-        <edge id="e26" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#t6" label="Coverage/annis/">
+        <edge id="e26" source="singleSpeaker/doc1#sSpan18" target="singleSpeaker/doc1#t5" label="Coverage/annis/">
         </edge>
-        <edge id="e27" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#t7" label="Coverage/annis/">
+        <edge id="e27" source="singleSpeaker/doc1#sSpan19" target="singleSpeaker/doc1#t6" label="Coverage/annis/">
         </edge>
-        <edge id="e28" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#t8" label="Coverage/annis/">
+        <edge id="e28" source="singleSpeaker/doc1#sSpan20" target="singleSpeaker/doc1#t7" label="Coverage/annis/">
         </edge>
-        <edge id="e29" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#t9" label="Coverage/annis/">
+        <edge id="e29" source="singleSpeaker/doc1#sSpan21" target="singleSpeaker/doc1#t8" label="Coverage/annis/">
         </edge>
-        <edge id="e30" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#t10" label="Coverage/annis/">
+        <edge id="e30" source="singleSpeaker/doc1#sSpan22" target="singleSpeaker/doc1#t9" label="Coverage/annis/">
         </edge>
-        <edge id="e31" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#t11" label="Coverage/annis/">
+        <edge id="e31" source="singleSpeaker/doc1#sSpan23" target="singleSpeaker/doc1#t10" label="Coverage/annis/">
         </edge>
-        <edge id="e32" source="singleSpeaker/doc1#sSpan22" target="singleSpeaker/doc1#t9" label="Coverage/annis/">
+        <edge id="e32" source="singleSpeaker/doc1#sSpan24" target="singleSpeaker/doc1#t11" label="Coverage/annis/">
         </edge>
         <edge id="e33" source="singleSpeaker/doc1#t10" target="singleSpeaker/doc1#t11" label="Ordering/annis/">
         </edge>
@@ -307,79 +307,79 @@ expression: actual
         </edge>
         <edge id="e42" source="singleSpeaker/doc1#t1" target="singleSpeaker/doc1#t2" label="Ordering/annis/">
         </edge>
-        <edge id="e43" source="singleSpeaker/doc1#sSpan24" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e43" source="singleSpeaker/doc1" target="singleSpeaker" label="PartOf/annis/">
         </edge>
-        <edge id="e44" source="singleSpeaker/doc1#sSpan21" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e44" source="singleSpeaker/doc1#text" target="singleSpeaker/doc1" label="PartOf/annis/">
         </edge>
-        <edge id="e45" source="singleSpeaker/doc1#sSpan18" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e45" source="singleSpeaker/doc1#t1" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e46" source="singleSpeaker/doc1#sSpan15" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e46" source="singleSpeaker/doc1#t2" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e47" source="singleSpeaker/doc1#sSpan12" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e47" source="singleSpeaker/doc1#t3" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e48" source="singleSpeaker/doc1#sSpan9" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e48" source="singleSpeaker/doc1#t4" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e49" source="singleSpeaker/doc1#sSpan6" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e49" source="singleSpeaker/doc1#t5" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e50" source="singleSpeaker/doc1#sSpan3" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e50" source="singleSpeaker/doc1#t6" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e51" source="singleSpeaker/doc1#t11" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e51" source="singleSpeaker/doc1#t7" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
         <edge id="e52" source="singleSpeaker/doc1#t8" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e53" source="singleSpeaker/doc1#t5" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e53" source="singleSpeaker/doc1#t9" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e54" source="singleSpeaker/doc1#t2" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e54" source="singleSpeaker/doc1#t10" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e55" source="singleSpeaker/doc1" target="singleSpeaker" label="PartOf/annis/">
+        <edge id="e55" source="singleSpeaker/doc1#t11" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e56" source="singleSpeaker/doc1#sSpan22" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e56" source="singleSpeaker/doc1#sSpan1" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e57" source="singleSpeaker/doc1#sSpan19" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e57" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e58" source="singleSpeaker/doc1#sSpan16" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e58" source="singleSpeaker/doc1#sSpan3" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e59" source="singleSpeaker/doc1#sSpan13" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e59" source="singleSpeaker/doc1#sSpan4" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e60" source="singleSpeaker/doc1#sSpan10" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e60" source="singleSpeaker/doc1#sSpan5" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e61" source="singleSpeaker/doc1#sSpan7" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e61" source="singleSpeaker/doc1#sSpan6" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e62" source="singleSpeaker/doc1#sSpan4" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e62" source="singleSpeaker/doc1#sSpan7" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e63" source="singleSpeaker/doc1#sSpan1" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e63" source="singleSpeaker/doc1#sSpan8" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e64" source="singleSpeaker/doc1#t9" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e64" source="singleSpeaker/doc1#sSpan9" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e65" source="singleSpeaker/doc1#t6" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e65" source="singleSpeaker/doc1#sSpan10" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e66" source="singleSpeaker/doc1#t3" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e66" source="singleSpeaker/doc1#sSpan11" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e67" source="singleSpeaker/doc1#text" target="singleSpeaker/doc1" label="PartOf/annis/">
+        <edge id="e67" source="singleSpeaker/doc1#sSpan12" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e68" source="singleSpeaker/doc1#sSpan23" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e68" source="singleSpeaker/doc1#sSpan13" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e69" source="singleSpeaker/doc1#sSpan20" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e69" source="singleSpeaker/doc1#sSpan14" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e70" source="singleSpeaker/doc1#sSpan17" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e70" source="singleSpeaker/doc1#sSpan15" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e71" source="singleSpeaker/doc1#sSpan14" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e71" source="singleSpeaker/doc1#sSpan16" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e72" source="singleSpeaker/doc1#sSpan11" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e72" source="singleSpeaker/doc1#sSpan17" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e73" source="singleSpeaker/doc1#sSpan8" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e73" source="singleSpeaker/doc1#sSpan18" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e74" source="singleSpeaker/doc1#sSpan5" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e74" source="singleSpeaker/doc1#sSpan19" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e75" source="singleSpeaker/doc1#sSpan2" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e75" source="singleSpeaker/doc1#sSpan20" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e76" source="singleSpeaker/doc1#t10" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e76" source="singleSpeaker/doc1#sSpan21" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e77" source="singleSpeaker/doc1#t7" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e77" source="singleSpeaker/doc1#sSpan22" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e78" source="singleSpeaker/doc1#t4" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e78" source="singleSpeaker/doc1#sSpan23" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e79" source="singleSpeaker/doc1#t1" target="singleSpeaker/doc1#text" label="PartOf/annis/">
+        <edge id="e79" source="singleSpeaker/doc1#sSpan24" target="singleSpeaker/doc1#text" label="PartOf/annis/">
         </edge>
     </graph>
 </graphml>

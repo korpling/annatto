@@ -102,7 +102,7 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
                 }
             }
             let all_keys = storage.get_anno_storage().annotation_keys()?;
-            if let Some(first_key) = all_keys.get(0) {
+            if let Some(first_key) = all_keys.first() {
                 if !first_key.ns.is_empty() {
                     mappings.insert("edge_anno_ns".to_string(), first_key.ns.to_string());
                 }

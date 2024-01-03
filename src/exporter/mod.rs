@@ -1,5 +1,6 @@
 //! Exporter modules export the data into different formats.
 
+pub mod exmaralda;
 pub mod graphml;
 
 use crate::{workflow::StatusSender, Module, StepID};

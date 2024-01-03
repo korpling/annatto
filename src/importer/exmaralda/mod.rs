@@ -2,6 +2,7 @@
 //! (`.exb`) files.
 use std::{
     collections::{BTreeMap, BTreeSet},
+    env,
     fs::File,
 };
 
@@ -50,14 +51,7 @@ impl Importer for ImportEXMARaLDA {
         let document_status: Result<Vec<()>, AnnattoError> = all_files
             .into_iter()
             .map(|(fp, doc_node_name)| {
-                self.import_document(
-                    &doc_node_name,
-                    fp.as_path(),
-                    input_path,
-                    &mut update,
-                    &progress,
-                    &tx,
-                )
+                self.import_document(&doc_node_name, fp.as_path(), &mut update, &progress, &tx)
             })
             .collect();
         // Check for any errors
@@ -73,12 +67,13 @@ fn attr_vec_to_map(attributes: &[OwnedAttribute]) -> BTreeMap<String, String> {
         .collect::<BTreeMap<String, String>>()
 }
 
+pub const LANGUAGE_SEP: &str = ",";
+
 impl ImportEXMARaLDA {
     fn import_document(
         &self,
         doc_node_name: &str,
         document_path: &std::path::Path,
-        corpus_path: &std::path::Path,
         update: &mut GraphUpdate,
         progress: &ProgressReporter,
         tx: &Option<crate::workflow::StatusSender>,
@@ -108,18 +103,35 @@ impl ImportEXMARaLDA {
                     name, attributes, ..
                 }) => {
                     parent_map.insert(name.to_string(), attr_vec_to_map(&attributes));
+                    let attr_map = parent_map.get(&name.to_string()).unwrap();
                     match name.to_string().as_str() {
                         "referenced-file" => {
                             if let Some(file_url) = attr_vec_to_map(&attributes).get("url") {
                                 if let Some(parent_path) = document_path.parent() {
                                     let audio_path = parent_path.join(file_url);
-                                    if audio_path.exists() {
-                                        map_audio_source(
-                                            update,
-                                            audio_path.as_path(),
-                                            corpus_path.to_str().unwrap(),
-                                            doc_node_name,
-                                        )?;
+                                    // only link files, no directories or symlinks
+                                    if audio_path.exists() && (audio_path.is_file()) {
+                                        if let Some(rel_path) = pathdiff::diff_paths(
+                                            audio_path.clone(),
+                                            env::current_dir()?,
+                                        ) {
+                                            map_audio_source(
+                                                update,
+                                                rel_path.as_path(),
+                                                doc_node_name.rsplit_once('/').unwrap().0,
+                                                doc_node_name,
+                                            )?;
+                                        } else {
+                                            progress.warn(
+                                                format!(
+                                                    "Could not map linked audio file in \n{}, because no relative path to \n{} could be determined using \n{} as a base.",
+                                                    doc_node_name,
+                                                    audio_path.to_string_lossy(),
+                                                    env::current_dir()?.to_string_lossy()
+                                                )
+                                                .as_str(),
+                                            )?;
+                                        }
                                     } else {
                                         let msg = format!("Linked file {} could not be found to be linked in document {}", audio_path.as_path().to_string_lossy(), &doc_node_name);
                                         progress.warn(&msg)?;
@@ -128,7 +140,6 @@ impl ImportEXMARaLDA {
                             }
                         }
                         "tli" => {
-                            let attr_map = attr_vec_to_map(&attributes);
                             if let Some(time_value) = attr_map.get("time") {
                                 let time =
                                     if let Ok(t_val) = time_value.parse::<OrderedFloat<f64>>() {
@@ -155,17 +166,41 @@ impl ImportEXMARaLDA {
                                 return Err(err);
                             }
                         }
-                        "event" | "abbreviation" => char_buf.clear(),
+                        "language" => {
+                            if !char_buf.is_empty() {
+                                char_buf.push_str(LANGUAGE_SEP);
+                            }
+                            if let Some(lang_value) = attr_map.get("lang") {
+                                char_buf.push_str(lang_value);
+                            }
+                        }
+                        "event" | "abbreviation" | "l1" | "l2" | "comment" | "languages-used"
+                        | "ud-information" => char_buf.clear(),
                         _ => {}
                     }
                 }
                 Ok(XmlEvent::EndElement { name }) => {
-                    match name.to_string().as_str() {
-                        "abbreviation" => {
-                            // write speaker name to speaker table
-                            let speaker_id = parent_map.get("speaker").unwrap()["id"].to_string();
-                            let speaker_name = char_buf.to_string();
-                            speaker_map.insert(speaker_id, speaker_name);
+                    let str_tag_name = name.to_string();
+                    match str_tag_name.as_str() {
+                        "abbreviation" | "l1" | "l2" | "comment" | "languages-used" => {
+                            if let Some(parent) = parent_map.get("speaker") {
+                                if !char_buf.trim().is_empty() {
+                                    let speaker_id = parent["id"].to_string();
+                                    if str_tag_name.as_str() == "abbreviation" {
+                                        // write speaker name to speaker table
+                                        let speaker_name = char_buf.to_string();
+                                        speaker_map.insert(speaker_id.to_string(), speaker_name);
+                                    }
+
+                                    update.add_event(UpdateEvent::AddNodeLabel {
+                                        // speaker table data as document meta annotation
+                                        node_name: doc_node_name.to_string(),
+                                        anno_ns: speaker_id.to_string(),
+                                        anno_name: str_tag_name,
+                                        anno_value: char_buf.to_string(),
+                                    })?;
+                                }
+                            }
                         }
                         "common-timeline" => {
                             // build empty toks
@@ -190,6 +225,13 @@ impl ImportEXMARaLDA {
                                         (*time_value, node_name.to_string()),
                                     );
                                 }
+                                update.add_event(UpdateEvent::AddEdge {
+                                    source_node: node_name.to_string(),
+                                    target_node: doc_node_name.to_string(),
+                                    layer: ANNIS_NS.to_string(),
+                                    component_type: AnnotationComponentType::PartOf.to_string(),
+                                    component_name: "".to_string(),
+                                })?;
                             }
                             // order timeline elements / empty toks
                             ordered_tl_nodes.extend(
@@ -375,8 +417,21 @@ impl ImportEXMARaLDA {
                                         component_name: "".to_string(),
                                     })?;
                                 }
-                                let (end_time, _) =
-                                    timeline.get(overlapped.last().unwrap()).unwrap();
+                                let (end_time, _) = if let Some(t_name) =
+                                    ordered_tl_nodes.get(end_i)
+                                {
+                                    // timeline and ordered tl nodes are directly dependent on each other, so we can safely unwrap
+                                    timeline.get(t_name).unwrap()
+                                } else {
+                                    if let Some(sender) = tx {
+                                        let msg = format!(
+                                                "Could not determine end time of event {}::{}:{}-{}. Event will be skipped.",
+                                                &speaker_id, &anno_name, &start_id, &end_id
+                                            );
+                                        sender.send(StatusMessage::Warning(msg))?;
+                                    }
+                                    continue;
+                                };
                                 update.add_event(UpdateEvent::AddNodeLabel {
                                     node_name: node_name.to_string(),
                                     anno_ns: ANNIS_NS.to_string(),
@@ -414,6 +469,29 @@ impl ImportEXMARaLDA {
                                 anno_name: anno_name.to_string(),
                                 anno_value: text.to_string(),
                             })?;
+                        }
+                        "ud-information" => {
+                            if let Some(anno_name) = parent_map
+                                .get("ud-information")
+                                .unwrap()
+                                .get("attribute-name")
+                            {
+                                let ns = if let Some(parent) = parent_map.get("speaker") {
+                                    if let Some(speaker_id) = parent.get("id") {
+                                        speaker_id.as_str()
+                                    } else {
+                                        ""
+                                    }
+                                } else {
+                                    ""
+                                };
+                                update.add_event(UpdateEvent::AddNodeLabel {
+                                    node_name: doc_node_name.to_string(),
+                                    anno_ns: ns.to_string(),
+                                    anno_name: anno_name.to_string(),
+                                    anno_value: char_buf.to_string(),
+                                })?;
+                            }
                         }
                         _ => {}
                     }

@@ -99,25 +99,25 @@ display_name = "grid"
         </edge>
         <edge id="e6" source="token_only/zossen#t1" target="token_only/zossen#t2" label="Ordering/annis/">
         </edge>
-        <edge id="e7" source="token_only/zossen#t8" target="token_only/zossen#text" label="PartOf/annis/">
+        <edge id="e7" source="token_only/zossen" target="token_only" label="PartOf/annis/">
         </edge>
-        <edge id="e8" source="token_only/zossen#t5" target="token_only/zossen#text" label="PartOf/annis/">
+        <edge id="e8" source="token_only/zossen#text" target="token_only/zossen" label="PartOf/annis/">
         </edge>
-        <edge id="e9" source="token_only/zossen#t2" target="token_only/zossen#text" label="PartOf/annis/">
+        <edge id="e9" source="token_only/zossen#t1" target="token_only/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e10" source="token_only/zossen" target="token_only" label="PartOf/annis/">
+        <edge id="e10" source="token_only/zossen#t2" target="token_only/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e11" source="token_only/zossen#t6" target="token_only/zossen#text" label="PartOf/annis/">
+        <edge id="e11" source="token_only/zossen#t3" target="token_only/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e12" source="token_only/zossen#t3" target="token_only/zossen#text" label="PartOf/annis/">
+        <edge id="e12" source="token_only/zossen#t4" target="token_only/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e13" source="token_only/zossen#text" target="token_only/zossen" label="PartOf/annis/">
+        <edge id="e13" source="token_only/zossen#t5" target="token_only/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e14" source="token_only/zossen#t7" target="token_only/zossen#text" label="PartOf/annis/">
+        <edge id="e14" source="token_only/zossen#t6" target="token_only/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e15" source="token_only/zossen#t4" target="token_only/zossen#text" label="PartOf/annis/">
+        <edge id="e15" source="token_only/zossen#t7" target="token_only/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e16" source="token_only/zossen#t1" target="token_only/zossen#text" label="PartOf/annis/">
+        <edge id="e16" source="token_only/zossen#t8" target="token_only/zossen#text" label="PartOf/annis/">
         </edge>
     </graph>
 </graphml>

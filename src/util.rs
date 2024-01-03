@@ -1,16 +1,22 @@
 use crate::{
     error::{AnnattoError, Result},
+    exporter::Exporter,
     importer::Importer,
+    workflow::StatusSender,
 };
 use graphannis::{
+    model::AnnotationComponent,
     update::{GraphUpdate, UpdateEvent},
     AnnotationGraph,
 };
+use graphannis_core::types::{Edge, NodeID};
 use std::{
-    fs::File,
+    env::temp_dir,
+    fs::{self, File},
     io::{BufWriter, Write},
     path::{Path, PathBuf},
 };
+use tempfile::tempdir_in;
 
 pub mod graphupdate;
 
@@ -34,7 +40,7 @@ pub fn write_to_file(updates: &GraphUpdate, path: &std::path::Path) -> Result<()
 pub fn get_all_files(
     corpus_root_dir: &Path,
     file_extensions: Vec<&str>,
-) -> std::result::Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
+) -> std::result::Result<Vec<PathBuf>, AnnattoError> {
     let mut paths = Vec::new();
     let flex_path = corpus_root_dir.join("**");
     for ext in file_extensions {
@@ -55,14 +61,28 @@ where
     I: Importer,
     P: AsRef<Path>,
 {
+    import_as_graphml_string_2(importer, path, graph_configuration, true, None)
+}
+
+pub fn import_as_graphml_string_2<I, P>(
+    importer: I,
+    path: P,
+    graph_configuration: Option<&str>,
+    disk_based: bool,
+    tx: Option<StatusSender>,
+) -> Result<String>
+where
+    I: Importer,
+    P: AsRef<Path>,
+{
     let mut u = importer
-        .import_corpus(path.as_ref(), importer.step_id(None), None)
+        .import_corpus(path.as_ref(), importer.step_id(None), tx)
         .map_err(|e| AnnattoError::Import {
             reason: e.to_string(),
             importer: importer.module_name().to_string(),
             path: path.as_ref().to_path_buf(),
         })?;
-    let mut g = AnnotationGraph::with_default_graphstorages(false)?;
+    let mut g = AnnotationGraph::with_default_graphstorages(disk_based)?;
     g.apply_update(&mut u, |_| {})?;
 
     let mut buf = BufWriter::new(Vec::new());
@@ -76,4 +96,55 @@ where
     let actual = String::from_utf8(bytes)?;
 
     Ok(actual)
+}
+
+pub fn export_to_string<E>(
+    graph: &AnnotationGraph,
+    exporter: E,
+    file_extension: &str,
+) -> Result<String>
+where
+    E: Exporter,
+{
+    let output_path = tempdir_in(temp_dir())?;
+    exporter
+        .export_corpus(graph, output_path.path(), exporter.step_id(None), None)
+        .map_err(|_| AnnattoError::Export {
+            reason: "Could not export graph to read its output.".to_string(),
+            exporter: exporter.module_name().to_string(),
+            path: output_path.path().to_path_buf(),
+        })?;
+    let mut buffer = String::new();
+    for path in get_all_files(output_path.path(), vec![file_extension])? {
+        let file_data = fs::read_to_string(path)?;
+        buffer.push_str(&file_data);
+    }
+    Ok(buffer)
+}
+
+pub trait Traverse<N, E> {
+    /// A node has been reached traversing the given component.
+    fn node(
+        &self,
+        graph: &AnnotationGraph,
+        node: NodeID,
+        component: &AnnotationComponent,
+        buffer: &mut N,
+    ) -> Result<()>;
+
+    /// An edge is being processed while traversing the graph in the given component.
+    fn edge(
+        &self,
+        graph: &AnnotationGraph,
+        edge: Edge,
+        component: &AnnotationComponent,
+        buffer: &mut E,
+    ) -> Result<()>;
+
+    fn traverse(
+        &self,
+        graph: &AnnotationGraph,
+        node_buffer: &mut N,
+        edge_buffer: &mut E,
+    ) -> Result<()>;
 }
