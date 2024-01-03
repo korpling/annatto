@@ -298,26 +298,19 @@ impl Exporter for ExportExmaralda {
                         ("id", tier_id.as_str()),
                         ("display-name", display_name.as_str()),
                     ];
-                    if entries.is_empty() {
-                        writer
-                            .create_element("tier")
-                            .with_attributes(tier_attributes)
-                            .write_empty()?;
-                    } else {
-                        let tier = BytesStart::new("tier").with_attributes(tier_attributes);
-                        writer.write_event(Event::Start(tier))?;
-                        for (node_id, anno_value) in sorted_entries {
-                            let start = start_data.get(&(*doc_node_id, *node_id)).unwrap();
-                            let end = end_data.get(&(*doc_node_id, *node_id)).unwrap();
-                            let mut event = BytesStart::new("event");
-                            event.push_attribute(("start", start.as_str()));
-                            event.push_attribute(("end", end.as_str()));
-                            writer.write_event(Event::Start(event))?;
-                            writer.write_event(Event::Text(BytesText::new(anno_value)))?;
-                            writer.write_event(Event::End(BytesEnd::new("event")))?;
-                        }
-                        writer.write_event(Event::End(BytesEnd::new("tier")))?;
+                    let tier = BytesStart::new("tier").with_attributes(tier_attributes);
+                    writer.write_event(Event::Start(tier))?;
+                    for (node_id, anno_value) in sorted_entries {
+                        let start = start_data.get(&(*doc_node_id, *node_id)).unwrap();
+                        let end = end_data.get(&(*doc_node_id, *node_id)).unwrap();
+                        let mut event = BytesStart::new("event");
+                        event.push_attribute(("start", start.as_str()));
+                        event.push_attribute(("end", end.as_str()));
+                        writer.write_event(Event::Start(event))?;
+                        writer.write_event(Event::Text(BytesText::new(anno_value)))?;
+                        writer.write_event(Event::End(BytesEnd::new("event")))?;
                     }
+                    writer.write_event(Event::End(BytesEnd::new("tier")))?;
                 }
             }
             writer.write_event(Event::End(BytesEnd::new("basic-body")))?;
