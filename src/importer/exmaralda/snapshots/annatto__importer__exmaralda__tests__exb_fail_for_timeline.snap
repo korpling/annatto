@@ -1,5 +1,0 @@
----
-source: src/importer/exmaralda/tests.rs
-expression: r.err().unwrap()
----
-Error during importing corpus to ./tests/data/import/exmaralda/fail-corrupt_timeline/import/exmaralda/test_doc.exb with "import_exmaralda": "Start time is bigger than end time for ids: T1--T2 "

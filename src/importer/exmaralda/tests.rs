@@ -12,7 +12,7 @@ use crate::{
 use super::ImportEXMARaLDA;
 
 #[test]
-fn test_exb_fail_for_timeline() {
+fn test_timeline_fail() {
     let import = ImportEXMARaLDA::default();
     let import_path = "./tests/data/import/exmaralda/fail-corrupt_timeline/import/";
     let (sender, _receiver) = mpsc::channel();
@@ -33,7 +33,7 @@ fn test_exb_fail_for_timeline() {
 }
 
 #[test]
-fn test_exb_fail_for_no_category() {
+fn test_category_fail() {
     let import = ImportEXMARaLDA::default();
     let import_path = "./tests/data/import/exmaralda/fail-no_category/";
     let (sender, _receiver) = mpsc::channel();
@@ -54,7 +54,7 @@ fn test_exb_fail_for_no_category() {
 }
 
 #[test]
-fn test_exb_fail_for_no_speaker() {
+fn test_no_speaker_fail() {
     let import = ImportEXMARaLDA::default();
     let import_path = "./tests/data/import/exmaralda/fail-no_speaker/";
     let (sender, _receiver) = mpsc::channel();
@@ -75,7 +75,7 @@ fn test_exb_fail_for_no_speaker() {
 }
 
 #[test]
-fn test_exb_fail_for_undefined_speaker() {
+fn test_undefined_speaker_fail() {
     let import = ImportEXMARaLDA::default();
     let import_path = "./tests/data/import/exmaralda/fail-undefined_speaker/";
     let (sender, _receiver) = mpsc::channel();
@@ -96,7 +96,7 @@ fn test_exb_fail_for_undefined_speaker() {
 }
 
 #[test]
-fn test_exb_fail_for_unknown_tli() {
+fn test_unknown_tli_fail() {
     let import = ImportEXMARaLDA::default();
     let import_path = "./tests/data/import/exmaralda/fail-unknown_tli/";
     let (sender, _receiver) = mpsc::channel();
@@ -117,7 +117,7 @@ fn test_exb_fail_for_unknown_tli() {
 }
 
 #[test]
-fn test_exb_fail_for_bad_timevalue() {
+fn test_bad_timevalue_fail() {
     let import = ImportEXMARaLDA::default();
     let import_path = "./tests/data/import/exmaralda/fail-bad_timevalue/";
     let (sender, _receiver) = mpsc::channel();
@@ -138,7 +138,7 @@ fn test_exb_fail_for_bad_timevalue() {
 }
 
 #[test]
-fn test_exb_fail_no_start_no_end() {
+fn test_underspec_event_fail() {
     let import = ImportEXMARaLDA::default();
     let import_path = "./tests/data/import/exmaralda/fail-no_start_no_end/";
     let (sender, _receiver) = mpsc::channel();
@@ -148,7 +148,7 @@ fn test_exb_fail_no_start_no_end() {
 }
 
 #[test]
-fn test_fail_invalid() {
+fn test_invalid_fail() {
     let import = ImportEXMARaLDA::default();
     let import_path = "./tests/data/import/exmaralda/fail-invalid/import/";
     let (sender, _receiver) = mpsc::channel();
@@ -169,19 +169,19 @@ fn test_fail_invalid() {
 }
 
 #[test]
-fn test_exb_on_disk() {
+fn test_import() {
     let r = test_exb("./tests/data/import/exmaralda/clean/import/", 0);
     assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
 }
 
 #[test]
-fn test_exb_broken_audio_on_disk() {
+fn test_broken_audio_pass() {
     let r = test_exb("./tests/data/import/exmaralda/broken_audio/import/", 1);
     assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
 }
 
 #[test]
-fn test_exb_pass_missing_type_attr_on_disk() {
+fn test_missing_type_attr_pass() {
     let r = test_exb("./tests/data/import/exmaralda/pass-no_tier_type/import/", 9);
     assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
 }
