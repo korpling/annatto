@@ -597,7 +597,7 @@ fn reachable_nodes(
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::{env, path::Path};
 
     use graphannis::AnnotationGraph;
     use insta::assert_snapshot;
@@ -624,6 +624,27 @@ mod tests {
         let mut graph = g.unwrap();
         assert!(graph.apply_update(&mut update, |_| {}).is_ok());
         let actual = export_to_string(&graph, ExportExmaralda::default(), "exb");
+        assert!(actual.is_ok());
+
+        assert_snapshot!(actual.unwrap());
+    }
+
+    #[test]
+    fn test_exmaralda_export_with_audio() {
+        let import = ImportEXMARaLDA::default();
+        let wd = env::current_dir();
+        assert!(wd.is_ok());
+        let source_path = wd
+            .unwrap()
+            .join(Path::new("./tests/data/import/exmaralda/clean/import/"));
+        let u = import.import_corpus(source_path.as_path(), import.step_id(None), None);
+        assert!(u.is_ok());
+        let mut update = u.unwrap();
+        let g = AnnotationGraph::new(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update, |_| {}).is_ok());
+        let actual = export_to_string(&graph, ExportExmaralda { copy_media: true }, "exb");
         assert!(actual.is_ok());
 
         assert_snapshot!(actual.unwrap());
