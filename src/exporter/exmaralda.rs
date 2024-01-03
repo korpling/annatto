@@ -7,7 +7,10 @@ use std::{
     sync::Arc,
 };
 
-use crate::{error::AnnattoError, importer::exmaralda::LANGUAGE_SEP, util::Traverse, Module};
+use crate::{
+    error::AnnattoError, importer::exmaralda::LANGUAGE_SEP, progress::ProgressReporter,
+    util::Traverse, Module,
+};
 use graphannis::{
     graph::GraphStorage,
     model::{AnnotationComponent, AnnotationComponentType},
@@ -58,8 +61,8 @@ impl Exporter for ExportExmaralda {
         &self,
         graph: &graphannis::AnnotationGraph,
         output_path: &std::path::Path,
-        _step_id: crate::StepID,
-        _tx: Option<crate::workflow::StatusSender>,
+        step_id: crate::StepID,
+        tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut node_buffer = NodeData::default();
         let mut edge_buffer = EdgeData::default();
@@ -75,14 +78,12 @@ impl Exporter for ExportExmaralda {
         } else {
             None
         };
+        let progress = ProgressReporter::new(tx, step_id, doc_nodes.len())?;
         for doc_node_id in doc_nodes {
             let doc_name = node_annos
                 .get_value_for_item(doc_node_id, &NODE_NAME_KEY)?
                 .unwrap();
-            let doc_path = output_path.join(format!(
-                "{}.exb",
-                doc_name.split("/").last().unwrap().to_string()
-            ));
+            let doc_path = output_path.join(format!("{}.exb", doc_name.split('/').last().unwrap()));
             fs::create_dir_all(doc_path.as_path().parent().unwrap())?;
             let file = fs::File::create(doc_path.as_path())?;
             let mut writer = Writer::new_with_indent(BufWriter::new(file), b' ', 2);
@@ -106,10 +107,9 @@ impl Exporter for ExportExmaralda {
                             .to_string()
                     } else {
                         // express path to original media file relative to newly created exmaralda file
-                        if let Some(relative_path) = pathdiff::diff_paths(
-                            env::current_dir()?.join(ref_path),
-                            output_path.to_path_buf(),
-                        ) {
+                        if let Some(relative_path) =
+                            pathdiff::diff_paths(env::current_dir()?.join(ref_path), output_path)
+                        {
                             relative_path.to_string_lossy().to_string()
                         } else {
                             return Err(Box::new(AnnattoError::Export {
@@ -150,7 +150,7 @@ impl Exporter for ExportExmaralda {
                 speaker.push_attribute(("id", speaker_name.as_str()));
                 writer.write_event(Event::Start(speaker))?;
                 writer.write_event(Event::Start(BytesStart::new("abbreviation")))?;
-                writer.write_event(Event::Text(BytesText::new(&speaker_name)))?;
+                writer.write_event(Event::Text(BytesText::new(speaker_name)))?;
                 writer.write_event(Event::End(BytesEnd::new("abbreviation")))?;
                 let sex_val = if let Some(v) = node_annos.get_value_for_item(
                     doc_node_id,
@@ -204,7 +204,7 @@ impl Exporter for ExportExmaralda {
                     }
                 }
                 let mut user_defined_attrs = Vec::new();
-                for anno_key in node_annos.get_all_keys_for_item(&doc_node_id, None, None)? {
+                for anno_key in node_annos.get_all_keys_for_item(doc_node_id, None, None)? {
                     if anno_key.ns.as_str() == ANNIS_NS
                         || anno_key.ns.as_str() != speaker_name
                         || SPEAKER_ANNO_NAMES.contains(&anno_key.name.as_str())
@@ -225,7 +225,7 @@ impl Exporter for ExportExmaralda {
                         writer
                             .create_element("ud-information")
                             .with_attribute(("attribute-name", attr_name.as_str()))
-                            .write_text_content(BytesText::new(&*text_val))?;
+                            .write_text_content(BytesText::new(&text_val))?;
                     }
                     writer.write_event(Event::End(BytesEnd::new("ud-speaker-information")))?;
                 }
@@ -323,6 +323,7 @@ impl Exporter for ExportExmaralda {
             writer.write_event(Event::End(BytesEnd::new("basic-body")))?;
             writer.write_event(Event::End(BytesEnd::new("basic-transcription")))?;
             writer.into_inner().flush()?;
+            progress.worked(1)?;
         }
         Ok(())
     }
@@ -374,7 +375,6 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
             // get the root nodes of the base (timeline) ordering
             let base_ordering_root_nodes = storage
                 .source_nodes()
-                .into_iter()
                 .filter(|r| match r {
                     Ok(n) => storage.get_ingoing_edges(*n).count() == 0,
                     Err(_) => false,
@@ -456,9 +456,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                     })?;
                     for n in &covering_nodes {
                         let k = (doc_node, *n);
-                        if !start_at_tli.contains_key(&k) {
-                            start_at_tli.insert(k, tli_id.to_string());
-                        }
+                        start_at_tli.entry(k).or_insert(tli_id.to_string());
                         end_at_tli.insert(k, next_tli_id.to_string());
                         if !processed_nodes.contains(n) {
                             graph
@@ -474,20 +472,17 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                                     // collect annotations
                                     let anno_k =
                                         (doc_node, (a.key.ns.to_string(), a.key.name.to_string()));
-                                    if !anno_data.contains_key(&anno_k) {
-                                        anno_data.insert(anno_k, vec![(*n, a.val.to_string())]);
+                                    if let Some(data) = anno_data.get_mut(&anno_k) {
+                                        data.push((*n, a.val.to_string()));
                                     } else {
-                                        anno_data
-                                            .get_mut(&anno_k)
-                                            .unwrap()
-                                            .push((*n, a.val.to_string()));
+                                        anno_data.insert(anno_k, vec![(*n, a.val.to_string())]);
                                     }
                                 });
                             // check for interval annotations
                             if let Ok(Some(interval)) =
                                 graph.get_node_annos().get_value_for_item(n, &time_key)
                             {
-                                if let Some(tpl) = interval.split_once("-") {
+                                if let Some(tpl) = interval.split_once('-') {
                                     for time_string in [tpl.0, tpl.1] {
                                         let time = time_string
                                             .parse::<OrderedFloat<f32>>()
@@ -504,7 +499,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                         }
                     }
                 }
-                if time_values.len() > 0 {
+                if !time_values.is_empty() {
                     for (i, t) in (0..max_dist + 2).zip(time_values.into_iter().sorted()) {
                         tli2time.insert((doc_node, format!("T{i}")), t);
                     }

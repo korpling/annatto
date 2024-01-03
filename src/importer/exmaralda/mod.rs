@@ -114,7 +114,7 @@ impl ImportEXMARaLDA {
                                         map_audio_source(
                                             update,
                                             rel_path,
-                                            doc_node_name.rsplit_once("/").unwrap().0,
+                                            doc_node_name.rsplit_once('/').unwrap().0,
                                             doc_node_name,
                                         )?;
                                     } else {
