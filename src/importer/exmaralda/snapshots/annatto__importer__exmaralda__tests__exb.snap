@@ -1,0 +1,225 @@
+---
+source: src/importer/exmaralda/tests.rs
+expression: actual
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="node" attr.name="dipl::abbreviation" attr.type="string"/>
+    <key id="k1" for="node" attr.name="norm::abbreviation" attr.type="string"/>
+    <key id="k2" for="node" attr.name="dipl::dipl" attr.type="string"/>
+    <key id="k3" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k4" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k5" for="node" attr.name="norm::lemma" attr.type="string"/>
+    <key id="k6" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k7" for="node" attr.name="norm::norm" attr.type="string"/>
+    <key id="k8" for="node" attr.name="norm::pos" attr.type="string"/>
+    <key id="k9" for="node" attr.name="dipl::sentence" attr.type="string"/>
+    <key id="k10" for="node" attr.name="annis::time" attr.type="string"/>
+    <key id="k11" for="node" attr.name="annis::tok" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <node id="import/exmaralda/test_doc#T286">
+            <data key="k11"> </data>
+            <data key="k6">node</data>
+        </node>
+        <node id="import/exmaralda/test_doc#T0">
+            <data key="k11"> </data>
+            <data key="k6">node</data>
+        </node>
+        <node id="import/exmaralda/test_doc#T1">
+            <data key="k11"> </data>
+            <data key="k6">node</data>
+        </node>
+        <node id="import/exmaralda/test_doc#T2">
+            <data key="k11"> </data>
+            <data key="k6">node</data>
+        </node>
+        <node id="import/exmaralda/test_doc#T3">
+            <data key="k11"> </data>
+            <data key="k6">node</data>
+        </node>
+        <node id="import/exmaralda/test_doc#T4">
+            <data key="k11"> </data>
+            <data key="k6">node</data>
+        </node>
+        <node id="import/exmaralda/test_doc#t_dipl_T286-T1">
+            <data key="k10">0-2</data>
+            <data key="k11">I&apos;m</data>
+            <data key="k2">I&apos;m</data>
+            <data key="k4">dipl</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="import/exmaralda/test_doc#t_dipl_T1-T2">
+            <data key="k10">2-3</data>
+            <data key="k11">in</data>
+            <data key="k2">in</data>
+            <data key="k4">dipl</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="import/exmaralda/test_doc#t_dipl_T2-T3">
+            <data key="k10">3-4</data>
+            <data key="k11">New</data>
+            <data key="k2">New</data>
+            <data key="k4">dipl</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="import/exmaralda/test_doc#t_dipl_T3-T4">
+            <data key="k10">4-5</data>
+            <data key="k11">York</data>
+            <data key="k2">York</data>
+            <data key="k4">dipl</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="import/exmaralda/test_doc#t_norm_T286-T0">
+            <data key="k10">0-1</data>
+            <data key="k11">I</data>
+            <data key="k4">norm</data>
+            <data key="k6">node</data>
+            <data key="k7">I</data>
+        </node>
+        <node id="import/exmaralda/test_doc#t_norm_T0-T1">
+            <data key="k10">1-2</data>
+            <data key="k11">am</data>
+            <data key="k4">norm</data>
+            <data key="k6">node</data>
+            <data key="k7">am</data>
+        </node>
+        <node id="import/exmaralda/test_doc#t_norm_T1-T2">
+            <data key="k10">2-3</data>
+            <data key="k11">in</data>
+            <data key="k4">norm</data>
+            <data key="k6">node</data>
+            <data key="k7">in</data>
+        </node>
+        <node id="import/exmaralda/test_doc#t_norm_T2-T4">
+            <data key="k10">3-5</data>
+            <data key="k11">New York</data>
+            <data key="k4">norm</data>
+            <data key="k6">node</data>
+            <data key="k7">New York</data>
+        </node>
+        <node id="import/exmaralda/test_doc#a_dipl_T286-T4">
+            <data key="k10">0-5</data>
+            <data key="k4">dipl</data>
+            <data key="k6">node</data>
+            <data key="k9">1</data>
+        </node>
+        <node id="import/exmaralda/test_doc#a_norm_T286-T0">
+            <data key="k10">0-1</data>
+            <data key="k4">norm</data>
+            <data key="k5">I</data>
+            <data key="k6">node</data>
+            <data key="k8">PRON</data>
+        </node>
+        <node id="import/exmaralda/test_doc#a_norm_T0-T1">
+            <data key="k10">1-2</data>
+            <data key="k4">norm</data>
+            <data key="k5">be</data>
+            <data key="k6">node</data>
+            <data key="k8">VERB</data>
+        </node>
+        <node id="import/exmaralda/test_doc#a_norm_T1-T2">
+            <data key="k10">2-3</data>
+            <data key="k4">norm</data>
+            <data key="k5">in</data>
+            <data key="k6">node</data>
+            <data key="k8">ADP</data>
+        </node>
+        <node id="import/exmaralda/test_doc#a_norm_T2-T4">
+            <data key="k10">3-5</data>
+            <data key="k4">norm</data>
+            <data key="k5">New York</data>
+            <data key="k6">node</data>
+            <data key="k8">ADP</data>
+        </node>
+        <node id="import">
+            <data key="k6">corpus</data>
+        </node>
+        <node id="import/exmaralda">
+            <data key="k6">corpus</data>
+        </node>
+        <node id="import/exmaralda/test_doc">
+            <data key="k0">dipl</data>
+            <data key="k1">norm</data>
+            <data key="k3">test_doc</data>
+            <data key="k6">corpus</data>
+        </node>
+        <edge id="e0" source="import/exmaralda/test_doc#t_norm_T2-T4" target="import/exmaralda/test_doc#T2" label="Coverage/annis/">
+        </edge>
+        <edge id="e1" source="import/exmaralda/test_doc#t_norm_T2-T4" target="import/exmaralda/test_doc#T3" label="Coverage/annis/">
+        </edge>
+        <edge id="e2" source="import/exmaralda/test_doc#t_norm_T286-T0" target="import/exmaralda/test_doc#T286" label="Coverage/annis/">
+        </edge>
+        <edge id="e3" source="import/exmaralda/test_doc#t_dipl_T1-T2" target="import/exmaralda/test_doc#T1" label="Coverage/annis/">
+        </edge>
+        <edge id="e4" source="import/exmaralda/test_doc#a_norm_T1-T2" target="import/exmaralda/test_doc#T1" label="Coverage/annis/">
+        </edge>
+        <edge id="e5" source="import/exmaralda/test_doc#a_dipl_T286-T4" target="import/exmaralda/test_doc#T286" label="Coverage/annis/">
+        </edge>
+        <edge id="e6" source="import/exmaralda/test_doc#a_dipl_T286-T4" target="import/exmaralda/test_doc#T0" label="Coverage/annis/">
+        </edge>
+        <edge id="e7" source="import/exmaralda/test_doc#a_dipl_T286-T4" target="import/exmaralda/test_doc#T1" label="Coverage/annis/">
+        </edge>
+        <edge id="e8" source="import/exmaralda/test_doc#a_dipl_T286-T4" target="import/exmaralda/test_doc#T2" label="Coverage/annis/">
+        </edge>
+        <edge id="e9" source="import/exmaralda/test_doc#a_dipl_T286-T4" target="import/exmaralda/test_doc#T3" label="Coverage/annis/">
+        </edge>
+        <edge id="e10" source="import/exmaralda/test_doc#t_norm_T0-T1" target="import/exmaralda/test_doc#T0" label="Coverage/annis/">
+        </edge>
+        <edge id="e11" source="import/exmaralda/test_doc#t_dipl_T2-T3" target="import/exmaralda/test_doc#T2" label="Coverage/annis/">
+        </edge>
+        <edge id="e12" source="import/exmaralda/test_doc#a_norm_T2-T4" target="import/exmaralda/test_doc#T2" label="Coverage/annis/">
+        </edge>
+        <edge id="e13" source="import/exmaralda/test_doc#a_norm_T2-T4" target="import/exmaralda/test_doc#T3" label="Coverage/annis/">
+        </edge>
+        <edge id="e14" source="import/exmaralda/test_doc#a_norm_T286-T0" target="import/exmaralda/test_doc#T286" label="Coverage/annis/">
+        </edge>
+        <edge id="e15" source="import/exmaralda/test_doc#t_norm_T1-T2" target="import/exmaralda/test_doc#T1" label="Coverage/annis/">
+        </edge>
+        <edge id="e16" source="import/exmaralda/test_doc#t_dipl_T3-T4" target="import/exmaralda/test_doc#T3" label="Coverage/annis/">
+        </edge>
+        <edge id="e17" source="import/exmaralda/test_doc#t_dipl_T286-T1" target="import/exmaralda/test_doc#T286" label="Coverage/annis/">
+        </edge>
+        <edge id="e18" source="import/exmaralda/test_doc#t_dipl_T286-T1" target="import/exmaralda/test_doc#T0" label="Coverage/annis/">
+        </edge>
+        <edge id="e19" source="import/exmaralda/test_doc#a_norm_T0-T1" target="import/exmaralda/test_doc#T0" label="Coverage/annis/">
+        </edge>
+        <edge id="e20" source="import/exmaralda/test_doc#T3" target="import/exmaralda/test_doc#T4" label="Ordering/annis/">
+        </edge>
+        <edge id="e21" source="import/exmaralda/test_doc#T2" target="import/exmaralda/test_doc#T3" label="Ordering/annis/">
+        </edge>
+        <edge id="e22" source="import/exmaralda/test_doc#T1" target="import/exmaralda/test_doc#T2" label="Ordering/annis/">
+        </edge>
+        <edge id="e23" source="import/exmaralda/test_doc#T0" target="import/exmaralda/test_doc#T1" label="Ordering/annis/">
+        </edge>
+        <edge id="e24" source="import/exmaralda/test_doc#T286" target="import/exmaralda/test_doc#T0" label="Ordering/annis/">
+        </edge>
+        <edge id="e25" source="import/exmaralda/test_doc#t_dipl_T286-T1" target="import/exmaralda/test_doc#t_dipl_T1-T2" label="Ordering/annis/dipl">
+        </edge>
+        <edge id="e26" source="import/exmaralda/test_doc#t_dipl_T1-T2" target="import/exmaralda/test_doc#t_dipl_T2-T3" label="Ordering/annis/dipl">
+        </edge>
+        <edge id="e27" source="import/exmaralda/test_doc#t_dipl_T2-T3" target="import/exmaralda/test_doc#t_dipl_T3-T4" label="Ordering/annis/dipl">
+        </edge>
+        <edge id="e28" source="import/exmaralda/test_doc#t_norm_T286-T0" target="import/exmaralda/test_doc#t_norm_T0-T1" label="Ordering/annis/norm">
+        </edge>
+        <edge id="e29" source="import/exmaralda/test_doc#t_norm_T0-T1" target="import/exmaralda/test_doc#t_norm_T1-T2" label="Ordering/annis/norm">
+        </edge>
+        <edge id="e30" source="import/exmaralda/test_doc#t_norm_T1-T2" target="import/exmaralda/test_doc#t_norm_T2-T4" label="Ordering/annis/norm">
+        </edge>
+        <edge id="e31" source="import/exmaralda/test_doc#T3" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e32" source="import/exmaralda/test_doc#T0" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e33" source="import/exmaralda" target="import" label="PartOf/annis/">
+        </edge>
+        <edge id="e34" source="import/exmaralda/test_doc#T4" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e35" source="import/exmaralda/test_doc#T1" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e36" source="import/exmaralda/test_doc" target="import/exmaralda" label="PartOf/annis/">
+        </edge>
+        <edge id="e37" source="import/exmaralda/test_doc#T2" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e38" source="import/exmaralda/test_doc#T286" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>
