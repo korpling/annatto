@@ -109,7 +109,9 @@ impl ImportEXMARaLDA {
                             if let Some(file_url) = attr_vec_to_map(&attributes).get("url") {
                                 if let Some(parent_path) = document_path.parent() {
                                     let audio_path = parent_path.join(file_url);
-                                    if audio_path.exists() {
+                                    if audio_path.exists()
+                                        && (audio_path.is_file() || audio_path.is_symlink())
+                                    {
                                         let rel_path = audio_path.strip_prefix(env::current_dir()?).map_err(|_| AnnattoError::Import { reason: format!("Could not obtain relative path of linked file {:?}", audio_path), importer: self.module_name().to_string(), path: document_path.to_path_buf() })?;
                                         map_audio_source(
                                             update,
