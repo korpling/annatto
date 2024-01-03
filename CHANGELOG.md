@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `collapse` provides more feedback on current process
 - `collapse` gives hypernodes proper names that allow to identify the subgraph they belong to. Furthermore already existing hypernode ids are not reused (in case multiple collapse operations are run on a graph).
 - `CorpusStorage` is now quiet
+- importing `exmaralda` does now has more features
+- `exmaralda` can be exported
 
 ### Fixed
 
@@ -45,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `link` now considers all matching nodes for the same value, so the correct amount of edges is created
 - `exmaralda` returns error when there is no time value for a timeline item
 - fixed and simplified import of corpus node annotations
+- `exmaralda` import's paths to linked media files are relative to the working directory
 
 ### Removed
 
