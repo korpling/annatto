@@ -109,9 +109,8 @@ impl ImportEXMARaLDA {
                             if let Some(file_url) = attr_vec_to_map(&attributes).get("url") {
                                 if let Some(parent_path) = document_path.parent() {
                                     let audio_path = parent_path.join(file_url);
-                                    if audio_path.exists()
-                                        && (audio_path.is_file() || audio_path.is_symlink())
-                                    {
+                                    // only link files, no directories or symlinks
+                                    if audio_path.exists() && (audio_path.is_file()) {
                                         if let Some(rel_path) = pathdiff::diff_paths(
                                             audio_path.clone(),
                                             env::current_dir()?,
