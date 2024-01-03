@@ -1,7 +1,8 @@
 use crate::{
     error::{AnnattoError, Result},
     exporter::Exporter,
-    importer::Importer, workflow::StatusSender,
+    importer::Importer,
+    workflow::StatusSender,
 };
 use graphannis::{
     model::AnnotationComponent,
@@ -68,7 +69,7 @@ pub fn import_as_graphml_string_2<I, P>(
     path: P,
     graph_configuration: Option<&str>,
     disk_based: bool,
-    tx: Option<StatusSender>
+    tx: Option<StatusSender>,
 ) -> Result<String>
 where
     I: Importer,
