@@ -61,7 +61,7 @@ where
     I: Importer,
     P: AsRef<Path>,
 {
-    import_as_graphml_string_2(importer, path, graph_configuration, false, None)
+    import_as_graphml_string_2(importer, path, graph_configuration, true, None)
 }
 
 pub fn import_as_graphml_string_2<I, P>(

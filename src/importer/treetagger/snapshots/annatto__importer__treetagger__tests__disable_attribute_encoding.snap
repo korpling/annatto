@@ -101,25 +101,25 @@ display_name = "grid"
         </edge>
         <edge id="e6" source="unescaped_attribute/zossen#t1" target="unescaped_attribute/zossen#t2" label="Ordering/annis/">
         </edge>
-        <edge id="e7" source="unescaped_attribute/zossen#t8" target="unescaped_attribute/zossen#text" label="PartOf/annis/">
+        <edge id="e7" source="unescaped_attribute/zossen" target="unescaped_attribute" label="PartOf/annis/">
         </edge>
-        <edge id="e8" source="unescaped_attribute/zossen#t5" target="unescaped_attribute/zossen#text" label="PartOf/annis/">
+        <edge id="e8" source="unescaped_attribute/zossen#text" target="unescaped_attribute/zossen" label="PartOf/annis/">
         </edge>
-        <edge id="e9" source="unescaped_attribute/zossen#t2" target="unescaped_attribute/zossen#text" label="PartOf/annis/">
+        <edge id="e9" source="unescaped_attribute/zossen#t1" target="unescaped_attribute/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e10" source="unescaped_attribute/zossen" target="unescaped_attribute" label="PartOf/annis/">
+        <edge id="e10" source="unescaped_attribute/zossen#t2" target="unescaped_attribute/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e11" source="unescaped_attribute/zossen#t6" target="unescaped_attribute/zossen#text" label="PartOf/annis/">
+        <edge id="e11" source="unescaped_attribute/zossen#t3" target="unescaped_attribute/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e12" source="unescaped_attribute/zossen#t3" target="unescaped_attribute/zossen#text" label="PartOf/annis/">
+        <edge id="e12" source="unescaped_attribute/zossen#t4" target="unescaped_attribute/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e13" source="unescaped_attribute/zossen#text" target="unescaped_attribute/zossen" label="PartOf/annis/">
+        <edge id="e13" source="unescaped_attribute/zossen#t5" target="unescaped_attribute/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e14" source="unescaped_attribute/zossen#t7" target="unescaped_attribute/zossen#text" label="PartOf/annis/">
+        <edge id="e14" source="unescaped_attribute/zossen#t6" target="unescaped_attribute/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e15" source="unescaped_attribute/zossen#t4" target="unescaped_attribute/zossen#text" label="PartOf/annis/">
+        <edge id="e15" source="unescaped_attribute/zossen#t7" target="unescaped_attribute/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e16" source="unescaped_attribute/zossen#t1" target="unescaped_attribute/zossen#text" label="PartOf/annis/">
+        <edge id="e16" source="unescaped_attribute/zossen#t8" target="unescaped_attribute/zossen#text" label="PartOf/annis/">
         </edge>
     </graph>
 </graphml>

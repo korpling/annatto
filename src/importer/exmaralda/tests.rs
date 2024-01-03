@@ -195,7 +195,7 @@ fn test_exb(
         ImportEXMARaLDA::default(),
         env::current_dir()?.join(import_path), // IMPORTANT: test with absolute paths, this is what Annatto does at runtime
         None,
-        false,
+        true,
         Some(sender),
     )?;
     assert_snapshot!(actual);
