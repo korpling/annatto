@@ -169,19 +169,22 @@ impl ImportEXMARaLDA {
                     match str_tag_name.as_str() {
                         "abbreviation" | "l1" | "l2" | "comment" | "languages-used" => {
                             if let Some(parent) = parent_map.get("speaker") {
-                                let speaker_id = parent["id"].to_string();
-                                if str_tag_name.as_str() == "abbreviation" {
-                                    // write speaker name to speaker table
-                                    let speaker_name = char_buf.to_string();
-                                    speaker_map.insert(speaker_id.to_string(), speaker_name);
+                                if !char_buf.trim().is_empty() {
+                                    let speaker_id = parent["id"].to_string();
+                                    if str_tag_name.as_str() == "abbreviation" {
+                                        // write speaker name to speaker table
+                                        let speaker_name = char_buf.to_string();
+                                        speaker_map.insert(speaker_id.to_string(), speaker_name);
+                                    }
+
+                                    update.add_event(UpdateEvent::AddNodeLabel {
+                                        // speaker table data as document meta annotation
+                                        node_name: doc_node_name.to_string(),
+                                        anno_ns: speaker_id.to_string(),
+                                        anno_name: str_tag_name,
+                                        anno_value: char_buf.to_string(),
+                                    })?;
                                 }
-                                update.add_event(UpdateEvent::AddNodeLabel {
-                                    // speaker table data as document meta annotation
-                                    node_name: doc_node_name.to_string(),
-                                    anno_ns: speaker_id.to_string(),
-                                    anno_name: str_tag_name,
-                                    anno_value: char_buf.to_string(),
-                                })?;
                             }
                         }
                         "common-timeline" => {
