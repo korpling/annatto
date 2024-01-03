@@ -14,12 +14,9 @@
       <speaker id="dipl">
         <abbreviation>dipl</abbreviation>
         <sex value="u" />
-        <languages-used>
-			<language lang="eng"/>			
-			<language lang="eng"/>
-        </languages-used>
-        <l1><language lang="eng"/></l1>
-        <l2><language lang="deu"/></l2>
+        <languages-used/>
+        <l1/>
+        <l2/>
         <ud-speaker-information />
         <comment>was late for elicitation</comment>
       </speaker>
