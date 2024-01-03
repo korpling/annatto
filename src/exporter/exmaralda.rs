@@ -594,3 +594,38 @@ fn reachable_nodes(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use graphannis::AnnotationGraph;
+    use insta::assert_snapshot;
+
+    use crate::{
+        exporter::exmaralda::ExportExmaralda,
+        importer::{exmaralda::ImportEXMARaLDA, Importer},
+        util::export_to_string,
+        Module,
+    };
+
+    #[test]
+    fn test_exmaralda_export() {
+        let import = ImportEXMARaLDA::default();
+        let u = import.import_corpus(
+            Path::new("./tests/data/import/exmaralda/clean/import/"),
+            import.step_id(None),
+            None,
+        );
+        assert!(u.is_ok());
+        let mut update = u.unwrap();
+        let g = AnnotationGraph::new(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update, |_| {}).is_ok());
+        let actual = export_to_string(&graph, ExportExmaralda::default(), "exb");
+        assert!(actual.is_ok());
+
+        assert_snapshot!(actual.unwrap());
+    }
+}

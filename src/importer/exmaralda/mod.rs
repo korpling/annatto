@@ -112,17 +112,26 @@ impl ImportEXMARaLDA {
                                     if audio_path.exists()
                                         && (audio_path.is_file() || audio_path.is_symlink())
                                     {
-                                        if let Ok(rel_path) =
-                                            audio_path.strip_prefix(env::current_dir()?)
-                                        {
+                                        if let Some(rel_path) = pathdiff::diff_paths(
+                                            audio_path.clone(),
+                                            env::current_dir()?,
+                                        ) {
                                             map_audio_source(
                                                 update,
-                                                rel_path,
+                                                rel_path.as_path(),
                                                 doc_node_name.rsplit_once('/').unwrap().0,
                                                 doc_node_name,
                                             )?;
                                         } else {
-                                            progress.warn(format!("Could not map linked audio file in {}. Path is incorrect.", doc_node_name).as_str())?;
+                                            progress.warn(
+                                                format!(
+                                                    "Could not map linked audio file in \n{}, because no relative path to \n{} could be determined using \n{} as a base.",
+                                                    doc_node_name,
+                                                    audio_path.to_string_lossy(),
+                                                    env::current_dir()?.to_string_lossy()
+                                                )
+                                                .as_str(),
+                                            )?;
                                         }
                                     } else {
                                         let msg = format!("Linked file {} could not be found to be linked in document {}", audio_path.as_path().to_string_lossy(), &doc_node_name);
