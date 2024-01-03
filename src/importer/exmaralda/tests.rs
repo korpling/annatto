@@ -198,7 +198,7 @@ fn test_exb(
         true,
         Some(sender),
     )?;
-    assert_snapshot!(actual.split('\n').sorted().join("\n")); // ordering lines alphabetically for now should fix an issue with the volatile order of elements in graphml snapshots
+    assert_snapshot!(actual);
     let warnings = receiver
         .into_iter()
         .filter(|m| matches!(m, StatusMessage::Warning(..)))
