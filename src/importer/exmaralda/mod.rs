@@ -112,13 +112,18 @@ impl ImportEXMARaLDA {
                                     if audio_path.exists()
                                         && (audio_path.is_file() || audio_path.is_symlink())
                                     {
-                                        let rel_path = audio_path.strip_prefix(env::current_dir()?).map_err(|_| AnnattoError::Import { reason: format!("Could not obtain relative path of linked file {:?}", audio_path), importer: self.module_name().to_string(), path: document_path.to_path_buf() })?;
-                                        map_audio_source(
-                                            update,
-                                            rel_path,
-                                            doc_node_name.rsplit_once('/').unwrap().0,
-                                            doc_node_name,
-                                        )?;
+                                        if let Ok(rel_path) =
+                                            audio_path.strip_prefix(env::current_dir()?)
+                                        {
+                                            map_audio_source(
+                                                update,
+                                                rel_path,
+                                                doc_node_name.rsplit_once('/').unwrap().0,
+                                                doc_node_name,
+                                            )?;
+                                        } else {
+                                            progress.warn(format!("Could not map linked audio file in {}. Path is incorrect.", doc_node_name).as_str())?;
+                                        }
                                     } else {
                                         let msg = format!("Linked file {} could not be found to be linked in document {}", audio_path.as_path().to_string_lossy(), &doc_node_name);
                                         progress.warn(&msg)?;
