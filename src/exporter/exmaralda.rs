@@ -90,11 +90,10 @@ impl Exporter for ExportExmaralda {
             writer.write_event(Event::Start(BytesStart::new("basic-transcription")))?;
             writer.write_event(Event::Start(BytesStart::new("head")))?;
             writer.write_event(Event::Start(BytesStart::new("meta-information")))?;
-            writer.write_event(Event::Start(BytesStart::new("transcription-name")))?;
-            writer.write_event(Event::End(BytesEnd::new("transcription-name")))?;
+            writer.create_element("project-name").write_empty()?;
+            writer.create_element("transcription-name").write_empty()?;
             if let Some(paths) = media_data.get(doc_node_id) {
                 for ref_path in paths {
-                    let mut ref_file = BytesStart::new("referenced-file");
                     let url = if self.copy_media {
                         let target = media_dir
                             .as_ref()
@@ -123,17 +122,17 @@ impl Exporter for ExportExmaralda {
                             }));
                         }
                     };
-                    ref_file.push_attribute(("url", url.as_str()));
-                    writer.write_event(Event::Start(ref_file))?;
-                    writer.write_event(Event::End(BytesEnd::new("referenced-file")))?;
+                    writer
+                        .create_element("referenced-file")
+                        .with_attribute(("url", url.as_str()))
+                        .write_empty()?;
                 }
             };
-            writer.write_event(Event::Start(BytesStart::new("ud-meta-information")))?;
-            writer.write_event(Event::End(BytesEnd::new("ud-meta-information")))?;
-            writer.write_event(Event::Start(BytesStart::new("comment")))?;
-            writer.write_event(Event::End(BytesEnd::new("comment")))?;
-            writer.write_event(Event::Start(BytesStart::new("transcription-convention")))?;
-            writer.write_event(Event::End(BytesEnd::new("transcription-convention")))?;
+            writer.create_element("ud-meta-information").write_empty()?;
+            writer.create_element("comment").write_empty()?;
+            writer
+                .create_element("transcription-convention")
+                .write_empty()?;
             writer.write_event(Event::End(BytesEnd::new("meta-information")))?;
             writer.write_event(Event::Start(BytesStart::new("speakertable")))?;
             // note: speaker id and speaker name are derived from namespaces,
@@ -153,7 +152,6 @@ impl Exporter for ExportExmaralda {
                 writer.write_event(Event::Start(BytesStart::new("abbreviation")))?;
                 writer.write_event(Event::Text(BytesText::new(&speaker_name)))?;
                 writer.write_event(Event::End(BytesEnd::new("abbreviation")))?;
-                let mut sex = BytesStart::new("sex");
                 let sex_val = if let Some(v) = node_annos.get_value_for_item(
                     doc_node_id,
                     &AnnoKey {
@@ -165,10 +163,10 @@ impl Exporter for ExportExmaralda {
                 } else {
                     "u".to_string()
                 };
-                sex.push_attribute(("value", sex_val.as_str()));
-                writer.write_event(Event::Start(sex))?;
-                writer.write_event(Event::End(BytesEnd::new("sex")))?;
-                writer.write_event(Event::Start(BytesStart::new("languages-used")))?;
+                writer
+                    .create_element("sex")
+                    .with_attribute(("value", sex_val.as_str()))
+                    .write_empty()?;
                 if let Some(v) = node_annos.get_value_for_item(
                     doc_node_id,
                     &AnnoKey {
@@ -176,17 +174,18 @@ impl Exporter for ExportExmaralda {
                         ns: speaker_name.into(),
                     },
                 )? {
+                    writer.write_event(Event::Start(BytesStart::new("languages-used")))?;
                     for entry in v.split(LANGUAGE_SEP) {
-                        let mut lang = BytesStart::new("language");
-                        lang.push_attribute(("lang", entry.trim()));
-                        writer.write_event(Event::Start(lang))?;
-                        writer.write_event(Event::End(BytesEnd::new("language")))?;
+                        writer
+                            .create_element("language")
+                            .with_attribute(("lang", entry.trim()))
+                            .write_empty()?;
                     }
+                    writer.write_event(Event::End(BytesEnd::new("languages-used")))?;
+                } else {
+                    writer.create_element("languages-used").write_empty()?;
                 }
-                writer.write_event(Event::End(BytesEnd::new("languages-used")))?;
                 for lang_key in ["l1", "l2"] {
-                    // TODO `languages-used` is not mapped correctly, it requires children of name "language"
-                    writer.write_event(Event::Start(BytesStart::new(lang_key)))?;
                     if let Some(v) = node_annos.get_value_for_item(
                         doc_node_id,
                         &AnnoKey {
@@ -194,14 +193,17 @@ impl Exporter for ExportExmaralda {
                             ns: speaker_name.into(),
                         },
                     )? {
-                        let mut lang = BytesStart::new("language");
-                        lang.push_attribute(("lang", v.trim()));
-                        writer.write_event(Event::Start(lang))?;
-                        writer.write_event(Event::End(BytesEnd::new("language")))?;
+                        writer.write_event(Event::Start(BytesStart::new(lang_key)))?;
+                        writer
+                            .create_element("language")
+                            .with_attribute(("lang", v.trim()))
+                            .write_empty()?;
+                        writer.write_event(Event::End(BytesEnd::new(lang_key)))?;
+                    } else {
+                        writer.create_element(lang_key).write_empty()?;
                     }
-                    writer.write_event(Event::End(BytesEnd::new(lang_key)))?;
                 }
-                writer.write_event(Event::Start(BytesStart::new("ud-speaker-information")))?;
+                let mut user_defined_attrs = Vec::new();
                 for anno_key in node_annos.get_all_keys_for_item(&doc_node_id, None, None)? {
                     if anno_key.ns.as_str() == ANNIS_NS
                         || anno_key.ns.as_str() != speaker_name
@@ -210,16 +212,23 @@ impl Exporter for ExportExmaralda {
                         continue;
                     }
                     if let Some(v) = node_annos.get_value_for_item(doc_node_id, &anno_key)? {
-                        let mut user_defined_attr = BytesStart::new("ud-information");
-                        user_defined_attr
-                            .push_attribute(("attribute-name", anno_key.name.as_str()));
-                        writer.write_event(Event::Start(user_defined_attr))?;
-                        writer.write_event(Event::Text(BytesText::new(&*v)))?;
-                        writer.write_event(Event::End(BytesEnd::new("ud-information")))?;
+                        user_defined_attrs.push((anno_key.name.to_string(), v));
                     }
                 }
-                writer.write_event(Event::End(BytesEnd::new("ud-speaker-information")))?;
-                writer.write_event(Event::Start(BytesStart::new("comment")))?;
+                if user_defined_attrs.is_empty() {
+                    writer
+                        .create_element("ud-speaker-information")
+                        .write_empty()?;
+                } else {
+                    writer.write_event(Event::Start(BytesStart::new("ud-speaker-information")))?;
+                    for (attr_name, text_val) in user_defined_attrs {
+                        writer
+                            .create_element("ud-information")
+                            .with_attribute(("attribute-name", attr_name.as_str()))
+                            .write_text_content(BytesText::new(&*text_val))?;
+                    }
+                    writer.write_event(Event::End(BytesEnd::new("ud-speaker-information")))?;
+                }
                 if let Some(v) = node_annos.get_value_for_item(
                     doc_node_id,
                     &AnnoKey {
@@ -227,9 +236,12 @@ impl Exporter for ExportExmaralda {
                         ns: speaker_name.into(),
                     },
                 )? {
+                    writer.write_event(Event::Start(BytesStart::new("comment")))?;
                     writer.write_event(Event::Text(BytesText::new(&v)))?;
+                    writer.write_event(Event::End(BytesEnd::new("comment")))?;
+                } else {
+                    writer.create_element("comment").write_empty()?;
                 }
-                writer.write_event(Event::End(BytesEnd::new("comment")))?;
                 writer.write_event(Event::End(BytesEnd::new("speaker")))?;
             }
             writer.write_event(Event::End(BytesEnd::new("speakertable")))?;
@@ -242,11 +254,11 @@ impl Exporter for ExportExmaralda {
                 .filter(|((d, _), _)| d == doc_node_id)
                 .collect();
             for ((_, tli_id), t) in &timeline {
-                let mut tli = BytesStart::new("tli");
-                tli.push_attribute(("id", tli_id.as_str()));
-                tli.push_attribute(("time", t.to_string().as_str()));
-                writer.write_event(Event::Start(tli))?;
-                writer.write_event(Event::End(BytesEnd::new("tli")))?;
+                writer
+                    .create_element("tli")
+                    .with_attribute(("id", tli_id.as_str()))
+                    .with_attribute(("time", t.to_string().as_str()))
+                    .write_empty()?;
             }
             writer.write_event(Event::End(BytesEnd::new("common-timeline")))?;
             for (i, anno_key) in node_annos.annotation_keys()?.iter().enumerate() {
@@ -276,27 +288,36 @@ impl Exporter for ExportExmaralda {
                     } else {
                         "a"
                     };
-                    let mut tier = BytesStart::new("tier");
-                    tier.push_attribute(("speaker", anno_key.ns.as_str()));
-                    tier.push_attribute(("category", anno_key.name.as_str()));
-                    tier.push_attribute(("type", tier_type));
-                    tier.push_attribute(("id", format!("TIER{i}").as_str()));
-                    tier.push_attribute((
-                        "display-name",
-                        format!("{}[{}]", anno_key.ns.as_str(), anno_key.name.as_str()).as_str(),
-                    ));
-                    writer.write_event(Event::Start(tier))?;
-                    for (node_id, anno_value) in sorted_entries {
-                        let start = start_data.get(&(*doc_node_id, *node_id)).unwrap();
-                        let end = end_data.get(&(*doc_node_id, *node_id)).unwrap();
-                        let mut event = BytesStart::new("event");
-                        event.push_attribute(("start", start.as_str()));
-                        event.push_attribute(("end", end.as_str()));
-                        writer.write_event(Event::Start(event))?;
-                        writer.write_event(Event::Text(BytesText::new(anno_value)))?;
-                        writer.write_event(Event::End(BytesEnd::new("event")))?;
+                    let display_name =
+                        format!("{}[{}]", anno_key.ns.as_str(), anno_key.name.as_str());
+                    let tier_id = format!("TIER{i}");
+                    let tier_attributes = [
+                        ("speaker", anno_key.ns.as_str()),
+                        ("category", anno_key.name.as_str()),
+                        ("type", tier_type),
+                        ("id", tier_id.as_str()),
+                        ("display-name", display_name.as_str()),
+                    ];
+                    if entries.is_empty() {
+                        writer
+                            .create_element("tier")
+                            .with_attributes(tier_attributes)
+                            .write_empty()?;
+                    } else {
+                        let tier = BytesStart::new("tier").with_attributes(tier_attributes);
+                        writer.write_event(Event::Start(tier))?;
+                        for (node_id, anno_value) in sorted_entries {
+                            let start = start_data.get(&(*doc_node_id, *node_id)).unwrap();
+                            let end = end_data.get(&(*doc_node_id, *node_id)).unwrap();
+                            let mut event = BytesStart::new("event");
+                            event.push_attribute(("start", start.as_str()));
+                            event.push_attribute(("end", end.as_str()));
+                            writer.write_event(Event::Start(event))?;
+                            writer.write_event(Event::Text(BytesText::new(anno_value)))?;
+                            writer.write_event(Event::End(BytesEnd::new("event")))?;
+                        }
+                        writer.write_event(Event::End(BytesEnd::new("tier")))?;
                     }
-                    writer.write_event(Event::End(BytesEnd::new("tier")))?;
                 }
             }
             writer.write_event(Event::End(BytesEnd::new("basic-body")))?;
