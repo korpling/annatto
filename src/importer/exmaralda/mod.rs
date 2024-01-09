@@ -38,6 +38,8 @@ impl Module for ImportEXMARaLDA {
     }
 }
 
+const FILE_EXTENSIONS: [&str; 2] = ["exb", "xml"];
+
 impl Importer for ImportEXMARaLDA {
     fn import_corpus(
         &self,
@@ -46,7 +48,7 @@ impl Importer for ImportEXMARaLDA {
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let all_files = import_corpus_graph_from_files(&mut update, input_path, &["exb", "xml"])?;
+        let all_files = import_corpus_graph_from_files(&mut update, input_path, self.file_extensions())?;
         let progress = ProgressReporter::new(tx.clone(), step_id, all_files.len())?;
         let document_status: Result<Vec<()>, AnnattoError> = all_files
             .into_iter()
@@ -57,6 +59,10 @@ impl Importer for ImportEXMARaLDA {
         // Check for any errors
         document_status?;
         Ok(update)
+    }
+
+    fn file_extensions(&self) -> &[&str] {
+        &FILE_EXTENSIONS
     }
 }
 

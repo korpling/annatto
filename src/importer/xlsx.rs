@@ -391,6 +391,8 @@ impl ImportSpreadsheet {
     }
 }
 
+const FILE_EXTENSIONS: [&str; 1] = ["xlsx"];
+
 impl Importer for ImportSpreadsheet {
     fn import_corpus(
         &self,
@@ -401,7 +403,7 @@ impl Importer for ImportSpreadsheet {
         let mut updates = GraphUpdate::default();
 
         let all_files =
-            util::graphupdate::import_corpus_graph_from_files(&mut updates, input_path, &["xlsx"])?;
+            util::graphupdate::import_corpus_graph_from_files(&mut updates, input_path, self.file_extensions())?;
         let number_of_files = all_files.len();
         // Each file is a work step
         let reporter = ProgressReporter::new(tx, step_id, number_of_files)?;
@@ -414,6 +416,10 @@ impl Importer for ImportSpreadsheet {
         })?;
 
         Ok(updates)
+    }
+
+    fn file_extensions(&self) -> &[&str] {
+        &FILE_EXTENSIONS
     }
 }
 

@@ -34,4 +34,6 @@ pub trait Importer: Module {
         step_id: StepID,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>>;
+
+    fn file_extensions(&self) -> &[&str];
 }

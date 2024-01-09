@@ -79,11 +79,12 @@ impl Exporter for ExportExmaralda {
             None
         };
         let progress = ProgressReporter::new(tx, step_id, doc_nodes.len())?;
+        let extension = self.file_extension();
         for doc_node_id in doc_nodes {
             let doc_name = node_annos
                 .get_value_for_item(doc_node_id, &NODE_NAME_KEY)?
                 .unwrap();
-            let doc_path = output_path.join(format!("{}.exb", doc_name.split('/').last().unwrap()));
+            let doc_path = output_path.join(format!("{}.{extension}", doc_name.split('/').last().unwrap()));
             fs::create_dir_all(doc_path.as_path().parent().unwrap())?;
             let file = fs::File::create(doc_path.as_path())?;
             let mut writer = Writer::new_with_indent(BufWriter::new(file), b' ', 2);
@@ -319,6 +320,10 @@ impl Exporter for ExportExmaralda {
             progress.worked(1)?;
         }
         Ok(())
+    }
+
+    fn file_extension(&self) -> &str {
+        "exb"
     }
 }
 

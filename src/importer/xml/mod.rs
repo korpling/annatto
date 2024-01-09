@@ -40,6 +40,8 @@ impl Module for ImportXML {
     }
 }
 
+const FILE_EXTENSIONS: [&str; 1] = ["xml"];
+
 impl Importer for ImportXML {
     fn import_corpus(
         &self,
@@ -48,12 +50,16 @@ impl Importer for ImportXML {
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let all_files = import_corpus_graph_from_files(&mut update, input_path, &["xml"])?;
+        let all_files = import_corpus_graph_from_files(&mut update, input_path, &FILE_EXTENSIONS)?;
         let progress = ProgressReporter::new(tx.clone(), step_id, all_files.len())?;
         all_files
             .into_iter()
             .try_for_each(|(p, d)| self.import_document(p.as_path(), d, &mut update, &progress))?;
         Ok(update)
+    }
+
+    fn file_extensions(&self) -> &[&str] {
+        &FILE_EXTENSIONS
     }
 }
 

@@ -39,7 +39,7 @@ pub fn write_to_file(updates: &GraphUpdate, path: &std::path::Path) -> Result<()
 /// Get all files with a given extension in a directory.
 pub fn get_all_files(
     corpus_root_dir: &Path,
-    file_extensions: Vec<&str>,
+    file_extensions: &[&str],
 ) -> std::result::Result<Vec<PathBuf>, AnnattoError> {
     let mut paths = Vec::new();
     let flex_path = corpus_root_dir.join("**");
@@ -115,7 +115,7 @@ where
             path: output_path.path().to_path_buf(),
         })?;
     let mut buffer = String::new();
-    for path in get_all_files(output_path.path(), vec![file_extension])? {
+    for path in get_all_files(output_path.path(), &[file_extension])? {
         let file_data = fs::read_to_string(path)?;
         buffer.push_str(&file_data);
     }

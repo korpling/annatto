@@ -51,6 +51,8 @@ fn read_annotations(
     Ok(anno_map)
 }
 
+const FILE_EXTENSIONS: [&str; 1] = ["meta"];
+
 impl Importer for AnnotateCorpus {
     fn import_corpus(
         &self,
@@ -59,7 +61,7 @@ impl Importer for AnnotateCorpus {
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let all_files = get_all_files(input_path, vec!["meta"])?;
+        let all_files = get_all_files(input_path, self.file_extensions())?;
         let progress = ProgressReporter::new(tx, step_id, all_files.len())?;
         let start_index = input_path.to_string_lossy().len() + 1;
         for file_path in all_files.into_iter().filter(|p| p.is_file()) {
@@ -87,6 +89,10 @@ impl Importer for AnnotateCorpus {
             progress.worked(1)?;
         }
         Ok(update)
+    }
+
+    fn file_extensions(&self) -> &[&str] {
+        &FILE_EXTENSIONS
     }
 }
 

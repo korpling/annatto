@@ -269,6 +269,8 @@ fn read_graphml<R: std::io::BufRead>(
     Ok(config)
 }
 
+const FILE_EXTENSIONS: [&str; 1] = ["graphml"];
+
 impl Importer for GraphMLImporter {
     fn import_corpus(
         &self,
@@ -297,6 +299,10 @@ impl Importer for GraphMLImporter {
         reporter.worked(1)?;
 
         Ok(updates)
+    }
+
+    fn file_extensions(&self) -> &[&str] {
+        &FILE_EXTENSIONS
     }
 }
 
