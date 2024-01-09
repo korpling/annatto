@@ -54,7 +54,8 @@ impl Importer for ImportOpusLinks {
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let all_files = import_corpus_graph_from_files(&mut update, input_path, self.file_extensions())?;
+        let all_files =
+            import_corpus_graph_from_files(&mut update, input_path, self.file_extensions())?;
         let progress = ProgressReporter::new(tx, step_id, all_files.len())?;
         all_files.into_iter().try_for_each(|(p, d)| {
             if let Err(e) = self.import_document(p.as_path(), Path::new(d.as_str()), &mut update) {

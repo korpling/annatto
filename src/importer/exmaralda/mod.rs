@@ -48,7 +48,8 @@ impl Importer for ImportEXMARaLDA {
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let all_files = import_corpus_graph_from_files(&mut update, input_path, self.file_extensions())?;
+        let all_files =
+            import_corpus_graph_from_files(&mut update, input_path, self.file_extensions())?;
         let progress = ProgressReporter::new(tx.clone(), step_id, all_files.len())?;
         let document_status: Result<Vec<()>, AnnattoError> = all_files
             .into_iter()

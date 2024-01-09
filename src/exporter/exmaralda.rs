@@ -84,7 +84,10 @@ impl Exporter for ExportExmaralda {
             let doc_name = node_annos
                 .get_value_for_item(doc_node_id, &NODE_NAME_KEY)?
                 .unwrap();
-            let doc_path = output_path.join(format!("{}.{extension}", doc_name.split('/').last().unwrap()));
+            let doc_path = output_path.join(format!(
+                "{}.{extension}",
+                doc_name.split('/').last().unwrap()
+            ));
             fs::create_dir_all(doc_path.as_path().parent().unwrap())?;
             let file = fs::File::create(doc_path.as_path())?;
             let mut writer = Writer::new_with_indent(BufWriter::new(file), b' ', 2);
