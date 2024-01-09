@@ -39,6 +39,8 @@ impl Module for ImportCoNLLU {
     }
 }
 
+const FILE_EXTENSIONS: [&str; 2] = ["conll", "conllu"];
+
 impl Importer for ImportCoNLLU {
     fn import_corpus(
         &self,
@@ -49,11 +51,15 @@ impl Importer for ImportCoNLLU {
         // TODO use ProgressReporter
         let mut update = GraphUpdate::default();
         let paths_and_node_names =
-            import_corpus_graph_from_files(&mut update, input_path, &["conll", "conllu"])?;
+            import_corpus_graph_from_files(&mut update, input_path, self.file_extensions())?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
             self.import_document(&mut update, pathbuf.as_path(), doc_node_name, &tx)?;
         }
         Ok(update)
+    }
+
+    fn file_extensions(&self) -> &[&str] {
+        &FILE_EXTENSIONS
     }
 }
 

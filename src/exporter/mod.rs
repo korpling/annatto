@@ -25,4 +25,6 @@ pub trait Exporter: Module {
         step_id: StepID,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>>;
+
+    fn file_extension(&self) -> &str;
 }

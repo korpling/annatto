@@ -403,6 +403,7 @@ impl Exporter for GraphMLExporter {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let reporter = ProgressReporter::new_unknown_total_work(tx, step_id)?;
         let file_name;
+        let extension = self.file_extension();
         if let Some(part_of_c) = graph
             .get_all_components(Some(AnnotationComponentType::PartOf), None)
             .first()
@@ -424,7 +425,7 @@ impl Exporter for GraphMLExporter {
                 .unwrap()?
                 .node;
             file_name = format!(
-                "{}.graphml",
+                "{}.{extension}",
                 graph
                     .get_node_annos()
                     .get_value_for_item(&corpus_root, &NODE_NAME_KEY)?
@@ -471,5 +472,9 @@ impl Exporter for GraphMLExporter {
             },
         )?;
         Ok(())
+    }
+
+    fn file_extension(&self) -> &str {
+        "graphml"
     }
 }
