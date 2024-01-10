@@ -48,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `exmaralda` returns error when there is no time value for a timeline item
 - fixed and simplified import of corpus node annotations
 - `exmaralda` import's paths to linked media files are relative to the working directory
+- `xlsx` importer now adds `PartOf` relations to the document nodes  
 
 ### Removed
 

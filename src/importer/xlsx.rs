@@ -215,6 +215,13 @@ impl ImportSpreadsheet {
                 anno_name: "layer".to_string(),
                 anno_value: "default_layer".to_string(),
             })?;
+            update.add_event(UpdateEvent::AddEdge {
+                source_node: tok_id.clone(),
+                target_node: doc_path.to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: "PartOf".to_string(),
+                component_name: "".to_string(),
+            })?;
             base_tokens.push(tok_id);
         }
         base_tokens
@@ -266,6 +273,13 @@ impl ImportSpreadsheet {
                         update.add_event(UpdateEvent::AddNode {
                             node_name: node_name.to_string(),
                             node_type: "node".to_string(),
+                        })?;
+                        update.add_event(UpdateEvent::AddEdge {
+                            source_node: node_name.clone(),
+                            target_node: doc_path.to_string(),
+                            layer: ANNIS_NS.to_string(),
+                            component_type: "PartOf".to_string(),
+                            component_name: "".to_string(),
                         })?;
                         if name == tok_name {
                             update.add_event(UpdateEvent::AddNodeLabel {
