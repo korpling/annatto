@@ -449,4 +449,57 @@ mod tests {
         let it = graphannis::aql::execute_query_on_graph(&written_graph, &q, false, None).unwrap();
         assert_eq!(1, it.count());
     }
+
+    #[test]
+    fn with_namespace() {
+        let importer: ImportSpreadsheet = toml::from_str(
+            r#"
+        column_map = {"tok" = ["mynamespace::lb"]}
+            "#,
+        )
+        .unwrap();
+        let mut exporter = XlsxExporter::default();
+        exporter.include_namespace = true;
+        exporter.annotation_order = vec!["tok".into()];
+
+        // Import an example document
+        let path = Path::new("./tests/data/import/xlsx/sample_sentence_with_namespace/");
+
+        let mut updates = importer
+            .import_corpus(path, importer.step_id(None), None)
+            .unwrap();
+        let mut original_graph = AnnotationGraph::new(false).unwrap();
+        original_graph.apply_update(&mut updates, |_| {}).unwrap();
+
+        // Export to Excel file and read it again
+        let output_dir = TempDir::new().unwrap();
+        exporter
+            .export_corpus(
+                &original_graph,
+                output_dir.path(),
+                exporter.step_id(None),
+                None,
+            )
+            .unwrap();
+        let mut written_graph = AnnotationGraph::new(false).unwrap();
+        let mut updates = importer
+            .import_corpus(path, importer.step_id(None), None)
+            .unwrap();
+        written_graph.apply_update(&mut updates, |_| {}).unwrap();
+
+        // Compare the graphs and make sure the token exist
+        compare_graphs(&original_graph, &written_graph);
+
+        let q = graphannis::aql::parse("tok", false).unwrap();
+        let it = graphannis::aql::execute_query_on_graph(&written_graph, &q, false, None).unwrap();
+        assert_eq!(11, it.count());
+
+        let q = graphannis::aql::parse("mynamespace:lb=\"1\"", false).unwrap();
+        let it = graphannis::aql::execute_query_on_graph(&written_graph, &q, false, None).unwrap();
+        assert_eq!(1, it.count());
+
+        let q = graphannis::aql::parse("mynamespace:lb=\"2\"", false).unwrap();
+        let it = graphannis::aql::execute_query_on_graph(&written_graph, &q, false, None).unwrap();
+        assert_eq!(1, it.count());
+    }
 }

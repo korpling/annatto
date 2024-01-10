@@ -297,10 +297,13 @@ impl ImportSpreadsheet {
                                 anno_value: tok_name.to_string(),
                             })?;
                         }
+
+                        let (anno_ns, anno_name) = split_qname(&name);
+
                         update.add_event(UpdateEvent::AddNodeLabel {
                             node_name: node_name.to_string(),
-                            anno_ns: tok_name.to_string(),
-                            anno_name: name.to_string(),
+                            anno_ns: anno_ns.unwrap_or(tok_name).to_string(),
+                            anno_name: anno_name.to_string(),
                             anno_value: value.to_string(),
                         })?;
                         for target_id in overlapped_tokens {
