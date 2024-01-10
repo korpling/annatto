@@ -25,7 +25,9 @@ pub const MODULE_NAME: &str = "export_xlsx";
 
 #[derive(Default, Deserialize)]
 #[serde(default)]
-pub struct XlsxExporter {}
+pub struct XlsxExporter {
+    output_namespace: bool,
+}
 
 impl Module for XlsxExporter {
     fn module_name(&self) -> &str {
@@ -98,47 +100,7 @@ impl XlsxExporter {
 
         // Output all spans
         let name_to_column = self.get_span_columns(g, &token_helper, 2)?;
-
-        for span_anno_key in name_to_column.keys() {
-            if let Some(column_name) = name_to_column.get(span_anno_key) {
-                worksheet
-                    .get_cell_mut(format!("{}1", column_name))
-                    .set_value_string(join_qname(&span_anno_key.ns, &span_anno_key.name));
-                for span in g.get_node_annos().exact_anno_search(
-                    Some(&span_anno_key.ns),
-                    &span_anno_key.name,
-                    ValueSearch::Any,
-                ) {
-                    let span = span?;
-                    let span_val = g
-                        .get_node_annos()
-                        .get_value_for_item(&span.node, &span.anno_key)?
-                        .unwrap_or_default();
-
-                    let mut spanned_rows = BTreeSet::new();
-                    // Find all token covered by the span
-                    for gs in token_helper.get_gs_coverage().iter() {
-                        for t in gs.get_outgoing_edges(span.node) {
-                            let t = t?;
-                            if let Some(row) = token_to_row.get(&t) {
-                                spanned_rows.insert(row);
-                            }
-                        }
-                    }
-                    let first_row = spanned_rows.first();
-                    let last_row = spanned_rows.last();
-
-                    if let (Some(first), Some(last)) = (first_row, last_row) {
-                        let first_cell = format!("{}{}", column_name, *first);
-                        worksheet
-                            .get_cell_mut(first_cell.clone())
-                            .set_value_string(span_val);
-                        let last_cell = format!("{}{}", column_name, last);
-                        worksheet.add_merge_cells(format!("{}:{}", first_cell, last_cell));
-                    }
-                }
-            }
-        }
+        self.create_span_columns(g, &name_to_column, token_to_row, &token_helper, worksheet)?;
 
         if has_only_empty_token {
             // Remove the empty token column
@@ -235,6 +197,63 @@ impl XlsxExporter {
         } else {
             Err(anyhow!("Missing PartOf component"))
         }
+    }
+
+    fn create_span_columns(
+        &self,
+        g: &AnnotationGraph,
+        name_to_column: &LinkedHashMap<AnnoKey, String>,
+        token_to_row: HashMap<NodeID, u32>,
+        token_helper: &TokenHelper,
+        worksheet: &mut Worksheet,
+    ) -> anyhow::Result<()> {
+        for span_anno_key in name_to_column.keys() {
+            if let Some(column_name) = name_to_column.get(span_anno_key) {
+                if self.output_namespace {
+                    worksheet
+                        .get_cell_mut(format!("{}1", column_name))
+                        .set_value_string(join_qname(&span_anno_key.ns, &span_anno_key.name));
+                } else {
+                    worksheet
+                        .get_cell_mut(format!("{}1", column_name))
+                        .set_value_string(span_anno_key.name.clone());
+                }
+                for span in g.get_node_annos().exact_anno_search(
+                    Some(&span_anno_key.ns),
+                    &span_anno_key.name,
+                    ValueSearch::Any,
+                ) {
+                    let span = span?;
+                    let span_val = g
+                        .get_node_annos()
+                        .get_value_for_item(&span.node, &span.anno_key)?
+                        .unwrap_or_default();
+
+                    let mut spanned_rows = BTreeSet::new();
+                    // Find all token covered by the span
+                    for gs in token_helper.get_gs_coverage().iter() {
+                        for t in gs.get_outgoing_edges(span.node) {
+                            let t = t?;
+                            if let Some(row) = token_to_row.get(&t) {
+                                spanned_rows.insert(row);
+                            }
+                        }
+                    }
+                    let first_row = spanned_rows.first();
+                    let last_row = spanned_rows.last();
+
+                    if let (Some(first), Some(last)) = (first_row, last_row) {
+                        let first_cell = format!("{}{}", column_name, *first);
+                        worksheet
+                            .get_cell_mut(first_cell.clone())
+                            .set_value_string(span_val);
+                        let last_cell = format!("{}{}", column_name, last);
+                        worksheet.add_merge_cells(format!("{}:{}", first_cell, last_cell));
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 }
 
