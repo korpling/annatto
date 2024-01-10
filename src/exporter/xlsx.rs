@@ -1,4 +1,7 @@
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::{
+    cmp::Ordering,
+    collections::{BTreeSet, HashMap, HashSet},
+};
 
 use anyhow::anyhow;
 use graphannis::{graph::GraphStorage, model::AnnotationComponentType, AnnotationGraph};
@@ -26,7 +29,8 @@ pub const MODULE_NAME: &str = "export_xlsx";
 #[derive(Default, Deserialize)]
 #[serde(default)]
 pub struct XlsxExporter {
-    output_namespace: bool,
+    include_namespace: bool,
+    annotation_order: Vec<String>,
 }
 
 impl Module for XlsxExporter {
@@ -71,6 +75,17 @@ fn is_span_column(
         }
     }
     Ok(true)
+}
+
+fn overwritten_position_for_key(
+    anno_key: &AnnoKey,
+    position_overwrite: &HashMap<String, u32>,
+) -> Option<u32> {
+    // Try the fully qualified name first, then check if the unspecific name is configured
+    position_overwrite
+        .get(&join_qname(&anno_key.ns, &anno_key.name))
+        .or_else(|| position_overwrite.get(anno_key.name.as_str()))
+        .copied()
 }
 
 impl XlsxExporter {
@@ -119,13 +134,42 @@ impl XlsxExporter {
         g: &AnnotationGraph,
         token_helper: &TokenHelper,
         column_offset: u32,
-    ) -> anyhow::Result<LinkedHashMap<AnnoKey, String>> {
-        let mut result = LinkedHashMap::new();
+    ) -> anyhow::Result<LinkedHashMap<AnnoKey, u32>> {
+        // create a hash map from the configuration value
+        let position_overwrite: HashMap<String, u32> = self
+            .annotation_order
+            .iter()
+            .enumerate()
+            .map(|(idx, anno)| (anno.clone(), (idx as u32) + column_offset))
+            .collect();
+
         let node_annos = g.get_node_annos();
+        let mut all_anno_keys = node_annos.annotation_keys()?;
+
+        // order the annotation keys by the configuration
+        all_anno_keys.sort_by(|a, b| {
+            let a_overwrite = overwritten_position_for_key(a, &position_overwrite);
+            let b_overwrite = overwritten_position_for_key(b, &position_overwrite);
+
+            if let (Some(a_overwrite), Some(b_overwrite)) = (a_overwrite, b_overwrite) {
+                // Compare the configured values
+                a_overwrite.cmp(&b_overwrite)
+            } else if a_overwrite.is_some() {
+                Ordering::Less
+            } else if b_overwrite.is_some() {
+                Ordering::Greater
+            } else {
+                // Use lexical comparision of the namespace/name components
+                a.cmp(b)
+            }
+        });
+
+        let mut result = LinkedHashMap::new();
+
         let mut column_index = column_offset;
-        for anno_key in node_annos.annotation_keys()? {
+        for anno_key in all_anno_keys {
             if anno_key.ns != ANNIS_NS && is_span_column(&anno_key, node_annos, token_helper)? {
-                result.insert(anno_key, string_from_column_index(&column_index));
+                result.insert(anno_key, column_index);
                 column_index += 1;
             }
         }
@@ -202,20 +246,20 @@ impl XlsxExporter {
     fn create_span_columns(
         &self,
         g: &AnnotationGraph,
-        name_to_column: &LinkedHashMap<AnnoKey, String>,
+        name_to_column: &LinkedHashMap<AnnoKey, u32>,
         token_to_row: HashMap<NodeID, u32>,
         token_helper: &TokenHelper,
         worksheet: &mut Worksheet,
     ) -> anyhow::Result<()> {
         for span_anno_key in name_to_column.keys() {
-            if let Some(column_name) = name_to_column.get(span_anno_key) {
-                if self.output_namespace {
+            if let Some(column_index) = name_to_column.get(span_anno_key) {
+                if self.include_namespace {
                     worksheet
-                        .get_cell_mut(format!("{}1", column_name))
+                        .get_cell_mut((*column_index, 1))
                         .set_value_string(join_qname(&span_anno_key.ns, &span_anno_key.name));
                 } else {
                     worksheet
-                        .get_cell_mut(format!("{}1", column_name))
+                        .get_cell_mut((*column_index, 1))
                         .set_value_string(span_anno_key.name.clone());
                 }
                 for span in g.get_node_annos().exact_anno_search(
@@ -243,11 +287,13 @@ impl XlsxExporter {
                     let last_row = spanned_rows.last();
 
                     if let (Some(first), Some(last)) = (first_row, last_row) {
-                        let first_cell = format!("{}{}", column_name, *first);
+                        let first_cell =
+                            format!("{}{}", string_from_column_index(column_index), *first);
                         worksheet
                             .get_cell_mut(first_cell.clone())
                             .set_value_string(span_val);
-                        let last_cell = format!("{}{}", column_name, last);
+                        let last_cell =
+                            format!("{}{}", string_from_column_index(column_index), last);
                         worksheet.add_merge_cells(format!("{}:{}", first_cell, last_cell));
                     }
                 }
@@ -290,7 +336,7 @@ impl Exporter for XlsxExporter {
         let results: anyhow::Result<Vec<_>> = document_names
             .par_iter()
             .map(|(doc_name, doc_node_id)| {
-                self.export_document(&doc_name, *doc_node_id, graph, output_path)?;
+                self.export_document(doc_name, *doc_node_id, graph, output_path)?;
                 reporter.worked(1)?;
                 Ok(())
             })
