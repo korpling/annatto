@@ -274,6 +274,13 @@ impl ImportSpreadsheet {
                             node_name: node_name.to_string(),
                             node_type: "node".to_string(),
                         })?;
+                        update.add_event(UpdateEvent::AddEdge {
+                            source_node: node_name.clone(),
+                            target_node: doc_path.to_string(),
+                            layer: ANNIS_NS.to_string(),
+                            component_type: AnnotationComponentType::PartOf.to_string(),
+                            component_name: "".to_string(),
+                        })?;
                         if name == tok_name {
                             update.add_event(UpdateEvent::AddNodeLabel {
                                 node_name: node_name.to_string(),
