@@ -4,7 +4,7 @@ use insta::assert_snapshot;
 
 use crate::{
     importer::treetagger::{AttributeDecoding, TreeTaggerImporter},
-    util::import_as_graphml_string,
+    test_util::import_as_graphml_string,
 };
 
 const TT_DEFAULT_VIS_CONFIG: &str = r#"

@@ -2,7 +2,7 @@ use std::path::Path;
 
 use insta::assert_snapshot;
 
-use crate::{importer::opus::ImportOpusLinks, util::import_as_graphml_string};
+use crate::{importer::opus::ImportOpusLinks, test_util::import_as_graphml_string};
 
 #[test]
 fn test_generic_xml() {

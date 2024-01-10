@@ -349,3 +349,49 @@ impl Exporter for XlsxExporter {
         "xlsx"
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use tempfile::TempDir;
+
+    use crate::{
+        importer::{xlsx::ImportSpreadsheet, Importer},
+        test_util::compare_graphs,
+    };
+
+    use super::*;
+
+    #[test]
+    fn with_token() {
+        let importer = ImportSpreadsheet::default();
+        let exporter = XlsxExporter::default();
+
+        // Import an example document
+        let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
+        let mut updates = importer
+            .import_corpus(path, importer.step_id(None), None)
+            .unwrap();
+        let mut original_graph = AnnotationGraph::new(false).unwrap();
+        original_graph.apply_update(&mut updates, |_| {}).unwrap();
+
+        // Export to Excel file, read it again and then compare the annotation graphs
+        let output_dir = TempDir::new().unwrap();
+        exporter
+            .export_corpus(
+                &original_graph,
+                output_dir.path(),
+                exporter.step_id(None),
+                None,
+            )
+            .unwrap();
+        let mut written_graph = AnnotationGraph::new(false).unwrap();
+        let mut updates = importer
+            .import_corpus(path, importer.step_id(None), None)
+            .unwrap();
+        written_graph.apply_update(&mut updates, |_| {}).unwrap();
+
+        compare_graphs(&original_graph, &written_graph);
+    }
+}

@@ -5,7 +5,7 @@ use insta::{assert_display_snapshot, assert_snapshot};
 use itertools::Itertools;
 
 use crate::{
-    importer::Importer, progress::ProgressReporter, util::import_as_graphml_string_2,
+    importer::Importer, progress::ProgressReporter, test_util::import_as_graphml_string_2,
     workflow::StatusMessage, Module,
 };
 

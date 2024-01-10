@@ -1,7 +1,6 @@
 use graphannis::{graph::GraphStorage, model::AnnotationComponentType, AnnotationGraph};
 use graphannis_core::{
     annostorage::NodeAnnotationStorage,
-    errors::GraphAnnisCoreError,
     graph::ANNIS_NS,
     types::{AnnoKey, Component, NodeID},
 };
@@ -12,8 +11,6 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct TokenHelper<'a> {
     node_annos: &'a dyn NodeAnnotationStorage,
-    left_edges: Arc<dyn GraphStorage>,
-    right_edges: Arc<dyn GraphStorage>,
     cov_edges: Vec<Arc<dyn GraphStorage>>,
 }
 
@@ -53,30 +50,13 @@ impl<'a> TokenHelper<'a> {
             })
             .collect();
 
-        let left_edges = graph
-            .get_graphstorage(&COMPONENT_LEFT)
-            .ok_or_else(|| GraphAnnisCoreError::MissingComponent(COMPONENT_LEFT.to_string()))?;
-        let right_edges = graph
-            .get_graphstorage(&COMPONENT_RIGHT)
-            .ok_or_else(|| GraphAnnisCoreError::MissingComponent(COMPONENT_RIGHT.to_string()))?;
-
         Ok(TokenHelper {
             node_annos: graph.get_node_annos(),
-            left_edges,
-            right_edges,
             cov_edges,
         })
     }
     pub fn get_gs_coverage(&self) -> &Vec<Arc<dyn GraphStorage>> {
         &self.cov_edges
-    }
-
-    pub fn get_gs_left_token(&self) -> &dyn GraphStorage {
-        self.left_edges.as_ref()
-    }
-
-    pub fn get_gs_right_token(&self) -> &dyn GraphStorage {
-        self.right_edges.as_ref()
     }
 
     pub fn is_token(&self, id: NodeID) -> anyhow::Result<bool> {

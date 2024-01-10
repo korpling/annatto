@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::{importer::ptb::PtbImporter, util::import_as_graphml_string};
+use crate::{importer::ptb::PtbImporter, test_util::import_as_graphml_string};
 use insta::assert_snapshot;
 
 const PTB_DEFAULT_VIS_CONFIG: &str = r#"

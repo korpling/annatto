@@ -36,7 +36,9 @@ pub mod manipulator;
 pub mod models;
 pub mod progress;
 pub mod runtime;
-pub mod util;
+#[cfg(test)]
+pub(crate) mod test_util;
+pub(crate) mod util;
 pub mod workflow;
 
 use std::{

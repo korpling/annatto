@@ -318,7 +318,7 @@ mod tests {
 
     use insta::assert_snapshot;
 
-    use crate::{importer::graphml::GraphMLImporter, util::import_as_graphml_string};
+    use crate::{importer::graphml::GraphMLImporter, test_util::import_as_graphml_string};
 
     #[test]
     fn single_sentence() {
