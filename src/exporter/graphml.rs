@@ -102,7 +102,7 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
                 }
             }
             let all_keys = storage.get_anno_storage().annotation_keys()?;
-            if let Some(first_key) = all_keys.get(0) {
+            if let Some(first_key) = all_keys.first() {
                 if !first_key.ns.is_empty() {
                     mappings.insert("edge_anno_ns".to_string(), first_key.ns.to_string());
                 }
@@ -403,6 +403,7 @@ impl Exporter for GraphMLExporter {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let reporter = ProgressReporter::new_unknown_total_work(tx, step_id)?;
         let file_name;
+        let extension = self.file_extension();
         if let Some(part_of_c) = graph
             .get_all_components(Some(AnnotationComponentType::PartOf), None)
             .first()
@@ -424,7 +425,7 @@ impl Exporter for GraphMLExporter {
                 .unwrap()?
                 .node;
             file_name = format!(
-                "{}.graphml",
+                "{}.{extension}",
                 graph
                     .get_node_annos()
                     .get_value_for_item(&corpus_root, &NODE_NAME_KEY)?
@@ -471,5 +472,9 @@ impl Exporter for GraphMLExporter {
             },
         )?;
         Ok(())
+    }
+
+    fn file_extension(&self) -> &str {
+        "graphml"
     }
 }

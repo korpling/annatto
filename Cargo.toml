@@ -24,6 +24,7 @@ lazy_static = "1.4.0"
 log = "0.4"
 normpath = "1.1"
 ordered-float = {version = "4.1", default-features = false}
+pathdiff = "0.2"
 pest = "2.7"
 pest_derive = "2.0"
 quick-xml = "0.31"

@@ -78,6 +78,8 @@ pub enum AnnattoError {
     XlsxRead(#[from] umya_spreadsheet::reader::xlsx::XlsxError),
     #[error("Error waiting for finished conversion thread")]
     JoinHandle,
+    #[error("Glob pattern caused an error: {0}")]
+    GlobError(String),
 }
 
 impl<T> From<std::sync::PoisonError<T>> for AnnattoError {
@@ -97,5 +99,17 @@ impl From<toml::de::Error> for AnnattoError {
         AnnattoError::TOMLError {
             error: value.to_string(),
         }
+    }
+}
+
+impl From<glob::GlobError> for AnnattoError {
+    fn from(value: glob::GlobError) -> Self {
+        AnnattoError::GlobError(value.to_string())
+    }
+}
+
+impl From<glob::PatternError> for AnnattoError {
+    fn from(value: glob::PatternError) -> Self {
+        AnnattoError::GlobError(value.msg.to_string())
     }
 }

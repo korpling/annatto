@@ -99,25 +99,25 @@ display_name = "grid"
         </edge>
         <edge id="e6" source="latin1/zossen#t1" target="latin1/zossen#t2" label="Ordering/annis/">
         </edge>
-        <edge id="e7" source="latin1/zossen#t8" target="latin1/zossen#text" label="PartOf/annis/">
+        <edge id="e7" source="latin1/zossen" target="latin1" label="PartOf/annis/">
         </edge>
-        <edge id="e8" source="latin1/zossen#t5" target="latin1/zossen#text" label="PartOf/annis/">
+        <edge id="e8" source="latin1/zossen#text" target="latin1/zossen" label="PartOf/annis/">
         </edge>
-        <edge id="e9" source="latin1/zossen#t2" target="latin1/zossen#text" label="PartOf/annis/">
+        <edge id="e9" source="latin1/zossen#t1" target="latin1/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e10" source="latin1/zossen" target="latin1" label="PartOf/annis/">
+        <edge id="e10" source="latin1/zossen#t2" target="latin1/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e11" source="latin1/zossen#t6" target="latin1/zossen#text" label="PartOf/annis/">
+        <edge id="e11" source="latin1/zossen#t3" target="latin1/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e12" source="latin1/zossen#t3" target="latin1/zossen#text" label="PartOf/annis/">
+        <edge id="e12" source="latin1/zossen#t4" target="latin1/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e13" source="latin1/zossen#text" target="latin1/zossen" label="PartOf/annis/">
+        <edge id="e13" source="latin1/zossen#t5" target="latin1/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e14" source="latin1/zossen#t7" target="latin1/zossen#text" label="PartOf/annis/">
+        <edge id="e14" source="latin1/zossen#t6" target="latin1/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e15" source="latin1/zossen#t4" target="latin1/zossen#text" label="PartOf/annis/">
+        <edge id="e15" source="latin1/zossen#t7" target="latin1/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e16" source="latin1/zossen#t1" target="latin1/zossen#text" label="PartOf/annis/">
+        <edge id="e16" source="latin1/zossen#t8" target="latin1/zossen#text" label="PartOf/annis/">
         </edge>
     </graph>
 </graphml>

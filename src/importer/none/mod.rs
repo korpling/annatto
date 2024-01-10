@@ -25,6 +25,10 @@ impl Importer for CreateEmptyCorpus {
         progress_reporter.worked(1)?;
         Ok(graph_update)
     }
+
+    fn file_extensions(&self) -> &[&str] {
+        &[]
+    }
 }
 
 impl Module for CreateEmptyCorpus {

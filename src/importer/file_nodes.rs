@@ -60,6 +60,10 @@ impl Importer for CreateFileNodes {
         }
         Ok(update)
     }
+
+    fn file_extensions(&self) -> &[&str] {
+        &[]
+    }
 }
 
 const MODULE_NAME: &str = "embed_files";

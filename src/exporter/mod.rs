@@ -1,5 +1,6 @@
 //! Exporter modules export the data into different formats.
 
+pub mod exmaralda;
 pub mod graphml;
 pub mod xlsx;
 
@@ -25,4 +26,6 @@ pub trait Exporter: Module {
         step_id: StepID,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>>;
+
+    fn file_extension(&self) -> &str;
 }

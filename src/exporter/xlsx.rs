@@ -246,4 +246,8 @@ impl Exporter for XlsxExporter {
         results?;
         Ok(())
     }
+
+    fn file_extension(&self) -> &str {
+        "xlsx"
+    }
 }

@@ -1,0 +1,84 @@
+---
+source: src/exporter/exmaralda.rs
+expression: actual.unwrap()
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<basic-transcription>
+  <head>
+    <meta-information>
+      <project-name/>
+      <transcription-name/>
+      <referenced-file url="media/test_file.wav"/>
+      <ud-meta-information/>
+      <comment/>
+      <transcription-convention/>
+    </meta-information>
+    <speakertable>
+      <speaker id="dipl">
+        <abbreviation>dipl</abbreviation>
+        <sex value="u"/>
+        <languages-used/>
+        <l1/>
+        <l2/>
+        <ud-speaker-information/>
+        <comment>was late for elicitation</comment>
+      </speaker>
+      <speaker id="norm">
+        <abbreviation>norm</abbreviation>
+        <sex value="u"/>
+        <languages-used>
+          <language lang="eng"/>
+          <language lang="eng"/>
+        </languages-used>
+        <l1>
+          <language lang="eng"/>
+        </l1>
+        <l2>
+          <language lang="deu"/>
+        </l2>
+        <ud-speaker-information>
+          <ud-information attribute-name="personal-anno-key-1">personal-anno-value-1</ud-information>
+          <ud-information attribute-name="personal-anno-key-2">personal-anno-value-2</ud-information>
+        </ud-speaker-information>
+        <comment>was on time</comment>
+      </speaker>
+    </speakertable>
+  </head>
+  <basic-body>
+    <common-timeline>
+      <tli id="T0" time="0"/>
+      <tli id="T1" time="1.11111"/>
+      <tli id="T2" time="2.22222"/>
+      <tli id="T3" time="3.33333"/>
+      <tli id="T4" time="4.44444"/>
+      <tli id="T5" time="5.55555"/>
+    </common-timeline>
+    <tier speaker="dipl" category="dipl" type="t" id="TIER4" display-name="dipl[dipl]">
+      <event start="T0" end="T2">I&apos;m</event>
+      <event start="T2" end="T3">in</event>
+      <event start="T3" end="T4">New</event>
+      <event start="T4" end="T5">York</event>
+    </tier>
+    <tier speaker="norm" category="lemma" type="a" id="TIER11" display-name="norm[lemma]">
+      <event start="T0" end="T1">I</event>
+      <event start="T1" end="T2">be</event>
+      <event start="T2" end="T3">in</event>
+      <event start="T3" end="T5">New York</event>
+    </tier>
+    <tier speaker="norm" category="norm" type="t" id="TIER14" display-name="norm[norm]">
+      <event start="T0" end="T1">I</event>
+      <event start="T1" end="T2">am</event>
+      <event start="T2" end="T3">in</event>
+      <event start="T3" end="T5">New York</event>
+    </tier>
+    <tier speaker="norm" category="pos" type="a" id="TIER17" display-name="norm[pos]">
+      <event start="T0" end="T1">PRON</event>
+      <event start="T1" end="T2">VERB</event>
+      <event start="T2" end="T3">ADP</event>
+      <event start="T3" end="T5">ADP</event>
+    </tier>
+    <tier speaker="dipl" category="sentence" type="a" id="TIER18" display-name="dipl[sentence]">
+      <event start="T0" end="T5">1</event>
+    </tier>
+  </basic-body>
+</basic-transcription>
