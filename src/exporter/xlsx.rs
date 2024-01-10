@@ -365,7 +365,12 @@ mod tests {
 
     #[test]
     fn with_token() {
-        let importer = ImportSpreadsheet::default();
+        let importer: ImportSpreadsheet = toml::from_str(
+            r#"
+        column_map = {"dipl" = ["sentence"], "norm" = ["pos", "lemma", "seg"]}
+            "#,
+        )
+        .unwrap();
         let exporter = XlsxExporter::default();
 
         // Import an example document
