@@ -36,7 +36,9 @@ pub mod manipulator;
 pub mod models;
 pub mod progress;
 pub mod runtime;
-pub mod util;
+#[cfg(test)]
+pub(crate) mod test_util;
+pub(crate) mod util;
 pub mod workflow;
 
 use std::{
@@ -45,7 +47,9 @@ use std::{
 };
 
 use error::Result;
-use exporter::{exmaralda::ExportExmaralda, graphml::GraphMLExporter, Exporter};
+use exporter::{
+    exmaralda::ExportExmaralda, graphml::GraphMLExporter, xlsx::XlsxExporter, Exporter,
+};
 use importer::{
     conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
     graphml::GraphMLImporter, meta::AnnotateCorpus, none::CreateEmptyCorpus, opus::ImportOpusLinks,
@@ -63,6 +67,7 @@ use serde_derive::Deserialize;
 pub enum WriteAs {
     GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
     EXMARaLDA(#[serde(default)] ExportExmaralda),
+    Xlsx(#[serde(default)] XlsxExporter),
 }
 
 impl Default for WriteAs {
@@ -83,6 +88,7 @@ impl WriteAs {
         match self {
             WriteAs::GraphML(m) => m,
             WriteAs::EXMARaLDA(m) => m,
+            WriteAs::Xlsx(m) => m,
         }
     }
 }

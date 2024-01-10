@@ -85,19 +85,19 @@ display_name = "grid"
             <data key="k4">.</data>
             <data key="k5"> </data>
         </node>
-        <edge id="e0" source="token_only/zossen#t7" target="token_only/zossen#t8" label="Ordering/annis/">
+        <edge id="e0" source="token_only/zossen#t1" target="token_only/zossen#t2" label="Ordering/annis/">
         </edge>
-        <edge id="e1" source="token_only/zossen#t6" target="token_only/zossen#t7" label="Ordering/annis/">
+        <edge id="e1" source="token_only/zossen#t2" target="token_only/zossen#t3" label="Ordering/annis/">
         </edge>
-        <edge id="e2" source="token_only/zossen#t5" target="token_only/zossen#t6" label="Ordering/annis/">
+        <edge id="e2" source="token_only/zossen#t3" target="token_only/zossen#t4" label="Ordering/annis/">
         </edge>
         <edge id="e3" source="token_only/zossen#t4" target="token_only/zossen#t5" label="Ordering/annis/">
         </edge>
-        <edge id="e4" source="token_only/zossen#t3" target="token_only/zossen#t4" label="Ordering/annis/">
+        <edge id="e4" source="token_only/zossen#t5" target="token_only/zossen#t6" label="Ordering/annis/">
         </edge>
-        <edge id="e5" source="token_only/zossen#t2" target="token_only/zossen#t3" label="Ordering/annis/">
+        <edge id="e5" source="token_only/zossen#t6" target="token_only/zossen#t7" label="Ordering/annis/">
         </edge>
-        <edge id="e6" source="token_only/zossen#t1" target="token_only/zossen#t2" label="Ordering/annis/">
+        <edge id="e6" source="token_only/zossen#t7" target="token_only/zossen#t8" label="Ordering/annis/">
         </edge>
         <edge id="e7" source="token_only/zossen" target="token_only" label="PartOf/annis/">
         </edge>

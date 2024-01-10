@@ -172,19 +172,19 @@ display_name = "grid"
         </edge>
         <edge id="e17" source="single_sentence/zossen#span4" target="single_sentence/zossen#t8" label="Coverage/annis/">
         </edge>
-        <edge id="e18" source="single_sentence/zossen#t7" target="single_sentence/zossen#t8" label="Ordering/annis/">
+        <edge id="e18" source="single_sentence/zossen#t1" target="single_sentence/zossen#t2" label="Ordering/annis/">
         </edge>
-        <edge id="e19" source="single_sentence/zossen#t6" target="single_sentence/zossen#t7" label="Ordering/annis/">
+        <edge id="e19" source="single_sentence/zossen#t2" target="single_sentence/zossen#t3" label="Ordering/annis/">
         </edge>
-        <edge id="e20" source="single_sentence/zossen#t5" target="single_sentence/zossen#t6" label="Ordering/annis/">
+        <edge id="e20" source="single_sentence/zossen#t3" target="single_sentence/zossen#t4" label="Ordering/annis/">
         </edge>
         <edge id="e21" source="single_sentence/zossen#t4" target="single_sentence/zossen#t5" label="Ordering/annis/">
         </edge>
-        <edge id="e22" source="single_sentence/zossen#t3" target="single_sentence/zossen#t4" label="Ordering/annis/">
+        <edge id="e22" source="single_sentence/zossen#t5" target="single_sentence/zossen#t6" label="Ordering/annis/">
         </edge>
-        <edge id="e23" source="single_sentence/zossen#t2" target="single_sentence/zossen#t3" label="Ordering/annis/">
+        <edge id="e23" source="single_sentence/zossen#t6" target="single_sentence/zossen#t7" label="Ordering/annis/">
         </edge>
-        <edge id="e24" source="single_sentence/zossen#t1" target="single_sentence/zossen#t2" label="Ordering/annis/">
+        <edge id="e24" source="single_sentence/zossen#t7" target="single_sentence/zossen#t8" label="Ordering/annis/">
         </edge>
         <edge id="e25" source="single_sentence/zossen" target="single_sentence" label="PartOf/annis/">
         </edge>

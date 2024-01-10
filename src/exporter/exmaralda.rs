@@ -606,7 +606,7 @@ mod tests {
     use crate::{
         exporter::exmaralda::ExportExmaralda,
         importer::{exmaralda::ImportEXMARaLDA, Importer},
-        util::export_to_string,
+        test_util::export_to_string,
         Module,
     };
 

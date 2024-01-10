@@ -1,4 +1,4 @@
-use crate::util::import_as_graphml_string;
+use crate::test_util::import_as_graphml_string;
 
 use super::*;
 use insta::assert_snapshot;

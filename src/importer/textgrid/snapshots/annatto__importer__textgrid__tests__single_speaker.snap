@@ -287,25 +287,25 @@ expression: actual
         </edge>
         <edge id="e32" source="singleSpeaker/doc1#sSpan24" target="singleSpeaker/doc1#t11" label="Coverage/annis/">
         </edge>
-        <edge id="e33" source="singleSpeaker/doc1#t10" target="singleSpeaker/doc1#t11" label="Ordering/annis/">
+        <edge id="e33" source="singleSpeaker/doc1#t1" target="singleSpeaker/doc1#t2" label="Ordering/annis/">
         </edge>
-        <edge id="e34" source="singleSpeaker/doc1#t9" target="singleSpeaker/doc1#t10" label="Ordering/annis/">
+        <edge id="e34" source="singleSpeaker/doc1#t2" target="singleSpeaker/doc1#t3" label="Ordering/annis/">
         </edge>
-        <edge id="e35" source="singleSpeaker/doc1#t8" target="singleSpeaker/doc1#t9" label="Ordering/annis/">
+        <edge id="e35" source="singleSpeaker/doc1#t3" target="singleSpeaker/doc1#t4" label="Ordering/annis/">
         </edge>
-        <edge id="e36" source="singleSpeaker/doc1#t7" target="singleSpeaker/doc1#t8" label="Ordering/annis/">
+        <edge id="e36" source="singleSpeaker/doc1#t4" target="singleSpeaker/doc1#t5" label="Ordering/annis/">
         </edge>
-        <edge id="e37" source="singleSpeaker/doc1#t6" target="singleSpeaker/doc1#t7" label="Ordering/annis/">
+        <edge id="e37" source="singleSpeaker/doc1#t5" target="singleSpeaker/doc1#t6" label="Ordering/annis/">
         </edge>
-        <edge id="e38" source="singleSpeaker/doc1#t5" target="singleSpeaker/doc1#t6" label="Ordering/annis/">
+        <edge id="e38" source="singleSpeaker/doc1#t6" target="singleSpeaker/doc1#t7" label="Ordering/annis/">
         </edge>
-        <edge id="e39" source="singleSpeaker/doc1#t4" target="singleSpeaker/doc1#t5" label="Ordering/annis/">
+        <edge id="e39" source="singleSpeaker/doc1#t7" target="singleSpeaker/doc1#t8" label="Ordering/annis/">
         </edge>
-        <edge id="e40" source="singleSpeaker/doc1#t3" target="singleSpeaker/doc1#t4" label="Ordering/annis/">
+        <edge id="e40" source="singleSpeaker/doc1#t8" target="singleSpeaker/doc1#t9" label="Ordering/annis/">
         </edge>
-        <edge id="e41" source="singleSpeaker/doc1#t2" target="singleSpeaker/doc1#t3" label="Ordering/annis/">
+        <edge id="e41" source="singleSpeaker/doc1#t9" target="singleSpeaker/doc1#t10" label="Ordering/annis/">
         </edge>
-        <edge id="e42" source="singleSpeaker/doc1#t1" target="singleSpeaker/doc1#t2" label="Ordering/annis/">
+        <edge id="e42" source="singleSpeaker/doc1#t10" target="singleSpeaker/doc1#t11" label="Ordering/annis/">
         </edge>
         <edge id="e43" source="singleSpeaker/doc1" target="singleSpeaker" label="PartOf/annis/">
         </edge>

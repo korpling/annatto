@@ -93,9 +93,9 @@ visibility = "hidden"
         </edge>
         <edge id="e5" source="brackets_in_value/doc1#n1" target="brackets_in_value/doc1#t3" label="Dominance/syntax/edge">
         </edge>
-        <edge id="e6" source="brackets_in_value/doc1#t2" target="brackets_in_value/doc1#t3" label="Ordering/annis/">
+        <edge id="e6" source="brackets_in_value/doc1#t1" target="brackets_in_value/doc1#t2" label="Ordering/annis/">
         </edge>
-        <edge id="e7" source="brackets_in_value/doc1#t1" target="brackets_in_value/doc1#t2" label="Ordering/annis/">
+        <edge id="e7" source="brackets_in_value/doc1#t2" target="brackets_in_value/doc1#t3" label="Ordering/annis/">
         </edge>
         <edge id="e8" source="brackets_in_value/doc1" target="brackets_in_value" label="PartOf/annis/">
         </edge>

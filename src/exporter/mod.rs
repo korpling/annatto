@@ -2,6 +2,7 @@
 
 pub mod exmaralda;
 pub mod graphml;
+pub mod xlsx;
 
 use crate::{workflow::StatusSender, Module, StepID};
 use graphannis::AnnotationGraph;

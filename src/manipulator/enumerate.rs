@@ -115,7 +115,7 @@ mod tests {
     use graphannis_core::{annostorage::ValueSearch, graph::ANNIS_NS, types::AnnoKey};
     use itertools::Itertools;
 
-    use crate::manipulator::Manipulator;
+    use crate::{manipulator::Manipulator, test_util::compare_results};
 
     use super::EnumerateMatches;
 
@@ -154,12 +154,16 @@ mod tests {
         manipulate.manipulate_corpus(&mut input_g, Path::new("who_cares"), None)?;
         let expected_annos = expected_g.get_node_annos();
         let output_annos = input_g.get_node_annos();
-        let expected_matches = expected_annos
+        let mut expected_matches = expected_annos
             .exact_anno_search(Some("count"), "i", ValueSearch::Any)
             .collect_vec();
-        let output_matches = output_annos
+        expected_matches.sort_unstable_by(compare_results);
+
+        let mut output_matches = output_annos
             .exact_anno_search(Some("count"), "i", ValueSearch::Any)
             .collect_vec();
+        output_matches.sort_unstable_by(compare_results);
+
         assert_eq!(expected_matches.len(), output_matches.len());
         let anno_key = AnnoKey {
             ns: "count".into(),

@@ -87,19 +87,19 @@ display_name = "grid"
             <data key="k4">.</data>
             <data key="k5"> </data>
         </node>
-        <edge id="e0" source="unescaped_attribute/zossen#t7" target="unescaped_attribute/zossen#t8" label="Ordering/annis/">
+        <edge id="e0" source="unescaped_attribute/zossen#t1" target="unescaped_attribute/zossen#t2" label="Ordering/annis/">
         </edge>
-        <edge id="e1" source="unescaped_attribute/zossen#t6" target="unescaped_attribute/zossen#t7" label="Ordering/annis/">
+        <edge id="e1" source="unescaped_attribute/zossen#t2" target="unescaped_attribute/zossen#t3" label="Ordering/annis/">
         </edge>
-        <edge id="e2" source="unescaped_attribute/zossen#t5" target="unescaped_attribute/zossen#t6" label="Ordering/annis/">
+        <edge id="e2" source="unescaped_attribute/zossen#t3" target="unescaped_attribute/zossen#t4" label="Ordering/annis/">
         </edge>
         <edge id="e3" source="unescaped_attribute/zossen#t4" target="unescaped_attribute/zossen#t5" label="Ordering/annis/">
         </edge>
-        <edge id="e4" source="unescaped_attribute/zossen#t3" target="unescaped_attribute/zossen#t4" label="Ordering/annis/">
+        <edge id="e4" source="unescaped_attribute/zossen#t5" target="unescaped_attribute/zossen#t6" label="Ordering/annis/">
         </edge>
-        <edge id="e5" source="unescaped_attribute/zossen#t2" target="unescaped_attribute/zossen#t3" label="Ordering/annis/">
+        <edge id="e5" source="unescaped_attribute/zossen#t6" target="unescaped_attribute/zossen#t7" label="Ordering/annis/">
         </edge>
-        <edge id="e6" source="unescaped_attribute/zossen#t1" target="unescaped_attribute/zossen#t2" label="Ordering/annis/">
+        <edge id="e6" source="unescaped_attribute/zossen#t7" target="unescaped_attribute/zossen#t8" label="Ordering/annis/">
         </edge>
         <edge id="e7" source="unescaped_attribute/zossen" target="unescaped_attribute" label="PartOf/annis/">
         </edge>
