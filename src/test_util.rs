@@ -13,7 +13,7 @@ use graphannis_core::{
     types::{Edge, NodeID},
 };
 use itertools::Itertools;
-use std::{fs, io::BufWriter, path::Path};
+use std::{cmp::Ordering, fs, io::BufWriter, path::Path};
 use tempfile::TempDir;
 
 pub fn import_as_graphml_string<I, P>(
@@ -219,5 +219,21 @@ pub fn compare_graphs(g1: &AnnotationGraph, g2: &AnnotationGraph) {
                 &edges2,
             );
         }
+    }
+}
+
+pub(crate) fn compare_results<T: Ord, E: Into<anyhow::Error>>(
+    a: &std::result::Result<T, E>,
+    b: &std::result::Result<T, E>,
+) -> Ordering {
+    if let (Ok(a), Ok(b)) = (a, b) {
+        a.cmp(b)
+    } else if a.is_err() {
+        Ordering::Less
+    } else if b.is_err() {
+        Ordering::Greater
+    } else {
+        // Treat two errors as equal
+        Ordering::Equal
     }
 }
