@@ -364,7 +364,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn with_token() {
+    fn with_segmentation() {
         let importer: ImportSpreadsheet = toml::from_str(
             r#"
         column_map = {"dipl" = ["sentence"], "norm" = ["pos", "lemma", "seg"]}
@@ -398,5 +398,55 @@ mod tests {
         written_graph.apply_update(&mut updates, |_| {}).unwrap();
 
         compare_graphs(&original_graph, &written_graph);
+    }
+
+    #[test]
+    fn with_token() {
+        let importer: ImportSpreadsheet = toml::from_str(
+            r#"
+        column_map = {"tok" = ["lb"]}
+            "#,
+        )
+        .unwrap();
+        let exporter = XlsxExporter::default();
+
+        // Import an example document
+        let path = Path::new("./tests/data/import/xlsx/sample_sentence/");
+        let mut updates = importer
+            .import_corpus(path, importer.step_id(None), None)
+            .unwrap();
+        let mut original_graph = AnnotationGraph::new(false).unwrap();
+        original_graph.apply_update(&mut updates, |_| {}).unwrap();
+
+        // Export to Excel file and read it again
+        let output_dir = TempDir::new().unwrap();
+        exporter
+            .export_corpus(
+                &original_graph,
+                output_dir.path(),
+                exporter.step_id(None),
+                None,
+            )
+            .unwrap();
+        let mut written_graph = AnnotationGraph::new(false).unwrap();
+        let mut updates = importer
+            .import_corpus(path, importer.step_id(None), None)
+            .unwrap();
+        written_graph.apply_update(&mut updates, |_| {}).unwrap();
+
+        // Compare the graphs and make sure the token exist
+        compare_graphs(&original_graph, &written_graph);
+
+        let q = graphannis::aql::parse("tok", false).unwrap();
+        let it = graphannis::aql::execute_query_on_graph(&written_graph, &q, false, None).unwrap();
+        assert_eq!(11, it.count());
+
+        let q = graphannis::aql::parse("lb=\"1\"", false).unwrap();
+        let it = graphannis::aql::execute_query_on_graph(&written_graph, &q, false, None).unwrap();
+        assert_eq!(1, it.count());
+
+        let q = graphannis::aql::parse("lb=\"2\"", false).unwrap();
+        let it = graphannis::aql::execute_query_on_graph(&written_graph, &q, false, None).unwrap();
+        assert_eq!(1, it.count());
     }
 }

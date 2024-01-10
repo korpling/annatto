@@ -48,6 +48,10 @@ insta = {version = "1.26.0", features = ["toml", "redactions"]}
 pretty_assertions = "1.3"
 ureq = {version = "2.7.1", default-features = false}
 
+[patch.crates-io]
+graphannis = {git = 'https://github.com/korpling/graphANNIS.git', branch = "feature/export-stable-order"}
+graphannis-core = {git = 'https://github.com/korpling/graphANNIS.git', branch = "feature/export-stable-order"}
+
 # Compile some of the dependencies in release mode if when we are ourself in
 # "dev" mode (like building debug binaries or running tests)
 [profile.dev.package]

@@ -412,31 +412,31 @@ expression: actual
         </edge>
         <edge id="e48" source="misalignedLemma/doc1#sSpan38" target="misalignedLemma/doc1#t13" label="Coverage/annis/">
         </edge>
-        <edge id="e49" source="misalignedLemma/doc1#t13" target="misalignedLemma/doc1#t14" label="Ordering/annis/">
+        <edge id="e49" source="misalignedLemma/doc1#t1" target="misalignedLemma/doc1#t2" label="Ordering/annis/">
         </edge>
-        <edge id="e50" source="misalignedLemma/doc1#t12" target="misalignedLemma/doc1#t13" label="Ordering/annis/">
+        <edge id="e50" source="misalignedLemma/doc1#t2" target="misalignedLemma/doc1#t3" label="Ordering/annis/">
         </edge>
-        <edge id="e51" source="misalignedLemma/doc1#t11" target="misalignedLemma/doc1#t12" label="Ordering/annis/">
+        <edge id="e51" source="misalignedLemma/doc1#t3" target="misalignedLemma/doc1#t4" label="Ordering/annis/">
         </edge>
-        <edge id="e52" source="misalignedLemma/doc1#t10" target="misalignedLemma/doc1#t11" label="Ordering/annis/">
+        <edge id="e52" source="misalignedLemma/doc1#t4" target="misalignedLemma/doc1#t5" label="Ordering/annis/">
         </edge>
-        <edge id="e53" source="misalignedLemma/doc1#t9" target="misalignedLemma/doc1#t10" label="Ordering/annis/">
+        <edge id="e53" source="misalignedLemma/doc1#t5" target="misalignedLemma/doc1#t6" label="Ordering/annis/">
         </edge>
-        <edge id="e54" source="misalignedLemma/doc1#t8" target="misalignedLemma/doc1#t9" label="Ordering/annis/">
+        <edge id="e54" source="misalignedLemma/doc1#t6" target="misalignedLemma/doc1#t7" label="Ordering/annis/">
         </edge>
         <edge id="e55" source="misalignedLemma/doc1#t7" target="misalignedLemma/doc1#t8" label="Ordering/annis/">
         </edge>
-        <edge id="e56" source="misalignedLemma/doc1#t6" target="misalignedLemma/doc1#t7" label="Ordering/annis/">
+        <edge id="e56" source="misalignedLemma/doc1#t8" target="misalignedLemma/doc1#t9" label="Ordering/annis/">
         </edge>
-        <edge id="e57" source="misalignedLemma/doc1#t5" target="misalignedLemma/doc1#t6" label="Ordering/annis/">
+        <edge id="e57" source="misalignedLemma/doc1#t9" target="misalignedLemma/doc1#t10" label="Ordering/annis/">
         </edge>
-        <edge id="e58" source="misalignedLemma/doc1#t4" target="misalignedLemma/doc1#t5" label="Ordering/annis/">
+        <edge id="e58" source="misalignedLemma/doc1#t10" target="misalignedLemma/doc1#t11" label="Ordering/annis/">
         </edge>
-        <edge id="e59" source="misalignedLemma/doc1#t3" target="misalignedLemma/doc1#t4" label="Ordering/annis/">
+        <edge id="e59" source="misalignedLemma/doc1#t11" target="misalignedLemma/doc1#t12" label="Ordering/annis/">
         </edge>
-        <edge id="e60" source="misalignedLemma/doc1#t2" target="misalignedLemma/doc1#t3" label="Ordering/annis/">
+        <edge id="e60" source="misalignedLemma/doc1#t12" target="misalignedLemma/doc1#t13" label="Ordering/annis/">
         </edge>
-        <edge id="e61" source="misalignedLemma/doc1#t1" target="misalignedLemma/doc1#t2" label="Ordering/annis/">
+        <edge id="e61" source="misalignedLemma/doc1#t13" target="misalignedLemma/doc1#t14" label="Ordering/annis/">
         </edge>
         <edge id="e62" source="misalignedLemma/doc1#sSpan1" target="misalignedLemma/doc1#sSpan2" label="Ordering/default_ns/A">
         </edge>

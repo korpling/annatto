@@ -412,31 +412,31 @@ expression: actual
         </edge>
         <edge id="e48" source="twoSpeakers/doc1#sSpan38" target="twoSpeakers/doc1#t13" label="Coverage/annis/">
         </edge>
-        <edge id="e49" source="twoSpeakers/doc1#t13" target="twoSpeakers/doc1#t14" label="Ordering/annis/">
+        <edge id="e49" source="twoSpeakers/doc1#t1" target="twoSpeakers/doc1#t2" label="Ordering/annis/">
         </edge>
-        <edge id="e50" source="twoSpeakers/doc1#t12" target="twoSpeakers/doc1#t13" label="Ordering/annis/">
+        <edge id="e50" source="twoSpeakers/doc1#t2" target="twoSpeakers/doc1#t3" label="Ordering/annis/">
         </edge>
-        <edge id="e51" source="twoSpeakers/doc1#t11" target="twoSpeakers/doc1#t12" label="Ordering/annis/">
+        <edge id="e51" source="twoSpeakers/doc1#t3" target="twoSpeakers/doc1#t4" label="Ordering/annis/">
         </edge>
-        <edge id="e52" source="twoSpeakers/doc1#t10" target="twoSpeakers/doc1#t11" label="Ordering/annis/">
+        <edge id="e52" source="twoSpeakers/doc1#t4" target="twoSpeakers/doc1#t5" label="Ordering/annis/">
         </edge>
-        <edge id="e53" source="twoSpeakers/doc1#t9" target="twoSpeakers/doc1#t10" label="Ordering/annis/">
+        <edge id="e53" source="twoSpeakers/doc1#t5" target="twoSpeakers/doc1#t6" label="Ordering/annis/">
         </edge>
-        <edge id="e54" source="twoSpeakers/doc1#t8" target="twoSpeakers/doc1#t9" label="Ordering/annis/">
+        <edge id="e54" source="twoSpeakers/doc1#t6" target="twoSpeakers/doc1#t7" label="Ordering/annis/">
         </edge>
         <edge id="e55" source="twoSpeakers/doc1#t7" target="twoSpeakers/doc1#t8" label="Ordering/annis/">
         </edge>
-        <edge id="e56" source="twoSpeakers/doc1#t6" target="twoSpeakers/doc1#t7" label="Ordering/annis/">
+        <edge id="e56" source="twoSpeakers/doc1#t8" target="twoSpeakers/doc1#t9" label="Ordering/annis/">
         </edge>
-        <edge id="e57" source="twoSpeakers/doc1#t5" target="twoSpeakers/doc1#t6" label="Ordering/annis/">
+        <edge id="e57" source="twoSpeakers/doc1#t9" target="twoSpeakers/doc1#t10" label="Ordering/annis/">
         </edge>
-        <edge id="e58" source="twoSpeakers/doc1#t4" target="twoSpeakers/doc1#t5" label="Ordering/annis/">
+        <edge id="e58" source="twoSpeakers/doc1#t10" target="twoSpeakers/doc1#t11" label="Ordering/annis/">
         </edge>
-        <edge id="e59" source="twoSpeakers/doc1#t3" target="twoSpeakers/doc1#t4" label="Ordering/annis/">
+        <edge id="e59" source="twoSpeakers/doc1#t11" target="twoSpeakers/doc1#t12" label="Ordering/annis/">
         </edge>
-        <edge id="e60" source="twoSpeakers/doc1#t2" target="twoSpeakers/doc1#t3" label="Ordering/annis/">
+        <edge id="e60" source="twoSpeakers/doc1#t12" target="twoSpeakers/doc1#t13" label="Ordering/annis/">
         </edge>
-        <edge id="e61" source="twoSpeakers/doc1#t1" target="twoSpeakers/doc1#t2" label="Ordering/annis/">
+        <edge id="e61" source="twoSpeakers/doc1#t13" target="twoSpeakers/doc1#t14" label="Ordering/annis/">
         </edge>
         <edge id="e62" source="twoSpeakers/doc1#sSpan1" target="twoSpeakers/doc1#sSpan2" label="Ordering/default_ns/A">
         </edge>

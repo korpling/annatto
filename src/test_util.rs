@@ -13,8 +13,8 @@ use graphannis_core::{
     types::{Edge, NodeID},
 };
 use itertools::Itertools;
-use std::{env::temp_dir, fs, io::BufWriter, path::Path};
-use tempfile::tempdir_in;
+use std::{fs, io::BufWriter, path::Path};
+use tempfile::TempDir;
 
 pub fn import_as_graphml_string<I, P>(
     importer: I,
@@ -50,7 +50,7 @@ where
     g.apply_update(&mut u, |_| {})?;
 
     let mut buf = BufWriter::new(Vec::new());
-    graphannis_core::graph::serialization::graphml::export(
+    graphannis_core::graph::serialization::graphml::export_stable_order(
         &g,
         graph_configuration,
         &mut buf,
@@ -70,7 +70,7 @@ pub fn export_to_string<E>(
 where
     E: Exporter,
 {
-    let output_path = tempdir_in(temp_dir())?;
+    let output_path = TempDir::new()?;
     exporter
         .export_corpus(graph, output_path.path(), exporter.step_id(None), None)
         .map_err(|_| AnnattoError::Export {

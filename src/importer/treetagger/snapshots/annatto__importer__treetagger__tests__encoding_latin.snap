@@ -85,19 +85,19 @@ display_name = "grid"
             <data key="k4">.</data>
             <data key="k5"> </data>
         </node>
-        <edge id="e0" source="latin1/zossen#t7" target="latin1/zossen#t8" label="Ordering/annis/">
+        <edge id="e0" source="latin1/zossen#t1" target="latin1/zossen#t2" label="Ordering/annis/">
         </edge>
-        <edge id="e1" source="latin1/zossen#t6" target="latin1/zossen#t7" label="Ordering/annis/">
+        <edge id="e1" source="latin1/zossen#t2" target="latin1/zossen#t3" label="Ordering/annis/">
         </edge>
-        <edge id="e2" source="latin1/zossen#t5" target="latin1/zossen#t6" label="Ordering/annis/">
+        <edge id="e2" source="latin1/zossen#t3" target="latin1/zossen#t4" label="Ordering/annis/">
         </edge>
         <edge id="e3" source="latin1/zossen#t4" target="latin1/zossen#t5" label="Ordering/annis/">
         </edge>
-        <edge id="e4" source="latin1/zossen#t3" target="latin1/zossen#t4" label="Ordering/annis/">
+        <edge id="e4" source="latin1/zossen#t5" target="latin1/zossen#t6" label="Ordering/annis/">
         </edge>
-        <edge id="e5" source="latin1/zossen#t2" target="latin1/zossen#t3" label="Ordering/annis/">
+        <edge id="e5" source="latin1/zossen#t6" target="latin1/zossen#t7" label="Ordering/annis/">
         </edge>
-        <edge id="e6" source="latin1/zossen#t1" target="latin1/zossen#t2" label="Ordering/annis/">
+        <edge id="e6" source="latin1/zossen#t7" target="latin1/zossen#t8" label="Ordering/annis/">
         </edge>
         <edge id="e7" source="latin1/zossen" target="latin1" label="PartOf/annis/">
         </edge>
