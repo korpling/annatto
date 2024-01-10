@@ -3,13 +3,15 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 use anyhow::anyhow;
 use graphannis::{graph::GraphStorage, model::AnnotationComponentType, AnnotationGraph};
 use graphannis_core::{
-    annostorage::ValueSearch,
+    annostorage::{NodeAnnotationStorage, ValueSearch},
     graph::ANNIS_NS,
-    types::{Component, NodeID},
+    types::{AnnoKey, Component, NodeID},
+    util::join_qname,
 };
+use linked_hash_map::LinkedHashMap;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::Deserialize;
-use umya_spreadsheet::Worksheet;
+use umya_spreadsheet::{helper::coordinate::string_from_column_index, Worksheet};
 
 use crate::{
     progress::ProgressReporter,
@@ -54,6 +56,21 @@ fn find_token_roots(
     Ok(roots)
 }
 
+fn is_span_column(
+    anno_key: &AnnoKey,
+    node_annos: &dyn NodeAnnotationStorage,
+    token_helper: &TokenHelper,
+) -> anyhow::Result<bool> {
+    // Check that none of the nodes having this key are token
+    for m in node_annos.exact_anno_search(Some(&anno_key.ns), &anno_key.name, ValueSearch::Any) {
+        let m = m?;
+        if token_helper.is_token(m.node)? {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
 impl XlsxExporter {
     fn export_document(
         &self,
@@ -77,55 +94,54 @@ impl XlsxExporter {
 
         let (token_to_row, has_only_empty_token) =
             self.create_token_colum(g, &token_roots, doc_node_id, worksheet)?;
+        worksheet.get_cell_mut((1, 1)).set_value_string("tok");
 
         // Output all spans
-        // TODO: do not hard-code all span annotation names
-        let mut name_to_column = HashMap::new();
-        name_to_column.insert("dipl", "B");
-        name_to_column.insert("clean", "C");
-        name_to_column.insert("lb", "D");
+        let name_to_column = self.get_span_columns(g, &token_helper, 2)?;
 
-        for span_name in ["dipl", "clean", "lb"] {
-            for span in g
-                .get_node_annos()
-                .exact_anno_search(None, span_name, ValueSearch::Any)
-            {
-                let span = span?;
-                let span_val = g
-                    .get_node_annos()
-                    .get_value_for_item(&span.node, &span.anno_key)?
-                    .unwrap_or_default();
+        for span_anno_key in name_to_column.keys() {
+            if let Some(column_name) = name_to_column.get(span_anno_key) {
+                worksheet
+                    .get_cell_mut(format!("{}1", column_name))
+                    .set_value_string(join_qname(&span_anno_key.ns, &span_anno_key.name));
+                for span in g.get_node_annos().exact_anno_search(
+                    Some(&span_anno_key.ns),
+                    &span_anno_key.name,
+                    ValueSearch::Any,
+                ) {
+                    let span = span?;
+                    let span_val = g
+                        .get_node_annos()
+                        .get_value_for_item(&span.node, &span.anno_key)?
+                        .unwrap_or_default();
 
-                let mut spanned_rows = BTreeSet::new();
-                // Find all token covered by the span
-                for gs in token_helper.get_gs_coverage().iter() {
-                    for t in gs.get_outgoing_edges(span.node) {
-                        let t = t?;
-                        if let Some(row) = token_to_row.get(&t) {
-                            spanned_rows.insert(row);
+                    let mut spanned_rows = BTreeSet::new();
+                    // Find all token covered by the span
+                    for gs in token_helper.get_gs_coverage().iter() {
+                        for t in gs.get_outgoing_edges(span.node) {
+                            let t = t?;
+                            if let Some(row) = token_to_row.get(&t) {
+                                spanned_rows.insert(row);
+                            }
                         }
                     }
-                }
-                let first_row = spanned_rows.first();
-                let last_row = spanned_rows.last();
-                if let (Some(first), Some(last)) = (first_row, last_row) {
-                    let first_cell = format!(
-                        "{}{}",
-                        name_to_column.get(span_name).unwrap_or(&"A"),
-                        *first
-                    );
-                    worksheet
-                        .get_cell_mut(first_cell.clone())
-                        .set_value_string(span_val);
-                    let last_cell =
-                        format!("{}{}", name_to_column.get(span_name).unwrap_or(&"A"), last);
-                    worksheet.add_merge_cells(format!("{}:{}", first_cell, last_cell));
+                    let first_row = spanned_rows.first();
+                    let last_row = spanned_rows.last();
+
+                    if let (Some(first), Some(last)) = (first_row, last_row) {
+                        let first_cell = format!("{}{}", column_name, *first);
+                        worksheet
+                            .get_cell_mut(first_cell.clone())
+                            .set_value_string(span_val);
+                        let last_cell = format!("{}{}", column_name, last);
+                        worksheet.add_merge_cells(format!("{}:{}", first_cell, last_cell));
+                    }
                 }
             }
         }
 
         if has_only_empty_token {
-            // Remove the token column
+            // Remove the empty token column
             worksheet.remove_column_by_index(&1, &1);
         }
 
@@ -133,6 +149,26 @@ impl XlsxExporter {
         umya_spreadsheet::writer::xlsx::write(&book, output_path)?;
 
         Ok(())
+    }
+
+    /// Get all annotation names for spans and assign them to a spreadsheet column.
+    fn get_span_columns(
+        &self,
+        g: &AnnotationGraph,
+        token_helper: &TokenHelper,
+        column_offset: u32,
+    ) -> anyhow::Result<LinkedHashMap<AnnoKey, String>> {
+        let mut result = LinkedHashMap::new();
+        let node_annos = g.get_node_annos();
+        let mut column_index = column_offset;
+        for anno_key in node_annos.annotation_keys()? {
+            if anno_key.ns != ANNIS_NS && is_span_column(&anno_key, node_annos, token_helper)? {
+                result.insert(anno_key, string_from_column_index(&column_index));
+                column_index += 1;
+            }
+        }
+
+        Ok(result)
     }
 
     fn create_token_colum(
@@ -170,21 +206,18 @@ impl XlsxExporter {
             let mut token = token_roots_for_document.into_iter().next();
 
             while let Some(current_token) = token {
-                if let Some(mut val) = g
+                if let Some(val) = g
                     .get_node_annos()
                     .get_value_for_item(&current_token, &TOKEN_KEY)?
                 {
                     if !val.trim().is_empty() {
                         has_only_empty_token = false;
-                    } else {
-                        val = "X".into();
                     }
-                    worksheet
-                        .get_cell_mut((1, row_index))
-                        .set_value(val.to_string());
+                    worksheet.get_cell_mut((1, row_index)).set_value_string(val);
                 }
 
-                token_to_row.insert(current_token, row_index);
+                // Reserve the first row for the header
+                token_to_row.insert(current_token, row_index + 1);
 
                 token = if let Some(ordering_gs) = ordering_gs {
                     if let Some(next_token) = ordering_gs.get_outgoing_edges(current_token).next() {
