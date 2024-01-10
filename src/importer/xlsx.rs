@@ -215,6 +215,13 @@ impl ImportSpreadsheet {
                 anno_name: "layer".to_string(),
                 anno_value: "default_layer".to_string(),
             })?;
+            update.add_event(UpdateEvent::AddEdge {
+                source_node: tok_id.to_string(),
+                target_node: doc_path.to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".to_string(),
+            })?;
             base_tokens.push(tok_id);
         }
         base_tokens
@@ -505,6 +512,7 @@ mod tests {
             ("annis:doc=\"test_file\"", 1),
             ("dipl .dipl dipl .dipl dipl .dipl dipl", 1),
             ("norm .norm norm .norm norm .norm norm", 1),
+            ("annis:node_name=/.*#t.*/ @ annis:doc", 6),
         ];
         let corpus_name = "current";
         let tmp_dir = tempdir_in(temp_dir())?;
