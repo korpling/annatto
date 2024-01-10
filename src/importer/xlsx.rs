@@ -298,7 +298,7 @@ impl ImportSpreadsheet {
                             })?;
                         }
 
-                        let (anno_ns, anno_name) = split_qname(&name);
+                        let (anno_ns, anno_name) = split_qname(name);
 
                         update.add_event(UpdateEvent::AddNodeLabel {
                             node_name: node_name.to_string(),
