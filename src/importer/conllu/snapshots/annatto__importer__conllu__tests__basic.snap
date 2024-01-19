@@ -1,0 +1,246 @@
+---
+source: src/importer/conllu/tests.rs
+expression: actual.unwrap()
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="node" attr.name="Case" attr.type="string"/>
+    <key id="k1" for="node" attr.name="Number" attr.type="string"/>
+    <key id="k2" for="node" attr.name="Person" attr.type="string"/>
+    <key id="k3" for="node" attr.name="PronType" attr.type="string"/>
+    <key id="k4" for="node" attr.name="SpaceAfter" attr.type="string"/>
+    <key id="k5" for="node" attr.name="Tense" attr.type="string"/>
+    <key id="k6" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k7" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k8" for="node" attr.name="lemma" attr.type="string"/>
+    <key id="k9" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k10" for="node" attr.name="sent_id" attr.type="string"/>
+    <key id="k11" for="node" attr.name="text" attr.type="string"/>
+    <key id="k12" for="node" attr.name="annis::tok" attr.type="string"/>
+    <key id="k13" for="node" attr.name="upos" attr.type="string"/>
+    <key id="k14" for="node" attr.name="xpos" attr.type="string"/>
+    <key id="k15" for="node" attr.name="deprel" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <node id="valid">
+            <data key="k9">corpus</data>
+        </node>
+        <node id="valid/website_example">
+            <data key="k6">website_example</data>
+            <data key="k9">corpus</data>
+        </node>
+        <node id="valid/website_example#t5_1">
+            <data key="k0">Nom</data>
+            <data key="k1">Plur</data>
+            <data key="k12">They</data>
+            <data key="k13">PRON</data>
+            <data key="k14">PRP</data>
+            <data key="k7">default_layer</data>
+            <data key="k8">they</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="valid/website_example#t5_68">
+            <data key="k1">Plur</data>
+            <data key="k12">buy</data>
+            <data key="k13">VERB</data>
+            <data key="k14">VBP</data>
+            <data key="k2">3</data>
+            <data key="k5">Pres</data>
+            <data key="k7">default_layer</data>
+            <data key="k8">buy</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="valid/website_example#t6_67">
+            <data key="k12">and</data>
+            <data key="k13">CONJ</data>
+            <data key="k14">CC</data>
+            <data key="k7">default_layer</data>
+            <data key="k8">and</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="valid/website_example#t7_32">
+            <data key="k1">Plur</data>
+            <data key="k12">sell</data>
+            <data key="k13">VERB</data>
+            <data key="k14">VBP</data>
+            <data key="k2">3</data>
+            <data key="k5">Pres</data>
+            <data key="k7">default_layer</data>
+            <data key="k8">sell</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="valid/website_example#t8_76">
+            <data key="k1">Plur</data>
+            <data key="k12">books</data>
+            <data key="k13">NOUN</data>
+            <data key="k14">NNS</data>
+            <data key="k4">No</data>
+            <data key="k7">default_layer</data>
+            <data key="k8">book</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="valid/website_example#t9_66">
+            <data key="k12">.</data>
+            <data key="k13">PUNCT</data>
+            <data key="k14">.</data>
+            <data key="k7">default_layer</data>
+            <data key="k8">.</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="valid/website_example#s1_1">
+            <data key="k10">1</data>
+            <data key="k11">They buy and sell books.</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="valid/website_example#t14_1">
+            <data key="k0">Nom</data>
+            <data key="k1">Sing</data>
+            <data key="k12">I</data>
+            <data key="k13">PRON</data>
+            <data key="k14">PRP</data>
+            <data key="k2">1</data>
+            <data key="k7">default_layer</data>
+            <data key="k8">I</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="valid/website_example#t14_57">
+            <data key="k1">Sing</data>
+            <data key="k12">have</data>
+            <data key="k13">VERB</data>
+            <data key="k14">VBP</data>
+            <data key="k2">1</data>
+            <data key="k5">Pres</data>
+            <data key="k7">default_layer</data>
+            <data key="k8">have</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="valid/website_example#t15_64">
+            <data key="k12">no</data>
+            <data key="k13">DET</data>
+            <data key="k14">DT</data>
+            <data key="k3">Neg</data>
+            <data key="k7">default_layer</data>
+            <data key="k8">no</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="valid/website_example#t16_38">
+            <data key="k1">Sing</data>
+            <data key="k12">clue</data>
+            <data key="k13">NOUN</data>
+            <data key="k14">NN</data>
+            <data key="k4">No</data>
+            <data key="k7">default_layer</data>
+            <data key="k8">clue</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="valid/website_example#t17_54">
+            <data key="k12">.</data>
+            <data key="k13">PUNCT</data>
+            <data key="k14">.</data>
+            <data key="k7">default_layer</data>
+            <data key="k8">.</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="valid/website_example#s10_34">
+            <data key="k10">2</data>
+            <data key="k11">I have no clue.</data>
+            <data key="k9">node</data>
+        </node>
+        <edge id="e0" source="valid/website_example#s1_1" target="valid/website_example#t5_1" label="Coverage/annis/">
+        </edge>
+        <edge id="e1" source="valid/website_example#s1_1" target="valid/website_example#t5_68" label="Coverage/annis/">
+        </edge>
+        <edge id="e2" source="valid/website_example#s1_1" target="valid/website_example#t6_67" label="Coverage/annis/">
+        </edge>
+        <edge id="e3" source="valid/website_example#s1_1" target="valid/website_example#t7_32" label="Coverage/annis/">
+        </edge>
+        <edge id="e4" source="valid/website_example#s1_1" target="valid/website_example#t8_76" label="Coverage/annis/">
+        </edge>
+        <edge id="e5" source="valid/website_example#s1_1" target="valid/website_example#t9_66" label="Coverage/annis/">
+        </edge>
+        <edge id="e6" source="valid/website_example#s10_34" target="valid/website_example#t14_1" label="Coverage/annis/">
+        </edge>
+        <edge id="e7" source="valid/website_example#s10_34" target="valid/website_example#t14_57" label="Coverage/annis/">
+        </edge>
+        <edge id="e8" source="valid/website_example#s10_34" target="valid/website_example#t15_64" label="Coverage/annis/">
+        </edge>
+        <edge id="e9" source="valid/website_example#s10_34" target="valid/website_example#t16_38" label="Coverage/annis/">
+        </edge>
+        <edge id="e10" source="valid/website_example#s10_34" target="valid/website_example#t17_54" label="Coverage/annis/">
+        </edge>
+        <edge id="e11" source="valid/website_example#t5_68" target="valid/website_example#t5_1" label="Pointing//dep">
+            <data key="k15">nsubj</data>
+        </edge>
+        <edge id="e12" source="valid/website_example#t5_68" target="valid/website_example#t7_32" label="Pointing//dep">
+            <data key="k15">conj</data>
+        </edge>
+        <edge id="e13" source="valid/website_example#t5_68" target="valid/website_example#t8_76" label="Pointing//dep">
+            <data key="k15">obj</data>
+        </edge>
+        <edge id="e14" source="valid/website_example#t5_68" target="valid/website_example#t9_66" label="Pointing//dep">
+            <data key="k15">punct</data>
+        </edge>
+        <edge id="e15" source="valid/website_example#t7_32" target="valid/website_example#t6_67" label="Pointing//dep">
+            <data key="k15">cc</data>
+        </edge>
+        <edge id="e16" source="valid/website_example#t14_57" target="valid/website_example#t14_1" label="Pointing//dep">
+            <data key="k15">nsubj</data>
+        </edge>
+        <edge id="e17" source="valid/website_example#t14_57" target="valid/website_example#t16_38" label="Pointing//dep">
+            <data key="k15">obj</data>
+        </edge>
+        <edge id="e18" source="valid/website_example#t14_57" target="valid/website_example#t17_54" label="Pointing//dep">
+            <data key="k15">punct</data>
+        </edge>
+        <edge id="e19" source="valid/website_example#t16_38" target="valid/website_example#t15_64" label="Pointing//dep">
+            <data key="k15">det</data>
+        </edge>
+        <edge id="e20" source="valid/website_example#t5_1" target="valid/website_example#t5_68" label="Ordering/annis/">
+        </edge>
+        <edge id="e21" source="valid/website_example#t5_68" target="valid/website_example#t6_67" label="Ordering/annis/">
+        </edge>
+        <edge id="e22" source="valid/website_example#t6_67" target="valid/website_example#t7_32" label="Ordering/annis/">
+        </edge>
+        <edge id="e23" source="valid/website_example#t7_32" target="valid/website_example#t8_76" label="Ordering/annis/">
+        </edge>
+        <edge id="e24" source="valid/website_example#t8_76" target="valid/website_example#t9_66" label="Ordering/annis/">
+        </edge>
+        <edge id="e25" source="valid/website_example#t9_66" target="valid/website_example#t14_1" label="Ordering/annis/">
+        </edge>
+        <edge id="e26" source="valid/website_example#t14_1" target="valid/website_example#t14_57" label="Ordering/annis/">
+        </edge>
+        <edge id="e27" source="valid/website_example#t14_57" target="valid/website_example#t15_64" label="Ordering/annis/">
+        </edge>
+        <edge id="e28" source="valid/website_example#t15_64" target="valid/website_example#t16_38" label="Ordering/annis/">
+        </edge>
+        <edge id="e29" source="valid/website_example#t16_38" target="valid/website_example#t17_54" label="Ordering/annis/">
+        </edge>
+        <edge id="e30" source="valid/website_example" target="valid" label="PartOf/annis/">
+        </edge>
+        <edge id="e31" source="valid/website_example#t5_1" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e32" source="valid/website_example#t5_68" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e33" source="valid/website_example#t6_67" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e34" source="valid/website_example#t7_32" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e35" source="valid/website_example#t8_76" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e36" source="valid/website_example#t9_66" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e37" source="valid/website_example#s1_1" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e38" source="valid/website_example#t14_1" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e39" source="valid/website_example#t14_57" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e40" source="valid/website_example#t15_64" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e41" source="valid/website_example#t16_38" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e42" source="valid/website_example#t17_54" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e43" source="valid/website_example#s10_34" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>
