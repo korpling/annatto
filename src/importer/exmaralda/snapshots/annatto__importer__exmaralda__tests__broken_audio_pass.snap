@@ -221,5 +221,31 @@ expression: r.unwrap()
         </edge>
         <edge id="e38" source="import/exmaralda/test_doc#T4" target="import/exmaralda/test_doc" label="PartOf/annis/">
         </edge>
+        <edge id="e39" source="import/exmaralda/test_doc#t_dipl_T286-T1" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e40" source="import/exmaralda/test_doc#t_dipl_T1-T2" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e41" source="import/exmaralda/test_doc#t_dipl_T2-T3" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e42" source="import/exmaralda/test_doc#t_dipl_T3-T4" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e43" source="import/exmaralda/test_doc#t_norm_T286-T0" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e44" source="import/exmaralda/test_doc#t_norm_T0-T1" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e45" source="import/exmaralda/test_doc#t_norm_T1-T2" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e46" source="import/exmaralda/test_doc#t_norm_T2-T4" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e47" source="import/exmaralda/test_doc#a_dipl_T286-T4" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e48" source="import/exmaralda/test_doc#a_norm_T286-T0" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e49" source="import/exmaralda/test_doc#a_norm_T0-T1" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e50" source="import/exmaralda/test_doc#a_norm_T1-T2" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e51" source="import/exmaralda/test_doc#a_norm_T2-T4" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        </edge>
     </graph>
 </graphml>
