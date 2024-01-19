@@ -118,6 +118,13 @@ impl ImportXML {
                         node_name: node_id.to_string(),
                         node_type: "node".to_string(),
                     })?;
+                    update.add_event(UpdateEvent::AddEdge {
+                        source_node: node_id.to_string(),
+                        target_node: doc_node_id.to_string(),
+                        layer: ANNIS_NS.to_string(),
+                        component_type: AnnotationComponentType::PartOf.to_string(),
+                        component_name: "".to_string(),
+                    })?;
                     for attr in attributes {
                         let key = attr.name.to_string();
                         let value = attr.value.to_string();
@@ -146,6 +153,13 @@ impl ImportXML {
                             target_node: empty_node.to_string(),
                             layer: ANNIS_NS.to_string(),
                             component_type: AnnotationComponentType::Coverage.to_string(),
+                            component_name: "".to_string(),
+                        })?;
+                        update.add_event(UpdateEvent::AddEdge {
+                            source_node: empty_node.to_string(),
+                            target_node: doc_node_id.to_string(),
+                            layer: ANNIS_NS.to_string(),
+                            component_type: AnnotationComponentType::PartOf.to_string(),
                             component_name: "".to_string(),
                         })?;
                         for ascendent_node in &node_stack[1..] {

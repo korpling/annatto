@@ -412,6 +412,14 @@ impl ImportEXMARaLDA {
                                     node_name: node_name.to_string(),
                                     node_type: "node".to_string(),
                                 })?;
+                                // part-of
+                                update.add_event(UpdateEvent::AddEdge {
+                                    source_node: node_name.to_string(),
+                                    target_node: doc_node_name.to_string(),
+                                    layer: ANNIS_NS.to_string(),
+                                    component_type: AnnotationComponentType::PartOf.to_string(),
+                                    component_name: "".to_string(),
+                                })?;
                                 // coverage
                                 for overlapped_id in overlapped {
                                     let (_, target_id) = timeline.get(overlapped_id).unwrap();

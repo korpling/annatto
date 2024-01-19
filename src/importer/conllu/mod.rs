@@ -195,6 +195,13 @@ impl ImportCoNLLU {
                 node_name: node_name.to_string(),
                 node_type: "node".to_string(),
             })?;
+            update.add_event(UpdateEvent::AddEdge {
+                source_node: node_name.to_string(),
+                target_node: document_node_name.to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".to_string(),
+            })?;
             for (anno_name, anno_value) in s_annos {
                 update.add_event(UpdateEvent::AddNodeLabel {
                     node_name: node_name.to_string(),
@@ -263,6 +270,13 @@ impl ImportCoNLLU {
         update.add_event(UpdateEvent::AddNode {
             node_name: node_name.to_string(),
             node_type: "node".to_string(),
+        })?;
+        update.add_event(UpdateEvent::AddEdge {
+            source_node: node_name.to_string(),
+            target_node: document_node_name.to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
         })?;
         update.add_event(UpdateEvent::AddNodeLabel {
             node_name: node_name.to_string(),
