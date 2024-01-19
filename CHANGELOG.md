@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - importing `exmaralda` does now has more features
 - `exmaralda` can be exported
 - `xlsx` import creates part of-edges between tokens and document nodes
+- all imports add PartOf edges from nodes to their respective document (lowest corpus node)
 
 ### Fixed
 
