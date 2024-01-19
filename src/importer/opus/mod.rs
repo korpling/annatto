@@ -4,6 +4,7 @@ use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
 };
+use graphannis_core::graph::ANNIS_NS;
 use serde_derive::Deserialize;
 use xml::{EventReader, ParserConfig};
 
@@ -87,9 +88,23 @@ impl ImportOpusLinks {
             node_name: source_id.to_string(),
             node_type: "node".to_string(),
         })?;
+        update.add_event(UpdateEvent::AddEdge {
+            source_node: source_id.to_string(),
+            target_node: source_doc_node_id.to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
         update.add_event(UpdateEvent::AddNode {
             node_name: target_id.to_string(),
             node_type: "node".to_string(),
+        })?;
+        update.add_event(UpdateEvent::AddEdge {
+            source_node: target_id.to_string(),
+            target_node: target_doc_node_id.to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
         })?;
         update.add_event(UpdateEvent::AddEdge {
             source_node: source_id.to_string(),
