@@ -11,6 +11,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - improve progress reporting by reporting each conversion step separately
 
+### Added
+
+- graph_op `collapse` can collapse an edge component, i. e., it merges all nodes in a connected subgraph in said component
+- `collapse` can be accelerated when all edges of the component to be collapsed are known to be disjoint by providing `disjoint = true` in the step config
+- `collapse` provides more feedback on current process
+- `collapse` gives hypernodes proper names that allow to identify the subgraph they belong to. Furthermore already existing hypernode ids are not reused (in case multiple collapse operations are run on a graph).
+- `CorpusStorage` is now quiet
+- importing `exmaralda` does now has more features
+- `exmaralda` can be exported
+- `xlsx` import creates part of-edges between tokens and document nodes
+- all imports add PartOf edges from nodes to their respective document (lowest corpus node)
+
+### Fixed
+
+- `link` now considers all matching nodes for the same value, so the correct amount of edges is created
+- `exmaralda` returns error when there is no time value for a timeline item
+- fixed and simplified import of corpus node annotations
+- `exmaralda` import's paths to linked media files are relative to the working directory
+- `xlsx` importer now adds `PartOf` relations to the document nodes  
+
 ## [0.4.0] - 2023-11-13
 
 ### Added
@@ -29,15 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - import opus sentence alignments
 - graph op `enumerate` to enumerate nodes, i. e., add numeric annotations to results of one or multiple queries
 - add importer for the format used by the [TreeTagger](https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/)
-- graph_op `collapse` can collapse an edge component, i. e., it merges all nodes in a connected subgraph in said component
-- `collapse` can be accelerated when all edges of the component to be collapsed are known to be disjoint by providing `disjoint = true` in the step config
-- `collapse` provides more feedback on current process
-- `collapse` gives hypernodes proper names that allow to identify the subgraph they belong to. Furthermore already existing hypernode ids are not reused (in case multiple collapse operations are run on a graph).
-- `CorpusStorage` is now quiet
-- importing `exmaralda` does now has more features
-- `exmaralda` can be exported
-- `xlsx` import creates part of-edges between tokens and document nodes
-- all imports add PartOf edges from nodes to their respective document (lowest corpus node)
 
 ### Fixed
 
@@ -48,11 +59,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - relative import and export paths are interpreted as relative to the parent directory of the workflow file
 - the spreadsheet importer will use the correct namespace `default_ns` for segmentation ordering relations
 - fixed ordering of token nodes in spreadsheet import
-- `link` now considers all matching nodes for the same value, so the correct amount of edges is created
-- `exmaralda` returns error when there is no time value for a timeline item
-- fixed and simplified import of corpus node annotations
-- `exmaralda` import's paths to linked media files are relative to the working directory
-- `xlsx` importer now adds `PartOf` relations to the document nodes  
 
 ### Removed
 
