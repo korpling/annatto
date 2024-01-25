@@ -181,14 +181,14 @@ mod tests {
     fn example_graph_token() {
         let mut updates = GraphUpdate::new();
         example_generator::create_corpus_structure_simple(&mut updates);
-        example_generator::create_tokens(&mut updates, Some("rootCorpus/doc1"));
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
         let mut g = AnnotationGraph::new(false).unwrap();
         g.apply_update(&mut updates, |_msg| {}).unwrap();
 
         let token_helper = TokenHelper::new(&g).unwrap();
 
         let ordered_token_ids = token_helper
-            .get_ordered_token("rootCorpus/doc1", None)
+            .get_ordered_token("root/doc1", None)
             .unwrap()
             .into_iter()
             .map(|t_id| token_helper.spanned_text(t_id).unwrap())
