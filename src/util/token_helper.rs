@@ -2,10 +2,12 @@ use anyhow::{anyhow, Result};
 use graphannis::{graph::GraphStorage, model::AnnotationComponentType, AnnotationGraph};
 use graphannis_core::{
     annostorage::{NodeAnnotationStorage, ValueSearch},
+    errors::GraphAnnisCoreError,
     graph::ANNIS_NS,
     types::{AnnoKey, Component, NodeID},
 };
 
+use itertools::Itertools;
 use lazy_static::lazy_static;
 use std::{
     borrow::Cow,
@@ -160,9 +162,14 @@ impl<'a> TokenHelper<'a> {
         Ok(result)
     }
 
-    pub fn spanned_text(&self, token_id: NodeID) -> Result<Cow<str>> {
-        let anno_value = self.node_annos.get_value_for_item(&token_id, &TOKEN_KEY)?;
-        let result = anno_value.unwrap_or_default();
+    pub fn spanned_text(&self, token_ids: &[NodeID]) -> Result<String> {
+        let anno_values: std::result::Result<Vec<_>, GraphAnnisCoreError> = token_ids
+            .iter()
+            .map(|t| self.node_annos.get_value_for_item(&t, &TOKEN_KEY))
+            .collect();
+        // TODO: support whitespace after/before annotations
+        let anno_values = anno_values?.into_iter().flatten().collect_vec();
+        let result = anno_values.join(" ");
         Ok(result)
     }
 }
@@ -191,7 +198,7 @@ mod tests {
             .get_ordered_token("root/doc1", None)
             .unwrap()
             .into_iter()
-            .map(|t_id| token_helper.spanned_text(t_id).unwrap())
+            .map(|t_id| token_helper.spanned_text(&[t_id]).unwrap())
             .collect_vec();
 
         assert_eq!(
