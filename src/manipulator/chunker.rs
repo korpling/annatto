@@ -1,15 +1,15 @@
+use super::Manipulator;
 use crate::{progress::ProgressReporter, util::token_helper::TokenHelper, Module};
 use graphannis_core::{
     annostorage::{Match, ValueSearch},
     errors::GraphAnnisCoreError,
     graph::{ANNIS_NS, NODE_NAME_KEY},
 };
-use itertools::Itertools;
-use nlprule::tokenizer::chunk::Chunker as NlpRuleChunker;
+use text_splitter::TextSplitter;
 
-use super::Manipulator;
-
-pub struct Chunker {}
+pub struct Chunker {
+    max_characters: usize,
+}
 
 impl Module for Chunker {
     fn module_name(&self) -> &str {
@@ -42,11 +42,42 @@ impl Manipulator for Chunker {
                 // Apply chunker to reconstructed base text of the token
                 let token = token_helper.get_ordered_token(&parent, None)?;
                 let base_text = token_helper.spanned_text(&token)?;
-                todo!("Apply nlprule tokenizer/chunker")
+                let splitter = TextSplitter::default();
+                let chunks: Vec<_> = splitter.chunks(&base_text, self.max_characters).collect();
+
+                dbg!(chunks);
+                todo!("Add sentence span annotation")
             }
             progress.worked(1)?;
         }
+        Ok(())
+    }
+}
 
-        todo!()
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use graphannis::{update::GraphUpdate, AnnotationGraph};
+
+    use crate::{manipulator::Manipulator, util::example_generator};
+
+    use super::Chunker;
+
+    #[test]
+    fn simple_chunk_configuration() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
+        let mut g = AnnotationGraph::new(false).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let chunker = Chunker {
+            max_characters: 500,
+        };
+
+        chunker
+            .manipulate_corpus(&mut g, Path::new("."), None)
+            .unwrap();
     }
 }
