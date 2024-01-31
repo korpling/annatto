@@ -72,9 +72,7 @@ mod tests {
         let mut g = AnnotationGraph::new(false).unwrap();
         g.apply_update(&mut updates, |_msg| {}).unwrap();
 
-        let chunker = Chunker {
-            max_characters: 500,
-        };
+        let chunker = Chunker { max_characters: 10 };
 
         chunker
             .manipulate_corpus(&mut g, Path::new("."), None)

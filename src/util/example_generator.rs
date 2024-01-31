@@ -140,6 +140,15 @@ pub fn create_corpus_structure_simple(update: &mut GraphUpdate) {
         .unwrap();
 
     update
+        .add_event(UpdateEvent::AddNodeLabel {
+            node_name: "root/doc1".to_string(),
+            anno_ns: ANNIS_NS.into(),
+            anno_name: "doc".into(),
+            anno_value: "doc1".into(),
+        })
+        .unwrap();
+
+    update
         .add_event(UpdateEvent::AddEdge {
             source_node: "root/doc1".to_string(),
             target_node: "root".to_string(),
