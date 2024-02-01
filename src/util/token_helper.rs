@@ -2,8 +2,9 @@ use anyhow::{anyhow, Result};
 use graphannis::{graph::GraphStorage, model::AnnotationComponentType, AnnotationGraph};
 use graphannis_core::{
     annostorage::{NodeAnnotationStorage, ValueSearch},
+    dfs,
     errors::GraphAnnisCoreError,
-    graph::ANNIS_NS,
+    graph::{storage::union::UnionEdgeContainer, ANNIS_NS},
     types::{AnnoKey, Component, NodeID},
 };
 
@@ -11,6 +12,7 @@ use itertools::Itertools;
 use lazy_static::lazy_static;
 use std::{
     borrow::Cow,
+    cmp::Ordering,
     collections::{BTreeMap, HashSet},
     sync::Arc,
 };
@@ -170,6 +172,45 @@ impl<'a> TokenHelper<'a> {
         // TODO: support whitespace after/before annotations
         let anno_values = anno_values?.into_iter().flatten().collect_vec();
         let result = anno_values.join(" ");
+        Ok(result)
+    }
+
+    /// Find all token covered by the given node
+    pub fn covered_token(&self, node_id: NodeID) -> Result<Vec<NodeID>> {
+        let mut result = Vec::default();
+        let coverage = UnionEdgeContainer::new(
+            self.cov_edges
+                .iter()
+                .map(|gs| gs.as_edgecontainer())
+                .collect_vec(),
+        );
+        let it = dfs::CycleSafeDFS::new(&coverage, node_id, 1, usize::MAX);
+        for step in it {
+            let step = step?;
+            if self.is_token(step.node)? {
+                result.push(step.node);
+            }
+        }
+
+        // Sort token by their order
+        if let Some(gs) = self.ordering_gs.get("") {
+            result.sort_by(|a, b| {
+                if a == b {
+                    return Ordering::Equal;
+                } else {
+                    if let Ok(connected) = gs.is_connected(*a, *b, 1, std::ops::Bound::Unbounded) {
+                        if connected {
+                            return Ordering::Less;
+                        } else {
+                            return Ordering::Greater;
+                        }
+                    } else {
+                        return Ordering::Less;
+                    }
+                }
+            });
+        }
+
         Ok(result)
     }
 }
