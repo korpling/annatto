@@ -11,7 +11,6 @@ use graphannis_core::{
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use std::{
-    borrow::Cow,
     cmp::Ordering,
     collections::{BTreeMap, HashSet},
     sync::Arc,

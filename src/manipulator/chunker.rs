@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 
 use super::Manipulator;
 use crate::{progress::ProgressReporter, util::token_helper::TokenHelper, Module};
@@ -15,9 +15,10 @@ use graphannis_core::{
     graph::{ANNIS_NS, NODE_NAME_KEY},
     types::NodeID,
 };
-use serde::de::IntoDeserializer;
-use text_splitter::{ChunkSizer, TextSplitter};
+use serde::Deserialize;
+use text_splitter::TextSplitter;
 
+#[derive(Deserialize)]
 pub struct Chunker {
     max_characters: usize,
     anno_namespace: String,
