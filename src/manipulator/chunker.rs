@@ -19,14 +19,14 @@ use serde::Deserialize;
 use text_splitter::TextSplitter;
 
 #[derive(Deserialize)]
-pub struct Chunker {
+pub struct Chunk {
     max_characters: usize,
     anno_namespace: String,
     anno_name: String,
     anno_value: String,
 }
 
-impl Default for Chunker {
+impl Default for Chunk {
     fn default() -> Self {
         Self {
             max_characters: 100,
@@ -37,13 +37,13 @@ impl Default for Chunker {
     }
 }
 
-impl Module for Chunker {
+impl Module for Chunk {
     fn module_name(&self) -> &str {
-        "Chunker"
+        "chunk"
     }
 }
 
-impl Manipulator for Chunker {
+impl Manipulator for Chunk {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
@@ -156,7 +156,7 @@ mod tests {
         util::{example_generator, token_helper::TokenHelper},
     };
 
-    use super::Chunker;
+    use super::Chunk;
     use pretty_assertions::assert_eq;
 
     #[test]
@@ -167,7 +167,7 @@ mod tests {
         let mut g = AnnotationGraph::new(false).unwrap();
         g.apply_update(&mut updates, |_msg| {}).unwrap();
 
-        let chunker = Chunker {
+        let chunker = Chunk {
             max_characters: 20,
             anno_name: "segment".into(),
             anno_namespace: "chunk".into(),

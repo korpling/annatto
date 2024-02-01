@@ -258,4 +258,39 @@ mod tests {
             ordered_token_ids
         );
     }
+
+    #[test]
+    fn ordered_token_with_segmentation() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
+        let mut g = AnnotationGraph::new(false).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let token_helper = TokenHelper::new(&g).unwrap();
+
+        let ordered_token_ids = token_helper
+            .get_ordered_token("root/doc1", Some("dipl"))
+            .unwrap()
+            .into_iter()
+            .map(|t_id| token_helper.spanned_text(&[t_id]).unwrap())
+            .collect_vec();
+
+        assert_eq!(
+            vec![
+                "Is",
+                "this",
+                "example",
+                "more",
+                "complicated",
+                "than",
+                "it",
+                "appears",
+                "to",
+                "be",
+                "?"
+            ],
+            ordered_token_ids
+        );
+    }
 }
