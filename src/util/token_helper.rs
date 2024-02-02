@@ -115,38 +115,29 @@ impl<'a> TokenHelper<'a> {
             .ordering_gs
             .get(segmentation)
             .ok_or_else(|| anyhow!("Missing ordering component for segmentation {segmentation}"))?;
+
         // Find all token roots
         let mut roots: HashSet<_> = HashSet::new();
-        for n in self
-            .node_annos
-            .exact_anno_search(Some(ANNIS_NS), "tok", ValueSearch::Any)
-        {
+        for n in ordering_gs.source_nodes() {
             let n = n?;
-
-            // Check that this is an actual token and there are no outgoing coverage edges
-            if self.is_token(n.node)? {
-                if ordering_gs.get_ingoing_edges(n.node).next().is_none() {
-                    roots.insert(n.node);
-                }
-            }
-        }
-
-        // Filter the roots by checking the parent node in the corpus structure
-        let mut roots_for_document = Vec::new();
-        if let Some(parent_id) = parent_id {
-            for n in roots {
-                if self
-                    .part_of_gs
-                    .is_connected(n, parent_id, 1, std::ops::Bound::Unbounded)?
-                {
-                    roots_for_document.push(n);
+            if !ordering_gs.has_ingoing_edges(n)? {
+                // Filter the roots by checking the parent node in the corpus structure
+                if let Some(parent_id) = parent_id {
+                    if self
+                        .part_of_gs
+                        .is_connected(n, parent_id, 1, std::ops::Bound::Unbounded)?
+                    {
+                        roots.insert(n);
+                    }
+                } else {
+                    roots.insert(n);
                 }
             }
         }
 
         // Follow the ordering edges from the roots to reconstruct the token in their correct order
         let mut result = Vec::default();
-        for r in roots_for_document {
+        for r in roots {
             let mut token = Some(r);
             while let Some(current_token) = token {
                 result.push(current_token);
@@ -217,6 +208,7 @@ impl<'a> TokenHelper<'a> {
 #[cfg(test)]
 mod tests {
     use graphannis::{
+        model::AnnotationComponentType,
         update::{GraphUpdate, UpdateEvent},
         AnnotationGraph,
     };
@@ -279,27 +271,56 @@ mod tests {
         updates
             .add_event(UpdateEvent::AddNodeLabel {
                 node_name: "root/doc1#seg1".into(),
-                anno_ns: "".into(),
-                anno_name: "seg".into(),
+                anno_ns: ANNIS_NS.into(),
+                anno_name: "tok".into(),
                 anno_value: "This".into(),
             })
             .unwrap();
+        updates
+            .add_event(UpdateEvent::AddEdge {
+                source_node: "root/doc1#seg1".into(),
+                target_node: "root/doc1".into(),
+                layer: ANNIS_NS.into(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".into(),
+            })
+            .unwrap();
+
         example_generator::make_span(&mut updates, "root/doc1#seg2", &["root/doc1#tok4"], true);
         updates
             .add_event(UpdateEvent::AddNodeLabel {
                 node_name: "root/doc1#seg2".into(),
-                anno_ns: "".into(),
-                anno_name: "seg".into(),
+                anno_ns: ANNIS_NS.into(),
+                anno_name: "tok".into(),
                 anno_value: "more".into(),
             })
             .unwrap();
+        updates
+            .add_event(UpdateEvent::AddEdge {
+                source_node: "root/doc1#seg2".into(),
+                target_node: "root/doc1".into(),
+                layer: ANNIS_NS.into(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".into(),
+            })
+            .unwrap();
+
         example_generator::make_span(&mut updates, "root/doc1#seg3", &["root/doc1#tok5"], true);
         updates
             .add_event(UpdateEvent::AddNodeLabel {
                 node_name: "root/doc1#seg3".into(),
-                anno_ns: "".into(),
-                anno_name: "seg".into(),
+                anno_ns: ANNIS_NS.into(),
+                anno_name: "tok".into(),
                 anno_value: "complicated".into(),
+            })
+            .unwrap();
+        updates
+            .add_event(UpdateEvent::AddEdge {
+                source_node: "root/doc1#seg3".into(),
+                target_node: "root/doc1".into(),
+                layer: ANNIS_NS.into(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".into(),
             })
             .unwrap();
 
