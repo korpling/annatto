@@ -24,6 +24,7 @@ pub struct Chunk {
     anno_namespace: String,
     anno_name: String,
     anno_value: String,
+    segmentation: Option<String>,
 }
 
 impl Default for Chunk {
@@ -33,6 +34,7 @@ impl Default for Chunk {
             anno_name: "chunk".into(),
             anno_namespace: "".into(),
             anno_value: "".into(),
+            segmentation: None,
         }
     }
 }
@@ -172,6 +174,7 @@ mod tests {
             anno_name: "segment".into(),
             anno_namespace: "chunk".into(),
             anno_value: "s".into(),
+            segmentation: None,
         };
 
         chunker
