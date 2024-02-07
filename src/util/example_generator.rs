@@ -85,8 +85,7 @@ pub fn create_tokens(update: &mut GraphUpdate, document_node: Option<&str>) {
         "".to_string()
     };
 
-    let token_strings = vec![
-        "Is",
+    let token_strings = ["Is",
         "this",
         "example",
         "more",
@@ -96,8 +95,7 @@ pub fn create_tokens(update: &mut GraphUpdate, document_node: Option<&str>) {
         "appears",
         "to",
         "be",
-        "?",
-    ];
+        "?"];
     for (i, t) in token_strings.iter().enumerate() {
         create_token_node(update, &format!("{}tok{}", prefix, i), t, document_node);
     }

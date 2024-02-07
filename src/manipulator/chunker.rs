@@ -64,7 +64,7 @@ impl Manipulator for Chunk {
 
             let progress = ProgressReporter::new(tx, self.step_id(None), documents.len())?;
 
-            let token_helper = TokenHelper::new(&graph)?;
+            let token_helper = TokenHelper::new(graph)?;
 
             let mut addded_node_index = 1;
 
@@ -75,7 +75,7 @@ impl Manipulator for Chunk {
                     // Apply chunker to reconstructed base text of the token
                     let token = token_helper.get_ordered_token(
                         &parent,
-                        self.segmentation.as_ref().map(|s| s.as_str()),
+                        self.segmentation.as_deref(),
                     )?;
 
                     // Get span for each token but remember which part of the text belongs to which token ID
@@ -84,12 +84,12 @@ impl Manipulator for Chunk {
                     for (i, t) in token.iter().enumerate() {
                         let text = token_helper.spanned_text(&[*t])?;
                         if i > 0 {
-                            base_text.push_str(" ");
+                            base_text.push(' ');
                         }
 
                         let all_covered_token = if self.segmentation.is_some() {
-                            let all_covered_token = token_helper.covered_token(*t)?;
-                            all_covered_token
+                            
+                            token_helper.covered_token(*t)?
                         } else {
                             vec![*t]
                         };
@@ -128,8 +128,7 @@ impl Manipulator for Chunk {
                         })?;
                         let covered_token: Vec<NodeID> = offset_to_token
                             .range(chunk_offset..(chunk_offset + chunk_text.len()))
-                            .flat_map(|(_offset, t)| t)
-                            .map(|t| *t)
+                            .flat_map(|(_offset, t)| t).copied()
                             .collect();
 
                         for t in covered_token {

@@ -157,7 +157,7 @@ impl<'a> TokenHelper<'a> {
     pub fn spanned_text(&self, token_ids: &[NodeID]) -> Result<String> {
         let anno_values: std::result::Result<Vec<_>, GraphAnnisCoreError> = token_ids
             .iter()
-            .map(|t| self.node_annos.get_value_for_item(&t, &TOKEN_KEY))
+            .map(|t| self.node_annos.get_value_for_item(t, &TOKEN_KEY))
             .collect();
         // TODO: support whitespace after/before annotations
         let anno_values = anno_values?.into_iter().flatten().collect_vec();
@@ -186,17 +186,15 @@ impl<'a> TokenHelper<'a> {
         if let Some(gs) = self.ordering_gs.get("") {
             result.sort_by(|a, b| {
                 if a == b {
-                    return Ordering::Equal;
-                } else {
-                    if let Ok(connected) = gs.is_connected(*a, *b, 1, std::ops::Bound::Unbounded) {
-                        if connected {
-                            return Ordering::Less;
-                        } else {
-                            return Ordering::Greater;
-                        }
+                    Ordering::Equal
+                } else if let Ok(connected) = gs.is_connected(*a, *b, 1, std::ops::Bound::Unbounded) {
+                    if connected {
+                        Ordering::Less
                     } else {
-                        return Ordering::Less;
+                        Ordering::Greater
                     }
+                } else {
+                    Ordering::Less
                 }
             });
         }
