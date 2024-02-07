@@ -187,7 +187,8 @@ impl<'a> TokenHelper<'a> {
             result.sort_by(|a, b| {
                 if a == b {
                     Ordering::Equal
-                } else if let Ok(connected) = gs.is_connected(*a, *b, 1, std::ops::Bound::Unbounded) {
+                } else if let Ok(connected) = gs.is_connected(*a, *b, 1, std::ops::Bound::Unbounded)
+                {
                     if connected {
                         Ordering::Less
                     } else {
