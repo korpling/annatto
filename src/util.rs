@@ -4,6 +4,8 @@ use graphannis::{model::AnnotationComponent, AnnotationGraph};
 use graphannis_core::types::{Edge, NodeID};
 use std::path::{Path, PathBuf};
 
+#[cfg(test)]
+pub(crate) mod example_generator;
 pub(crate) mod graphupdate;
 pub(crate) mod token_helper;
 

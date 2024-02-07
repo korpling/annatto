@@ -57,8 +57,8 @@ use importer::{
     xlsx::ImportSpreadsheet, xml::ImportXML, Importer,
 };
 use manipulator::{
-    check::Check, collapse::Collapse, enumerate::EnumerateMatches, link::LinkNodes, map::MapAnnos,
-    merge::Merge, no_op::NoOp, re::Revise, Manipulator,
+    check::Check, chunker::Chunk, collapse::Collapse, enumerate::EnumerateMatches, link::LinkNodes,
+    map::MapAnnos, merge::Merge, no_op::NoOp, re::Revise, Manipulator,
 };
 use serde_derive::Deserialize;
 
@@ -152,7 +152,8 @@ pub enum GraphOp {
     Map(MapAnnos),                    // no default, has a (required) path attribute
     Merge(Merge),                     // no default, has required attributes
     Revise(#[serde(default)] Revise), // does nothing on default
-    None(#[serde(default)] NoOp),     // has no attributes
+    Chunk(Chunk),
+    None(#[serde(default)] NoOp), // has no attributes
 }
 
 impl Default for GraphOp {
@@ -179,6 +180,7 @@ impl GraphOp {
             GraphOp::Revise(m) => m,
             GraphOp::None(m) => m,
             GraphOp::Enumerate(m) => m,
+            GraphOp::Chunk(m) => m,
         }
     }
 }
