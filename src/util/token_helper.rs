@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use graphannis::{graph::GraphStorage, model::AnnotationComponentType, AnnotationGraph};
 use graphannis_core::{
-    annostorage::{NodeAnnotationStorage, ValueSearch},
+    annostorage::NodeAnnotationStorage,
     dfs,
     errors::GraphAnnisCoreError,
     graph::{storage::union::UnionEdgeContainer, ANNIS_NS},
