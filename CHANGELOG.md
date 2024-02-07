@@ -5,6 +5,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added simple chunker module based on
+  [text-splitter](https://crates.io/crates/text-splitter).
+
 ## [0.5.0] - 2024-01-19
 
 ### Changed
