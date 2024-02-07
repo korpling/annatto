@@ -182,19 +182,14 @@ mod tests {
         let mut g = AnnotationGraph::new(false).unwrap();
         g.apply_update(&mut updates, |_msg| {}).unwrap();
 
-        let chunker = Chunk {
-            max_characters: 20,
-            anno_name: "segment".into(),
-            anno_namespace: "chunk".into(),
-            anno_value: "s".into(),
-            segmentation: None,
-        };
+        let mut chunker = Chunk::default();
+        chunker.max_characters = 20;
 
         chunker
             .manipulate_corpus(&mut g, Path::new("."), None)
             .unwrap();
 
-        let chunk_query = aql::parse("chunk:segment", false).unwrap();
+        let chunk_query = aql::parse("chunk", false).unwrap();
         let chunks: Result<Vec<_>, graphannis::errors::GraphAnnisError> =
             aql::execute_query_on_graph(&g, &chunk_query, false, None)
                 .unwrap()
