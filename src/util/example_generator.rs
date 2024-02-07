@@ -1,3 +1,4 @@
+use graphannis::model::AnnotationComponentType;
 use graphannis_core::graph::{
     update::{GraphUpdate, UpdateEvent},
     ANNIS_NS,
@@ -85,7 +86,8 @@ pub fn create_tokens(update: &mut GraphUpdate, document_node: Option<&str>) {
         "".to_string()
     };
 
-    let token_strings = ["Is",
+    let token_strings = [
+        "Is",
         "this",
         "example",
         "more",
@@ -95,7 +97,8 @@ pub fn create_tokens(update: &mut GraphUpdate, document_node: Option<&str>) {
         "appears",
         "to",
         "be",
-        "?"];
+        "?",
+    ];
     for (i, t) in token_strings.iter().enumerate() {
         create_token_node(update, &format!("{}tok{}", prefix, i), t, document_node);
     }
@@ -174,4 +177,63 @@ pub fn make_span(
             })
             .unwrap();
     }
+}
+
+pub fn make_segmentation_span(
+    update: &mut GraphUpdate,
+    node_name: &str,
+    parent_node_name: &str,
+    segmentation_name: &str,
+    segmentation_value: &str,
+    covered_token_names: &[&str],
+) {
+    update
+        .add_event(UpdateEvent::AddNode {
+            node_name: node_name.to_string(),
+            node_type: "node".to_string(),
+        })
+        .unwrap();
+    make_span(
+        update,
+        node_name,
+        &["root/doc1#tok1", "root/doc1#tok2", "root/doc1#tok3"],
+        true,
+    );
+    update
+        .add_event(UpdateEvent::AddNodeLabel {
+            node_name: node_name.into(),
+            anno_ns: ANNIS_NS.into(),
+            anno_name: "tok".into(),
+            anno_value: "This".into(),
+        })
+        .unwrap();
+    update
+        .add_event(UpdateEvent::AddNodeLabel {
+            node_name: node_name.into(),
+            anno_ns: "".into(),
+            anno_name: segmentation_name.into(),
+            anno_value: segmentation_value.into(),
+        })
+        .unwrap();
+
+    for c in covered_token_names {
+        update
+            .add_event(UpdateEvent::AddEdge {
+                source_node: node_name.to_string(),
+                target_node: c.to_string(),
+                layer: "".to_string(),
+                component_type: "Coverage".to_string(),
+                component_name: "".to_string(),
+            })
+            .unwrap();
+    }
+    update
+        .add_event(UpdateEvent::AddEdge {
+            source_node: node_name.into(),
+            target_node: parent_node_name.into(),
+            layer: ANNIS_NS.into(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".into(),
+        })
+        .unwrap();
 }

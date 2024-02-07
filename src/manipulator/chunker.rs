@@ -73,10 +73,8 @@ impl Manipulator for Chunk {
                     node_annos.get_value_for_item(&document_match.node, &NODE_NAME_KEY)?;
                 if let Some(parent) = document_node_name {
                     // Apply chunker to reconstructed base text of the token
-                    let token = token_helper.get_ordered_token(
-                        &parent,
-                        self.segmentation.as_deref(),
-                    )?;
+                    let token =
+                        token_helper.get_ordered_token(&parent, self.segmentation.as_deref())?;
 
                     // Get span for each token but remember which part of the text belongs to which token ID
                     let mut base_text = String::default();
@@ -88,7 +86,6 @@ impl Manipulator for Chunk {
                         }
 
                         let all_covered_token = if self.segmentation.is_some() {
-                            
                             token_helper.covered_token(*t)?
                         } else {
                             vec![*t]
@@ -128,7 +125,8 @@ impl Manipulator for Chunk {
                         })?;
                         let covered_token: Vec<NodeID> = offset_to_token
                             .range(chunk_offset..(chunk_offset + chunk_text.len()))
-                            .flat_map(|(_offset, t)| t).copied()
+                            .flat_map(|(_offset, t)| t)
+                            .copied()
                             .collect();
 
                         for t in covered_token {
@@ -161,7 +159,12 @@ impl Manipulator for Chunk {
 mod tests {
     use std::{collections::BTreeSet, path::Path};
 
-    use graphannis::{aql, update::GraphUpdate, AnnotationGraph};
+    use graphannis::{
+        aql,
+        update::{GraphUpdate, UpdateEvent},
+        AnnotationGraph,
+    };
+    use graphannis_core::graph::ANNIS_NS;
 
     use crate::{
         manipulator::Manipulator,
@@ -213,5 +216,125 @@ mod tests {
         assert_eq!("Is this example more", texts_covered_by_chunks[0]);
         assert_eq!("appears to be ?", texts_covered_by_chunks[1]);
         assert_eq!("complicated than it", texts_covered_by_chunks[2]);
+    }
+
+    #[test]
+    fn chunk_with_segmentation() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
+
+        // Add an additional segmentation layer "This more complicated ?"
+        example_generator::make_segmentation_span(
+            &mut updates,
+            "root/doc1#seg1",
+            "root/doc1",
+            "seg",
+            "This",
+            &["root/doc1#tok0", "root/doc1#tok1", "root/doc1#tok2"],
+        );
+        example_generator::make_segmentation_span(
+            &mut updates,
+            "root/doc1#seg2",
+            "root/doc1",
+            "seg",
+            "more",
+            &["root/doc1#tok3", "root/doc1#tok4"],
+        );
+        example_generator::make_segmentation_span(
+            &mut updates,
+            "root/doc1#seg3",
+            "root/doc1",
+            "seg",
+            "complicated",
+            &[
+                "root/doc1#tok5",
+                "root/doc1#tok6",
+                "root/doc1#tok7",
+                "root/doc1#tok8",
+                "root/doc1#tok9",
+            ],
+        );
+        example_generator::make_segmentation_span(
+            &mut updates,
+            "root/doc1#seg4",
+            "root/doc1",
+            "seg",
+            "?",
+            &["root/doc1#tok10"],
+        );
+
+        // add the order relations for the segmentation
+        updates
+            .add_event(UpdateEvent::AddEdge {
+                source_node: "root/doc1#seg1".into(),
+                target_node: "root/doc1#seg2".into(),
+                layer: ANNIS_NS.to_string(),
+                component_type: "Ordering".to_string(),
+                component_name: "seg".to_string(),
+            })
+            .unwrap();
+        updates
+            .add_event(UpdateEvent::AddEdge {
+                source_node: "root/doc1#seg2".into(),
+                target_node: "root/doc1#seg3".into(),
+                layer: ANNIS_NS.to_string(),
+                component_type: "Ordering".to_string(),
+                component_name: "seg".to_string(),
+            })
+            .unwrap();
+        updates
+            .add_event(UpdateEvent::AddEdge {
+                source_node: "root/doc1#seg3".into(),
+                target_node: "root/doc1#seg4".into(),
+                layer: ANNIS_NS.to_string(),
+                component_type: "Ordering".to_string(),
+                component_name: "seg".to_string(),
+            })
+            .unwrap();
+
+        let mut g = AnnotationGraph::new(false).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let chunker = Chunk {
+            max_characters: 10,
+            anno_name: "segment".into(),
+            anno_namespace: "chunk".into(),
+            anno_value: "s".into(),
+            segmentation: Some("seg".into()),
+        };
+
+        chunker
+            .manipulate_corpus(&mut g, Path::new("."), None)
+            .unwrap();
+
+        let all_chunks_query = aql::parse("chunk:segment", false).unwrap();
+        let chunks: Result<Vec<_>, graphannis::errors::GraphAnnisError> =
+            aql::execute_query_on_graph(&g, &all_chunks_query, false, None)
+                .unwrap()
+                .collect();
+        assert_eq!(2, chunks.unwrap().len());
+
+        let first_chunk_query = aql::parse(
+            "chunk:segment & #1 _l_ seg=\"This\" & #1 _r_ seg=\"more\"",
+            false,
+        )
+        .unwrap();
+        let results: Result<Vec<_>, graphannis::errors::GraphAnnisError> =
+            aql::execute_query_on_graph(&g, &first_chunk_query, false, None)
+                .unwrap()
+                .collect();
+        assert_eq!(1, results.unwrap().len());
+
+        let second_chunk_query = aql::parse(
+            "chunk:segment & #1 _l_ seg=\"complicated\" & #1 _r_ seg=\"?\"",
+            false,
+        )
+        .unwrap();
+        let results: Result<Vec<_>, graphannis::errors::GraphAnnisError> =
+            aql::execute_query_on_graph(&g, &second_chunk_query, false, None)
+                .unwrap()
+                .collect();
+        assert_eq!(1, results.unwrap().len());
     }
 }
