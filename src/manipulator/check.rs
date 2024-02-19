@@ -1,15 +1,15 @@
 //! Runs AQL queries on the corpus and checks for constraints on the result.
 // Can fail the workflow when one of the checks fail
-use std::{collections::BTreeMap, env::temp_dir, path::Path};
+use std::{collections::BTreeMap, path::Path};
 
 use graphannis::{
-    corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
-    AnnotationGraph, CorpusStorage,
+    aql::{self},
+    AnnotationGraph,
 };
+use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE};
 use itertools::Itertools;
 use serde_derive::Deserialize;
 use tabled::{Table, Tabled};
-use tempfile::tempdir_in;
 
 use crate::{
     error::AnnattoError,
@@ -138,33 +138,29 @@ impl Check {
         &self,
         graph: &mut AnnotationGraph,
     ) -> Result<Vec<(String, TestResult)>, Box<dyn std::error::Error>> {
-        let corpus_name = "current";
-        let tmp_dir = tempdir_in(temp_dir())?;
-        graph.save_to(&tmp_dir.path().join(corpus_name))?;
-        let cs = CorpusStorage::with_auto_cache_size(tmp_dir.path(), true)?;
         let mut results = Vec::new();
         for test in &self.tests {
             let aql_tests: Vec<AQLTest> = test.into();
             for aql_test in aql_tests {
                 results.push((
                     aql_test.description.to_string(),
-                    Check::run_test(&cs, &aql_test),
+                    Check::run_test(graph, &aql_test),
                 ));
             }
         }
         Ok(results)
     }
 
-    fn run_test(cs: &CorpusStorage, test: &AQLTest) -> TestResult {
+    fn run_test(g: &AnnotationGraph, test: &AQLTest) -> TestResult {
         let query_s = &test.query[..];
         let expected_result = &test.expected;
-        let result = Check::run_query(cs, query_s);
+        let result = Check::run_query(g, query_s);
         if let Ok(r) = result {
             let n = r.len();
             let passes = match expected_result {
                 ExpectedQueryResult::Numeric(n_is) => &n == n_is,
                 ExpectedQueryResult::Query(alt_query) => {
-                    let alt_result = Check::run_query(cs, &alt_query[..]);
+                    let alt_result = Check::run_query(g, &alt_query[..]);
                     alt_result.is_ok() && alt_result.unwrap().len() == n
                 }
                 ExpectedQueryResult::ClosedInterval(lower, upper) => n.ge(lower) && n.le(upper),
@@ -193,17 +189,43 @@ impl Check {
     }
 
     fn run_query(
-        storage: &CorpusStorage,
+        g: &AnnotationGraph,
         query_s: &str,
     ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-        let query = SearchQuery {
-            corpus_names: &["current"],
-            query: query_s,
-            query_language: QueryLanguage::AQL,
-            timeout: None,
-        };
-        let results = storage.find(query, 0, None, ResultOrder::Normal)?;
-        Ok(results)
+        let parsed_query = aql::parse(query_s, false)?;
+        let it = aql::execute_query_on_graph(g, &parsed_query, true, None)?;
+        let mut result = Vec::with_capacity(it.size_hint().0);
+        for m in it {
+            let m = m?;
+            let mut match_desc = String::new();
+
+            for (i, singlematch) in m.iter().enumerate() {
+                // check if query node actually should be included
+
+                if i > 0 {
+                    match_desc.push(' ');
+                }
+
+                let singlematch_anno_key = &singlematch.anno_key;
+                if singlematch_anno_key.ns != ANNIS_NS || singlematch_anno_key.name != NODE_TYPE {
+                    if !singlematch_anno_key.ns.is_empty() {
+                        match_desc.push_str(&singlematch_anno_key.ns);
+                        match_desc.push_str("::");
+                    }
+                    match_desc.push_str(&singlematch_anno_key.name);
+                    match_desc.push_str("::");
+                }
+
+                if let Some(node_name) = g
+                    .get_node_annos()
+                    .get_value_for_item(&singlematch.node, &NODE_NAME_KEY)?
+                {
+                    match_desc.push_str(&node_name);
+                }
+            }
+            result.push(match_desc);
+        }
+        Ok(result)
     }
 }
 

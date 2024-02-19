@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added simple chunker module based on
   [text-splitter](https://crates.io/crates/text-splitter).
 
+### Changed
+
+- The `check` module can now query the `AnnotationGraph` directly without using
+  the `CorpusStorageManager`.
+
 ## [0.5.0] - 2024-01-19
 
 ### Changed
