@@ -1,6 +1,11 @@
 //! Runs AQL queries on the corpus and checks for constraints on the result.
 // Can fail the workflow when one of the checks fail
-use std::{collections::BTreeMap, path::Path};
+use std::{
+    collections::BTreeMap,
+    fs,
+    path::{Path, PathBuf},
+    sync::mpsc,
+};
 
 use graphannis::{
     aql::{self},
@@ -25,6 +30,8 @@ pub struct Check {
     report: Option<ReportLevel>,
     #[serde(default)]
     policy: FailurePolicy,
+    #[serde(default)]
+    save: Option<PathBuf>,
 }
 
 #[derive(Default, Deserialize)]
@@ -52,12 +59,24 @@ impl Manipulator for Check {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
-        _workflow_directory: &Path,
+        workflow_directory: &Path,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let r = self.run_tests(graph)?;
         if self.report.is_some() && tx.is_some() {
             self.print_report(self.report.as_ref().unwrap(), &r, tx.as_ref().unwrap())?;
+        }
+        if let Some(path) = &self.save {
+            let (sender, receiver) = mpsc::channel();
+            self.print_report(self.report.as_ref().unwrap(), &r, &sender)?;
+            if let Some(StatusMessage::Info(msg)) = receiver.into_iter().next() {
+                let target_path = if path.is_absolute() {
+                    path.to_path_buf()
+                } else {
+                    workflow_directory.join(path)
+                };
+                fs::write(target_path, msg)?;
+            }
         }
         let failed_checks = r
             .into_iter()
@@ -364,7 +383,7 @@ mod tests {
 
     use crate::{
         manipulator::{
-            check::{AQLTest, ReportLevel, TestResult},
+            check::{AQLTest, ExpectedQueryResult, FailurePolicy, ReportLevel, TestResult},
             Manipulator,
         },
         workflow::StatusMessage,
@@ -583,6 +602,29 @@ mod tests {
         );
         let aql_tests: Vec<AQLTest> = (&Test::LayerTest { layers, edge: None }).into();
         assert_eq!(aql_tests.len(), 6);
+    }
+
+    #[test]
+    fn test_write_report() {
+        let g = input_graph(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let tests = vec![Test::QueryTest {
+            query: "tok".to_string(),
+            expected: ExpectedQueryResult::Numeric(4),
+            description: "Correct number of tokens".to_string(),
+        }];
+        let report_path = temp_dir().join("annatto_test_report_out.txt");
+        let check = Check {
+            policy: FailurePolicy::Fail,
+            tests,
+            report: Some(ReportLevel::List),
+            save: Some(report_path.clone()),
+        };
+        assert!(check
+            .manipulate_corpus(&mut graph, temp_dir().as_path(), None)
+            .is_ok());
+        assert!(report_path.exists());
     }
 
     fn input_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
