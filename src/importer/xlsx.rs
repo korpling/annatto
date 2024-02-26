@@ -189,8 +189,9 @@ impl ImportSpreadsheet {
                     });
                 } else {
                     progress_reporter.warn(&format!(
-                        "Merged cells {} could not be mapped to a known column",
-                        cell_range.get_range()
+                        "Merged cells {} ({}) could not be mapped to a known column",
+                        cell_range.get_range(),
+                        doc_path,
                     ))?;
                 }
             }
