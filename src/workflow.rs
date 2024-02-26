@@ -378,11 +378,17 @@ impl Workflow {
         default_workflow_directory: &Path,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate> {
-        let resolved_import_path = if step.path.is_relative() {
-            default_workflow_directory.join(&step.path).normalize()?
+        let import_path = if step.path.is_relative() {
+            default_workflow_directory.join(&step.path)
         } else {
-            step.path.normalize()?
+            step.path.clone()
         };
+        let resolved_import_path: PathBuf = if import_path.exists() {
+            import_path.normalize()?.into()
+        } else {
+            import_path
+        };
+
         let updates = step
             .module
             .reader()
@@ -483,6 +489,20 @@ mod tests {
     #[test]
     fn multiple_importers() {
         // The workflow contains a check for the number of corpora
+        execute_from_file(
+            Path::new("./tests/workflows/multiple_importer.toml"),
+            false,
+            None,
+        )
+        .unwrap();
+    }
+
+    #[test]
+    /// Test that exporting to an non-existing directory does not fail.
+    fn nonexisting_export_dir() {
+        let tmp_out = tempfile::tempdir().unwrap();
+        std::env::set_var("TEST_OUTPUT", tmp_out.path().to_string_lossy().as_ref());
+
         execute_from_file(
             Path::new("./tests/workflows/multiple_importer.toml"),
             false,

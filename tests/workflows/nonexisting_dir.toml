@@ -1,0 +1,11 @@
+[[import]]
+format = "graphml"
+path = "../data/import/graphml/single_sentence.graphml"
+
+[import.config]
+
+[[export]]
+format = "graphml"
+path = "$TEST_OUTPUT/this-directory-does-not-exist/"
+
+[export.config]
