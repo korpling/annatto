@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `check` module can now query the `AnnotationGraph` directly without using
   the `CorpusStorageManager`.
 
+### Fixed
+
+- Don't throw error if output directory for any workflow does not exist.
+
 ## [0.5.0] - 2024-01-19
 
 ### Changed
