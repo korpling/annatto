@@ -473,7 +473,7 @@ impl Exporter for GraphMLExporter {
         let toplevel_corpus_name = graph
             .get_node_annos()
             .get_value_for_item(&corpus_root, &NODE_NAME_KEY)?
-            .unwrap_or_else(|| Cow::Borrowed("corpus"));
+            .unwrap_or(Cow::Borrowed("corpus"));
 
         // Use the corpus name to determine the file name
         let extension = self.file_extension();
