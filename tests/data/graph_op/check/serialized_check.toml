@@ -26,3 +26,8 @@ description = "There is only one sentence"
 query = "sentence"
 expected = [1, 1]
 description = "There is between one and one sentence (closed interval type, boundaries included)"
+
+[[tests]]
+query = "tok"
+expected = ["tests/data/graph_op/check/external_db", "corpus", "tok"]
+description = "Test with external corpus graph"

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added simple chunker module based on
   [text-splitter](https://crates.io/crates/text-splitter).
 - `check` can write check report to file 
+- `check` can test a corpus graph comparing results to an external corpus graph loaded from a graphANNIS database
 
 ### Changed
 
