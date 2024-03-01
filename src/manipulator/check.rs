@@ -1,16 +1,13 @@
 //! Runs AQL queries on the corpus and checks for constraints on the result.
 // Can fail the workflow when one of the checks fail
 use std::{
-    collections::BTreeMap,
+    collections::{btree_map::Entry, BTreeMap},
     fs,
     path::{Path, PathBuf},
     sync::mpsc,
 };
 
-use graphannis::{
-    aql::{self},
-    AnnotationGraph,
-};
+use graphannis::{aql, AnnotationGraph};
 use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE};
 use itertools::Itertools;
 use serde_derive::Deserialize;
@@ -158,19 +155,24 @@ impl Check {
         graph: &mut AnnotationGraph,
     ) -> Result<Vec<(String, TestResult)>, Box<dyn std::error::Error>> {
         let mut results = Vec::new();
+        let mut graph_cache = BTreeMap::default();
         for test in &self.tests {
             let aql_tests: Vec<AQLTest> = test.into();
             for aql_test in aql_tests {
                 results.push((
                     aql_test.description.to_string(),
-                    Check::run_test(graph, &aql_test),
+                    Check::run_test(graph, &aql_test, &mut graph_cache),
                 ));
             }
         }
         Ok(results)
     }
 
-    fn run_test(g: &AnnotationGraph, test: &AQLTest) -> TestResult {
+    fn run_test(
+        g: &AnnotationGraph,
+        test: &AQLTest,
+        graph_cache: &mut BTreeMap<String, AnnotationGraph>,
+    ) -> TestResult {
         let query_s = &test.query[..];
         let expected_result = &test.expected;
         let result = Check::run_query(g, query_s);
@@ -190,6 +192,34 @@ impl Check {
                         let u = upper.abs().ceil() as usize;
                         n.ge(lower) && u.gt(&n)
                     }
+                }
+                ExpectedQueryResult::CorpusQuery(db_dir, corpus_name, query) => {
+                    let path = db_dir.join(corpus_name);
+                    let path_string = path.to_string_lossy().to_string();
+                    if let Entry::Vacant(e) = graph_cache.entry(path_string.to_string()) {
+                        let eg = AnnotationGraph::new(false);
+                        if eg.is_err() {
+                            return TestResult::ProcessingError {
+                                error: Box::new(eg.err().unwrap()),
+                            };
+                        }
+                        let mut external_g = eg.unwrap();
+                        if let Err(e) = external_g.load_from(&db_dir.join(corpus_name), true) {
+                            return TestResult::ProcessingError { error: Box::new(e) };
+                        }
+                        e.insert(external_g);
+                    }
+                    let external_g = graph_cache.get_mut(&path_string).unwrap();
+                    if external_g.ensure_loaded_all().is_err() {
+                        return TestResult::ProcessingError {
+                            error: Box::new(AnnattoError::Manipulator {
+                                reason: "Could not load corpus entirely.".to_string(),
+                                manipulator: MODULE_NAME.to_string(),
+                            }),
+                        };
+                    }
+                    let e_n = Check::run_query(external_g, query);
+                    e_n.is_ok() && e_n.unwrap().len() == n
                 }
             };
             if passes {
@@ -272,6 +302,11 @@ impl From<&Test> for Vec<AQLTest> {
                     ExpectedQueryResult::SemiOpenInterval(a, b) => {
                         ExpectedQueryResult::SemiOpenInterval(*a, *b)
                     }
+                    ExpectedQueryResult::CorpusQuery(db, c, q) => ExpectedQueryResult::CorpusQuery(
+                        db.to_path_buf(),
+                        c.to_string(),
+                        q.to_string(),
+                    ),
                 },
                 description: description.to_string(),
             }],
@@ -323,6 +358,7 @@ enum Test {
     },
 }
 
+#[derive(Debug)]
 enum TestResult {
     Passed,
     Failed { query: String, matches: Vec<String> },
@@ -366,11 +402,12 @@ enum ExpectedQueryResult {
     Query(String),
     ClosedInterval(usize, usize),
     SemiOpenInterval(usize, f64),
+    CorpusQuery(PathBuf, String, String), // db_dir, corpus name, query
 }
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeMap, env::temp_dir, fs, sync::mpsc};
+    use std::{collections::BTreeMap, env::temp_dir, fs, path::Path, sync::mpsc};
 
     use graphannis::{
         model::AnnotationComponentType,
@@ -431,7 +468,7 @@ mod tests {
         let serialized_data =
             fs::read_to_string("./tests/data/graph_op/check/serialized_check.toml")?;
         let check: Check = toml::from_str(serialized_data.as_str())?;
-        let mut g = input_graph(on_disk)?;
+        let mut g = input_graph(on_disk, "corpus")?;
         let (sender, receiver) = mpsc::channel();
         check.manipulate_corpus(&mut g, temp_dir().as_path(), Some(sender))?;
         assert!(check.report.is_some()); // if deserialization worked properly, `check` should be set to report
@@ -451,7 +488,7 @@ mod tests {
         };
         let serialized_data = fs::read_to_string(toml_path)?;
         let check: Check = toml::from_str(serialized_data.as_str())?;
-        let mut g = input_graph(on_disk)?;
+        let mut g = input_graph(on_disk, "corpus")?;
         let (sender, _receiver) = mpsc::channel();
         let result = check.manipulate_corpus(&mut g, temp_dir().as_path(), Some(sender));
         assert!(result.is_err());
@@ -512,7 +549,7 @@ mod tests {
     }
 
     fn test_layer_check(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
-        let mut g = input_graph(on_disk)?;
+        let mut g = input_graph(on_disk, "corpus")?;
         let toml_path = "./tests/data/graph_op/check/serialized_layer_check.toml";
         let s = fs::read_to_string(toml_path)?;
         let check: Check = toml::from_str(s.as_str())?;
@@ -529,7 +566,7 @@ mod tests {
     }
 
     fn test_layer_check_fail(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
-        let mut g = input_graph(on_disk)?;
+        let mut g = input_graph(on_disk, "corpus")?;
         let toml_path = "./tests/data/graph_op/check/serialized_layer_check_failing.toml";
         let s = fs::read_to_string(toml_path)?;
         let check: Check = toml::from_str(s.as_str())?;
@@ -552,7 +589,7 @@ mod tests {
 
     #[test]
     fn test_layer_check_fail_policy_warn() {
-        let gr = input_graph(false);
+        let gr = input_graph(false, "corpus");
         assert!(gr.is_ok());
         let mut g = gr.unwrap();
         let toml_path = "./tests/data/graph_op/check/serialized_layer_check_failing_warn.toml";
@@ -606,7 +643,7 @@ mod tests {
 
     #[test]
     fn test_write_report() {
-        let g = input_graph(false);
+        let g = input_graph(false, "corpus");
         assert!(g.is_ok());
         let mut graph = g.unwrap();
         let tests = vec![Test::QueryTest {
@@ -627,10 +664,56 @@ mod tests {
         assert!(report_path.exists());
     }
 
-    fn input_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
+    #[test]
+    fn with_external_corpus() {
+        let g = input_graph(true, "new-corpus");
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let query = "/This/ _ident_ pos=/PRON/ . /is/ _ident_ pos=/VERB/ . /a/ _ident_ pos=/DET/ . /test/ _ident_ pos=/NOUN/";
+        let check = Check {
+            policy: FailurePolicy::Fail,
+            tests: vec![
+                Test::QueryTest {
+                    query: query.to_string(),
+                    expected: ExpectedQueryResult::Numeric(1),
+                    description: "Control test to make sure the query actually works".to_string(),
+                },
+                Test::QueryTest {
+                    description: "Query sequence.".to_string(),
+                    query: query.to_string(),
+                    expected: ExpectedQueryResult::CorpusQuery(
+                        Path::new("tests/data/graph_op/check/external_db/").to_path_buf(),
+                        "corpus".to_string(),
+                        query.to_string(),
+                    ),
+                },
+                Test::QueryTest {
+                    description: "Query nodes.".to_string(),
+                    query: "node".to_string(),
+                    expected: ExpectedQueryResult::CorpusQuery(
+                        Path::new("tests/data/graph_op/check/external_db/").to_path_buf(),
+                        "corpus".to_string(),
+                        "node".to_string(),
+                    ),
+                },
+            ],
+            report: None,
+            save: None,
+        };
+        let result = check.run_tests(&mut graph);
+        dbg!(&result);
+        assert!(result.is_ok(), "{:?}", result.err());
+        let manip = check.manipulate_corpus(&mut graph, Path::new("./"), None);
+        assert!(manip.is_ok(), "{:?}", manip.err());
+    }
+
+    fn input_graph(
+        on_disk: bool,
+        root_name: &str,
+    ) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
         let mut g = AnnotationGraph::new(on_disk)?;
         let mut u = GraphUpdate::default();
-        let root_corpus = "corpus";
+        let root_corpus = root_name;
         let doc_name = "doc";
         let doc_node = format!("{root_corpus}/{doc_name}");
         u.add_event(UpdateEvent::AddNode {

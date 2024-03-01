@@ -125,6 +125,7 @@ use std::{
 };
 
 use graphannis::{update::GraphUpdate, AnnotationGraph};
+
 use regex::Regex;
 use serde_derive::Deserialize;
 
