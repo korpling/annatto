@@ -1,7 +1,7 @@
 use std::{env, path::Path, sync::mpsc};
 
 use graphannis::update::GraphUpdate;
-use insta::{assert_display_snapshot, assert_snapshot};
+use insta::assert_snapshot;
 use itertools::Itertools;
 
 use crate::{
@@ -18,7 +18,7 @@ fn timeline_fail() {
     let (sender, _receiver) = mpsc::channel();
     let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
     assert!(r.is_err());
-    assert_display_snapshot!(r.err().unwrap());
+    assert_snapshot!(r.err().unwrap().to_string());
     let document_path = "./tests/data/import/exmaralda/fail-corrupt_timeline/import/test_doc.exb";
     let mut u = GraphUpdate::default();
     assert!(import
@@ -39,7 +39,7 @@ fn category_fail() {
     let (sender, _receiver) = mpsc::channel();
     let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
     assert!(r.is_err());
-    assert_display_snapshot!(r.err().unwrap());
+    assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
     let mut u = GraphUpdate::default();
     assert!(import
@@ -60,7 +60,7 @@ fn speaker_fail() {
     let (sender, _receiver) = mpsc::channel();
     let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
     assert!(r.is_err());
-    assert_display_snapshot!(r.err().unwrap());
+    assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
     let mut u = GraphUpdate::default();
     assert!(import
@@ -81,7 +81,7 @@ fn undefined_speaker_fail() {
     let (sender, _receiver) = mpsc::channel();
     let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
     assert!(r.is_err());
-    assert_display_snapshot!(r.err().unwrap());
+    assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
     let mut u = GraphUpdate::default();
     assert!(import
@@ -102,7 +102,7 @@ fn unknown_tli_fail() {
     let (sender, _receiver) = mpsc::channel();
     let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
     assert!(r.is_err());
-    assert_display_snapshot!(r.err().unwrap());
+    assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
     let mut u = GraphUpdate::default();
     assert!(import
@@ -123,7 +123,7 @@ fn bad_timevalue_fail() {
     let (sender, _receiver) = mpsc::channel();
     let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
     assert!(r.is_err());
-    assert_display_snapshot!(r.err().unwrap());
+    assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
     let mut u = GraphUpdate::default();
     assert!(import
@@ -144,7 +144,7 @@ fn underspec_event_fail() {
     let (sender, _receiver) = mpsc::channel();
     let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
     assert!(r.is_err());
-    assert_display_snapshot!(r.err().unwrap());
+    assert_snapshot!(r.err().unwrap().to_string());
 }
 
 #[test]
@@ -154,7 +154,7 @@ fn invalid_fail() {
     let (sender, _receiver) = mpsc::channel();
     let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
     assert!(r.is_err());
-    assert_display_snapshot!(r.err().unwrap());
+    assert_snapshot!(r.err().unwrap().to_string());
     let document_path = "./tests/data/import/exmaralda/fail-invalid/import/test_doc_invalid.exb";
     let mut u = GraphUpdate::default();
     assert!(import
