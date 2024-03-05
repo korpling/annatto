@@ -1,7 +1,7 @@
 use std::{path::Path, sync::mpsc};
 
 use graphannis::update::GraphUpdate;
-use insta::{assert_display_snapshot, assert_snapshot};
+use insta::assert_snapshot;
 
 use crate::{importer::Importer, test_util::import_as_graphml_string, Module};
 
@@ -13,7 +13,7 @@ fn test_conll_fail_invalid() {
     let import_path = Path::new("tests/data/import/conll/invalid");
     let job = import.import_corpus(import_path, import.step_id(Some(import_path)), None);
     assert!(job.is_err());
-    assert_display_snapshot!(job.err().unwrap());
+    assert_snapshot!(job.err().unwrap().to_string());
     let mut u = GraphUpdate::default();
     assert!(import
         .import_document(
@@ -32,7 +32,7 @@ fn test_conll_fail_invalid_heads() {
     let (sender, _receiver) = mpsc::channel();
     let job = import.import_corpus(import_path, import.step_id(None), Some(sender));
     assert!(job.is_err());
-    assert_display_snapshot!(job.err().unwrap());
+    assert_snapshot!(job.err().unwrap().to_string());
 }
 
 #[test]

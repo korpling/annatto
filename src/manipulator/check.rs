@@ -415,7 +415,7 @@ mod tests {
         AnnotationGraph,
     };
     use graphannis_core::graph::ANNIS_NS;
-    use insta::assert_display_snapshot;
+    use insta::assert_snapshot;
     use toml;
 
     use crate::{
@@ -618,7 +618,7 @@ mod tests {
             let dummy_value = temp_dir();
             let run = check.manipulate_corpus(&mut g, dummy_value.as_path(), Some(sender));
             assert!(run.is_err());
-            assert_display_snapshot!(run.err().unwrap());
+            assert_snapshot!(run.err().unwrap().to_string());
         }
     }
 

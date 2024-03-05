@@ -202,21 +202,31 @@ visibility = "hidden"
         </edge>
         <edge id="e32" source="single_sentence/zossen#text" target="single_sentence/zossen" label="PartOf/annis/">
         </edge>
-        <edge id="e33" source="single_sentence/zossen#t1" target="single_sentence/zossen#text" label="PartOf/annis/">
+        <edge id="e33" source="single_sentence/zossen#n1" target="single_sentence/zossen" label="PartOf/annis/">
         </edge>
-        <edge id="e34" source="single_sentence/zossen#t2" target="single_sentence/zossen#text" label="PartOf/annis/">
+        <edge id="e34" source="single_sentence/zossen#n2" target="single_sentence/zossen" label="PartOf/annis/">
         </edge>
-        <edge id="e35" source="single_sentence/zossen#t3" target="single_sentence/zossen#text" label="PartOf/annis/">
+        <edge id="e35" source="single_sentence/zossen#n3" target="single_sentence/zossen" label="PartOf/annis/">
         </edge>
-        <edge id="e36" source="single_sentence/zossen#t4" target="single_sentence/zossen#text" label="PartOf/annis/">
+        <edge id="e36" source="single_sentence/zossen#t1" target="single_sentence/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e37" source="single_sentence/zossen#t5" target="single_sentence/zossen#text" label="PartOf/annis/">
+        <edge id="e37" source="single_sentence/zossen#t2" target="single_sentence/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e38" source="single_sentence/zossen#t6" target="single_sentence/zossen#text" label="PartOf/annis/">
+        <edge id="e38" source="single_sentence/zossen#n4" target="single_sentence/zossen" label="PartOf/annis/">
         </edge>
-        <edge id="e39" source="single_sentence/zossen#t7" target="single_sentence/zossen#text" label="PartOf/annis/">
+        <edge id="e39" source="single_sentence/zossen#t3" target="single_sentence/zossen#text" label="PartOf/annis/">
         </edge>
-        <edge id="e40" source="single_sentence/zossen#t8" target="single_sentence/zossen#text" label="PartOf/annis/">
+        <edge id="e40" source="single_sentence/zossen#t4" target="single_sentence/zossen#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e41" source="single_sentence/zossen#t5" target="single_sentence/zossen#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e42" source="single_sentence/zossen#n5" target="single_sentence/zossen" label="PartOf/annis/">
+        </edge>
+        <edge id="e43" source="single_sentence/zossen#t6" target="single_sentence/zossen#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e44" source="single_sentence/zossen#t7" target="single_sentence/zossen#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e45" source="single_sentence/zossen#t8" target="single_sentence/zossen#text" label="PartOf/annis/">
         </edge>
     </graph>
 </graphml>
