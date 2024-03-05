@@ -102,6 +102,13 @@ impl<'a> DocumentMapper {
                     anno_name: "layer".to_string(),
                     anno_value: "syntax".to_string(),
                 })?;
+                u.add_event(UpdateEvent::AddEdge {
+                    source_node: node_name.to_string(),
+                    target_node: self.doc_path.to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::PartOf.to_string(),
+                    component_name: "".to_string(),
+                })?;
 
                 self.number_of_spans += 1;
 
