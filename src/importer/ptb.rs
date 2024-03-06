@@ -118,15 +118,15 @@ impl<'a> DocumentMapper {
         Ok(())
     }
 
-    fn split_annotation_value<'b>(&self, phrase_label: &'b String) -> (&'b str, Option<&'b str>) {
+    fn split_annotation_value<'b>(&self, phrase_label: &'b str) -> (&'b str, Option<&'b str>) {
         if let Some(sep) = &self.edge_delimiter {
             if let Some((n, e)) = phrase_label.split_once(sep) {
                 (n, Some(e))
             } else {
-                (phrase_label.as_str(), None)
+                (phrase_label, None)
             }
         } else {
-            (phrase_label.as_str(), None)
+            (phrase_label, None)
         }
     }
 
