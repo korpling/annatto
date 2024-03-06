@@ -72,3 +72,17 @@ fn multiple_documents() {
 
     assert_snapshot!(actual);
 }
+
+#[test]
+fn with_edge_functions() {
+    let actual = import_as_graphml_string(
+        PtbImporter {
+            edge_delimiter: Some("-".to_string()),
+        },
+        Path::new("tests/data/import/ptb/with_edge_functions"),
+        None,
+    )
+    .unwrap();
+
+    assert_snapshot!(actual);
+}
