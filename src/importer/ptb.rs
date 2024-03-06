@@ -71,11 +71,26 @@ impl<'a> DocumentMapper {
         target: String,
         edge_label: Option<&str>,
     ) -> anyhow::Result<()> {
-        dbg!(&source);
-        dbg!(&target);
-        dbg!(&edge_label);
-        if let Some(label) = edge_label {
-            if let Some(parent_node_name) = source {
+        if let Some(parent_node_name) = source {
+            // Add a a typed (with component name) and an untyped
+            // dominance edge (empty component name) between this parent
+            // node and the child node.
+            // TODO: make the layer and component name configurable
+            u.add_event(UpdateEvent::AddEdge {
+                source_node: parent_node_name.to_string(),
+                target_node: target.to_string(),
+                layer: "syntax".to_string(),
+                component_type: AnnotationComponentType::Dominance.to_string(),
+                component_name: "".to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddEdge {
+                source_node: parent_node_name.clone(),
+                target_node: target.to_string(),
+                layer: "syntax".to_string(),
+                component_type: AnnotationComponentType::Dominance.to_string(),
+                component_name: "edge".to_string(),
+            })?;
+            if let Some(label) = edge_label {
                 if !label.is_empty() {
                     u.add_event(UpdateEvent::AddEdgeLabel {
                         source_node: parent_node_name.to_string(),
@@ -168,26 +183,9 @@ impl<'a> DocumentMapper {
                 self.number_of_spans += 1;
 
                 // Left-descend to any phrase
+                //let mut target_node = node_name.to_string();
                 for c in remaining_children {
-                    let target_node = self.consume_phrase(c.into_inner(), Some(&node_name), u)?;
-                    // Add a a typed (with component name) and an untyped
-                    // dominance edge (empty component name) between this parent
-                    // node and the child node.
-                    // TODO: make the layer and component name configurable
-                    u.add_event(UpdateEvent::AddEdge {
-                        source_node: node_name.clone(),
-                        target_node: target_node.clone(),
-                        layer: "syntax".to_string(),
-                        component_type: AnnotationComponentType::Dominance.to_string(),
-                        component_name: "".to_string(),
-                    })?;
-                    u.add_event(UpdateEvent::AddEdge {
-                        source_node: node_name.clone(),
-                        target_node,
-                        layer: "syntax".to_string(),
-                        component_type: AnnotationComponentType::Dominance.to_string(),
-                        component_name: "edge".to_string(),
-                    })?;
+                    self.consume_phrase(c.into_inner(), Some(&node_name), u)?;
                 }
                 Ok(node_name)
             }
