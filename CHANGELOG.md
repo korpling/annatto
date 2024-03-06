@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   [text-splitter](https://crates.io/crates/text-splitter).
 - `check` can write check report to file 
 - `check` can test a corpus graph comparing results to an external corpus graph loaded from a graphANNIS database
+- import `ptb` can now split node annotations to derive a label for the incoming edge, when a delimiter is provided 
+  using `edge_delimiter`. E. g., `NP-sbj` will create a node of category `NP`, whose incoming edge has function `sbj`,
+  given the following config is used: `edge_delimiter = "-"`
 
 ### Changed
 
@@ -20,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Don't throw error if output directory for any workflow does not exist.
-- Also constituents get `PartOf` edges to their respective document node.
+- import `ptb`: Also constituents get `PartOf` edges to their respective document node.
 
 ## [0.5.0] - 2024-01-19
 
