@@ -20,18 +20,27 @@ use text_splitter::TextSplitter;
 
 #[derive(Deserialize)]
 pub struct Chunk {
+    #[serde(default)]
     max_characters: usize,
+    #[serde(default)]
     anno_namespace: String,
+    #[serde(default = "default_chunk_name")]
     anno_name: String,
+    #[serde(default)]
     anno_value: String,
+    #[serde(default)]
     segmentation: Option<String>,
+}
+
+fn default_chunk_name() -> String {
+    "chunk".to_string()
 }
 
 impl Default for Chunk {
     fn default() -> Self {
         Self {
             max_characters: 100,
-            anno_name: "chunk".into(),
+            anno_name: default_chunk_name(),
             anno_namespace: "".into(),
             anno_value: "".into(),
             segmentation: None,

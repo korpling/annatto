@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The `check` module can now query the `AnnotationGraph` directly without using
   the `CorpusStorageManager`.
+- `chunk` deserializes with empty config to default values
 
 ### Fixed
 

@@ -1,3 +1,4 @@
+use annatto::runtime::EnvVars;
 use assert_cmd::prelude::*;
 use insta::assert_snapshot;
 use std::{path::PathBuf, process::Command};
@@ -40,6 +41,7 @@ fn convert_to_itself() {
     let tmp_out = tempfile::tempdir().unwrap();
 
     std::env::set_var("TEST_OUTPUT", tmp_out.path().to_string_lossy().as_ref());
+    std::env::set_var(EnvVars::InMemory.to_string(), false.to_string());
 
     let mut cmd = Command::cargo_bin("annatto").unwrap();
 
@@ -51,7 +53,7 @@ fn convert_to_itself() {
     cmd.assert().success();
 
     // Input and output files should be the same
-    let original = include_str!("data/import/graphml/single_sentence.graphml");
+    let original = include_str!("data/import/graphml/single_sentence.graphml").trim();
     let converted =
         std::fs::read_to_string(tmp_out.path().join("single_sentence.graphml")).unwrap();
     pretty_assertions::assert_str_eq!(original, converted);
