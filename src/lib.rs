@@ -152,7 +152,7 @@ pub enum GraphOp {
     Map(MapAnnos),                    // no default, has a (required) path attribute
     Merge(Merge),                     // no default, has required attributes
     Revise(#[serde(default)] Revise), // does nothing on default
-    Chunk(Chunk),
+    Chunk(#[serde(default)] Chunk),
     None(#[serde(default)] NoOp), // has no attributes
 }
 
