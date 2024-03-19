@@ -1,3 +1,4 @@
+use annatto::runtime::EnvVars;
 use assert_cmd::prelude::*;
 use insta::assert_snapshot;
 use std::{path::PathBuf, process::Command};
@@ -40,6 +41,7 @@ fn convert_to_itself() {
     let tmp_out = tempfile::tempdir().unwrap();
 
     std::env::set_var("TEST_OUTPUT", tmp_out.path().to_string_lossy().as_ref());
+    std::env::set_var(EnvVars::InMemory.to_string(), false.to_string());
 
     let mut cmd = Command::cargo_bin("annatto").unwrap();
 
