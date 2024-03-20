@@ -5,14 +5,14 @@ use annatto::{
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
-use clap::StructOpt;
+use clap::Parser;
 use std::{
     collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread, time::Duration,
 };
 use tracing_subscriber::filter::EnvFilter;
 
 /// Define a conversion operation
-#[derive(StructOpt)]
+#[derive(Parser)]
 #[clap(version)]
 enum Cli {
     /// Run a conversion pipeline from a workflow file.
@@ -38,7 +38,7 @@ pub fn main() -> anyhow::Result<()> {
         .with_env_filter(filter)
         .compact()
         .init();
-    let args = clap::Parser::parse();
+    let args = Parser::parse();
     match args {
         Cli::Run { workflow_file, env } => convert(workflow_file, env)?,
         Cli::Validate { workflow_file } => {
