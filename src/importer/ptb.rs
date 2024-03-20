@@ -290,12 +290,12 @@ impl<'a> DocumentMapper {
 
 /// Importer the Penn Treebank Bracketed Text format (PTB)
 #[derive(Default, Deserialize)]
-#[serde(default)]
-pub struct PtbImporter {
+#[serde(default, deny_unknown_fields)]
+pub struct ImportPTB {
     edge_delimiter: Option<String>,
 }
 
-impl Module for PtbImporter {
+impl Module for ImportPTB {
     fn module_name(&self) -> &str {
         MODULE_NAME
     }
@@ -303,7 +303,7 @@ impl Module for PtbImporter {
 
 const FILE_EXTENSIONS: [&str; 1] = ["ptb"];
 
-impl Importer for PtbImporter {
+impl Importer for ImportPTB {
     fn import_corpus(
         &self,
         input_path: &Path,

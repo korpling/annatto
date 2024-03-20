@@ -30,7 +30,7 @@ use super::Importer;
 pub const MODULE_NAME: &str = "import_conllu";
 
 #[derive(Default, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct ImportCoNLLU {}
 
 impl Module for ImportCoNLLU {

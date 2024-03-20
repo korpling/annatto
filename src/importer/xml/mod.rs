@@ -22,6 +22,7 @@ use crate::{
 use super::Importer;
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImportXML {
     default_ordering: String,
     #[serde(default)]

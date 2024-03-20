@@ -21,6 +21,7 @@ use super::Manipulator;
 pub const MODULE_NAME: &str = "map_annotations";
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct MapAnnos {
     rule_file: PathBuf,
 }

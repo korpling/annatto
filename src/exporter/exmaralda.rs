@@ -32,6 +32,7 @@ use serde_derive::Deserialize;
 use super::Exporter;
 
 #[derive(Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ExportExmaralda {
     #[serde(default)]
     copy_media: bool,

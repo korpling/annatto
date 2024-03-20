@@ -5,6 +5,7 @@ use crate::Module;
 use super::Manipulator;
 
 #[derive(Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct NoOp {}
 
 impl Module for NoOp {

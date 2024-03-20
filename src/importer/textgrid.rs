@@ -32,8 +32,8 @@ pub const MODULE_NAME: &str = "import_textgrid";
 /// Documentation](https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html)
 /// for more information on the format itself.
 #[derive(Default, Deserialize)]
-#[serde(default)]
-pub struct TextgridImporter {
+#[serde(default, deny_unknown_fields)]
+pub struct ImportTextgrid {
     tier_groups: Option<BTreeMap<String, BTreeSet<String>>>,
     skip_timeline_generation: bool,
     skip_audio: bool,
@@ -41,7 +41,7 @@ pub struct TextgridImporter {
     audio_extension: Option<String>,
 }
 
-impl Module for TextgridImporter {
+impl Module for ImportTextgrid {
     fn module_name(&self) -> &str {
         MODULE_NAME
     }
@@ -394,7 +394,7 @@ impl<'a> DocumentMapper<'a> {
     }
 }
 
-impl Importer for TextgridImporter {
+impl Importer for ImportTextgrid {
     fn import_corpus(
         &self,
         input_path: &Path,

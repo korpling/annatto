@@ -22,6 +22,7 @@ use crate::{error::AnnattoError, progress::ProgressReporter, workflow::StatusSen
 use super::Manipulator;
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Collapse {
     ctype: AnnotationComponentType,
     layer: String,

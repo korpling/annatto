@@ -19,7 +19,7 @@ use super::Importer;
 pub const MODULE_NAME: &str = "annotate_corpus";
 
 #[derive(Default, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct AnnotateCorpus {}
 
 impl Module for AnnotateCorpus {
