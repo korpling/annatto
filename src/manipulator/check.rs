@@ -7,6 +7,7 @@ use std::{
     sync::mpsc,
 };
 
+use anyhow::anyhow;
 use graphannis::{aql, AnnotationGraph};
 use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE};
 use itertools::Itertools;
@@ -16,10 +17,8 @@ use tabled::{Table, Tabled};
 use crate::{
     error::AnnattoError,
     workflow::{StatusMessage, StatusSender},
-    Manipulator, Module,
+    Manipulator, StepID,
 };
-
-pub const MODULE_NAME: &str = "check";
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -47,17 +46,12 @@ enum ReportLevel {
     Verbose,
 }
 
-impl Module for Check {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
-}
-
 impl Manipulator for Check {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
         workflow_directory: &Path,
+        _step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let r = self.run_tests(graph)?;
@@ -213,10 +207,7 @@ impl Check {
                     let external_g = graph_cache.get_mut(&path_string).unwrap();
                     if external_g.ensure_loaded_all().is_err() {
                         return TestResult::ProcessingError {
-                            error: Box::new(AnnattoError::Manipulator {
-                                reason: "Could not load corpus entirely.".to_string(),
-                                manipulator: MODULE_NAME.to_string(),
-                            }),
+                            error: anyhow!("Could not load corpus entirely.").into(),
                         };
                     }
                     let e_n = Check::run_query(external_g, query);
@@ -425,6 +416,7 @@ mod tests {
             Manipulator,
         },
         workflow::StatusMessage,
+        StepID,
     };
 
     use super::{Check, Test};
@@ -470,8 +462,14 @@ mod tests {
             fs::read_to_string("./tests/data/graph_op/check/serialized_check.toml")?;
         let check: Check = toml::from_str(serialized_data.as_str())?;
         let mut g = input_graph(on_disk, "corpus")?;
+
+        let step_id = StepID {
+            module_name: "check".to_string(),
+            path: None,
+        };
+
         let (sender, receiver) = mpsc::channel();
-        check.manipulate_corpus(&mut g, temp_dir().as_path(), Some(sender))?;
+        check.manipulate_corpus(&mut g, temp_dir().as_path(), step_id, Some(sender))?;
         assert!(check.report.is_some()); // if deserialization worked properly, `check` should be set to report
         assert!(matches!(check.report.as_ref().unwrap(), &ReportLevel::List));
         assert!(receiver.iter().count() > 0); // there should be a status report
@@ -491,7 +489,12 @@ mod tests {
         let check: Check = toml::from_str(serialized_data.as_str())?;
         let mut g = input_graph(on_disk, "corpus")?;
         let (sender, _receiver) = mpsc::channel();
-        let result = check.manipulate_corpus(&mut g, temp_dir().as_path(), Some(sender));
+
+        let step_id = StepID {
+            module_name: "check".to_string(),
+            path: None,
+        };
+        let result = check.manipulate_corpus(&mut g, temp_dir().as_path(), step_id, Some(sender));
         assert!(result.is_err());
         assert!(check.report.is_some());
         if with_nodes {
@@ -600,7 +603,12 @@ mod tests {
             let check = processor_opt.unwrap();
             let (sender, receiver) = mpsc::channel();
             let dummy_value = temp_dir();
-            let run = check.manipulate_corpus(&mut g, dummy_value.as_path(), Some(sender));
+
+            let step_id = StepID {
+                module_name: "check".to_string(),
+                path: None,
+            };
+            let run = check.manipulate_corpus(&mut g, dummy_value.as_path(), step_id, Some(sender));
             assert!(run.is_ok());
             assert_eq!(
                 receiver
@@ -617,7 +625,12 @@ mod tests {
             let check = processor_opt.unwrap();
             let (sender, _receiver) = mpsc::channel();
             let dummy_value = temp_dir();
-            let run = check.manipulate_corpus(&mut g, dummy_value.as_path(), Some(sender));
+
+            let step_id = StepID {
+                module_name: "check".to_string(),
+                path: None,
+            };
+            let run = check.manipulate_corpus(&mut g, dummy_value.as_path(), step_id, Some(sender));
             assert!(run.is_err());
             assert_snapshot!(run.err().unwrap().to_string());
         }
@@ -659,8 +672,13 @@ mod tests {
             report: Some(ReportLevel::List),
             save: Some(report_path.clone()),
         };
+
+        let step_id = StepID {
+            module_name: "check".to_string(),
+            path: None,
+        };
         assert!(check
-            .manipulate_corpus(&mut graph, temp_dir().as_path(), None)
+            .manipulate_corpus(&mut graph, temp_dir().as_path(), step_id, None)
             .is_ok());
         assert!(report_path.exists());
     }
@@ -704,7 +722,12 @@ mod tests {
         let result = check.run_tests(&mut graph);
         dbg!(&result);
         assert!(result.is_ok(), "{:?}", result.err());
-        let manip = check.manipulate_corpus(&mut graph, Path::new("./"), None);
+
+        let step_id = StepID {
+            module_name: "check".to_string(),
+            path: None,
+        };
+        let manip = check.manipulate_corpus(&mut graph, Path::new("./"), step_id, None);
         assert!(manip.is_ok(), "{:?}", manip.err());
     }
 

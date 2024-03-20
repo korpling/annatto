@@ -6,8 +6,6 @@ use graphannis_core::graph::ANNIS_NS;
 use normpath::PathExt;
 use serde_derive::Deserialize;
 
-use crate::Module;
-
 use super::Importer;
 
 #[derive(Deserialize, Default)]
@@ -67,17 +65,9 @@ impl Importer for CreateFileNodes {
     }
 }
 
-const MODULE_NAME: &str = "embed_files";
-
-impl Module for CreateFileNodes {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::path::PathBuf;
 
     use graphannis::{
         model::{AnnotationComponent, AnnotationComponentType},
@@ -87,9 +77,9 @@ mod tests {
     use graphannis_core::graph::ANNIS_NS;
     use itertools::Itertools;
 
-    use crate::{importer::Importer, StepID};
+    use crate::{ImporterStep, Step};
 
-    use super::{CreateFileNodes, MODULE_NAME};
+    use super::CreateFileNodes;
 
     #[test]
     fn test_file_nodes_in_mem() {
@@ -141,14 +131,14 @@ mod tests {
         let import = CreateFileNodes {
             corpus_name: Some("xlsx".to_string()),
         };
-        let mut test_u = import.import_corpus(
-            Path::new("tests/data/import/xlsx/clean/xlsx/"),
-            StepID {
-                module_name: MODULE_NAME.to_string(),
-                path: None,
-            },
-            None,
-        )?;
+        let step = ImporterStep {
+            module: crate::ReadFrom::Path(import),
+            path: PathBuf::from("tests/data/import/xlsx/clean/xlsx/"),
+        };
+        let mut test_u =
+            step.module
+                .reader()
+                .import_corpus(&step.path, step.get_step_id(), None)?;
         // add dummy node and dummy ordering edge to pass model checks when applying the update to the graph
         test_u.add_event(UpdateEvent::AddNode {
             node_name: "dummy_node".to_string(),

@@ -14,11 +14,9 @@ use itertools::Itertools;
 use serde_derive::Deserialize;
 use tempfile::tempdir_in;
 
-use crate::{workflow::StatusSender, Module};
+use crate::{workflow::StatusSender, StepID};
 
 use super::Manipulator;
-
-pub const MODULE_NAME: &str = "map_annotations";
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -26,17 +24,12 @@ pub struct MapAnnos {
     rule_file: PathBuf,
 }
 
-impl Module for MapAnnos {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
-}
-
 impl Manipulator for MapAnnos {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
         workflow_directory: &std::path::Path,
+        _step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let read_from_path = {

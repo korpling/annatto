@@ -17,7 +17,7 @@ use graphannis_core::{
 use itertools::Itertools;
 use serde_derive::Deserialize;
 
-use crate::{error::AnnattoError, progress::ProgressReporter, workflow::StatusSender, Module};
+use crate::{error::AnnattoError, progress::ProgressReporter, workflow::StatusSender, StepID};
 
 use super::Manipulator;
 
@@ -31,22 +31,15 @@ pub struct Collapse {
     disjoint: bool, // performance boost -> if you know all edges are already disjoint, an expensive step can be skipped
 }
 
-const MODULE_NAME: &str = "collapse_component";
-
-impl Module for Collapse {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
-}
-
 impl Manipulator for Collapse {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
         _workflow_directory: &std::path::Path,
+        step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let mut update = self.collapse(graph, tx)?;
+        let mut update = self.collapse(graph, &step_id, tx)?;
         graph.apply_update(&mut update, |_| {})?;
         Ok(())
     }
@@ -87,6 +80,7 @@ impl Collapse {
     fn collapse(
         &self,
         graph: &mut AnnotationGraph,
+        step_id: &StepID,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
@@ -96,7 +90,7 @@ impl Collapse {
             (&self.name).into(),
         );
         if let Some(component_storage) = graph.get_graphstorage(&component) {
-            let hyperedges = self.collect_hyperedges(component_storage, tx.clone())?;
+            let hyperedges = self.collect_hyperedges(component_storage, step_id, tx.clone())?;
             let mut hypernode_map = BTreeMap::new();
             let offset = graph
                 .get_node_annos()
@@ -127,7 +121,7 @@ impl Collapse {
                 }
             }
             // collapse hyperedges
-            let progress = ProgressReporter::new(tx, self.step_id(None), hyperedges.len())?;
+            let progress = ProgressReporter::new(tx, step_id.clone(), hyperedges.len())?;
             let mut processed_edges = BTreeSet::new();
             for hyperedge in &hyperedges {
                 self.collapse_hyperedge(
@@ -147,7 +141,7 @@ impl Collapse {
                     component.layer,
                     component.name
                 ),
-                manipulator: MODULE_NAME.to_string(),
+                manipulator: step_id.module_name.clone(),
             }
             .into());
         }
@@ -157,11 +151,12 @@ impl Collapse {
     fn collect_hyperedges(
         &self,
         component_storage: Arc<dyn GraphStorage>,
+        step_id: &StepID,
         tx: Option<StatusSender>,
     ) -> Result<Vec<BTreeSet<u64>>, Box<dyn std::error::Error>> {
         let mut hyperedges = Vec::new();
         let source_nodes = component_storage.source_nodes().collect_vec();
-        let progress = ProgressReporter::new(tx.clone(), self.step_id(None), source_nodes.len())?;
+        let progress = ProgressReporter::new(tx.clone(), step_id.clone(), source_nodes.len())?;
         for sn in source_nodes {
             let source_node = sn?;
             let dfs = CycleSafeDFS::new(
@@ -182,8 +177,7 @@ impl Collapse {
         }
         if !self.disjoint {
             // make sure hyperedges are disjoint
-            let progress_disjoint =
-                ProgressReporter::new_unknown_total_work(tx, self.step_id(None))?;
+            let progress_disjoint = ProgressReporter::new_unknown_total_work(tx, step_id.clone())?;
             let mut repeat = true;
             while repeat {
                 let mut disjoint_hyperedges = Vec::new();
@@ -381,7 +375,10 @@ mod tests {
 
     use serde_derive::Deserialize;
 
-    use crate::manipulator::{check::Check, Manipulator};
+    use crate::{
+        manipulator::{check::Check, Manipulator},
+        StepID,
+    };
 
     use super::{Collapse, HYPERNODE_NAME_STEM};
 
@@ -437,8 +434,14 @@ mod tests {
             name: "align".to_string(),
             disjoint,
         };
+        let step_id = StepID {
+            module_name: "collapse".to_string(),
+            path: None,
+        };
+
         let (msg_sender, msg_receiver) = mpsc::channel();
-        let application = collapse.manipulate_corpus(&mut g, Path::new("./"), Some(msg_sender));
+        let application =
+            collapse.manipulate_corpus(&mut g, Path::new("./"), step_id, Some(msg_sender));
         assert!(application.is_ok(), "not Ok: {:?}", application.err());
         assert!(msg_receiver.into_iter().count() > 0);
         let eg = target_graph(on_disk, disjoint);
@@ -456,12 +459,21 @@ mod tests {
         let check = check_r.unwrap();
         let dummy_path = Path::new("./");
         let (sender_e, _receiver_e) = mpsc::channel();
-        if let Err(e) = check.manipulate_corpus(&mut expected_g, dummy_path, Some(sender_e)) {
+        if let Err(e) = check.manipulate_corpus(
+            &mut expected_g,
+            dummy_path,
+            StepID::from_graph_op_module(&crate::GraphOp::Collapse(collapse)),
+            Some(sender_e),
+        ) {
             return Err(e);
         }
 
         let (sender, _receiver) = mpsc::channel();
-        if let Err(e) = check.manipulate_corpus(&mut g, dummy_path, Some(sender)) {
+        let step_id = StepID {
+            module_name: "collapse".to_string(),
+            path: None,
+        };
+        if let Err(e) = check.manipulate_corpus(&mut g, dummy_path, step_id, Some(sender)) {
             return Err(e);
         }
 

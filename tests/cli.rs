@@ -136,3 +136,15 @@ fn load_complex_workflow_attr_ommited() {
     let output = std::str::from_utf8(&output.stdout).unwrap();
     assert_snapshot!(output);
 }
+
+#[test]
+fn list_modules() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd.arg("list").output().unwrap();
+    cmd.assert().success();
+
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+
+    assert_snapshot!(output);
+}

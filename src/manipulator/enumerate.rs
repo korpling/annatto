@@ -9,7 +9,7 @@ use itertools::Itertools;
 use serde_derive::Deserialize;
 use tempfile::tempdir_in;
 
-use crate::{error::AnnattoError, Module};
+use crate::{error::AnnattoError, StepID};
 
 use super::Manipulator;
 
@@ -35,19 +35,12 @@ impl Default for EnumerateMatches {
     }
 }
 
-const MODULE_NAME: &str = "enumerate_matches";
-
-impl Module for EnumerateMatches {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
-}
-
 impl Manipulator for EnumerateMatches {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
         _workflow_directory: &std::path::Path,
+        step_id: StepID,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
@@ -93,7 +86,7 @@ impl Manipulator for EnumerateMatches {
                             "No matching node with index {} for query {query_s}",
                             &self.target
                         ),
-                        manipulator: MODULE_NAME.to_string(),
+                        manipulator: step_id.module_name.clone(),
                     }));
                 }
             }
@@ -115,7 +108,7 @@ mod tests {
     use graphannis_core::{annostorage::ValueSearch, graph::ANNIS_NS, types::AnnoKey};
     use itertools::Itertools;
 
-    use crate::{manipulator::Manipulator, test_util::compare_results};
+    use crate::{manipulator::Manipulator, test_util::compare_results, StepID};
 
     use super::EnumerateMatches;
 
@@ -151,7 +144,11 @@ mod tests {
             target: 1,
             start: 1,
         };
-        manipulate.manipulate_corpus(&mut input_g, Path::new("who_cares"), None)?;
+        let step_id = StepID {
+            module_name: "manipulate".to_string(),
+            path: None,
+        };
+        manipulate.manipulate_corpus(&mut input_g, Path::new("who_cares"), step_id, None)?;
         let expected_annos = expected_g.get_node_annos();
         let output_annos = input_g.get_node_annos();
         let mut expected_matches = expected_annos

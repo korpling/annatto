@@ -1,5 +1,5 @@
 //! Created edges between nodes based on their annotation value.
-use crate::{error::AnnattoError, Module};
+use crate::{error::AnnattoError, StepID};
 use graphannis::{
     corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
     model::AnnotationComponentType,
@@ -34,19 +34,12 @@ pub struct LinkNodes {
     value_sep: String,
 }
 
-pub const MODULE_NAME: &str = "link_nodes";
-
-impl Module for LinkNodes {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
-}
-
 impl Manipulator for LinkNodes {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
         _workflow_directory: &std::path::Path,
+        step_id: StepID,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let db_dir = tempdir_in(temp_dir())?;
@@ -59,6 +52,7 @@ impl Manipulator for LinkNodes {
             self.source_node,
             &self.source_value,
             &self.value_sep,
+            &step_id,
         )?;
         let link_targets = gather_link_data(
             graph,
@@ -67,6 +61,7 @@ impl Manipulator for LinkNodes {
             self.target_node,
             &self.target_value,
             &self.value_sep,
+            &step_id,
         )?;
         let mut update = self.link_nodes(link_sources, link_targets)?;
         graph.apply_update(&mut update, |_| {})?;
@@ -129,6 +124,7 @@ fn gather_link_data(
     node_index: usize,
     value_indices: &[usize],
     sep: &String,
+    step_id: &StepID,
 ) -> Result<BTreeMap<String, Vec<String>>, Box<dyn std::error::Error>> {
     let mut data: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let node_annos = graph.get_node_annos();
@@ -154,7 +150,7 @@ fn gather_link_data(
                             "Could not extract node with value index {value_index} from query `{}`",
                             &query
                         ),
-                        manipulator: MODULE_NAME.to_string(),
+                        manipulator: step_id.module_name.to_string(),
                     }
                     .into());
                 }
@@ -172,7 +168,7 @@ fn gather_link_data(
                     "Could not extract node with node index {node_index} from query `{}`",
                     &query
                 ),
-                manipulator: MODULE_NAME.to_string(),
+                manipulator: step_id.module_name.to_string(),
             }
             .into());
         }
@@ -226,9 +222,12 @@ mod tests {
     use itertools::Itertools;
     use tempfile::{tempdir_in, TempDir};
 
-    use crate::manipulator::{
-        link::{gather_link_data, retrieve_nodes_with_values, LinkNodes},
-        Manipulator,
+    use crate::{
+        manipulator::{
+            link::{gather_link_data, retrieve_nodes_with_values, LinkNodes},
+            Manipulator,
+        },
+        StepID,
     };
 
     #[test]
@@ -261,7 +260,11 @@ mod tests {
         };
         let dummy_dir = tempdir_in(temp_dir())?;
         let dummy_path = dummy_dir.path();
-        let link = linker.manipulate_corpus(&mut g, dummy_path, Some(sender));
+        let step_id = StepID {
+            module_name: "linler".to_string(),
+            path: None,
+        };
+        let link = linker.manipulate_corpus(&mut g, dummy_path, step_id, Some(sender));
         assert!(
             link.is_ok(),
             "Importer update failed with error: {:?}",
@@ -450,6 +453,10 @@ mod tests {
             1,
             &[1, 2],
             &" ".to_string(),
+            &StepID {
+                module_name: "link".to_string(),
+                path: None,
+            },
         );
         assert!(ldr.is_ok(), "not Ok: {:?}", ldr.err());
         let link_data = ldr.unwrap();

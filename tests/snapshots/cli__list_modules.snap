@@ -1,0 +1,7 @@
+---
+source: tests/cli.rs
+expression: output
+---
+Importers: conllu, exmaralda, graphml, meta, none, opus, path, ptb, textgrid, treetagger, xlsx, xml
+Exporters: graphml, exmaralda, xlsx
+Graph operations: check, collapse, enumerate, link, map, merge, revise, chunk, none

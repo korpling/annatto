@@ -1,7 +1,8 @@
 //! Merge multiple imported corpora into one corpus.
 use crate::error::{AnnattoError, StandardErrorResult};
 use crate::workflow::{StatusMessage, StatusSender};
-use crate::{Manipulator, Module};
+use crate::{Manipulator, StepID};
+use anyhow::anyhow;
 use graphannis::{
     graph::{Component, Edge},
     model::{AnnotationComponent, AnnotationComponentType},
@@ -49,7 +50,7 @@ enum ErrorPolicy {
 }
 
 impl TryFrom<Option<&String>> for ErrorPolicy {
-    type Error = AnnattoError;
+    type Error = anyhow::Error;
     fn try_from(value: Option<&String>) -> Result<Self, Self::Error> {
         match value {
             None => Ok(ErrorPolicy::default()),
@@ -59,16 +60,13 @@ impl TryFrom<Option<&String>> for ErrorPolicy {
 }
 
 impl TryFrom<&String> for ErrorPolicy {
-    type Error = AnnattoError;
+    type Error = anyhow::Error;
     fn try_from(value: &String) -> Result<Self, Self::Error> {
         match &value.trim().to_lowercase()[..] {
             "fail" => Ok(ErrorPolicy::Fail),
             "drop" => Ok(ErrorPolicy::Drop),
             "forward" => Ok(ErrorPolicy::Forward),
-            _ => Err(AnnattoError::Manipulator {
-                reason: format!("Undefined error policy: {value}"),
-                manipulator: String::from(MODULE_NAME),
-            }),
+            _ => Err(anyhow!("Undefined error policy: {value}")),
         }
     }
 }
@@ -90,6 +88,7 @@ impl Merge {
         &self,
         graph: &AnnotationGraph,
         order_names: &'a Vec<String>,
+        step_id: &StepID,
     ) -> StandardErrorResult<BTreeMap<String, BTreeMap<&'a str, NodeIdCollection>>> {
         let mut ordered_items_by_doc: BTreeMap<String, BTreeMap<&str, NodeIdCollection>> =
             BTreeMap::new();
@@ -141,7 +140,7 @@ impl Merge {
                     if nodes.is_empty() {
                         let err = AnnattoError::Manipulator {
                             reason: format!("Ordering `{order_name}` does not connect any nodes."),
-                            manipulator: self.module_name().to_string(),
+                            manipulator: step_id.module_name.to_string(),
                         };
                         return Err(Box::new(err));
                     }
@@ -153,7 +152,7 @@ impl Merge {
             } else {
                 let err = AnnattoError::Manipulator {
                     reason: format!("Required ordering `{order_name}` does not exist."),
-                    manipulator: self.module_name().to_string(),
+                    manipulator: step_id.module_name.to_string(),
                 };
                 return Err(Box::new(err));
             }
@@ -303,6 +302,7 @@ impl Merge {
         updates: &mut GraphUpdate,
         docs_with_errors: BTreeSet<String>,
         policy: &ErrorPolicy,
+        step_id: &StepID,
         tx: &Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let node_annos = graph.get_node_annos();
@@ -316,7 +316,7 @@ impl Merge {
                     let msg = format!("{n} documents with ill-merged tokens:\n{docs_s}");
                     let err = AnnattoError::Manipulator {
                         reason: msg,
-                        manipulator: self.module_name().to_string(),
+                        manipulator: step_id.module_name.to_string(),
                     };
                     collected_errors.push(err);
                 }
@@ -567,6 +567,7 @@ impl Manipulator for Merge {
         &self,
         graph: &mut AnnotationGraph,
         _workflow_directory: &Path,
+        step_id: StepID,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(sender) = &tx {
@@ -588,11 +589,11 @@ impl Manipulator for Merge {
         // init
         let mut updates = GraphUpdate::default();
         // merge
-        let ordered_items_by_doc = self.retrieve_ordered_nodes(graph, order_names)?;
+        let ordered_items_by_doc = self.retrieve_ordered_nodes(graph, order_names, &step_id)?;
         let reporter = if report_details { &sender_opt } else { &None };
         let mut mapper = TextNodeMapper {
             target_key: keep_name_key,
-            module_name: self.module_name().to_string(),
+            module_name: step_id.module_name.to_string(),
             docs_with_errors: BTreeSet::default(),
             optional_chars,
             optionals: optional_toks,
@@ -606,18 +607,11 @@ impl Manipulator for Merge {
             &mut updates,
             mapper.docs_with_errors,
             on_error,
+            &step_id,
             &sender_opt,
         )?;
         graph.apply_update(&mut updates, |_msg| {})?;
         Ok(())
-    }
-}
-
-pub const MODULE_NAME: &str = "merge";
-
-impl Module for Merge {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
     }
 }
 
@@ -628,7 +622,7 @@ mod tests {
 
     use crate::manipulator::merge::{ErrorPolicy, Merge};
     use crate::manipulator::Manipulator;
-    use crate::Result;
+    use crate::{Result, StepID};
 
     use graphannis::corpusstorage::{QueryLanguage, ResultOrder, SearchQuery};
     use graphannis::model::AnnotationComponentType;
@@ -669,7 +663,11 @@ mod tests {
             silent: false,
             skip_components: None,
         };
-        let merge_r = merger.manipulate_corpus(&mut g, temp_dir().as_path(), None);
+        let step_id = StepID {
+            module_name: "merger".to_string(),
+            path: None,
+        };
+        let merge_r = merger.manipulate_corpus(&mut g, temp_dir().as_path(), step_id, None);
         assert_eq!(merge_r.is_ok(), true, "Probing merge result {:?}", &merge_r);
         let mut e_g = expected_output_graph(on_disk)?;
         // corpus nodes
@@ -809,9 +807,13 @@ mod tests {
             silent: false,
             skip_components: None,
         };
+        let step_id = StepID {
+            module_name: "merger".to_string(),
+            path: None,
+        };
         assert_eq!(
             merger
-                .manipulate_corpus(&mut g, temp_dir().as_path(), None)
+                .manipulate_corpus(&mut g, temp_dir().as_path(), step_id, None)
                 .is_ok(),
             true
         );

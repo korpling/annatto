@@ -10,7 +10,7 @@ use std::{
 
 use crate::{
     error::AnnattoError, exporter::Exporter, progress::ProgressReporter, workflow::StatusSender,
-    Module, StepID,
+    StepID,
 };
 use graphannis::AnnotationGraph;
 use graphannis::{
@@ -26,20 +26,12 @@ use graphannis_core::{
 use itertools::Itertools;
 use serde_derive::{Deserialize, Serialize};
 
-pub const MODULE_NAME: &str = "export_graphml";
-
 #[derive(Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct ExportGraphML {
     add_vis: Option<String>,
     guess_vis: bool,
     stable_order: bool,
-}
-
-impl Module for ExportGraphML {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
 }
 
 const DEFAULT_VIS_STR: &str = "# configure visualizations here";
@@ -402,7 +394,7 @@ impl Exporter for ExportGraphML {
         step_id: StepID,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let reporter = ProgressReporter::new_unknown_total_work(tx, step_id)?;
+        let reporter = ProgressReporter::new_unknown_total_work(tx, step_id.clone())?;
         let file_name;
         let extension = self.file_extension();
         if let Some(part_of_c) = graph
@@ -436,7 +428,7 @@ impl Exporter for ExportGraphML {
             let reason = String::from("Could not determine file name for graphML.");
             let err = AnnattoError::Export {
                 reason,
-                exporter: self.module_name().to_string(),
+                exporter: step_id.module_name.clone(),
                 path: output_path.to_path_buf(),
             };
             return Err(Box::new(err));

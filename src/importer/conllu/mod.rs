@@ -22,22 +22,14 @@ use serde_derive::Deserialize;
 
 use crate::{
     error::AnnattoError, util::graphupdate::import_corpus_graph_from_files, workflow::StatusSender,
-    Module, StepID,
+    StepID,
 };
 
 use super::Importer;
 
-pub const MODULE_NAME: &str = "import_conllu";
-
 #[derive(Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct ImportCoNLLU {}
-
-impl Module for ImportCoNLLU {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
-}
 
 const FILE_EXTENSIONS: [&str; 2] = ["conll", "conllu"];
 
@@ -45,7 +37,7 @@ impl Importer for ImportCoNLLU {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
-        _step_id: StepID,
+        step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         // TODO use ProgressReporter
@@ -53,7 +45,7 @@ impl Importer for ImportCoNLLU {
         let paths_and_node_names =
             import_corpus_graph_from_files(&mut update, input_path, self.file_extensions())?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
-            self.import_document(&mut update, pathbuf.as_path(), doc_node_name, &tx)?;
+            self.import_document(&step_id, &mut update, pathbuf.as_path(), doc_node_name, &tx)?;
         }
         Ok(update)
     }
@@ -81,6 +73,7 @@ type DepSpec = (usize, Option<String>);
 impl ImportCoNLLU {
     fn import_document(
         &self,
+        step_id: &StepID,
         update: &mut GraphUpdate,
         document_path: &Path,
         document_node_name: String,
@@ -91,12 +84,13 @@ impl ImportCoNLLU {
         let mut file_content = String::new();
         decoder.read_to_string(&mut file_content)?; // TODO this needs to be buffered. UD Files can be very large
         let conllu: Pairs<Rule> = CoNLLUParser::parse(Rule::conll, &file_content)?;
-        self.map_document(update, document_node_name, conllu, tx)?;
+        self.map_document(step_id, update, document_node_name, conllu, tx)?;
         Ok(())
     }
 
     fn map_document(
         &self,
+        step_id: &StepID,
         update: &mut GraphUpdate,
         document_node_name: String,
         mut conllu: Pairs<Rule>,
@@ -109,6 +103,7 @@ impl ImportCoNLLU {
                     // iterate over sentences
                     if sentence.as_rule() == Rule::sentence {
                         token_names.extend(self.map_sentence(
+                            step_id,
                             update,
                             document_node_name.as_str(),
                             sentence,
@@ -121,7 +116,7 @@ impl ImportCoNLLU {
             let msg = format!("Could not parse file as conllu: {document_node_name}");
             let err = AnnattoError::Import {
                 reason: msg,
-                importer: self.module_name().to_string(),
+                importer: step_id.module_name.clone(),
                 path: PathBuf::from(document_node_name),
             };
             return Err(err.into());
@@ -140,6 +135,7 @@ impl ImportCoNLLU {
 
     fn map_sentence(
         &self,
+        step_id: &StepID,
         update: &mut GraphUpdate,
         document_node_name: &str,
         sentence: Pair<Rule>,
@@ -153,7 +149,7 @@ impl ImportCoNLLU {
             match member.as_rule() {
                 Rule::token => {
                     let (tok_name, tok_id, dep) =
-                        self.map_token(update, document_node_name, member, tx)?;
+                        self.map_token(step_id, update, document_node_name, member, tx)?;
                     id_to_tok_name.insert(tok_id, tok_name.to_string());
                     if let Some(dependency) = dep {
                         dependencies.push((tok_name, dependency.0, dependency.1));
@@ -246,7 +242,7 @@ impl ImportCoNLLU {
                             format!("Failed to build dependency tree: Unknown head id `{head_id}` ({l}, {c})");
                         let err = AnnattoError::Import {
                             reason: msg,
-                            importer: self.module_name().to_string(),
+                            importer: step_id.module_name.clone(),
                             path: Path::new(document_node_name).to_path_buf(),
                         };
                         return Err(err.into());
@@ -259,6 +255,7 @@ impl ImportCoNLLU {
 
     fn map_token(
         &self,
+        step_id: &StepID,
         update: &mut GraphUpdate,
         document_node_name: &str,
         token: Pair<Rule>,
@@ -361,7 +358,7 @@ impl ImportCoNLLU {
 
             Err(AnnattoError::Import {
                 reason,
-                importer: self.module_name().to_string(),
+                importer: step_id.module_name.clone(),
                 path: document_node_name.into(),
             }
             .into())

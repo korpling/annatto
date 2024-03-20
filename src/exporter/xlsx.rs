@@ -19,24 +19,15 @@ use umya_spreadsheet::{helper::coordinate::string_from_column_index, Worksheet};
 use crate::{
     progress::ProgressReporter,
     util::token_helper::{TokenHelper, TOKEN_KEY},
-    Module,
 };
 
 use super::Exporter;
-
-pub const MODULE_NAME: &str = "export_xlsx";
 
 #[derive(Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct XlsxExporter {
     include_namespace: bool,
     annotation_order: Vec<String>,
-}
-
-impl Module for XlsxExporter {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
 }
 
 fn find_token_roots(
@@ -357,8 +348,7 @@ mod tests {
     use tempfile::TempDir;
 
     use crate::{
-        importer::{xlsx::ImportSpreadsheet, Importer},
-        test_util::compare_graphs,
+        importer::xlsx::ImportSpreadsheet, test_util::compare_graphs, ReadFrom, StepID, WriteAs,
     };
 
     use super::*;
@@ -375,25 +365,30 @@ mod tests {
 
         // Import an example document
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
+        let importer = crate::ReadFrom::Xlsx(importer);
         let mut updates = importer
-            .import_corpus(path, importer.step_id(None), None)
+            .reader()
+            .import_corpus(path, StepID::from_importer_module(&importer, None), None)
             .unwrap();
         let mut original_graph = AnnotationGraph::new(false).unwrap();
         original_graph.apply_update(&mut updates, |_| {}).unwrap();
 
         // Export to Excel file, read it again and then compare the annotation graphs
         let output_dir = TempDir::new().unwrap();
+        let exporter = crate::WriteAs::Xlsx(exporter);
         exporter
+            .writer()
             .export_corpus(
                 &original_graph,
                 output_dir.path(),
-                exporter.step_id(None),
+                StepID::from_exporter_module(&exporter, None),
                 None,
             )
             .unwrap();
         let mut written_graph = AnnotationGraph::new(false).unwrap();
         let mut updates = importer
-            .import_corpus(path, importer.step_id(None), None)
+            .reader()
+            .import_corpus(path, StepID::from_importer_module(&importer, None), None)
             .unwrap();
         written_graph.apply_update(&mut updates, |_| {}).unwrap();
 
@@ -412,25 +407,30 @@ mod tests {
 
         // Import an example document
         let path = Path::new("./tests/data/import/xlsx/sample_sentence/");
+        let importer = crate::ReadFrom::Xlsx(importer);
         let mut updates = importer
-            .import_corpus(path, importer.step_id(None), None)
+            .reader()
+            .import_corpus(path, StepID::from_importer_module(&importer, None), None)
             .unwrap();
         let mut original_graph = AnnotationGraph::new(false).unwrap();
         original_graph.apply_update(&mut updates, |_| {}).unwrap();
 
         // Export to Excel file and read it again
         let output_dir = TempDir::new().unwrap();
+        let exporter = crate::WriteAs::Xlsx(exporter);
         exporter
+            .writer()
             .export_corpus(
                 &original_graph,
                 output_dir.path(),
-                exporter.step_id(None),
+                StepID::from_exporter_module(&exporter, None),
                 None,
             )
             .unwrap();
         let mut written_graph = AnnotationGraph::new(false).unwrap();
         let mut updates = importer
-            .import_corpus(path, importer.step_id(None), None)
+            .reader()
+            .import_corpus(path, StepID::from_importer_module(&importer, None), None)
             .unwrap();
         written_graph.apply_update(&mut updates, |_| {}).unwrap();
 
@@ -458,15 +458,18 @@ mod tests {
             "#,
         )
         .unwrap();
+        let importer = ReadFrom::Xlsx(importer);
         let mut exporter = XlsxExporter::default();
         exporter.include_namespace = true;
         exporter.annotation_order = vec!["tok".into()];
+        let exporter = WriteAs::Xlsx(exporter);
 
         // Import an example document
         let path = Path::new("./tests/data/import/xlsx/sample_sentence_with_namespace/");
 
         let mut updates = importer
-            .import_corpus(path, importer.step_id(None), None)
+            .reader()
+            .import_corpus(path, StepID::from_importer_module(&importer, None), None)
             .unwrap();
         let mut original_graph = AnnotationGraph::new(false).unwrap();
         original_graph.apply_update(&mut updates, |_| {}).unwrap();
@@ -474,16 +477,18 @@ mod tests {
         // Export to Excel file and read it again
         let output_dir = TempDir::new().unwrap();
         exporter
+            .writer()
             .export_corpus(
                 &original_graph,
                 output_dir.path(),
-                exporter.step_id(None),
+                StepID::from_exporter_module(&exporter, None),
                 None,
             )
             .unwrap();
         let mut written_graph = AnnotationGraph::new(false).unwrap();
         let mut updates = importer
-            .import_corpus(path, importer.step_id(None), None)
+            .reader()
+            .import_corpus(path, StepID::from_importer_module(&importer, None), None)
             .unwrap();
         written_graph.apply_update(&mut updates, |_| {}).unwrap();
 
