@@ -8,6 +8,7 @@ pub mod none;
 pub mod opus;
 pub mod ptb;
 pub mod textgrid;
+pub mod toolbox;
 pub mod treetagger;
 pub mod xlsx;
 pub mod xml;
