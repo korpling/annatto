@@ -3,9 +3,8 @@ path = "../data/import/graphml/single_sentence.graphml"
 format = "graphml"
 
 [import.config]
-stable_order = true
 
 [[export]]
 path = "$TEST_OUTPUT"
 format = "graphml"
-config = {guess_vis = true}  # as alternative to "[export.config]""
+config = {guess_vis = true, stable_order = true}  # as alternative to "[export.config]""
