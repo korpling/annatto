@@ -5,10 +5,10 @@ use annatto::{
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
+use clap::StructOpt;
 use std::{
     collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread, time::Duration,
 };
-use structopt::StructOpt;
 use tracing_subscriber::filter::EnvFilter;
 
 /// Define a conversion operation
