@@ -5,19 +5,20 @@ use annatto::{
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
+use clap::Parser;
 use std::{
     collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread, time::Duration,
 };
-use structopt::StructOpt;
 use tracing_subscriber::filter::EnvFilter;
 
 /// Define a conversion operation
-#[derive(StructOpt)]
+#[derive(Parser)]
+#[command(version, about)]
 enum Cli {
     /// Run a conversion pipeline from a workflow file.
     Run {
         /// The path to the workflow file.
-        #[structopt(parse(from_os_str))]
+        #[clap(value_parser)]
         workflow_file: std::path::PathBuf,
         /// Adding this argument resolves environmental variables in the provided workflow file.
         #[structopt(long)]
@@ -26,7 +27,7 @@ enum Cli {
     /// Only check if a workflow file can be imported. Invalid workflow files will lead to a non-zero exit code.
     Validate {
         /// The path to the workflow file.
-        #[structopt(parse(from_os_str))]
+        #[clap(value_parser)]
         workflow_file: std::path::PathBuf,
     },
 }
@@ -37,7 +38,7 @@ pub fn main() -> anyhow::Result<()> {
         .with_env_filter(filter)
         .compact()
         .init();
-    let args = Cli::from_args();
+    let args = Parser::parse();
     match args {
         Cli::Run { workflow_file, env } => convert(workflow_file, env)?,
         Cli::Validate { workflow_file } => {
