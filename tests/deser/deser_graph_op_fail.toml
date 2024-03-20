@@ -1,0 +1,2 @@
+action = "check"
+config = { tests = [], unknown_field = "please fail" }

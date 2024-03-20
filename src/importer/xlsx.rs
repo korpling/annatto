@@ -29,7 +29,7 @@ use super::Importer;
 pub const MODULE_NAME: &str = "import_xlsx";
 
 #[derive(Default, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct ImportSpreadsheet {
     column_map: BTreeMap<String, BTreeSet<String>>,
     fallback: Option<String>,

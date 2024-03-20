@@ -11,6 +11,7 @@ use crate::Module;
 use super::Importer;
 
 #[derive(Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct CreateFileNodes {
     corpus_name: Option<String>,
 }

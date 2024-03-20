@@ -27,7 +27,7 @@ use super::Exporter;
 pub const MODULE_NAME: &str = "export_xlsx";
 
 #[derive(Default, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct XlsxExporter {
     include_namespace: bool,
     annotation_order: Vec<String>,

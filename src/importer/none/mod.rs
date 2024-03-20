@@ -10,7 +10,7 @@ use super::Importer;
 pub const CREATE_EMPTY_CORPUS_MODULE_NAME: &str = "create_empty_corpus";
 
 #[derive(Default, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct CreateEmptyCorpus {}
 
 impl Importer for CreateEmptyCorpus {

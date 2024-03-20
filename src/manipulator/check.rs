@@ -22,6 +22,7 @@ use crate::{
 pub const MODULE_NAME: &str = "check";
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Check {
     tests: Vec<Test>,
     report: Option<ReportLevel>,
