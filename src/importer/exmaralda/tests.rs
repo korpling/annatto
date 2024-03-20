@@ -1,32 +1,42 @@
-use std::{env, path::Path, sync::mpsc};
+use std::{
+    env,
+    path::{Path, PathBuf},
+    sync::mpsc,
+};
 
 use graphannis::update::GraphUpdate;
 use insta::assert_snapshot;
 use itertools::Itertools;
 
 use crate::{
-    importer::Importer, progress::ProgressReporter, test_util::import_as_graphml_string_2,
-    workflow::StatusMessage, Module,
+    progress::ProgressReporter, test_util::import_as_graphml_string_2, workflow::StatusMessage,
+    StepID,
 };
 
 use super::ImportEXMARaLDA;
 
 #[test]
 fn timeline_fail() {
-    let import = ImportEXMARaLDA::default();
+    let import = crate::ReadFrom::EXMARaLDA(ImportEXMARaLDA::default());
     let import_path = "./tests/data/import/exmaralda/fail-corrupt_timeline/import/";
+    let step_id = StepID::from_importer_module(&import, Some(PathBuf::from(import_path)));
+
     let (sender, _receiver) = mpsc::channel();
-    let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
+    let r = import
+        .reader()
+        .import_corpus(Path::new(import_path), step_id.clone(), Some(sender));
     assert!(r.is_err());
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = "./tests/data/import/exmaralda/fail-corrupt_timeline/import/test_doc.exb";
     let mut u = GraphUpdate::default();
+    let import = ImportEXMARaLDA::default();
     assert!(import
         .import_document(
+            &step_id,
             "import/test_doc",
             Path::new(document_path),
             &mut u,
-            &ProgressReporter::new(None, import.step_id(None), 1).unwrap(),
+            &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
             &None,
         )
         .is_err());
@@ -34,20 +44,24 @@ fn timeline_fail() {
 
 #[test]
 fn category_fail() {
-    let import = ImportEXMARaLDA::default();
+    let import = crate::ReadFrom::EXMARaLDA(ImportEXMARaLDA::default());
     let import_path = "./tests/data/import/exmaralda/fail-no_category/";
+    let step_id = StepID::from_importer_module(&import, Some(PathBuf::from(import_path)));
     let (sender, _receiver) = mpsc::channel();
-    let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
+    let r = import
+        .reader()
+        .import_corpus(Path::new(import_path), step_id.clone(), Some(sender));
     assert!(r.is_err());
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
     let mut u = GraphUpdate::default();
-    assert!(import
+    assert!(ImportEXMARaLDA::default()
         .import_document(
+            &step_id,
             "fail-no_category/test_doc",
             document_path.as_path(),
             &mut u,
-            &ProgressReporter::new(None, import.step_id(None), 1).unwrap(),
+            &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
             &None
         )
         .is_err());
@@ -55,20 +69,25 @@ fn category_fail() {
 
 #[test]
 fn speaker_fail() {
-    let import = ImportEXMARaLDA::default();
+    let import = crate::ReadFrom::EXMARaLDA(ImportEXMARaLDA::default());
     let import_path = "./tests/data/import/exmaralda/fail-no_speaker/";
+    let step_id = StepID::from_importer_module(&import, Some(PathBuf::from(import_path)));
+
     let (sender, _receiver) = mpsc::channel();
-    let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
+    let r = import
+        .reader()
+        .import_corpus(Path::new(import_path), step_id.clone(), Some(sender));
     assert!(r.is_err());
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
     let mut u = GraphUpdate::default();
-    assert!(import
+    assert!(ImportEXMARaLDA::default()
         .import_document(
+            &step_id,
             "fail-no_speaker/test_doc",
             document_path.as_path(),
             &mut u,
-            &ProgressReporter::new(None, import.step_id(None), 1).unwrap(),
+            &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
             &None
         )
         .is_err());
@@ -76,20 +95,25 @@ fn speaker_fail() {
 
 #[test]
 fn undefined_speaker_fail() {
-    let import = ImportEXMARaLDA::default();
+    let import = crate::ReadFrom::EXMARaLDA(ImportEXMARaLDA::default());
     let import_path = "./tests/data/import/exmaralda/fail-undefined_speaker/";
+    let step_id = StepID::from_importer_module(&import, Some(PathBuf::from(import_path)));
+
     let (sender, _receiver) = mpsc::channel();
-    let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
+    let r = import
+        .reader()
+        .import_corpus(Path::new(import_path), step_id.clone(), Some(sender));
     assert!(r.is_err());
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
     let mut u = GraphUpdate::default();
-    assert!(import
+    assert!(ImportEXMARaLDA::default()
         .import_document(
+            &step_id,
             "fail-undefined_speaker/test_doc",
             document_path.as_path(),
             &mut u,
-            &ProgressReporter::new(None, import.step_id(None), 1).unwrap(),
+            &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
             &None
         )
         .is_err());
@@ -97,20 +121,24 @@ fn undefined_speaker_fail() {
 
 #[test]
 fn unknown_tli_fail() {
-    let import = ImportEXMARaLDA::default();
+    let import = crate::ReadFrom::EXMARaLDA(ImportEXMARaLDA::default());
     let import_path = "./tests/data/import/exmaralda/fail-unknown_tli/";
+    let step_id = StepID::from_importer_module(&import, Some(PathBuf::from(import_path)));
     let (sender, _receiver) = mpsc::channel();
-    let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
+    let r = import
+        .reader()
+        .import_corpus(Path::new(import_path), step_id.clone(), Some(sender));
     assert!(r.is_err());
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
     let mut u = GraphUpdate::default();
-    assert!(import
+    assert!(ImportEXMARaLDA::default()
         .import_document(
+            &step_id,
             "fail-unknown_tli/test_doc",
             document_path.as_path(),
             &mut u,
-            &ProgressReporter::new(None, import.step_id(None), 1).unwrap(),
+            &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
             &None
         )
         .is_err());
@@ -118,20 +146,24 @@ fn unknown_tli_fail() {
 
 #[test]
 fn bad_timevalue_fail() {
-    let import = ImportEXMARaLDA::default();
+    let import = crate::ReadFrom::EXMARaLDA(ImportEXMARaLDA::default());
     let import_path = "./tests/data/import/exmaralda/fail-bad_timevalue/";
+    let step_id = StepID::from_importer_module(&import, Some(PathBuf::from(import_path)));
     let (sender, _receiver) = mpsc::channel();
-    let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
+    let r = import
+        .reader()
+        .import_corpus(Path::new(import_path), step_id.clone(), Some(sender));
     assert!(r.is_err());
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
     let mut u = GraphUpdate::default();
-    assert!(import
+    assert!(ImportEXMARaLDA::default()
         .import_document(
+            &step_id,
             "fail-bad_timevalue/test_doc",
             document_path.as_path(),
             &mut u,
-            &ProgressReporter::new(None, import.step_id(None), 1).unwrap(),
+            &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
             &None
         )
         .is_err());
@@ -139,30 +171,37 @@ fn bad_timevalue_fail() {
 
 #[test]
 fn underspec_event_fail() {
-    let import = ImportEXMARaLDA::default();
+    let import = crate::ReadFrom::EXMARaLDA(ImportEXMARaLDA::default());
     let import_path = "./tests/data/import/exmaralda/fail-no_start_no_end/";
+    let step_id = StepID::from_importer_module(&import, Some(PathBuf::from(import_path)));
     let (sender, _receiver) = mpsc::channel();
-    let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
+    let r = import
+        .reader()
+        .import_corpus(Path::new(import_path), step_id, Some(sender));
     assert!(r.is_err());
     assert_snapshot!(r.err().unwrap().to_string());
 }
 
 #[test]
 fn invalid_fail() {
-    let import = ImportEXMARaLDA::default();
+    let import = crate::ReadFrom::EXMARaLDA(ImportEXMARaLDA::default());
     let import_path = "./tests/data/import/exmaralda/fail-invalid/import/";
+    let step_id = StepID::from_importer_module(&import, Some(PathBuf::from(import_path)));
     let (sender, _receiver) = mpsc::channel();
-    let r = import.import_corpus(Path::new(import_path), import.step_id(None), Some(sender));
+    let r = import
+        .reader()
+        .import_corpus(Path::new(import_path), step_id.clone(), Some(sender));
     assert!(r.is_err());
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = "./tests/data/import/exmaralda/fail-invalid/import/test_doc_invalid.exb";
     let mut u = GraphUpdate::default();
-    assert!(import
+    assert!(ImportEXMARaLDA::default()
         .import_document(
+            &step_id,
             "import/test_doc_invalid",
             Path::new(document_path),
             &mut u,
-            &ProgressReporter::new(None, import.step_id(None), 1).unwrap(),
+            &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
             &None
         )
         .is_err());

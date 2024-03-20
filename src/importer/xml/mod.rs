@@ -16,12 +16,13 @@ use crate::{
     error::{AnnattoError, Result},
     progress::ProgressReporter,
     util::graphupdate::import_corpus_graph_from_files,
-    Module,
+    StepID,
 };
 
 use super::Importer;
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImportXML {
     default_ordering: String,
     #[serde(default)]
@@ -30,14 +31,6 @@ pub struct ImportXML {
     skip_names: BTreeSet<String>,
     #[serde(default)]
     use_ids: bool,
-}
-
-const MODULE_NAME: &str = "import_xml";
-
-impl Module for ImportXML {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
 }
 
 const FILE_EXTENSIONS: [&str; 1] = ["xml"];
@@ -51,10 +44,10 @@ impl Importer for ImportXML {
     ) -> std::result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
         let all_files = import_corpus_graph_from_files(&mut update, input_path, &FILE_EXTENSIONS)?;
-        let progress = ProgressReporter::new(tx.clone(), step_id, all_files.len())?;
-        all_files
-            .into_iter()
-            .try_for_each(|(p, d)| self.import_document(p.as_path(), d, &mut update, &progress))?;
+        let progress = ProgressReporter::new(tx.clone(), step_id.clone(), all_files.len())?;
+        all_files.into_iter().try_for_each(|(p, d)| {
+            self.import_document(&step_id, p.as_path(), d, &mut update, &progress)
+        })?;
         Ok(update)
     }
 
@@ -68,6 +61,7 @@ const GENERIC_NS: &str = "generic";
 impl ImportXML {
     fn import_document(
         &self,
+        step_id: &StepID,
         path: &Path,
         doc_node_id: String,
         update: &mut GraphUpdate,
@@ -87,7 +81,7 @@ impl ImportXML {
         loop {
             let xml_event = reader.next().map_err(|_| AnnattoError::Import {
                 reason: "Error parsing xml.".to_string(),
-                importer: MODULE_NAME.to_string(),
+                importer: step_id.module_name.clone(),
                 path: path.to_path_buf(),
             })?;
             match xml_event {

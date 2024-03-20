@@ -13,13 +13,13 @@ pub mod treetagger;
 pub mod xlsx;
 pub mod xml;
 
-use crate::{workflow::StatusSender, Module, StepID};
+use crate::{workflow::StatusSender, StepID};
 use graphannis::update::GraphUpdate;
 use std::path::Path;
 
 /// An importer is a module that takes a path and produces a list of graph update events.
 /// Using the graph update event list allows to execute several importers in parallel and join them to a single annotation graph.
-pub trait Importer: Module {
+pub trait Importer: Sync {
     /// Returns a list of graph update events for a single corpus.
     ///
     /// # Arguments

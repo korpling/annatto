@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - import `ptb` can now split node annotations to derive a label for the incoming edge, when a delimiter is provided 
   using `edge_delimiter`. E. g., `NP-sbj` will create a node of category `NP`, whose incoming edge has function `sbj`,
   given the following config is used: `edge_delimiter = "-"`
+- config attribute `stable_order` for exporting graphml enforces stable ordering of edges and nodes in output
+- toml workflow files now strictly need to stick to known fields of module structs
 
 ### Changed
 

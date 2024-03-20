@@ -16,12 +16,10 @@ use pest_derive::Parser;
 use serde_derive::Deserialize;
 
 use crate::{
-    progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files, Module, StepID,
+    progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files, StepID,
 };
 
 use super::Importer;
-
-pub const MODULE_NAME: &str = "import_ptb";
 
 #[derive(Parser)]
 #[grammar = "importer/ptb/ptb.pest"]
@@ -290,20 +288,14 @@ impl<'a> DocumentMapper {
 
 /// Importer the Penn Treebank Bracketed Text format (PTB)
 #[derive(Default, Deserialize)]
-#[serde(default)]
-pub struct PtbImporter {
+#[serde(default, deny_unknown_fields)]
+pub struct ImportPTB {
     edge_delimiter: Option<String>,
-}
-
-impl Module for PtbImporter {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
 }
 
 const FILE_EXTENSIONS: [&str; 1] = ["ptb"];
 
-impl Importer for PtbImporter {
+impl Importer for ImportPTB {
     fn import_corpus(
         &self,
         input_path: &Path,

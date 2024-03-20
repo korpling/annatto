@@ -1,4 +1,3 @@
-use annatto::runtime::EnvVars;
 use assert_cmd::prelude::*;
 use insta::assert_snapshot;
 use std::{path::PathBuf, process::Command};
@@ -41,7 +40,6 @@ fn convert_to_itself() {
     let tmp_out = tempfile::tempdir().unwrap();
 
     std::env::set_var("TEST_OUTPUT", tmp_out.path().to_string_lossy().as_ref());
-    std::env::set_var(EnvVars::InMemory.to_string(), false.to_string());
 
     let mut cmd = Command::cargo_bin("annatto").unwrap();
 
@@ -136,5 +134,17 @@ fn load_complex_workflow_attr_ommited() {
     let output_err = std::str::from_utf8(&output.stderr).unwrap();
     assert_snapshot!(output_err);
     let output = std::str::from_utf8(&output.stdout).unwrap();
+    assert_snapshot!(output);
+}
+
+#[test]
+fn list_modules() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd.arg("list").output().unwrap();
+    cmd.assert().success();
+
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+
     assert_snapshot!(output);
 }

@@ -10,7 +10,7 @@ use std::{
 
 use crate::{
     error::AnnattoError, exporter::Exporter, progress::ProgressReporter, workflow::StatusSender,
-    Module, StepID,
+    StepID,
 };
 use graphannis::AnnotationGraph;
 use graphannis::{
@@ -26,19 +26,12 @@ use graphannis_core::{
 use itertools::Itertools;
 use serde_derive::{Deserialize, Serialize};
 
-pub const MODULE_NAME: &str = "export_graphml";
-
 #[derive(Default, Deserialize)]
-#[serde(default)]
-pub struct GraphMLExporter {
+#[serde(default, deny_unknown_fields)]
+pub struct ExportGraphML {
     add_vis: Option<String>,
     guess_vis: bool,
-}
-
-impl Module for GraphMLExporter {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
+    stable_order: bool,
 }
 
 const DEFAULT_VIS_STR: &str = "# configure visualizations here";
@@ -393,7 +386,7 @@ fn vis_from_graph(graph: &AnnotationGraph) -> Result<String, Box<dyn std::error:
     Ok(vis)
 }
 
-impl Exporter for GraphMLExporter {
+impl Exporter for ExportGraphML {
     fn export_corpus(
         &self,
         graph: &AnnotationGraph,
@@ -401,7 +394,7 @@ impl Exporter for GraphMLExporter {
         step_id: StepID,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let reporter = ProgressReporter::new_unknown_total_work(tx, step_id)?;
+        let reporter = ProgressReporter::new_unknown_total_work(tx, step_id.clone())?;
         let file_name;
         let extension = self.file_extension();
         if let Some(part_of_c) = graph
@@ -435,7 +428,7 @@ impl Exporter for GraphMLExporter {
             let reason = String::from("Could not determine file name for graphML.");
             let err = AnnattoError::Export {
                 reason,
-                exporter: self.module_name().to_string(),
+                exporter: step_id.module_name.clone(),
                 path: output_path.to_path_buf(),
             };
             return Err(Box::new(err));
@@ -462,15 +455,27 @@ impl Exporter for GraphMLExporter {
         } else {
             vis_str
         };
+        let vis_str = format!("\n{vis}\n");
         reporter.info(format!("Starting export to {}", &output_file_path.display()).as_str())?;
-        graphannis_core::graph::serialization::graphml::export(
-            graph,
-            Some(format!("\n{vis}\n").as_str()),
-            output_file,
-            |msg| {
-                reporter.info(msg).expect("Could not send status message");
-            },
-        )?;
+        if self.stable_order {
+            graphannis_core::graph::serialization::graphml::export_stable_order(
+                graph,
+                Some(vis_str.as_str()),
+                output_file,
+                |msg| {
+                    reporter.info(msg).expect("Could not send status message");
+                },
+            )?;
+        } else {
+            graphannis_core::graph::serialization::graphml::export(
+                graph,
+                Some(vis_str.as_str()),
+                output_file,
+                |msg| {
+                    reporter.info(msg).expect("Could not send status message");
+                },
+            )?;
+        }
         Ok(())
     }
 

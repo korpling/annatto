@@ -1,0 +1,2 @@
+action = "check"
+config = { tests = [] }

@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::{importer::ptb::PtbImporter, test_util::import_as_graphml_string};
+use crate::{importer::ptb::ImportPTB, test_util::import_as_graphml_string};
 use insta::assert_snapshot;
 
 const PTB_DEFAULT_VIS_CONFIG: &str = r#"
@@ -40,7 +40,7 @@ visibility = "hidden"
 #[test]
 fn single_sentence() {
     let actual = import_as_graphml_string(
-        PtbImporter::default(),
+        ImportPTB::default(),
         Path::new("tests/data/import/ptb/single_sentence"),
         Some(PTB_DEFAULT_VIS_CONFIG),
     )
@@ -52,7 +52,7 @@ fn single_sentence() {
 #[test]
 fn brackets_in_value() {
     let actual = import_as_graphml_string(
-        PtbImporter::default(),
+        ImportPTB::default(),
         Path::new("tests/data/import/ptb/brackets_in_value"),
         Some(PTB_DEFAULT_VIS_CONFIG),
     )
@@ -64,7 +64,7 @@ fn brackets_in_value() {
 #[test]
 fn multiple_documents() {
     let actual = import_as_graphml_string(
-        PtbImporter::default(),
+        ImportPTB::default(),
         Path::new("tests/data/import/ptb/multiple_documents"),
         Some(PTB_DEFAULT_VIS_CONFIG),
     )
@@ -76,7 +76,7 @@ fn multiple_documents() {
 #[test]
 fn with_edge_functions() {
     let actual = import_as_graphml_string(
-        PtbImporter {
+        ImportPTB {
             edge_delimiter: Some("-".to_string()),
         },
         Path::new("tests/data/import/ptb/with_edge_functions"),

@@ -1,23 +1,26 @@
 use annatto::{
     error::AnnattoError,
     workflow::{execute_from_file, StatusMessage, Workflow},
-    StepID,
+    GraphOpDiscriminants, ReadFromDiscriminants, StepID, WriteAsDiscriminants,
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
+use clap::Parser;
+use itertools::Itertools;
 use std::{
     collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread, time::Duration,
 };
-use structopt::StructOpt;
+use strum::IntoEnumIterator;
 use tracing_subscriber::filter::EnvFilter;
 
 /// Define a conversion operation
-#[derive(StructOpt)]
+#[derive(Parser)]
+#[command(version, about)]
 enum Cli {
     /// Run a conversion pipeline from a workflow file.
     Run {
         /// The path to the workflow file.
-        #[structopt(parse(from_os_str))]
+        #[clap(value_parser)]
         workflow_file: std::path::PathBuf,
         /// Adding this argument resolves environmental variables in the provided workflow file.
         #[structopt(long)]
@@ -26,9 +29,11 @@ enum Cli {
     /// Only check if a workflow file can be imported. Invalid workflow files will lead to a non-zero exit code.
     Validate {
         /// The path to the workflow file.
-        #[structopt(parse(from_os_str))]
+        #[clap(value_parser)]
         workflow_file: std::path::PathBuf,
     },
+    /// List all modules (importer, graph operations and exporter).
+    List,
 }
 
 pub fn main() -> anyhow::Result<()> {
@@ -37,12 +42,13 @@ pub fn main() -> anyhow::Result<()> {
         .with_env_filter(filter)
         .compact()
         .init();
-    let args = Cli::from_args();
+    let args = Parser::parse();
     match args {
         Cli::Run { workflow_file, env } => convert(workflow_file, env)?,
         Cli::Validate { workflow_file } => {
             Workflow::try_from((workflow_file, false))?;
         }
+        Cli::List => list_modules(),
     };
     Ok(())
 }
@@ -142,4 +148,21 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
         }
         Err(e) => Err(e),
     }
+}
+
+fn list_modules() {
+    let importer_list = ReadFromDiscriminants::iter()
+        .map(|m| m.to_string().to_lowercase())
+        .join(", ");
+    println!("Importers: {}", importer_list);
+
+    let exporter_list = WriteAsDiscriminants::iter()
+        .map(|m| m.to_string().to_lowercase())
+        .join(", ");
+    println!("Exporters: {}", exporter_list);
+
+    let graph_op_list = GraphOpDiscriminants::iter()
+        .map(|m| m.to_string().to_lowercase())
+        .join(", ");
+    println!("Graph operations: {}", graph_op_list);
 }

@@ -12,7 +12,7 @@ use crate::util::graphupdate::{
     add_order_relations, import_corpus_graph_from_files, map_annotations, map_audio_source,
     map_token, root_corpus_from_path, NodeInfo,
 };
-use crate::{Module, StepID};
+use crate::StepID;
 use anyhow::{anyhow, Result};
 use encoding_rs_io::DecodeReaderBytes;
 use graphannis::update::{GraphUpdate, UpdateEvent};
@@ -24,27 +24,19 @@ use serde_derive::Deserialize;
 use super::Importer;
 const FILE_ENDINGS: [&str; 3] = ["textgrid", "TextGrid", "textGrid"];
 
-pub const MODULE_NAME: &str = "import_textgrid";
-
 /// Importer the Praat TextGrid file format.
 ///
 /// See the [Praat
 /// Documentation](https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html)
 /// for more information on the format itself.
 #[derive(Default, Deserialize)]
-#[serde(default)]
-pub struct TextgridImporter {
+#[serde(default, deny_unknown_fields)]
+pub struct ImportTextgrid {
     tier_groups: Option<BTreeMap<String, BTreeSet<String>>>,
     skip_timeline_generation: bool,
     skip_audio: bool,
     skip_time_annotations: bool,
     audio_extension: Option<String>,
-}
-
-impl Module for TextgridImporter {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
 }
 
 struct MapperParams<'a> {
@@ -394,7 +386,7 @@ impl<'a> DocumentMapper<'a> {
     }
 }
 
-impl Importer for TextgridImporter {
+impl Importer for ImportTextgrid {
     fn import_corpus(
         &self,
         input_path: &Path,

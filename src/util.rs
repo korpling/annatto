@@ -1,4 +1,7 @@
-use crate::error::{AnnattoError, Result};
+use crate::{
+    error::{AnnattoError, Result},
+    StepID,
+};
 use graphannis::{model::AnnotationComponent, AnnotationGraph};
 
 use graphannis_core::types::{Edge, NodeID};
@@ -29,6 +32,7 @@ pub trait Traverse<N, E> {
     /// A node has been reached traversing the given component.
     fn node(
         &self,
+        step_id: &StepID,
         graph: &AnnotationGraph,
         node: NodeID,
         component: &AnnotationComponent,
@@ -38,6 +42,7 @@ pub trait Traverse<N, E> {
     /// An edge is being processed while traversing the graph in the given component.
     fn edge(
         &self,
+        step_id: &StepID,
         graph: &AnnotationGraph,
         edge: Edge,
         component: &AnnotationComponent,
@@ -46,6 +51,7 @@ pub trait Traverse<N, E> {
 
     fn traverse(
         &self,
+        step_id: &StepID,
         graph: &AnnotationGraph,
         node_buffer: &mut N,
         edge_buffer: &mut E,

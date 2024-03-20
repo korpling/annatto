@@ -21,15 +21,13 @@ use crate::{
     error::AnnattoError,
     progress::ProgressReporter,
     util::{self},
-    Module, StepID,
+    StepID,
 };
 
 use super::Importer;
 
-pub const MODULE_NAME: &str = "import_xlsx";
-
 #[derive(Default, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct ImportSpreadsheet {
     column_map: BTreeMap<String, BTreeSet<String>>,
     fallback: Option<String>,
@@ -53,12 +51,6 @@ impl ToString for SheetAddress {
     }
 }
 
-impl Module for ImportSpreadsheet {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
-}
-
 fn sheet_from_address<'a>(
     book: &'a umya_spreadsheet::Spreadsheet,
     address: &Option<SheetAddress>,
@@ -79,6 +71,7 @@ fn sheet_from_address<'a>(
 impl ImportSpreadsheet {
     fn import_datasheet(
         &self,
+        step_id: &StepID,
         doc_path: &str,
         sheet: &umya_spreadsheet::Worksheet,
         update: &mut GraphUpdate,
@@ -154,7 +147,7 @@ impl ImportSpreadsheet {
                     let err = AnnattoError::Import {
                         reason: "Merged cells across multiple columns cannot be mapped."
                             .to_string(),
-                        importer: MODULE_NAME.to_string(),
+                        importer: step_id.module_name.clone(),
                         path: doc_path.into(),
                     };
                     return Err(err);
@@ -378,6 +371,7 @@ impl ImportSpreadsheet {
 
     fn import_workbook(
         &self,
+        step_id: &StepID,
         update: &mut GraphUpdate,
         path: &Path,
         doc_node_name: &str,
@@ -387,11 +381,11 @@ impl ImportSpreadsheet {
         if let Some(sheet) = sheet_from_address(&book, &self.datasheet, Some(0)).map_err(|e| {
             AnnattoError::Import {
                 reason: e.to_string(),
-                importer: MODULE_NAME.to_string(),
+                importer: step_id.module_name.clone(),
                 path: path.to_path_buf(),
             }
         })? {
-            self.import_datasheet(doc_node_name, sheet, update, progress_reporter)?;
+            self.import_datasheet(step_id, doc_node_name, sheet, update, progress_reporter)?;
         }
         if let Some(sheet) =
             sheet_from_address(&book, &self.metasheet, None).map_err(|_| AnnattoError::Import {
@@ -399,7 +393,7 @@ impl ImportSpreadsheet {
                     "Could not find sheet {}",
                     &self.metasheet.as_ref().unwrap().to_string()
                 ),
-                importer: self.module_name().to_string(),
+                importer: step_id.module_name.clone(),
                 path: path.into(),
             })?
         {
@@ -427,11 +421,11 @@ impl Importer for ImportSpreadsheet {
         )?;
         let number_of_files = all_files.len();
         // Each file is a work step
-        let reporter = ProgressReporter::new(tx, step_id, number_of_files)?;
+        let reporter = ProgressReporter::new(tx, step_id.clone(), number_of_files)?;
 
         all_files.into_iter().try_for_each(|(pb, doc_node_name)| {
             reporter.info(&format!("Importing {}", pb.to_string_lossy()))?;
-            self.import_workbook(&mut updates, &pb, &doc_node_name, &reporter)?;
+            self.import_workbook(&step_id, &mut updates, &pb, &doc_node_name, &reporter)?;
             reporter.worked(1)?;
             Ok::<(), AnnattoError>(())
         })?;
@@ -483,16 +477,18 @@ mod tests {
         );
         let importer = ImportSpreadsheet {
             column_map: col_map,
-            fallback: fallback,
+            fallback: fallback.clone(),
             datasheet: None,
             metasheet: None,
         };
+        let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
-        let import = importer.import_corpus(path, importer.step_id(None), None);
+        let step_id = StepID::from_importer_module(&importer, Some(path.to_path_buf()));
+        let import = importer.reader().import_corpus(path, step_id, None);
         let mut u = import?;
         let mut g = AnnotationGraph::new(on_disk)?;
         g.apply_update(&mut u, |_| {})?;
-        let lemma_count = match &importer.fallback {
+        let lemma_count = match &fallback {
             Some(v) => match &v[..] {
                 "norm" => 4,
                 _ => 0,
@@ -589,9 +585,11 @@ mod tests {
             datasheet: None,
             metasheet: None,
         };
+        let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/dirty/xlsx/");
+        let step_id = StepID::from_importer_module(&importer, Some(path.to_path_buf()));
         let (sender, receiver) = mpsc::channel();
-        let import = importer.import_corpus(path, importer.step_id(None), Some(sender));
+        let import = importer.reader().import_corpus(path, step_id, Some(sender));
         assert!(import.is_err());
         assert_ne!(receiver.into_iter().count(), 0);
     }
@@ -617,9 +615,11 @@ mod tests {
             datasheet: None,
             metasheet: None,
         };
+        let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/warnings/xlsx/");
+        let step_id = StepID::from_importer_module(&importer, Some(path.to_path_buf()));
         let (sender, receiver) = mpsc::channel();
-        let import = importer.import_corpus(path, importer.step_id(None), Some(sender));
+        let import = importer.reader().import_corpus(path, step_id, Some(sender));
         assert!(import.is_ok());
         assert_ne!(receiver.into_iter().count(), 0);
     }
@@ -689,9 +689,11 @@ mod tests {
             datasheet: None,
             metasheet: None,
         };
+        let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
+        let step_id = StepID::from_importer_module(&importer, Some(path.to_path_buf()));
         let (sender, receiver) = mpsc::channel();
-        let import = importer.import_corpus(path, importer.step_id(None), Some(sender));
+        let import = importer.reader().import_corpus(path, step_id, Some(sender));
         assert!(import.is_ok());
         assert_ne!(receiver.into_iter().count(), 0);
     }
@@ -774,8 +776,10 @@ mod tests {
             datasheet: None,
             metasheet: Some(SheetAddress::Name("meta".to_string())),
         };
+        let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
-        let import = importer.import_corpus(path, importer.step_id(None), None);
+        let step_id = StepID::from_importer_module(&importer, Some(path.to_path_buf()));
+        let import = importer.reader().import_corpus(path, step_id, None);
         let mut g = AnnotationGraph::new(on_disk)?;
         g.apply_update(&mut import?, |_| {})?;
         let node_annos = g.get_node_annos();

@@ -41,19 +41,14 @@ pub(crate) mod test_util;
 pub(crate) mod util;
 pub mod workflow;
 
-use std::{
-    fmt::Display,
-    path::{Path, PathBuf},
-};
+use std::{fmt::Display, path::PathBuf};
 
 use error::Result;
-use exporter::{
-    exmaralda::ExportExmaralda, graphml::GraphMLExporter, xlsx::XlsxExporter, Exporter,
-};
+use exporter::{exmaralda::ExportExmaralda, graphml::ExportGraphML, xlsx::XlsxExporter, Exporter};
 use importer::{
     conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
     graphml::GraphMLImporter, meta::AnnotateCorpus, none::CreateEmptyCorpus, opus::ImportOpusLinks,
-    ptb::PtbImporter, textgrid::TextgridImporter, treetagger::TreeTaggerImporter,
+    ptb::ImportPTB, textgrid::ImportTextgrid, treetagger::ImportTreeTagger,
     xlsx::ImportSpreadsheet, xml::ImportXML, Importer,
 };
 use manipulator::{
@@ -61,11 +56,13 @@ use manipulator::{
     map::MapAnnos, merge::Merge, no_op::NoOp, re::Revise, Manipulator,
 };
 use serde_derive::Deserialize;
+use strum::{Display, EnumDiscriminants, EnumIter};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, EnumDiscriminants, Display)]
+#[strum_discriminants(derive(EnumIter, Display))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum WriteAs {
-    GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
+    GraphML(#[serde(default)] ExportGraphML), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
     EXMARaLDA(#[serde(default)] ExportExmaralda),
     Xlsx(#[serde(default)] XlsxExporter),
 }
@@ -73,13 +70,7 @@ pub enum WriteAs {
 impl Default for WriteAs {
     // the purpose of this default is to allow to omit `format` in an `[[export]]` table
     fn default() -> Self {
-        WriteAs::GraphML(GraphMLExporter::default())
-    }
-}
-
-impl ToString for WriteAs {
-    fn to_string(&self) -> String {
-        self.writer().module_name().to_string()
+        WriteAs::GraphML(ExportGraphML::default())
     }
 }
 
@@ -93,7 +84,8 @@ impl WriteAs {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, EnumDiscriminants, Display)]
+#[strum_discriminants(derive(EnumIter, Display))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum ReadFrom {
     CoNLLU(#[serde(default)] ImportCoNLLU),
@@ -103,9 +95,9 @@ pub enum ReadFrom {
     None(#[serde(default)] CreateEmptyCorpus),
     Opus(#[serde(default)] ImportOpusLinks),
     Path(#[serde(default)] CreateFileNodes),
-    PTB(#[serde(default)] PtbImporter),
-    TextGrid(#[serde(default)] TextgridImporter),
-    TreeTagger(#[serde(default)] TreeTaggerImporter),
+    PTB(#[serde(default)] ImportPTB),
+    TextGrid(#[serde(default)] ImportTextgrid),
+    TreeTagger(#[serde(default)] ImportTreeTagger),
     Xlsx(#[serde(default)] ImportSpreadsheet),
     Xml(ImportXML),
 }
@@ -114,12 +106,6 @@ impl Default for ReadFrom {
     // the purpose of this default is to allow to omit `format` in an `[[import]]` table
     fn default() -> Self {
         ReadFrom::None(CreateEmptyCorpus::default())
-    }
-}
-
-impl ToString for ReadFrom {
-    fn to_string(&self) -> String {
-        self.reader().module_name().to_string()
     }
 }
 
@@ -142,7 +128,8 @@ impl ReadFrom {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, EnumDiscriminants, Display)]
+#[strum_discriminants(derive(EnumIter, Display))]
 #[serde(tag = "action", rename_all = "lowercase", content = "config")]
 pub enum GraphOp {
     Check(Check),       // no default, has a (required) path attribute
@@ -160,12 +147,6 @@ impl Default for GraphOp {
     // the purpose of this default is to allow to omit `format` in an `[[graph_op]]` table
     fn default() -> Self {
         GraphOp::None(NoOp::default())
-    }
-}
-
-impl ToString for GraphOp {
-    fn to_string(&self) -> String {
-        self.processor().module_name().to_string()
     }
 }
 
@@ -194,6 +175,29 @@ pub struct StepID {
     pub path: Option<PathBuf>,
 }
 
+impl StepID {
+    pub fn from_importer_module(m: &ReadFrom, path: Option<PathBuf>) -> StepID {
+        StepID {
+            module_name: format!("import_{}", m.to_string().to_lowercase()),
+            path,
+        }
+    }
+
+    pub fn from_graph_op_module(m: &GraphOp) -> StepID {
+        StepID {
+            module_name: m.to_string().to_lowercase(),
+            path: None,
+        }
+    }
+
+    pub fn from_exporter_module(m: &WriteAs, path: Option<PathBuf>) -> StepID {
+        StepID {
+            module_name: format!("export_{}", m.to_string().to_lowercase()),
+            path,
+        }
+    }
+}
+
 impl Display for StepID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(path) = &self.path {
@@ -218,10 +222,7 @@ pub struct ImporterStep {
 
 impl Step for ImporterStep {
     fn get_step_id(&self) -> StepID {
-        StepID {
-            module_name: self.module.to_string(),
-            path: Some(self.path.clone()),
-        }
+        StepID::from_importer_module(&self.module, Some(self.path.clone()))
     }
 }
 
@@ -234,10 +235,7 @@ pub struct ExporterStep {
 
 impl Step for ExporterStep {
     fn get_step_id(&self) -> StepID {
-        StepID {
-            module_name: self.module.to_string(),
-            path: Some(self.path.clone()),
-        }
+        StepID::from_exporter_module(&self.module, Some(self.path.clone()))
     }
 }
 
@@ -250,23 +248,51 @@ pub struct ManipulatorStep {
 
 impl Step for ManipulatorStep {
     fn get_step_id(&self) -> StepID {
-        StepID {
-            module_name: self.module.to_string(),
-            path: None,
-        }
+        StepID::from_graph_op_module(&self.module)
     }
 }
 
-/// A module that can be used in the conversion pipeline.
-pub trait Module: Sync {
-    /// Get the name of the module as string.
-    fn module_name(&self) -> &str;
+#[cfg(test)]
+mod tests {
+    use std::fs;
 
-    /// Return the ID of the module when used with the given specific path.
-    fn step_id(&self, path: Option<&Path>) -> StepID {
-        StepID {
-            module_name: self.module_name().to_string(),
-            path: path.map(|p| p.to_path_buf()),
-        }
+    use serde::de::DeserializeOwned;
+
+    use crate::{GraphOp, ReadFrom, WriteAs};
+
+    #[test]
+    fn deser_read_from_pass() {
+        assert!(deserialize_toml::<ReadFrom>("tests/deser/deser_read_from.toml").is_ok());
+    }
+
+    #[test]
+    fn deser_read_from_fail_unknown() {
+        assert!(deserialize_toml::<ReadFrom>("tests/deser/deser_read_from_fail.toml").is_err());
+    }
+
+    #[test]
+    fn deser_graph_op_pass() {
+        assert!(deserialize_toml::<GraphOp>("tests/deser/deser_graph_op.toml").is_ok());
+    }
+
+    #[test]
+    fn deser_graph_op_fail_unknown() {
+        assert!(deserialize_toml::<GraphOp>("tests/deser/deser_graph_op_fail.toml").is_err());
+    }
+
+    #[test]
+    fn deser_write_as_pass() {
+        assert!(deserialize_toml::<WriteAs>("tests/deser/deser_write_as.toml").is_ok());
+    }
+
+    #[test]
+    fn deser_write_as_fail_unknown() {
+        assert!(deserialize_toml::<WriteAs>("tests/deser/deser_write_as_fail.toml").is_err());
+    }
+
+    fn deserialize_toml<E: DeserializeOwned>(path: &str) -> Result<E, toml::de::Error> {
+        let toml_string = fs::read_to_string(path);
+        assert!(toml_string.is_ok());
+        toml::from_str(&toml_string.unwrap())
     }
 }

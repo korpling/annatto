@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use super::Manipulator;
-use crate::{progress::ProgressReporter, util::token_helper::TokenHelper, Module};
+use crate::{progress::ProgressReporter, util::token_helper::TokenHelper, StepID};
 use graphannis::{
     model::AnnotationComponentType,
     update::{
@@ -19,6 +19,7 @@ use serde::Deserialize;
 use text_splitter::TextSplitter;
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Chunk {
     #[serde(default)]
     max_characters: usize,
@@ -48,17 +49,12 @@ impl Default for Chunk {
     }
 }
 
-impl Module for Chunk {
-    fn module_name(&self) -> &str {
-        "chunk"
-    }
-}
-
 impl Manipulator for Chunk {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
         _workflow_directory: &std::path::Path,
+        step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut updates = GraphUpdate::new();
@@ -71,7 +67,7 @@ impl Manipulator for Chunk {
                 .collect();
             let documents = documents?;
 
-            let progress = ProgressReporter::new(tx, self.step_id(None), documents.len())?;
+            let progress = ProgressReporter::new(tx, step_id, documents.len())?;
 
             let token_helper = TokenHelper::new(graph)?;
 
@@ -178,6 +174,7 @@ mod tests {
     use crate::{
         manipulator::Manipulator,
         util::{example_generator, token_helper::TokenHelper},
+        StepID,
     };
 
     use super::Chunk;
@@ -194,8 +191,13 @@ mod tests {
         let mut chunker = Chunk::default();
         chunker.max_characters = 20;
 
+        let step_id = StepID {
+            module_name: "chunker".to_string(),
+            path: None,
+        };
+
         chunker
-            .manipulate_corpus(&mut g, Path::new("."), None)
+            .manipulate_corpus(&mut g, Path::new("."), step_id, None)
             .unwrap();
 
         let chunk_query = aql::parse("chunk", false).unwrap();
@@ -308,8 +310,13 @@ mod tests {
             segmentation: Some("seg".into()),
         };
 
+        let step_id = StepID {
+            module_name: "chunker".to_string(),
+            path: None,
+        };
+
         chunker
-            .manipulate_corpus(&mut g, Path::new("."), None)
+            .manipulate_corpus(&mut g, Path::new("."), step_id, None)
             .unwrap();
 
         let all_chunks_query = aql::parse("chunk:segment", false).unwrap();
