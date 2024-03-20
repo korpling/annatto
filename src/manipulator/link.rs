@@ -15,6 +15,7 @@ use tempfile::tempdir_in;
 use super::Manipulator;
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct LinkNodes {
     source_query: String,
     #[serde(default)]

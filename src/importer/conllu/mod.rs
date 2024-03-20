@@ -28,7 +28,7 @@ use crate::{
 use super::Importer;
 
 #[derive(Default, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct ImportCoNLLU {}
 
 const FILE_EXTENSIONS: [&str; 2] = ["conll", "conllu"];

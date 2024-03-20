@@ -19,6 +19,7 @@ use serde::Deserialize;
 use text_splitter::TextSplitter;
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Chunk {
     #[serde(default)]
     max_characters: usize,

@@ -24,7 +24,7 @@ use crate::{
 use super::Exporter;
 
 #[derive(Default, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct XlsxExporter {
     include_namespace: bool,
     annotation_order: Vec<String>,

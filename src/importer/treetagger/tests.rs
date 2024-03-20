@@ -3,7 +3,7 @@ use std::path::Path;
 use insta::assert_snapshot;
 
 use crate::{
-    importer::treetagger::{AttributeDecoding, TreeTaggerImporter},
+    importer::treetagger::{AttributeDecoding, ImportTreeTagger},
     test_util::import_as_graphml_string,
 };
 
@@ -28,7 +28,7 @@ display_name = "grid"
 #[test]
 fn simple_token() {
     let actual = import_as_graphml_string(
-        TreeTaggerImporter::default(),
+        ImportTreeTagger::default(),
         Path::new("tests/data/import/treetagger/token_only"),
         Some(TT_DEFAULT_VIS_CONFIG),
     )
@@ -39,7 +39,7 @@ fn simple_token() {
 
 #[test]
 fn encoding_latin() {
-    let mut importer = TreeTaggerImporter::default();
+    let mut importer = ImportTreeTagger::default();
     importer.file_encoding = Some("Latin1".into());
     let actual = import_as_graphml_string(
         importer,
@@ -53,7 +53,7 @@ fn encoding_latin() {
 
 #[test]
 fn disable_attribute_encoding() {
-    let mut importer = TreeTaggerImporter::default();
+    let mut importer = ImportTreeTagger::default();
     importer.attribute_decoding = AttributeDecoding::Entitites;
     let should_fail = import_as_graphml_string(
         importer,
@@ -62,7 +62,7 @@ fn disable_attribute_encoding() {
     );
     assert!(should_fail.is_err());
 
-    let mut importer = TreeTaggerImporter::default();
+    let mut importer = ImportTreeTagger::default();
     importer.attribute_decoding = AttributeDecoding::None;
     let actual = import_as_graphml_string(
         importer,
@@ -77,7 +77,7 @@ fn disable_attribute_encoding() {
 #[test]
 fn single_sentence() {
     let actual = import_as_graphml_string(
-        TreeTaggerImporter::default(),
+        ImportTreeTagger::default(),
         Path::new("tests/data/import/treetagger/single_sentence"),
         Some(TT_DEFAULT_VIS_CONFIG),
     )

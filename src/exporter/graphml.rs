@@ -27,8 +27,8 @@ use itertools::Itertools;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Default, Deserialize)]
-#[serde(default)]
-pub struct GraphMLExporter {
+#[serde(default, deny_unknown_fields)]
+pub struct ExportGraphML {
     add_vis: Option<String>,
     guess_vis: bool,
     stable_order: bool,
@@ -386,7 +386,7 @@ fn vis_from_graph(graph: &AnnotationGraph) -> Result<String, Box<dyn std::error:
     Ok(vis)
 }
 
-impl Exporter for GraphMLExporter {
+impl Exporter for ExportGraphML {
     fn export_corpus(
         &self,
         graph: &AnnotationGraph,

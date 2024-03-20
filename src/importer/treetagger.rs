@@ -317,15 +317,15 @@ pub enum AttributeDecoding {
 
 /// Importer for the file format used by the TreeTagger.
 #[derive(Default, Deserialize)]
-#[serde(default)]
-pub struct TreeTaggerImporter {
+#[serde(default, deny_unknown_fields)]
+pub struct ImportTreeTagger {
     column_names: Vec<String>,
     /// The encoding to use when for the input files. Defaults to UTF-8.
     file_encoding: Option<String>,
     attribute_decoding: AttributeDecoding,
 }
 
-impl Importer for TreeTaggerImporter {
+impl Importer for ImportTreeTagger {
     fn import_corpus(
         &self,
         input_path: &Path,

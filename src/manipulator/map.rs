@@ -19,6 +19,7 @@ use crate::{workflow::StatusSender, StepID};
 use super::Manipulator;
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct MapAnnos {
     rule_file: PathBuf,
 }

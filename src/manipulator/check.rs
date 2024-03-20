@@ -21,6 +21,7 @@ use crate::{
 };
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Check {
     tests: Vec<Test>,
     report: Option<ReportLevel>,

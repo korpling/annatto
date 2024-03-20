@@ -28,7 +28,7 @@ use crate::{
 };
 
 #[derive(Default, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct Revise {
     remove_nodes: Option<Vec<String>>,
     move_node_annos: bool,

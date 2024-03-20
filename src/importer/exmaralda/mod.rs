@@ -27,7 +27,7 @@ use crate::{
 use super::Importer;
 
 #[derive(Default, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct ImportEXMARaLDA {}
 
 const FILE_EXTENSIONS: [&str; 2] = ["exb", "xml"];

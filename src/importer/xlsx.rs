@@ -27,7 +27,7 @@ use crate::{
 use super::Importer;
 
 #[derive(Default, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct ImportSpreadsheet {
     column_map: BTreeMap<String, BTreeSet<String>>,
     fallback: Option<String>,

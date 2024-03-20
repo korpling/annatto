@@ -23,6 +23,7 @@ use std::convert::TryFrom;
 use std::path::Path;
 
 #[derive(Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Merge {
     #[serde(default)]
     error_policy: ErrorPolicy,

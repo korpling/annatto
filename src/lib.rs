@@ -44,13 +44,11 @@ pub mod workflow;
 use std::{fmt::Display, path::PathBuf};
 
 use error::Result;
-use exporter::{
-    exmaralda::ExportExmaralda, graphml::GraphMLExporter, xlsx::XlsxExporter, Exporter,
-};
+use exporter::{exmaralda::ExportExmaralda, graphml::ExportGraphML, xlsx::XlsxExporter, Exporter};
 use importer::{
     conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
     graphml::GraphMLImporter, meta::AnnotateCorpus, none::CreateEmptyCorpus, opus::ImportOpusLinks,
-    ptb::PtbImporter, textgrid::TextgridImporter, treetagger::TreeTaggerImporter,
+    ptb::ImportPTB, textgrid::ImportTextgrid, treetagger::ImportTreeTagger,
     xlsx::ImportSpreadsheet, xml::ImportXML, Importer,
 };
 use manipulator::{
@@ -64,7 +62,7 @@ use strum::{Display, EnumDiscriminants, EnumIter};
 #[strum_discriminants(derive(EnumIter, Display))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum WriteAs {
-    GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
+    GraphML(#[serde(default)] ExportGraphML), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
     EXMARaLDA(#[serde(default)] ExportExmaralda),
     Xlsx(#[serde(default)] XlsxExporter),
 }
@@ -72,7 +70,7 @@ pub enum WriteAs {
 impl Default for WriteAs {
     // the purpose of this default is to allow to omit `format` in an `[[export]]` table
     fn default() -> Self {
-        WriteAs::GraphML(GraphMLExporter::default())
+        WriteAs::GraphML(ExportGraphML::default())
     }
 }
 
@@ -97,9 +95,9 @@ pub enum ReadFrom {
     None(#[serde(default)] CreateEmptyCorpus),
     Opus(#[serde(default)] ImportOpusLinks),
     Path(#[serde(default)] CreateFileNodes),
-    PTB(#[serde(default)] PtbImporter),
-    TextGrid(#[serde(default)] TextgridImporter),
-    TreeTagger(#[serde(default)] TreeTaggerImporter),
+    PTB(#[serde(default)] ImportPTB),
+    TextGrid(#[serde(default)] ImportTextgrid),
+    TreeTagger(#[serde(default)] ImportTreeTagger),
     Xlsx(#[serde(default)] ImportSpreadsheet),
     Xml(ImportXML),
 }
@@ -251,5 +249,50 @@ pub struct ManipulatorStep {
 impl Step for ManipulatorStep {
     fn get_step_id(&self) -> StepID {
         StepID::from_graph_op_module(&self.module)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use serde::de::DeserializeOwned;
+
+    use crate::{GraphOp, ReadFrom, WriteAs};
+
+    #[test]
+    fn deser_read_from_pass() {
+        assert!(deserialize_toml::<ReadFrom>("tests/deser/deser_read_from.toml").is_ok());
+    }
+
+    #[test]
+    fn deser_read_from_fail_unknown() {
+        assert!(deserialize_toml::<ReadFrom>("tests/deser/deser_read_from_fail.toml").is_err());
+    }
+
+    #[test]
+    fn deser_graph_op_pass() {
+        assert!(deserialize_toml::<GraphOp>("tests/deser/deser_graph_op.toml").is_ok());
+    }
+
+    #[test]
+    fn deser_graph_op_fail_unknown() {
+        assert!(deserialize_toml::<GraphOp>("tests/deser/deser_graph_op_fail.toml").is_err());
+    }
+
+    #[test]
+    fn deser_write_as_pass() {
+        assert!(deserialize_toml::<WriteAs>("tests/deser/deser_write_as.toml").is_ok());
+    }
+
+    #[test]
+    fn deser_write_as_fail_unknown() {
+        assert!(deserialize_toml::<WriteAs>("tests/deser/deser_write_as_fail.toml").is_err());
+    }
+
+    fn deserialize_toml<E: DeserializeOwned>(path: &str) -> Result<E, toml::de::Error> {
+        let toml_string = fs::read_to_string(path);
+        assert!(toml_string.is_ok());
+        toml::from_str(&toml_string.unwrap())
     }
 }

@@ -8,7 +8,7 @@ use serde_derive::Deserialize;
 use super::Importer;
 
 #[derive(Default, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct CreateEmptyCorpus {}
 
 impl Importer for CreateEmptyCorpus {

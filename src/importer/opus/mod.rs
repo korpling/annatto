@@ -17,7 +17,7 @@ use crate::{
 use super::Importer;
 
 #[derive(Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct ImportOpusLinks {
     default_name: String,
     default_type: AnnotationComponentType,

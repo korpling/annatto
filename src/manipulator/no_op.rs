@@ -5,6 +5,7 @@ use crate::StepID;
 use super::Manipulator;
 
 #[derive(Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct NoOp {}
 
 impl Manipulator for NoOp {
