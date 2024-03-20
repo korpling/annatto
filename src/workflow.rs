@@ -334,6 +334,7 @@ impl Workflow {
                         workflow_directory
                             .as_ref()
                             .map_or(default_workflow_directory, PathBuf::as_path),
+                        desc.get_step_id(),
                         tx.clone(),
                     )
                     .map_err(|reason| AnnattoError::Manipulator {
@@ -342,7 +343,7 @@ impl Workflow {
                     })?;
                 if let Some(ref tx) = tx {
                     tx.send(crate::workflow::StatusMessage::StepDone {
-                        id: desc.module.processor().step_id(None),
+                        id: desc.get_step_id(),
                     })?;
                 }
             }

@@ -23,10 +23,8 @@ use graphannis::{
 
 use crate::{
     error::AnnattoError, importer::Importer, progress::ProgressReporter, workflow::StatusSender,
-    Module, StepID,
+    StepID,
 };
-
-pub const MODULE_NAME: &str = "import_graphml";
 
 #[derive(Default, Deserialize)]
 #[serde(default)]
@@ -303,12 +301,6 @@ impl Importer for GraphMLImporter {
 
     fn file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
-    }
-}
-
-impl Module for GraphMLImporter {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
     }
 }
 

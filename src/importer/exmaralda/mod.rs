@@ -21,22 +21,14 @@ use crate::{
     progress::ProgressReporter,
     util::graphupdate::{import_corpus_graph_from_files, map_audio_source},
     workflow::StatusMessage,
-    Module, StepID,
+    StepID,
 };
 
 use super::Importer;
 
-pub const MODULE_NAME: &str = "import_exmaralda";
-
 #[derive(Default, Deserialize)]
 #[serde(default)]
 pub struct ImportEXMARaLDA {}
-
-impl Module for ImportEXMARaLDA {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
-}
 
 const FILE_EXTENSIONS: [&str; 2] = ["exb", "xml"];
 
@@ -50,11 +42,18 @@ impl Importer for ImportEXMARaLDA {
         let mut update = GraphUpdate::default();
         let all_files =
             import_corpus_graph_from_files(&mut update, input_path, self.file_extensions())?;
-        let progress = ProgressReporter::new(tx.clone(), step_id, all_files.len())?;
+        let progress = ProgressReporter::new(tx.clone(), step_id.clone(), all_files.len())?;
         let document_status: Result<Vec<()>, AnnattoError> = all_files
             .into_iter()
             .map(|(fp, doc_node_name)| {
-                self.import_document(&doc_node_name, fp.as_path(), &mut update, &progress, &tx)
+                self.import_document(
+                    &step_id,
+                    &doc_node_name,
+                    fp.as_path(),
+                    &mut update,
+                    &progress,
+                    &tx,
+                )
             })
             .collect();
         // Check for any errors
@@ -79,6 +78,7 @@ pub const LANGUAGE_SEP: &str = ",";
 impl ImportEXMARaLDA {
     fn import_document(
         &self,
+        step_id: &StepID,
         doc_node_name: &str,
         document_path: &std::path::Path,
         update: &mut GraphUpdate,
@@ -154,7 +154,7 @@ impl ImportEXMARaLDA {
                                     } else {
                                         let err = AnnattoError::Import {
                                             reason: "Failed to parse tli time value.".to_string(),
-                                            importer: self.module_name().to_string(),
+                                            importer: step_id.module_name.clone(),
                                             path: document_path.to_path_buf(),
                                         };
                                         return Err(err);
@@ -167,7 +167,7 @@ impl ImportEXMARaLDA {
                                 let err = AnnattoError::Import {
                                     reason: "A timeline item does not have a time value."
                                         .to_string(),
-                                    importer: self.module_name().to_string(),
+                                    importer: step_id.module_name.clone(),
                                     path: document_path.to_path_buf(),
                                 };
                                 return Err(err);
@@ -274,7 +274,7 @@ impl ImportEXMARaLDA {
                                 let rs = "Undefined speaker (not defined in tier attributes).";
                                 let err = AnnattoError::Import {
                                     reason: rs.to_string(),
-                                    importer: self.module_name().to_string(),
+                                    importer: step_id.module_name.clone(),
                                     path: document_path.to_path_buf(),
                                 };
                                 return Err(err);
@@ -288,7 +288,7 @@ impl ImportEXMARaLDA {
                                 );
                                 let err = AnnattoError::Import {
                                     reason: rs,
-                                    importer: self.module_name().to_string(),
+                                    importer: step_id.module_name.clone(),
                                     path: document_path.to_path_buf(),
                                 };
                                 return Err(err);
@@ -300,7 +300,7 @@ impl ImportEXMARaLDA {
                                 let rs = "Tier encountered with undefined category attribute.";
                                 let err = AnnattoError::Import {
                                     reason: rs.to_string(),
-                                    importer: self.module_name().to_string(),
+                                    importer: step_id.module_name.clone(),
                                     path: document_path.to_path_buf(),
                                 };
                                 return Err(err);
@@ -326,7 +326,7 @@ impl ImportEXMARaLDA {
                                 );
                                 let err = AnnattoError::Import {
                                     reason: msg,
-                                    importer: self.module_name().to_string(),
+                                    importer: step_id.module_name.clone(),
                                     path: document_path.to_path_buf(),
                                 };
                                 errors.push(err);
@@ -343,7 +343,7 @@ impl ImportEXMARaLDA {
                                         );
                                 let err = AnnattoError::Import {
                                     reason: msg,
-                                    importer: self.module_name().to_string(),
+                                    importer: step_id.module_name.clone(),
                                     path: document_path.to_path_buf(),
                                 };
                                 errors.push(err);
@@ -356,7 +356,7 @@ impl ImportEXMARaLDA {
                             } else {
                                 let err = AnnattoError::Import {
                                     reason: format!("Unknown time line item: {start_id}"),
-                                    importer: self.module_name().to_string(),
+                                    importer: step_id.module_name.clone(),
                                     path: document_path.to_path_buf(),
                                 };
                                 return Err(err);
@@ -368,7 +368,7 @@ impl ImportEXMARaLDA {
                             } else {
                                 let err = AnnattoError::Import {
                                     reason: format!("Unknown time line item: {start_id}"),
-                                    importer: self.module_name().to_string(),
+                                    importer: step_id.module_name.clone(),
                                     path: document_path.to_path_buf(),
                                 };
                                 return Err(err);
@@ -377,7 +377,7 @@ impl ImportEXMARaLDA {
                                 let err_msg = format!("Start time is bigger than end time for ids: {start_id}--{end_id} ");
                                 return Err(AnnattoError::Import {
                                     reason: err_msg,
-                                    importer: self.module_name().to_string(),
+                                    importer: step_id.module_name.clone(),
                                     path: document_path.to_path_buf(),
                                 });
                             }
@@ -515,7 +515,7 @@ impl ImportEXMARaLDA {
                 Err(_) => {
                     return Err(AnnattoError::Import {
                         reason: "Failed parsing EXMARaLDA XML.".to_string(),
-                        importer: self.module_name().to_string(),
+                        importer: step_id.module_name.clone(),
                         path: document_path.to_path_buf(),
                     })
                 }

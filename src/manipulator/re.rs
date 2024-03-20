@@ -5,6 +5,7 @@ use std::{
     path::Path,
 };
 
+use anyhow::anyhow;
 use graphannis::{
     graph::{AnnoKey, Edge, Match},
     model::{AnnotationComponent, AnnotationComponentType},
@@ -23,7 +24,7 @@ use serde_derive::Deserialize;
 use crate::{
     error::{AnnattoError, StandardErrorResult},
     progress::ProgressReporter,
-    Manipulator, Module,
+    Manipulator, StepID,
 };
 
 #[derive(Default, Deserialize)]
@@ -37,24 +38,12 @@ pub struct Revise {
     components: Option<BTreeMap<String, String>>,
 }
 
-pub const MODULE_NAME: &str = "revise"; // deprecate feature MODULE_NAME soon
-
-impl Module for Revise {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
-}
-
 const DELIMITER: &str = "::";
 
-fn parse_component_string(value: &str) -> Result<Option<AnnotationComponent>, AnnattoError> {
+fn parse_component_string(value: &str) -> Result<Option<AnnotationComponent>, anyhow::Error> {
     if value.trim().is_empty() {
         return Ok(None);
     }
-    let annatto_err = AnnattoError::Manipulator {
-        reason: format!("Could not map component configuration `{value}`"),
-        manipulator: MODULE_NAME.to_string(),
-    };
     if let Some((ctype_str, layer, name)) = value.splitn(3, DELIMITER).collect_tuple() {
         let ctype = match ctype_str.to_lowercase().as_str() {
             "partof" => AnnotationComponentType::PartOf,
@@ -64,7 +53,7 @@ fn parse_component_string(value: &str) -> Result<Option<AnnotationComponent>, An
             "pointing" => AnnotationComponentType::Dominance,
             "l" => AnnotationComponentType::LeftToken,
             "r" => AnnotationComponentType::RightToken,
-            _ => return Err(annatto_err),
+            _ => return Err(anyhow!("Could not map component configuration `{value}`")),
         };
         Ok(Some(AnnotationComponent::new(
             ctype,
@@ -72,22 +61,19 @@ fn parse_component_string(value: &str) -> Result<Option<AnnotationComponent>, An
             name.into(),
         )))
     } else {
-        Err(annatto_err)
+        Err(anyhow!("Could not map component configuration `{value}`"))
     }
 }
 
 fn to_component_map(
     str_map: &BTreeMap<String, String>,
-) -> Result<BTreeMap<AnnotationComponent, Option<AnnotationComponent>>, AnnattoError> {
+) -> Result<BTreeMap<AnnotationComponent, Option<AnnotationComponent>>, anyhow::Error> {
     let mut component_map = BTreeMap::new();
     for (old, new) in str_map {
         if let Some(source) = parse_component_string(old)? {
             component_map.insert(source, parse_component_string(new)?);
         } else {
-            return Err(AnnattoError::Manipulator {
-                reason: format!("Could not parse source component: {old}"),
-                manipulator: MODULE_NAME.to_string(),
-            });
+            return Err(anyhow!("Could not parse source component: {old}"));
         }
     }
     Ok(component_map)
@@ -98,7 +84,7 @@ fn revise_components(
     component_config: &BTreeMap<String, String>,
     update: &mut GraphUpdate,
     progress_reporter: &ProgressReporter,
-) -> Result<(), AnnattoError> {
+) -> Result<(), anyhow::Error> {
     let component_map = to_component_map(component_config)?;
     for (source, target) in component_map {
         revise_component(graph, source, target, update, progress_reporter)?;
@@ -323,15 +309,11 @@ fn place_at_new_target(
             }
         }
         _ => {
-            let message = format!(
+            return Err(anyhow!(
                 "Could not gather any covered nodes for name `{}`",
                 target_key.ns
-            );
-            let err = AnnattoError::Manipulator {
-                reason: message,
-                manipulator: MODULE_NAME.to_string(),
-            };
-            return Err(Box::new(err));
+            )
+            .into());
         }
     };
     Ok(())
@@ -587,16 +569,10 @@ impl Manipulator for Revise {
         &self,
         graph: &mut graphannis::AnnotationGraph,
         _workflow_directory: &Path,
+        step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let progress_reporter = ProgressReporter::new(
-            tx,
-            crate::StepID {
-                module_name: MODULE_NAME.to_string(),
-                path: None,
-            },
-            6,
-        )?;
+        let progress_reporter = ProgressReporter::new(tx, step_id.clone(), 6)?;
         let mut update = GraphUpdate::default();
         let move_by_ns = self.move_node_annos;
         if let Some(ref node_names) = self.remove_nodes {
@@ -703,7 +679,11 @@ mod tests {
             namespaces: None,
             components: None,
         };
-        let result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), None);
+        let step_id = StepID {
+            module_name: "replace".to_string(),
+            path: None,
+        };
+        let result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), step_id, None);
         assert_eq!(result.is_ok(), true, "Probing merge result {:?}", &result);
         let mut e_g = if rename {
             input_graph(on_disk, true)?
@@ -837,7 +817,11 @@ mod tests {
             remove_nodes: None,
             components: None,
         };
-        let result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), None);
+        let step_id = StepID {
+            module_name: "replace".to_string(),
+            path: None,
+        };
+        let result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), step_id, None);
         assert_eq!(result.is_ok(), true, "Probing merge result {:?}", &result);
         let mut e_g = expected_output_for_move(on_disk)?;
         // corpus nodes
@@ -973,9 +957,13 @@ mod tests {
             remove_nodes: None,
             components: None,
         };
+        let step_id = StepID {
+            module_name: "replace".to_string(),
+            path: None,
+        };
         assert_eq!(
             replace
-                .manipulate_corpus(&mut g, temp_dir().as_path(), None)
+                .manipulate_corpus(&mut g, temp_dir().as_path(), step_id, None)
                 .is_ok(),
             true
         );
@@ -1028,9 +1016,13 @@ mod tests {
             remove_nodes: None,
             components: None,
         };
+        let step_id = StepID {
+            module_name: "replace".to_string(),
+            path: None,
+        };
         assert_eq!(
             replace
-                .manipulate_corpus(&mut g, temp_dir().as_path(), None)
+                .manipulate_corpus(&mut g, temp_dir().as_path(), step_id, None)
                 .is_ok(),
             true
         );
@@ -1069,7 +1061,11 @@ mod tests {
             namespaces: Some(ns_map),
             components: None,
         };
-        let op_result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), None);
+        let step_id = StepID {
+            module_name: "replace".to_string(),
+            path: None,
+        };
+        let op_result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), step_id, None);
         assert_eq!(
             op_result.is_ok(),
             true,
@@ -1913,7 +1909,11 @@ mod tests {
             namespaces: None,
             components: Some(component_mod_config),
         };
-        let r = op.manipulate_corpus(&mut g, Path::new("./"), None);
+        let step_id = StepID {
+            module_name: "replace".to_string(),
+            path: None,
+        };
+        let r = op.manipulate_corpus(&mut g, Path::new("./"), step_id, None);
         assert!(r.is_ok(), "graph op returned error: {:?}", r.err());
         let current_components = g.get_all_components(None, None);
         for ec in erased_components {

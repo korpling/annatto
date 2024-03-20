@@ -41,10 +41,7 @@ pub(crate) mod test_util;
 pub(crate) mod util;
 pub mod workflow;
 
-use std::{
-    fmt::Display,
-    path::{Path, PathBuf},
-};
+use std::{fmt::Display, path::PathBuf};
 
 use error::Result;
 use exporter::{
@@ -61,8 +58,9 @@ use manipulator::{
     map::MapAnnos, merge::Merge, no_op::NoOp, re::Revise, Manipulator,
 };
 use serde_derive::Deserialize;
+use strum::{Display, EnumDiscriminants, EnumIter};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, EnumDiscriminants, Display)]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum WriteAs {
     GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
@@ -77,12 +75,6 @@ impl Default for WriteAs {
     }
 }
 
-impl ToString for WriteAs {
-    fn to_string(&self) -> String {
-        self.writer().module_name().to_string()
-    }
-}
-
 impl WriteAs {
     fn writer(&self) -> &dyn Exporter {
         match self {
@@ -93,7 +85,8 @@ impl WriteAs {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, EnumDiscriminants, Display)]
+#[strum_discriminants(derive(EnumIter, Display))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum ReadFrom {
     CoNLLU(#[serde(default)] ImportCoNLLU),
@@ -117,12 +110,6 @@ impl Default for ReadFrom {
     }
 }
 
-impl ToString for ReadFrom {
-    fn to_string(&self) -> String {
-        self.reader().module_name().to_string()
-    }
-}
-
 impl ReadFrom {
     fn reader(&self) -> &dyn Importer {
         match self {
@@ -142,7 +129,7 @@ impl ReadFrom {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, EnumDiscriminants, Display)]
 #[serde(tag = "action", rename_all = "lowercase", content = "config")]
 pub enum GraphOp {
     Check(Check),       // no default, has a (required) path attribute
@@ -160,12 +147,6 @@ impl Default for GraphOp {
     // the purpose of this default is to allow to omit `format` in an `[[graph_op]]` table
     fn default() -> Self {
         GraphOp::None(NoOp::default())
-    }
-}
-
-impl ToString for GraphOp {
-    fn to_string(&self) -> String {
-        self.processor().module_name().to_string()
     }
 }
 
@@ -194,6 +175,29 @@ pub struct StepID {
     pub path: Option<PathBuf>,
 }
 
+impl StepID {
+    pub fn from_importer_module(m: &ReadFrom, path: Option<PathBuf>) -> StepID {
+        StepID {
+            module_name: format!("import_{m}",),
+            path,
+        }
+    }
+
+    pub fn from_graph_op_module(m: &GraphOp) -> StepID {
+        StepID {
+            module_name: m.to_string(),
+            path: None,
+        }
+    }
+
+    pub fn from_exporter_module(m: &WriteAs, path: Option<PathBuf>) -> StepID {
+        StepID {
+            module_name: format!("export_{m}",),
+            path,
+        }
+    }
+}
+
 impl Display for StepID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(path) = &self.path {
@@ -218,10 +222,7 @@ pub struct ImporterStep {
 
 impl Step for ImporterStep {
     fn get_step_id(&self) -> StepID {
-        StepID {
-            module_name: self.module.to_string(),
-            path: Some(self.path.clone()),
-        }
+        StepID::from_importer_module(&self.module, Some(self.path.clone()))
     }
 }
 
@@ -234,10 +235,7 @@ pub struct ExporterStep {
 
 impl Step for ExporterStep {
     fn get_step_id(&self) -> StepID {
-        StepID {
-            module_name: self.module.to_string(),
-            path: Some(self.path.clone()),
-        }
+        StepID::from_exporter_module(&self.module, Some(self.path.clone()))
     }
 }
 
@@ -250,23 +248,6 @@ pub struct ManipulatorStep {
 
 impl Step for ManipulatorStep {
     fn get_step_id(&self) -> StepID {
-        StepID {
-            module_name: self.module.to_string(),
-            path: None,
-        }
-    }
-}
-
-/// A module that can be used in the conversion pipeline.
-pub trait Module: Sync {
-    /// Get the name of the module as string.
-    fn module_name(&self) -> &str;
-
-    /// Return the ID of the module when used with the given specific path.
-    fn step_id(&self, path: Option<&Path>) -> StepID {
-        StepID {
-            module_name: self.module_name().to_string(),
-            path: path.map(|p| p.to_path_buf()),
-        }
+        StepID::from_graph_op_module(&self.module)
     }
 }

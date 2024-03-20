@@ -1,7 +1,7 @@
 use std::{collections::HashMap, io::Read, path::Path};
 
 use crate::{
-    progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files, Module, StepID,
+    progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files, StepID,
 };
 
 use super::Importer;
@@ -17,8 +17,6 @@ use pest_derive::Parser;
 use serde_derive::Deserialize;
 
 const FILE_ENDINGS: [&str; 5] = ["treetagger", "tab", "tt", "txt", "xml"];
-
-pub const MODULE_NAME: &str = "import_treetagger";
 
 #[derive(Parser)]
 #[grammar = "importer/treetagger/treetagger.pest"]
@@ -325,12 +323,6 @@ pub struct TreeTaggerImporter {
     /// The encoding to use when for the input files. Defaults to UTF-8.
     file_encoding: Option<String>,
     attribute_decoding: AttributeDecoding,
-}
-
-impl Module for TreeTaggerImporter {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
 }
 
 impl Importer for TreeTaggerImporter {

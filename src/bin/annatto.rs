@@ -1,7 +1,7 @@
 use annatto::{
     error::AnnattoError,
     workflow::{execute_from_file, StatusMessage, Workflow},
-    StepID,
+    ReadFromDiscriminants, StepID,
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
@@ -9,6 +9,7 @@ use clap::Parser;
 use std::{
     collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread, time::Duration,
 };
+use strum::IntoEnumIterator;
 use tracing_subscriber::filter::EnvFilter;
 
 /// Define a conversion operation
@@ -30,6 +31,8 @@ enum Cli {
         #[clap(value_parser)]
         workflow_file: std::path::PathBuf,
     },
+    /// List all modules (importer, graph operations and exporter).
+    List,
 }
 
 pub fn main() -> anyhow::Result<()> {
@@ -44,6 +47,7 @@ pub fn main() -> anyhow::Result<()> {
         Cli::Validate { workflow_file } => {
             Workflow::try_from((workflow_file, false))?;
         }
+        Cli::List => list_modules(),
     };
     Ok(())
 }
@@ -142,5 +146,12 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
             Ok(())
         }
         Err(e) => Err(e),
+    }
+}
+
+fn list_modules() {
+    // Get all import modules
+    for importer in ReadFromDiscriminants::iter() {
+        println!("{}", importer);
     }
 }

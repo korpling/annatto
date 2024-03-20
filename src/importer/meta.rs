@@ -12,21 +12,13 @@ use graphannis::update::{GraphUpdate, UpdateEvent};
 use graphannis_core::util::split_qname;
 use serde_derive::Deserialize;
 
-use crate::{progress::ProgressReporter, util::get_all_files, Module, StepID};
+use crate::{progress::ProgressReporter, util::get_all_files, StepID};
 
 use super::Importer;
-
-pub const MODULE_NAME: &str = "annotate_corpus";
 
 #[derive(Default, Deserialize)]
 #[serde(default)]
 pub struct AnnotateCorpus {}
-
-impl Module for AnnotateCorpus {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
-}
 
 const KV_SEPARATOR: &str = "=";
 
@@ -109,7 +101,7 @@ mod tests {
     use graphannis_core::graph::ANNIS_NS;
     use tempfile::tempdir_in;
 
-    use crate::{importer::Importer, Module};
+    use crate::{ReadFrom, StepID};
 
     use super::AnnotateCorpus;
 
@@ -127,7 +119,7 @@ mod tests {
 
     fn test_metadata(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
         let mut e_g = target_graph(on_disk).map_err(|_| assert!(false)).unwrap();
-        let add_metadata = AnnotateCorpus::default();
+        let add_metadata = ReadFrom::Meta(AnnotateCorpus::default());
         // document-level metadata
         let doc_metadata = ["language=unknown", "date=yesterday"];
         let metadata_file_path = temp_dir().join("metadata").join("corpus").join("doc.meta");
@@ -151,9 +143,10 @@ mod tests {
             .write(corpus_metadata.join("\n").as_bytes())
             .map_err(|_| assert!(false))
             .unwrap();
-        let r = add_metadata.import_corpus(
+        let step_id = StepID::from_importer_module(&add_metadata, None);
+        let r = add_metadata.reader().import_corpus(
             temp_dir().join("metadata").as_path(),
-            add_metadata.step_id(None),
+            step_id,
             None,
         );
         assert_eq!(

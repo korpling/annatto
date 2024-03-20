@@ -16,12 +16,10 @@ use pest_derive::Parser;
 use serde_derive::Deserialize;
 
 use crate::{
-    progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files, Module, StepID,
+    progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files, StepID,
 };
 
 use super::Importer;
-
-pub const MODULE_NAME: &str = "import_ptb";
 
 #[derive(Parser)]
 #[grammar = "importer/ptb/ptb.pest"]
@@ -293,12 +291,6 @@ impl<'a> DocumentMapper {
 #[serde(default)]
 pub struct PtbImporter {
     edge_delimiter: Option<String>,
-}
-
-impl Module for PtbImporter {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
 }
 
 const FILE_EXTENSIONS: [&str; 1] = ["ptb"];
