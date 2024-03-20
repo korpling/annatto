@@ -51,7 +51,7 @@ impl Importer for ImportOpusLinks {
         let progress = ProgressReporter::new(tx, step_id.clone(), all_files.len())?;
         all_files.into_iter().try_for_each(|(p, d)| {
             if let Err(e) =
-                self.import_document(&&step_id, p.as_path(), Path::new(d.as_str()), &mut update)
+                self.import_document(&step_id, p.as_path(), Path::new(d.as_str()), &mut update)
             {
                 Err(e)
             } else {

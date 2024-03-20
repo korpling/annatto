@@ -89,7 +89,7 @@ impl Collapse {
             (&self.name).into(),
         );
         if let Some(component_storage) = graph.get_graphstorage(&component) {
-            let hyperedges = self.collect_hyperedges(component_storage, &step_id, tx.clone())?;
+            let hyperedges = self.collect_hyperedges(component_storage, step_id, tx.clone())?;
             let mut hypernode_map = BTreeMap::new();
             let offset = graph
                 .get_node_annos()
