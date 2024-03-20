@@ -33,6 +33,7 @@ pub const MODULE_NAME: &str = "export_graphml";
 pub struct GraphMLExporter {
     add_vis: Option<String>,
     guess_vis: bool,
+    stable_order: bool,
 }
 
 impl Module for GraphMLExporter {
@@ -462,15 +463,27 @@ impl Exporter for GraphMLExporter {
         } else {
             vis_str
         };
+        let vis_str = format!("\n{vis}\n");
         reporter.info(format!("Starting export to {}", &output_file_path.display()).as_str())?;
-        graphannis_core::graph::serialization::graphml::export(
-            graph,
-            Some(format!("\n{vis}\n").as_str()),
-            output_file,
-            |msg| {
-                reporter.info(msg).expect("Could not send status message");
-            },
-        )?;
+        if self.stable_order {
+            graphannis_core::graph::serialization::graphml::export_stable_order(
+                graph,
+                Some(vis_str.as_str()),
+                output_file,
+                |msg| {
+                    reporter.info(msg).expect("Could not send status message");
+                },
+            )?;
+        } else {
+            graphannis_core::graph::serialization::graphml::export(
+                graph,
+                Some(vis_str.as_str()),
+                output_file,
+                |msg| {
+                    reporter.info(msg).expect("Could not send status message");
+                },
+            )?;
+        }
         Ok(())
     }
 

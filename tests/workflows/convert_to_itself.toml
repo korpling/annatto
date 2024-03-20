@@ -3,6 +3,7 @@ path = "../data/import/graphml/single_sentence.graphml"
 format = "graphml"
 
 [import.config]
+stable_order = true
 
 [[export]]
 path = "$TEST_OUTPUT"
