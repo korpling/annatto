@@ -13,7 +13,7 @@ use tracing_subscriber::filter::EnvFilter;
 
 /// Define a conversion operation
 #[derive(Parser)]
-#[clap(version)]
+#[command(version, about)]
 enum Cli {
     /// Run a conversion pipeline from a workflow file.
     Run {
