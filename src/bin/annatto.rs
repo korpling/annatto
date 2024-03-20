@@ -1,11 +1,12 @@
 use annatto::{
     error::AnnattoError,
     workflow::{execute_from_file, StatusMessage, Workflow},
-    ReadFromDiscriminants, StepID,
+    GraphOpDiscriminants, ReadFromDiscriminants, StepID, WriteAsDiscriminants,
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
 use clap::Parser;
+use itertools::Itertools;
 use std::{
     collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread, time::Duration,
 };
@@ -150,8 +151,18 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
 }
 
 fn list_modules() {
-    // Get all import modules
-    for importer in ReadFromDiscriminants::iter() {
-        println!("{}", importer);
-    }
+    let importer_list = ReadFromDiscriminants::iter()
+        .map(|m| m.to_string().to_lowercase())
+        .join(", ");
+    println!("Importers: {}", importer_list);
+
+    let exporter_list = WriteAsDiscriminants::iter()
+        .map(|m| m.to_string().to_lowercase())
+        .join(", ");
+    println!("Exporters: {}", exporter_list);
+
+    let graph_op_list = GraphOpDiscriminants::iter()
+        .map(|m| m.to_string().to_lowercase())
+        .join(", ");
+    println!("Graph operations: {}", graph_op_list);
 }
