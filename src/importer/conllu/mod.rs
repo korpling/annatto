@@ -18,6 +18,7 @@ use pest::{
 };
 use pest_derive::Parser;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Importer;
 use crate::{
@@ -25,10 +26,10 @@ use crate::{
     StepID,
 };
 
-#[derive(Default, Deserialize, Documented, DocumentedFields)]
-#[serde(default, deny_unknown_fields)]
 /// Import files in the [CONLL-U format](https://universaldependencies.org/format.html)
 /// from the Universal Dependencies project.
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(default, deny_unknown_fields)]
 pub struct ImportCoNLLU {}
 
 const FILE_EXTENSIONS: [&str; 2] = ["conll", "conllu"];

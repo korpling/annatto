@@ -17,17 +17,18 @@ use std::{
     path::Path,
     str::FromStr,
 };
+use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
     error::AnnattoError, importer::Importer, progress::ProgressReporter, workflow::StatusSender,
     StepID,
 };
 
-#[derive(Default, Deserialize, Documented, DocumentedFields)]
-#[serde(default, deny_unknown_fields)]
 /// Imports files in the [GraphML](http://graphml.graphdrawing.org/) file which
 /// have to conform to the
 /// [graphANNIS data model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(default, deny_unknown_fields)]
 pub struct GraphMLImporter {}
 
 fn add_node(

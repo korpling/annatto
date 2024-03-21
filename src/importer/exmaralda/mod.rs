@@ -12,6 +12,7 @@ use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader, ParserConfig};
 
 use super::Importer;
@@ -24,10 +25,10 @@ use crate::{
 };
 use documented::{Documented, DocumentedFields};
 
-#[derive(Default, Deserialize, Documented, DocumentedFields)]
-#[serde(default, deny_unknown_fields)]
 /// Import [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
 /// (`.exb`) files.
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(default, deny_unknown_fields)]
 pub struct ImportEXMARaLDA {}
 
 const FILE_EXTENSIONS: [&str; 2] = ["exb", "xml"];

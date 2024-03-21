@@ -5,10 +5,11 @@ use crate::{progress::ProgressReporter, workflow::StatusSender, StepID};
 use documented::{Documented, DocumentedFields};
 use graphannis::update::GraphUpdate;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 
-#[derive(Default, Deserialize, Documented, DocumentedFields)]
-#[serde(default, deny_unknown_fields)]
 /// A special importer that imports nothing.
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(default, deny_unknown_fields)]
 pub struct CreateEmptyCorpus {}
 
 impl Importer for CreateEmptyCorpus {

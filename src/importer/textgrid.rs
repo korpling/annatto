@@ -20,6 +20,7 @@ use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 const FILE_ENDINGS: [&str; 3] = ["textgrid", "TextGrid", "textGrid"];
 
 /// Importer the Praat TextGrid file format.
@@ -27,7 +28,7 @@ const FILE_ENDINGS: [&str; 3] = ["textgrid", "TextGrid", "textGrid"];
 /// See the [Praat
 /// Documentation](https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html)
 /// for more information on the format itself.
-#[derive(Default, Deserialize, Documented, DocumentedFields)]
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct ImportTextgrid {
     tier_groups: Option<BTreeMap<String, BTreeSet<String>>>,

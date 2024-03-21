@@ -166,6 +166,67 @@ impl ReadFromDiscriminants {
             ReadFromDiscriminants::Xml => ImportXML::DOCS,
         }
     }
+
+    pub fn module_configs(&self) -> Vec<ModuleConfiguration> {
+        let mut result = Vec::new();
+        let (field_names, field_docs) = match self {
+            ReadFromDiscriminants::CoNLLU => {
+                (ImportCoNLLU::FIELD_NAMES_AS_SLICE, ImportCoNLLU::FIELD_DOCS)
+            }
+            ReadFromDiscriminants::EXMARaLDA => (
+                ImportEXMARaLDA::FIELD_NAMES_AS_SLICE,
+                ImportEXMARaLDA::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::GraphML => (
+                GraphMLImporter::FIELD_NAMES_AS_SLICE,
+                GraphMLImporter::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::Meta => (
+                AnnotateCorpus::FIELD_NAMES_AS_SLICE,
+                AnnotateCorpus::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::None => (
+                CreateEmptyCorpus::FIELD_NAMES_AS_SLICE,
+                CreateEmptyCorpus::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::Opus => (
+                ImportOpusLinks::FIELD_NAMES_AS_SLICE,
+                ImportOpusLinks::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::Path => (
+                CreateFileNodes::FIELD_NAMES_AS_SLICE,
+                CreateFileNodes::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::PTB => (ImportPTB::FIELD_NAMES_AS_SLICE, ImportPTB::FIELD_DOCS),
+            ReadFromDiscriminants::TextGrid => (
+                ImportTextgrid::FIELD_NAMES_AS_SLICE,
+                ImportTextgrid::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::TreeTagger => (
+                ImportTreeTagger::FIELD_NAMES_AS_SLICE,
+                ImportTreeTagger::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::Xlsx => (
+                ImportSpreadsheet::FIELD_NAMES_AS_SLICE,
+                ImportSpreadsheet::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::Xml => (ImportXML::FIELD_NAMES_AS_SLICE, ImportXML::FIELD_DOCS),
+        };
+        for (idx, n) in field_names.iter().enumerate() {
+            if idx < field_docs.len() {
+                result.push(ModuleConfiguration {
+                    name: n.to_string(),
+                    description: field_docs[idx].unwrap_or_default().to_string(),
+                });
+            } else {
+                result.push(ModuleConfiguration {
+                    name: n.to_string(),
+                    description: String::default(),
+                });
+            }
+        }
+        result
+    }
 }
 
 #[derive(Deserialize, EnumDiscriminants, AsRefStr)]
@@ -222,7 +283,7 @@ impl GraphOpDiscriminants {
         }
     }
 
-    pub fn module_options(&self) -> Vec<ModuleConfiguration> {
+    pub fn module_configs(&self) -> Vec<ModuleConfiguration> {
         let mut result = Vec::new();
         let (field_names, field_docs) = match self {
             GraphOpDiscriminants::Check => (Check::FIELD_NAMES_AS_SLICE, Check::FIELD_DOCS),

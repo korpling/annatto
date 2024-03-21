@@ -7,10 +7,11 @@ use graphannis::{
 use graphannis_core::graph::ANNIS_NS;
 use normpath::PathExt;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 
-#[derive(Deserialize, Default, Documented, DocumentedFields)]
-#[serde(deny_unknown_fields)]
 /// Add file nodes for all files in the imported directory.
+#[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(deny_unknown_fields)]
 pub struct CreateFileNodes {
     corpus_name: Option<String>,
 }

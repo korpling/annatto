@@ -1,7 +1,7 @@
 use annatto::{
     error::AnnattoError,
     workflow::{execute_from_file, StatusMessage, Workflow},
-    GraphOpDiscriminants, ReadFromDiscriminants, StepID, WriteAsDiscriminants,
+    GraphOpDiscriminants, ModuleConfiguration, ReadFromDiscriminants, StepID, WriteAsDiscriminants,
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
@@ -187,6 +187,7 @@ fn module_info(name: &str) {
         for m in matching_importers {
             let module_doc = m.module_doc();
             termimad::print_text(&format!("## {} (importer)\n\n{module_doc}\n\n", m.as_ref()));
+            print_module_fields(m.module_configs());
         }
     }
 
@@ -206,16 +207,18 @@ fn module_info(name: &str) {
                 "## {} (graph operation)\n\n{module_doc}\n\n",
                 m.as_ref()
             ));
-            // print all fields as table
-            let fields = m.module_options();
-            if !fields.is_empty() {
-                let mut table = Table::new(fields);
-
-                table.with(tabled::settings::Panel::header("Configuration"));
-                table.with(tabled::settings::Style::modern());
-
-                println!("{}", table.to_string());
-            }
+            print_module_fields(m.module_configs());
         }
+    }
+}
+
+fn print_module_fields(fields: Vec<ModuleConfiguration>) {
+    if !fields.is_empty() {
+        let mut table = Table::new(fields);
+
+        table.with(tabled::settings::Panel::header("Configuration"));
+        table.with(tabled::settings::Style::modern());
+
+        println!("{}", table.to_string());
     }
 }
