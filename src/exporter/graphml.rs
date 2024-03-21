@@ -23,11 +23,12 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use serde_derive::{Deserialize, Serialize};
+use struct_field_names_as_array::FieldNamesAsSlice;
 
-#[derive(Default, Deserialize, Documented, DocumentedFields)]
-#[serde(default, deny_unknown_fields)]
 /// Exports files as [GraphML](http://graphml.graphdrawing.org/) files which
 /// conform to the [graphANNIS data model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(default, deny_unknown_fields)]
 pub struct ExportGraphML {
     add_vis: Option<String>,
     guess_vis: bool,

@@ -102,6 +102,37 @@ impl WriteAsDiscriminants {
             WriteAsDiscriminants::Xlsx => XlsxExporter::DOCS,
         }
     }
+
+    pub fn module_configs(&self) -> Vec<ModuleConfiguration> {
+        let mut result = Vec::new();
+        let (field_names, field_docs) = match self {
+            WriteAsDiscriminants::GraphML => (
+                ExportGraphML::FIELD_NAMES_AS_SLICE,
+                ExportGraphML::FIELD_DOCS,
+            ),
+            WriteAsDiscriminants::EXMARaLDA => (
+                ExportExmaralda::FIELD_NAMES_AS_SLICE,
+                ExportExmaralda::FIELD_DOCS,
+            ),
+            WriteAsDiscriminants::Xlsx => {
+                (XlsxExporter::FIELD_NAMES_AS_SLICE, XlsxExporter::FIELD_DOCS)
+            }
+        };
+        for (idx, n) in field_names.iter().enumerate() {
+            if idx < field_docs.len() {
+                result.push(ModuleConfiguration {
+                    name: n.to_string(),
+                    description: field_docs[idx].unwrap_or_default().to_string(),
+                });
+            } else {
+                result.push(ModuleConfiguration {
+                    name: n.to_string(),
+                    description: String::default(),
+                });
+            }
+        }
+        result
+    }
 }
 
 #[derive(Deserialize, EnumDiscriminants, AsRefStr)]

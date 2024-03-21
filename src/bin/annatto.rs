@@ -11,7 +11,7 @@ use std::{
     collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread, time::Duration,
 };
 use strum::IntoEnumIterator;
-use tabled::Table;
+use tabled::{settings::themes::ColumnNames, Table};
 use tracing_subscriber::filter::EnvFilter;
 
 /// Define a conversion operation
@@ -196,6 +196,7 @@ fn module_info(name: &str) {
         for m in matching_exporters {
             let module_doc = m.module_doc();
             termimad::print_text(&format!("## {} (exporter)\n\n{module_doc}\n\n", m.as_ref()));
+            print_module_fields(m.module_configs());
         }
     }
 
@@ -213,11 +214,15 @@ fn module_info(name: &str) {
 }
 
 fn print_module_fields(fields: Vec<ModuleConfiguration>) {
-    if !fields.is_empty() {
+    termimad::print_text("*Configuration*\n\n");
+    if fields.is_empty() {
+        termimad::print_text("*None*\n\n");
+    } else {
         let mut table = Table::new(fields);
 
-        table.with(tabled::settings::Panel::header("Configuration"));
-        table.with(tabled::settings::Style::modern());
+        table
+            .with(tabled::settings::Style::modern())
+            .with(ColumnNames::default());
 
         println!("{}", table.to_string());
     }

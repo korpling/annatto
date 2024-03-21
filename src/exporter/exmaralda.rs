@@ -29,13 +29,14 @@ use quick_xml::{
     Writer,
 };
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Exporter;
 
-#[derive(Default, Deserialize, Documented, DocumentedFields)]
-#[serde(deny_unknown_fields)]
 /// Export [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
 /// (`.exb`) files.
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(deny_unknown_fields)]
 pub struct ExportExmaralda {
     #[serde(default)]
     copy_media: bool,
