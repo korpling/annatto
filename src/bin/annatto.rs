@@ -266,8 +266,8 @@ fn print_module_fields(mut fields: Vec<ModuleConfiguration>) {
         print_markdown("*No Configuration*\n\n");
     } else {
         // Replace all descriptions with markdown
-        for i in 0..fields.len() {
-            fields[i].description = markdown_text(&fields[i].description);
+        for f in &mut fields {
+            f.description = markdown_text(&f.description);
         }
 
         print_markdown("*Configuration*\n\n");
