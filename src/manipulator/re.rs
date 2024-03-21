@@ -1,4 +1,3 @@
-//! Manipulate annotations, like deleting or renaming them.
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet},
@@ -26,8 +25,10 @@ use crate::{
     progress::ProgressReporter,
     Manipulator, StepID,
 };
+use documented::{Documented, DocumentedFields};
 
-#[derive(Default, Deserialize)]
+/// Manipulate annotations, like deleting or renaming them.
+#[derive(Default, Deserialize, Documented, DocumentedFields)]
 #[serde(default, deny_unknown_fields)]
 pub struct Revise {
     remove_nodes: Option<Vec<String>>,

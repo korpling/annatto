@@ -1,10 +1,14 @@
 use serde_derive::Deserialize;
 
 use crate::StepID;
+use documented::{Documented, DocumentedFields};
 
 use super::Manipulator;
 
-#[derive(Deserialize, Default)]
+/// A graph operation that does nothing.
+/// The purpose of this graph operation is to allow to omit a `format` field in
+/// the `[[graph_op]]` configuration of the workflow file.
+#[derive(Deserialize, Default, Documented, DocumentedFields)]
 #[serde(deny_unknown_fields)]
 pub struct NoOp {}
 

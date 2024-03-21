@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use super::Manipulator;
 use crate::{progress::ProgressReporter, util::token_helper::TokenHelper, StepID};
+use documented::{Documented, DocumentedFields};
 use graphannis::{
     model::AnnotationComponentType,
     update::{
@@ -18,7 +19,12 @@ use graphannis_core::{
 use serde::Deserialize;
 use text_splitter::TextSplitter;
 
-#[derive(Deserialize)]
+/// Add a span annotation for automatically generated chunks.
+///
+/// Uses the [text-splitter](https://crates.io/crates/text-splitter) crate which
+/// uses sentence markers and the given maximum number of characters per chunk
+/// to segment the text into chunks.
+#[derive(Deserialize, Documented, DocumentedFields)]
 #[serde(deny_unknown_fields)]
 pub struct Chunk {
     #[serde(default)]

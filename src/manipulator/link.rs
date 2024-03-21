@@ -1,5 +1,7 @@
 //! Created edges between nodes based on their annotation value.
+use super::Manipulator;
 use crate::{error::AnnattoError, StepID};
+use documented::{Documented, DocumentedFields};
 use graphannis::{
     corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
     model::AnnotationComponentType,
@@ -12,9 +14,9 @@ use serde_derive::Deserialize;
 use std::{collections::BTreeMap, env::temp_dir};
 use tempfile::tempdir_in;
 
-use super::Manipulator;
-
-#[derive(Deserialize)]
+/// Link nodes within a graph. Source and target of a link are determined via
+/// queries; type, layer, and name of the link component can be configured.
+#[derive(Deserialize, Documented, DocumentedFields)]
 #[serde(deny_unknown_fields)]
 pub struct LinkNodes {
     source_query: String,

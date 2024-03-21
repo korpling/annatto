@@ -1,8 +1,8 @@
-//! Merge multiple imported corpora into one corpus.
 use crate::error::{AnnattoError, StandardErrorResult};
 use crate::workflow::{StatusMessage, StatusSender};
 use crate::{Manipulator, StepID};
 use anyhow::anyhow;
+use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::{Component, Edge},
     model::{AnnotationComponent, AnnotationComponentType},
@@ -22,7 +22,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::convert::TryFrom;
 use std::path::Path;
 
-#[derive(Default, Deserialize)]
+/// Merge multiple imported corpora into one corpus.
+#[derive(Default, Deserialize, Documented, DocumentedFields)]
 #[serde(deny_unknown_fields)]
 pub struct Merge {
     #[serde(default)]

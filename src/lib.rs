@@ -43,6 +43,7 @@ pub mod workflow;
 
 use std::{fmt::Display, path::PathBuf};
 
+use documented::Documented;
 use error::Result;
 use exporter::{exmaralda::ExportExmaralda, graphml::ExportGraphML, xlsx::XlsxExporter, Exporter};
 use importer::{
@@ -81,6 +82,16 @@ impl WriteAs {
             WriteAs::GraphML(m) => m,
             WriteAs::EXMARaLDA(m) => m,
             WriteAs::Xlsx(m) => m,
+        }
+    }
+}
+
+impl WriteAsDiscriminants {
+    pub fn module_doc(&self) -> &str {
+        match self {
+            WriteAsDiscriminants::GraphML => ExportGraphML::DOCS,
+            WriteAsDiscriminants::EXMARaLDA => ExportExmaralda::DOCS,
+            WriteAsDiscriminants::Xlsx => XlsxExporter::DOCS,
         }
     }
 }
@@ -130,6 +141,25 @@ impl ReadFrom {
     }
 }
 
+impl ReadFromDiscriminants {
+    pub fn module_doc(&self) -> &str {
+        match self {
+            ReadFromDiscriminants::CoNLLU => ImportCoNLLU::DOCS,
+            ReadFromDiscriminants::EXMARaLDA => ImportEXMARaLDA::DOCS,
+            ReadFromDiscriminants::GraphML => GraphMLImporter::DOCS,
+            ReadFromDiscriminants::Meta => AnnotateCorpus::DOCS,
+            ReadFromDiscriminants::None => CreateEmptyCorpus::DOCS,
+            ReadFromDiscriminants::Opus => ImportOpusLinks::DOCS,
+            ReadFromDiscriminants::Path => CreateFileNodes::DOCS,
+            ReadFromDiscriminants::PTB => ImportPTB::DOCS,
+            ReadFromDiscriminants::TextGrid => ImportTextgrid::DOCS,
+            ReadFromDiscriminants::TreeTagger => ImportTreeTagger::DOCS,
+            ReadFromDiscriminants::Xlsx => ImportSpreadsheet::DOCS,
+            ReadFromDiscriminants::Xml => ImportXML::DOCS,
+        }
+    }
+}
+
 #[derive(Deserialize, EnumDiscriminants, AsRefStr)]
 #[strum(serialize_all = "lowercase")]
 #[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
@@ -165,6 +195,22 @@ impl GraphOp {
             GraphOp::None(m) => m,
             GraphOp::Enumerate(m) => m,
             GraphOp::Chunk(m) => m,
+        }
+    }
+}
+
+impl GraphOpDiscriminants {
+    pub fn module_doc(&self) -> &str {
+        match self {
+            GraphOpDiscriminants::Check => Check::DOCS,
+            GraphOpDiscriminants::Collapse => Collapse::DOCS,
+            GraphOpDiscriminants::Enumerate => EnumerateMatches::DOCS,
+            GraphOpDiscriminants::Link => LinkNodes::DOCS,
+            GraphOpDiscriminants::Map => MapAnnos::DOCS,
+            GraphOpDiscriminants::Merge => Merge::DOCS,
+            GraphOpDiscriminants::Revise => Revise::DOCS,
+            GraphOpDiscriminants::Chunk => Chunk::DOCS,
+            GraphOpDiscriminants::None => NoOp::DOCS,
         }
     }
 }

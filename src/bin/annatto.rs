@@ -1,19 +1,11 @@
 use annatto::{
     error::AnnattoError,
-    exporter::{exmaralda::ExportExmaralda, graphml::ExportGraphML, xlsx::XlsxExporter},
-    importer::{
-        conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
-        graphml::GraphMLImporter, meta::AnnotateCorpus, none::CreateEmptyCorpus,
-        opus::ImportOpusLinks, ptb::ImportPTB, textgrid::ImportTextgrid,
-        treetagger::ImportTreeTagger, xlsx::ImportSpreadsheet, xml::ImportXML,
-    },
     workflow::{execute_from_file, StatusMessage, Workflow},
     GraphOpDiscriminants, ReadFromDiscriminants, StepID, WriteAsDiscriminants,
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
 use clap::Parser;
-use documented::Documented;
 use itertools::Itertools;
 use std::{
     collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread, time::Duration,
@@ -185,48 +177,34 @@ fn module_info(name: &str) {
     let matching_exporters: Vec<_> = WriteAsDiscriminants::iter()
         .filter(|m| m.as_ref() == name.to_lowercase())
         .collect();
-    let _matching_graph_ops: Vec<_> = GraphOpDiscriminants::iter()
+    let matching_graph_ops: Vec<_> = GraphOpDiscriminants::iter()
         .filter(|m| m.as_ref() == name.to_lowercase())
         .collect();
 
     if !matching_importers.is_empty() {
         termimad::print_text("# Importers");
         for m in matching_importers {
-            print_importer_info(m);
+            let module_doc = m.module_doc();
+            termimad::print_text(&format!("## {} (importer)\n\n{module_doc}\n\n", m.as_ref()));
         }
     }
 
     if !matching_exporters.is_empty() {
         termimad::print_text("# Exporters");
         for m in matching_exporters {
-            print_exporter_info(m);
+            let module_doc = m.module_doc();
+            termimad::print_text(&format!("## {} (exporter)\n\n{module_doc}\n\n", m.as_ref()));
         }
     }
-}
 
-fn print_importer_info(m: ReadFromDiscriminants) {
-    let module_doc = match m {
-        ReadFromDiscriminants::CoNLLU => ImportCoNLLU::DOCS,
-        ReadFromDiscriminants::EXMARaLDA => ImportEXMARaLDA::DOCS,
-        ReadFromDiscriminants::GraphML => GraphMLImporter::DOCS,
-        ReadFromDiscriminants::Meta => AnnotateCorpus::DOCS,
-        ReadFromDiscriminants::None => CreateEmptyCorpus::DOCS,
-        ReadFromDiscriminants::Opus => ImportOpusLinks::DOCS,
-        ReadFromDiscriminants::Path => CreateFileNodes::DOCS,
-        ReadFromDiscriminants::PTB => ImportPTB::DOCS,
-        ReadFromDiscriminants::TextGrid => ImportTextgrid::DOCS,
-        ReadFromDiscriminants::TreeTagger => ImportTreeTagger::DOCS,
-        ReadFromDiscriminants::Xlsx => ImportSpreadsheet::DOCS,
-        ReadFromDiscriminants::Xml => ImportXML::DOCS,
-    };
-    termimad::print_text(&format!("## {} (importer)\n\n{module_doc}\n\n", m.as_ref()));
-}
-
-fn print_exporter_info(m: WriteAsDiscriminants) {
-    let module_doc = match m {
-        WriteAsDiscriminants::GraphML => ExportGraphML::DOCS,
-        WriteAsDiscriminants::EXMARaLDA => ExportExmaralda::DOCS,
-        WriteAsDiscriminants::Xlsx => XlsxExporter::DOCS,
-    };
-    termimad::print_text(&format!("## {} (exporter)\n\n{module_doc}\n\n", m.as_ref()));
+    if !matching_graph_ops.is_empty() {
+        termimad::print_text("# Graph operations");
+        for m in matching_graph_ops {
+            let module_doc = m.module_doc();
+            termimad::print_text(&format!(
+                "## {} (graph operation)\n\n{module_doc}\n\n",
+                m.as_ref()
+            ));
+        }
+    }
 }

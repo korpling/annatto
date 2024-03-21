@@ -1,8 +1,4 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    sync::Arc,
-};
-
+use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::GraphStorage,
     model::{AnnotationComponent, AnnotationComponentType},
@@ -16,12 +12,22 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use serde_derive::Deserialize;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::Arc,
+};
 
 use crate::{error::AnnattoError, progress::ProgressReporter, workflow::StatusSender, StepID};
 
 use super::Manipulator;
 
-#[derive(Deserialize)]
+/// Collapse an edge component,
+///
+/// Given a component, this graph operation joins source and target node of each
+/// edge to a single node. This could be done by keeping one of the nodes or by
+/// creating a third one. Then all all edges, annotations, etc. are moved to the
+/// node of choice, the other node(s) is/are deleted.
+#[derive(Deserialize, Documented, DocumentedFields)]
 #[serde(deny_unknown_fields)]
 pub struct Collapse {
     ctype: AnnotationComponentType,
