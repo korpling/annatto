@@ -251,6 +251,6 @@ fn print_module_fields(fields: Vec<ModuleConfiguration>) {
             .with(tabled::settings::Style::modern())
             .with(ColumnNames::default());
 
-        println!("{}", table);
+        println!("{}\n", table);
     }
 }

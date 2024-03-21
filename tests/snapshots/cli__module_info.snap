@@ -20,6 +20,7 @@ spans and merged cells can be used for spans that cover more than one token.
 ├────────────┼───────────┤
 │ metasheet  │           │
 └────────────┴───────────┘
+
 # Exporters
 
 ## xlsx (exporter)
