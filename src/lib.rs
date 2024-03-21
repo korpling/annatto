@@ -59,7 +59,8 @@ use serde_derive::Deserialize;
 use strum::{AsRefStr, EnumDiscriminants, EnumIter};
 
 #[derive(Deserialize, EnumDiscriminants, AsRefStr)]
-#[strum_discriminants(derive(EnumIter, AsRefStr))]
+#[strum(serialize_all = "lowercase")]
+#[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum WriteAs {
     GraphML(#[serde(default)] ExportGraphML), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
@@ -85,7 +86,8 @@ impl WriteAs {
 }
 
 #[derive(Deserialize, EnumDiscriminants, AsRefStr)]
-#[strum_discriminants(derive(EnumIter, AsRefStr))]
+#[strum(serialize_all = "lowercase")]
+#[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum ReadFrom {
     CoNLLU(#[serde(default)] ImportCoNLLU),
@@ -129,7 +131,8 @@ impl ReadFrom {
 }
 
 #[derive(Deserialize, EnumDiscriminants, AsRefStr)]
-#[strum_discriminants(derive(EnumIter, AsRefStr))]
+#[strum(serialize_all = "lowercase")]
+#[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "action", rename_all = "lowercase", content = "config")]
 pub enum GraphOp {
     Check(Check),       // no default, has a (required) path attribute

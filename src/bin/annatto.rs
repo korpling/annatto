@@ -155,17 +155,17 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
 
 fn list_modules() {
     let importer_list = ReadFromDiscriminants::iter()
-        .map(|m| m.as_ref().to_string().to_lowercase())
+        .map(|m| m.as_ref().to_string())
         .join(", ");
     println!("Importer formats: {}", importer_list);
 
     let exporter_list = WriteAsDiscriminants::iter()
-        .map(|m| m.as_ref().to_string().to_lowercase())
+        .map(|m| m.as_ref().to_string())
         .join(", ");
     println!("Exporter formats: {}", exporter_list);
 
     let graph_op_list = GraphOpDiscriminants::iter()
-        .map(|m| m.as_ref().to_lowercase())
+        .map(|m| m.as_ref().to_string())
         .join(", ");
     println!("Graph operations: {}", graph_op_list);
 }
