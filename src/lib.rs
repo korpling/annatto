@@ -14,7 +14,9 @@ use std::{fmt::Display, path::PathBuf};
 
 use documented::{Documented, DocumentedFields};
 use error::Result;
-use exporter::{exmaralda::ExportExmaralda, graphml::ExportGraphML, xlsx::XlsxExporter, Exporter};
+use exporter::{
+    exmaralda::ExportExmaralda, graphml::GraphMLExporter, xlsx::XlsxExporter, Exporter,
+};
 use importer::{
     conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
     graphml::GraphMLImporter, meta::AnnotateCorpus, none::CreateEmptyCorpus, opus::ImportOpusLinks,
@@ -41,7 +43,7 @@ pub struct ModuleConfiguration {
 #[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum WriteAs {
-    GraphML(#[serde(default)] ExportGraphML), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
+    GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
     EXMARaLDA(#[serde(default)] ExportExmaralda),
     Xlsx(#[serde(default)] XlsxExporter),
 }
@@ -49,7 +51,7 @@ pub enum WriteAs {
 impl Default for WriteAs {
     // the purpose of this default is to allow to omit `format` in an `[[export]]` table
     fn default() -> Self {
-        WriteAs::GraphML(ExportGraphML::default())
+        WriteAs::GraphML(GraphMLExporter::default())
     }
 }
 
@@ -66,7 +68,7 @@ impl WriteAs {
 impl WriteAsDiscriminants {
     pub fn module_doc(&self) -> &str {
         match self {
-            WriteAsDiscriminants::GraphML => ExportGraphML::DOCS,
+            WriteAsDiscriminants::GraphML => GraphMLExporter::DOCS,
             WriteAsDiscriminants::EXMARaLDA => ExportExmaralda::DOCS,
             WriteAsDiscriminants::Xlsx => XlsxExporter::DOCS,
         }
@@ -76,8 +78,8 @@ impl WriteAsDiscriminants {
         let mut result = Vec::new();
         let (field_names, field_docs) = match self {
             WriteAsDiscriminants::GraphML => (
-                ExportGraphML::FIELD_NAMES_AS_SLICE,
-                ExportGraphML::FIELD_DOCS,
+                GraphMLExporter::FIELD_NAMES_AS_SLICE,
+                GraphMLExporter::FIELD_DOCS,
             ),
             WriteAsDiscriminants::EXMARaLDA => (
                 ExportExmaralda::FIELD_NAMES_AS_SLICE,
