@@ -13,12 +13,13 @@ use graphannis::{
 };
 use itertools::Itertools;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 use tempfile::tempdir_in;
 
 use super::Manipulator;
 
 /// Creates new annotations based on existing annotation values.
-#[derive(Deserialize, Documented, DocumentedFields)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct MapAnnos {
     rule_file: PathBuf,

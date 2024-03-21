@@ -43,7 +43,7 @@ pub mod workflow;
 
 use std::{fmt::Display, path::PathBuf};
 
-use documented::Documented;
+use documented::{Documented, DocumentedFields};
 use error::Result;
 use exporter::{exmaralda::ExportExmaralda, graphml::ExportGraphML, xlsx::XlsxExporter, Exporter};
 use importer::{
@@ -52,11 +52,13 @@ use importer::{
     ptb::ImportPTB, textgrid::ImportTextgrid, treetagger::ImportTreeTagger,
     xlsx::ImportSpreadsheet, xml::ImportXML, Importer,
 };
+use linked_hash_map::LinkedHashMap;
 use manipulator::{
     check::Check, chunker::Chunk, collapse::Collapse, enumerate::EnumerateMatches, link::LinkNodes,
     map::MapAnnos, merge::Merge, no_op::NoOp, re::Revise, Manipulator,
 };
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 use strum::{AsRefStr, EnumDiscriminants, EnumIter};
 
 #[derive(Deserialize, EnumDiscriminants, AsRefStr)]
@@ -212,6 +214,37 @@ impl GraphOpDiscriminants {
             GraphOpDiscriminants::Chunk => Chunk::DOCS,
             GraphOpDiscriminants::None => NoOp::DOCS,
         }
+    }
+
+    pub fn module_options(&self) -> LinkedHashMap<String, String> {
+        let mut result = LinkedHashMap::new();
+        let (field_names, field_docs) = match self {
+            GraphOpDiscriminants::Check => (Check::FIELD_NAMES_AS_SLICE, Check::FIELD_DOCS),
+            GraphOpDiscriminants::Collapse => {
+                (Collapse::FIELD_NAMES_AS_SLICE, Collapse::FIELD_DOCS)
+            }
+            GraphOpDiscriminants::Enumerate => (
+                EnumerateMatches::FIELD_NAMES_AS_SLICE,
+                EnumerateMatches::FIELD_DOCS,
+            ),
+            GraphOpDiscriminants::Link => (LinkNodes::FIELD_NAMES_AS_SLICE, LinkNodes::FIELD_DOCS),
+            GraphOpDiscriminants::Map => (MapAnnos::FIELD_NAMES_AS_SLICE, MapAnnos::FIELD_DOCS),
+            GraphOpDiscriminants::Merge => (Merge::FIELD_NAMES_AS_SLICE, Merge::FIELD_DOCS),
+            GraphOpDiscriminants::Revise => (Revise::FIELD_NAMES_AS_SLICE, Revise::FIELD_DOCS),
+            GraphOpDiscriminants::Chunk => (Chunk::FIELD_NAMES_AS_SLICE, Chunk::FIELD_DOCS),
+            GraphOpDiscriminants::None => (NoOp::FIELD_NAMES_AS_SLICE, NoOp::FIELD_DOCS),
+        };
+        for (idx, n) in field_names.iter().enumerate() {
+            if idx < field_docs.len() {
+                result.insert(
+                    n.to_string(),
+                    field_docs[idx].unwrap_or_default().to_string(),
+                );
+            } else {
+                result.insert(n.to_string(), String::default());
+            }
+        }
+        result
     }
 }
 

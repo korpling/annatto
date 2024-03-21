@@ -21,11 +21,16 @@ use serde_derive::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 use std::convert::TryFrom;
 use std::path::Path;
+use struct_field_names_as_array::FieldNamesAsSlice;
 
 /// Merge multiple imported corpora into one corpus.
-#[derive(Default, Deserialize, Documented, DocumentedFields)]
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct Merge {
+    /// Define how to handle merging errrors.
+    /// Use `fail` if the whole conversion should fail, `drop` to remove the
+    /// documents having errors and `forward` to keep the documents and just
+    /// report the errors.
     #[serde(default)]
     error_policy: ErrorPolicy,
     check_names: Vec<String>,

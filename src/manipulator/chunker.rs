@@ -17,6 +17,7 @@ use graphannis_core::{
     types::NodeID,
 };
 use serde::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 use text_splitter::TextSplitter;
 
 /// Add a span annotation for automatically generated chunks.
@@ -24,7 +25,7 @@ use text_splitter::TextSplitter;
 /// Uses the [text-splitter](https://crates.io/crates/text-splitter) crate which
 /// uses sentence markers and the given maximum number of characters per chunk
 /// to segment the text into chunks.
-#[derive(Deserialize, Documented, DocumentedFields)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct Chunk {
     #[serde(default)]

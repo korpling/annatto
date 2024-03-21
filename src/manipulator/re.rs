@@ -19,6 +19,7 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
     error::{AnnattoError, StandardErrorResult},
@@ -28,7 +29,7 @@ use crate::{
 use documented::{Documented, DocumentedFields};
 
 /// Manipulate annotations, like deleting or renaming them.
-#[derive(Default, Deserialize, Documented, DocumentedFields)]
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct Revise {
     remove_nodes: Option<Vec<String>>,

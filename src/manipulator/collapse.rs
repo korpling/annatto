@@ -16,6 +16,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     sync::Arc,
 };
+use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{error::AnnattoError, progress::ProgressReporter, workflow::StatusSender, StepID};
 
@@ -27,7 +28,7 @@ use super::Manipulator;
 /// edge to a single node. This could be done by keeping one of the nodes or by
 /// creating a third one. Then all all edges, annotations, etc. are moved to the
 /// node of choice, the other node(s) is/are deleted.
-#[derive(Deserialize, Documented, DocumentedFields)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct Collapse {
     ctype: AnnotationComponentType,
