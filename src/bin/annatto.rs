@@ -169,6 +169,8 @@ fn list_modules() {
         .map(|m| m.as_ref().to_string())
         .join(", ");
     println!("Graph operations: {}", graph_op_list);
+
+    termimad::print_text("---\nUse `annatto info <name>` to get more information about one of the formats or graph operations.\n---");
 }
 
 fn module_info(name: &str) {
