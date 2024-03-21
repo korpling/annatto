@@ -2,13 +2,13 @@
 source: tests/cli.rs
 expression: output
 ---
-                                                                                                                                              [1m[4mImporters[0m
-[4mxlsx (importer)[0m
+                                                                                                                                              Importers
+xlsx (importer)
 
 Imports Excel Spreadsheets where each line is a token, the other columns are
 spans and merged cells can be used for spans that cover more than one token.
 
-[3mConfiguration[0m
+Configuration
 
 ┌name────────┬description┐
 │ column_map │           │
@@ -19,13 +19,13 @@ spans and merged cells can be used for spans that cover more than one token.
 ├────────────┼───────────┤
 │ metasheet  │           │
 └────────────┴───────────┘
-                                                                                                                                              [1m[4mExporters[0m
-[4mxlsx (exporter)[0m
+                                                                                                                                              Exporters
+xlsx (exporter)
 
 Exports Excel Spreadsheets where each line is a token, the other columns are
 spans and merged cells can be used for spans that cover more than one token.
 
-[3mConfiguration[0m
+Configuration
 
 ┌name───────────────┬description─────────────────────────────────────────────┐
 │ include_namespace │ Include the annotation namespace in the column header. │

@@ -1,4 +1,5 @@
 use assert_cmd::prelude::*;
+use console::strip_ansi_codes;
 use insta::assert_snapshot;
 use std::{path::PathBuf, process::Command};
 
@@ -144,7 +145,7 @@ fn list_modules() {
     let output = cmd.arg("list").output().unwrap();
     cmd.assert().success();
 
-    let output = std::str::from_utf8(&output.stdout).unwrap();
+    let output = strip_ansi_codes(std::str::from_utf8(&output.stdout).unwrap());
 
     assert_snapshot!(output);
 }
@@ -156,7 +157,7 @@ fn module_info() {
     let output = cmd.arg("info").arg("xlsx").output().unwrap();
     cmd.assert().success();
 
-    let output = std::str::from_utf8(&output.stdout).unwrap();
+    let output = strip_ansi_codes(std::str::from_utf8(&output.stdout).unwrap());
 
     assert_snapshot!(output);
 }
@@ -168,7 +169,7 @@ fn graph_op_info() {
     let output = cmd.arg("info").arg("merge").output().unwrap();
     cmd.assert().success();
 
-    let output = std::str::from_utf8(&output.stdout).unwrap();
+    let output = strip_ansi_codes(std::str::from_utf8(&output.stdout).unwrap());
 
     assert_snapshot!(output);
 }
