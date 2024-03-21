@@ -31,9 +31,16 @@ use super::Exporter;
 #[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct XlsxExporter {
-    /// Include the annotation namespace in the column header.
+    /// If `true`, include the annotation namespace in the column header.
     include_namespace: bool,
-    // If given, allows to specify the order of the annotation columns.
+    /// Specify the order of the exported columns as array of annotation names.
+    ///
+    /// Example:
+    /// ```
+    /// [export.config]
+    /// annotation_order = ["tok", "lemma", "pos"]
+    /// ```
+    /// Has no effect if the vector is empty.
     annotation_order: Vec<String>,
 }
 
