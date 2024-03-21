@@ -45,6 +45,7 @@ pub fn main() -> anyhow::Result<()> {
         .with_env_filter(filter)
         .compact()
         .init();
+
     let args = Parser::parse();
     match args {
         Cli::Run { workflow_file, env } => convert(workflow_file, env)?,

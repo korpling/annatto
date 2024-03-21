@@ -1,7 +1,8 @@
-use assert_cmd::prelude::*;
+use assert_cmd::Command;
 use console::strip_ansi_codes;
+use crossterm::{execute, terminal::SetSize};
 use insta::assert_snapshot;
-use std::{path::PathBuf, process::Command};
+use std::{io::stdout, path::PathBuf};
 
 #[test]
 fn show_help() {
@@ -142,10 +143,14 @@ fn load_complex_workflow_attr_ommited() {
 fn list_modules() {
     let mut cmd = Command::cargo_bin("annatto").unwrap();
 
-    let output = cmd.arg("list").output().unwrap();
+    let output = cmd
+        .arg("list")
+        .write_stdin(SetSize(80, 40).to_string())
+        .output()
+        .unwrap();
     cmd.assert().success();
 
-    let output = std::str::from_utf8(&output.stdout).unwrap();
+    let output = strip_ansi_codes(std::str::from_utf8(&output.stdout).unwrap());
 
     assert_snapshot!(output);
 }
@@ -154,10 +159,15 @@ fn list_modules() {
 fn module_info() {
     let mut cmd = Command::cargo_bin("annatto").unwrap();
 
-    let output = cmd.arg("info").arg("xlsx").output().unwrap();
+    let output = cmd
+        .arg("info")
+        .arg("xlsx")
+        .write_stdin(SetSize(80, 40).to_string())
+        .output()
+        .unwrap();
     cmd.assert().success();
 
-    let output = std::str::from_utf8(&output.stdout).unwrap();
+    let output = strip_ansi_codes(std::str::from_utf8(&output.stdout).unwrap());
 
     assert_snapshot!(output);
 }
@@ -166,10 +176,14 @@ fn module_info() {
 fn graph_op_info() {
     let mut cmd = Command::cargo_bin("annatto").unwrap();
 
-    let output = cmd.arg("info").arg("merge").output().unwrap();
-    cmd.assert().success();
+    let output = cmd
+        .arg("info")
+        .arg("merge")
+        .write_stdin(SetSize(80, 40).to_string())
+        .output()
+        .unwrap();
 
-    let output = std::str::from_utf8(&output.stdout).unwrap();
+    let output = strip_ansi_codes(std::str::from_utf8(&output.stdout).unwrap());
 
     assert_snapshot!(output);
 }
