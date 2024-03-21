@@ -52,6 +52,14 @@ fn print_markdown(text: &str) {
     }
 }
 
+fn markdown_inline(text: &str) -> String {
+    if *USE_ANSI_COLORS {
+        termimad::inline(text).to_string()
+    } else {
+        text.to_string()
+    }
+}
+
 pub fn main() -> anyhow::Result<()> {
     let filter = EnvFilter::from_default_env().add_directive("annatto=trace".parse()?);
     tracing_subscriber::fmt()
@@ -253,10 +261,15 @@ fn module_info(name: &str) {
     }
 }
 
-fn print_module_fields(fields: Vec<ModuleConfiguration>) {
+fn print_module_fields(mut fields: Vec<ModuleConfiguration>) {
     if fields.is_empty() {
         print_markdown("*No Configuration*\n\n");
     } else {
+        // Replace all descriptions with markdown
+        for i in 0..fields.len() {
+            fields[i].description = markdown_inline(&fields[i].description);
+        }
+
         print_markdown("*Configuration*\n\n");
         let mut table = Table::new(fields);
 
