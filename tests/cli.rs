@@ -1,5 +1,6 @@
 use assert_cmd::Command;
 use console::strip_ansi_codes;
+use crossterm::terminal::SetSize;
 use insta::assert_snapshot;
 use std::path::PathBuf;
 
@@ -142,12 +143,20 @@ fn load_complex_workflow_attr_ommited() {
 fn list_modules() {
     let mut cmd = Command::cargo_bin("annatto").unwrap();
 
-    let output = cmd.arg("list").output().unwrap();
+    let output = cmd
+        .arg("list")
+        .write_stdin(SetSize(20, 50).to_string())
+        .output()
+        .unwrap();
     cmd.assert().success();
 
     let output = strip_ansi_codes(std::str::from_utf8(&output.stdout).unwrap());
 
-    assert_snapshot!(output);
+    insta::with_settings!({filters => vec![
+        ("―+", "---")
+    ]}, {
+        assert_snapshot!(output);
+    });
 }
 
 #[test]
@@ -167,6 +176,17 @@ fn graph_op_info() {
     let mut cmd = Command::cargo_bin("annatto").unwrap();
 
     let output = cmd.arg("info").arg("merge").output().unwrap();
+
+    let output = strip_ansi_codes(std::str::from_utf8(&output.stdout).unwrap());
+
+    assert_snapshot!(output);
+}
+
+#[test]
+fn unknown_module_info() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd.arg("info").arg("thiswillnotexist").output().unwrap();
 
     let output = strip_ansi_codes(std::str::from_utf8(&output.stdout).unwrap());
 

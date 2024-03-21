@@ -49,7 +49,8 @@ xml-rs = "0.8"
 
 [dev-dependencies]
 assert_cmd = "2.0.11"
-insta = {version = "1.26.0", features = ["toml", "redactions"]}
+crossterm = "0.27"
+insta = {version = "1.26.0", features = ["toml", "redactions", "filters"]}
 pretty_assertions = "1.3"
 ureq = {version = "2.7.1", default-features = false}
 

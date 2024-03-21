@@ -196,6 +196,13 @@ fn module_info(name: &str) {
         .filter(|m| m.as_ref() == name.to_lowercase())
         .collect();
 
+    if matching_importers.is_empty()
+        && matching_exporters.is_empty()
+        && matching_graph_ops.is_empty()
+    {
+        println!("No module with name {name} found. Run the `annotto list` command to get a list of all modules.")
+    }
+
     if !matching_importers.is_empty() {
         MARKDOWN_SKIN.print_text("# Importers\n\n");
         for m in matching_importers {
