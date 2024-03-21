@@ -6,5 +6,5 @@ Importer formats: conllu, exmaralda, graphml, meta, none, opus, path, ptb, textg
 Exporter formats: graphml, exmaralda, xlsx
 Graph operations: check, collapse, enumerate, link, map, merge, revise, chunk, none
 ---
-Use annatto info <name> to get more information about one of the formats or graph operations.
+Use `annatto info <name>` to get more information about one of the formats or graph operations.
 ---

@@ -2,13 +2,13 @@
 source: tests/cli.rs
 expression: output
 ---
-Graph operations
+# Graph operations
 
-merge (graph operation)
+## merge (graph operation)
 
 Merge multiple imported corpora into one corpus.
 
-Configuration
+*Configuration*
 
 ┌name─────────────┬description───────────────────────────────────────────────────────────┐
 │ error_policy    │ Define how to handle merging errrors.                                │

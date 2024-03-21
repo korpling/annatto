@@ -13,16 +13,10 @@ use std::{
 };
 use strum::IntoEnumIterator;
 use tabled::{settings::themes::ColumnNames, Table};
-use termimad::{Alignment, MadSkin};
 use tracing_subscriber::filter::EnvFilter;
 
 lazy_static! {
-    static ref MARKDOWN_SKIN: MadSkin = {
-        let mut skin = MadSkin::default();
-        skin.headers[0].align = Alignment::Left;
-//        skin.limit_to_ascii();
-        skin
-    };
+    static ref USE_ANSI_COLORS: bool = std::env::var("NO_COLOR").is_err();
 }
 
 /// Define a conversion operation
@@ -48,6 +42,14 @@ enum Cli {
     List,
     /// Show information about modules for the given format or graph operations having this name.
     Info { name: String },
+}
+
+fn print_markdown(text: &str) {
+    if *USE_ANSI_COLORS {
+        termimad::print_text(text);
+    } else {
+        print!("{text}");
+    }
 }
 
 pub fn main() -> anyhow::Result<()> {
@@ -123,7 +125,11 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
             }
             StatusMessage::Warning(msg) => {
                 let msg = format!("[WARNING] {}", &msg);
-                multi_bar.println(console::style(msg).red().to_string())?;
+                if *USE_ANSI_COLORS {
+                    multi_bar.println(console::style(msg).red().to_string())?;
+                } else {
+                    multi_bar.println(msg)?;
+                }
             }
             StatusMessage::Progress {
                 id,
@@ -182,7 +188,7 @@ fn list_modules() {
         .join(", ");
     println!("Graph operations: {}", graph_op_list);
 
-    MARKDOWN_SKIN.print_text("---\nUse `annatto info <name>` to get more information about one of the formats or graph operations.\n---");
+    print_markdown("---\nUse `annatto info <name>` to get more information about one of the formats or graph operations.\n---");
 }
 
 fn module_info(name: &str) {
@@ -204,28 +210,28 @@ fn module_info(name: &str) {
     }
 
     if !matching_importers.is_empty() {
-        MARKDOWN_SKIN.print_text("# Importers\n\n");
+        print_markdown("# Importers\n\n");
         for m in matching_importers {
             let module_doc = m.module_doc();
-            MARKDOWN_SKIN.print_text(&format!("## {} (importer)\n\n{module_doc}\n\n", m.as_ref()));
+            print_markdown(&format!("## {} (importer)\n\n{module_doc}\n\n", m.as_ref()));
             print_module_fields(m.module_configs());
         }
     }
 
     if !matching_exporters.is_empty() {
-        MARKDOWN_SKIN.print_text("# Exporters\n\n");
+        print_markdown("# Exporters\n\n");
         for m in matching_exporters {
             let module_doc = m.module_doc();
-            MARKDOWN_SKIN.print_text(&format!("## {} (exporter)\n\n{module_doc}\n\n", m.as_ref()));
+            print_markdown(&format!("## {} (exporter)\n\n{module_doc}\n\n", m.as_ref()));
             print_module_fields(m.module_configs());
         }
     }
 
     if !matching_graph_ops.is_empty() {
-        MARKDOWN_SKIN.print_text("# Graph operations\n\n");
+        print_markdown("# Graph operations\n\n");
         for m in matching_graph_ops {
             let module_doc = m.module_doc();
-            MARKDOWN_SKIN.print_text(&format!(
+            print_markdown(&format!(
                 "## {} (graph operation)\n\n{module_doc}\n\n",
                 m.as_ref()
             ));
@@ -235,9 +241,9 @@ fn module_info(name: &str) {
 }
 
 fn print_module_fields(fields: Vec<ModuleConfiguration>) {
-    MARKDOWN_SKIN.print_text("*Configuration*\n\n");
+    print_markdown("*Configuration*\n\n");
     if fields.is_empty() {
-        MARKDOWN_SKIN.print_text("*None*\n\n");
+        print_markdown("*None*\n\n");
     } else {
         let mut table = Table::new(fields);
 
