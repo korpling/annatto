@@ -1,11 +1,10 @@
-//! Imports [Praat TextGrid text file format](https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html).
-//!
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
 use std::*;
 
+use super::Importer;
 use crate::models::textgrid::{Interval, TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{
@@ -14,14 +13,13 @@ use crate::util::graphupdate::{
 };
 use crate::StepID;
 use anyhow::{anyhow, Result};
+use documented::{Documented, DocumentedFields};
 use encoding_rs_io::DecodeReaderBytes;
 use graphannis::update::{GraphUpdate, UpdateEvent};
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use serde_derive::Deserialize;
-
-use super::Importer;
 const FILE_ENDINGS: [&str; 3] = ["textgrid", "TextGrid", "textGrid"];
 
 /// Importer the Praat TextGrid file format.
@@ -29,7 +27,7 @@ const FILE_ENDINGS: [&str; 3] = ["textgrid", "TextGrid", "textGrid"];
 /// See the [Praat
 /// Documentation](https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html)
 /// for more information on the format itself.
-#[derive(Default, Deserialize)]
+#[derive(Default, Deserialize, Documented, DocumentedFields)]
 #[serde(default, deny_unknown_fields)]
 pub struct ImportTextgrid {
     tier_groups: Option<BTreeMap<String, BTreeSet<String>>>,

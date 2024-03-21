@@ -1,14 +1,14 @@
-//! A special importer that imports nothing.
 use std::path::Path;
 
+use super::Importer;
 use crate::{progress::ProgressReporter, workflow::StatusSender, StepID};
+use documented::{Documented, DocumentedFields};
 use graphannis::update::GraphUpdate;
 use serde_derive::Deserialize;
 
-use super::Importer;
-
-#[derive(Default, Deserialize)]
+#[derive(Default, Deserialize, Documented, DocumentedFields)]
 #[serde(default, deny_unknown_fields)]
+/// A special importer that imports nothing.
 pub struct CreateEmptyCorpus {}
 
 impl Importer for CreateEmptyCorpus {

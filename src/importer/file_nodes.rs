@@ -1,3 +1,5 @@
+use super::Importer;
+use documented::{Documented, DocumentedFields};
 use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
@@ -6,10 +8,9 @@ use graphannis_core::graph::ANNIS_NS;
 use normpath::PathExt;
 use serde_derive::Deserialize;
 
-use super::Importer;
-
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, Documented, DocumentedFields)]
 #[serde(deny_unknown_fields)]
+/// Add file nodes for all files in the imported directory.
 pub struct CreateFileNodes {
     corpus_name: Option<String>,
 }

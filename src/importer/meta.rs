@@ -1,13 +1,10 @@
-//! Works similar to the Pepper configuration value
-//! [`pepper.before.readMeta`](https://corpus-tools.org/pepper/generalCustomizationProperties.html)
-//! and imports metadata property files for documents and corpora by using the file
-//! name as path to the document.
 use std::{
     collections::BTreeMap,
     io::{self, BufRead},
     path::Path,
 };
 
+use documented::{Documented, DocumentedFields};
 use graphannis::update::{GraphUpdate, UpdateEvent};
 use graphannis_core::util::split_qname;
 use serde_derive::Deserialize;
@@ -16,8 +13,12 @@ use crate::{progress::ProgressReporter, util::get_all_files, StepID};
 
 use super::Importer;
 
-#[derive(Default, Deserialize)]
+#[derive(Default, Deserialize, Documented, DocumentedFields)]
 #[serde(default, deny_unknown_fields)]
+/// Works similar to the Pepper configuration value
+/// [`pepper.before.readMeta`](https://corpus-tools.org/pepper/generalCustomizationProperties.html)
+/// and imports metadata property files for documents and corpora by using the file
+/// name as path to the document.
 pub struct AnnotateCorpus {}
 
 const KV_SEPARATOR: &str = "=";

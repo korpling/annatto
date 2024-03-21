@@ -5,6 +5,7 @@ use crate::{
 };
 
 use super::Importer;
+use documented::{Documented, DocumentedFields};
 use encoding_rs::Encoding;
 use encoding_rs_io::DecodeReaderBytesBuilder;
 use graphannis::{
@@ -316,7 +317,7 @@ pub enum AttributeDecoding {
 }
 
 /// Importer for the file format used by the TreeTagger.
-#[derive(Default, Deserialize)]
+#[derive(Default, Deserialize, Documented, DocumentedFields)]
 #[serde(default, deny_unknown_fields)]
 pub struct ImportTreeTagger {
     column_names: Vec<String>,

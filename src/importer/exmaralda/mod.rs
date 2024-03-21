@@ -1,5 +1,3 @@
-//! Import [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
-//! (`.exb`) files.
 use std::{
     collections::{BTreeMap, BTreeSet},
     env,
@@ -16,6 +14,7 @@ use ordered_float::OrderedFloat;
 use serde_derive::Deserialize;
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader, ParserConfig};
 
+use super::Importer;
 use crate::{
     error::AnnattoError,
     progress::ProgressReporter,
@@ -23,11 +22,12 @@ use crate::{
     workflow::StatusMessage,
     StepID,
 };
+use documented::{Documented, DocumentedFields};
 
-use super::Importer;
-
-#[derive(Default, Deserialize)]
+#[derive(Default, Deserialize, Documented, DocumentedFields)]
 #[serde(default, deny_unknown_fields)]
+/// Import [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
+/// (`.exb`) files.
 pub struct ImportEXMARaLDA {}
 
 const FILE_EXTENSIONS: [&str; 2] = ["exb", "xml"];
