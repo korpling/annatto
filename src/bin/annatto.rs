@@ -173,22 +173,35 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
 }
 
 fn list_modules() {
+    // Create a markdown styled table where each row is one type of module
+    let mut table = String::default();
+    table.push_str("|:-:|:-:|\n");
     let importer_list = ReadFromDiscriminants::iter()
         .map(|m| m.as_ref().to_string())
         .join(", ");
-    println!("Importer formats: {}", importer_list);
+    table.push_str("| Import formats | ");
+    table.push_str(&importer_list);
+    table.push_str("|\n");
+    table.push_str("|:-:|:-:|\n");
 
     let exporter_list = WriteAsDiscriminants::iter()
         .map(|m| m.as_ref().to_string())
         .join(", ");
-    println!("Exporter formats: {}", exporter_list);
+    table.push_str("| Export formats | ");
+    table.push_str(&exporter_list);
+    table.push_str("|\n");
+    table.push_str("|:-:|:-:|\n");
 
     let graph_op_list = GraphOpDiscriminants::iter()
         .map(|m| m.as_ref().to_string())
         .join(", ");
-    println!("Graph operations: {}", graph_op_list);
+    table.push_str("| Graph operations | ");
+    table.push_str(&graph_op_list);
+    table.push_str("|\n");
+    table.push_str("|-\n");
 
-    print_markdown("---\nUse `annatto info <name>` to get more information about one of the formats or graph operations.\n---");
+    print_markdown(&table);
+    print_markdown("\nUse `annatto info <name>` to get more information about one of the formats or graph operations.\n\n");
 }
 
 fn module_info(name: &str) {
