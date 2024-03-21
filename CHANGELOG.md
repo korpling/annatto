@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   given the following config is used: `edge_delimiter = "-"`
 - config attribute `stable_order` for exporting graphml enforces stable ordering of edges and nodes in output
 - toml workflow files now strictly need to stick to known fields of module structs
-- command line interface now has the `list` subcommand to list all modules and the `info`  subcommand to show the description and parameters of a module.
+- command line interface now has the `list` subcommand to list all modules and the `info`  subcommand to show the description and parameters of a module.o
 
 ### Changed
 

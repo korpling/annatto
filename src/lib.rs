@@ -1,34 +1,3 @@
-//! # Introduction to using annatto
-//!
-//! ## Command line
-//!
-//! The main usage of annatto is through the command line interface. Run
-//! ```bash
-//! annatto --help
-//! ```
-//!
-//! to get more help on the sub-commands.
-//! The most important command is `annatto run <workflow-file>`, which runs all the modules as defined in the given [workflow] file.
-//!
-//! ## Modules
-//!
-//! Annatto comes with a number of modules, which have different types:
-//!
-//! [**Importer**](importer) modules allow importing files from different formats.
-//! More than one importer can be used in a workflow, but then the corpus data needs
-//! to be merged using one of the merger manipulators.
-//! When running a workflow, the importers are executed first and in parallel.
-//!   
-//!
-//!
-//! [**Graph operation**](manipulator) modules change the imported corpus data.
-//! They are executed one after another (non-parallel) and in the order they have been defined in the workflow.
-//!
-//! [**Exporter**](exporter) modules export the data into different formats.
-//! More than one exporter can be used in a workflow.
-//! When running a workflow, the exporters are executed last and in parallel.
-//!
-
 pub mod error;
 pub mod exporter;
 pub mod importer;
