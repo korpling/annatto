@@ -56,10 +56,10 @@ use manipulator::{
     map::MapAnnos, merge::Merge, no_op::NoOp, re::Revise, Manipulator,
 };
 use serde_derive::Deserialize;
-use strum::{Display, EnumDiscriminants, EnumIter};
+use strum::{AsRefStr, EnumDiscriminants, EnumIter};
 
-#[derive(Deserialize, EnumDiscriminants, Display)]
-#[strum_discriminants(derive(EnumIter, Display))]
+#[derive(Deserialize, EnumDiscriminants, AsRefStr)]
+#[strum_discriminants(derive(EnumIter, AsRefStr))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum WriteAs {
     GraphML(#[serde(default)] ExportGraphML), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
@@ -84,8 +84,8 @@ impl WriteAs {
     }
 }
 
-#[derive(Deserialize, EnumDiscriminants, Display)]
-#[strum_discriminants(derive(EnumIter, Display))]
+#[derive(Deserialize, EnumDiscriminants, AsRefStr)]
+#[strum_discriminants(derive(EnumIter, AsRefStr))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum ReadFrom {
     CoNLLU(#[serde(default)] ImportCoNLLU),
@@ -128,8 +128,8 @@ impl ReadFrom {
     }
 }
 
-#[derive(Deserialize, EnumDiscriminants, Display)]
-#[strum_discriminants(derive(EnumIter, Display))]
+#[derive(Deserialize, EnumDiscriminants, AsRefStr)]
+#[strum_discriminants(derive(EnumIter, AsRefStr))]
 #[serde(tag = "action", rename_all = "lowercase", content = "config")]
 pub enum GraphOp {
     Check(Check),       // no default, has a (required) path attribute
@@ -178,21 +178,21 @@ pub struct StepID {
 impl StepID {
     pub fn from_importer_module(m: &ReadFrom, path: Option<PathBuf>) -> StepID {
         StepID {
-            module_name: format!("import_{}", m.to_string().to_lowercase()),
+            module_name: format!("import_{}", m.as_ref().to_lowercase()),
             path,
         }
     }
 
     pub fn from_graph_op_module(m: &GraphOp) -> StepID {
         StepID {
-            module_name: m.to_string().to_lowercase(),
+            module_name: m.as_ref().to_lowercase(),
             path: None,
         }
     }
 
     pub fn from_exporter_module(m: &WriteAs, path: Option<PathBuf>) -> StepID {
         StepID {
-            module_name: format!("export_{}", m.to_string().to_lowercase()),
+            module_name: format!("export_{}", m.as_ref().to_lowercase()),
             path,
         }
     }

@@ -155,32 +155,32 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
 
 fn list_modules() {
     let importer_list = ReadFromDiscriminants::iter()
-        .map(|m| m.to_string().to_lowercase())
+        .map(|m| m.as_ref().to_string().to_lowercase())
         .join(", ");
     println!("Importer formats: {}", importer_list);
 
     let exporter_list = WriteAsDiscriminants::iter()
-        .map(|m| m.to_string().to_lowercase())
+        .map(|m| m.as_ref().to_string().to_lowercase())
         .join(", ");
     println!("Exporter formats: {}", exporter_list);
 
     let graph_op_list = GraphOpDiscriminants::iter()
-        .map(|m| m.to_string().to_lowercase())
+        .map(|m| m.as_ref().to_lowercase())
         .join(", ");
     println!("Graph operations: {}", graph_op_list);
 }
 
 fn module_info(name: &str) {
     let matching_importers: Vec<_> = ReadFromDiscriminants::iter()
-        .map(|m| m.to_string())
+        .map(|m| m.as_ref().to_string())
         .filter(|m| m.to_lowercase() == name.to_lowercase())
         .collect();
     let matching_exporters: Vec<_> = WriteAsDiscriminants::iter()
-        .map(|m| m.to_string())
+        .map(|m| m.as_ref().to_string())
         .filter(|m| m.to_lowercase() == name.to_lowercase())
         .collect();
     let matching_graph_ops: Vec<_> = GraphOpDiscriminants::iter()
-        .map(|m| m.to_string())
+        .map(|m| m.as_ref().to_string())
         .filter(|m| m.to_lowercase() == name.to_lowercase())
         .collect();
 
