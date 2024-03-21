@@ -1,4 +1,3 @@
-//! Manipulate annotations, like deleting or renaming them.
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet},
@@ -20,14 +19,17 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
     error::{AnnattoError, StandardErrorResult},
     progress::ProgressReporter,
     Manipulator, StepID,
 };
+use documented::{Documented, DocumentedFields};
 
-#[derive(Default, Deserialize)]
+/// Manipulate annotations, like deleting or renaming them.
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct Revise {
     remove_nodes: Option<Vec<String>>,

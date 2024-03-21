@@ -5,6 +5,7 @@ use crate::{
 };
 
 use super::Importer;
+use documented::{Documented, DocumentedFields};
 use encoding_rs::Encoding;
 use encoding_rs_io::DecodeReaderBytesBuilder;
 use graphannis::{
@@ -15,6 +16,7 @@ use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use pest::{iterators::Pairs, Parser};
 use pest_derive::Parser;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 
 const FILE_ENDINGS: [&str; 5] = ["treetagger", "tab", "tt", "txt", "xml"];
 
@@ -316,7 +318,7 @@ pub enum AttributeDecoding {
 }
 
 /// Importer for the file format used by the TreeTagger.
-#[derive(Default, Deserialize)]
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct ImportTreeTagger {
     column_names: Vec<String>,

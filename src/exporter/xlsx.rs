@@ -14,6 +14,7 @@ use graphannis_core::{
 use linked_hash_map::LinkedHashMap;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 use umya_spreadsheet::{helper::coordinate::string_from_column_index, Worksheet};
 
 use crate::{
@@ -21,12 +22,18 @@ use crate::{
     util::token_helper::{TokenHelper, TOKEN_KEY},
 };
 
+use documented::{Documented, DocumentedFields};
+
 use super::Exporter;
 
-#[derive(Default, Deserialize)]
+/// Exports Excel Spreadsheets where each line is a token, the other columns are
+/// spans and merged cells can be used for spans that cover more than one token.
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct XlsxExporter {
+    /// Include the annotation namespace in the column header.
     include_namespace: bool,
+    // If given, allows to specify the order of the annotation columns.
     annotation_order: Vec<String>,
 }
 

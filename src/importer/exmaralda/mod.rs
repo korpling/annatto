@@ -1,5 +1,3 @@
-//! Import [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
-//! (`.exb`) files.
 use std::{
     collections::{BTreeMap, BTreeSet},
     env,
@@ -14,8 +12,10 @@ use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader, ParserConfig};
 
+use super::Importer;
 use crate::{
     error::AnnattoError,
     progress::ProgressReporter,
@@ -23,10 +23,11 @@ use crate::{
     workflow::StatusMessage,
     StepID,
 };
+use documented::{Documented, DocumentedFields};
 
-use super::Importer;
-
-#[derive(Default, Deserialize)]
+/// Import [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
+/// (`.exb`) files.
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct ImportEXMARaLDA {}
 

@@ -1,5 +1,3 @@
-//! Imports Excel Spreadsheets where each line is a token, the other columns are
-// spans and merged cells can be used for spans that cover more than one token.
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::Path,
@@ -15,18 +13,21 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 use umya_spreadsheet::Cell;
 
+use super::Importer;
 use crate::{
     error::AnnattoError,
     progress::ProgressReporter,
     util::{self},
     StepID,
 };
+use documented::{Documented, DocumentedFields};
 
-use super::Importer;
-
-#[derive(Default, Deserialize)]
+/// Imports Excel Spreadsheets where each line is a token, the other columns are
+/// spans and merged cells can be used for spans that cover more than one token.
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct ImportSpreadsheet {
     column_map: BTreeMap<String, BTreeSet<String>>,

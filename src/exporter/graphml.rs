@@ -1,6 +1,3 @@
-//! Exports files as [GraphML](http://graphml.graphdrawing.org/) files which
-//! conform to the [graphANNIS data
-//! model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet},
@@ -12,6 +9,7 @@ use crate::{
     error::AnnattoError, exporter::Exporter, progress::ProgressReporter, workflow::StatusSender,
     StepID,
 };
+use documented::{Documented, DocumentedFields};
 use graphannis::AnnotationGraph;
 use graphannis::{
     graph::AnnoKey,
@@ -25,8 +23,11 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use serde_derive::{Deserialize, Serialize};
+use struct_field_names_as_array::FieldNamesAsSlice;
 
-#[derive(Default, Deserialize)]
+/// Exports files as [GraphML](http://graphml.graphdrawing.org/) files which
+/// conform to the [graphANNIS data model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct ExportGraphML {
     add_vis: Option<String>,

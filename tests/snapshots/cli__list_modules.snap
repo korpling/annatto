@@ -2,6 +2,9 @@
 source: tests/cli.rs
 expression: output
 ---
-Importers: conllu, exmaralda, graphml, meta, none, opus, path, ptb, textgrid, treetagger, xlsx, xml
-Exporters: graphml, exmaralda, xlsx
+Importer formats: conllu, exmaralda, graphml, meta, none, opus, path, ptb, textgrid, treetagger, xlsx, xml
+Exporter formats: graphml, exmaralda, xlsx
 Graph operations: check, collapse, enumerate, link, map, merge, revise, chunk, none
+---
+Use `annatto info <name>` to get more information about one of the formats or graph operations.
+---

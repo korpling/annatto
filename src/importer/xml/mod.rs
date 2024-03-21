@@ -10,6 +10,7 @@ use graphannis::{
 };
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 use xml::{EventReader, ParserConfig};
 
 use crate::{
@@ -18,10 +19,12 @@ use crate::{
     util::graphupdate::import_corpus_graph_from_files,
     StepID,
 };
+use documented::{Documented, DocumentedFields};
 
 use super::Importer;
 
-#[derive(Deserialize)]
+/// Generic importer for XML files.
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct ImportXML {
     default_ordering: String,
