@@ -1,0 +1,34 @@
+---
+source: tests/cli.rs
+expression: output
+---
+                                                                                                                                              [1m[4mImporters[0m
+[4mxlsx (importer)[0m
+
+Imports Excel Spreadsheets where each line is a token, the other columns are
+spans and merged cells can be used for spans that cover more than one token.
+
+[3mConfiguration[0m
+
+┌name────────┬description┐
+│ column_map │           │
+├────────────┼───────────┤
+│ fallback   │           │
+├────────────┼───────────┤
+│ datasheet  │           │
+├────────────┼───────────┤
+│ metasheet  │           │
+└────────────┴───────────┘
+                                                                                                                                              [1m[4mExporters[0m
+[4mxlsx (exporter)[0m
+
+Exports Excel Spreadsheets where each line is a token, the other columns are
+spans and merged cells can be used for spans that cover more than one token.
+
+[3mConfiguration[0m
+
+┌name───────────────┬description─────────────────────────────────────────────┐
+│ include_namespace │ Include the annotation namespace in the column header. │
+├───────────────────┼────────────────────────────────────────────────────────┤
+│ annotation_order  │                                                        │
+└───────────────────┴────────────────────────────────────────────────────────┘

@@ -148,3 +148,27 @@ fn list_modules() {
 
     assert_snapshot!(output);
 }
+
+#[test]
+fn module_info() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd.arg("info").arg("xlsx").output().unwrap();
+    cmd.assert().success();
+
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+
+    assert_snapshot!(output);
+}
+
+#[test]
+fn graph_op_info() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd.arg("info").arg("merge").output().unwrap();
+    cmd.assert().success();
+
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+
+    assert_snapshot!(output);
+}
