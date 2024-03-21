@@ -1,8 +1,8 @@
 use assert_cmd::Command;
 use console::strip_ansi_codes;
-use crossterm::{execute, terminal::SetSize};
+use crossterm::{terminal::SetSize, tty::IsTty};
 use insta::assert_snapshot;
-use std::{io::stdout, path::PathBuf};
+use std::{io::stdin, path::PathBuf};
 
 #[test]
 fn show_help() {
@@ -141,6 +141,7 @@ fn load_complex_workflow_attr_ommited() {
 
 #[test]
 fn list_modules() {
+    assert!(stdin().is_tty());
     let mut cmd = Command::cargo_bin("annatto").unwrap();
 
     let output = cmd
@@ -157,6 +158,7 @@ fn list_modules() {
 
 #[test]
 fn module_info() {
+    assert!(stdin().is_tty());
     let mut cmd = Command::cargo_bin("annatto").unwrap();
 
     let output = cmd
@@ -174,6 +176,8 @@ fn module_info() {
 
 #[test]
 fn graph_op_info() {
+    assert!(stdin().is_tty());
+
     let mut cmd = Command::cargo_bin("annatto").unwrap();
 
     let output = cmd
