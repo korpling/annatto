@@ -35,9 +35,28 @@ use super::Exporter;
 
 /// Export [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
 /// (`.exb`) files.
+///
+/// Example:
+///
+/// ```toml
+/// [[export]]
+/// format = "exmaralda"
+/// path = "exb/MyCorpus"
+///
+/// [export.config]
+/// copy_media = false
+/// ```
 #[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct ExportExmaralda {
+    /// If `true`, copy linked media files to the output location.
+    ///
+    /// Example:
+    ///
+    /// ```toml
+    /// [export.config]
+    /// copy_media = true
+    /// ```
     #[serde(default)]
     copy_media: bool,
 }

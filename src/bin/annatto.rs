@@ -52,9 +52,9 @@ fn print_markdown(text: &str) {
     }
 }
 
-fn markdown_inline(text: &str) -> String {
+fn markdown_text(text: &str) -> String {
     if *USE_ANSI_COLORS {
-        termimad::inline(text).to_string()
+        termimad::text(text).to_string()
     } else {
         text.to_string()
     }
@@ -267,7 +267,7 @@ fn print_module_fields(mut fields: Vec<ModuleConfiguration>) {
     } else {
         // Replace all descriptions with markdown
         for i in 0..fields.len() {
-            fields[i].description = markdown_inline(&fields[i].description);
+            fields[i].description = markdown_text(&fields[i].description);
         }
 
         print_markdown("*Configuration*\n\n");

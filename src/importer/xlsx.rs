@@ -35,7 +35,8 @@ pub struct ImportSpreadsheet {
     /// In this case, it is necessary to tell the importer which annotation column belongs to which token column.
     ///
     /// Example with the two token columns "dipl" and "norm":
-    /// ```
+    ///
+    /// ```toml
     /// [export.config]
     /// column_map = {"dipl" = ["sentence"], "norm" = ["pos", "lemma", "seg"]}
     /// ```
@@ -48,7 +49,8 @@ pub struct ImportSpreadsheet {
     ///
     /// Example with two token columns "dipl" and "norm", where all annotation
     /// columns except "lemma" and "pos" are mapped to the "dipl" token column:
-    /// ```
+    ///
+    /// ```toml
     /// [export.config]
     /// column_map = {"dipl" = [], "norm" = ["pos", "lemma"]}
     /// fallback = "dipl"

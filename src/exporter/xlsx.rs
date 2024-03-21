@@ -36,10 +36,12 @@ pub struct XlsxExporter {
     /// Specify the order of the exported columns as array of annotation names.
     ///
     /// Example:
-    /// ```
+    ///
+    /// ```toml
     /// [export.config]
     /// annotation_order = ["tok", "lemma", "pos"]
     /// ```
+    ///
     /// Has no effect if the vector is empty.
     annotation_order: Vec<String>,
 }
