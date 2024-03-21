@@ -32,8 +32,10 @@ enum Cli {
         #[clap(value_parser)]
         workflow_file: std::path::PathBuf,
     },
-    /// List all modules (importer, graph operations and exporter).
+    /// List all supported formats (importer, exporter) and graph operations.
     List,
+    /// Show information about modules for the given format or graph operations having this name.
+    Info { name: String },
 }
 
 pub fn main() -> anyhow::Result<()> {
@@ -49,6 +51,7 @@ pub fn main() -> anyhow::Result<()> {
             Workflow::try_from((workflow_file, false))?;
         }
         Cli::List => list_modules(),
+        Cli::Info { name } => module_info(&name),
     };
     Ok(())
 }
@@ -154,15 +157,32 @@ fn list_modules() {
     let importer_list = ReadFromDiscriminants::iter()
         .map(|m| m.to_string().to_lowercase())
         .join(", ");
-    println!("Importers: {}", importer_list);
+    println!("Importer formats: {}", importer_list);
 
     let exporter_list = WriteAsDiscriminants::iter()
         .map(|m| m.to_string().to_lowercase())
         .join(", ");
-    println!("Exporters: {}", exporter_list);
+    println!("Exporter formats: {}", exporter_list);
 
     let graph_op_list = GraphOpDiscriminants::iter()
         .map(|m| m.to_string().to_lowercase())
         .join(", ");
     println!("Graph operations: {}", graph_op_list);
+}
+
+fn module_info(name: &str) {
+    let matching_importers: Vec<_> = ReadFromDiscriminants::iter()
+        .map(|m| m.to_string())
+        .filter(|m| m.to_lowercase() == name.to_lowercase())
+        .collect();
+    let matching_exporters: Vec<_> = WriteAsDiscriminants::iter()
+        .map(|m| m.to_string())
+        .filter(|m| m.to_lowercase() == name.to_lowercase())
+        .collect();
+    let matching_graph_ops: Vec<_> = GraphOpDiscriminants::iter()
+        .map(|m| m.to_string())
+        .filter(|m| m.to_lowercase() == name.to_lowercase())
+        .collect();
+
+    dbg!(matching_importers, matching_exporters, matching_graph_ops);
 }
