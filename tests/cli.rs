@@ -1,8 +1,7 @@
 use assert_cmd::Command;
 use console::strip_ansi_codes;
-use crossterm::{terminal::SetSize, tty::IsTty};
 use insta::assert_snapshot;
-use std::{io::stdin, path::PathBuf};
+use std::path::PathBuf;
 
 #[test]
 fn show_help() {
@@ -141,14 +140,9 @@ fn load_complex_workflow_attr_ommited() {
 
 #[test]
 fn list_modules() {
-    assert!(stdin().is_tty());
     let mut cmd = Command::cargo_bin("annatto").unwrap();
 
-    let output = cmd
-        .arg("list")
-        .write_stdin(SetSize(80, 40).to_string())
-        .output()
-        .unwrap();
+    let output = cmd.arg("list").output().unwrap();
     cmd.assert().success();
 
     let output = strip_ansi_codes(std::str::from_utf8(&output.stdout).unwrap());
@@ -158,15 +152,9 @@ fn list_modules() {
 
 #[test]
 fn module_info() {
-    assert!(stdin().is_tty());
     let mut cmd = Command::cargo_bin("annatto").unwrap();
 
-    let output = cmd
-        .arg("info")
-        .arg("xlsx")
-        .write_stdin(SetSize(80, 40).to_string())
-        .output()
-        .unwrap();
+    let output = cmd.arg("info").arg("xlsx").output().unwrap();
     cmd.assert().success();
 
     let output = strip_ansi_codes(std::str::from_utf8(&output.stdout).unwrap());
@@ -176,16 +164,9 @@ fn module_info() {
 
 #[test]
 fn graph_op_info() {
-    assert!(stdin().is_tty());
-
     let mut cmd = Command::cargo_bin("annatto").unwrap();
 
-    let output = cmd
-        .arg("info")
-        .arg("merge")
-        .write_stdin(SetSize(80, 40).to_string())
-        .output()
-        .unwrap();
+    let output = cmd.arg("info").arg("merge").output().unwrap();
 
     let output = strip_ansi_codes(std::str::from_utf8(&output.stdout).unwrap());
 

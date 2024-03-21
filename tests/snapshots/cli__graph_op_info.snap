@@ -2,7 +2,8 @@
 source: tests/cli.rs
 expression: output
 ---
-                                                                                                                                          Graph operations
+Graph operations
+
 merge (graph operation)
 
 Merge multiple imported corpora into one corpus.

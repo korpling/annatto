@@ -7,12 +7,23 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
 use clap::Parser;
 use itertools::Itertools;
+use lazy_static::lazy_static;
 use std::{
     collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread, time::Duration,
 };
 use strum::IntoEnumIterator;
 use tabled::{settings::themes::ColumnNames, Table};
+use termimad::{Alignment, MadSkin};
 use tracing_subscriber::filter::EnvFilter;
+
+lazy_static! {
+    static ref MARKDOWN_SKIN: MadSkin = {
+        let mut skin = MadSkin::default();
+        skin.headers[0].align = Alignment::Left;
+//        skin.limit_to_ascii();
+        skin
+    };
+}
 
 /// Define a conversion operation
 #[derive(Parser)]
@@ -171,7 +182,7 @@ fn list_modules() {
         .join(", ");
     println!("Graph operations: {}", graph_op_list);
 
-    termimad::print_text("---\nUse `annatto info <name>` to get more information about one of the formats or graph operations.\n---");
+    MARKDOWN_SKIN.print_text("---\nUse `annatto info <name>` to get more information about one of the formats or graph operations.\n---");
 }
 
 fn module_info(name: &str) {
@@ -186,28 +197,28 @@ fn module_info(name: &str) {
         .collect();
 
     if !matching_importers.is_empty() {
-        termimad::print_text("# Importers");
+        MARKDOWN_SKIN.print_text("# Importers\n\n");
         for m in matching_importers {
             let module_doc = m.module_doc();
-            termimad::print_text(&format!("## {} (importer)\n\n{module_doc}\n\n", m.as_ref()));
+            MARKDOWN_SKIN.print_text(&format!("## {} (importer)\n\n{module_doc}\n\n", m.as_ref()));
             print_module_fields(m.module_configs());
         }
     }
 
     if !matching_exporters.is_empty() {
-        termimad::print_text("# Exporters");
+        MARKDOWN_SKIN.print_text("# Exporters\n\n");
         for m in matching_exporters {
             let module_doc = m.module_doc();
-            termimad::print_text(&format!("## {} (exporter)\n\n{module_doc}\n\n", m.as_ref()));
+            MARKDOWN_SKIN.print_text(&format!("## {} (exporter)\n\n{module_doc}\n\n", m.as_ref()));
             print_module_fields(m.module_configs());
         }
     }
 
     if !matching_graph_ops.is_empty() {
-        termimad::print_text("# Graph operations");
+        MARKDOWN_SKIN.print_text("# Graph operations\n\n");
         for m in matching_graph_ops {
             let module_doc = m.module_doc();
-            termimad::print_text(&format!(
+            MARKDOWN_SKIN.print_text(&format!(
                 "## {} (graph operation)\n\n{module_doc}\n\n",
                 m.as_ref()
             ));
@@ -217,9 +228,9 @@ fn module_info(name: &str) {
 }
 
 fn print_module_fields(fields: Vec<ModuleConfiguration>) {
-    termimad::print_text("*Configuration*\n\n");
+    MARKDOWN_SKIN.print_text("*Configuration*\n\n");
     if fields.is_empty() {
-        termimad::print_text("*None*\n\n");
+        MARKDOWN_SKIN.print_text("*None*\n\n");
     } else {
         let mut table = Table::new(fields);
 

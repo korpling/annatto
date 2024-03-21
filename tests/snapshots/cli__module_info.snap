@@ -2,7 +2,8 @@
 source: tests/cli.rs
 expression: output
 ---
-                                                                                                                                              Importers
+Importers
+
 xlsx (importer)
 
 Imports Excel Spreadsheets where each line is a token, the other columns are
@@ -19,7 +20,8 @@ Configuration
 ├────────────┼───────────┤
 │ metasheet  │           │
 └────────────┴───────────┘
-                                                                                                                                              Exporters
+Exporters
+
 xlsx (exporter)
 
 Exports Excel Spreadsheets where each line is a token, the other columns are
