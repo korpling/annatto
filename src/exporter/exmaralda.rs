@@ -11,6 +11,7 @@ use crate::{
     error::AnnattoError, importer::exmaralda::LANGUAGE_SEP, progress::ProgressReporter,
     util::Traverse, StepID,
 };
+use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::GraphStorage,
     model::{AnnotationComponent, AnnotationComponentType},
@@ -31,8 +32,10 @@ use serde_derive::Deserialize;
 
 use super::Exporter;
 
-#[derive(Default, Deserialize)]
+#[derive(Default, Deserialize, Documented, DocumentedFields)]
 #[serde(deny_unknown_fields)]
+/// Export [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
+/// (`.exb`) files.
 pub struct ExportExmaralda {
     #[serde(default)]
     copy_media: bool,

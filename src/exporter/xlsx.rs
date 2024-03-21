@@ -21,12 +21,18 @@ use crate::{
     util::token_helper::{TokenHelper, TOKEN_KEY},
 };
 
+use documented::{Documented, DocumentedFields};
+
 use super::Exporter;
 
-#[derive(Default, Deserialize)]
+#[derive(Default, Deserialize, Documented, DocumentedFields)]
 #[serde(default, deny_unknown_fields)]
+/// Exports Excel Spreadsheets where each line is a token, the other columns are
+/// spans and merged cells can be used for spans that cover more than one token.
 pub struct XlsxExporter {
+    /// Include the annotation namespace in the column header.
     include_namespace: bool,
+    // If given, allows to specify the order of the annotation columns.
     annotation_order: Vec<String>,
 }
 
