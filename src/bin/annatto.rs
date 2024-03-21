@@ -254,10 +254,10 @@ fn module_info(name: &str) {
 }
 
 fn print_module_fields(fields: Vec<ModuleConfiguration>) {
-    print_markdown("*Configuration*\n\n");
     if fields.is_empty() {
-        print_markdown("*None*\n\n");
+        print_markdown("*No Configuration*\n\n");
     } else {
+        print_markdown("*Configuration*\n\n");
         let mut table = Table::new(fields);
 
         table
