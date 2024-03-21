@@ -11,7 +11,7 @@ use std::{
     collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread, time::Duration,
 };
 use strum::IntoEnumIterator;
-use tabled::builder::Builder;
+use tabled::Table;
 use tracing_subscriber::filter::EnvFilter;
 
 /// Define a conversion operation
@@ -209,14 +209,8 @@ fn module_info(name: &str) {
             // print all fields as table
             let fields = m.module_options();
             if !fields.is_empty() {
-                let mut table_builder = Builder::new();
+                let mut table = Table::new(fields);
 
-                table_builder.push_record(["name", "description"]);
-                let markdown_skin = termimad::get_default_skin();
-                for (name, desc) in fields.iter() {
-                    table_builder.push_record([name, &markdown_skin.inline(desc).to_string()]);
-                }
-                let mut table = table_builder.build();
                 table.with(tabled::settings::Panel::header("Configuration"));
                 table.with(tabled::settings::Style::modern());
 
