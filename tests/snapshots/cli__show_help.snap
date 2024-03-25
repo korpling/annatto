@@ -9,7 +9,8 @@ Usage: annatto <COMMAND>
 Commands:
   run       Run a conversion pipeline from a workflow file
   validate  Only check if a workflow file can be imported. Invalid workflow files will lead to a non-zero exit code
-  list      List all modules (importer, graph operations and exporter)
+  list      List all supported formats (importer, exporter) and graph operations
+  info      Show information about modules for the given format or graph operations having this name
   help      Print this message or the help of the given subcommand(s)
 
 Options:

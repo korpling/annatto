@@ -1,5 +1,3 @@
-//! Imports Excel Spreadsheets where each line is a token, the other columns are
-// spans and merged cells can be used for spans that cover more than one token.
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::Path,
@@ -15,23 +13,54 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 use umya_spreadsheet::Cell;
 
+use super::Importer;
 use crate::{
     error::AnnattoError,
     progress::ProgressReporter,
     util::{self},
     StepID,
 };
+use documented::{Documented, DocumentedFields};
 
-use super::Importer;
-
-#[derive(Default, Deserialize)]
+/// Imports Excel Spreadsheets where each line is a token, the other columns are
+/// spans and merged cells can be used for spans that cover more than one token.
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct ImportSpreadsheet {
+    /// Maps token columns to annotation columns. If there is more than one
+    /// token column, it is assumed that the corpus has multiple segmentations.
+    /// In this case, it is necessary to tell the importer which annotation column belongs to which token column.
+    ///
+    /// Example with the two token columns "dipl" and "norm":
+    ///
+    /// ```toml
+    /// [export.config]
+    /// column_map = {"dipl" = ["sentence"], "norm" = ["pos", "lemma", "seg"]}
+    /// ```
+    /// The column "sentence" must be always be aligned with the "dipl" token
+    /// and "pos", "lemma" and "seg" are aligned with the "norm" token.
     column_map: BTreeMap<String, BTreeSet<String>>,
+    /// If given, the name of the token column to be used when there is no
+    /// explicit mapping given in the `column_map` parameter for this annotation
+    /// column.
+    ///
+    /// Example with two token columns "dipl" and "norm", where all annotation
+    /// columns except "lemma" and "pos" are mapped to the "dipl" token column:
+    ///
+    /// ```toml
+    /// [export.config]
+    /// column_map = {"dipl" = [], "norm" = ["pos", "lemma"]}
+    /// fallback = "dipl"
+    /// ```
     fallback: Option<String>,
+    /// Optional value of the Excel sheet that contains the data. If not given,
+    /// the first sheet is used.
     datasheet: Option<SheetAddress>,
+    /// Optional value of the Excel sheet that contains the metadata table. If
+    /// no metadata is imported.    
     metasheet: Option<SheetAddress>,
 }
 

@@ -1,5 +1,3 @@
-//! Runs AQL queries on the corpus and checks for constraints on the result.
-// Can fail the workflow when one of the checks fail
 use std::{
     collections::{btree_map::Entry, BTreeMap},
     fs,
@@ -8,10 +6,12 @@ use std::{
 };
 
 use anyhow::anyhow;
+use documented::{Documented, DocumentedFields};
 use graphannis::{aql, AnnotationGraph};
 use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE};
 use itertools::Itertools;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 use tabled::{Table, Tabled};
 
 use crate::{
@@ -20,7 +20,9 @@ use crate::{
     Manipulator, StepID,
 };
 
-#[derive(Deserialize)]
+/// Runs AQL queries on the corpus and checks for constraints on the result.
+/// Can fail the workflow when one of the checks fail
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct Check {
     tests: Vec<Test>,
@@ -720,7 +722,6 @@ mod tests {
             save: None,
         };
         let result = check.run_tests(&mut graph);
-        dbg!(&result);
         assert!(result.is_ok(), "{:?}", result.err());
 
         let step_id = StepID {

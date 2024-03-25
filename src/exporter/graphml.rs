@@ -1,6 +1,3 @@
-//! Exports files as [GraphML](http://graphml.graphdrawing.org/) files which
-//! conform to the [graphANNIS data
-//! model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet},
@@ -12,6 +9,7 @@ use crate::{
     error::AnnattoError, exporter::Exporter, progress::ProgressReporter, workflow::StatusSender,
     StepID,
 };
+use documented::{Documented, DocumentedFields};
 use graphannis::AnnotationGraph;
 use graphannis::{
     graph::AnnoKey,
@@ -25,12 +23,26 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use serde_derive::{Deserialize, Serialize};
+use struct_field_names_as_array::FieldNamesAsSlice;
 
-#[derive(Default, Deserialize)]
+/// Exports files as [GraphML](http://graphml.graphdrawing.org/) files which
+/// conform to the [graphANNIS data model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
-pub struct ExportGraphML {
+pub struct GraphMLExporter {
+    /// If set, add this ANNIS visualization configuration string to the corpus
+    /// configuration. See
+    /// <http://korpling.github.io/ANNIS/4.11/user-guide/import-and-config/visualizations.html>
+    /// for a description of the possible visualization options of ANNIS.
     add_vis: Option<String>,
+    /// Automatically generate visualization options for ANNIS based on the
+    /// structure of the annotations, e.g. `Dominance` edges are indicators that
+    /// a syntactic tree should be visualized.
     guess_vis: bool,
+    /// Always generate the same order of nodes and edges in the output file.
+    /// This is e.g. useful when comparing files in a versioning environment
+    /// like git.
+    /// **Attention: this is slower to generate.**
     stable_order: bool,
 }
 
@@ -386,7 +398,7 @@ fn vis_from_graph(graph: &AnnotationGraph) -> Result<String, Box<dyn std::error:
     Ok(vis)
 }
 
-impl Exporter for ExportGraphML {
+impl Exporter for GraphMLExporter {
     fn export_corpus(
         &self,
         graph: &AnnotationGraph,

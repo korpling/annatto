@@ -1,5 +1,6 @@
 use std::{collections::BTreeSet, env::temp_dir};
 
+use documented::{Documented, DocumentedFields};
 use graphannis::{
     corpusstorage::{QueryLanguage, SearchQuery},
     update::{GraphUpdate, UpdateEvent},
@@ -7,13 +8,16 @@ use graphannis::{
 };
 use itertools::Itertools;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 use tempfile::tempdir_in;
 
 use crate::{error::AnnattoError, StepID};
 
 use super::Manipulator;
 
-#[derive(Deserialize)]
+/// Adds a node label to all matched nodes for set of queries with the number of
+/// the match as value.
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct EnumerateMatches {
     queries: Vec<String>,

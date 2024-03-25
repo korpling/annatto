@@ -11,6 +11,7 @@ use crate::{
     error::AnnattoError, importer::exmaralda::LANGUAGE_SEP, progress::ProgressReporter,
     util::Traverse, StepID,
 };
+use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::GraphStorage,
     model::{AnnotationComponent, AnnotationComponentType},
@@ -28,12 +29,34 @@ use quick_xml::{
     Writer,
 };
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Exporter;
 
-#[derive(Default, Deserialize)]
+/// Export [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
+/// (`.exb`) files.
+///
+/// Example:
+///
+/// ```toml
+/// [[export]]
+/// format = "exmaralda"
+/// path = "exb/MyCorpus"
+///
+/// [export.config]
+/// copy_media = false
+/// ```
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct ExportExmaralda {
+    /// If `true`, copy linked media files to the output location.
+    ///
+    /// Example:
+    ///
+    /// ```toml
+    /// [export.config]
+    /// copy_media = true
+    /// ```
     #[serde(default)]
     copy_media: bool,
 }

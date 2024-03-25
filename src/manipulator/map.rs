@@ -1,10 +1,11 @@
-//! Creates new annotations based on existing annotation values.
 use std::{
     env::temp_dir,
     fs,
     path::{Path, PathBuf},
 };
 
+use crate::{workflow::StatusSender, StepID};
+use documented::{Documented, DocumentedFields};
 use graphannis::{
     corpusstorage::{QueryLanguage, SearchQuery},
     update::{GraphUpdate, UpdateEvent},
@@ -12,13 +13,13 @@ use graphannis::{
 };
 use itertools::Itertools;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 use tempfile::tempdir_in;
-
-use crate::{workflow::StatusSender, StepID};
 
 use super::Manipulator;
 
-#[derive(Deserialize)]
+/// Creates new annotations based on existing annotation values.
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct MapAnnos {
     rule_file: PathBuf,

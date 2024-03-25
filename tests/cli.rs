@@ -1,6 +1,7 @@
-use assert_cmd::prelude::*;
+use assert_cmd::Command;
+use crossterm::terminal::SetSize;
 use insta::assert_snapshot;
-use std::{path::PathBuf, process::Command};
+use std::path::PathBuf;
 
 #[test]
 fn show_help() {
@@ -141,8 +142,61 @@ fn load_complex_workflow_attr_ommited() {
 fn list_modules() {
     let mut cmd = Command::cargo_bin("annatto").unwrap();
 
-    let output = cmd.arg("list").output().unwrap();
+    let output = cmd
+        .env("NO_COLOR", "1")
+        .arg("list")
+        .write_stdin(SetSize(20, 50).to_string())
+        .output()
+        .unwrap();
     cmd.assert().success();
+
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+    assert_snapshot!(output);
+}
+
+#[test]
+fn module_info() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd
+        .env("NO_COLOR", "1")
+        .arg("info")
+        .arg("xlsx")
+        .output()
+        .unwrap();
+    cmd.assert().success();
+
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+
+    assert_snapshot!(output);
+}
+
+#[test]
+fn graph_op_info() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd
+        .env("NO_COLOR", "1")
+        .arg("info")
+        .arg("merge")
+        .output()
+        .unwrap();
+
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+
+    assert_snapshot!(output);
+}
+
+#[test]
+fn unknown_module_info() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd
+        .env("NO_COLOR", "1")
+        .arg("info")
+        .arg("thiswillnotexist")
+        .output()
+        .unwrap();
 
     let output = std::str::from_utf8(&output.stdout).unwrap();
 

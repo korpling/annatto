@@ -1,7 +1,5 @@
-//! Imports files in the Penn Treebank (bracket) format.
-use std::{io::Read, path::Path};
-
 use anyhow::anyhow;
+use documented::{Documented, DocumentedFields};
 use encoding_rs_io::DecodeReaderBytes;
 use graphannis::{
     model::AnnotationComponentType,
@@ -14,6 +12,8 @@ use pest::{
 };
 use pest_derive::Parser;
 use serde_derive::Deserialize;
+use std::{io::Read, path::Path};
+use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
     progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files, StepID,
@@ -287,7 +287,7 @@ impl<'a> DocumentMapper {
 }
 
 /// Importer the Penn Treebank Bracketed Text format (PTB)
-#[derive(Default, Deserialize)]
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct ImportPTB {
     edge_delimiter: Option<String>,

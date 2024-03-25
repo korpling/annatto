@@ -1,0 +1,5 @@
+---
+source: tests/cli.rs
+expression: output
+---
+No module with name thiswillnotexist found. Run the `annotto list` command to get a list of all modules.

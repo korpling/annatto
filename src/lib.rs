@@ -1,34 +1,3 @@
-//! # Introduction to using annatto
-//!
-//! ## Command line
-//!
-//! The main usage of annatto is through the command line interface. Run
-//! ```bash
-//! annatto --help
-//! ```
-//!
-//! to get more help on the sub-commands.
-//! The most important command is `annatto run <workflow-file>`, which runs all the modules as defined in the given [workflow] file.
-//!
-//! ## Modules
-//!
-//! Annatto comes with a number of modules, which have different types:
-//!
-//! [**Importer**](importer) modules allow importing files from different formats.
-//! More than one importer can be used in a workflow, but then the corpus data needs
-//! to be merged using one of the merger manipulators.
-//! When running a workflow, the importers are executed first and in parallel.
-//!   
-//!
-//!
-//! [**Graph operation**](manipulator) modules change the imported corpus data.
-//! They are executed one after another (non-parallel) and in the order they have been defined in the workflow.
-//!
-//! [**Exporter**](exporter) modules export the data into different formats.
-//! More than one exporter can be used in a workflow.
-//! When running a workflow, the exporters are executed last and in parallel.
-//!
-
 pub mod error;
 pub mod exporter;
 pub mod importer;
@@ -43,8 +12,11 @@ pub mod workflow;
 
 use std::{fmt::Display, path::PathBuf};
 
+use documented::{Documented, DocumentedFields};
 use error::Result;
-use exporter::{exmaralda::ExportExmaralda, graphml::ExportGraphML, xlsx::XlsxExporter, Exporter};
+use exporter::{
+    exmaralda::ExportExmaralda, graphml::GraphMLExporter, xlsx::XlsxExporter, Exporter,
+};
 use importer::{
     conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
     graphml::GraphMLImporter, meta::AnnotateCorpus, none::CreateEmptyCorpus, opus::ImportOpusLinks,
@@ -56,13 +28,22 @@ use manipulator::{
     map::MapAnnos, merge::Merge, no_op::NoOp, re::Revise, Manipulator,
 };
 use serde_derive::Deserialize;
-use strum::{Display, EnumDiscriminants, EnumIter};
+use struct_field_names_as_array::FieldNamesAsSlice;
+use strum::{AsRefStr, EnumDiscriminants, EnumIter};
+use tabled::Tabled;
 
-#[derive(Deserialize, EnumDiscriminants, Display)]
-#[strum_discriminants(derive(EnumIter, Display))]
+#[derive(Tabled)]
+pub struct ModuleConfiguration {
+    pub name: String,
+    pub description: String,
+}
+
+#[derive(Deserialize, EnumDiscriminants, AsRefStr)]
+#[strum(serialize_all = "lowercase")]
+#[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum WriteAs {
-    GraphML(#[serde(default)] ExportGraphML), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
+    GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
     EXMARaLDA(#[serde(default)] ExportExmaralda),
     Xlsx(#[serde(default)] XlsxExporter),
 }
@@ -70,7 +51,7 @@ pub enum WriteAs {
 impl Default for WriteAs {
     // the purpose of this default is to allow to omit `format` in an `[[export]]` table
     fn default() -> Self {
-        WriteAs::GraphML(ExportGraphML::default())
+        WriteAs::GraphML(GraphMLExporter::default())
     }
 }
 
@@ -84,8 +65,50 @@ impl WriteAs {
     }
 }
 
-#[derive(Deserialize, EnumDiscriminants, Display)]
-#[strum_discriminants(derive(EnumIter, Display))]
+impl WriteAsDiscriminants {
+    pub fn module_doc(&self) -> &str {
+        match self {
+            WriteAsDiscriminants::GraphML => GraphMLExporter::DOCS,
+            WriteAsDiscriminants::EXMARaLDA => ExportExmaralda::DOCS,
+            WriteAsDiscriminants::Xlsx => XlsxExporter::DOCS,
+        }
+    }
+
+    pub fn module_configs(&self) -> Vec<ModuleConfiguration> {
+        let mut result = Vec::new();
+        let (field_names, field_docs) = match self {
+            WriteAsDiscriminants::GraphML => (
+                GraphMLExporter::FIELD_NAMES_AS_SLICE,
+                GraphMLExporter::FIELD_DOCS,
+            ),
+            WriteAsDiscriminants::EXMARaLDA => (
+                ExportExmaralda::FIELD_NAMES_AS_SLICE,
+                ExportExmaralda::FIELD_DOCS,
+            ),
+            WriteAsDiscriminants::Xlsx => {
+                (XlsxExporter::FIELD_NAMES_AS_SLICE, XlsxExporter::FIELD_DOCS)
+            }
+        };
+        for (idx, n) in field_names.iter().enumerate() {
+            if idx < field_docs.len() {
+                result.push(ModuleConfiguration {
+                    name: n.to_string(),
+                    description: field_docs[idx].unwrap_or_default().to_string(),
+                });
+            } else {
+                result.push(ModuleConfiguration {
+                    name: n.to_string(),
+                    description: String::default(),
+                });
+            }
+        }
+        result
+    }
+}
+
+#[derive(Deserialize, EnumDiscriminants, AsRefStr)]
+#[strum(serialize_all = "lowercase")]
+#[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum ReadFrom {
     CoNLLU(#[serde(default)] ImportCoNLLU),
@@ -128,8 +151,89 @@ impl ReadFrom {
     }
 }
 
-#[derive(Deserialize, EnumDiscriminants, Display)]
-#[strum_discriminants(derive(EnumIter, Display))]
+impl ReadFromDiscriminants {
+    pub fn module_doc(&self) -> &str {
+        match self {
+            ReadFromDiscriminants::CoNLLU => ImportCoNLLU::DOCS,
+            ReadFromDiscriminants::EXMARaLDA => ImportEXMARaLDA::DOCS,
+            ReadFromDiscriminants::GraphML => GraphMLImporter::DOCS,
+            ReadFromDiscriminants::Meta => AnnotateCorpus::DOCS,
+            ReadFromDiscriminants::None => CreateEmptyCorpus::DOCS,
+            ReadFromDiscriminants::Opus => ImportOpusLinks::DOCS,
+            ReadFromDiscriminants::Path => CreateFileNodes::DOCS,
+            ReadFromDiscriminants::PTB => ImportPTB::DOCS,
+            ReadFromDiscriminants::TextGrid => ImportTextgrid::DOCS,
+            ReadFromDiscriminants::TreeTagger => ImportTreeTagger::DOCS,
+            ReadFromDiscriminants::Xlsx => ImportSpreadsheet::DOCS,
+            ReadFromDiscriminants::Xml => ImportXML::DOCS,
+        }
+    }
+
+    pub fn module_configs(&self) -> Vec<ModuleConfiguration> {
+        let mut result = Vec::new();
+        let (field_names, field_docs) = match self {
+            ReadFromDiscriminants::CoNLLU => {
+                (ImportCoNLLU::FIELD_NAMES_AS_SLICE, ImportCoNLLU::FIELD_DOCS)
+            }
+            ReadFromDiscriminants::EXMARaLDA => (
+                ImportEXMARaLDA::FIELD_NAMES_AS_SLICE,
+                ImportEXMARaLDA::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::GraphML => (
+                GraphMLImporter::FIELD_NAMES_AS_SLICE,
+                GraphMLImporter::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::Meta => (
+                AnnotateCorpus::FIELD_NAMES_AS_SLICE,
+                AnnotateCorpus::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::None => (
+                CreateEmptyCorpus::FIELD_NAMES_AS_SLICE,
+                CreateEmptyCorpus::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::Opus => (
+                ImportOpusLinks::FIELD_NAMES_AS_SLICE,
+                ImportOpusLinks::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::Path => (
+                CreateFileNodes::FIELD_NAMES_AS_SLICE,
+                CreateFileNodes::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::PTB => (ImportPTB::FIELD_NAMES_AS_SLICE, ImportPTB::FIELD_DOCS),
+            ReadFromDiscriminants::TextGrid => (
+                ImportTextgrid::FIELD_NAMES_AS_SLICE,
+                ImportTextgrid::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::TreeTagger => (
+                ImportTreeTagger::FIELD_NAMES_AS_SLICE,
+                ImportTreeTagger::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::Xlsx => (
+                ImportSpreadsheet::FIELD_NAMES_AS_SLICE,
+                ImportSpreadsheet::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::Xml => (ImportXML::FIELD_NAMES_AS_SLICE, ImportXML::FIELD_DOCS),
+        };
+        for (idx, n) in field_names.iter().enumerate() {
+            if idx < field_docs.len() {
+                result.push(ModuleConfiguration {
+                    name: n.to_string(),
+                    description: field_docs[idx].unwrap_or_default().to_string(),
+                });
+            } else {
+                result.push(ModuleConfiguration {
+                    name: n.to_string(),
+                    description: String::default(),
+                });
+            }
+        }
+        result
+    }
+}
+
+#[derive(Deserialize, EnumDiscriminants, AsRefStr)]
+#[strum(serialize_all = "lowercase")]
+#[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "action", rename_all = "lowercase", content = "config")]
 pub enum GraphOp {
     Check(Check),       // no default, has a (required) path attribute
@@ -166,6 +270,56 @@ impl GraphOp {
     }
 }
 
+impl GraphOpDiscriminants {
+    pub fn module_doc(&self) -> &str {
+        match self {
+            GraphOpDiscriminants::Check => Check::DOCS,
+            GraphOpDiscriminants::Collapse => Collapse::DOCS,
+            GraphOpDiscriminants::Enumerate => EnumerateMatches::DOCS,
+            GraphOpDiscriminants::Link => LinkNodes::DOCS,
+            GraphOpDiscriminants::Map => MapAnnos::DOCS,
+            GraphOpDiscriminants::Merge => Merge::DOCS,
+            GraphOpDiscriminants::Revise => Revise::DOCS,
+            GraphOpDiscriminants::Chunk => Chunk::DOCS,
+            GraphOpDiscriminants::None => NoOp::DOCS,
+        }
+    }
+
+    pub fn module_configs(&self) -> Vec<ModuleConfiguration> {
+        let mut result = Vec::new();
+        let (field_names, field_docs) = match self {
+            GraphOpDiscriminants::Check => (Check::FIELD_NAMES_AS_SLICE, Check::FIELD_DOCS),
+            GraphOpDiscriminants::Collapse => {
+                (Collapse::FIELD_NAMES_AS_SLICE, Collapse::FIELD_DOCS)
+            }
+            GraphOpDiscriminants::Enumerate => (
+                EnumerateMatches::FIELD_NAMES_AS_SLICE,
+                EnumerateMatches::FIELD_DOCS,
+            ),
+            GraphOpDiscriminants::Link => (LinkNodes::FIELD_NAMES_AS_SLICE, LinkNodes::FIELD_DOCS),
+            GraphOpDiscriminants::Map => (MapAnnos::FIELD_NAMES_AS_SLICE, MapAnnos::FIELD_DOCS),
+            GraphOpDiscriminants::Merge => (Merge::FIELD_NAMES_AS_SLICE, Merge::FIELD_DOCS),
+            GraphOpDiscriminants::Revise => (Revise::FIELD_NAMES_AS_SLICE, Revise::FIELD_DOCS),
+            GraphOpDiscriminants::Chunk => (Chunk::FIELD_NAMES_AS_SLICE, Chunk::FIELD_DOCS),
+            GraphOpDiscriminants::None => (NoOp::FIELD_NAMES_AS_SLICE, NoOp::FIELD_DOCS),
+        };
+        for (idx, n) in field_names.iter().enumerate() {
+            if idx < field_docs.len() {
+                result.push(ModuleConfiguration {
+                    name: n.to_string(),
+                    description: field_docs[idx].unwrap_or_default().to_string(),
+                });
+            } else {
+                result.push(ModuleConfiguration {
+                    name: n.to_string(),
+                    description: String::default(),
+                });
+            }
+        }
+        result
+    }
+}
+
 /// Unique ID of a single step in the conversion pipeline.
 #[derive(Eq, PartialEq, Hash, Debug, Clone)]
 pub struct StepID {
@@ -178,21 +332,21 @@ pub struct StepID {
 impl StepID {
     pub fn from_importer_module(m: &ReadFrom, path: Option<PathBuf>) -> StepID {
         StepID {
-            module_name: format!("import_{}", m.to_string().to_lowercase()),
+            module_name: format!("import_{}", m.as_ref().to_lowercase()),
             path,
         }
     }
 
     pub fn from_graph_op_module(m: &GraphOp) -> StepID {
         StepID {
-            module_name: m.to_string().to_lowercase(),
+            module_name: m.as_ref().to_lowercase(),
             path: None,
         }
     }
 
     pub fn from_exporter_module(m: &WriteAs, path: Option<PathBuf>) -> StepID {
         StepID {
-            module_name: format!("export_{}", m.to_string().to_lowercase()),
+            module_name: format!("export_{}", m.as_ref().to_lowercase()),
             path,
         }
     }
