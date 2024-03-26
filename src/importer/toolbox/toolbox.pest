@@ -1,0 +1,10 @@
+data = { SOI ~ block+ }
+block = { line+ ~ (EOI | NEWLINE*) }
+line = { "\\" ~ (anno_field | proc_field) ~ entries ~ (NEWLINE | EOI) }
+entries = { (spaces ~ (null | entry))+ }
+anno_field = { ALPHABETIC+ }
+proc_field = { "_" ~ ALPHABETIC+ }
+entry = { valid_chars+ }
+valid_chars = _{ !(" " | NEWLINE | EOI) ~ ANY }
+null = { "-" }
+spaces = _{ " "+ }
