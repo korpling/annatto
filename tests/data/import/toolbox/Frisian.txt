@@ -1,0 +1,113 @@
+\_sh v3.0  492  Frisian Text
+
+\id Adjectives
+
+\ref Adj.001
+\txt ûnbrekber         ûnwis        ûntrou        ûngeef       ûnfreonlik    ûnwolkom
+\mb ûn-  brek  -ber   ûn-  wis     ûn-  trou     ûn-  geef    ûn-  freonlik ûn-  wolkom
+\gl un-  break -able  un-  certain un-  faithful un-  healthy un-  kind     un-  welcome
+\ps neg- v     -v>adj neg- adj     neg- adj      neg- adj     neg- adj      neg- adj
+
+\txt ûntagonklik     ûnbikwaam    ûnferlykber         ûnkrekt      ûngenêslik    ûnytber
+\mb ûn-  tagonklik  ûn-  bikwaam ûn-  ferlyk  -ber   ûn-  krekt   ûn-  genêslik ûn-  yt  -ber
+\gl un-  accessible un-  capable un-  compare -able  un-  correct un-  curable  un-  eat -able
+\ps neg- adj        neg- adj     neg- v       -v>adj neg- adj     neg- adj      neg- v   -v>adj
+
+\txt ûnbegeanber        ûngeduldich    ûnfolmakke    ûnbeskamme     ûnmooglik     ûnwierskynlik
+\mb ûn-  begean -ber   ûn-  geduldich ûn-  folmakke ûn-  beskamme  ûn-  mooglik  ûn-  wierskynlik
+\gl un-  pass   -able  un-  patient   un-  perfect  un-  pertinent un-  possible un-  probable
+\ps neg- v      -v>adj neg- adj       neg- adj      neg- adj       neg- adj      neg- adj
+
+\id Bern
+
+\ref Bern.001
+\txt Berne      en   opgroeid         yn   Ynje,
+\mb bern -e    en   op-  groei -e    yn   Ynje
+\gl bear -PstP and  up-  grow  -PstP in   Indonesia
+\ps v    -tns  conj dir- v     -tns  prep n
+
+\f Born and raised in Indonesia, 
+
+\ref Bern.002
+\txt sil  dêr   syn  grêf  wêze.
+\mb sil  dêr   syn  grêf  wêze
+\gl will there his  grave be
+\ps v    adv   pron n     v
+
+\f He will be buried there also.
+
+\id Lake
+
+\ref Lake.001
+\txt Fryslân   yn   maitiidpracht,     wylst de  sinne skynde
+\mb Fryslân   yn   maitiid - pracht   wylst de  sinne skyn  -de
+\gl Friesland in   spring  - splendor while the sun   shine -Pst
+\ps n         prep n       - n        conj  det n     v     -tns
+
+\txt oer  de  marren    en   de  wide greiden      mei  fee.
+\mb oer  de  mar  -en  en   de  wide greid   -en  mei  fee
+\gl over the lake -Pl  and  the wide pasture -Pl  with cattle
+\ps prep det n    -num conj det adj  n       -num prep n
+
+\f Friesland in the glory of springtime, when the sun shone over  the
+lakes and the wide pastures filled with cattle.
+
+\ref Lake.002
+\txt Noarwegen, doe't de  hege sinne dreamde    yn
+\mb Noarwegen  doe't de  hege sinne dream -de  yn
+\gl Norway     when  the high sun   dream -Pst in
+\ps n          conj  det adj  n     v     -tns prep
+
+\txt 'e  fjorden.
+\mb de  fjord -en
+\gl the fjord -Pl
+\ps det n     -num
+
+\f Norway, where the sun shone dreamily over the fjords.
+
+\ref Lake.003
+\txt Heite        en   Memme        lân.
+\mb Heit   -e    en   Mem    -e    lân
+\gl father -Poss and  mother -Poss land
+\ps n      -poss conj n      -poss n
+
+\f It was his father's and mother's homeland.
+
+\ref Lake.004
+\txt Mar  sines?
+\mb mar  sines
+\gl but  his.p
+\ps conj pron
+
+\f But is it his homeland?
+
+\ref Lake.005
+\txt Hij hat der nea werom west.
+
+\f He has never been there.
+
+\id Verb
+
+\ref Vrb.001
+\txt miene
+\mb mien  -e
+\gl think -Inf
+\ps v     -tns
+
+\f
+
+\ref Vrb.002
+\txt ik   mien  do   mienst      hy   mient       wy   miene
+\mb ik   mien  do   mien  -st   hy   mien  -t    wy   mien  -e
+\gl I    think you  think -2    he   think -3    we   think -Pl
+\ps pron v     pron v     -pers pron v     -pers pron v     -vnum
+
+\f
+
+\ref Vrb.003
+\txt ik   miende     do   miendest         hy   miende     wy   mienden
+\mb ik   mien  -de  do   mien  -de  -st   hy   mien  -de  wy   mien  -de  -e
+\gl I    think -Pst you  think -Pst -2    he   think -Pst we   think -Pst -Pl
+\ps pron v     -tns pron v     -tns -pers pron v     -tns pron v     -tns -vnum
+
+\f
