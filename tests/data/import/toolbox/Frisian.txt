@@ -3,18 +3,18 @@
 \id Adjectives
 
 \ref Adj.001
-\txt 鹡brekber         鹡wis        鹡trou        鹡geef       鹡freonlik    鹡wolkom
-\mb 鹡-  brek  -ber   鹡-  wis     鹡-  trou     鹡-  geef    鹡-  freonlik 鹡-  wolkom
+\txt 没nbrekber         没nwis        没ntrou        没ngeef       没nfreonlik    没nwolkom
+\mb 没n-  brek  -ber   没n-  wis     没n-  trou     没n-  geef    没n-  freonlik 没n-  wolkom
 \gl un-  break -able  un-  certain un-  faithful un-  healthy un-  kind     un-  welcome
 \ps neg- v     -v>adj neg- adj     neg- adj      neg- adj     neg- adj      neg- adj
 
-\txt 鹡tagonklik     鹡bikwaam    鹡ferlykber         鹡krekt      鹡gen阺lik    鹡ytber
-\mb 鹡-  tagonklik  鹡-  bikwaam 鹡-  ferlyk  -ber   鹡-  krekt   鹡-  gen阺lik 鹡-  yt  -ber
+\txt 没ntagonklik     没nbikwaam    没nferlykber         没nkrekt      没ngen锚slik    没nytber
+\mb 没n-  tagonklik  没n-  bikwaam 没n-  ferlyk  -ber   没n-  krekt   没n-  gen锚slik 没n-  yt  -ber
 \gl un-  accessible un-  capable un-  compare -able  un-  correct un-  curable  un-  eat -able
 \ps neg- adj        neg- adj     neg- v       -v>adj neg- adj     neg- adj      neg- v   -v>adj
 
-\txt 鹡begeanber        鹡geduldich    鹡folmakke    鹡beskamme     鹡mooglik     鹡wierskynlik
-\mb 鹡-  begean -ber   鹡-  geduldich 鹡-  folmakke 鹡-  beskamme  鹡-  mooglik  鹡-  wierskynlik
+\txt 没nbegeanber        没ngeduldich    没nfolmakke    没nbeskamme     没nmooglik     没nwierskynlik
+\mb 没n-  begean -ber   没n-  geduldich 没n-  folmakke 没n-  beskamme  没n-  mooglik  没n-  wierskynlik
 \gl un-  pass   -able  un-  patient   un-  perfect  un-  pertinent un-  possible un-  probable
 \ps neg- v      -v>adj neg- adj       neg- adj      neg- adj       neg- adj      neg- adj
 
@@ -29,8 +29,8 @@
 \f Born and raised in Indonesia, 
 
 \ref Bern.002
-\txt sil  d阹   syn  gr阥  w陑e.
-\mb sil  d阹   syn  gr阥  w陑e
+\txt sil  d锚r   syn  gr锚f  w锚ze.
+\mb sil  d锚r   syn  gr锚f  w锚ze
 \gl will there his  grave be
 \ps v    adv   pron n     v
 
@@ -39,8 +39,8 @@
 \id Lake
 
 \ref Lake.001
-\txt Frysl鈔   yn   maitiidpracht,     wylst de  sinne skynde
-\mb Frysl鈔   yn   maitiid - pracht   wylst de  sinne skyn  -de
+\txt Frysl芒n   yn   maitiidpracht,     wylst de  sinne skynde
+\mb Frysl芒n   yn   maitiid - pracht   wylst de  sinne skyn  -de
 \gl Friesland in   spring  - splendor while the sun   shine -Pst
 \ps n         prep n       - n        conj  det n     v     -tns
 
@@ -66,8 +66,8 @@ lakes and the wide pastures filled with cattle.
 \f Norway, where the sun shone dreamily over the fjords.
 
 \ref Lake.003
-\txt Heite        en   Memme        l鈔.
-\mb Heit   -e    en   Mem    -e    l鈔
+\txt Heite        en   Memme        l芒n.
+\mb Heit   -e    en   Mem    -e    l芒n
 \gl father -Poss and  mother -Poss land
 \ps n      -poss conj n      -poss n
 
