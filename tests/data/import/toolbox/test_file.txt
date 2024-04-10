@@ -1,0 +1,17 @@
+\_sh v3.0  621  Text
+
+\id Testdatei erstellt für diesen Test
+
+\ref Testsatz 1
+\tx  Das    ist    ein    Testbeispiel    .
+\PoS PRON   VERB   DET    NOUN            PUNCT
+\syl das    ist    ein    test -bei -spiel -
+\mrph das   ist    ein    test- beispiel  -
+
+\comment  Dieser Kommentar sollte nicht im Zielgraph erscheinen.
+
+\ref  Testsatz 2
+\tx   Damit    lassen   sich  Sachen   testen   .
+\PoS  ADV      AUX      PRON  NOUN     VERB     .
+\syl  da -mit  las -sen sich  sa -chen tes -ten -
+\mrph damit    lass -en sich  sachen   test -en -
