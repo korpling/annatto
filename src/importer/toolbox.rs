@@ -141,17 +141,13 @@ impl ImportToolBox {
         }
         let max_end = end_ids.into_iter().max().unwrap();
         for (i, anno) in block_annos.into_iter().enumerate() {
-            let tokens = (start_id..max_end)
-                .map(|i| NodeSpec::Terminal(i))
-                .collect_vec();
+            let tokens = (start_id..max_end).map(NodeSpec::Terminal).collect_vec();
             self.annotate(
                 update,
                 doc_node_name,
-                (start_id, i as i8, "span".to_string()),
+                (start_id, i as u8, "span".to_string()),
                 tokens,
-                &anno.key.ns,
-                &anno.key.name,
-                anno.val.trim(),
+                (&anno.key.ns, &anno.key.name, anno.val.trim()),
                 ordering,
             )?;
         }
@@ -236,7 +232,7 @@ impl ImportToolBox {
                                                 doc_node_name,
                                                 (
                                                     timeline_id,
-                                                    sub_index as i8,
+                                                    sub_index as u8,
                                                     anno_name.to_string(),
                                                 ),
                                                 vec![if use_tokens {
@@ -248,9 +244,7 @@ impl ImportToolBox {
                                                         self.target.to_string(),
                                                     ))
                                                 }],
-                                                "",
-                                                anno_name,
-                                                sub_entry.as_str(),
+                                                ("", anno_name, sub_entry.as_str()),
                                                 ordering,
                                             )?;
                                         }
@@ -262,13 +256,13 @@ impl ImportToolBox {
                             _ => {
                                 // with_dashes OR default
                                 let (node_index, target_index) = (
-                                    (timeline_id, 0 as i8, anno_name.to_string()),
+                                    (timeline_id, 0_u8, anno_name.to_string()),
                                     if use_tokens {
                                         NodeSpec::Terminal(timeline_id)
                                     } else {
                                         NodeSpec::NonTerminal((
                                             timeline_id,
-                                            0 as i8,
+                                            0_u8,
                                             self.target.to_string(),
                                         ))
                                     },
@@ -278,9 +272,7 @@ impl ImportToolBox {
                                     doc_node_name,
                                     node_index,
                                     vec![target_index],
-                                    "",
-                                    anno_name,
-                                    entry_or_space.as_str(),
+                                    ("", anno_name, entry_or_space.as_str()),
                                     ordering,
                                 )?;
                                 timeline_id += 1;
@@ -313,9 +305,7 @@ impl ImportToolBox {
         doc_node_name: &str,
         node_index: AnnotationNode,
         targets: Vec<NodeSpec>,
-        anno_ns: &str,
-        anno_name: &str,
-        anno_value: &str,
+        anno: (&str, &str, &str),
         ordering: &mut BTreeMap<String, BTreeSet<(NodeSpec, String)>>,
     ) -> Result<()> {
         let node_name = format!(
@@ -328,9 +318,9 @@ impl ImportToolBox {
         })?;
         update.add_event(UpdateEvent::AddNodeLabel {
             node_name: node_name.to_string(),
-            anno_ns: anno_ns.to_string(),
-            anno_name: anno_name.to_string(),
-            anno_value: anno_value.to_string(),
+            anno_ns: anno.0.to_string(),
+            anno_name: anno.1.to_string(),
+            anno_value: anno.2.to_string(),
         })?;
         update.add_event(UpdateEvent::AddNodeLabel {
             node_name: node_name.to_string(),
@@ -338,11 +328,8 @@ impl ImportToolBox {
             anno_name: "layer".to_string(),
             anno_value: "default_layer".to_string(),
         })?;
-        let pointing_component = AnnotationComponent::new(
-            AnnotationComponentType::Pointing,
-            "".into(),
-            anno_name.into(),
-        );
+        let pointing_component =
+            AnnotationComponent::new(AnnotationComponentType::Pointing, "".into(), anno.1.into());
         let coverage_component = AnnotationComponent::new(
             AnnotationComponentType::Coverage,
             ANNIS_NS.into(),
@@ -398,7 +385,7 @@ impl ImportToolBox {
         })?;
         let ordered_node_spec =
             NodeSpec::NonTerminal((node_index.0, node_index.1, node_index.2.to_string()));
-        match ordering.entry(anno_name.to_string()) {
+        match ordering.entry(anno.1.to_string()) {
             Entry::Vacant(e) => {
                 let mut v = BTreeSet::default();
                 v.insert((ordered_node_spec, node_name));
@@ -412,7 +399,7 @@ impl ImportToolBox {
     }
 }
 
-type AnnotationNode = (usize, i8, String);
+type AnnotationNode = (usize, u8, String);
 type Tok = usize;
 
 #[derive(PartialOrd, PartialEq, Eq, Ord)]
