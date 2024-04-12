@@ -20,7 +20,7 @@ use exporter::{
 use importer::{
     conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
     graphml::GraphMLImporter, meta::AnnotateCorpus, none::CreateEmptyCorpus, opus::ImportOpusLinks,
-    ptb::ImportPTB, textgrid::ImportTextgrid, treetagger::ImportTreeTagger,
+    ptb::ImportPTB, textgrid::ImportTextgrid, toolbox::ImportToolBox, treetagger::ImportTreeTagger,
     xlsx::ImportSpreadsheet, xml::ImportXML, Importer,
 };
 use manipulator::{
@@ -120,6 +120,7 @@ pub enum ReadFrom {
     Path(#[serde(default)] CreateFileNodes),
     PTB(#[serde(default)] ImportPTB),
     TextGrid(#[serde(default)] ImportTextgrid),
+    Toolbox(#[serde(default)] ImportToolBox),
     TreeTagger(#[serde(default)] ImportTreeTagger),
     Xlsx(#[serde(default)] ImportSpreadsheet),
     Xml(ImportXML),
@@ -147,6 +148,7 @@ impl ReadFrom {
             ReadFrom::Path(m) => m,
             ReadFrom::Xml(m) => m,
             ReadFrom::Opus(m) => m,
+            ReadFrom::Toolbox(m) => m,
         }
     }
 }
@@ -163,6 +165,7 @@ impl ReadFromDiscriminants {
             ReadFromDiscriminants::Path => CreateFileNodes::DOCS,
             ReadFromDiscriminants::PTB => ImportPTB::DOCS,
             ReadFromDiscriminants::TextGrid => ImportTextgrid::DOCS,
+            ReadFromDiscriminants::Toolbox => ImportToolBox::DOCS,
             ReadFromDiscriminants::TreeTagger => ImportTreeTagger::DOCS,
             ReadFromDiscriminants::Xlsx => ImportSpreadsheet::DOCS,
             ReadFromDiscriminants::Xml => ImportXML::DOCS,
@@ -213,6 +216,10 @@ impl ReadFromDiscriminants {
                 ImportSpreadsheet::FIELD_DOCS,
             ),
             ReadFromDiscriminants::Xml => (ImportXML::FIELD_NAMES_AS_SLICE, ImportXML::FIELD_DOCS),
+            ReadFromDiscriminants::Toolbox => (
+                ImportToolBox::FIELD_NAMES_AS_SLICE,
+                ImportToolBox::FIELD_DOCS,
+            ),
         };
         for (idx, n) in field_names.iter().enumerate() {
             if idx < field_docs.len() {

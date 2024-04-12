@@ -1,2 +1,2 @@
-target = "txt"
-span = ["ref", "f"]
+target = "tx"
+span = ["ref", "id"]

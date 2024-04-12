@@ -7,7 +7,7 @@ use std::{
 use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::{AnnoKey, Annotation},
-    model::AnnotationComponentType,
+    model::{AnnotationComponent, AnnotationComponentType},
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::graph::ANNIS_NS;
@@ -30,9 +30,9 @@ use super::Importer;
 #[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct ImportToolBox {
-    /// This map links annotation layers to ordered (token) layers.
-    #[serde(default)]
-    order: BTreeSet<String>,
+    /// This attribute sets the annotation layer, that other annotations will point to.
+    /// This needs to be set to avoid an invalid model.
+    target: String,
     /// The annotation names named here are considered single-valued per line. Space values
     /// are not considered delimiters, but part of the annotation value. Such annotations
     /// rely on the existence of the target nodes, i. e. annotation lines without any other
@@ -83,7 +83,7 @@ impl ImportToolBox {
             })?;
         let next_pair = pairs.next();
         let mut start_id = 1;
-        let mut order_ends = BTreeMap::default();
+        let mut ordering = BTreeMap::default();
         if let Some(pair) = next_pair {
             if pair.as_rule() == Rule::data {
                 for annotation_block in pair.into_inner() {
@@ -93,10 +93,25 @@ impl ImportToolBox {
                             doc_node_name,
                             annotation_block,
                             start_id,
-                            &mut order_ends,
+                            &mut ordering,
                         )?;
                     }
                 }
+            }
+        }
+        for (ordering_name, node_specs) in ordering {
+            let sorted_nodes = node_specs
+                .into_iter()
+                .sorted_by(|a, b| a.0.cmp(&b.0))
+                .map(|(_, name)| name);
+            for (source_node, target_node) in sorted_nodes.tuple_windows() {
+                update.add_event(UpdateEvent::AddEdge {
+                    source_node,
+                    target_node,
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::Ordering.to_string(),
+                    component_name: ordering_name.to_string(),
+                })?;
             }
         }
         Ok(())
@@ -108,7 +123,7 @@ impl ImportToolBox {
         doc_node_name: &str,
         data: Pair<Rule>,
         start_id: usize,
-        order_ends: &mut BTreeMap<String, String>,
+        ordering: &mut BTreeMap<String, BTreeSet<(NodeSpec, String)>>,
     ) -> Result<usize> {
         let mut end_ids = BTreeSet::default();
         end_ids.insert(start_id); // to guarantee an option of a maximal value
@@ -117,7 +132,7 @@ impl ImportToolBox {
         for line in lines {
             if line.as_rule() == Rule::line {
                 let (end_id, block_anno) =
-                    self.map_annotation_line(update, doc_node_name, line, start_id, order_ends)?;
+                    self.map_annotation_line(update, doc_node_name, line, start_id, ordering)?;
                 end_ids.insert(end_id);
                 if let Some(anno) = block_anno {
                     block_annos.push(anno);
@@ -125,21 +140,19 @@ impl ImportToolBox {
             }
         }
         let max_end = end_ids.into_iter().max().unwrap();
-        for anno in block_annos {
-            let node_name = format!("{doc_node_name}#n{start_id}-{max_end}");
+        for (i, anno) in block_annos.into_iter().enumerate() {
             let tokens = (start_id..max_end)
-                .into_iter()
-                .map(|i| format!("{doc_node_name}#t{i}"))
+                .map(|i| NodeSpec::Terminal(i))
                 .collect_vec();
-            self.annotate_tokens(
+            self.annotate(
                 update,
                 doc_node_name,
-                node_name,
-                &tokens,
+                (start_id, i as i8, "span".to_string()),
+                tokens,
                 &anno.key.ns,
                 &anno.key.name,
-                &anno.val,
-                order_ends,
+                anno.val.trim(),
+                ordering,
             )?;
         }
         Ok(max_end)
@@ -151,7 +164,7 @@ impl ImportToolBox {
         doc_node_name: &str,
         data: Pair<Rule>,
         start_id: usize,
-        order_ends: &mut BTreeMap<String, String>,
+        ordering: &mut BTreeMap<String, BTreeSet<(NodeSpec, String)>>,
     ) -> Result<(usize, Option<Annotation>)> {
         let mut layer_name = String::new();
         let mut end_id = start_id;
@@ -165,7 +178,7 @@ impl ImportToolBox {
                         pair,
                         &layer_name,
                         start_id,
-                        order_ends,
+                        ordering,
                     )?;
                     if let Some(anno_val) = block_anno {
                         span_anno = Some(Annotation {
@@ -196,33 +209,83 @@ impl ImportToolBox {
         data: Pair<Rule>,
         anno_name: &str,
         id: usize,
-        order_ends: &mut BTreeMap<String, String>,
+        ordering: &mut BTreeMap<String, BTreeSet<(NodeSpec, String)>>,
     ) -> Result<(usize, Option<String>)> {
         let inner = data.into_inner();
-        // Build nodes
-        // FIXME this will lead to multiple creations of the same nodes and edges, which is not problematic, but slows things down
-        build_ordered_nodes(update, doc_node_name, id, inner.len())?;
         // annotate nodes
         let mut timeline_id = id;
         let mut join_list = Vec::new();
         let build_joint = self.span.contains(anno_name);
+        let use_tokens = self.target == anno_name;
         for entry_or_space in inner {
             match entry_or_space.as_rule() {
                 Rule::entry => {
                     if build_joint {
                         join_list.push(entry_or_space.as_str());
                     } else {
-                        self.annotate_tokens(
-                            update,
-                            doc_node_name,
-                            format!("{doc_node_name}#n{timeline_id}"),
-                            &[format!("{doc_node_name}#t{timeline_id}")],
-                            "",
-                            anno_name,
-                            entry_or_space.as_str(),
-                            order_ends,
-                        )?;
-                        timeline_id += 1;
+                        let mut inner = entry_or_space.clone().into_inner();
+                        let entry_node = inner.next().unwrap();
+                        match entry_node.as_rule() {
+                            Rule::complex => {
+                                let sub_entries = entry_node.into_inner();
+                                for (sub_index, sub_entry) in sub_entries.enumerate() {
+                                    match sub_entry.as_rule() {
+                                        Rule::default | Rule::pro_clitic | Rule::en_clitic => {
+                                            self.annotate(
+                                                update,
+                                                doc_node_name,
+                                                (
+                                                    timeline_id,
+                                                    sub_index as i8,
+                                                    anno_name.to_string(),
+                                                ),
+                                                vec![if use_tokens {
+                                                    NodeSpec::Terminal(timeline_id)
+                                                } else {
+                                                    NodeSpec::NonTerminal((
+                                                        timeline_id,
+                                                        0,
+                                                        self.target.to_string(),
+                                                    ))
+                                                }],
+                                                "",
+                                                anno_name,
+                                                sub_entry.as_str(),
+                                                ordering,
+                                            )?;
+                                        }
+                                        _ => continue,
+                                    };
+                                }
+                                timeline_id += 1;
+                            }
+                            _ => {
+                                // with_dashes OR default
+                                let (node_index, target_index) = (
+                                    (timeline_id, 0 as i8, anno_name.to_string()),
+                                    if use_tokens {
+                                        NodeSpec::Terminal(timeline_id)
+                                    } else {
+                                        NodeSpec::NonTerminal((
+                                            timeline_id,
+                                            0 as i8,
+                                            self.target.to_string(),
+                                        ))
+                                    },
+                                );
+                                self.annotate(
+                                    update,
+                                    doc_node_name,
+                                    node_index,
+                                    vec![target_index],
+                                    "",
+                                    anno_name,
+                                    entry_or_space.as_str(),
+                                    ordering,
+                                )?;
+                                timeline_id += 1;
+                            }
+                        };
                     }
                 }
                 Rule::spaces => {
@@ -244,17 +307,21 @@ impl ImportToolBox {
         Ok((timeline_id, block_annotation))
     }
 
-    fn annotate_tokens(
+    fn annotate(
         &self,
         update: &mut GraphUpdate,
         doc_node_name: &str,
-        node_name: String,
-        tokens: &[String],
+        node_index: AnnotationNode,
+        targets: Vec<NodeSpec>,
         anno_ns: &str,
         anno_name: &str,
         anno_value: &str,
-        order_ends: &mut BTreeMap<String, String>,
+        ordering: &mut BTreeMap<String, BTreeSet<(NodeSpec, String)>>,
     ) -> Result<()> {
+        let node_name = format!(
+            "{doc_node_name}#{}{}.{}",
+            node_index.2, node_index.0, node_index.1
+        );
         update.add_event(UpdateEvent::AddNode {
             node_name: node_name.to_string(),
             node_type: "node".to_string(),
@@ -271,13 +338,55 @@ impl ImportToolBox {
             anno_name: "layer".to_string(),
             anno_value: "default_layer".to_string(),
         })?;
-        for token_name in tokens {
+        let pointing_component = AnnotationComponent::new(
+            AnnotationComponentType::Pointing,
+            "".into(),
+            anno_name.into(),
+        );
+        let coverage_component = AnnotationComponent::new(
+            AnnotationComponentType::Coverage,
+            ANNIS_NS.into(),
+            "virtual".into(),
+        );
+        for target in targets {
+            let (target_name, component) = match target {
+                NodeSpec::NonTerminal((id, sub_id, prefix)) => (
+                    format!("{doc_node_name}#{prefix}{id}.{sub_id}"),
+                    &pointing_component,
+                ),
+                NodeSpec::Terminal(tok_i) => {
+                    let target_name = format!("{doc_node_name}#{tok_i}");
+                    match ordering.entry("".to_string()) {
+                        Entry::Vacant(e) => {
+                            update.add_event(UpdateEvent::AddNode {
+                                node_name: target_name.to_string(),
+                                node_type: "node".to_string(),
+                            })?;
+                            let mut v = BTreeSet::default();
+                            v.insert((target, target_name.to_string()));
+                            e.insert(v);
+                        }
+                        Entry::Occupied(mut e) => {
+                            let k = (target, target_name.to_string());
+                            let v = e.get_mut();
+                            if !v.contains(&k) {
+                                update.add_event(UpdateEvent::AddNode {
+                                    node_name: target_name.to_string(),
+                                    node_type: "node".to_string(),
+                                })?;
+                                v.insert(k);
+                            }
+                        }
+                    }
+                    (target_name, &coverage_component)
+                }
+            };
             update.add_event(UpdateEvent::AddEdge {
                 source_node: node_name.to_string(),
-                target_node: token_name.to_string(),
-                layer: ANNIS_NS.to_string(),
-                component_type: AnnotationComponentType::Coverage.to_string(),
-                component_name: "".to_string(),
+                target_node: target_name,
+                layer: component.layer.to_string(),
+                component_type: component.get_type().to_string(),
+                component_name: component.name.to_string(),
             })?;
         }
         update.add_event(UpdateEvent::AddEdge {
@@ -287,77 +396,29 @@ impl ImportToolBox {
             component_type: AnnotationComponentType::PartOf.to_string(),
             component_name: "".to_string(),
         })?;
-        if self.order.contains(anno_name) {
-            if let Entry::Occupied(e) = order_ends.entry(anno_name.to_string()) {
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: e.get().to_string(),
-                    target_node: node_name.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: anno_name.to_string(),
-                })?;
+        let ordered_node_spec =
+            NodeSpec::NonTerminal((node_index.0, node_index.1, node_index.2.to_string()));
+        match ordering.entry(anno_name.to_string()) {
+            Entry::Vacant(e) => {
+                let mut v = BTreeSet::default();
+                v.insert((ordered_node_spec, node_name));
+                e.insert(v);
             }
-            order_ends.insert(anno_name.to_string(), node_name);
-        }
+            Entry::Occupied(mut e) => {
+                e.get_mut().insert((ordered_node_spec, node_name));
+            }
+        };
         Ok(())
     }
 }
 
-fn build_ordered_nodes(
-    update: &mut GraphUpdate,
-    doc_node_name: &str,
-    start: usize,
-    n: usize,
-) -> Result<()> {
-    (start..(start + n))
-        .into_iter()
-        .try_for_each(|i| {
-            let node_name = format!("{doc_node_name}#t{i}");
-            update
-                .add_event(UpdateEvent::AddNode {
-                    node_name: node_name.to_string(),
-                    node_type: "node".to_string(),
-                })
-                .and_then(|_| {
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: ANNIS_NS.to_string(),
-                        anno_name: "tok".to_string(),
-                        anno_value: " ".to_string(),
-                    })
-                })
-                .and_then(|_| {
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: ANNIS_NS.to_string(),
-                        anno_name: "layer".to_string(),
-                        anno_value: "default_layer".to_string(),
-                    })
-                })
-                .and_then(|_| {
-                    update.add_event(UpdateEvent::AddEdge {
-                        source_node: node_name.to_string(),
-                        target_node: doc_node_name.to_string(),
-                        layer: ANNIS_NS.to_string(),
-                        component_type: AnnotationComponentType::PartOf.to_string(),
-                        component_name: "".to_string(),
-                    })
-                })
-                .and_then(|_| {
-                    if i > 1 {
-                        update.add_event(UpdateEvent::AddEdge {
-                            source_node: format!("{doc_node_name}#t{}", i - 1),
-                            target_node: node_name,
-                            layer: ANNIS_NS.to_string(),
-                            component_type: AnnotationComponentType::Ordering.to_string(),
-                            component_name: "".to_string(),
-                        })
-                    } else {
-                        Ok(())
-                    }
-                })
-        })
-        .map_err(|e| AnnattoError::GraphAnnisCore(e))
+type AnnotationNode = (usize, i8, String);
+type Tok = usize;
+
+#[derive(PartialOrd, PartialEq, Eq, Ord)]
+enum NodeSpec {
+    NonTerminal(AnnotationNode),
+    Terminal(Tok),
 }
 
 #[derive(Parser)]
@@ -366,7 +427,7 @@ struct ToolboxParser;
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::{fs, path::Path};
 
     use insta::assert_snapshot;
 
@@ -374,19 +435,22 @@ mod tests {
 
     #[test]
     fn core_functionality() {
-        let toml_str = r#"""
-        order = ["txt"]
-        span = ["ref", "Subref"]
-        """#;
-        let imp: Result<ImportToolBox, _> = toml::from_str(toml_str);
-        assert!(imp.is_ok());
+        let ts = fs::read_to_string("tests/data/import/toolbox/build.toml");
+        assert!(ts.is_ok(), "Could not read workflow: {:?}", ts.err());
+        let toml_str = ts.unwrap();
+        let imp: Result<ImportToolBox, _> = toml::from_str(toml_str.as_str());
+        assert!(imp.is_ok(), "Error occurred: {:?}", imp.err());
         let importer = imp.unwrap();
         let graphml_is = crate::test_util::import_as_graphml_string(
             importer,
             Path::new("tests/data/import/toolbox/"),
             None,
         );
-        assert!(graphml_is.is_ok());
+        assert!(
+            graphml_is.is_ok(),
+            "Failed to import test file: {:?}",
+            graphml_is.err()
+        );
         assert_snapshot!(graphml_is.unwrap());
     }
 }
