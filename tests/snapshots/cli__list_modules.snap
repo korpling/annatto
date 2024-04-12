@@ -3,7 +3,7 @@ source: tests/cli.rs
 expression: output
 ---
 |:-:|:-:|
-| Import formats | conllu, exmaralda, graphml, meta, none, opus, path, ptb, textgrid, treetagger, xlsx, xml|
+| Import formats | conllu, exmaralda, graphml, meta, none, opus, path, ptb, textgrid, toolbox, treetagger, xlsx, xml|
 |:-:|:-:|
 | Export formats | graphml, exmaralda, xlsx|
 |:-:|:-:|
@@ -11,3 +11,5 @@ expression: output
 |-
 
 Use `annatto info <name>` to get more information about one of the formats or graph operations.
+
+

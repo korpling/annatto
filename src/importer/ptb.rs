@@ -316,7 +316,7 @@ impl Importer for ImportPTB {
             let mut file_content = String::new();
             decoder.read_to_string(&mut file_content)?;
 
-            let ptb: Pairs<Rule> = PtbParser::parse(Rule::ptb, &file_content)?;
+            let ptb: Pairs<Rule> = PtbParser::parse(Rule::ptb, file_content.trim())?;
 
             let text_node_name = format!("{}#text", &doc_path);
 
