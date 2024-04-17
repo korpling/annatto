@@ -1,9 +1,4 @@
-use std::{
-    collections::BTreeMap,
-    fs::{self, File},
-    io::Write,
-    path::Path,
-};
+use std::{collections::BTreeMap, fs::File, path::Path};
 
 use graphannis::{
     model::AnnotationComponentType,
@@ -71,7 +66,7 @@ impl ImportXML {
         // stacks and lists
         let default_key = "".to_string();
         let mut node_counts = BTreeMap::default();
-        node_counts.insert(default_key.to_string(), 0 as usize);
+        node_counts.insert(default_key.to_string(), 0_usize);
         let mut node_stack: Vec<(String, String)> = Vec::new();
         loop {
             let xml_event = reader.next().map_err(|_| AnnattoError::Import {
@@ -88,11 +83,7 @@ impl ImportXML {
                         .entry(name_str.to_string())
                         .and_modify(|e| *e += 1)
                         .or_insert(1);
-                    let node_name = format!(
-                        "{doc_node_name}#{}{}",
-                        name.to_string(),
-                        node_counts[&name_str]
-                    );
+                    let node_name = format!("{doc_node_name}#{}{}", name, node_counts[&name_str]);
                     add_node(update, &doc_node_name, &node_name, None)?;
                     for attr in attributes {
                         update.add_event(UpdateEvent::AddNodeLabel {
@@ -152,10 +143,6 @@ impl ImportXML {
                 }
                 xml::reader::XmlEvent::EndDocument => {
                     progress.worked(1)?;
-                    let total_node_count: usize = node_counts.into_iter().map(|(_, v)| v).sum();
-                    let mut f = fs::File::create("./node_count.log")?;
-                    f.write(total_node_count.to_string().as_bytes())?;
-                    dbg!(&usize::MAX);
                     return Ok(());
                 }
                 _ => {}
