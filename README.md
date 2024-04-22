@@ -213,8 +213,6 @@ The [level](https://github.com/crate-ci/cargo-release/blob/HEAD/docs/reference.m
 Running the release command will also trigger a CI workflow to create release binaries on GitHub.
 
 
-This will also trigger a CI workflow to create release binaries on GitHub.
-
 ## Funding
 
 Die Forschungsergebnisse dieser Veröffentlichung wurden gefördert durch die Deutsche Forschungsgemeinschaft (DFG) – SFB 1412, 416591334 sowie FOR 2537, 313607803, GZ LU 856/16-1.
