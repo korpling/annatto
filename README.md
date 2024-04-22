@@ -206,8 +206,12 @@ cargo install cargo-release
 To perform a release, switch to the main branch and execute:
 
 ```bash
-cargo release --execute
+cargo release [LEVEL] --execute
 ```
+
+The [level](https://github.com/crate-ci/cargo-release/blob/HEAD/docs/reference.md#bump-level) should be `patch`, `minor` or `major` depending on the changes made in the release.
+Running the release command will also trigger a CI workflow to create release binaries on GitHub.
+
 
 This will also trigger a CI workflow to create release binaries on GitHub.
 
