@@ -127,8 +127,8 @@ impl Exporter for ExportSequence {
                     start_node,
                     &groups,
                     output_path,
-                    &progress,
                 )?;
+                progress.worked(1)?;
             }
         }
         Ok(())
@@ -148,7 +148,6 @@ impl ExportSequence {
         sequence_start: u64,
         groups: &BTreeMap<u64, u64>,
         target_dir: &Path,
-        progress: &ProgressReporter,
     ) -> Result<()> {
         let node_annos = graph.get_node_annos();
         let mut values = Vec::new();
@@ -197,7 +196,6 @@ impl ExportSequence {
         }
         out_file.write_all("\n".as_bytes())?;
         out_file.flush()?;
-        progress.worked(1)?;
         Ok(())
     }
 
