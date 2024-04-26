@@ -5,7 +5,7 @@ expression: output
 |:-:|:-:|
 | Import formats | conllu, exmaralda, graphml, meta, none, opus, path, ptb, textgrid, toolbox, treetagger, xlsx, xml|
 |:-:|:-:|
-| Export formats | graphml, exmaralda, xlsx|
+| Export formats | graphml, exmaralda, sequence, xlsx|
 |:-:|:-:|
 | Graph operations | check, collapse, enumerate, link, map, merge, revise, chunk, none|
 |-

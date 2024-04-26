@@ -1,0 +1,8 @@
+horizontal = true
+fileby = { ns = "annis", name = "doc" }
+groupby = { ns = "", name = "sentence" }
+group_component_type = "Coverage"
+component_type = "Ordering"
+component_layer = "annis"
+component_name = "norm"
+anno = { ns = "", name = "norm" }

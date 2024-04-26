@@ -1,0 +1,5 @@
+horizontal = false
+component_type = "Ordering"
+component_layer = "default_ns"
+component_name = "norm"
+anno = { ns = "norm", name = "norm" }
