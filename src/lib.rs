@@ -15,8 +15,8 @@ use std::{fmt::Display, path::PathBuf};
 use documented::{Documented, DocumentedFields};
 use error::Result;
 use exporter::{
-    exmaralda::ExportExmaralda, graphml::GraphMLExporter, sequence::ExportSequence, xlsx::XlsxExporter,
-    Exporter,
+    exmaralda::ExportExmaralda, graphml::GraphMLExporter, sequence::ExportSequence,
+    xlsx::XlsxExporter, Exporter,
 };
 use importer::{
     conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
