@@ -67,11 +67,7 @@ where
     Ok(actual)
 }
 
-pub fn export_to_string<E>(
-    graph: &AnnotationGraph,
-    exporter: E,
-    file_extension: &str,
-) -> Result<String>
+pub fn export_to_string<E>(graph: &AnnotationGraph, exporter: E) -> Result<String>
 where
     E: Exporter,
 {
@@ -89,7 +85,7 @@ where
             path: output_path.path().to_path_buf(),
         })?;
     let mut buffer = String::new();
-    for path in get_all_files(output_path.path(), &[file_extension])? {
+    for path in get_all_files(output_path.path(), &[exporter.file_extension()])? {
         let file_data = fs::read_to_string(path)?;
         buffer.push_str(&file_data);
     }

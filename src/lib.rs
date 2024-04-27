@@ -15,7 +15,8 @@ use std::{fmt::Display, path::PathBuf};
 use documented::{Documented, DocumentedFields};
 use error::Result;
 use exporter::{
-    exmaralda::ExportExmaralda, graphml::GraphMLExporter, xlsx::XlsxExporter, Exporter,
+    exmaralda::ExportExmaralda, graphml::GraphMLExporter, sequence::ExportSequence,
+    xlsx::XlsxExporter, Exporter,
 };
 use importer::{
     conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
@@ -45,6 +46,7 @@ pub struct ModuleConfiguration {
 pub enum WriteAs {
     GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
     EXMARaLDA(#[serde(default)] ExportExmaralda),
+    Sequence(#[serde(default)] ExportSequence),
     Xlsx(#[serde(default)] XlsxExporter),
 }
 
@@ -60,6 +62,7 @@ impl WriteAs {
         match self {
             WriteAs::GraphML(m) => m,
             WriteAs::EXMARaLDA(m) => m,
+            WriteAs::Sequence(m) => m,
             WriteAs::Xlsx(m) => m,
         }
     }
@@ -70,6 +73,7 @@ impl WriteAsDiscriminants {
         match self {
             WriteAsDiscriminants::GraphML => GraphMLExporter::DOCS,
             WriteAsDiscriminants::EXMARaLDA => ExportExmaralda::DOCS,
+            WriteAsDiscriminants::Sequence => ExportSequence::DOCS,
             WriteAsDiscriminants::Xlsx => XlsxExporter::DOCS,
         }
     }
@@ -84,6 +88,10 @@ impl WriteAsDiscriminants {
             WriteAsDiscriminants::EXMARaLDA => (
                 ExportExmaralda::FIELD_NAMES_AS_SLICE,
                 ExportExmaralda::FIELD_DOCS,
+            ),
+            WriteAsDiscriminants::Sequence => (
+                ExportSequence::FIELD_NAMES_AS_SLICE,
+                ExportSequence::FIELD_DOCS,
             ),
             WriteAsDiscriminants::Xlsx => {
                 (XlsxExporter::FIELD_NAMES_AS_SLICE, XlsxExporter::FIELD_DOCS)

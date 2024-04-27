@@ -648,7 +648,7 @@ mod tests {
         assert!(g.is_ok());
         let mut graph = g.unwrap();
         assert!(graph.apply_update(&mut update, |_| {}).is_ok());
-        let actual = export_to_string(&graph, ExportExmaralda::default(), "exb");
+        let actual = export_to_string(&graph, ExportExmaralda::default());
         assert!(actual.is_ok());
 
         assert_snapshot!(actual.unwrap());
@@ -675,7 +675,7 @@ mod tests {
         assert!(g.is_ok());
         let mut graph = g.unwrap();
         assert!(graph.apply_update(&mut update, |_| {}).is_ok());
-        let actual = export_to_string(&graph, ExportExmaralda { copy_media: true }, "exb");
+        let actual = export_to_string(&graph, ExportExmaralda { copy_media: true });
         assert!(actual.is_ok());
 
         assert_snapshot!(actual.unwrap());
