@@ -186,9 +186,6 @@ impl ExportSequence {
             .get_value_for_item(&file_node, &self.fileby)?
             .unwrap(); // at this point we know there is a value
         let out_path = target_dir.join(format!("{doc_name}.{}", self.file_extension()));
-        if out_path.exists() {
-            progress.warn(format!("File exists: {}", out_path.to_string_lossy()).as_str())?;
-        }
         let mut out_file = fs::File::create(out_path)?;
         for value in blocks {
             out_file.write_all(value.as_bytes())?;
