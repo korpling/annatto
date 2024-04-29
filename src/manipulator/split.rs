@@ -44,8 +44,7 @@ impl Manipulator for SplitValues {
         let value_map = self
             .layer_map
             .iter()
-            .map(|(k, v)| v.iter().map(|vv| (vv.as_str(), k.as_str())).collect_vec())
-            .flatten()
+            .flat_map(|(k, v)| v.iter().map(|vv| (vv.as_str(), k.as_str())).collect_vec())
             .collect::<BTreeMap<&str, &str>>();
         let index_to_key: BTreeMap<usize, AnnoKey> = self
             .index_map
@@ -86,8 +85,8 @@ impl Manipulator for SplitValues {
             progress.worked(1)?;
         }
         let application_progress = ProgressReporter::new_unknown_total_work(tx, step_id)?;
-        graph.apply_update(&mut update, move |_| match application_progress.worked(1) {
-            _ => {}
+        graph.apply_update(&mut update, move |_| {
+            let _ = application_progress.worked(1);
         })?;
         Ok(())
     }
@@ -113,7 +112,7 @@ impl SplitValues {
             } else {
                 // use value map
                 if let Some(anno_key_str) = value_map.get(v) {
-                    let (ns, name) = split_qname(&anno_key_str);
+                    let (ns, name) = split_qname(anno_key_str);
                     update.add_event(UpdateEvent::AddNodeLabel {
                         node_name: node_name.to_string(),
                         anno_ns: ns.unwrap_or("").to_string(),
