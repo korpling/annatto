@@ -101,7 +101,7 @@ impl SplitValues {
         value_map: &BTreeMap<&str, &str>,
         index_map: &BTreeMap<usize, AnnoKey>,
     ) -> Result<()> {
-        for (i, v) in value.to_string().split(&self.delimiter).enumerate() {
+        for (i, v) in value.split(&self.delimiter).enumerate() {
             if let Some(key) = index_map.get(&(i + 1)) {
                 update.add_event(UpdateEvent::AddNodeLabel {
                     node_name: node_name.to_string(),
