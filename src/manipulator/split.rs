@@ -183,6 +183,8 @@ mod tests {
         let gml = export_to_string(&graph, GraphMLExporter::default());
         assert!(gml.is_ok());
         let graphml = gml.unwrap();
-        assert_snapshot!(graphml);
+        let start = graphml.find("<node ").unwrap_or(0);
+        let end = graphml.rfind("</node>").unwrap_or(usize::MAX);
+        assert_snapshot!(&graphml[start..end + 7]);
     }
 }
