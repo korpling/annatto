@@ -26,7 +26,7 @@ use importer::{
 };
 use manipulator::{
     check::Check, chunker::Chunk, collapse::Collapse, enumerate::EnumerateMatches, link::LinkNodes,
-    map::MapAnnos, merge::Merge, no_op::NoOp, re::Revise, Manipulator,
+    map::MapAnnos, merge::Merge, no_op::NoOp, re::Revise, split::SplitValues, Manipulator,
 };
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
@@ -259,6 +259,7 @@ pub enum GraphOp {
     Merge(Merge),                     // no default, has required attributes
     Revise(#[serde(default)] Revise), // does nothing on default
     Chunk(#[serde(default)] Chunk),
+    Split(SplitValues),           // no default
     None(#[serde(default)] NoOp), // has no attributes
 }
 
@@ -281,6 +282,7 @@ impl GraphOp {
             GraphOp::None(m) => m,
             GraphOp::Enumerate(m) => m,
             GraphOp::Chunk(m) => m,
+            GraphOp::Split(m) => m,
         }
     }
 }
@@ -297,6 +299,7 @@ impl GraphOpDiscriminants {
             GraphOpDiscriminants::Revise => Revise::DOCS,
             GraphOpDiscriminants::Chunk => Chunk::DOCS,
             GraphOpDiscriminants::None => NoOp::DOCS,
+            GraphOpDiscriminants::Split => SplitValues::DOCS,
         }
     }
 
@@ -317,6 +320,9 @@ impl GraphOpDiscriminants {
             GraphOpDiscriminants::Revise => (Revise::FIELD_NAMES_AS_SLICE, Revise::FIELD_DOCS),
             GraphOpDiscriminants::Chunk => (Chunk::FIELD_NAMES_AS_SLICE, Chunk::FIELD_DOCS),
             GraphOpDiscriminants::None => (NoOp::FIELD_NAMES_AS_SLICE, NoOp::FIELD_DOCS),
+            GraphOpDiscriminants::Split => {
+                (SplitValues::FIELD_NAMES_AS_SLICE, SplitValues::FIELD_DOCS)
+            }
         };
         for (idx, n) in field_names.iter().enumerate() {
             if idx < field_docs.len() {

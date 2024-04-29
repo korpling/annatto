@@ -1,0 +1,15 @@
+die	DDART.Fem.Nom.Sg	der
+zeit	NA.Fem.Nom.Sg	zeit
+des	DDART.MN.Gen.Sg	der
+schweygens	NA.MN.Gen.Sg	schweigen
+ist	VAFIN.3.Sg.Präs.Ind.Unr	sein
+vorgangen	PTKVZ|VVPP	vor|vorgehen
+,	$_	,
+und	KON	und
+die	DDART.Fem.Akk.Sg	der
+zeit	NA.Fem.Akk.Sg	zeit
+zu	PTKZU	zu
+reden	VVINF	reden
+ist	VAFIN.3.Sg.Präs.Ind.Unr	sein
+kommen	VVPP	kommen
+,	$_	,
