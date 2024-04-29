@@ -8,6 +8,7 @@ pub mod map;
 pub mod merge;
 pub mod no_op;
 pub mod re;
+pub mod split;
 
 use crate::{workflow::StatusSender, StepID};
 use graphannis::AnnotationGraph;
