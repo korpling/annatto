@@ -401,7 +401,7 @@ enum ExpectedQueryResult {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeMap, env::temp_dir, fs, path::Path, sync::mpsc};
+    use std::{collections::BTreeMap, fs, path::Path, sync::mpsc};
 
     use graphannis::{
         model::AnnotationComponentType,
@@ -410,6 +410,7 @@ mod tests {
     };
     use graphannis_core::graph::ANNIS_NS;
     use insta::assert_snapshot;
+    use tempfile::tempdir;
     use toml;
 
     use crate::{
@@ -471,7 +472,7 @@ mod tests {
         };
 
         let (sender, receiver) = mpsc::channel();
-        check.manipulate_corpus(&mut g, temp_dir().as_path(), step_id, Some(sender))?;
+        check.manipulate_corpus(&mut g, tempdir()?.path(), step_id, Some(sender))?;
         assert!(check.report.is_some()); // if deserialization worked properly, `check` should be set to report
         assert!(matches!(check.report.as_ref().unwrap(), &ReportLevel::List));
         assert!(receiver.iter().count() > 0); // there should be a status report
@@ -496,7 +497,7 @@ mod tests {
             module_name: "check".to_string(),
             path: None,
         };
-        let result = check.manipulate_corpus(&mut g, temp_dir().as_path(), step_id, Some(sender));
+        let result = check.manipulate_corpus(&mut g, tempdir()?.path(), step_id, Some(sender));
         assert!(result.is_err());
         assert!(check.report.is_some());
         if with_nodes {
@@ -604,13 +605,15 @@ mod tests {
             assert!(processor_opt.is_ok());
             let check = processor_opt.unwrap();
             let (sender, receiver) = mpsc::channel();
-            let dummy_value = temp_dir();
+            let tmp = tempdir();
+            assert!(tmp.is_ok());
+            let dummy_value = tmp.unwrap();
 
             let step_id = StepID {
                 module_name: "check".to_string(),
                 path: None,
             };
-            let run = check.manipulate_corpus(&mut g, dummy_value.as_path(), step_id, Some(sender));
+            let run = check.manipulate_corpus(&mut g, dummy_value.path(), step_id, Some(sender));
             assert!(run.is_ok());
             assert_eq!(
                 receiver
@@ -626,13 +629,15 @@ mod tests {
             assert!(processor_opt.is_ok());
             let check = processor_opt.unwrap();
             let (sender, _receiver) = mpsc::channel();
-            let dummy_value = temp_dir();
+            let tmp = tempdir();
+            assert!(tmp.is_ok());
+            let dummy_value = tmp.unwrap();
 
             let step_id = StepID {
                 module_name: "check".to_string(),
                 path: None,
             };
-            let run = check.manipulate_corpus(&mut g, dummy_value.as_path(), step_id, Some(sender));
+            let run = check.manipulate_corpus(&mut g, dummy_value.path(), step_id, Some(sender));
             assert!(run.is_err());
             assert_snapshot!(run.err().unwrap().to_string());
         }
@@ -667,7 +672,10 @@ mod tests {
             expected: ExpectedQueryResult::Numeric(4),
             description: "Correct number of tokens".to_string(),
         }];
-        let report_path = temp_dir().join("annatto_test_report_out.txt");
+        let tmp = tempdir();
+        assert!(tmp.is_ok());
+        let tmp_dir = tmp.unwrap();
+        let report_path = tmp_dir.path().join("annatto_test_report_out.txt");
         let check = Check {
             policy: FailurePolicy::Fail,
             tests,
@@ -680,7 +688,7 @@ mod tests {
             path: None,
         };
         assert!(check
-            .manipulate_corpus(&mut graph, temp_dir().as_path(), step_id, None)
+            .manipulate_corpus(&mut graph, tmp_dir.path(), step_id, None)
             .is_ok());
         assert!(report_path.exists());
     }

@@ -620,7 +620,6 @@ impl Manipulator for Revise {
 #[cfg(test)]
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
-    use std::env::temp_dir;
     use std::fs;
     use std::path::Path;
 
@@ -636,7 +635,7 @@ mod tests {
     use graphannis_core::annostorage::ValueSearch;
     use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY};
     use itertools::Itertools;
-    use tempfile::{tempdir_in, tempfile};
+    use tempfile::{tempdir, tempfile};
 
     use super::revise_components;
 
@@ -685,7 +684,7 @@ mod tests {
             module_name: "replace".to_string(),
             path: None,
         };
-        let result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), step_id, None);
+        let result = replace.manipulate_corpus(&mut g, tempdir()?.path(), step_id, None);
         assert_eq!(result.is_ok(), true, "Probing merge result {:?}", &result);
         let mut e_g = if rename {
             input_graph(on_disk, true)?
@@ -764,8 +763,8 @@ mod tests {
             "node ->dep[func=/.+/] node",
         ];
         let corpus_name = "current";
-        let tmp_dir_e = tempdir_in(temp_dir())?;
-        let tmp_dir_g = tempdir_in(temp_dir())?;
+        let tmp_dir_e = tempdir()?;
+        let tmp_dir_g = tempdir()?;
         e_g.save_to(&tmp_dir_e.path().join(corpus_name))?;
         g.save_to(&tmp_dir_g.path().join(corpus_name))?;
         let cs_e = CorpusStorage::with_auto_cache_size(&tmp_dir_e.path(), true)?;
@@ -823,7 +822,7 @@ mod tests {
             module_name: "replace".to_string(),
             path: None,
         };
-        let result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), step_id, None);
+        let result = replace.manipulate_corpus(&mut g, tempdir()?.path(), step_id, None);
         assert_eq!(result.is_ok(), true, "Probing merge result {:?}", &result);
         let mut e_g = expected_output_for_move(on_disk)?;
         // corpus nodes
@@ -889,8 +888,8 @@ mod tests {
         // test with queries
         let queries = ["tok", "pos", "derived_pos"];
         let corpus_name = "current";
-        let tmp_dir_e = tempdir_in(temp_dir())?;
-        let tmp_dir_g = tempdir_in(temp_dir())?;
+        let tmp_dir_e = tempdir()?;
+        let tmp_dir_g = tempdir()?;
         e_g.save_to(&tmp_dir_e.path().join(corpus_name))?;
         g.save_to(&tmp_dir_g.path().join(corpus_name))?;
         let cs_e = CorpusStorage::with_auto_cache_size(&tmp_dir_e.path(), true)?;
@@ -965,7 +964,7 @@ mod tests {
         };
         assert_eq!(
             replace
-                .manipulate_corpus(&mut g, temp_dir().as_path(), step_id, None)
+                .manipulate_corpus(&mut g, tempdir()?.path(), step_id, None)
                 .is_ok(),
             true
         );
@@ -1024,7 +1023,7 @@ mod tests {
         };
         assert_eq!(
             replace
-                .manipulate_corpus(&mut g, temp_dir().as_path(), step_id, None)
+                .manipulate_corpus(&mut g, tempdir()?.path(), step_id, None)
                 .is_ok(),
             true
         );
@@ -1067,7 +1066,7 @@ mod tests {
             module_name: "replace".to_string(),
             path: None,
         };
-        let op_result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), step_id, None);
+        let op_result = replace.manipulate_corpus(&mut g, tempdir()?.path(), step_id, None);
         assert_eq!(
             op_result.is_ok(),
             true,
@@ -1148,8 +1147,8 @@ mod tests {
             "node ->dep[default_ns:func=/.*/] node",
         ];
         let corpus_name = "current";
-        let tmp_dir_e = tempdir_in(temp_dir())?;
-        let tmp_dir_g = tempdir_in(temp_dir())?;
+        let tmp_dir_e = tempdir()?;
+        let tmp_dir_g = tempdir()?;
         e_g.save_to(&tmp_dir_e.path().join(corpus_name))?;
         g.save_to(&tmp_dir_g.path().join(corpus_name))?;
         let cs_e = CorpusStorage::with_auto_cache_size(&tmp_dir_e.path(), true)?;

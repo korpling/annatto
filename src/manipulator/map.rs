@@ -1,5 +1,4 @@
 use std::{
-    env::temp_dir,
     fs,
     path::{Path, PathBuf},
 };
@@ -14,7 +13,7 @@ use graphannis::{
 use itertools::Itertools;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
-use tempfile::tempdir_in;
+use tempfile::tempdir;
 
 use super::Manipulator;
 
@@ -56,7 +55,7 @@ impl MapAnnos {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
         let corpus_name = "current";
-        let tmp_dir = tempdir_in(temp_dir())?;
+        let tmp_dir = tempdir()?;
         graph.save_to(&tmp_dir.path().join(corpus_name))?;
         let cs = CorpusStorage::with_auto_cache_size(tmp_dir.path(), true)?;
         for rule in mapping.rules {
@@ -115,7 +114,7 @@ struct Rule {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeSet, env::temp_dir, sync::mpsc};
+    use std::{collections::BTreeSet, sync::mpsc};
 
     use graphannis::{
         corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
@@ -129,7 +128,7 @@ mod tests {
         util::join_qname,
     };
     use itertools::Itertools;
-    use tempfile::tempdir_in;
+    use tempfile::tempdir;
 
     use super::{MapAnnos, Mapping};
 
@@ -178,8 +177,9 @@ mod tests {
             value = "PROPN"
         "#;
         let mapping: Mapping = toml::from_str(config)?;
+        let tmp = tempdir()?;
         let mapper = MapAnnos {
-            rule_file: temp_dir().join("rule_file_test.toml"), // dummy path
+            rule_file: tmp.path().join("rule_file_test.toml"), // dummy path
         };
         let (sender, _receiver) = mpsc::channel();
         let mut g = source_graph(on_disk)?;
@@ -274,8 +274,8 @@ mod tests {
             ("tok=/New York/ _=_ pos=/PROPN/", 1),
         ];
         let corpus_name = "current";
-        let tmp_dir_e = tempdir_in(temp_dir())?;
-        let tmp_dir_g = tempdir_in(temp_dir())?;
+        let tmp_dir_e = tempdir()?;
+        let tmp_dir_g = tempdir()?;
         e_g.save_to(&tmp_dir_e.path().join(corpus_name))?;
         g.save_to(&tmp_dir_g.path().join(corpus_name))?;
         let cs_e = CorpusStorage::with_auto_cache_size(&tmp_dir_e.path(), true)?;

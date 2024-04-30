@@ -461,14 +461,14 @@ impl Importer for ImportSpreadsheet {
 
 #[cfg(test)]
 mod tests {
-    use std::{env::temp_dir, sync::mpsc};
+    use std::sync::mpsc;
 
     use graphannis::{
         corpusstorage::{QueryLanguage, SearchQuery},
         AnnotationGraph, CorpusStorage,
     };
     use graphannis_core::{annostorage::ValueSearch, types::AnnoKey};
-    use tempfile::tempdir_in;
+    use tempfile::tempdir;
 
     use crate::{workflow::Workflow, ReadFrom};
 
@@ -543,7 +543,7 @@ mod tests {
             ("annis:node_name=/.*#t.*/ @ annis:doc", 6),
         ];
         let corpus_name = "current";
-        let tmp_dir = tempdir_in(temp_dir())?;
+        let tmp_dir = tempdir()?;
         g.save_to(&tmp_dir.path().join(corpus_name))?;
         let cs_r = CorpusStorage::with_auto_cache_size(&tmp_dir.path(), true);
         assert!(cs_r.is_ok());

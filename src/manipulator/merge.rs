@@ -624,7 +624,6 @@ impl Manipulator for Merge {
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeSet;
-    use std::env::temp_dir;
 
     use crate::manipulator::merge::{ErrorPolicy, Merge};
     use crate::manipulator::Manipulator;
@@ -637,7 +636,7 @@ mod tests {
     use graphannis_core::annostorage::ValueSearch;
     use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY};
     use itertools::Itertools;
-    use tempfile::{tempdir_in, tempfile};
+    use tempfile::{tempdir, tempfile};
 
     #[test]
     fn test_merger_in_mem() {
@@ -673,7 +672,7 @@ mod tests {
             module_name: "merger".to_string(),
             path: None,
         };
-        let merge_r = merger.manipulate_corpus(&mut g, temp_dir().as_path(), step_id, None);
+        let merge_r = merger.manipulate_corpus(&mut g, tempdir()?.path(), step_id, None);
         assert_eq!(merge_r.is_ok(), true, "Probing merge result {:?}", &merge_r);
         let mut e_g = expected_output_graph(on_disk)?;
         // corpus nodes
@@ -747,8 +746,8 @@ mod tests {
             "node ->dep[deprel=/.+/] node",
         ];
         let corpus_name = "current";
-        let tmp_dir_e = tempdir_in(temp_dir())?;
-        let tmp_dir_g = tempdir_in(temp_dir())?;
+        let tmp_dir_e = tempdir()?;
+        let tmp_dir_g = tempdir()?;
         e_g.save_to(&tmp_dir_e.path().join(corpus_name))?;
         g.save_to(&tmp_dir_g.path().join(corpus_name))?;
         let cs_e = CorpusStorage::with_auto_cache_size(&tmp_dir_e.path(), true)?;
@@ -819,7 +818,7 @@ mod tests {
         };
         assert_eq!(
             merger
-                .manipulate_corpus(&mut g, temp_dir().as_path(), step_id, None)
+                .manipulate_corpus(&mut g, tempdir()?.path(), step_id, None)
                 .is_ok(),
             true
         );
