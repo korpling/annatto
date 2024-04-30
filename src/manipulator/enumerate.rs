@@ -3,9 +3,11 @@ use std::collections::BTreeSet;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
     corpusstorage::{QueryLanguage, SearchQuery},
+    graph::AnnoKey,
     update::{GraphUpdate, UpdateEvent},
     CorpusStorage,
 };
+use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
@@ -24,6 +26,7 @@ pub struct EnumerateMatches {
     target: usize,
     label_ns: String,
     label_name: String,
+    value: Option<usize>,
     start: u64,
 }
 
@@ -34,6 +37,7 @@ impl Default for EnumerateMatches {
             target: 1,
             label_ns: "".to_string(),
             label_name: "i".to_string(),
+            value: None,
             start: 0,
         }
     }
@@ -76,12 +80,52 @@ impl Manipulator for EnumerateMatches {
                     if visited.contains(*target_node) {
                         offset += 1;
                     } else {
-                        update.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: target_node.to_string(),
-                            anno_ns: self.label_ns.to_string(),
-                            anno_name: self.label_name.to_string(),
-                            anno_value: (i as u64 + self.start - offset).to_string(),
-                        })?;
+                        if let Some(value_i) = self.value {
+                            let mut coords = m.split(' ').collect_vec();
+                            if value_i <= coords.len() {
+                                let coord = coords.remove(value_i - 1);
+                                let (coord_ns, coord_name, coord_node_name) =
+                                    match coord.rsplit_once("::") {
+                                        Some((anno, node_name)) => {
+                                            let (ns, anno_name) =
+                                                anno.split_once("::").unwrap_or(("", anno));
+                                            (ns, anno_name, node_name)
+                                        }
+                                        None => (ANNIS_NS, "tok", coord),
+                                    };
+                                if let Some(internal_id) = graph
+                                    .get_node_annos()
+                                    .get_node_id_from_name(coord_node_name)?
+                                {
+                                    if let Some(prefix) =
+                                        graph.get_node_annos().get_value_for_item(
+                                            &internal_id,
+                                            &AnnoKey {
+                                                ns: coord_ns.into(),
+                                                name: coord_name.into(),
+                                            },
+                                        )?
+                                    {
+                                        update.add_event(UpdateEvent::AddNodeLabel {
+                                            node_name: target_node.to_string(),
+                                            anno_ns: self.label_ns.to_string(),
+                                            anno_name: self.label_name.to_string(),
+                                            anno_value: format!(
+                                                "{prefix}-{}",
+                                                i as u64 + self.start - offset
+                                            ),
+                                        })?;
+                                    }
+                                }
+                            }
+                        } else {
+                            update.add_event(UpdateEvent::AddNodeLabel {
+                                node_name: target_node.to_string(),
+                                anno_ns: self.label_ns.to_string(),
+                                anno_name: self.label_name.to_string(),
+                                anno_value: (i as u64 + self.start - offset).to_string(),
+                            })?;
+                        }
                         visited.insert(target_node.to_string());
                     }
                 } else {
@@ -117,18 +161,30 @@ mod tests {
     use super::EnumerateMatches;
 
     #[test]
-    fn test_enumerate_in_mem() {
-        let r = test_enumerate(false);
+    fn bare_enumerate_in_mem() {
+        let r = enumerate_bare(false);
         assert!(r.is_ok(), "Error testing enumerate in mem: {:?}", r.err());
     }
 
     #[test]
-    fn test_enumerate_on_disk() {
-        let r = test_enumerate(true);
+    fn bare_enumerate_on_disk() {
+        let r = enumerate_bare(true);
         assert!(r.is_ok(), "Error testing enumerate on disk: {:?}", r.err());
     }
 
-    fn test_enumerate(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
+    #[test]
+    fn prefixed_enumerate_in_mem() {
+        let r = enumerate_with_value(false);
+        assert!(r.is_ok(), "Error testing enumerate in mem: {:?}", r.err());
+    }
+
+    #[test]
+    fn prefixed_enumerate_on_disk() {
+        let r = enumerate_with_value(true);
+        assert!(r.is_ok(), "Error testing enumerate on disk: {:?}", r.err());
+    }
+
+    fn enumerate_bare(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
         let mut input_g = base_graph(on_disk)?;
         let mut expected_g = base_graph(on_disk)?;
         let mut u = GraphUpdate::default();
@@ -147,6 +203,62 @@ mod tests {
             queries: vec!["annis:node_type=\"node\"".to_string()],
             target: 1,
             start: 1,
+            value: None,
+        };
+        let step_id = StepID {
+            module_name: "manipulate".to_string(),
+            path: None,
+        };
+        manipulate.manipulate_corpus(&mut input_g, Path::new("who_cares"), step_id, None)?;
+        let expected_annos = expected_g.get_node_annos();
+        let output_annos = input_g.get_node_annos();
+        let mut expected_matches = expected_annos
+            .exact_anno_search(Some("count"), "i", ValueSearch::Any)
+            .collect_vec();
+        expected_matches.sort_unstable_by(compare_results);
+
+        let mut output_matches = output_annos
+            .exact_anno_search(Some("count"), "i", ValueSearch::Any)
+            .collect_vec();
+        output_matches.sort_unstable_by(compare_results);
+
+        assert_eq!(expected_matches.len(), output_matches.len());
+        let anno_key = AnnoKey {
+            ns: "count".into(),
+            name: "i".into(),
+        };
+        for (em, om) in expected_matches.into_iter().zip(output_matches) {
+            let enode = em?.node;
+            let onode = om?.node;
+            let evalue = expected_annos.get_value_for_item(&enode, &anno_key)?;
+            let ovalue = output_annos.get_value_for_item(&onode, &anno_key)?;
+            assert!(evalue.is_some());
+            assert!(ovalue.is_some());
+            assert_eq!(evalue.unwrap(), ovalue.unwrap());
+        }
+        Ok(())
+    }
+
+    fn enumerate_with_value(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
+        let mut input_g = base_graph(on_disk)?;
+        let mut expected_g = base_graph(on_disk)?;
+        let mut u = GraphUpdate::default();
+        for (i, val) in ["positive", "negative", "neutral"].iter().enumerate() {
+            u.add_event(UpdateEvent::AddNodeLabel {
+                node_name: format!("corpus/document#t{}", i + 1),
+                anno_ns: "count".to_string(),
+                anno_name: "i".to_string(),
+                anno_value: format!("{val}-{}", i + 1),
+            })?;
+        }
+        expected_g.apply_update(&mut u, |_| {})?;
+        let manipulate = EnumerateMatches {
+            label_name: "i".to_string(),
+            label_ns: "count".to_string(),
+            queries: vec!["sentiment".to_string()],
+            target: 1,
+            start: 1,
+            value: Some(1),
         };
         let step_id = StepID {
             module_name: "manipulate".to_string(),
@@ -204,13 +316,31 @@ mod tests {
             node_name: "corpus/document#t1".to_string(),
             node_type: "node".to_string(),
         })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "corpus/document#t1".to_string(),
+            anno_ns: "".to_string(),
+            anno_name: "sentiment".to_string(),
+            anno_value: "positive".to_string(),
+        })?;
         u.add_event(UpdateEvent::AddNode {
             node_name: "corpus/document#t2".to_string(),
             node_type: "node".to_string(),
         })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "corpus/document#t2".to_string(),
+            anno_ns: "".to_string(),
+            anno_name: "sentiment".to_string(),
+            anno_value: "negative".to_string(),
+        })?;
         u.add_event(UpdateEvent::AddNode {
             node_name: "corpus/document#t3".to_string(),
             node_type: "node".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "corpus/document#t3".to_string(),
+            anno_ns: "".to_string(),
+            anno_name: "sentiment".to_string(),
+            anno_value: "neutral".to_string(),
         })?;
         u.add_event(UpdateEvent::AddEdge {
             source_node: "corpus/document#t1".to_string(),
