@@ -1,4 +1,4 @@
-use std::{collections::BTreeSet, env::temp_dir};
+use std::collections::BTreeSet;
 
 use documented::{Documented, DocumentedFields};
 use graphannis::{
@@ -9,7 +9,7 @@ use graphannis::{
 use itertools::Itertools;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
-use tempfile::tempdir_in;
+use tempfile::tempdir;
 
 use crate::{error::AnnattoError, StepID};
 
@@ -49,7 +49,7 @@ impl Manipulator for EnumerateMatches {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
         let corpus_name = "current";
-        let tmp_dir = tempdir_in(temp_dir())?;
+        let tmp_dir = tempdir()?;
         graph.save_to(&tmp_dir.path().join(corpus_name))?;
         let cs = CorpusStorage::with_auto_cache_size(tmp_dir.path(), true)?;
         for query_s in &self.queries {

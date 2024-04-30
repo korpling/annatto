@@ -207,7 +207,6 @@ impl LinkNodes {
 mod tests {
     use std::{
         collections::{BTreeMap, BTreeSet},
-        env::temp_dir,
         sync::mpsc,
     };
 
@@ -223,7 +222,7 @@ mod tests {
         util::join_qname,
     };
     use itertools::Itertools;
-    use tempfile::{tempdir_in, TempDir};
+    use tempfile::{tempdir, TempDir};
 
     use crate::{
         manipulator::{
@@ -261,7 +260,7 @@ mod tests {
             link_name: "morphology".to_string(),
             value_sep: "".to_string(),
         };
-        let dummy_dir = tempdir_in(temp_dir())?;
+        let dummy_dir = tempdir()?;
         let dummy_path = dummy_dir.path();
         let step_id = StepID {
             module_name: "linler".to_string(),
@@ -403,7 +402,7 @@ mod tests {
         graph: &mut AnnotationGraph,
         corpus_name: &str,
     ) -> Result<(CorpusStorage, TempDir), Box<dyn std::error::Error>> {
-        let tmp_dir = tempdir_in(temp_dir())?;
+        let tmp_dir = tempdir()?;
         graph.save_to(&tmp_dir.path().join(corpus_name))?;
         Ok((
             CorpusStorage::with_auto_cache_size(&tmp_dir.path(), true)?,
