@@ -24,7 +24,7 @@ pub struct EnumerateMatches {
     target: usize,
     label_ns: String,
     label_name: String,
-    start: u128,
+    start: u64,
 }
 
 impl Default for EnumerateMatches {
@@ -80,7 +80,7 @@ impl Manipulator for EnumerateMatches {
                             node_name: target_node.to_string(),
                             anno_ns: self.label_ns.to_string(),
                             anno_name: self.label_name.to_string(),
-                            anno_value: (i as u128 + self.start - offset).to_string(),
+                            anno_value: (i as u64 + self.start - offset).to_string(),
                         })?;
                         visited.insert(target_node.to_string());
                     }
