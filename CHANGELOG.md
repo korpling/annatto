@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `enumerate` uses u64 internally (to be in line with graphANNIS and to be deserializable)
 
+### Fixed
+
+- no more `annis::tok` labels for non-terminal coverage nodes in `xlsx` import
+
 ## [0.6.0] - 2024-04-22
 
 ### Added
