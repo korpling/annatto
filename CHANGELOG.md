@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `sequence` exports connected node's annotation values (e. g. ordered nodes) as vertical or horizontal sequences.
 - `split` breaks up conflated annotation values into parts
 
+### Changed
+
+- `enumerate` uses u64 internally (to be in line with graphANNIS and to be deserializable)
+
 ## [0.6.0] - 2024-04-22
 
 ### Added
