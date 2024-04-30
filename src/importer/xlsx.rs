@@ -304,14 +304,6 @@ impl ImportSpreadsheet {
                             component_type: AnnotationComponentType::PartOf.to_string(),
                             component_name: "".to_string(),
                         })?;
-                        if name == tok_name {
-                            update.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: node_name.to_string(),
-                                anno_ns: ANNIS_NS.to_string(),
-                                anno_name: "tok".to_string(),
-                                anno_value: value.to_string(),
-                            })?;
-                        }
                         if !tok_name.is_empty() {
                             update.add_event(UpdateEvent::AddNodeLabel {
                                 node_name: node_name.to_string(),
