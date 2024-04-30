@@ -32,15 +32,57 @@ use documented::{Documented, DocumentedFields};
 #[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct Revise {
-    remove_nodes: Option<Vec<String>>,
+    /// a list of names of nodes to be removed
+    remove_nodes: Vec<String>,
+    /// also move annotations to other host nodes determined by namespace
     move_node_annos: bool,
-    node_annos: Option<BTreeMap<String, String>>,
-    edge_annos: Option<BTreeMap<String, String>>,
-    namespaces: Option<BTreeMap<String, String>>,
-    components: Option<BTreeMap<String, String>>,
+    /// rename node annotation
+    node_annos: BTreeMap<String, String>,
+    /// rename edge annotations
+    edge_annos: BTreeMap<String, String>,
+    /// rename or erase namespaces
+    namespaces: BTreeMap<String, String>,
+    /// rename or erase components
+    components: BTreeMap<String, String>,
+    /// The given node names and all ingoing paths (incl. nodes) in PartOf/annis/ will be removed
+    remove_subgraph: Vec<String>,
 }
 
 const DELIMITER: &str = "::";
+
+fn remove_subgraph(
+    graph: &AnnotationGraph,
+    update: &mut GraphUpdate,
+    from_node: &str,
+) -> Result<(), anyhow::Error> {
+    update.add_event(UpdateEvent::DeleteNode {
+        node_name: from_node.to_string(),
+    })?;
+    if let Some(part_of_storage) = graph.get_graphstorage(&AnnotationComponent::new(
+        AnnotationComponentType::PartOf,
+        ANNIS_NS.into(),
+        "".into(),
+    )) {
+        let node_annos = graph.get_node_annos();
+        let nid = node_annos.get_node_id_from_name(from_node)?;
+        if let Some(node_id) = nid {
+            for n in CycleSafeDFS::new_inverse(
+                part_of_storage.as_edgecontainer(),
+                node_id,
+                1,
+                usize::MAX,
+            ) {
+                let node = n?.node;
+                if let Some(node_name) = node_annos.get_value_for_item(&node, &NODE_NAME_KEY)? {
+                    update.add_event(UpdateEvent::DeleteNode {
+                        node_name: node_name.to_string(),
+                    })?;
+                }
+            }
+        }
+    }
+    Ok(())
+}
 
 fn parse_component_string(value: &str) -> Result<Option<AnnotationComponent>, anyhow::Error> {
     if value.trim().is_empty() {
@@ -577,22 +619,22 @@ impl Manipulator for Revise {
         let progress_reporter = ProgressReporter::new(tx, step_id.clone(), 6)?;
         let mut update = GraphUpdate::default();
         let move_by_ns = self.move_node_annos;
-        if let Some(ref node_names) = self.remove_nodes {
-            remove_nodes(&mut update, node_names)?;
+        if !self.remove_nodes.is_empty() {
+            remove_nodes(&mut update, &self.remove_nodes)?;
         }
         progress_reporter.worked(1)?;
-        if let Some(ref anno_name_s) = self.node_annos {
-            let node_annos = read_replace_property_value(anno_name_s)?;
+        if !self.node_annos.is_empty() {
+            let node_annos = read_replace_property_value(&self.node_annos)?;
             replace_node_annos(graph, &mut update, node_annos, move_by_ns)?;
         }
         progress_reporter.worked(1)?;
-        if let Some(ref edge_name_s) = self.edge_annos {
-            let edge_annos = read_replace_property_value(edge_name_s)?;
+        if !self.edge_annos.is_empty() {
+            let edge_annos = read_replace_property_value(&self.edge_annos)?;
             replace_edge_annos(graph, &mut update, edge_annos)?;
         }
         progress_reporter.worked(1)?;
-        if let Some(ref namespace_s) = self.namespaces {
-            let namespaces = read_replace_property_value(namespace_s)?;
+        if !self.namespaces.is_empty() {
+            let namespaces = read_replace_property_value(&self.namespaces)?;
             let replacements = namespaces
                 .into_iter()
                 .map(|(k, k_opt)| {
@@ -607,10 +649,15 @@ impl Manipulator for Revise {
             replace_namespaces(graph, &mut update, replacements)?;
         }
         progress_reporter.worked(1)?;
-        if let Some(component_config) = &self.components {
-            revise_components(graph, component_config, &mut update, &progress_reporter)?;
+        if !self.components.is_empty() {
+            revise_components(graph, &self.components, &mut update, &progress_reporter)?;
         }
         progress_reporter.worked(1)?;
+        if !self.remove_subgraph.is_empty() {
+            for node_name in &self.remove_subgraph {
+                remove_subgraph(graph, &mut update, node_name)?;
+            }
+        }
         graph.apply_update(&mut update, |_| {})?;
         progress_reporter.worked(1)?;
         Ok(())
@@ -623,9 +670,11 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
+    use crate::exporter::graphml::GraphMLExporter;
     use crate::manipulator::re::{parse_component_string, to_component_map, Revise};
     use crate::manipulator::Manipulator;
     use crate::progress::ProgressReporter;
+    use crate::test_util::export_to_string;
     use crate::{Result, StepID};
 
     use graphannis::corpusstorage::{QueryLanguage, ResultOrder, SearchQuery};
@@ -634,6 +683,7 @@ mod tests {
     use graphannis::{AnnotationGraph, CorpusStorage};
     use graphannis_core::annostorage::ValueSearch;
     use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY};
+    use insta::assert_snapshot;
     use itertools::Itertools;
     use tempfile::{tempdir, tempfile};
 
@@ -673,12 +723,13 @@ mod tests {
         let node_map: BTreeMap<String, String> = toml::from_str(node_anno_prop_val)?;
         let edge_map: BTreeMap<String, String> = toml::from_str(edge_anno_prop_val)?;
         let replace = Revise {
-            remove_nodes: None,
+            remove_nodes: vec![],
             move_node_annos: false,
-            node_annos: Some(node_map),
-            edge_annos: Some(edge_map),
-            namespaces: None,
-            components: None,
+            node_annos: node_map,
+            edge_annos: edge_map,
+            namespaces: BTreeMap::default(),
+            components: BTreeMap::default(),
+            remove_subgraph: vec![],
         };
         let step_id = StepID {
             module_name: "replace".to_string(),
@@ -812,11 +863,12 @@ mod tests {
         )?;
         let replace = Revise {
             move_node_annos: true,
-            namespaces: None,
-            node_annos: Some(node_map),
-            edge_annos: None,
-            remove_nodes: None,
-            components: None,
+            namespaces: BTreeMap::default(),
+            node_annos: node_map,
+            edge_annos: BTreeMap::default(),
+            remove_nodes: vec![],
+            components: BTreeMap::default(),
+            remove_subgraph: vec![],
         };
         let step_id = StepID {
             module_name: "replace".to_string(),
@@ -952,11 +1004,12 @@ mod tests {
         )?;
         let replace = Revise {
             move_node_annos: true,
-            namespaces: None,
-            node_annos: Some(node_map),
-            edge_annos: Some(edge_map),
-            remove_nodes: None,
-            components: None,
+            namespaces: BTreeMap::default(),
+            node_annos: node_map,
+            edge_annos: edge_map,
+            remove_nodes: vec![],
+            components: BTreeMap::default(),
+            remove_subgraph: vec![],
         };
         let step_id = StepID {
             module_name: "replace".to_string(),
@@ -1011,11 +1064,12 @@ mod tests {
         )?;
         let replace = Revise {
             move_node_annos: true,
-            namespaces: None,
-            node_annos: Some(node_map),
-            edge_annos: Some(edge_map),
-            remove_nodes: None,
-            components: None,
+            namespaces: BTreeMap::default(),
+            node_annos: node_map,
+            edge_annos: edge_map,
+            remove_nodes: vec![],
+            components: BTreeMap::default(),
+            remove_subgraph: vec![],
         };
         let step_id = StepID {
             module_name: "replace".to_string(),
@@ -1055,12 +1109,13 @@ mod tests {
         "#,
         )?;
         let replace = Revise {
-            remove_nodes: None,
+            remove_nodes: vec![],
             move_node_annos: false,
-            node_annos: None,
-            edge_annos: None,
-            namespaces: Some(ns_map),
-            components: None,
+            node_annos: BTreeMap::default(),
+            edge_annos: BTreeMap::default(),
+            namespaces: ns_map,
+            components: BTreeMap::default(),
+            remove_subgraph: vec![],
         };
         let step_id = StepID {
             module_name: "replace".to_string(),
@@ -1243,6 +1298,13 @@ mod tests {
                 anno_ns: "".to_string(),
                 anno_name: pos_name.to_string(),
                 anno_value: pos_label.to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddEdge {
+                source_node: name.to_string(),
+                target_node: "root/b/doc".to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".to_string(),
             })?;
             if i > 1 {
                 u.add_event(UpdateEvent::AddEdge {
@@ -1903,12 +1965,13 @@ mod tests {
             erased_components.push(existing_component);
         }
         let op = Revise {
-            remove_nodes: None,
+            remove_nodes: vec![],
             move_node_annos: false,
-            node_annos: None,
-            edge_annos: None,
-            namespaces: None,
-            components: Some(component_mod_config),
+            node_annos: BTreeMap::default(),
+            edge_annos: BTreeMap::default(),
+            namespaces: BTreeMap::default(),
+            components: component_mod_config,
+            remove_subgraph: vec![],
         };
         let step_id = StepID {
             module_name: "replace".to_string(),
@@ -1939,20 +2002,20 @@ mod tests {
             .map_err(|e| assert!(false, "{:?}", e))
             .unwrap();
         assert_eq!(
-            Some(vec!["any_weird_node_address".to_string()]),
+            vec!["any_weird_node_address".to_string()],
             revise.remove_nodes
         );
         assert!(revise.move_node_annos);
         let mut name_map = BTreeMap::new();
         name_map.insert("norm::pos".to_string(), "norm::POS".to_string());
         name_map.insert("norm::lemma".to_string(), "norm::LEMMA".to_string());
-        assert_eq!(Some(name_map), revise.node_annos);
+        assert_eq!(name_map, revise.node_annos);
         name_map = BTreeMap::new();
         name_map.insert("deprel".to_string(), "func".to_string());
-        assert_eq!(Some(name_map), revise.edge_annos);
+        assert_eq!(name_map, revise.edge_annos);
         name_map = BTreeMap::new();
         name_map.insert("default_ns".to_string(), "".to_string());
-        assert_eq!(Some(name_map), revise.namespaces);
+        assert_eq!(name_map, revise.namespaces);
         name_map = BTreeMap::new();
         name_map.insert(
             "ordering::annis::text".to_string(),
@@ -1963,8 +2026,8 @@ mod tests {
             "ordering::::default_ordering".to_string(),
         );
         name_map.insert("dominance::annis::syntax".to_string(), "".to_string());
-        assert_eq!(Some(name_map), revise.components);
-        let component_map = to_component_map(revise.components.as_ref().unwrap())
+        assert_eq!(name_map, revise.components);
+        let component_map = to_component_map(&revise.components)
             .map_err(|_| assert!(false))
             .unwrap();
         let mut target_map = BTreeMap::new();
@@ -2146,5 +2209,32 @@ mod tests {
             };
         }
         Ok(())
+    }
+
+    #[test]
+    fn delete_subgraph() {
+        let g = input_graph(true, false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let tmp = tempdir();
+        assert!(tmp.is_ok());
+        let manipulation = Revise {
+            remove_subgraph: vec!["root/b".to_string()],
+            ..Default::default()
+        }
+        .manipulate_corpus(
+            &mut graph,
+            tmp.unwrap().path(),
+            StepID {
+                module_name: "test_revise".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(manipulation.is_ok());
+        let gs = export_to_string(&graph, GraphMLExporter::default());
+        assert!(gs.is_ok());
+        let graphml = gs.unwrap();
+        assert_snapshot!(graphml);
     }
 }
