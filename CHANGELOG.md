@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `sequence` exports connected node's annotation values (e. g. ordered nodes) as vertical or horizontal sequences.
 - `split` breaks up conflated annotation values into parts
 - `revise` now offers to delete an entire subgraph from a node in the inverse direction of part of edges
+- `enumerate` can prefix the numeric annotation it generates with an annotation value from the query match (use attribute `value` to point in the match list with a 1-based index)
 
 ### Changed
 
