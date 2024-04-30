@@ -50,6 +50,40 @@ pub struct Revise {
 
 const DELIMITER: &str = "::";
 
+fn remove_subgraph(
+    graph: &AnnotationGraph,
+    update: &mut GraphUpdate,
+    from_node: &str,
+) -> Result<(), anyhow::Error> {
+    update.add_event(UpdateEvent::DeleteNode {
+        node_name: from_node.to_string(),
+    })?;
+    if let Some(part_of_storage) = graph.get_graphstorage(&AnnotationComponent::new(
+        AnnotationComponentType::PartOf,
+        ANNIS_NS.into(),
+        "".into(),
+    )) {
+        let node_annos = graph.get_node_annos();
+        let nid = node_annos.get_node_id_from_name(from_node)?;
+        if let Some(node_id) = nid {
+            for n in CycleSafeDFS::new_inverse(
+                part_of_storage.as_edgecontainer(),
+                node_id,
+                1,
+                usize::MAX,
+            ) {
+                let node = n?.node;
+                if let Some(node_name) = node_annos.get_value_for_item(&node, &NODE_NAME_KEY)? {
+                    update.add_event(UpdateEvent::DeleteNode {
+                        node_name: node_name.to_string(),
+                    })?;
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 fn parse_component_string(value: &str) -> Result<Option<AnnotationComponent>, anyhow::Error> {
     if value.trim().is_empty() {
         return Ok(None);
@@ -619,6 +653,11 @@ impl Manipulator for Revise {
             revise_components(graph, &self.components, &mut update, &progress_reporter)?;
         }
         progress_reporter.worked(1)?;
+        if !self.remove_subgraph.is_empty() {
+            for node_name in &self.remove_subgraph {
+                remove_subgraph(graph, &mut update, node_name)?;
+            }
+        }
         graph.apply_update(&mut update, |_| {})?;
         progress_reporter.worked(1)?;
         Ok(())
@@ -631,9 +670,11 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
+    use crate::exporter::graphml::GraphMLExporter;
     use crate::manipulator::re::{parse_component_string, to_component_map, Revise};
     use crate::manipulator::Manipulator;
     use crate::progress::ProgressReporter;
+    use crate::test_util::export_to_string;
     use crate::{Result, StepID};
 
     use graphannis::corpusstorage::{QueryLanguage, ResultOrder, SearchQuery};
@@ -642,6 +683,7 @@ mod tests {
     use graphannis::{AnnotationGraph, CorpusStorage};
     use graphannis_core::annostorage::ValueSearch;
     use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY};
+    use insta::assert_snapshot;
     use itertools::Itertools;
     use tempfile::{tempdir, tempfile};
 
@@ -1256,6 +1298,13 @@ mod tests {
                 anno_ns: "".to_string(),
                 anno_name: pos_name.to_string(),
                 anno_value: pos_label.to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddEdge {
+                source_node: name.to_string(),
+                target_node: "root/b/doc".to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".to_string(),
             })?;
             if i > 1 {
                 u.add_event(UpdateEvent::AddEdge {
@@ -2160,5 +2209,32 @@ mod tests {
             };
         }
         Ok(())
+    }
+
+    #[test]
+    fn delete_subgraph() {
+        let g = input_graph(true, false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let tmp = tempdir();
+        assert!(tmp.is_ok());
+        let manipulation = Revise {
+            remove_subgraph: vec!["root/b".to_string()],
+            ..Default::default()
+        }
+        .manipulate_corpus(
+            &mut graph,
+            tmp.unwrap().path(),
+            StepID {
+                module_name: "test_revise".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(manipulation.is_ok());
+        let gs = export_to_string(&graph, GraphMLExporter::default());
+        assert!(gs.is_ok());
+        let graphml = gs.unwrap();
+        assert_snapshot!(graphml);
     }
 }
