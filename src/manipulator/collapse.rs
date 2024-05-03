@@ -136,7 +136,7 @@ impl Collapse {
                         let mut v = Vec::with_capacity(a.1.len() + b.1.len() + 3);
                         v.push(a.0);
                         v.extend(a.1);
-                        v.push("_".to_string());
+                        v.push("".to_string());
                         v.push(b.0);
                         v.extend(b.1);
                         (v.join("_"), vec![])
