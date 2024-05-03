@@ -15,7 +15,7 @@ pub enum EnvVars {
 impl Display for EnvVars {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            EnvVars::InMemory => "ANNATTO_IN_MEMORY".to_string(),
+            EnvVars::InMemory => "ANNATTO_IN_MEMORY",
         };
         write!(f, "{s}")
     }
@@ -39,7 +39,7 @@ fn on_error_default_storage(tx: &Option<StatusSender>) -> Result<bool> {
     if let Some(sender) = &tx {
         sender.send(StatusMessage::Warning(format!(
             "Could not read value of environment variable {}, working on disk.",
-            EnvVars::InMemory.to_string()
+            EnvVars::InMemory
         )))?;
     }
     Ok(true)

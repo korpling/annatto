@@ -21,6 +21,7 @@ use crate::{
 
 use super::Importer;
 
+/// This implements the Pest parser for the given grammar.
 #[derive(Parser)]
 #[grammar = "importer/ptb/ptb.pest"]
 pub struct PtbParser;

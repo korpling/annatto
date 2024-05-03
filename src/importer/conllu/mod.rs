@@ -369,6 +369,7 @@ impl ImportCoNLLU {
     }
 }
 
+/// This implements the Pest parser for the given grammar.
 #[derive(Parser)]
 #[grammar = "importer/conllu/conllu.pest"]
 struct CoNLLUParser;
