@@ -121,7 +121,7 @@ impl Collapse {
                         .unwrap_or_default()
                         .to_string();
                     let relevant_suffix = member_name
-                        .split("#")
+                        .split('#')
                         .last()
                         .unwrap_or_default()
                         .to_string();
