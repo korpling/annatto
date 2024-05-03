@@ -29,6 +29,26 @@ pub fn get_all_files(
 }
 
 pub trait Traverse<N, E> {
+    /// A node has been reached traversing the given component.
+    fn node(
+        &self,
+        step_id: &StepID,
+        graph: &AnnotationGraph,
+        node: NodeID,
+        component: &AnnotationComponent,
+        buffer: &mut N,
+    ) -> Result<()>;
+
+    /// An edge is being processed while traversing the graph in the given component.
+    fn edge(
+        &self,
+        step_id: &StepID,
+        graph: &AnnotationGraph,
+        edge: Edge,
+        component: &AnnotationComponent,
+        buffer: &mut E,
+    ) -> Result<()>;
+
     fn traverse(
         &self,
         step_id: &StepID,
