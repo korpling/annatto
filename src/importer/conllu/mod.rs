@@ -1,5 +1,6 @@
 use std::{
     collections::BTreeMap,
+    fmt::Display,
     io::Read,
     path::{Path, PathBuf},
 };
@@ -56,16 +57,17 @@ impl Importer for ImportCoNLLU {
     }
 }
 
-impl ToString for Rule {
-    fn to_string(&self) -> String {
-        match self {
-            Rule::lemma => "lemma".to_string(),
-            Rule::upos => "upos".to_string(),
-            Rule::xpos => "xpos".to_string(),
-            Rule::deprel => "deprel".to_string(),
-            Rule::enhanced_rel => "rel".to_string(),
-            _ => "".to_string(),
-        }
+impl Display for Rule {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            Rule::lemma => "lemma",
+            Rule::upos => "upos",
+            Rule::xpos => "xpos",
+            Rule::deprel => "deprel",
+            Rule::enhanced_rel => "rel",
+            _ => "",
+        };
+        write!(f, "{s}")
     }
 }
 
@@ -367,6 +369,7 @@ impl ImportCoNLLU {
     }
 }
 
+/// This implements the Pest parser for the given grammar.
 #[derive(Parser)]
 #[grammar = "importer/conllu/conllu.pest"]
 struct CoNLLUParser;

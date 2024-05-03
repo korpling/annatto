@@ -81,7 +81,7 @@ fn parent_node(
     Ok(parent_name)
 }
 
-const HYPERNODE_NAME_STEM: &str = "#hypernode";
+const HYPERNODE_NAME_STEM: &str = "#mrg";
 
 impl Collapse {
     fn collapse(
@@ -110,21 +110,55 @@ impl Collapse {
                 .count();
             for (mut id, hyperedge) in hyperedges.iter().enumerate() {
                 id += offset;
+                let mut parent_to_member = BTreeMap::default();
+                for (parent, member) in hyperedge
+                    .iter()
+                    .map(|m| (parent_node(graph, m).unwrap_or_default(), m))
+                {
+                    let member_name = graph
+                        .get_node_annos()
+                        .get_value_for_item(member, &NODE_NAME_KEY)?
+                        .unwrap_or_default()
+                        .to_string();
+                    let relevant_suffix = member_name
+                        .split('#')
+                        .last()
+                        .unwrap_or_default()
+                        .to_string();
+                    parent_to_member
+                        .entry(parent)
+                        .or_insert(Vec::with_capacity(hyperedge.len()))
+                        .push(relevant_suffix);
+                }
+                let (hypernode_name, _) = parent_to_member
+                    .into_iter()
+                    .reduce(|a, b| {
+                        let mut v = Vec::with_capacity(a.1.len() + b.1.len() + 3);
+                        v.push(a.0);
+                        v.extend(a.1);
+                        v.push("".to_string());
+                        v.push(b.0);
+                        v.extend(b.1);
+                        (v.join("_"), vec![])
+                    })
+                    .unwrap_or_default();
+                let trace_name = format!("{HYPERNODE_NAME_STEM}{id}_{hypernode_name}");
+                update.add_event(UpdateEvent::AddNode {
+                    node_name: trace_name.to_string(),
+                    node_type: "node".to_string(),
+                })?;
                 for m in hyperedge {
-                    let parent = parent_node(graph, m)?;
-                    let name = format!("{parent}{HYPERNODE_NAME_STEM}{id}");
-                    update.add_event(UpdateEvent::AddNode {
-                        node_name: name.to_string(),
-                        node_type: "node".to_string(),
-                    })?;
-                    hypernode_map.insert(m, name);
-                    let node_name = graph
+                    hypernode_map.insert(m, trace_name.to_string());
+                    if let Some(node_name) = graph
                         .get_node_annos()
                         .get_value_for_item(m, &NODE_NAME_KEY)?
-                        .unwrap();
-                    update.add_event(UpdateEvent::DeleteNode {
-                        node_name: node_name.to_string(),
-                    })?;
+                    {
+                        update.add_event(UpdateEvent::DeleteNode {
+                            node_name: node_name.to_string(),
+                        })?;
+                    } else {
+                        return Err(AnnattoError::Manipulator { reason: format!("Node {m} has no node name or it cannot be retrieved, this can lead to an invalid result."), manipulator: step_id.module_name.to_string() })?;
+                    }
                 }
             }
             // collapse hyperedges

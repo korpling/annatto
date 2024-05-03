@@ -1,5 +1,6 @@
 use std::{
     collections::{btree_map::Entry, BTreeMap},
+    fmt::Display,
     fs,
     path::{Path, PathBuf},
     sync::mpsc,
@@ -359,9 +360,9 @@ enum TestResult {
     ProcessingError { error: Box<dyn std::error::Error> },
 }
 
-impl ToString for TestResult {
-    fn to_string(&self) -> String {
-        match self {
+impl Display for TestResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
             TestResult::Passed => format!(
                 "{}+{}",
                 ansi_term::Color::Green.prefix(),
@@ -378,7 +379,8 @@ impl ToString for TestResult {
                 ansi_term::Color::Purple.prefix(),
                 ansi_term::Color::Purple.suffix()
             ),
-        }
+        };
+        write!(f, "{s}")
     }
 }
 

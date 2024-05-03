@@ -408,6 +408,7 @@ enum NodeSpec {
     Terminal(Tok),
 }
 
+/// This implements the Pest parser for the given grammar.
 #[derive(Parser)]
 #[grammar = "importer/toolbox/toolbox.pest"]
 struct ToolboxParser;

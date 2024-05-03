@@ -15,10 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `enumerate` uses u64 internally (to be in line with graphANNIS and to be deserializable)
+- `collapse` now uses node ids that indicate the node names that entered the merge, the parent node is not indicated anymore
 
 ### Fixed
 
 - no more `annis::tok` labels for non-terminal coverage nodes in `xlsx` import
+- hypernode id's are unified, in older versions it could happen that annotations get distributed about two or more hypernode instances due to invalid determination of the parent (part of-child)
 
 ## [0.6.0] - 2024-04-22
 

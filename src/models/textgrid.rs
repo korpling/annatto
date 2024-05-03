@@ -71,6 +71,7 @@ pub struct TextGrid {
     pub items: Vec<TextGridItem>,
 }
 
+/// This implements the Pest parser for the given grammar.
 #[derive(Parser)]
 #[grammar = "models/textgrid.pest"]
 pub struct TextGridParser;

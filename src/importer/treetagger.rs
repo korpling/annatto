@@ -20,6 +20,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 
 const FILE_ENDINGS: [&str; 5] = ["treetagger", "tab", "tt", "txt", "xml"];
 
+/// This implements the Pest parser for the given grammar.
 #[derive(Parser)]
 #[grammar = "importer/treetagger/treetagger.pest"]
 pub struct TreeTaggerParser;
