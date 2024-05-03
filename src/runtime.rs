@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use graphannis::AnnotationGraph;
 
 use crate::{
@@ -10,11 +12,12 @@ pub enum EnvVars {
     InMemory,
 }
 
-impl ToString for EnvVars {
-    fn to_string(&self) -> String {
-        match self {
+impl Display for EnvVars {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
             EnvVars::InMemory => "ANNATTO_IN_MEMORY".to_string(),
-        }
+        };
+        write!(f, "{s}")
     }
 }
 

@@ -1,5 +1,6 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
+    fmt::Display,
     path::Path,
 };
 
@@ -71,12 +72,13 @@ enum SheetAddress {
     Name(String),
 }
 
-impl ToString for SheetAddress {
-    fn to_string(&self) -> String {
-        match self {
+impl Display for SheetAddress {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let v = match self {
             SheetAddress::Numeric(n) => n.to_string(),
             SheetAddress::Name(s) => s.to_string(),
-        }
+        };
+        write!(f, "{v}")
     }
 }
 
