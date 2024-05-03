@@ -28,6 +28,7 @@ pub fn get_all_files(
     Ok(paths)
 }
 
+#[allow(dead_code)]
 pub trait Traverse<N, E> {
     /// A node has been reached traversing the given component.
     fn node(
