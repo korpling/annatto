@@ -1,4 +1,5 @@
 use std::{
+    any::Any,
     fs,
     path::{Path, PathBuf},
 };
@@ -6,14 +7,13 @@ use std::{
 use crate::{workflow::StatusSender, StepID};
 use documented::{Documented, DocumentedFields};
 use graphannis::{
-    corpusstorage::{QueryLanguage, SearchQuery},
+    aql,
     update::{GraphUpdate, UpdateEvent},
-    AnnotationGraph, CorpusStorage,
+    AnnotationGraph,
 };
 use itertools::Itertools;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
-use tempfile::tempdir;
 
 use super::Manipulator;
 
@@ -54,27 +54,18 @@ impl MapAnnos {
         _tx: &Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let corpus_name = "current";
-        let tmp_dir = tempdir()?;
-        graph.save_to(&tmp_dir.path().join(corpus_name))?;
-        let cs = CorpusStorage::with_auto_cache_size(tmp_dir.path(), true)?;
         for rule in mapping.rules {
-            let query = SearchQuery {
-                corpus_names: &["current"],
-                query: rule.query.as_str(),
-                query_language: QueryLanguage::AQL,
-                timeout: None,
-            };
-            let search_results = cs.find(
-                query,
-                0,
-                None,
-                graphannis::corpusstorage::ResultOrder::NotSorted,
-            )?;
-            for m in search_results {
-                let matching_nodes = m
-                    .split(' ')
-                    .filter_map(|s| s.split("::").last())
+            let disj = aql::parse(rule.query.as_str(), false)?;
+            let search_results = aql::execute_query_on_graph(graph, &disj, true, None)?;
+            for r in search_results {
+                let matching_nodes = r?
+                    .into_iter()
+                    .filter_map(|m| {
+                        graph
+                            .get_node_annos()
+                            .get_value_for_item(&m.node, &m.anno_key)
+                            .unwrap_or_default()
+                    })
                     .collect_vec();
                 let target = rule.target - 1;
                 if let Some(node_name) = matching_nodes.get(target) {
@@ -241,7 +232,9 @@ mod tests {
         assert_eq!(
             e_anno_names.len(),
             g_anno_names.len(),
-            "Expected graph and generated graph do not contain the same number of annotation keys."
+            "Expected graph and generated graph do not contain the same number of annotation keys: {:?} vs. {:?}",
+            e_anno_names,
+            g_anno_names
         );
         let e_c_list = e_g
             .get_all_components(None, None)

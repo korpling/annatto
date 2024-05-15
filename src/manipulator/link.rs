@@ -3,17 +3,16 @@ use super::Manipulator;
 use crate::{error::AnnattoError, StepID};
 use documented::{Documented, DocumentedFields};
 use graphannis::{
-    corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
+    aql,
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
-    AnnotationGraph, CorpusStorage,
+    AnnotationGraph,
 };
-use graphannis_core::{types::AnnoKey, util::split_qname};
+use graphannis_core::{graph::NODE_NAME_KEY, types::AnnoKey};
 use itertools::Itertools;
 use serde_derive::Deserialize;
-use std::{collections::BTreeMap, env::temp_dir};
+use std::{borrow::Cow, collections::BTreeMap, ops::Deref};
 use struct_field_names_as_array::FieldNamesAsSlice;
-use tempfile::tempdir_in;
 
 /// Link nodes within a graph. Source and target of a link are determined via
 /// queries; type, layer, and name of the link component can be configured.
@@ -45,12 +44,8 @@ impl Manipulator for LinkNodes {
         step_id: StepID,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let db_dir = tempdir_in(temp_dir())?;
-        graph.save_to(db_dir.path().join("current").as_path())?;
-        let cs = CorpusStorage::with_auto_cache_size(db_dir.path(), true)?;
         let link_sources = gather_link_data(
             graph,
-            &cs,
             self.source_query.to_string(),
             self.source_node,
             &self.source_value,
@@ -59,7 +54,6 @@ impl Manipulator for LinkNodes {
         )?;
         let link_targets = gather_link_data(
             graph,
-            &cs,
             self.target_query.to_string(),
             self.target_node,
             &self.target_value,
@@ -77,52 +71,34 @@ type NodeBundle = Vec<(Option<AnnoKey>, String)>;
 /// This function executes a single query and returns bundled results or an error.
 /// A bundled result is the annotation key the node has a match for and the matching node itself.
 fn retrieve_nodes_with_values(
-    cs: &CorpusStorage,
-    query: String,
+    graph: &AnnotationGraph,
+    query: &str,
 ) -> Result<Vec<NodeBundle>, Box<dyn std::error::Error>> {
     let mut node_bundles = Vec::new();
-    for m in cs.find(
-        SearchQuery {
-            corpus_names: &["current"],
-            query: query.as_str(),
-            query_language: QueryLanguage::AQL,
-            timeout: None,
-        },
-        0,
-        None,
-        ResultOrder::Normal,
-    )? {
+    for r in aql::execute_query_on_graph(graph, &aql::parse(query, false)?, true, None)? {
         node_bundles.push(
-            m.split(' ')
-                .map(|match_member| {
-                    match_member
-                        .rsplit_once("::")
-                        .map_or((None, match_member.to_string()), |(pref, suff)| {
-                            (Some(anno_key(pref)), suff.to_string())
-                        })
+            r?.into_iter()
+                .map(|m| {
+                    let matching_node_name = graph
+                        .get_node_annos()
+                        .get_value_for_item(&m.node, &NODE_NAME_KEY)
+                        .or::<Box<dyn std::error::Error>>(Ok(Some(Cow::Borrowed(""))))
+                        .unwrap();
+                    (
+                        Some(m.anno_key.deref().clone()),
+                        matching_node_name.unwrap_or_default().to_string(),
+                    )
                 })
                 .collect_vec(),
-        );
+        )
     }
     Ok(node_bundles)
-}
-
-fn anno_key(qname: &str) -> AnnoKey {
-    let (ns, name) = split_qname(qname);
-    AnnoKey {
-        name: name.into(),
-        ns: match ns {
-            None => "".into(),
-            Some(v) => v.into(),
-        },
-    }
 }
 
 /// This function queries the corpus graph and returns the relevant match data.
 /// The returned data maps an annotation value or a joint value (value) to the nodes holding said value.
 fn gather_link_data(
     graph: &AnnotationGraph,
-    cs: &CorpusStorage,
     query: String,
     node_index: usize,
     value_indices: &[usize],
@@ -131,7 +107,7 @@ fn gather_link_data(
 ) -> Result<BTreeMap<String, Vec<String>>, Box<dyn std::error::Error>> {
     let mut data: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let node_annos = graph.get_node_annos();
-    for group_of_bundles in retrieve_nodes_with_values(cs, query.to_string())? {
+    for group_of_bundles in retrieve_nodes_with_values(graph, query.as_str())? {
         if let Some((_, link_node_name)) = group_of_bundles.get(node_index - 1) {
             let mut target_data = Vec::new();
             let mut value_segments = Vec::new();
@@ -211,10 +187,11 @@ mod tests {
     };
 
     use graphannis::{
-        corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
+        aql,
+        graph::AnnoKey,
         model::AnnotationComponentType,
         update::{GraphUpdate, UpdateEvent},
-        AnnotationGraph, CorpusStorage,
+        AnnotationGraph,
     };
     use graphannis_core::{
         annostorage::ValueSearch,
@@ -222,7 +199,7 @@ mod tests {
         util::join_qname,
     };
     use itertools::Itertools;
-    use tempfile::{tempdir, TempDir};
+    use tempfile::tempdir;
 
     use crate::{
         manipulator::{
@@ -245,7 +222,7 @@ mod tests {
     }
 
     fn main_test(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
-        let mut e_g = target_graph(on_disk)?;
+        let e_g = target_graph(on_disk)?;
         let (sender, receiver) = mpsc::channel();
         let mut g = source_graph(on_disk)?;
         let linker = LinkNodes {
@@ -363,18 +340,17 @@ mod tests {
             ("norm:norm ->morphology morph=/New York/ > morph=/York/", 1),
             ("norm:norm ->morphology morph=/I/", 1),
         ];
-        let corpus_name = "current";
-        let (cs_e, _tmpe) = store_corpus(&mut e_g, corpus_name)?;
-        let (cs_g, _tmpg) = store_corpus(&mut g, corpus_name)?;
         for (query_s, expected_n) in queries {
-            let query = SearchQuery {
-                corpus_names: &[corpus_name],
-                query: query_s,
-                query_language: QueryLanguage::AQL,
-                timeout: None,
-            };
-            let matches_e = cs_e.find(query.clone(), 0, None, ResultOrder::Normal)?;
-            let matches_g = cs_g.find(query, 0, None, ResultOrder::Normal)?;
+            let mut matches_e =
+                aql::execute_query_on_graph(&e_g, &aql::parse(query_s, false)?, true, None)?
+                    .filter(|e| e.is_ok())
+                    .map(|e| e.unwrap())
+                    .collect_vec();
+            let mut matches_g =
+                aql::execute_query_on_graph(&g, &aql::parse(query_s, false)?, true, None)?
+                    .filter(|e| e.is_ok())
+                    .map(|e| e.unwrap())
+                    .collect_vec();
             assert_eq!(
                 matches_e.len(),
                 expected_n,
@@ -389,7 +365,9 @@ mod tests {
                 "Failed with query: {}",
                 query_s
             );
-            for (match_g, match_e) in matches_g.iter().zip(&matches_e) {
+            matches_g.sort();
+            matches_e.sort();
+            for (match_g, match_e) in matches_g.into_iter().zip(matches_e) {
                 assert_eq!(match_g, match_e);
             }
         }
@@ -398,38 +376,26 @@ mod tests {
         Ok(())
     }
 
-    fn store_corpus(
-        graph: &mut AnnotationGraph,
-        corpus_name: &str,
-    ) -> Result<(CorpusStorage, TempDir), Box<dyn std::error::Error>> {
-        let tmp_dir = tempdir()?;
-        graph.save_to(&tmp_dir.path().join(corpus_name))?;
-        Ok((
-            CorpusStorage::with_auto_cache_size(&tmp_dir.path(), true)?,
-            tmp_dir,
-        ))
-    }
-
     #[test]
     fn test_retrieve_nodes_with_values() {
         let g = source_graph(false);
         assert!(g.is_ok());
-        let mut graph = g.unwrap();
-        let corpus_name = "current";
-        let cs_r = store_corpus(&mut graph, corpus_name);
-        assert!(cs_r.is_ok());
-        let (cs, _tmp) = cs_r.unwrap();
+        let graph = g.unwrap();
         // 1
-        let r1 = retrieve_nodes_with_values(&cs, "tok=/.*/".to_string());
+        let r1 = retrieve_nodes_with_values(&graph, "tok=/.*/");
         assert!(r1.is_ok(), "not Ok: {:?}", r1.err());
         let results_1 = r1.unwrap();
         assert_eq!(6, results_1.len());
         for match_v in results_1 {
             assert_eq!(1, match_v.len());
-            assert!(match_v.get(0).unwrap().0.is_none());
+            assert!(match_v.get(0).unwrap().0.is_some());
+            let key =
+                <std::option::Option<AnnoKey> as Clone>::clone(&match_v.get(0).unwrap().0).unwrap();
+            assert_eq!(key.ns, NODE_TYPE_KEY.ns);
+            assert_eq!(key.name, NODE_TYPE_KEY.name);
         }
         // 2
-        let r2 = retrieve_nodes_with_values(&cs, "norm _=_ pos".to_string());
+        let r2 = retrieve_nodes_with_values(&graph, "norm _=_ pos");
         assert!(r2.is_ok(), "not Ok: {:?}", r2.err());
         let results_2 = r2.unwrap();
         assert_eq!(4, results_2.len());
@@ -443,14 +409,9 @@ mod tests {
     fn test_gather_link_data() {
         let g = source_graph(false);
         assert!(g.is_ok());
-        let mut graph = g.unwrap();
-        let corpus_name = "current";
-        let cs_r = store_corpus(&mut graph, corpus_name);
-        assert!(cs_r.is_ok());
-        let (cs, _tmp) = cs_r.unwrap();
+        let graph = g.unwrap();
         let ldr = gather_link_data(
             &graph,
-            &cs,
             "norm _=_ pos".to_string(),
             1,
             &[1, 2],
@@ -548,9 +509,6 @@ mod tests {
         assert!(r.is_ok());
         let mut u = r.unwrap();
         assert!(graph.apply_update(&mut u, |_| {}).is_ok());
-        let storage_bundle = store_corpus(&mut graph, "current");
-        assert!(storage_bundle.is_ok());
-        let (cs, _tmp) = storage_bundle.unwrap();
         let queries_with_results = [
             ("dipl=/I'm/ ->link norm=/I/ . norm=/am/ & #1 ->link #3", 1),
             (
@@ -559,15 +517,12 @@ mod tests {
             ),
         ];
         for (q, n) in queries_with_results {
-            let query = SearchQuery {
-                corpus_names: &["current"],
-                query: q,
-                query_language: QueryLanguage::AQL,
-                timeout: None,
-            };
-            let c = cs.count(query);
+            let query = aql::parse(&q, false);
+            assert!(query.is_ok());
+            let disj = query.unwrap();
+            let c = aql::execute_query_on_graph(&graph, &disj, true, None);
             assert!(c.is_ok());
-            assert_eq!(n, c.unwrap());
+            assert_eq!(n, c.unwrap().count());
         }
     }
 

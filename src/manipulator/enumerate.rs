@@ -55,6 +55,9 @@ impl Manipulator for EnumerateMatches {
         let corpus_name = "current";
         let tmp_dir = tempdir()?;
         graph.save_to(&tmp_dir.path().join(corpus_name))?;
+        // NOTE: This currently requires a corpus storage because searching on the graph directly
+        // using aql::execute_query_on_graph does not to allow to request a specific order of results,
+        // which is essential for `enumerate` to work as expected
         let cs = CorpusStorage::with_auto_cache_size(tmp_dir.path(), true)?;
         for query_s in &self.queries {
             let query = SearchQuery {
