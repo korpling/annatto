@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2024-05-23
+
 ### Added
 
 - `sequence` exports connected node's annotation values (e. g. ordered nodes) as vertical or horizontal sequences.
