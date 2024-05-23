@@ -19,15 +19,25 @@ use super::Manipulator;
 #[serde(deny_unknown_fields)]
 pub struct SplitValues {
     /// This is the delimiter between the parts of the conflated annotation in the input graph
+    #[serde(default = "default_delimiter")]
     delimiter: String,
     /// The annotation that holds the conflated values. Can be qualified with a namespace using `::` as delimiter.
     anno: String,
     /// This maps a target annotation name to a list of potential values to be found in the split parts.
+    #[serde(default)]
     layer_map: BTreeMap<String, Vec<String>>,
     /// This maps annotation names that occur in a fixed position in the conflation sequence. This is easier especially for large numbers of annotation values.
+    #[serde(default)]
     index_map: BTreeMap<String, usize>,
-    /// Whether or not to keep the original annotation.
-    keep: bool,
+    /// Whether or not to delete the original annotation.
+    #[serde(default)]
+    delete: bool,
+}
+
+const DEFAULT_DELIMITER: &str = "-";
+
+fn default_delimiter() -> String {
+    DEFAULT_DELIMITER.to_string()
 }
 
 impl Manipulator for SplitValues {
@@ -71,7 +81,7 @@ impl Manipulator for SplitValues {
         for m in match_vec {
             let n = m?.node;
             if let Some(node_name) = node_annos.get_value_for_item(&n, &NODE_NAME_KEY)? {
-                if !self.keep {
+                if self.delete {
                     update.add_event(UpdateEvent::DeleteNodeLabel {
                         node_name: node_name.to_string(),
                         anno_ns: ns.unwrap_or("").to_string(),
