@@ -1,7 +1,7 @@
 delimiter = "."
 anno = "default_ns::pos"
 index_map = { "default_ns::pos" = 1 }
-keep = false
+delete = true
 [layer_map]
 Gender = ["Fem", "Neut", "Mask"]
 Case = ["Nom", "Gen", "Dat", "Akk"]
