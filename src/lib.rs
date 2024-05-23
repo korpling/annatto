@@ -259,8 +259,8 @@ pub enum GraphOp {
     Merge(Merge),                     // no default, has required attributes
     Revise(#[serde(default)] Revise), // does nothing on default
     Chunk(#[serde(default)] Chunk),
-    Split(SplitValues),           // no default
-    None(#[serde(default)] NoOp), // has no attributes
+    Split(#[serde(default)] SplitValues), // default does nothing
+    None(#[serde(default)] NoOp),         // has no attributes
 }
 
 impl Default for GraphOp {
