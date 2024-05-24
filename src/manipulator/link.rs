@@ -233,6 +233,7 @@ mod tests {
             link::{gather_link_data, retrieve_nodes_with_values, LinkNodes},
             Manipulator,
         },
+        workflow::StatusMessage,
         StepID,
     };
 
@@ -397,7 +398,10 @@ mod tests {
                 assert_eq!(match_g, match_e);
             }
         }
-        let message_count = receiver.into_iter().count();
+        let message_count = receiver
+            .into_iter()
+            .filter(|m| !matches!(m, &StatusMessage::Progress { .. }))
+            .count();
         assert_eq!(0, message_count);
         Ok(())
     }
