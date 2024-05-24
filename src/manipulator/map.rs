@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{workflow::StatusSender, StepID};
+use crate::{progress::ProgressReporter, workflow::StatusSender, StepID};
 use documented::{Documented, DocumentedFields};
 use graphannis::{
     corpusstorage::{QueryLanguage, SearchQuery},
@@ -29,7 +29,7 @@ impl Manipulator for MapAnnos {
         &self,
         graph: &mut graphannis::AnnotationGraph,
         workflow_directory: &std::path::Path,
-        _step_id: StepID,
+        step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let read_from_path = {
@@ -41,7 +41,7 @@ impl Manipulator for MapAnnos {
             }
         };
         let mapping = read_config(read_from_path.as_path())?;
-        self.run(graph, mapping, &tx)?;
+        self.run(graph, mapping, &tx, &step_id)?;
         Ok(())
     }
 }
@@ -51,13 +51,15 @@ impl MapAnnos {
         &self,
         graph: &mut AnnotationGraph,
         mapping: Mapping,
-        _tx: &Option<StatusSender>,
+        tx: &Option<StatusSender>,
+        step_id: &StepID,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
         let corpus_name = "current";
         let tmp_dir = tempdir()?;
         graph.save_to(&tmp_dir.path().join(corpus_name))?;
         let cs = CorpusStorage::with_auto_cache_size(tmp_dir.path(), true)?;
+        let progress = ProgressReporter::new(tx.clone(), step_id.clone(), mapping.rules.len())?;
         for rule in mapping.rules {
             let query = SearchQuery {
                 corpus_names: &["current"],
@@ -86,6 +88,7 @@ impl MapAnnos {
                     })?;
                 }
             }
+            progress.worked(1)?;
         }
         graph.apply_update(&mut update, |_| {})?;
         Ok(())
@@ -184,7 +187,15 @@ mod tests {
         let (sender, _receiver) = mpsc::channel();
         let mut g = source_graph(on_disk)?;
         let tx = Some(sender);
-        mapper.run(&mut g, mapping, &tx)?;
+        mapper.run(
+            &mut g,
+            mapping,
+            &tx,
+            &crate::StepID {
+                module_name: "test_map".to_string(),
+                path: None,
+            },
+        )?;
         let mut e_g = target_graph(on_disk)?;
         // corpus nodes
         let e_corpus_nodes: BTreeSet<String> = e_g

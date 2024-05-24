@@ -1,6 +1,11 @@
 //! Created edges between nodes based on their annotation value.
 use super::Manipulator;
-use crate::{error::AnnattoError, StepID};
+use crate::{
+    error::AnnattoError,
+    progress::{self, ProgressReporter},
+    workflow::StatusSender,
+    StepID,
+};
 use documented::{Documented, DocumentedFields};
 use graphannis::{
     corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
@@ -43,7 +48,7 @@ impl Manipulator for LinkNodes {
         graph: &mut graphannis::AnnotationGraph,
         _workflow_directory: &std::path::Path,
         step_id: StepID,
-        _tx: Option<crate::workflow::StatusSender>,
+        tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let db_dir = tempdir_in(temp_dir())?;
         graph.save_to(db_dir.path().join("current").as_path())?;
@@ -66,7 +71,7 @@ impl Manipulator for LinkNodes {
             &self.value_sep,
             &step_id,
         )?;
-        let mut update = self.link_nodes(link_sources, link_targets)?;
+        let mut update = self.link_nodes(link_sources, link_targets, tx, step_id)?;
         graph.apply_update(&mut update, |_| {})?;
         Ok(())
     }
@@ -184,8 +189,11 @@ impl LinkNodes {
         &self,
         sources: BTreeMap<String, Vec<String>>,
         targets: BTreeMap<String, Vec<String>>,
+        tx: Option<StatusSender>,
+        step_id: StepID,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
+        let progress = ProgressReporter::new(tx, step_id, sources.len())?;
         for (anno_value, node_list) in sources {
             if let Some(target_node_list) = targets.get(&anno_value) {
                 for (source, target) in node_list.iter().cartesian_product(target_node_list) {
@@ -198,6 +206,7 @@ impl LinkNodes {
                     })?;
                 }
             }
+            progress.worked(1)?;
         }
         Ok(update)
     }
@@ -544,7 +553,15 @@ mod tests {
         ]
         .into_iter()
         .collect();
-        let r = linker.link_nodes(source_map, target_map);
+        let r = linker.link_nodes(
+            source_map,
+            target_map,
+            None,
+            StepID {
+                module_name: "test".to_string(),
+                path: None,
+            },
+        );
         assert!(r.is_ok());
         let mut u = r.unwrap();
         assert!(graph.apply_update(&mut u, |_| {}).is_ok());
