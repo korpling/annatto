@@ -1,11 +1,6 @@
 //! Created edges between nodes based on their annotation value.
 use super::Manipulator;
-use crate::{
-    error::AnnattoError,
-    progress::{self, ProgressReporter},
-    workflow::StatusSender,
-    StepID,
-};
+use crate::{error::AnnattoError, progress::ProgressReporter, workflow::StatusSender, StepID};
 use documented::{Documented, DocumentedFields};
 use graphannis::{
     corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
