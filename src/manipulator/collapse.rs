@@ -46,6 +46,11 @@ impl Manipulator for Collapse {
         step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        if let Some(sender) = &tx {
+            sender.send(crate::workflow::StatusMessage::Info(
+                "Starting to collapse".to_string(),
+            ))?;
+        }
         let mut update = self.collapse(graph, &step_id, tx)?;
         graph.apply_update(&mut update, |_| {})?;
         Ok(())
@@ -108,6 +113,9 @@ impl Collapse {
                     false,
                 )
                 .count();
+            let progress_create_nodes =
+                ProgressReporter::new(tx.clone(), step_id.clone(), hyperedges.len())?;
+            progress_create_nodes.info("Starting to build hypernodes")?;
             for (mut id, hyperedge) in hyperedges.iter().enumerate() {
                 id += offset;
                 let mut parent_to_member = BTreeMap::default();
@@ -160,9 +168,11 @@ impl Collapse {
                         return Err(AnnattoError::Manipulator { reason: format!("Node {m} has no node name or it cannot be retrieved, this can lead to an invalid result."), manipulator: step_id.module_name.to_string() })?;
                     }
                 }
+                progress_create_nodes.worked(1)?;
             }
             // collapse hyperedges
             let progress = ProgressReporter::new(tx, step_id.clone(), hyperedges.len())?;
+            progress.info("Starting to join nodes")?;
             let mut processed_edges = BTreeSet::new();
             for hyperedge in &hyperedges {
                 self.collapse_hyperedge(
@@ -195,9 +205,10 @@ impl Collapse {
         step_id: &StepID,
         tx: Option<StatusSender>,
     ) -> Result<Vec<BTreeSet<u64>>, Box<dyn std::error::Error>> {
-        let mut hyperedges = Vec::new();
         let source_nodes = component_storage.source_nodes().collect_vec();
         let progress = ProgressReporter::new(tx.clone(), step_id.clone(), source_nodes.len())?;
+        progress.info("Starting to collect hyperedges")?;
+        let mut hyperedges = Vec::with_capacity(source_nodes.len() / 2); // this should not grow for most use cases
         for sn in source_nodes {
             let source_node = sn?;
             let dfs = CycleSafeDFS::new(
@@ -219,6 +230,7 @@ impl Collapse {
         if !self.disjoint {
             // make sure hyperedges are disjoint
             let progress_disjoint = ProgressReporter::new_unknown_total_work(tx, step_id.clone())?;
+            progress_disjoint.info("Starting to build disjoint hyperedges")?;
             let mut repeat = true;
             while repeat {
                 let mut disjoint_hyperedges = Vec::new();

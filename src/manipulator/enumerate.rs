@@ -13,7 +13,7 @@ use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 use tempfile::tempdir;
 
-use crate::{error::AnnattoError, StepID};
+use crate::{error::AnnattoError, progress::ProgressReporter, StepID};
 
 use super::Manipulator;
 
@@ -49,13 +49,14 @@ impl Manipulator for EnumerateMatches {
         graph: &mut graphannis::AnnotationGraph,
         _workflow_directory: &std::path::Path,
         step_id: StepID,
-        _tx: Option<crate::workflow::StatusSender>,
+        tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
         let corpus_name = "current";
         let tmp_dir = tempdir()?;
         graph.save_to(&tmp_dir.path().join(corpus_name))?;
         let cs = CorpusStorage::with_auto_cache_size(tmp_dir.path(), true)?;
+        let progress = ProgressReporter::new(tx, step_id.clone(), self.queries.len())?;
         for query_s in &self.queries {
             let query = SearchQuery {
                 corpus_names: &["current"],
@@ -138,6 +139,7 @@ impl Manipulator for EnumerateMatches {
                     }));
                 }
             }
+            progress.worked(1)?;
         }
         graph.apply_update(&mut update, |_| {})?;
         Ok(())
