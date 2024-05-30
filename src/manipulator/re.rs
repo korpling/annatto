@@ -32,6 +32,8 @@ use documented::{Documented, DocumentedFields};
 #[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct Revise {
+    /// A map of nodes to rename, usually useful for corpus nodes. Note that this operation does not check whether such a node already exists.
+    node_names: BTreeMap<String, String>,
     /// a list of names of nodes to be removed
     remove_nodes: Vec<String>,
     /// also move annotations to other host nodes determined by namespace
@@ -608,6 +610,30 @@ fn read_replace_property_value(
     Ok(names)
 }
 
+fn rename_nodes(
+    step_id: &StepID,
+    graph: &AnnotationGraph,
+    update: &mut GraphUpdate,
+    old_name: &String,
+    new_name: &String,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let node_annos = graph.get_node_annos();
+    if node_annos.has_node_name(&old_name)? {
+        update.add_event(UpdateEvent::AddNodeLabel {
+            node_name: old_name.to_string(),
+            anno_ns: NODE_NAME_KEY.ns.to_string(),
+            anno_name: NODE_NAME_KEY.name.to_string(),
+            anno_value: new_name.to_string(),
+        })?;
+        Ok(())
+    } else {
+        Err(Box::new(AnnattoError::Manipulator {
+            reason: format!("No such node to be renamed: {old_name}"),
+            manipulator: step_id.module_name.to_string(),
+        }))
+    }
+}
+
 impl Manipulator for Revise {
     fn manipulate_corpus(
         &self,
@@ -616,8 +642,12 @@ impl Manipulator for Revise {
         step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let progress_reporter = ProgressReporter::new(tx, step_id.clone(), 6)?;
+        let progress_reporter = ProgressReporter::new(tx, step_id.clone(), 7)?;
         let mut update = GraphUpdate::default();
+        for (old_name, new_name) in &self.node_names {
+            rename_nodes(&step_id, graph, &mut update, old_name, new_name)?;
+        }
+        progress_reporter.worked(1)?;
         let move_by_ns = self.move_node_annos;
         if !self.remove_nodes.is_empty() {
             remove_nodes(&mut update, &self.remove_nodes)?;
@@ -723,6 +753,7 @@ mod tests {
         let node_map: BTreeMap<String, String> = toml::from_str(node_anno_prop_val)?;
         let edge_map: BTreeMap<String, String> = toml::from_str(edge_anno_prop_val)?;
         let replace = Revise {
+            node_names: BTreeMap::default(),
             remove_nodes: vec![],
             move_node_annos: false,
             node_annos: node_map,
@@ -862,6 +893,7 @@ mod tests {
         "#,
         )?;
         let replace = Revise {
+            node_names: BTreeMap::default(),
             move_node_annos: true,
             namespaces: BTreeMap::default(),
             node_annos: node_map,
@@ -1003,6 +1035,7 @@ mod tests {
         "#,
         )?;
         let replace = Revise {
+            node_names: BTreeMap::default(),
             move_node_annos: true,
             namespaces: BTreeMap::default(),
             node_annos: node_map,
@@ -1063,6 +1096,7 @@ mod tests {
         "#,
         )?;
         let replace = Revise {
+            node_names: BTreeMap::default(),
             move_node_annos: true,
             namespaces: BTreeMap::default(),
             node_annos: node_map,
@@ -1109,6 +1143,7 @@ mod tests {
         "#,
         )?;
         let replace = Revise {
+            node_names: BTreeMap::default(),
             remove_nodes: vec![],
             move_node_annos: false,
             node_annos: BTreeMap::default(),
@@ -1965,6 +2000,7 @@ mod tests {
             erased_components.push(existing_component);
         }
         let op = Revise {
+            node_names: BTreeMap::default(),
             remove_nodes: vec![],
             move_node_annos: false,
             node_annos: BTreeMap::default(),
@@ -2227,6 +2263,37 @@ mod tests {
             tmp.unwrap().path(),
             StepID {
                 module_name: "test_revise".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(manipulation.is_ok());
+        let gs = export_to_string(&graph, GraphMLExporter::default());
+        assert!(gs.is_ok());
+        let graphml = gs.unwrap();
+        assert_snapshot!(graphml);
+    }
+
+    #[test]
+    fn rename_corpus_node() {
+        let g = input_graph(true, false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let tmp = tempdir();
+        assert!(tmp.is_ok());
+        let node_names = [("root/b", "corpus/subcorpus"), ("root", "corpus")]
+            .iter()
+            .map(|(old, new)| (old.to_string(), new.to_string()))
+            .collect();
+        let manipulation = Revise {
+            node_names,
+            ..Default::default()
+        }
+        .manipulate_corpus(
+            &mut graph,
+            tmp.unwrap().path(),
+            StepID {
+                module_name: "test_rename_nodes".to_string(),
                 path: None,
             },
             None,
