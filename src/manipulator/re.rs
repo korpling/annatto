@@ -621,7 +621,7 @@ fn rename_nodes(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let node_annos = graph.get_node_annos();
     let trimmed_old_name = old_name.trim();
-    if node_annos.has_node_name(&trimmed_old_name)? {
+    if node_annos.has_node_name(trimmed_old_name)? {
         let trimmed_new_name = new_name.trim();
         if trimmed_new_name.is_empty() {
             // deletion by rename
