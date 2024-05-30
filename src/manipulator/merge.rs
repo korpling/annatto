@@ -830,7 +830,7 @@ mod tests {
     }
 
     fn input_graph(on_disk: bool) -> Result<AnnotationGraph> {
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode {
             node_name: "root".to_string(),
@@ -1204,7 +1204,7 @@ mod tests {
     }
 
     fn expected_output_graph(on_disk: bool) -> Result<AnnotationGraph> {
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode {
             node_name: "root".to_string(),

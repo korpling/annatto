@@ -589,7 +589,7 @@ mod tests {
 
     fn source_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
         // copied this from exmaralda test
-        let mut graph = AnnotationGraph::new(on_disk)?;
+        let mut graph = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode {
             node_name: "import".to_string(),
