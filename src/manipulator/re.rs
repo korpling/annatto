@@ -32,7 +32,9 @@ use documented::{Documented, DocumentedFields};
 #[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct Revise {
-    /// A map of nodes to rename, usually useful for corpus nodes. Note that this operation does not check whether such a node already exists.
+    /// A map of nodes to rename, usually useful for corpus nodes. If the target name exists,
+    /// the operation will fail with an error. If the target name is empty, the node will be
+    /// deleted.
     node_names: BTreeMap<String, String>,
     /// a list of names of nodes to be removed
     remove_nodes: Vec<String>,
@@ -611,24 +613,41 @@ fn read_replace_property_value(
 }
 
 fn rename_nodes(
-    step_id: &StepID,
     graph: &AnnotationGraph,
     update: &mut GraphUpdate,
     old_name: &String,
     new_name: &String,
+    step_id: &StepID,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let node_annos = graph.get_node_annos();
-    if node_annos.has_node_name(&old_name)? {
-        update.add_event(UpdateEvent::AddNodeLabel {
-            node_name: old_name.to_string(),
-            anno_ns: NODE_NAME_KEY.ns.to_string(),
-            anno_name: NODE_NAME_KEY.name.to_string(),
-            anno_value: new_name.to_string(),
-        })?;
-        Ok(())
+    let trimmed_old_name = old_name.trim();
+    if node_annos.has_node_name(&trimmed_old_name)? {
+        let trimmed_new_name = new_name.trim();
+        if trimmed_new_name.is_empty() {
+            // deletion by rename
+            update.add_event(UpdateEvent::DeleteNode {
+                node_name: trimmed_old_name.to_string(),
+            })?;
+        } else {
+            update.add_event(UpdateEvent::AddNodeLabel {
+                node_name: trimmed_old_name.to_string(),
+                anno_ns: NODE_NAME_KEY.ns.to_string(),
+                anno_name: NODE_NAME_KEY.name.to_string(),
+                anno_value: trimmed_new_name.to_string(),
+            })?;
+        }
+        if node_annos.has_node_name(trimmed_new_name)? {
+            // this will also be triggered when old and new name are identical (which is fine)
+            Err(Box::new(AnnattoError::Manipulator {
+                reason: format!("New node name {trimmed_new_name} is already in use"),
+                manipulator: step_id.module_name.to_string(),
+            }))
+        } else {
+            Ok(())
+        }
     } else {
         Err(Box::new(AnnattoError::Manipulator {
-            reason: format!("No such node to be renamed: {old_name}"),
+            reason: format!("No such node to be renamed: {trimmed_old_name}"),
             manipulator: step_id.module_name.to_string(),
         }))
     }
@@ -645,7 +664,7 @@ impl Manipulator for Revise {
         let progress_reporter = ProgressReporter::new(tx, step_id.clone(), 7)?;
         let mut update = GraphUpdate::default();
         for (old_name, new_name) in &self.node_names {
-            rename_nodes(&step_id, graph, &mut update, old_name, new_name)?;
+            rename_nodes(graph, &mut update, old_name, new_name, &step_id)?;
         }
         progress_reporter.worked(1)?;
         let move_by_ns = self.move_node_annos;
@@ -2294,6 +2313,64 @@ mod tests {
             tmp.unwrap().path(),
             StepID {
                 module_name: "test_rename_nodes".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(manipulation.is_ok());
+        let gs = export_to_string(&graph, GraphMLExporter::default());
+        assert!(gs.is_ok());
+        let graphml = gs.unwrap();
+        assert_snapshot!(graphml);
+    }
+
+    #[test]
+    fn rename_node_fail_in_use() {
+        let g = input_graph(true, false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let tmp = tempdir();
+        assert!(tmp.is_ok());
+        let node_names = [("root/b", "root/b/doc")]
+            .iter()
+            .map(|(old, new)| (old.to_string(), new.to_string()))
+            .collect();
+        let manipulation = Revise {
+            node_names,
+            ..Default::default()
+        }
+        .manipulate_corpus(
+            &mut graph,
+            tmp.unwrap().path(),
+            StepID {
+                module_name: "test_rename_nodes_fail_in_use".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(manipulation.is_err());
+    }
+
+    #[test]
+    fn deletion_by_rename() {
+        let g = input_graph(true, false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let tmp = tempdir();
+        assert!(tmp.is_ok());
+        let node_names = [("root/b", "")]
+            .iter()
+            .map(|(old, new)| (old.to_string(), new.to_string()))
+            .collect();
+        let manipulation = Revise {
+            node_names,
+            ..Default::default()
+        }
+        .manipulate_corpus(
+            &mut graph,
+            tmp.unwrap().path(),
+            StepID {
+                module_name: "test_deletion_by_rename".to_string(),
                 path: None,
             },
             None,
