@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - progress reports for `enumerate`, `link`, and `map`
+- `revise` can now rename nodes using attribute `node_names`, e. g. for renaming (top level) corpus nodes. The syntax is equivalent to renaming annotations, thus renaming with an empty value will lead to deletion. Renaming with an existing value (also rename with self) will lead to an error.
 
 ### Changed
 
