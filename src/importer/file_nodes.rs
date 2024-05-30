@@ -96,7 +96,7 @@ mod tests {
     }
 
     fn test(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
-        let mut expected_g = AnnotationGraph::new(on_disk)?;
+        let mut expected_g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode {
             node_name: "xlsx".to_string(),
@@ -129,7 +129,7 @@ mod tests {
         })?;
         let eur = expected_g.apply_update(&mut u, |_| {});
         assert!(eur.is_ok()); // ordering component is missing, so this should be an error
-        let mut test_g = AnnotationGraph::new(on_disk)?;
+        let mut test_g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let import = CreateFileNodes {
             corpus_name: Some("xlsx".to_string()),
         };

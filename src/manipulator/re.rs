@@ -1285,7 +1285,7 @@ mod tests {
     }
 
     fn input_graph(on_disk: bool, new_names: bool) -> Result<AnnotationGraph> {
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode {
             node_name: "root".to_string(),
@@ -1408,7 +1408,7 @@ mod tests {
     }
 
     fn expected_output_graph(on_disk: bool) -> Result<AnnotationGraph> {
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode {
             node_name: "root".to_string(),
@@ -1500,7 +1500,7 @@ mod tests {
     }
 
     fn input_graph_for_move(on_disk: bool) -> Result<AnnotationGraph> {
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode {
             node_name: "root".to_string(),
@@ -1668,7 +1668,7 @@ mod tests {
     }
 
     fn expected_output_for_move(on_disk: bool) -> Result<AnnotationGraph> {
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode {
             node_name: "root".to_string(),
@@ -1863,7 +1863,7 @@ mod tests {
     }
 
     fn namespace_test_graph(on_disk: bool, after: bool) -> Result<AnnotationGraph> {
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         let corpus_type = "corpus";
         let node_type = "node";
@@ -2206,7 +2206,7 @@ mod tests {
             anno_name: "info".to_string(),
             anno_value: "note this info".to_string(),
         })?;
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         g.apply_update(&mut build_update, |_| {})?;
         let mut expected_update = GraphUpdate::default();
         expected_update.add_event(UpdateEvent::DeleteEdge {
