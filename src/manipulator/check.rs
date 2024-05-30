@@ -195,7 +195,7 @@ impl Check {
                     let path = db_dir.join(corpus_name);
                     let path_string = path.to_string_lossy().to_string();
                     if let Entry::Vacant(e) = graph_cache.entry(path_string.to_string()) {
-                        let eg = AnnotationGraph::new(false);
+                        let eg = AnnotationGraph::with_default_graphstorages(false);
                         if eg.is_err() {
                             return TestResult::ProcessingError {
                                 error: Box::new(eg.err().unwrap()),
@@ -746,7 +746,7 @@ mod tests {
         on_disk: bool,
         root_name: &str,
     ) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         let root_corpus = root_name;
         let doc_name = "doc";

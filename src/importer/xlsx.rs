@@ -509,7 +509,7 @@ mod tests {
         let step_id = StepID::from_importer_module(&importer, Some(path.to_path_buf()));
         let import = importer.reader().import_corpus(path, step_id, None);
         let mut u = import?;
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         g.apply_update(&mut u, |_| {})?;
         let lemma_count = match &fallback {
             Some(v) => match &v[..] {
@@ -803,7 +803,7 @@ mod tests {
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
         let step_id = StepID::from_importer_module(&importer, Some(path.to_path_buf()));
         let import = importer.reader().import_corpus(path, step_id, None);
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         g.apply_update(&mut import?, |_| {})?;
         let node_annos = g.get_node_annos();
         for (meta_name, exp_value) in [("date", "today"), ("author", "me"), ("key", "value")] {

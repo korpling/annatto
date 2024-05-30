@@ -386,7 +386,7 @@ mod tests {
             .reader()
             .import_corpus(path, StepID::from_importer_module(&importer, None), None)
             .unwrap();
-        let mut original_graph = AnnotationGraph::new(false).unwrap();
+        let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
         original_graph.apply_update(&mut updates, |_| {}).unwrap();
 
         // Export to Excel file, read it again and then compare the annotation graphs
@@ -401,7 +401,7 @@ mod tests {
                 None,
             )
             .unwrap();
-        let mut written_graph = AnnotationGraph::new(false).unwrap();
+        let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
         let mut updates = importer
             .reader()
             .import_corpus(path, StepID::from_importer_module(&importer, None), None)
@@ -428,7 +428,7 @@ mod tests {
             .reader()
             .import_corpus(path, StepID::from_importer_module(&importer, None), None)
             .unwrap();
-        let mut original_graph = AnnotationGraph::new(false).unwrap();
+        let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
         original_graph.apply_update(&mut updates, |_| {}).unwrap();
 
         // Export to Excel file and read it again
@@ -443,7 +443,7 @@ mod tests {
                 None,
             )
             .unwrap();
-        let mut written_graph = AnnotationGraph::new(false).unwrap();
+        let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
         let mut updates = importer
             .reader()
             .import_corpus(path, StepID::from_importer_module(&importer, None), None)
@@ -487,7 +487,7 @@ mod tests {
             .reader()
             .import_corpus(path, StepID::from_importer_module(&importer, None), None)
             .unwrap();
-        let mut original_graph = AnnotationGraph::new(false).unwrap();
+        let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
         original_graph.apply_update(&mut updates, |_| {}).unwrap();
 
         // Export to Excel file and read it again
@@ -501,7 +501,7 @@ mod tests {
                 None,
             )
             .unwrap();
-        let mut written_graph = AnnotationGraph::new(false).unwrap();
+        let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
         let mut updates = importer
             .reader()
             .import_corpus(path, StepID::from_importer_module(&importer, None), None)
