@@ -615,8 +615,8 @@ fn read_replace_property_value(
 fn rename_nodes(
     graph: &AnnotationGraph,
     update: &mut GraphUpdate,
-    old_name: &String,
-    new_name: &String,
+    old_name: &str,
+    new_name: &str,
     step_id: &StepID,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let node_annos = graph.get_node_annos();
