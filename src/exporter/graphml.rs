@@ -641,7 +641,13 @@ mod tests {
         assert_eq!(true, zip_file_path.is_file());
         // Read the ZIP file and check its contents
         let zip = zip::ZipArchive::new(zip_file).unwrap();
-        let files: Vec<_> = zip.file_names().collect();
-        assert_eq!(vec!["exmaralda.graphml", "files/test_file.wav"], files);
+        let files: Vec<_> = zip.file_names().sorted().collect();
+        assert_eq!(
+            vec![
+                "exmaralda.graphml",
+                "tests/data/import/exmaralda/clean/import/exmaralda/test_file.wav",
+            ],
+            files
+        );
     }
 }

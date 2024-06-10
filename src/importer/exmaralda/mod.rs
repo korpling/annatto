@@ -1,17 +1,17 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    env,
-    fs::File,
-};
-
 use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
+use normpath::PathExt;
 use ordered_float::OrderedFloat;
 use serde_derive::Deserialize;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    env,
+    fs::File,
+};
 use struct_field_names_as_array::FieldNamesAsSlice;
 use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader, ParserConfig};
 
@@ -119,8 +119,9 @@ impl ImportEXMARaLDA {
                                     let audio_path = parent_path.join(file_url);
                                     // only link files, no directories or symlinks
                                     if audio_path.exists() && (audio_path.is_file()) {
+                                        let absolute_audio_path = audio_path.normalize()?;
                                         if let Some(rel_path) = pathdiff::diff_paths(
-                                            audio_path.clone(),
+                                            absolute_audio_path,
                                             env::current_dir()?,
                                         ) {
                                             map_audio_source(
