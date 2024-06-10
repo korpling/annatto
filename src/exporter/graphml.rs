@@ -26,6 +26,7 @@ use graphannis_core::{
 use itertools::Itertools;
 use serde_derive::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
+use zip::ZipWriter;
 
 /// Exports files as [GraphML](http://graphml.graphdrawing.org/) files which
 /// conform to the [graphANNIS data model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
@@ -436,6 +437,44 @@ impl GraphMLExporter {
             .map(|item| item.map_err(anyhow::Error::from));
         Ok(it)
     }
+
+    fn write_graphml_file(
+        &self,
+        graph: &AnnotationGraph,
+        output_file_path: &Path,
+        zip_file: Option<&mut ZipWriter<File>>,
+        vis_str: &str,
+        reporter: &ProgressReporter,
+    ) -> anyhow::Result<()> {
+        let mut writer: Box<dyn std::io::Write> = if let Some(zip_file) = zip_file {
+            Box::new(zip_file)
+        } else {
+            // Directly write to the output file
+            let output_file = File::create(output_file_path)?;
+            Box::new(output_file)
+        };
+
+        if self.stable_order {
+            graphannis_core::graph::serialization::graphml::export_stable_order(
+                graph,
+                Some(vis_str),
+                &mut writer,
+                |msg| {
+                    reporter.info(msg).expect("Could not send status message");
+                },
+            )?;
+        } else {
+            graphannis_core::graph::serialization::graphml::export(
+                graph,
+                Some(vis_str),
+                &mut writer,
+                |msg| {
+                    reporter.info(msg).expect("Could not send status message");
+                },
+            )?;
+        }
+        Ok(())
+    }
 }
 
 impl Exporter for GraphMLExporter {
@@ -488,7 +527,6 @@ impl Exporter for GraphMLExporter {
             create_dir_all(output_path)?;
         }
         let output_file_path = output_path.join(file_name);
-        let output_file = File::create(output_file_path.clone())?;
 
         let infered_vis = if self.guess_vis {
             Some(vis_from_graph(graph)?)
@@ -506,39 +544,33 @@ impl Exporter for GraphMLExporter {
         };
         let vis_str = format!("\n{vis}\n");
         reporter.info(format!("Starting export to {}", &output_file_path.display()).as_str())?;
-        if self.zip {
+
+        let zip_options =
+            zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+        let mut zip_file = if self.zip {
             // Create a ZIP file at the given location
+            let output_file = File::create(output_file_path.clone())?;
             let mut zip = zip::ZipWriter::new(output_file);
 
             // Create an entry in the ZIP file and write the GraphML to this file entry
-            let options = zip::write::FileOptions::default()
-                .compression_method(zip::CompressionMethod::Deflated);
+            zip.start_file(format!("{toplevel_corpus_name}.graphml"), zip_options)?;
+            Some(zip)
+        } else {
+            None
+        };
 
-            zip.start_file(format!("{toplevel_corpus_name}.graphml"), options)?;
+        self.write_graphml_file(
+            graph,
+            &output_file_path,
+            zip_file.as_mut(),
+            &vis_str,
+            &reporter,
+        )?;
 
-            if self.stable_order {
-                graphannis_core::graph::serialization::graphml::export_stable_order(
-                    graph,
-                    Some(vis_str.as_str()),
-                    &mut zip,
-                    |msg| {
-                        reporter.info(msg).expect("Could not send status message");
-                    },
-                )?;
-            } else {
-                graphannis_core::graph::serialization::graphml::export(
-                    graph,
-                    Some(format!("\n{vis}\n").as_str()),
-                    &mut zip,
-                    |msg| {
-                        reporter.info(msg).expect("Could not send status message");
-                    },
-                )?;
-            }
-
+        if let Some(mut zip_file) = zip_file {
             // Insert all linked files with a *relative* path into the ZIP file.
             // We can't rewrite the links in the GraphML at this point and have
-            // to assume that wen unpacking it again, the absolute file paths
+            // to assume that when unpacking it again, the absolute file paths
             // should point to the original files. But when relative files are
             // used, we can store them in the ZIP file itself and the when
             // unpacked, the paths are still valid regardless of whether they
@@ -547,30 +579,12 @@ impl Exporter for GraphMLExporter {
                 let original_path = file?;
 
                 if original_path.is_relative() {
-                    zip.start_file(original_path.to_string_lossy(), options)?;
+                    zip_file.start_file(original_path.to_string_lossy(), zip_options)?;
                 }
                 let file_to_copy = File::open(original_path)?;
                 let mut reader = BufReader::new(file_to_copy);
-                std::io::copy(&mut reader, &mut zip)?;
+                std::io::copy(&mut reader, &mut zip_file)?;
             }
-        } else if self.stable_order {
-            graphannis_core::graph::serialization::graphml::export_stable_order(
-                graph,
-                Some(vis_str.as_str()),
-                output_file,
-                |msg| {
-                    reporter.info(msg).expect("Could not send status message");
-                },
-            )?;
-        } else {
-            graphannis_core::graph::serialization::graphml::export(
-                graph,
-                Some(vis_str.as_str()),
-                output_file,
-                |msg| {
-                    reporter.info(msg).expect("Could not send status message");
-                },
-            )?;
         }
         Ok(())
     }
@@ -628,6 +642,6 @@ mod tests {
         // Read the ZIP file and check its contents
         let zip = zip::ZipArchive::new(zip_file).unwrap();
         let files: Vec<_> = zip.file_names().collect();
-        assert_eq!(vec!["exmaralda.graphml", "test_file.wav"], files);
+        assert_eq!(vec!["exmaralda.graphml", "files/test_file.wav"], files);
     }
 }
