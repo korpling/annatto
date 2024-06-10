@@ -1,6 +1,3 @@
-//! Exports files as [GraphML](http://graphml.graphdrawing.org/) files which
-//! conform to the [graphANNIS data
-//! model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
 use std::{
     borrow::Cow,
     cmp::Ordering,
@@ -12,8 +9,9 @@ use std::{
 
 use crate::{
     error::AnnattoError, exporter::Exporter, progress::ProgressReporter, workflow::StatusSender,
-    Module, StepID,
+    StepID,
 };
+use documented::{Documented, DocumentedFields};
 use graphannis::AnnotationGraph;
 use graphannis::{
     graph::AnnoKey,
@@ -27,21 +25,28 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use serde_derive::{Deserialize, Serialize};
+use struct_field_names_as_array::FieldNamesAsSlice;
 
-pub const MODULE_NAME: &str = "export_graphml";
-
-#[derive(Default, Deserialize)]
-#[serde(default)]
+/// Exports files as [GraphML](http://graphml.graphdrawing.org/) files which
+/// conform to the [graphANNIS data model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(default, deny_unknown_fields)]
 pub struct GraphMLExporter {
+    /// If set, add this ANNIS visualization configuration string to the corpus
+    /// configuration. See
+    /// <http://korpling.github.io/ANNIS/4.11/user-guide/import-and-config/visualizations.html>
+    /// for a description of the possible visualization options of ANNIS.
     add_vis: Option<String>,
+    /// Automatically generate visualization options for ANNIS based on the
+    /// structure of the annotations, e.g. `Dominance` edges are indicators that
+    /// a syntactic tree should be visualized.
     guess_vis: bool,
+    /// Always generate the same order of nodes and edges in the output file.
+    /// This is e.g. useful when comparing files in a versioning environment
+    /// like git.
+    /// **Attention: this is slower to generate.**
+    stable_order: bool,
     zip: bool,
-}
-
-impl Module for GraphMLExporter {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
 }
 
 const DEFAULT_VIS_STR: &str = "# configure visualizations here";
@@ -441,7 +446,7 @@ impl Exporter for GraphMLExporter {
         step_id: StepID,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let reporter = ProgressReporter::new_unknown_total_work(tx, step_id)?;
+        let reporter = ProgressReporter::new_unknown_total_work(tx, step_id.clone())?;
 
         // Get the toplevel corpus name from the corpus structure
         let part_of_c = graph
@@ -450,7 +455,7 @@ impl Exporter for GraphMLExporter {
             .cloned()
             .ok_or_else(|| AnnattoError::Export {
                 reason: "Could not determine file name for graphML.".into(),
-                exporter: self.module_name().to_string(),
+                exporter: step_id.module_name.clone(),
                 path: output_path.to_path_buf(),
             })?;
 
@@ -499,8 +504,8 @@ impl Exporter for GraphMLExporter {
         } else {
             vis_str
         };
+        let vis_str = format!("\n{vis}\n");
         reporter.info(format!("Starting export to {}", &output_file_path.display()).as_str())?;
-
         if self.zip {
             // Create a ZIP file at the given location
             let mut zip = zip::ZipWriter::new(output_file);
@@ -511,14 +516,26 @@ impl Exporter for GraphMLExporter {
 
             zip.start_file(format!("{toplevel_corpus_name}.graphml"), options)?;
 
-            graphannis_core::graph::serialization::graphml::export(
-                graph,
-                Some(format!("\n{vis}\n").as_str()),
-                &mut zip,
-                |msg| {
-                    reporter.info(msg).expect("Could not send status message");
-                },
-            )?;
+            if self.stable_order {
+                graphannis_core::graph::serialization::graphml::export_stable_order(
+                    graph,
+                    Some(vis_str.as_str()),
+                    &mut zip,
+                    |msg| {
+                        reporter.info(msg).expect("Could not send status message");
+                    },
+                )?;
+            } else {
+                graphannis_core::graph::serialization::graphml::export(
+                    graph,
+                    Some(format!("\n{vis}\n").as_str()),
+                    &mut zip,
+                    |msg| {
+                        reporter.info(msg).expect("Could not send status message");
+                    },
+                )?;
+            }
+
             // Insert all linked files with a *relative* path into the ZIP file.
             // We can't rewrite the links in the GraphML at this point and have
             // to assume that wen unpacking it again, the absolute file paths
@@ -536,18 +553,25 @@ impl Exporter for GraphMLExporter {
                 let mut reader = BufReader::new(file_to_copy);
                 std::io::copy(&mut reader, &mut zip)?;
             }
+        } else if self.stable_order {
+            graphannis_core::graph::serialization::graphml::export_stable_order(
+                graph,
+                Some(vis_str.as_str()),
+                output_file,
+                |msg| {
+                    reporter.info(msg).expect("Could not send status message");
+                },
+            )?;
         } else {
-            // Directly writhe the GraphML to the output file
             graphannis_core::graph::serialization::graphml::export(
                 graph,
-                Some(format!("\n{vis}\n").as_str()),
+                Some(vis_str.as_str()),
                 output_file,
                 |msg| {
                     reporter.info(msg).expect("Could not send status message");
                 },
             )?;
         }
-
         Ok(())
     }
 
@@ -569,18 +593,19 @@ mod tests {
     use graphannis::AnnotationGraph;
     use tempfile::TempDir;
 
-    use crate::{
-        importer::{exmaralda::ImportEXMARaLDA, Importer},
-        Module,
-    };
+    use crate::importer::{exmaralda::ImportEXMARaLDA, Importer};
 
     #[test]
     fn export_as_zip_with_files() {
+        let step_id = StepID {
+            module_name: "export_graphml".to_string(),
+            path: None,
+        };
         let importer = ImportEXMARaLDA::default();
         let mut updates = importer
             .import_corpus(
                 Path::new("tests/data/import/exmaralda/clean/import/exmaralda"),
-                importer.step_id(None),
+                step_id.clone(),
                 None,
             )
             .unwrap();
@@ -594,7 +619,7 @@ mod tests {
         let output_path = TempDir::new().unwrap();
 
         exporter
-            .export_corpus(&g, output_path.path(), exporter.step_id(None), None)
+            .export_corpus(&g, output_path.path(), step_id, None)
             .unwrap();
         // The output directory should contain a single ZIP file
         let zip_file_path = output_path.path().join("exmaralda.zip");

@@ -1,0 +1,159 @@
+---
+source: src/manipulator/split.rs
+expression: "&graphml[start..end + 7]"
+---
+<node id="split_values">
+            <data key="k11">corpus</data>
+        </node>
+        <node id="split_values/test_file">
+            <data key="k11">corpus</data>
+            <data key="k8">test_file</data>
+        </node>
+        <node id="split_values/test_file#text">
+            <data key="k11">datasource</data>
+        </node>
+        <node id="split_values/test_file#t1">
+            <data key="k1">Nom</data>
+            <data key="k10">der</data>
+            <data key="k11">node</data>
+            <data key="k12">DDART</data>
+            <data key="k13">die</data>
+            <data key="k2">Fem</data>
+            <data key="k4">Sg</data>
+            <data key="k9">default_layer</data>
+        </node>
+        <node id="split_values/test_file#t2">
+            <data key="k1">Nom</data>
+            <data key="k10">zeit</data>
+            <data key="k11">node</data>
+            <data key="k12">NA</data>
+            <data key="k13">zeit</data>
+            <data key="k14"> </data>
+            <data key="k2">Fem</data>
+            <data key="k4">Sg</data>
+            <data key="k9">default_layer</data>
+        </node>
+        <node id="split_values/test_file#t3">
+            <data key="k1">Gen</data>
+            <data key="k10">der</data>
+            <data key="k11">node</data>
+            <data key="k12">DDART</data>
+            <data key="k13">des</data>
+            <data key="k14"> </data>
+            <data key="k4">Sg</data>
+            <data key="k9">default_layer</data>
+        </node>
+        <node id="split_values/test_file#t4">
+            <data key="k1">Gen</data>
+            <data key="k10">schweigen</data>
+            <data key="k11">node</data>
+            <data key="k12">NA</data>
+            <data key="k13">schweygens</data>
+            <data key="k14"> </data>
+            <data key="k4">Sg</data>
+            <data key="k9">default_layer</data>
+        </node>
+        <node id="split_values/test_file#t5">
+            <data key="k10">sein</data>
+            <data key="k11">node</data>
+            <data key="k12">VAFIN</data>
+            <data key="k13">ist</data>
+            <data key="k14"> </data>
+            <data key="k3">Ind</data>
+            <data key="k4">Sg</data>
+            <data key="k5">3</data>
+            <data key="k6">Präs</data>
+            <data key="k7">Unr</data>
+            <data key="k9">default_layer</data>
+        </node>
+        <node id="split_values/test_file#t6">
+            <data key="k10">vor|vorgehen</data>
+            <data key="k11">node</data>
+            <data key="k12">PTKVZ|VVPP</data>
+            <data key="k13">vorgangen</data>
+            <data key="k14"> </data>
+            <data key="k9">default_layer</data>
+        </node>
+        <node id="split_values/test_file#t7">
+            <data key="k10">,</data>
+            <data key="k11">node</data>
+            <data key="k12">$_</data>
+            <data key="k13">,</data>
+            <data key="k14"> </data>
+            <data key="k9">default_layer</data>
+        </node>
+        <node id="split_values/test_file#t8">
+            <data key="k10">und</data>
+            <data key="k11">node</data>
+            <data key="k12">KON</data>
+            <data key="k13">und</data>
+            <data key="k14"> </data>
+            <data key="k9">default_layer</data>
+        </node>
+        <node id="split_values/test_file#t9">
+            <data key="k1">Akk</data>
+            <data key="k10">der</data>
+            <data key="k11">node</data>
+            <data key="k12">DDART</data>
+            <data key="k13">die</data>
+            <data key="k14"> </data>
+            <data key="k2">Fem</data>
+            <data key="k4">Sg</data>
+            <data key="k9">default_layer</data>
+        </node>
+        <node id="split_values/test_file#t10">
+            <data key="k1">Akk</data>
+            <data key="k10">zeit</data>
+            <data key="k11">node</data>
+            <data key="k12">NA</data>
+            <data key="k13">zeit</data>
+            <data key="k14"> </data>
+            <data key="k2">Fem</data>
+            <data key="k4">Sg</data>
+            <data key="k9">default_layer</data>
+        </node>
+        <node id="split_values/test_file#t11">
+            <data key="k10">zu</data>
+            <data key="k11">node</data>
+            <data key="k12">PTKZU</data>
+            <data key="k13">zu</data>
+            <data key="k14"> </data>
+            <data key="k9">default_layer</data>
+        </node>
+        <node id="split_values/test_file#t12">
+            <data key="k10">reden</data>
+            <data key="k11">node</data>
+            <data key="k12">VVINF</data>
+            <data key="k13">reden</data>
+            <data key="k14"> </data>
+            <data key="k9">default_layer</data>
+        </node>
+        <node id="split_values/test_file#t13">
+            <data key="k10">sein</data>
+            <data key="k11">node</data>
+            <data key="k12">VAFIN</data>
+            <data key="k13">ist</data>
+            <data key="k14"> </data>
+            <data key="k3">Ind</data>
+            <data key="k4">Sg</data>
+            <data key="k5">3</data>
+            <data key="k6">Präs</data>
+            <data key="k7">Unr</data>
+            <data key="k9">default_layer</data>
+        </node>
+        <node id="split_values/test_file#t14">
+            <data key="k10">kommen</data>
+            <data key="k11">node</data>
+            <data key="k12">VVPP</data>
+            <data key="k13">kommen</data>
+            <data key="k14"> </data>
+            <data key="k9">default_layer</data>
+        </node>
+        <node id="split_values/test_file#t15">
+            <data key="k10">,</data>
+            <data key="k11">node</data>
+            <data key="k12">$_</data>
+            <data key="k13">,</data>
+            <data key="k14"> </data>
+            <data key="k9">default_layer</data>
+        </node>

@@ -1,7 +1,5 @@
-//! Imports files in the Penn Treebank (bracket) format.
-use std::{io::Read, path::Path};
-
 use anyhow::anyhow;
+use documented::{Documented, DocumentedFields};
 use encoding_rs_io::DecodeReaderBytes;
 use graphannis::{
     model::AnnotationComponentType,
@@ -14,15 +12,16 @@ use pest::{
 };
 use pest_derive::Parser;
 use serde_derive::Deserialize;
+use std::{io::Read, path::Path};
+use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
-    progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files, Module, StepID,
+    progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files, StepID,
 };
 
 use super::Importer;
 
-pub const MODULE_NAME: &str = "import_ptb";
-
+/// This implements the Pest parser for the given grammar.
 #[derive(Parser)]
 #[grammar = "importer/ptb/ptb.pest"]
 pub struct PtbParser;
@@ -33,6 +32,7 @@ struct DocumentMapper {
     last_token_id: Option<String>,
     number_of_token: usize,
     number_of_spans: usize,
+    edge_delimiter: Option<String>,
 }
 
 impl<'a> DocumentMapper {
@@ -55,7 +55,7 @@ impl<'a> DocumentMapper {
             if ptb.as_rule() == Rule::ptb {
                 for root_phrase in ptb.into_inner() {
                     if root_phrase.as_rule() == Rule::phrase {
-                        self.consume_phrase(root_phrase.into_inner(), u)?;
+                        self.consume_phrase(root_phrase.into_inner(), None, u)?;
                     }
                 }
             }
@@ -63,9 +63,76 @@ impl<'a> DocumentMapper {
         Ok(())
     }
 
+    fn annotate_edge(
+        &self,
+        u: &mut GraphUpdate,
+        source: Option<&String>,
+        target: String,
+        edge_label: Option<&str>,
+    ) -> anyhow::Result<()> {
+        if let Some(parent_node_name) = source {
+            // Add a a typed (with component name) and an untyped
+            // dominance edge (empty component name) between this parent
+            // node and the child node.
+            // TODO: make the layer and component name configurable
+            u.add_event(UpdateEvent::AddEdge {
+                source_node: parent_node_name.to_string(),
+                target_node: target.to_string(),
+                layer: "syntax".to_string(),
+                component_type: AnnotationComponentType::Dominance.to_string(),
+                component_name: "".to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddEdge {
+                source_node: parent_node_name.clone(),
+                target_node: target.to_string(),
+                layer: "syntax".to_string(),
+                component_type: AnnotationComponentType::Dominance.to_string(),
+                component_name: "edge".to_string(),
+            })?;
+            if let Some(label) = edge_label {
+                if !label.is_empty() {
+                    u.add_event(UpdateEvent::AddEdgeLabel {
+                        source_node: parent_node_name.to_string(),
+                        target_node: target.to_string(),
+                        layer: "syntax".to_string(),
+                        component_type: AnnotationComponentType::Dominance.to_string(),
+                        component_name: "".to_string(),
+                        anno_ns: "syntax".to_string(),
+                        anno_name: "func".to_string(),
+                        anno_value: label.to_string(),
+                    })?;
+                    u.add_event(UpdateEvent::AddEdgeLabel {
+                        source_node: parent_node_name.to_string(),
+                        target_node: target,
+                        layer: "syntax".to_string(),
+                        component_type: AnnotationComponentType::Dominance.to_string(),
+                        component_name: "edge".to_string(),
+                        anno_ns: "syntax".to_string(),
+                        anno_name: "func".to_string(),
+                        anno_value: label.to_string(),
+                    })?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn split_annotation_value<'b>(&self, phrase_label: &'b str) -> (&'b str, Option<&'b str>) {
+        if let Some(sep) = &self.edge_delimiter {
+            if let Some((n, e)) = phrase_label.split_once(sep) {
+                (n, Some(e))
+            } else {
+                (phrase_label, None)
+            }
+        } else {
+            (phrase_label, None)
+        }
+    }
+
     fn consume_phrase(
         &mut self,
         mut phrase_children: Pairs<Rule>,
+        parent: Option<&String>,
         u: &mut GraphUpdate,
     ) -> anyhow::Result<String> {
         // The first child of a phrase we want to map must be a label
@@ -77,9 +144,10 @@ impl<'a> DocumentMapper {
                     || remaining_children[0].as_rule() == Rule::label)
             {
                 // map the value as token
-                let tok_id = self.consume_token(u, &remaining_children[0], phrase_label)?;
+                let tok_id = self.consume_token(u, &remaining_children[0], phrase_label, parent)?;
                 Ok(tok_id)
             } else {
+                let (node_label, edge_label) = self.split_annotation_value(&phrase_label);
                 // Map this as span
                 let id = self.number_of_spans + 1;
                 let node_name = format!("{}#n{id}", self.doc_path);
@@ -93,7 +161,7 @@ impl<'a> DocumentMapper {
                     node_name: node_name.clone(),
                     anno_ns: "syntax".to_string(),
                     anno_name: "cat".to_string(),
-                    anno_value: phrase_label,
+                    anno_value: node_label.to_string(),
                 })?;
                 // TODO: make the layer configurable
                 u.add_event(UpdateEvent::AddNodeLabel {
@@ -102,30 +170,21 @@ impl<'a> DocumentMapper {
                     anno_name: "layer".to_string(),
                     anno_value: "syntax".to_string(),
                 })?;
+                u.add_event(UpdateEvent::AddEdge {
+                    source_node: node_name.to_string(),
+                    target_node: self.doc_path.to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::PartOf.to_string(),
+                    component_name: "".to_string(),
+                })?;
 
+                self.annotate_edge(u, parent, node_name.to_string(), edge_label)?;
                 self.number_of_spans += 1;
 
                 // Left-descend to any phrase
+                //let mut target_node = node_name.to_string();
                 for c in remaining_children {
-                    let target_node = self.consume_phrase(c.into_inner(), u)?;
-                    // Add a a typed (with component name) and an untyped
-                    // dominance edge (empty component name) between this parent
-                    // node and the child node.
-                    // TODO: make the layer and component name configurable
-                    u.add_event(UpdateEvent::AddEdge {
-                        source_node: node_name.clone(),
-                        target_node: target_node.clone(),
-                        layer: "syntax".to_string(),
-                        component_type: AnnotationComponentType::Dominance.to_string(),
-                        component_name: "".to_string(),
-                    })?;
-                    u.add_event(UpdateEvent::AddEdge {
-                        source_node: node_name.clone(),
-                        target_node,
-                        layer: "syntax".to_string(),
-                        component_type: AnnotationComponentType::Dominance.to_string(),
-                        component_name: "edge".to_string(),
-                    })?;
+                    self.consume_phrase(c.into_inner(), Some(&node_name), u)?;
                 }
                 Ok(node_name)
             }
@@ -139,10 +198,12 @@ impl<'a> DocumentMapper {
         u: &mut GraphUpdate,
         pair: &Pair<Rule>,
         phrase_label: String,
+        parent: Option<&String>,
     ) -> anyhow::Result<String> {
         let value = self.consume_value(pair)?;
         let id = self.number_of_token + 1;
         let tok_id = format!("{}#t{id}", self.doc_path);
+        let (node_label, edge_label) = self.split_annotation_value(&phrase_label);
         u.add_event(UpdateEvent::AddNode {
             node_name: tok_id.clone(),
             node_type: "node".to_string(),
@@ -166,12 +227,13 @@ impl<'a> DocumentMapper {
             component_type: AnnotationComponentType::PartOf.to_string(),
             component_name: "".to_string(),
         })?;
+        self.annotate_edge(u, parent, tok_id.to_string(), edge_label)?;
         // TODO: allow to customize the token annotation name
         u.add_event(UpdateEvent::AddNodeLabel {
             node_name: tok_id.clone(),
             anno_ns: DEFAULT_NS.to_string(),
             anno_name: "pos".to_string(),
-            anno_value: phrase_label,
+            anno_value: node_label.to_string(),
         })?;
         if let Some(last_token_id) = &self.last_token_id {
             u.add_event(UpdateEvent::AddNodeLabel {
@@ -226,19 +288,15 @@ impl<'a> DocumentMapper {
 }
 
 /// Importer the Penn Treebank Bracketed Text format (PTB)
-#[derive(Default, Deserialize)]
-#[serde(default)]
-pub struct PtbImporter {}
-
-impl Module for PtbImporter {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(default, deny_unknown_fields)]
+pub struct ImportPTB {
+    edge_delimiter: Option<String>,
 }
 
 const FILE_EXTENSIONS: [&str; 1] = ["ptb"];
 
-impl Importer for PtbImporter {
+impl Importer for ImportPTB {
     fn import_corpus(
         &self,
         input_path: &Path,
@@ -259,7 +317,7 @@ impl Importer for PtbImporter {
             let mut file_content = String::new();
             decoder.read_to_string(&mut file_content)?;
 
-            let ptb: Pairs<Rule> = PtbParser::parse(Rule::ptb, &file_content)?;
+            let ptb: Pairs<Rule> = PtbParser::parse(Rule::ptb, file_content.trim())?;
 
             let text_node_name = format!("{}#text", &doc_path);
 
@@ -269,6 +327,7 @@ impl Importer for PtbImporter {
                 last_token_id: None,
                 number_of_token: 0,
                 number_of_spans: 0,
+                edge_delimiter: self.edge_delimiter.clone(),
             };
 
             doc_mapper.map(&mut u, ptb)?;

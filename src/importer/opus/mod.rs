@@ -1,24 +1,27 @@
 use std::{collections::BTreeMap, fs::File, path::Path};
 
+use documented::{Documented, DocumentedFields};
 use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::graph::ANNIS_NS;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 use xml::{EventReader, ParserConfig};
 
 use crate::{
     error::{AnnattoError, Result},
     progress::ProgressReporter,
     util::graphupdate::import_corpus_graph_from_files,
-    Module,
 };
 
 use super::Importer;
 
-#[derive(Deserialize)]
-#[serde(default)]
+/// Add alignment edges for parallel corpora from the XML format used by the
+/// [OPUS](https://opus.nlpl.eu/) corpora.
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(default, deny_unknown_fields)]
 pub struct ImportOpusLinks {
     default_name: String,
     default_type: AnnotationComponentType,
@@ -37,14 +40,6 @@ impl Default for ImportOpusLinks {
     }
 }
 
-const MODULE_NAME: &str = "import_opus_links";
-
-impl Module for ImportOpusLinks {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
-}
-
 const FILE_EXTENSIONS: [&str; 1] = ["xml"];
 
 impl Importer for ImportOpusLinks {
@@ -57,9 +52,11 @@ impl Importer for ImportOpusLinks {
         let mut update = GraphUpdate::default();
         let all_files =
             import_corpus_graph_from_files(&mut update, input_path, self.file_extensions())?;
-        let progress = ProgressReporter::new(tx, step_id, all_files.len())?;
+        let progress = ProgressReporter::new(tx, step_id.clone(), all_files.len())?;
         all_files.into_iter().try_for_each(|(p, d)| {
-            if let Err(e) = self.import_document(p.as_path(), Path::new(d.as_str()), &mut update) {
+            if let Err(e) =
+                self.import_document(&step_id, p.as_path(), Path::new(d.as_str()), &mut update)
+            {
                 Err(e)
             } else {
                 progress.worked(1)
@@ -127,6 +124,7 @@ impl ImportOpusLinks {
 
     fn import_document(
         &self,
+        step_id: &crate::StepID,
         path: &Path,
         corpus_node_path: &Path,
         update: &mut GraphUpdate,
@@ -142,7 +140,7 @@ impl ImportOpusLinks {
         loop {
             let xml_event = reader.next().map_err(|_| AnnattoError::Import {
                 reason: "Error parsing xml.".to_string(),
-                importer: MODULE_NAME.to_string(),
+                importer: step_id.module_name.clone(),
                 path: path.to_path_buf(),
             })?;
             match xml_event {
@@ -159,7 +157,7 @@ impl ImportOpusLinks {
                             if let Some(parent_name) = corpus_node_path.parent() {
                                 let err = Err(AnnattoError::Import {
                                     reason: "Source or target document undefined.".to_string(),
-                                    importer: MODULE_NAME.to_string(),
+                                    importer: step_id.module_name.clone(),
                                     path: path.to_path_buf(),
                                 });
                                 if let Some(source_doc_path) = attribute_map.get("fromDoc") {

@@ -1,7 +1,6 @@
-//! Imports Excel Spreadsheets where each line is a token, the other columns are
-// spans and merged cells can be used for spans that cover more than one token.
 use std::{
     collections::{BTreeMap, BTreeSet},
+    fmt::Display,
     path::Path,
 };
 
@@ -15,25 +14,54 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 use umya_spreadsheet::Cell;
 
+use super::Importer;
 use crate::{
     error::AnnattoError,
     progress::ProgressReporter,
     util::{self},
-    Module, StepID,
+    StepID,
 };
+use documented::{Documented, DocumentedFields};
 
-use super::Importer;
-
-pub const MODULE_NAME: &str = "import_xlsx";
-
-#[derive(Default, Deserialize)]
-#[serde(default)]
+/// Imports Excel Spreadsheets where each line is a token, the other columns are
+/// spans and merged cells can be used for spans that cover more than one token.
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(default, deny_unknown_fields)]
 pub struct ImportSpreadsheet {
+    /// Maps token columns to annotation columns. If there is more than one
+    /// token column, it is assumed that the corpus has multiple segmentations.
+    /// In this case, it is necessary to tell the importer which annotation column belongs to which token column.
+    ///
+    /// Example with the two token columns "dipl" and "norm":
+    ///
+    /// ```toml
+    /// [export.config]
+    /// column_map = {"dipl" = ["sentence"], "norm" = ["pos", "lemma", "seg"]}
+    /// ```
+    /// The column "sentence" must be always be aligned with the "dipl" token
+    /// and "pos", "lemma" and "seg" are aligned with the "norm" token.
     column_map: BTreeMap<String, BTreeSet<String>>,
+    /// If given, the name of the token column to be used when there is no
+    /// explicit mapping given in the `column_map` parameter for this annotation
+    /// column.
+    ///
+    /// Example with two token columns "dipl" and "norm", where all annotation
+    /// columns except "lemma" and "pos" are mapped to the "dipl" token column:
+    ///
+    /// ```toml
+    /// [export.config]
+    /// column_map = {"dipl" = [], "norm" = ["pos", "lemma"]}
+    /// fallback = "dipl"
+    /// ```
     fallback: Option<String>,
+    /// Optional value of the Excel sheet that contains the data. If not given,
+    /// the first sheet is used.
     datasheet: Option<SheetAddress>,
+    /// Optional value of the Excel sheet that contains the metadata table. If
+    /// no metadata is imported.    
     metasheet: Option<SheetAddress>,
 }
 
@@ -44,18 +72,13 @@ enum SheetAddress {
     Name(String),
 }
 
-impl ToString for SheetAddress {
-    fn to_string(&self) -> String {
-        match self {
+impl Display for SheetAddress {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let v = match self {
             SheetAddress::Numeric(n) => n.to_string(),
             SheetAddress::Name(s) => s.to_string(),
-        }
-    }
-}
-
-impl Module for ImportSpreadsheet {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
+        };
+        write!(f, "{v}")
     }
 }
 
@@ -79,6 +102,7 @@ fn sheet_from_address<'a>(
 impl ImportSpreadsheet {
     fn import_datasheet(
         &self,
+        step_id: &StepID,
         doc_path: &str,
         sheet: &umya_spreadsheet::Worksheet,
         update: &mut GraphUpdate,
@@ -154,7 +178,7 @@ impl ImportSpreadsheet {
                     let err = AnnattoError::Import {
                         reason: "Merged cells across multiple columns cannot be mapped."
                             .to_string(),
-                        importer: MODULE_NAME.to_string(),
+                        importer: step_id.module_name.clone(),
                         path: doc_path.into(),
                     };
                     return Err(err);
@@ -282,14 +306,6 @@ impl ImportSpreadsheet {
                             component_type: AnnotationComponentType::PartOf.to_string(),
                             component_name: "".to_string(),
                         })?;
-                        if name == tok_name {
-                            update.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: node_name.to_string(),
-                                anno_ns: ANNIS_NS.to_string(),
-                                anno_name: "tok".to_string(),
-                                anno_value: value.to_string(),
-                            })?;
-                        }
                         if !tok_name.is_empty() {
                             update.add_event(UpdateEvent::AddNodeLabel {
                                 node_name: node_name.to_string(),
@@ -378,6 +394,7 @@ impl ImportSpreadsheet {
 
     fn import_workbook(
         &self,
+        step_id: &StepID,
         update: &mut GraphUpdate,
         path: &Path,
         doc_node_name: &str,
@@ -387,11 +404,11 @@ impl ImportSpreadsheet {
         if let Some(sheet) = sheet_from_address(&book, &self.datasheet, Some(0)).map_err(|e| {
             AnnattoError::Import {
                 reason: e.to_string(),
-                importer: MODULE_NAME.to_string(),
+                importer: step_id.module_name.clone(),
                 path: path.to_path_buf(),
             }
         })? {
-            self.import_datasheet(doc_node_name, sheet, update, progress_reporter)?;
+            self.import_datasheet(step_id, doc_node_name, sheet, update, progress_reporter)?;
         }
         if let Some(sheet) =
             sheet_from_address(&book, &self.metasheet, None).map_err(|_| AnnattoError::Import {
@@ -399,7 +416,7 @@ impl ImportSpreadsheet {
                     "Could not find sheet {}",
                     &self.metasheet.as_ref().unwrap().to_string()
                 ),
-                importer: self.module_name().to_string(),
+                importer: step_id.module_name.clone(),
                 path: path.into(),
             })?
         {
@@ -427,11 +444,11 @@ impl Importer for ImportSpreadsheet {
         )?;
         let number_of_files = all_files.len();
         // Each file is a work step
-        let reporter = ProgressReporter::new(tx, step_id, number_of_files)?;
+        let reporter = ProgressReporter::new(tx, step_id.clone(), number_of_files)?;
 
         all_files.into_iter().try_for_each(|(pb, doc_node_name)| {
             reporter.info(&format!("Importing {}", pb.to_string_lossy()))?;
-            self.import_workbook(&mut updates, &pb, &doc_node_name, &reporter)?;
+            self.import_workbook(&step_id, &mut updates, &pb, &doc_node_name, &reporter)?;
             reporter.worked(1)?;
             Ok::<(), AnnattoError>(())
         })?;
@@ -446,14 +463,14 @@ impl Importer for ImportSpreadsheet {
 
 #[cfg(test)]
 mod tests {
-    use std::{env::temp_dir, sync::mpsc};
+    use std::sync::mpsc;
 
     use graphannis::{
         corpusstorage::{QueryLanguage, SearchQuery},
         AnnotationGraph, CorpusStorage,
     };
     use graphannis_core::{annostorage::ValueSearch, types::AnnoKey};
-    use tempfile::tempdir_in;
+    use tempfile::tempdir;
 
     use crate::{workflow::Workflow, ReadFrom};
 
@@ -483,16 +500,18 @@ mod tests {
         );
         let importer = ImportSpreadsheet {
             column_map: col_map,
-            fallback: fallback,
+            fallback: fallback.clone(),
             datasheet: None,
             metasheet: None,
         };
+        let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
-        let import = importer.import_corpus(path, importer.step_id(None), None);
+        let step_id = StepID::from_importer_module(&importer, Some(path.to_path_buf()));
+        let import = importer.reader().import_corpus(path, step_id, None);
         let mut u = import?;
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         g.apply_update(&mut u, |_| {})?;
-        let lemma_count = match &importer.fallback {
+        let lemma_count = match &fallback {
             Some(v) => match &v[..] {
                 "norm" => 4,
                 _ => 0,
@@ -526,7 +545,7 @@ mod tests {
             ("annis:node_name=/.*#t.*/ @ annis:doc", 6),
         ];
         let corpus_name = "current";
-        let tmp_dir = tempdir_in(temp_dir())?;
+        let tmp_dir = tempdir()?;
         g.save_to(&tmp_dir.path().join(corpus_name))?;
         let cs_r = CorpusStorage::with_auto_cache_size(&tmp_dir.path(), true);
         assert!(cs_r.is_ok());
@@ -589,9 +608,11 @@ mod tests {
             datasheet: None,
             metasheet: None,
         };
+        let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/dirty/xlsx/");
+        let step_id = StepID::from_importer_module(&importer, Some(path.to_path_buf()));
         let (sender, receiver) = mpsc::channel();
-        let import = importer.import_corpus(path, importer.step_id(None), Some(sender));
+        let import = importer.reader().import_corpus(path, step_id, Some(sender));
         assert!(import.is_err());
         assert_ne!(receiver.into_iter().count(), 0);
     }
@@ -617,9 +638,11 @@ mod tests {
             datasheet: None,
             metasheet: None,
         };
+        let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/warnings/xlsx/");
+        let step_id = StepID::from_importer_module(&importer, Some(path.to_path_buf()));
         let (sender, receiver) = mpsc::channel();
-        let import = importer.import_corpus(path, importer.step_id(None), Some(sender));
+        let import = importer.reader().import_corpus(path, step_id, Some(sender));
         assert!(import.is_ok());
         assert_ne!(receiver.into_iter().count(), 0);
     }
@@ -689,9 +712,11 @@ mod tests {
             datasheet: None,
             metasheet: None,
         };
+        let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
+        let step_id = StepID::from_importer_module(&importer, Some(path.to_path_buf()));
         let (sender, receiver) = mpsc::channel();
-        let import = importer.import_corpus(path, importer.step_id(None), Some(sender));
+        let import = importer.reader().import_corpus(path, step_id, Some(sender));
         assert!(import.is_ok());
         assert_ne!(receiver.into_iter().count(), 0);
     }
@@ -774,9 +799,11 @@ mod tests {
             datasheet: None,
             metasheet: Some(SheetAddress::Name("meta".to_string())),
         };
+        let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
-        let import = importer.import_corpus(path, importer.step_id(None), None);
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let step_id = StepID::from_importer_module(&importer, Some(path.to_path_buf()));
+        let import = importer.reader().import_corpus(path, step_id, None);
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         g.apply_update(&mut import?, |_| {})?;
         let node_annos = g.get_node_annos();
         for (meta_name, exp_value) in [("date", "today"), ("author", "me"), ("key", "value")] {

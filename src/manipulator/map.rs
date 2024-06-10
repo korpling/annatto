@@ -1,10 +1,10 @@
-//! Creates new annotations based on existing annotation values.
 use std::{
-    env::temp_dir,
     fs,
     path::{Path, PathBuf},
 };
 
+use crate::{progress::ProgressReporter, workflow::StatusSender, StepID};
+use documented::{Documented, DocumentedFields};
 use graphannis::{
     corpusstorage::{QueryLanguage, SearchQuery},
     update::{GraphUpdate, UpdateEvent},
@@ -12,23 +12,16 @@ use graphannis::{
 };
 use itertools::Itertools;
 use serde_derive::Deserialize;
-use tempfile::tempdir_in;
-
-use crate::{workflow::StatusSender, Module};
+use struct_field_names_as_array::FieldNamesAsSlice;
+use tempfile::tempdir;
 
 use super::Manipulator;
 
-pub const MODULE_NAME: &str = "map_annotations";
-
-#[derive(Deserialize)]
+/// Creates new annotations based on existing annotation values.
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(deny_unknown_fields)]
 pub struct MapAnnos {
     rule_file: PathBuf,
-}
-
-impl Module for MapAnnos {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
 }
 
 impl Manipulator for MapAnnos {
@@ -36,6 +29,7 @@ impl Manipulator for MapAnnos {
         &self,
         graph: &mut graphannis::AnnotationGraph,
         workflow_directory: &std::path::Path,
+        step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let read_from_path = {
@@ -47,7 +41,7 @@ impl Manipulator for MapAnnos {
             }
         };
         let mapping = read_config(read_from_path.as_path())?;
-        self.run(graph, mapping, &tx)?;
+        self.run(graph, mapping, &tx, &step_id)?;
         Ok(())
     }
 }
@@ -57,13 +51,15 @@ impl MapAnnos {
         &self,
         graph: &mut AnnotationGraph,
         mapping: Mapping,
-        _tx: &Option<StatusSender>,
+        tx: &Option<StatusSender>,
+        step_id: &StepID,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
         let corpus_name = "current";
-        let tmp_dir = tempdir_in(temp_dir())?;
+        let tmp_dir = tempdir()?;
         graph.save_to(&tmp_dir.path().join(corpus_name))?;
         let cs = CorpusStorage::with_auto_cache_size(tmp_dir.path(), true)?;
+        let progress = ProgressReporter::new(tx.clone(), step_id.clone(), mapping.rules.len())?;
         for rule in mapping.rules {
             let query = SearchQuery {
                 corpus_names: &["current"],
@@ -92,6 +88,7 @@ impl MapAnnos {
                     })?;
                 }
             }
+            progress.worked(1)?;
         }
         graph.apply_update(&mut update, |_| {})?;
         Ok(())
@@ -120,7 +117,7 @@ struct Rule {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeSet, env::temp_dir, sync::mpsc};
+    use std::{collections::BTreeSet, sync::mpsc};
 
     use graphannis::{
         corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
@@ -134,7 +131,7 @@ mod tests {
         util::join_qname,
     };
     use itertools::Itertools;
-    use tempfile::tempdir_in;
+    use tempfile::tempdir;
 
     use super::{MapAnnos, Mapping};
 
@@ -183,13 +180,22 @@ mod tests {
             value = "PROPN"
         "#;
         let mapping: Mapping = toml::from_str(config)?;
+        let tmp = tempdir()?;
         let mapper = MapAnnos {
-            rule_file: temp_dir().join("rule_file_test.toml"), // dummy path
+            rule_file: tmp.path().join("rule_file_test.toml"), // dummy path
         };
         let (sender, _receiver) = mpsc::channel();
         let mut g = source_graph(on_disk)?;
         let tx = Some(sender);
-        mapper.run(&mut g, mapping, &tx)?;
+        mapper.run(
+            &mut g,
+            mapping,
+            &tx,
+            &crate::StepID {
+                module_name: "test_map".to_string(),
+                path: None,
+            },
+        )?;
         let mut e_g = target_graph(on_disk)?;
         // corpus nodes
         let e_corpus_nodes: BTreeSet<String> = e_g
@@ -279,8 +285,8 @@ mod tests {
             ("tok=/New York/ _=_ pos=/PROPN/", 1),
         ];
         let corpus_name = "current";
-        let tmp_dir_e = tempdir_in(temp_dir())?;
-        let tmp_dir_g = tempdir_in(temp_dir())?;
+        let tmp_dir_e = tempdir()?;
+        let tmp_dir_g = tempdir()?;
         e_g.save_to(&tmp_dir_e.path().join(corpus_name))?;
         g.save_to(&tmp_dir_g.path().join(corpus_name))?;
         let cs_e = CorpusStorage::with_auto_cache_size(&tmp_dir_e.path(), true)?;
@@ -313,7 +319,7 @@ mod tests {
     }
 
     fn source_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode {
             node_name: "doc".to_string(),

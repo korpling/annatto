@@ -1,5 +1,5 @@
 [[tests]]
-query = "node_name=/.*hypernode.*/"
+query = "node_name=/.*#mrg.*/"
 expected = 5
 description = "Hypernodes were successfully created"
 

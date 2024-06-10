@@ -9,8 +9,9 @@ use std::{
 
 use crate::{
     error::AnnattoError, importer::exmaralda::LANGUAGE_SEP, progress::ProgressReporter,
-    util::Traverse, Module,
+    util::Traverse, StepID,
 };
+use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::GraphStorage,
     model::{AnnotationComponent, AnnotationComponentType},
@@ -28,21 +29,36 @@ use quick_xml::{
     Writer,
 };
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Exporter;
 
-#[derive(Default, Deserialize)]
+/// Export [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
+/// (`.exb`) files.
+///
+/// Example:
+///
+/// ```toml
+/// [[export]]
+/// format = "exmaralda"
+/// path = "exb/MyCorpus"
+///
+/// [export.config]
+/// copy_media = false
+/// ```
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(deny_unknown_fields)]
 pub struct ExportExmaralda {
+    /// If `true`, copy linked media files to the output location.
+    ///
+    /// Example:
+    ///
+    /// ```toml
+    /// [export.config]
+    /// copy_media = true
+    /// ```
     #[serde(default)]
     copy_media: bool,
-}
-
-const MODULE_NAME: &str = "export_exmaralda";
-
-impl Module for ExportExmaralda {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
 }
 
 const MEDIA_DIR_NAME: &str = "media";
@@ -66,7 +82,7 @@ impl Exporter for ExportExmaralda {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut node_buffer = NodeData::default();
         let mut edge_buffer = EdgeData::default();
-        self.traverse(graph, &mut node_buffer, &mut edge_buffer)?;
+        self.traverse(&step_id, graph, &mut node_buffer, &mut edge_buffer)?;
         let (start_data, end_data, timeline_data, anno_data) = node_buffer;
         let (ordering_data, media_data) = edge_buffer;
         let doc_nodes = start_data.iter().map(|((d, _), _)| d).collect_vec();
@@ -78,7 +94,7 @@ impl Exporter for ExportExmaralda {
         } else {
             None
         };
-        let progress = ProgressReporter::new(tx, step_id, doc_nodes.len())?;
+        let progress = ProgressReporter::new(tx, step_id.clone(), doc_nodes.len())?;
         let extension = self.file_extension();
         for doc_node_id in doc_nodes {
             let doc_name = node_annos
@@ -121,7 +137,7 @@ impl Exporter for ExportExmaralda {
                                     "Could not derive relative path to media file {:?}",
                                     ref_path
                                 ),
-                                exporter: self.module_name().to_string(),
+                                exporter: step_id.module_name.clone(),
                                 path: doc_path.to_path_buf(),
                             }));
                         }
@@ -341,6 +357,7 @@ type EdgeData = (OrderingData, AudioData);
 impl Traverse<NodeData, EdgeData> for ExportExmaralda {
     fn node(
         &self,
+        _step_id: &StepID,
         _graph: &AnnotationGraph,
         _node: graphannis_core::types::NodeID,
         _component: &graphannis::model::AnnotationComponent,
@@ -353,6 +370,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
 
     fn edge(
         &self,
+        _step_id: &StepID,
         _graph: &AnnotationGraph,
         _edge: graphannis_core::types::Edge,
         _component: &graphannis::model::AnnotationComponent,
@@ -363,6 +381,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
 
     fn traverse(
         &self,
+        step_id: &StepID,
         graph: &AnnotationGraph,
         node_buffer: &mut NodeData,
         edge_buffer: &mut EdgeData,
@@ -452,7 +471,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                     )
                     .map_err(|_| AnnattoError::Export {
                         reason: "Could not determine reachable nodes".to_string(),
-                        exporter: self.module_name().to_string(),
+                        exporter: step_id.module_name.clone(),
                         path: Path::new("./").to_path_buf(),
                     })?;
                     for n in &covering_nodes {
@@ -465,7 +484,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                                 .get_annotations_for_item(n)
                                 .map_err(|_| AnnattoError::Export {
                                     reason: "Could not gather annotations for a node.".to_string(),
-                                    exporter: self.module_name().to_string(),
+                                    exporter: step_id.module_name.clone(),
                                     path: Path::new("./").to_path_buf(),
                                 })?
                                 .into_iter()
@@ -489,7 +508,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                                             .parse::<OrderedFloat<f32>>()
                                             .map_err(|_| AnnattoError::Export {
                                                 reason: format!("Failed to parse time value {time_string} of interval {interval}"),
-                                                exporter: self.module_name().to_string(),
+                                                exporter: step_id.module_name.clone(),
                                                 path: Path::new("./").to_path_buf(),
                                             })?;
                                         time_values.insert(time);
@@ -563,7 +582,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
         } else {
             return Err(AnnattoError::Export {
                 reason: "Component `Ordering/annis/` is missing.".to_string(),
-                exporter: self.module_name().to_string(),
+                exporter: step_id.module_name.clone(),
                 path: Path::new("./").to_path_buf(),
             });
         }
@@ -598,33 +617,38 @@ fn reachable_nodes(
 
 #[cfg(test)]
 mod tests {
-    use std::{env, path::Path};
+    use std::{
+        env,
+        path::{Path, PathBuf},
+    };
 
     use graphannis::AnnotationGraph;
     use insta::assert_snapshot;
 
     use crate::{
-        exporter::exmaralda::ExportExmaralda,
-        importer::{exmaralda::ImportEXMARaLDA, Importer},
-        test_util::export_to_string,
-        Module,
+        exporter::exmaralda::ExportExmaralda, importer::exmaralda::ImportEXMARaLDA,
+        test_util::export_to_string, ImporterStep, ReadFrom, Step, StepID,
     };
 
     #[test]
     fn test_exmaralda_export() {
         let import = ImportEXMARaLDA::default();
-        let u = import.import_corpus(
+        let step = ImporterStep {
+            module: crate::ReadFrom::EXMARaLDA(import),
+            path: PathBuf::from("./tests/data/import/exmaralda/clean/import/"),
+        };
+        let u = step.module.reader().import_corpus(
             Path::new("./tests/data/import/exmaralda/clean/import/"),
-            import.step_id(None),
+            step.get_step_id(),
             None,
         );
         assert!(u.is_ok());
         let mut update = u.unwrap();
-        let g = AnnotationGraph::new(false);
+        let g = AnnotationGraph::with_default_graphstorages(false);
         assert!(g.is_ok());
         let mut graph = g.unwrap();
         assert!(graph.apply_update(&mut update, |_| {}).is_ok());
-        let actual = export_to_string(&graph, ExportExmaralda::default(), "exb");
+        let actual = export_to_string(&graph, ExportExmaralda::default());
         assert!(actual.is_ok());
 
         assert_snapshot!(actual.unwrap());
@@ -632,20 +656,26 @@ mod tests {
 
     #[test]
     fn test_exmaralda_export_with_audio() {
-        let import = ImportEXMARaLDA::default();
+        let import = ReadFrom::EXMARaLDA(ImportEXMARaLDA::default());
+
         let wd = env::current_dir();
         assert!(wd.is_ok());
         let source_path = wd
             .unwrap()
             .join(Path::new("./tests/data/import/exmaralda/clean/import/"));
-        let u = import.import_corpus(source_path.as_path(), import.step_id(None), None);
+
+        let u = import.reader().import_corpus(
+            &source_path,
+            StepID::from_importer_module(&import, Some(source_path.clone())),
+            None,
+        );
         assert!(u.is_ok());
         let mut update = u.unwrap();
-        let g = AnnotationGraph::new(false);
+        let g = AnnotationGraph::with_default_graphstorages(false);
         assert!(g.is_ok());
         let mut graph = g.unwrap();
         assert!(graph.apply_update(&mut update, |_| {}).is_ok());
-        let actual = export_to_string(&graph, ExportExmaralda { copy_media: true }, "exb");
+        let actual = export_to_string(&graph, ExportExmaralda { copy_media: true });
         assert!(actual.is_ok());
 
         assert_snapshot!(actual.unwrap());

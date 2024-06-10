@@ -1,5 +1,7 @@
 //! Created edges between nodes based on their annotation value.
-use crate::{error::AnnattoError, Module};
+use super::Manipulator;
+use crate::{error::AnnattoError, progress::ProgressReporter, workflow::StatusSender, StepID};
+use documented::{Documented, DocumentedFields};
 use graphannis::{
     corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
     model::AnnotationComponentType,
@@ -10,11 +12,13 @@ use graphannis_core::{types::AnnoKey, util::split_qname};
 use itertools::Itertools;
 use serde_derive::Deserialize;
 use std::{collections::BTreeMap, env::temp_dir};
+use struct_field_names_as_array::FieldNamesAsSlice;
 use tempfile::tempdir_in;
 
-use super::Manipulator;
-
-#[derive(Deserialize)]
+/// Link nodes within a graph. Source and target of a link are determined via
+/// queries; type, layer, and name of the link component can be configured.
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(deny_unknown_fields)]
 pub struct LinkNodes {
     source_query: String,
     #[serde(default)]
@@ -33,20 +37,13 @@ pub struct LinkNodes {
     value_sep: String,
 }
 
-pub const MODULE_NAME: &str = "link_nodes";
-
-impl Module for LinkNodes {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
-}
-
 impl Manipulator for LinkNodes {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
         _workflow_directory: &std::path::Path,
-        _tx: Option<crate::workflow::StatusSender>,
+        step_id: StepID,
+        tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let db_dir = tempdir_in(temp_dir())?;
         graph.save_to(db_dir.path().join("current").as_path())?;
@@ -58,6 +55,7 @@ impl Manipulator for LinkNodes {
             self.source_node,
             &self.source_value,
             &self.value_sep,
+            &step_id,
         )?;
         let link_targets = gather_link_data(
             graph,
@@ -66,8 +64,9 @@ impl Manipulator for LinkNodes {
             self.target_node,
             &self.target_value,
             &self.value_sep,
+            &step_id,
         )?;
-        let mut update = self.link_nodes(link_sources, link_targets)?;
+        let mut update = self.link_nodes(link_sources, link_targets, tx, step_id)?;
         graph.apply_update(&mut update, |_| {})?;
         Ok(())
     }
@@ -128,6 +127,7 @@ fn gather_link_data(
     node_index: usize,
     value_indices: &[usize],
     sep: &String,
+    step_id: &StepID,
 ) -> Result<BTreeMap<String, Vec<String>>, Box<dyn std::error::Error>> {
     let mut data: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let node_annos = graph.get_node_annos();
@@ -153,7 +153,7 @@ fn gather_link_data(
                             "Could not extract node with value index {value_index} from query `{}`",
                             &query
                         ),
-                        manipulator: MODULE_NAME.to_string(),
+                        manipulator: step_id.module_name.to_string(),
                     }
                     .into());
                 }
@@ -171,7 +171,7 @@ fn gather_link_data(
                     "Could not extract node with node index {node_index} from query `{}`",
                     &query
                 ),
-                manipulator: MODULE_NAME.to_string(),
+                manipulator: step_id.module_name.to_string(),
             }
             .into());
         }
@@ -184,8 +184,11 @@ impl LinkNodes {
         &self,
         sources: BTreeMap<String, Vec<String>>,
         targets: BTreeMap<String, Vec<String>>,
+        tx: Option<StatusSender>,
+        step_id: StepID,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
+        let progress = ProgressReporter::new(tx, step_id, sources.len())?;
         for (anno_value, node_list) in sources {
             if let Some(target_node_list) = targets.get(&anno_value) {
                 for (source, target) in node_list.iter().cartesian_product(target_node_list) {
@@ -198,6 +201,7 @@ impl LinkNodes {
                     })?;
                 }
             }
+            progress.worked(1)?;
         }
         Ok(update)
     }
@@ -207,7 +211,6 @@ impl LinkNodes {
 mod tests {
     use std::{
         collections::{BTreeMap, BTreeSet},
-        env::temp_dir,
         sync::mpsc,
     };
 
@@ -223,11 +226,15 @@ mod tests {
         util::join_qname,
     };
     use itertools::Itertools;
-    use tempfile::{tempdir_in, TempDir};
+    use tempfile::{tempdir, TempDir};
 
-    use crate::manipulator::{
-        link::{gather_link_data, retrieve_nodes_with_values, LinkNodes},
-        Manipulator,
+    use crate::{
+        manipulator::{
+            link::{gather_link_data, retrieve_nodes_with_values, LinkNodes},
+            Manipulator,
+        },
+        workflow::StatusMessage,
+        StepID,
     };
 
     #[test]
@@ -258,9 +265,13 @@ mod tests {
             link_name: "morphology".to_string(),
             value_sep: "".to_string(),
         };
-        let dummy_dir = tempdir_in(temp_dir())?;
+        let dummy_dir = tempdir()?;
         let dummy_path = dummy_dir.path();
-        let link = linker.manipulate_corpus(&mut g, dummy_path, Some(sender));
+        let step_id = StepID {
+            module_name: "linler".to_string(),
+            path: None,
+        };
+        let link = linker.manipulate_corpus(&mut g, dummy_path, step_id, Some(sender));
         assert!(
             link.is_ok(),
             "Importer update failed with error: {:?}",
@@ -387,7 +398,10 @@ mod tests {
                 assert_eq!(match_g, match_e);
             }
         }
-        let message_count = receiver.into_iter().count();
+        let message_count = receiver
+            .into_iter()
+            .filter(|m| !matches!(m, &StatusMessage::Progress { .. }))
+            .count();
         assert_eq!(0, message_count);
         Ok(())
     }
@@ -396,7 +410,7 @@ mod tests {
         graph: &mut AnnotationGraph,
         corpus_name: &str,
     ) -> Result<(CorpusStorage, TempDir), Box<dyn std::error::Error>> {
-        let tmp_dir = tempdir_in(temp_dir())?;
+        let tmp_dir = tempdir()?;
         graph.save_to(&tmp_dir.path().join(corpus_name))?;
         Ok((
             CorpusStorage::with_auto_cache_size(&tmp_dir.path(), true)?,
@@ -449,6 +463,10 @@ mod tests {
             1,
             &[1, 2],
             &" ".to_string(),
+            &StepID {
+                module_name: "link".to_string(),
+                path: None,
+            },
         );
         assert!(ldr.is_ok(), "not Ok: {:?}", ldr.err());
         let link_data = ldr.unwrap();
@@ -534,7 +552,15 @@ mod tests {
         ]
         .into_iter()
         .collect();
-        let r = linker.link_nodes(source_map, target_map);
+        let r = linker.link_nodes(
+            source_map,
+            target_map,
+            None,
+            StepID {
+                module_name: "test".to_string(),
+                path: None,
+            },
+        );
         assert!(r.is_ok());
         let mut u = r.unwrap();
         assert!(graph.apply_update(&mut u, |_| {}).is_ok());
@@ -563,7 +589,7 @@ mod tests {
 
     fn source_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
         // copied this from exmaralda test
-        let mut graph = AnnotationGraph::new(on_disk)?;
+        let mut graph = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode {
             node_name: "import".to_string(),

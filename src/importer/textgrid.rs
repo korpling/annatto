@@ -1,50 +1,41 @@
-//! Imports [Praat TextGrid text file format](https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html).
-//!
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
 use std::*;
 
+use super::Importer;
 use crate::models::textgrid::{Interval, TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{
     add_order_relations, import_corpus_graph_from_files, map_annotations, map_audio_source,
     map_token, root_corpus_from_path, NodeInfo,
 };
-use crate::{Module, StepID};
+use crate::StepID;
 use anyhow::{anyhow, Result};
+use documented::{Documented, DocumentedFields};
 use encoding_rs_io::DecodeReaderBytes;
 use graphannis::update::{GraphUpdate, UpdateEvent};
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use serde_derive::Deserialize;
-
-use super::Importer;
+use struct_field_names_as_array::FieldNamesAsSlice;
 const FILE_ENDINGS: [&str; 3] = ["textgrid", "TextGrid", "textGrid"];
-
-pub const MODULE_NAME: &str = "import_textgrid";
 
 /// Importer the Praat TextGrid file format.
 ///
 /// See the [Praat
 /// Documentation](https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html)
 /// for more information on the format itself.
-#[derive(Default, Deserialize)]
-#[serde(default)]
-pub struct TextgridImporter {
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(default, deny_unknown_fields)]
+pub struct ImportTextgrid {
     tier_groups: Option<BTreeMap<String, BTreeSet<String>>>,
     skip_timeline_generation: bool,
     skip_audio: bool,
     skip_time_annotations: bool,
     audio_extension: Option<String>,
-}
-
-impl Module for TextgridImporter {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
 }
 
 struct MapperParams<'a> {
@@ -394,7 +385,7 @@ impl<'a> DocumentMapper<'a> {
     }
 }
 
-impl Importer for TextgridImporter {
+impl Importer for ImportTextgrid {
     fn import_corpus(
         &self,
         input_path: &Path,

@@ -1,32 +1,26 @@
-//! Works similar to the Pepper configuration value
-//! [`pepper.before.readMeta`](https://corpus-tools.org/pepper/generalCustomizationProperties.html)
-//! and imports metadata property files for documents and corpora by using the file
-//! name as path to the document.
 use std::{
     collections::BTreeMap,
     io::{self, BufRead},
     path::Path,
 };
 
+use documented::{Documented, DocumentedFields};
 use graphannis::update::{GraphUpdate, UpdateEvent};
 use graphannis_core::util::split_qname;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 
-use crate::{progress::ProgressReporter, util::get_all_files, Module, StepID};
+use crate::{progress::ProgressReporter, util::get_all_files, StepID};
 
 use super::Importer;
 
-pub const MODULE_NAME: &str = "annotate_corpus";
-
-#[derive(Default, Deserialize)]
-#[serde(default)]
+/// Works similar to the Pepper configuration value
+/// [`pepper.before.readMeta`](https://corpus-tools.org/pepper/generalCustomizationProperties.html)
+/// and imports metadata property files for documents and corpora by using the file
+/// name as path to the document.
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(default, deny_unknown_fields)]
 pub struct AnnotateCorpus {}
-
-impl Module for AnnotateCorpus {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
-}
 
 const KV_SEPARATOR: &str = "=";
 
@@ -98,7 +92,7 @@ impl Importer for AnnotateCorpus {
 
 #[cfg(test)]
 mod tests {
-    use std::{env::temp_dir, io::Write};
+    use std::io::Write;
 
     use graphannis::{
         corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
@@ -107,9 +101,9 @@ mod tests {
         AnnotationGraph, CorpusStorage,
     };
     use graphannis_core::graph::ANNIS_NS;
-    use tempfile::tempdir_in;
+    use tempfile::tempdir;
 
-    use crate::{importer::Importer, Module};
+    use crate::{ReadFrom, StepID};
 
     use super::AnnotateCorpus;
 
@@ -127,10 +121,15 @@ mod tests {
 
     fn test_metadata(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
         let mut e_g = target_graph(on_disk).map_err(|_| assert!(false)).unwrap();
-        let add_metadata = AnnotateCorpus::default();
+        let add_metadata = ReadFrom::Meta(AnnotateCorpus::default());
         // document-level metadata
         let doc_metadata = ["language=unknown", "date=yesterday"];
-        let metadata_file_path = temp_dir().join("metadata").join("corpus").join("doc.meta");
+        let tmp_dir = tempdir()?;
+        let metadata_file_path = tmp_dir
+            .path()
+            .join("metadata")
+            .join("corpus")
+            .join("doc.meta");
         std::fs::create_dir_all(metadata_file_path.parent().unwrap())
             .map_err(|_| assert!(false))
             .unwrap();
@@ -143,7 +142,7 @@ mod tests {
             .unwrap();
         // corpus-level metadata
         let corpus_metadata = ["version=1.0", "doi=is a secret"];
-        let cmetadata_file_path = temp_dir().join("metadata").join("corpus.meta");
+        let cmetadata_file_path = tmp_dir.path().join("metadata").join("corpus.meta");
         let mut cmetadata_file = std::fs::File::create(cmetadata_file_path)
             .map_err(|_| assert!(false))
             .unwrap();
@@ -151,9 +150,10 @@ mod tests {
             .write(corpus_metadata.join("\n").as_bytes())
             .map_err(|_| assert!(false))
             .unwrap();
-        let r = add_metadata.import_corpus(
-            temp_dir().join("metadata").as_path(),
-            add_metadata.step_id(None),
+        let step_id = StepID::from_importer_module(&add_metadata, None);
+        let r = add_metadata.reader().import_corpus(
+            tmp_dir.path().join("metadata").as_path(),
+            step_id,
             None,
         );
         assert_eq!(
@@ -166,7 +166,7 @@ mod tests {
         external_updates(&mut u)
             .map_err(|_| assert!(false))
             .unwrap();
-        let mut g = AnnotationGraph::new(on_disk)
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)
             .map_err(|_| assert!(false))
             .unwrap();
         let apu = g.apply_update(&mut u, |_| {});
@@ -184,8 +184,8 @@ mod tests {
             "annis:node_name=\"corpus/doc\" _ident_ language=/unknown/ _ident_ date=/yesterday/",
         ];
         let corpus_name = "current";
-        let tmp_dir_e = tempdir_in(temp_dir()).map_err(|_| assert!(false)).unwrap();
-        let tmp_dir_g = tempdir_in(temp_dir()).map_err(|_| assert!(false)).unwrap();
+        let tmp_dir_e = tempdir().map_err(|_| assert!(false)).unwrap();
+        let tmp_dir_g = tempdir().map_err(|_| assert!(false)).unwrap();
         assert!(e_g.save_to(&tmp_dir_e.path().join(corpus_name)).is_ok());
         assert!(g.save_to(&tmp_dir_g.path().join(corpus_name)).is_ok());
         let cs_e = CorpusStorage::with_auto_cache_size(&tmp_dir_e.path(), true)
@@ -295,7 +295,7 @@ mod tests {
     }
 
     fn target_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode {
             node_name: "corpus".to_string(),

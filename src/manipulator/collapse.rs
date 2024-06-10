@@ -1,8 +1,4 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    sync::Arc,
-};
-
+use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::GraphStorage,
     model::{AnnotationComponent, AnnotationComponentType},
@@ -16,12 +12,24 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use serde_derive::Deserialize;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::Arc,
+};
+use struct_field_names_as_array::FieldNamesAsSlice;
 
-use crate::{error::AnnattoError, progress::ProgressReporter, workflow::StatusSender, Module};
+use crate::{error::AnnattoError, progress::ProgressReporter, workflow::StatusSender, StepID};
 
 use super::Manipulator;
 
-#[derive(Deserialize)]
+/// Collapse an edge component,
+///
+/// Given a component, this graph operation joins source and target node of each
+/// edge to a single node. This could be done by keeping one of the nodes or by
+/// creating a third one. Then all all edges, annotations, etc. are moved to the
+/// node of choice, the other node(s) is/are deleted.
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(deny_unknown_fields)]
 pub struct Collapse {
     ctype: AnnotationComponentType,
     layer: String,
@@ -30,22 +38,20 @@ pub struct Collapse {
     disjoint: bool, // performance boost -> if you know all edges are already disjoint, an expensive step can be skipped
 }
 
-const MODULE_NAME: &str = "collapse_component";
-
-impl Module for Collapse {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
-}
-
 impl Manipulator for Collapse {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
         _workflow_directory: &std::path::Path,
+        step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let mut update = self.collapse(graph, tx)?;
+        if let Some(sender) = &tx {
+            sender.send(crate::workflow::StatusMessage::Info(
+                "Starting to collapse".to_string(),
+            ))?;
+        }
+        let mut update = self.collapse(graph, &step_id, tx)?;
         graph.apply_update(&mut update, |_| {})?;
         Ok(())
     }
@@ -80,12 +86,13 @@ fn parent_node(
     Ok(parent_name)
 }
 
-const HYPERNODE_NAME_STEM: &str = "#hypernode";
+const HYPERNODE_NAME_STEM: &str = "#mrg";
 
 impl Collapse {
     fn collapse(
         &self,
         graph: &mut AnnotationGraph,
+        step_id: &StepID,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
@@ -95,7 +102,7 @@ impl Collapse {
             (&self.name).into(),
         );
         if let Some(component_storage) = graph.get_graphstorage(&component) {
-            let hyperedges = self.collect_hyperedges(component_storage, tx.clone())?;
+            let hyperedges = self.collect_hyperedges(component_storage, step_id, tx.clone())?;
             let mut hypernode_map = BTreeMap::new();
             let offset = graph
                 .get_node_annos()
@@ -106,27 +113,66 @@ impl Collapse {
                     false,
                 )
                 .count();
+            let progress_create_nodes =
+                ProgressReporter::new(tx.clone(), step_id.clone(), hyperedges.len())?;
+            progress_create_nodes.info("Starting to build hypernodes")?;
             for (mut id, hyperedge) in hyperedges.iter().enumerate() {
                 id += offset;
+                let mut parent_to_member = BTreeMap::default();
+                for (parent, member) in hyperedge
+                    .iter()
+                    .map(|m| (parent_node(graph, m).unwrap_or_default(), m))
+                {
+                    let member_name = graph
+                        .get_node_annos()
+                        .get_value_for_item(member, &NODE_NAME_KEY)?
+                        .unwrap_or_default()
+                        .to_string();
+                    let relevant_suffix = member_name
+                        .split('#')
+                        .last()
+                        .unwrap_or_default()
+                        .to_string();
+                    parent_to_member
+                        .entry(parent)
+                        .or_insert(Vec::with_capacity(hyperedge.len()))
+                        .push(relevant_suffix);
+                }
+                let (hypernode_name, _) = parent_to_member
+                    .into_iter()
+                    .reduce(|a, b| {
+                        let mut v = Vec::with_capacity(a.1.len() + b.1.len() + 3);
+                        v.push(a.0);
+                        v.extend(a.1);
+                        v.push("".to_string());
+                        v.push(b.0);
+                        v.extend(b.1);
+                        (v.join("_"), vec![])
+                    })
+                    .unwrap_or_default();
+                let trace_name = format!("{HYPERNODE_NAME_STEM}{id}_{hypernode_name}");
+                update.add_event(UpdateEvent::AddNode {
+                    node_name: trace_name.to_string(),
+                    node_type: "node".to_string(),
+                })?;
                 for m in hyperedge {
-                    let parent = parent_node(graph, m)?;
-                    let name = format!("{parent}{HYPERNODE_NAME_STEM}{id}");
-                    update.add_event(UpdateEvent::AddNode {
-                        node_name: name.to_string(),
-                        node_type: "node".to_string(),
-                    })?;
-                    hypernode_map.insert(m, name);
-                    let node_name = graph
+                    hypernode_map.insert(m, trace_name.to_string());
+                    if let Some(node_name) = graph
                         .get_node_annos()
                         .get_value_for_item(m, &NODE_NAME_KEY)?
-                        .unwrap();
-                    update.add_event(UpdateEvent::DeleteNode {
-                        node_name: node_name.to_string(),
-                    })?;
+                    {
+                        update.add_event(UpdateEvent::DeleteNode {
+                            node_name: node_name.to_string(),
+                        })?;
+                    } else {
+                        return Err(AnnattoError::Manipulator { reason: format!("Node {m} has no node name or it cannot be retrieved, this can lead to an invalid result."), manipulator: step_id.module_name.to_string() })?;
+                    }
                 }
+                progress_create_nodes.worked(1)?;
             }
             // collapse hyperedges
-            let progress = ProgressReporter::new(tx, self.step_id(None), hyperedges.len())?;
+            let progress = ProgressReporter::new(tx, step_id.clone(), hyperedges.len())?;
+            progress.info("Starting to join nodes")?;
             let mut processed_edges = BTreeSet::new();
             for hyperedge in &hyperedges {
                 self.collapse_hyperedge(
@@ -146,7 +192,7 @@ impl Collapse {
                     component.layer,
                     component.name
                 ),
-                manipulator: MODULE_NAME.to_string(),
+                manipulator: step_id.module_name.clone(),
             }
             .into());
         }
@@ -156,11 +202,13 @@ impl Collapse {
     fn collect_hyperedges(
         &self,
         component_storage: Arc<dyn GraphStorage>,
+        step_id: &StepID,
         tx: Option<StatusSender>,
     ) -> Result<Vec<BTreeSet<u64>>, Box<dyn std::error::Error>> {
-        let mut hyperedges = Vec::new();
         let source_nodes = component_storage.source_nodes().collect_vec();
-        let progress = ProgressReporter::new(tx.clone(), self.step_id(None), source_nodes.len())?;
+        let progress = ProgressReporter::new(tx.clone(), step_id.clone(), source_nodes.len())?;
+        progress.info("Starting to collect hyperedges")?;
+        let mut hyperedges = Vec::with_capacity(source_nodes.len() / 2); // this should not grow for most use cases
         for sn in source_nodes {
             let source_node = sn?;
             let dfs = CycleSafeDFS::new(
@@ -181,8 +229,8 @@ impl Collapse {
         }
         if !self.disjoint {
             // make sure hyperedges are disjoint
-            let progress_disjoint =
-                ProgressReporter::new_unknown_total_work(tx, self.step_id(None))?;
+            let progress_disjoint = ProgressReporter::new_unknown_total_work(tx, step_id.clone())?;
+            progress_disjoint.info("Starting to build disjoint hyperedges")?;
             let mut repeat = true;
             while repeat {
                 let mut disjoint_hyperedges = Vec::new();
@@ -380,7 +428,10 @@ mod tests {
 
     use serde_derive::Deserialize;
 
-    use crate::manipulator::{check::Check, Manipulator};
+    use crate::{
+        manipulator::{check::Check, Manipulator},
+        StepID,
+    };
 
     use super::{Collapse, HYPERNODE_NAME_STEM};
 
@@ -436,8 +487,14 @@ mod tests {
             name: "align".to_string(),
             disjoint,
         };
+        let step_id = StepID {
+            module_name: "collapse".to_string(),
+            path: None,
+        };
+
         let (msg_sender, msg_receiver) = mpsc::channel();
-        let application = collapse.manipulate_corpus(&mut g, Path::new("./"), Some(msg_sender));
+        let application =
+            collapse.manipulate_corpus(&mut g, Path::new("./"), step_id, Some(msg_sender));
         assert!(application.is_ok(), "not Ok: {:?}", application.err());
         assert!(msg_receiver.into_iter().count() > 0);
         let eg = target_graph(on_disk, disjoint);
@@ -455,12 +512,21 @@ mod tests {
         let check = check_r.unwrap();
         let dummy_path = Path::new("./");
         let (sender_e, _receiver_e) = mpsc::channel();
-        if let Err(e) = check.manipulate_corpus(&mut expected_g, dummy_path, Some(sender_e)) {
+        if let Err(e) = check.manipulate_corpus(
+            &mut expected_g,
+            dummy_path,
+            StepID::from_graph_op_module(&crate::GraphOp::Collapse(collapse)),
+            Some(sender_e),
+        ) {
             return Err(e);
         }
 
         let (sender, _receiver) = mpsc::channel();
-        if let Err(e) = check.manipulate_corpus(&mut g, dummy_path, Some(sender)) {
+        let step_id = StepID {
+            module_name: "collapse".to_string(),
+            path: None,
+        };
+        if let Err(e) = check.manipulate_corpus(&mut g, dummy_path, step_id, Some(sender)) {
             return Err(e);
         }
 
@@ -471,7 +537,7 @@ mod tests {
         on_disk: bool,
         disjoint: bool,
     ) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         let corpus = "corpus";
         u.add_event(UpdateEvent::AddNode {
@@ -741,7 +807,7 @@ mod tests {
         on_disk: bool,
         disjoint: bool,
     ) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         let corpus = "corpus";
         u.add_event(UpdateEvent::AddNode {

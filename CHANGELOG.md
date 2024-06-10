@@ -7,20 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added simple chunker module based on
-  [text-splitter](https://crates.io/crates/text-splitter).
-- `check` can write check report to file 
+- progress reports for `enumerate`, `link`, and `map`
+- `revise` can now rename nodes using attribute `node_names`, e. g. for renaming (top level) corpus nodes. The syntax is equivalent to renaming annotations, thus renaming with an empty value will lead to deletion. Renaming with an existing value (also rename with self) will lead to an error.
 - Add `zip` option to GraphML export to directly export as ZIP file which can be
   more easily imported in ANNIS.
 
 ### Changed
 
+- update to dependencies to latest graphANNIS version
+
+## [0.7.0] - 2024-05-23
+
+### Added
+
+- `sequence` exports connected node's annotation values (e. g. ordered nodes) as vertical or horizontal sequences.
+- `split` breaks up conflated annotation values into parts
+- `revise` now offers to delete an entire subgraph from a node in the inverse direction of part of edges
+- `enumerate` can prefix the numeric annotation it generates with an annotation value from the query match (use attribute `value` to point in the match list with a 1-based index)
+
+### Changed
+
+- `enumerate` uses u64 internally (to be in line with graphANNIS and to be deserializable)
+- `collapse` now uses node ids that indicate the node names that entered the merge, the parent node is not indicated anymore
+- `split` has default configuration/behaviour (do nothing); attribute `keep` is now `delete` to adhere to boolean default logic
+
+### Fixed
+
+- no more `annis::tok` labels for non-terminal coverage nodes in `xlsx` import
+- hypernode id's are unified, in older versions it could happen that annotations get distributed about two or more hypernode instances due to invalid determination of the parent (part of-child)
+
+## [0.6.0] - 2024-04-22
+
+### Added
+
+- Added simple chunker module based on
+  [text-splitter](https://crates.io/crates/text-splitter).
+- `check` can write check report to file 
+- `check` can test a corpus graph comparing results to an external corpus graph loaded from a graphANNIS database
+- import `ptb` can now split node annotations to derive a label for the incoming edge, when a delimiter is provided 
+  using `edge_delimiter`. E. g., `NP-sbj` will create a node of category `NP`, whose incoming edge has function `sbj`,
+  given the following config is used: `edge_delimiter = "-"`
+- config attribute `stable_order` for exporting graphml enforces stable ordering of edges and nodes in output
+- toml workflow files now strictly need to stick to known fields of module structs
+- command line interface now has the `list` subcommand to list all modules and the `info`  subcommand to show the description and parameters of a module.o
+
+### Changed
+
 - The `check` module can now query the `AnnotationGraph` directly without using
   the `CorpusStorageManager`.
+- `chunk` deserializes with empty config to default values
 
 ### Fixed
 
 - Don't throw error if output directory for any workflow does not exist.
+- import `ptb`: Also constituents get `PartOf` edges to their respective document node.
 
 ## [0.5.0] - 2024-01-19
 

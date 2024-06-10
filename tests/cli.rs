@@ -1,6 +1,7 @@
-use assert_cmd::prelude::*;
+use assert_cmd::Command;
+use crossterm::terminal::SetSize;
 use insta::assert_snapshot;
-use std::{path::PathBuf, process::Command};
+use std::path::PathBuf;
 
 #[test]
 fn show_help() {
@@ -51,7 +52,7 @@ fn convert_to_itself() {
     cmd.assert().success();
 
     // Input and output files should be the same
-    let original = include_str!("data/import/graphml/single_sentence.graphml");
+    let original = include_str!("data/import/graphml/single_sentence.graphml").trim();
     let converted =
         std::fs::read_to_string(tmp_out.path().join("single_sentence.graphml")).unwrap();
     pretty_assertions::assert_str_eq!(original, converted);
@@ -134,5 +135,70 @@ fn load_complex_workflow_attr_ommited() {
     let output_err = std::str::from_utf8(&output.stderr).unwrap();
     assert_snapshot!(output_err);
     let output = std::str::from_utf8(&output.stdout).unwrap();
+    assert_snapshot!(output);
+}
+
+#[test]
+fn list_modules() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd
+        .env("NO_COLOR", "1")
+        .arg("list")
+        .write_stdin(SetSize(20, 50).to_string())
+        .output()
+        .unwrap();
+    cmd.assert().success();
+
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+    assert_snapshot!(output);
+}
+
+#[test]
+fn module_info() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd
+        .env("NO_COLOR", "1")
+        .arg("info")
+        .arg("xlsx")
+        .output()
+        .unwrap();
+    cmd.assert().success();
+
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+
+    assert_snapshot!(output);
+}
+
+#[test]
+fn graph_op_info() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd
+        .env("NO_COLOR", "1")
+        .arg("info")
+        .arg("merge")
+        .output()
+        .unwrap();
+
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+
+    assert_snapshot!(output);
+}
+
+#[test]
+fn unknown_module_info() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd
+        .env("NO_COLOR", "1")
+        .arg("info")
+        .arg("thiswillnotexist")
+        .output()
+        .unwrap();
+
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+
     assert_snapshot!(output);
 }

@@ -1,16 +1,15 @@
-//! A special importer that imports nothing.
 use std::path::Path;
 
-use crate::{progress::ProgressReporter, workflow::StatusSender, Module, StepID};
+use super::Importer;
+use crate::{progress::ProgressReporter, workflow::StatusSender, StepID};
+use documented::{Documented, DocumentedFields};
 use graphannis::update::GraphUpdate;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 
-use super::Importer;
-
-pub const CREATE_EMPTY_CORPUS_MODULE_NAME: &str = "create_empty_corpus";
-
-#[derive(Default, Deserialize)]
-#[serde(default)]
+/// A special importer that imports nothing.
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(default, deny_unknown_fields)]
 pub struct CreateEmptyCorpus {}
 
 impl Importer for CreateEmptyCorpus {
@@ -28,11 +27,5 @@ impl Importer for CreateEmptyCorpus {
 
     fn file_extensions(&self) -> &[&str] {
         &[]
-    }
-}
-
-impl Module for CreateEmptyCorpus {
-    fn module_name(&self) -> &str {
-        CREATE_EMPTY_CORPUS_MODULE_NAME
     }
 }

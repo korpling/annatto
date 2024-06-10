@@ -4,6 +4,7 @@ use crate::{
     importer::Importer,
     util::get_all_files,
     workflow::StatusSender,
+    StepID,
 };
 use graphannis::AnnotationGraph;
 
@@ -39,11 +40,15 @@ where
     I: Importer,
     P: AsRef<Path>,
 {
+    let step_id = StepID {
+        module_name: "import_under_test".to_string(),
+        path: None,
+    };
     let mut u = importer
-        .import_corpus(path.as_ref(), importer.step_id(None), tx)
+        .import_corpus(path.as_ref(), step_id.clone(), tx)
         .map_err(|e| AnnattoError::Import {
             reason: e.to_string(),
-            importer: importer.module_name().to_string(),
+            importer: step_id.module_name.to_string(),
             path: path.as_ref().to_path_buf(),
         })?;
     let mut g = AnnotationGraph::with_default_graphstorages(disk_based)?;
@@ -62,24 +67,25 @@ where
     Ok(actual)
 }
 
-pub fn export_to_string<E>(
-    graph: &AnnotationGraph,
-    exporter: E,
-    file_extension: &str,
-) -> Result<String>
+pub fn export_to_string<E>(graph: &AnnotationGraph, exporter: E) -> Result<String>
 where
     E: Exporter,
 {
     let output_path = TempDir::new()?;
+
+    let step_id = StepID {
+        module_name: "export_under_test".to_string(),
+        path: Some(output_path.path().to_path_buf()),
+    };
     exporter
-        .export_corpus(graph, output_path.path(), exporter.step_id(None), None)
+        .export_corpus(graph, output_path.path(), step_id.clone(), None)
         .map_err(|_| AnnattoError::Export {
             reason: "Could not export graph to read its output.".to_string(),
-            exporter: exporter.module_name().to_string(),
+            exporter: step_id.module_name.to_string(),
             path: output_path.path().to_path_buf(),
         })?;
     let mut buffer = String::new();
-    for path in get_all_files(output_path.path(), &[file_extension])? {
+    for path in get_all_files(output_path.path(), &[exporter.file_extension()])? {
         let file_data = fs::read_to_string(path)?;
         buffer.push_str(&file_data);
     }

@@ -1,10 +1,11 @@
 use std::{collections::HashMap, io::Read, path::Path};
 
 use crate::{
-    progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files, Module, StepID,
+    progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files, StepID,
 };
 
 use super::Importer;
+use documented::{Documented, DocumentedFields};
 use encoding_rs::Encoding;
 use encoding_rs_io::DecodeReaderBytesBuilder;
 use graphannis::{
@@ -15,11 +16,11 @@ use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use pest::{iterators::Pairs, Parser};
 use pest_derive::Parser;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 
 const FILE_ENDINGS: [&str; 5] = ["treetagger", "tab", "tt", "txt", "xml"];
 
-pub const MODULE_NAME: &str = "import_treetagger";
-
+/// This implements the Pest parser for the given grammar.
 #[derive(Parser)]
 #[grammar = "importer/treetagger/treetagger.pest"]
 pub struct TreeTaggerParser;
@@ -318,22 +319,16 @@ pub enum AttributeDecoding {
 }
 
 /// Importer for the file format used by the TreeTagger.
-#[derive(Default, Deserialize)]
-#[serde(default)]
-pub struct TreeTaggerImporter {
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(default, deny_unknown_fields)]
+pub struct ImportTreeTagger {
     column_names: Vec<String>,
     /// The encoding to use when for the input files. Defaults to UTF-8.
     file_encoding: Option<String>,
     attribute_decoding: AttributeDecoding,
 }
 
-impl Module for TreeTaggerImporter {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
-}
-
-impl Importer for TreeTaggerImporter {
+impl Importer for ImportTreeTagger {
     fn import_corpus(
         &self,
         input_path: &Path,
