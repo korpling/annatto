@@ -7,6 +7,7 @@ pub mod meta;
 pub mod none;
 pub mod opus;
 pub mod ptb;
+pub mod relannis;
 pub mod textgrid;
 pub mod toolbox;
 pub mod treetagger;
