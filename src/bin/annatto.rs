@@ -275,19 +275,17 @@ fn print_module_fields(mut fields: Vec<ModuleConfiguration>) {
         }
 
         let name_col_width: usize = fields.iter().map(|f| f.name.len()).max().unwrap_or(5);
+        let (term_width, _) = termimad::terminal_size();
+        let term_width = term_width as usize;
+        let description_col_width = term_width.saturating_sub(name_col_width).saturating_sub(7);
 
         print_markdown("*Configuration*\n\n");
         let mut table = Table::new(fields);
-        table.with(ColumnNames::new(["name", "description"]));
 
         if *USE_ANSI_COLORS {
-            let (term_width, _) = termimad::terminal_size();
-            let term_width = term_width as usize;
-            let description_col_width = term_width.saturating_sub(name_col_width).saturating_sub(7);
-
             table
-                .with(tabled::settings::Style::sharp())
-                // Apply width constraint to the columns
+                .with(tabled::settings::Style::modern())
+                .with(ColumnNames::default())
                 .with(
                     Modify::new(Segment::new(.., 0..1))
                         .with(Width::wrap(name_col_width).keep_words()),
@@ -299,7 +297,6 @@ fn print_module_fields(mut fields: Vec<ModuleConfiguration>) {
         } else {
             table.with(tabled::settings::Style::markdown());
         }
-
         println!("{}\n", table);
     }
 }
