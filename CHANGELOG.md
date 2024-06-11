@@ -9,10 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - progress reports for `enumerate`, `link`, and `map`
 - `revise` can now rename nodes using attribute `node_names`, e. g. for renaming (top level) corpus nodes. The syntax is equivalent to renaming annotations, thus renaming with an empty value will lead to deletion. Renaming with an existing value (also rename with self) will lead to an error.
+- Add `zip` option to GraphML export to directly export as ZIP file which can be
+  more easily imported in ANNIS.
 
 ### Changed
 
 - update to dependencies to latest graphANNIS version
+
+### Fixed
+
+- Fix non-resolved relative path when importing EXMARaLDA files. 
 
 ## [0.7.0] - 2024-05-23
 

@@ -73,19 +73,32 @@ where
 {
     let output_path = TempDir::new()?;
 
+    let result = export_to_string_in_directory(graph, exporter, output_path)?;
+    Ok(result)
+}
+
+pub fn export_to_string_in_directory<E, P>(
+    graph: &AnnotationGraph,
+    exporter: E,
+    output_path: P,
+) -> Result<String>
+where
+    E: Exporter,
+    P: AsRef<Path>,
+{
     let step_id = StepID {
         module_name: "export_under_test".to_string(),
-        path: Some(output_path.path().to_path_buf()),
+        path: Some(output_path.as_ref().to_path_buf()),
     };
     exporter
-        .export_corpus(graph, output_path.path(), step_id.clone(), None)
+        .export_corpus(graph, output_path.as_ref(), step_id.clone(), None)
         .map_err(|_| AnnattoError::Export {
             reason: "Could not export graph to read its output.".to_string(),
             exporter: step_id.module_name.to_string(),
-            path: output_path.path().to_path_buf(),
+            path: output_path.as_ref().to_path_buf(),
         })?;
     let mut buffer = String::new();
-    for path in get_all_files(output_path.path(), &[exporter.file_extension()])? {
+    for path in get_all_files(output_path.as_ref(), &[exporter.file_extension()])? {
         let file_data = fs::read_to_string(path)?;
         buffer.push_str(&file_data);
     }
