@@ -1,5 +1,4 @@
 use assert_cmd::Command;
-use crossterm::terminal::SetSize;
 use insta::assert_snapshot;
 use std::path::PathBuf;
 
@@ -142,12 +141,7 @@ fn load_complex_workflow_attr_ommited() {
 fn list_modules() {
     let mut cmd = Command::cargo_bin("annatto").unwrap();
 
-    let output = cmd
-        .env("NO_COLOR", "1")
-        .arg("list")
-        .write_stdin(SetSize(20, 50).to_string())
-        .output()
-        .unwrap();
+    let output = cmd.env("NO_COLOR", "1").arg("list").output().unwrap();
     cmd.assert().success();
 
     let output = std::str::from_utf8(&output.stdout).unwrap();

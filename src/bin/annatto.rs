@@ -278,21 +278,27 @@ fn print_module_fields(mut fields: Vec<ModuleConfiguration>) {
 
         print_markdown("*Configuration*\n\n");
         let mut table = Table::new(fields);
+        table.with(ColumnNames::new(["name", "description"]));
 
-        let (term_width, _) = termimad::terminal_size();
-        let term_width = term_width as usize;
-        let description_col_width = term_width.saturating_sub(name_col_width).saturating_sub(7);
-        table
-            .with(tabled::settings::Style::modern())
-            // Apply width constraint to the columns
-            .with(
-                Modify::new(Segment::new(.., 0..1)).with(Width::wrap(name_col_width).keep_words()),
-            )
-            .with(
-                Modify::new(Segment::new(.., 1..2))
-                    .with(Width::wrap(description_col_width).keep_words()),
-            )
-            .with(ColumnNames::default());
+        if *USE_ANSI_COLORS {
+            let (term_width, _) = termimad::terminal_size();
+            let term_width = term_width as usize;
+            let description_col_width = term_width.saturating_sub(name_col_width).saturating_sub(7);
+
+            table
+                .with(tabled::settings::Style::sharp())
+                // Apply width constraint to the columns
+                .with(
+                    Modify::new(Segment::new(.., 0..1))
+                        .with(Width::wrap(name_col_width).keep_words()),
+                )
+                .with(
+                    Modify::new(Segment::new(.., 1..2))
+                        .with(Width::wrap(description_col_width).keep_words()),
+                );
+        } else {
+            table.with(tabled::settings::Style::markdown());
+        }
 
         println!("{}\n", table);
     }
