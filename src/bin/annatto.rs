@@ -12,7 +12,10 @@ use std::{
     collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread, time::Duration,
 };
 use strum::IntoEnumIterator;
-use tabled::{settings::themes::ColumnNames, Table};
+use tabled::{
+    settings::{object::Segment, themes::ColumnNames, Modify, Width},
+    Table,
+};
 use tracing_subscriber::filter::EnvFilter;
 
 lazy_static! {
@@ -266,15 +269,29 @@ fn print_module_fields(mut fields: Vec<ModuleConfiguration>) {
         print_markdown("*No Configuration*\n\n");
     } else {
         // Replace all descriptions with markdown
+
         for f in &mut fields {
             f.description = markdown_text(&f.description);
         }
 
+        let name_col_width: usize = fields.iter().map(|f| f.name.len()).max().unwrap_or(5);
+
         print_markdown("*Configuration*\n\n");
         let mut table = Table::new(fields);
 
+        let (term_width, _) = termimad::terminal_size();
+        let term_width = term_width as usize;
+        let description_col_width = term_width.saturating_sub(name_col_width).saturating_sub(7);
         table
             .with(tabled::settings::Style::modern())
+            // Apply width constraint to the columns
+            .with(
+                Modify::new(Segment::new(.., 0..1)).with(Width::wrap(name_col_width).keep_words()),
+            )
+            .with(
+                Modify::new(Segment::new(.., 1..2))
+                    .with(Width::wrap(description_col_width).keep_words()),
+            )
             .with(ColumnNames::default());
 
         println!("{}\n", table);
