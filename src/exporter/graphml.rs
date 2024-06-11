@@ -47,6 +47,11 @@ pub struct GraphMLExporter {
     /// like git.
     /// **Attention: this is slower to generate.**
     stable_order: bool,
+    /// Output a ZIP file that includes the GraphML file. Linked files (like
+    /// e.g. audio files) are included if they have been referenced by a
+    /// *relative* path. Since GraphML is easily compressed this can help with
+    /// storage size. It also improves the IMPORT in the ANNIS frontend, which
+    /// only accepts ZIP files.
     zip: bool,
 }
 
