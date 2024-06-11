@@ -624,10 +624,13 @@ mod tests {
 
     use graphannis::AnnotationGraph;
     use insta::assert_snapshot;
+    use tempfile::TempDir;
 
     use crate::{
-        exporter::exmaralda::ExportExmaralda, importer::exmaralda::ImportEXMARaLDA,
-        test_util::export_to_string, ImporterStep, ReadFrom, Step, StepID,
+        exporter::exmaralda::ExportExmaralda,
+        importer::exmaralda::ImportEXMARaLDA,
+        test_util::{export_to_string, export_to_string_in_directory},
+        ImporterStep, ReadFrom, Step, StepID,
     };
 
     #[test]
@@ -648,10 +651,21 @@ mod tests {
         assert!(g.is_ok());
         let mut graph = g.unwrap();
         assert!(graph.apply_update(&mut update, |_| {}).is_ok());
-        let actual = export_to_string(&graph, ExportExmaralda::default());
+
+        let output_path = TempDir::new().unwrap();
+
+        let actual =
+            export_to_string_in_directory(&graph, ExportExmaralda::default(), &output_path);
         assert!(actual.is_ok());
 
-        assert_snapshot!(actual.unwrap());
+        let path_to_remove =
+            pathdiff::diff_paths(std::env::current_dir().unwrap(), output_path.path()).unwrap();
+        let path_to_remove = path_to_remove.to_str().unwrap();
+        insta::with_settings!({filters => vec![
+            (path_to_remove, "[GRAPH_DIR]"),
+        ]}, {
+            assert_snapshot!(actual.unwrap());
+        });
     }
 
     #[test]
