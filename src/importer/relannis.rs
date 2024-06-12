@@ -1,9 +1,10 @@
+use crate::progress::ProgressReporter;
+
 use super::Importer;
 use anyhow::{anyhow, Result};
 use documented::{Documented, DocumentedFields};
 use graphannis::model::AnnotationComponentType;
 use graphannis::update::{GraphUpdate, UpdateEvent};
-use graphannis::AnnotationGraph;
 use log::{info, warn};
 use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
 use serde::{Deserialize, Serialize};
@@ -42,7 +43,45 @@ impl Importer for ImportRelAnnis {
         step_id: crate::StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        todo!()
+        let progress = ProgressReporter::new_unknown_total_work(tx, step_id.clone())?;
+
+        if input_path.is_dir() && input_path.exists() {
+            // check if this is the ANNIS 3.3 import format
+            let annis_version_path = input_path.join("annis.version");
+            let is_annis_33 = if annis_version_path.exists() {
+                let mut file = File::open(&annis_version_path)?;
+                let mut version_str = std::string::String::new();
+                file.read_to_string(&mut version_str)?;
+
+                version_str == "3.3"
+            } else {
+                false
+            };
+
+            let mut updates = GraphUpdate::new();
+            let load_node_and_corpus_result =
+                load_node_and_corpus_tables(input_path, &mut updates, is_annis_33, &progress)?;
+            {
+                let text_coverage_edges = load_edge_tables(
+                    input_path,
+                    &mut updates,
+                    is_annis_33,
+                    &load_node_and_corpus_result.id_to_node_name,
+                    &progress,
+                )?;
+
+                calculate_automatic_coverage_edges(
+                    &mut updates,
+                    &load_node_and_corpus_result,
+                    &text_coverage_edges,
+                    &progress,
+                )?;
+            }
+
+            Ok(updates)
+        } else {
+            Err(anyhow!("directory {} not found", input_path.to_string_lossy()).into())
+        }
     }
 
     fn file_extensions(&self) -> &[&str] {
@@ -253,7 +292,6 @@ struct LoadRankResult {
 }
 
 struct LoadNodeAndCorpusResult {
-    toplevel_corpus_name: String,
     id_to_node_name: DiskMap<NodeID, String>,
     textpos_table: TextPosTable,
 }
@@ -271,91 +309,15 @@ struct LoadNodeResult {
     textpos_table: TextPosTable,
 }
 
-/// Load a c corpus in the legacy relANNIS format from the specified `path`.
-///
-/// Returns a tuple consisting of the corpus name and the extracted annotation graph.
-pub fn load<F>(
-    path: &Path,
-    disk_based: bool,
-    progress_callback: F,
-) -> Result<(String, AnnotationGraph)>
-where
-    F: Fn(&str),
-{
-    // convert to path
-    let path = PathBuf::from(path);
-    if path.is_dir() && path.exists() {
-        // check if this is the ANNIS 3.3 import format
-        let annis_version_path = path.join("annis.version");
-        let is_annis_33 = if annis_version_path.exists() {
-            let mut file = File::open(&annis_version_path)?;
-            let mut version_str = std::string::String::new();
-            file.read_to_string(&mut version_str)?;
-
-            version_str == "3.3"
-        } else {
-            false
-        };
-
-        let mut db = AnnotationGraph::with_default_graphstorages(disk_based)?;
-        let mut updates = GraphUpdate::new();
-        let load_node_and_corpus_result =
-            load_node_and_corpus_tables(&path, &mut updates, is_annis_33, &progress_callback)?;
-        {
-            let text_coverage_edges = load_edge_tables(
-                &path,
-                &mut updates,
-                is_annis_33,
-                &load_node_and_corpus_result.id_to_node_name,
-                &progress_callback,
-            )?;
-
-            calculate_automatic_coverage_edges(
-                &mut updates,
-                &load_node_and_corpus_result,
-                &text_coverage_edges,
-                &progress_callback,
-            )?;
-        }
-
-        progress_callback("calculating node statistics (before update)");
-        db.get_node_annos_mut().calculate_statistics()?;
-
-        db.apply_update(&mut updates, &progress_callback)?;
-
-        progress_callback("calculating graph statistics (after update)");
-        db.calculate_all_statistics()?;
-
-        for c in db.get_all_components(None, None) {
-            progress_callback(&format!(
-                "checking if implementation for component {} can be optimized",
-                c
-            ));
-            db.optimize_gs_impl(&c)?;
-        }
-
-        progress_callback(&format!(
-            "finished loading relANNIS from {}",
-            path.to_string_lossy()
-        ));
-        return Ok((load_node_and_corpus_result.toplevel_corpus_name, db));
-    }
-
-    Err(anyhow!("directory {} not found", path.to_string_lossy()))
-}
-
-fn load_node_and_corpus_tables<F>(
+fn load_node_and_corpus_tables(
     path: &Path,
     updates: &mut GraphUpdate,
     is_annis_33: bool,
-    progress_callback: &F,
-) -> Result<LoadNodeAndCorpusResult>
-where
-    F: Fn(&str),
-{
-    let corpus_table = parse_corpus_tab(path, is_annis_33, &progress_callback)?;
-    let mut texts = parse_text_tab(path, is_annis_33, &progress_callback)?;
-    let corpus_id_to_annos = load_corpus_annotation(path, is_annis_33, &progress_callback)?;
+    progress: &ProgressReporter,
+) -> Result<LoadNodeAndCorpusResult> {
+    let corpus_table = parse_corpus_tab(path, is_annis_33, progress)?;
+    let mut texts = parse_text_tab(path, is_annis_33, progress)?;
+    let corpus_id_to_annos = load_corpus_annotation(path, is_annis_33, progress)?;
 
     let load_nodes_result = load_nodes(
         path,
@@ -363,7 +325,7 @@ where
         &mut texts,
         &corpus_table,
         is_annis_33,
-        progress_callback,
+        progress,
     )?;
 
     add_subcorpora(
@@ -381,28 +343,24 @@ where
         &load_nodes_result.textpos_table,
         &mut texts,
         &load_nodes_result.id_to_node_name,
-        progress_callback,
+        progress,
     )?;
 
     Ok(LoadNodeAndCorpusResult {
-        toplevel_corpus_name: corpus_table.toplevel_corpus_name,
         id_to_node_name: load_nodes_result.id_to_node_name,
         textpos_table: load_nodes_result.textpos_table,
     })
 }
 
-fn load_edge_tables<F>(
+fn load_edge_tables(
     path: &Path,
     updates: &mut GraphUpdate,
     is_annis_33: bool,
     id_to_node_name: &DiskMap<NodeID, String>,
-    progress_callback: &F,
-) -> Result<LoadRankResult>
-where
-    F: Fn(&str),
-{
+    progress: &ProgressReporter,
+) -> Result<LoadRankResult> {
     let load_rank_result = {
-        let component_by_id = load_component_tab(path, is_annis_33, progress_callback)?;
+        let component_by_id = load_component_tab(path, is_annis_33, progress)?;
 
         load_rank_tab(
             path,
@@ -410,7 +368,7 @@ where
             &component_by_id,
             id_to_node_name,
             is_annis_33,
-            progress_callback,
+            progress,
         )?
     };
 
@@ -420,7 +378,7 @@ where
         &load_rank_result,
         id_to_node_name,
         is_annis_33,
-        progress_callback,
+        progress,
     )?;
 
     Ok(load_rank_result)
@@ -567,14 +525,11 @@ fn get_field_not_null(
     Ok(result)
 }
 
-fn parse_corpus_tab<F>(
+fn parse_corpus_tab(
     path: &Path,
     is_annis_33: bool,
-    progress_callback: &F,
-) -> Result<ParsedCorpusTable>
-where
-    F: Fn(&str),
-{
+    progress: &ProgressReporter,
+) -> Result<ParsedCorpusTable> {
     let mut corpus_tab_path = PathBuf::from(path);
     corpus_tab_path.push(if is_annis_33 {
         "corpus.annis"
@@ -582,10 +537,10 @@ where
         "corpus.tab"
     });
 
-    progress_callback(&format!(
+    progress.info(&format!(
         "loading {}",
         corpus_tab_path.to_str().unwrap_or_default()
-    ));
+    ))?;
 
     let mut corpus_by_preorder = BTreeMap::new();
     let mut corpus_by_id = BTreeMap::new();
@@ -629,7 +584,7 @@ where
             CorpusTableEntry {
                 pre: pre_order,
                 post: post_order,
-                normalized_name: String::from(normalized_name.to_string()),
+                normalized_name: normalized_name.to_string(),
                 name,
             },
         );
@@ -653,14 +608,11 @@ where
     })
 }
 
-fn parse_text_tab<F>(
+fn parse_text_tab(
     path: &Path,
     is_annis_33: bool,
-    progress_callback: &F,
-) -> Result<DiskMap<TextKey, Text>>
-where
-    F: Fn(&str),
-{
+    progress: &ProgressReporter,
+) -> Result<DiskMap<TextKey, Text>> {
     let mut text_tab_path = PathBuf::from(path);
     text_tab_path.push(if is_annis_33 {
         "text.annis"
@@ -668,10 +620,10 @@ where
         "text.tab"
     });
 
-    progress_callback(&format!(
+    progress.info(&format!(
         "loading {}",
         text_tab_path.to_str().unwrap_or_default()
-    ));
+    ))?;
 
     let mut texts: DiskMap<TextKey, Text> = DiskMap::default();
 
@@ -708,20 +660,16 @@ where
     Ok(texts)
 }
 
-fn calculate_automatic_token_order<F>(
+fn calculate_automatic_token_order(
     updates: &mut GraphUpdate,
     token_by_index: &DiskMap<TextProperty, NodeID>,
     id_to_node_name: &DiskMap<NodeID, String>,
-    progress_callback: &F,
-) -> Result<()>
-where
-    F: Fn(&str),
-{
+    progress: &ProgressReporter,
+) -> Result<()> {
     // iterate over all token by their order, find the nodes with the same
     // text coverage (either left or right) and add explicit Ordering edge
 
-    let msg = "calculating the automatically generated Ordering edges";
-    progress_callback(msg);
+    progress.info("calculating the automatically generated Ordering edges")?;
 
     let mut last_textprop: Option<TextProperty> = None;
     let mut last_token: Option<NodeID> = None;
@@ -751,7 +699,7 @@ where
                         .to_string(),
                     layer: ordering_layer,
                     component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: current_textprop.segmentation.clone().into(),
+                    component_name: current_textprop.segmentation.clone(),
                 })?;
             }
         } // end if same text
@@ -885,9 +833,9 @@ fn add_automatic_cov_edge_for_node(
                         .get(&tok_id)?
                         .ok_or_else(|| anyhow!("node with ID {tok_id} not found"))?
                         .to_string(),
-                    layer: component_layer.into(),
+                    layer: component_layer,
                     component_type: AnnotationComponentType::Coverage.to_string(),
-                    component_name: component_name.into(),
+                    component_name,
                 })?;
             }
         }
@@ -896,17 +844,14 @@ fn add_automatic_cov_edge_for_node(
     Ok(())
 }
 
-fn calculate_automatic_coverage_edges<F>(
+fn calculate_automatic_coverage_edges(
     updates: &mut GraphUpdate,
     load_node_and_corpus_result: &LoadNodeAndCorpusResult,
     load_rank_result: &LoadRankResult,
-    progress_callback: &F,
-) -> Result<()>
-where
-    F: Fn(&str),
-{
+    progress: &ProgressReporter,
+) -> Result<()> {
     // add explicit coverage edges for each node in the special annis namespace coverage component
-    progress_callback("calculating the automatically generated Coverage edges");
+    progress.info("calculating the automatically generated Coverage edges")?;
 
     for item in load_node_and_corpus_result
         .textpos_table
@@ -939,17 +884,14 @@ where
     Ok(())
 }
 
-fn add_white_space_token_labels<F>(
+fn add_white_space_token_labels(
     updates: &mut GraphUpdate,
     textpos_table: &TextPosTable,
     texts: &mut DiskMap<TextKey, Text>,
     id_to_node_name: &DiskMap<NodeID, String>,
-    progress_callback: &F,
-) -> Result<()>
-where
-    F: Fn(&str),
-{
-    progress_callback("adding non-tokenized primary text segments as white-space label to tokens");
+    progress: &ProgressReporter,
+) -> Result<()> {
+    progress.info("adding non-tokenized primary text segments as white-space label to tokens")?;
     let mut added_whitespace_label_count = 0;
 
     // Iterate over all texts of the graph separately
@@ -1069,25 +1011,22 @@ where
             previous_token_id = Some(current_token_id);
         }
     }
-    progress_callback(&format!(
+    progress.info(&format!(
         "added {} non-tokenized primary text segments as white-space labels to the existing tokens",
         added_whitespace_label_count
-    ));
+    ))?;
 
     Ok(())
 }
 
-fn load_node_tab<F>(
+fn load_node_tab(
     path: &Path,
     updates: &mut GraphUpdate,
     texts: &mut DiskMap<TextKey, Text>,
     corpus_table: &ParsedCorpusTable,
     is_annis_33: bool,
-    progress_callback: &F,
-) -> Result<NodeTabParseResult>
-where
-    F: Fn(&str),
-{
+    progress: &ProgressReporter,
+) -> Result<NodeTabParseResult> {
     let mut nodes_by_text: DiskMap<NodeByTextEntry, bool> = DiskMap::default();
     let mut missing_seg_span: DiskMap<NodeID, String> = DiskMap::default();
     let mut id_to_node_name: DiskMap<NodeID, String> = DiskMap::default();
@@ -1099,10 +1038,10 @@ where
         "node.tab"
     });
 
-    progress_callback(&format!(
+    progress.info(&format!(
         "loading {}",
         node_tab_path.to_str().unwrap_or_default()
-    ));
+    ))?;
 
     // maps a character position to it's token
     let mut textpos_table = TextPosTable {
@@ -1167,7 +1106,7 @@ where
                 node_name: node_path.clone(),
                 node_type: "node".to_owned(),
             })?;
-            id_to_node_name.insert(node_nr, node_path.clone().into())?;
+            id_to_node_name.insert(node_nr, node_path.clone())?;
 
             if let Some(layer) = layer {
                 if !layer.is_empty() {
@@ -1310,11 +1249,11 @@ where
             } // endif if check segmentations
 
             if (line_nr + 1) % 100_000 == 0 {
-                progress_callback(&format!(
+                progress.info(&format!(
                     "loaded {} lines from {}",
                     line_nr + 1,
                     node_tab_path.to_str().unwrap_or_default()
-                ));
+                ))?;
             }
         }
     } // end "scan all lines" visibility block
@@ -1340,7 +1279,7 @@ where
             updates,
             &textpos_table.token_by_index,
             &id_to_node_name,
-            progress_callback,
+            progress,
         )?;
     } // end if token_by_index not empty
 
@@ -1352,17 +1291,14 @@ where
     })
 }
 
-fn load_node_anno_tab<F>(
+fn load_node_anno_tab(
     path: &Path,
     updates: &mut GraphUpdate,
     missing_seg_span: &DiskMap<NodeID, String>,
     id_to_node_name: &DiskMap<NodeID, String>,
     is_annis_33: bool,
-    progress_callback: &F,
-) -> Result<()>
-where
-    F: Fn(&str),
-{
+    progress: &ProgressReporter,
+) -> Result<()> {
     let mut node_anno_tab_path = PathBuf::from(path);
     node_anno_tab_path.push(if is_annis_33 {
         "node_annotation.annis"
@@ -1370,10 +1306,10 @@ where
         "node_annotation.tab"
     });
 
-    progress_callback(&format!(
+    progress.info(&format!(
         "loading {}",
         node_anno_tab_path.to_str().unwrap_or_default()
-    ));
+    ))?;
 
     let mut node_anno_tab_csv = postgresql_import_reader(node_anno_tab_path.as_path())?;
 
@@ -1415,25 +1351,22 @@ where
         }
 
         if (line_nr + 1) % 100_000 == 0 {
-            progress_callback(&format!(
+            progress.info(&format!(
                 "loaded {} lines from {}",
                 line_nr + 1,
                 node_anno_tab_path.to_str().unwrap_or_default()
-            ));
+            ))?;
         }
     }
 
     Ok(())
 }
 
-fn load_component_tab<F>(
+fn load_component_tab(
     path: &Path,
     is_annis_33: bool,
-    progress_callback: &F,
-) -> Result<BTreeMap<u32, Component<AnnotationComponentType>>>
-where
-    F: Fn(&str),
-{
+    progress: &ProgressReporter,
+) -> Result<BTreeMap<u32, Component<AnnotationComponentType>>> {
     let mut component_tab_path = PathBuf::from(path);
     component_tab_path.push(if is_annis_33 {
         "component.annis"
@@ -1441,10 +1374,10 @@ where
         "component.tab"
     });
 
-    progress_callback(&format!(
+    progress.info(&format!(
         "loading {}",
         component_tab_path.to_str().unwrap_or_default()
-    ));
+    ))?;
 
     let mut component_by_id: BTreeMap<u32, Component<AnnotationComponentType>> = BTreeMap::new();
 
@@ -1463,25 +1396,16 @@ where
     Ok(component_by_id)
 }
 
-fn load_nodes<F>(
+fn load_nodes(
     path: &Path,
     updates: &mut GraphUpdate,
     texts: &mut DiskMap<TextKey, Text>,
     corpus_table: &ParsedCorpusTable,
     is_annis_33: bool,
-    progress_callback: &F,
-) -> Result<LoadNodeResult>
-where
-    F: Fn(&str),
-{
-    let node_tab_parse_result = load_node_tab(
-        path,
-        updates,
-        texts,
-        corpus_table,
-        is_annis_33,
-        progress_callback,
-    )?;
+    progress: &ProgressReporter,
+) -> Result<LoadNodeResult> {
+    let node_tab_parse_result =
+        load_node_tab(path, updates, texts, corpus_table, is_annis_33, progress)?;
 
     load_node_anno_tab(
         path,
@@ -1489,7 +1413,7 @@ where
         &node_tab_parse_result.missing_seg_span,
         &node_tab_parse_result.id_to_node_name,
         is_annis_33,
-        progress_callback,
+        progress,
     )?;
 
     Ok(LoadNodeResult {
@@ -1499,17 +1423,14 @@ where
     })
 }
 
-fn load_rank_tab<F>(
+fn load_rank_tab(
     path: &Path,
     updates: &mut GraphUpdate,
     component_by_id: &BTreeMap<u32, Component<AnnotationComponentType>>,
     id_to_node_name: &DiskMap<NodeID, String>,
     is_annis_33: bool,
-    progress_callback: &F,
-) -> Result<LoadRankResult>
-where
-    F: Fn(&str),
-{
+    progress: &ProgressReporter,
+) -> Result<LoadRankResult> {
     let mut rank_tab_path = PathBuf::from(path);
     rank_tab_path.push(if is_annis_33 {
         "rank.annis"
@@ -1517,10 +1438,10 @@ where
         "rank.tab"
     });
 
-    progress_callback(&format!(
+    progress.info(&format!(
         "loading {}",
         rank_tab_path.to_str().unwrap_or_default()
-    ));
+    ))?;
 
     let mut load_rank_result = LoadRankResult {
         components_by_pre: DiskMap::default(),
@@ -1616,17 +1537,14 @@ where
     Ok(load_rank_result)
 }
 
-fn load_edge_annotation<F>(
+fn load_edge_annotation(
     path: &Path,
     updates: &mut GraphUpdate,
     rank_result: &LoadRankResult,
     id_to_node_name: &DiskMap<NodeID, String>,
     is_annis_33: bool,
-    progress_callback: &F,
-) -> Result<()>
-where
-    F: Fn(&str),
-{
+    progress: &ProgressReporter,
+) -> Result<()> {
     let mut edge_anno_tab_path = PathBuf::from(path);
     edge_anno_tab_path.push(if is_annis_33 {
         "edge_annotation.annis"
@@ -1634,10 +1552,10 @@ where
         "edge_annotation.tab"
     });
 
-    progress_callback(&format!(
+    progress.info(&format!(
         "loading {}",
         edge_anno_tab_path.to_str().unwrap_or_default()
-    ));
+    ))?;
 
     let mut edge_anno_tab_csv = postgresql_import_reader(edge_anno_tab_path.as_path())?;
 
@@ -1676,14 +1594,11 @@ where
     Ok(())
 }
 
-fn load_corpus_annotation<F>(
+fn load_corpus_annotation(
     path: &Path,
     is_annis_33: bool,
-    progress_callback: &F,
-) -> Result<BTreeMap<(u32, AnnoKey), std::string::String>>
-where
-    F: Fn(&str),
-{
+    progress: &ProgressReporter,
+) -> Result<BTreeMap<(u32, AnnoKey), std::string::String>> {
     let mut corpus_id_to_anno = BTreeMap::new();
 
     let mut corpus_anno_tab_path = PathBuf::from(path);
@@ -1693,10 +1608,10 @@ where
         "corpus_annotation.tab"
     });
 
-    progress_callback(&format!(
+    progress.info(&format!(
         "loading {}",
         corpus_anno_tab_path.to_str().unwrap_or_default()
-    ));
+    ))?;
 
     let mut corpus_anno_tab_csv = postgresql_import_reader(corpus_anno_tab_path.as_path())?;
 
@@ -1739,12 +1654,12 @@ fn get_parent_path(cid: u32, corpus_table: &ParsedCorpusTable) -> Result<std::st
 }
 
 fn get_corpus_path(cid: u32, corpus_table: &ParsedCorpusTable) -> Result<String> {
-    let mut result: String = get_parent_path(cid, corpus_table)?.into();
+    let mut result: String = get_parent_path(cid, corpus_table)?;
     let corpus = corpus_table
         .corpus_by_id
         .get(&cid)
         .ok_or_else(|| anyhow!("corpus with ID {cid} not found"))?;
-    result.push_str("/");
+    result.push('/');
     result.push_str(&corpus.normalized_name);
     Ok(result)
 }
