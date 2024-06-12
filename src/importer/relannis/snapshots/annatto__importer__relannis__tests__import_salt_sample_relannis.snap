@@ -22,25 +22,29 @@ expression: actual
         vis_type = "kwic"
         display_name = "Key Word in Context"
         visibility = "permanent"
-        
+
+        [[visualizers]]
+        element = "node"
+        layer = "syntax"
+        vis_type="tree"
+        display_name="syntax"
+        visibility = "hidden"
+
+        [visualizers.mappings]
+        node_key = "const"
+
         [[visualizers]]
         element = "edge"
         layer = "default_ns"
-        vis_type = "arch_dependency"
-        display_name = "pointing (anaphoric)"
+        vis_type = "discourse"
+        display_name = "anaphoric"
         visibility = "hidden"
-        
-        
+
         [[visualizers]]
         element = "node"
         vis_type = "grid"
         display_name = "annotations"
         visibility = "hidden"
-        
-        [visualizers.mappings]
-        escape_html = "false"
-        hide_tok = "true"
-        show_ns = "false"
         ]]></data>
         <node id="SaltSampleCorpus/subCorpus2/doc3#sTok7">
             <data key="k10"> </data>
