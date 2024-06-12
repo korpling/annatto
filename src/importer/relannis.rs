@@ -85,7 +85,7 @@ impl Importer for ImportRelAnnis {
     }
 
     fn file_extensions(&self) -> &[&str] {
-        todo!()
+        &[]
     }
 }
 
@@ -549,8 +549,8 @@ fn parse_corpus_tab(
 
     let mut document_names: HashMap<String, usize> = HashMap::new();
 
-    for result in corpus_tab_csv.records() {
-        let line = result?;
+    for line in corpus_tab_csv.records() {
+        let line = line?;
 
         let id = get_field_not_null(&line, 0, "id", &corpus_tab_path)?.parse::<u32>()?;
         let name = get_field_not_null(&line, 1, "name", &corpus_tab_path)?;
@@ -1059,7 +1059,7 @@ fn load_node_tab(
     {
         let mut node_tab_csv = postgresql_import_reader(node_tab_path.as_path())?;
 
-        for (line_nr, result) in node_tab_csv.records().enumerate() {
+        for result in node_tab_csv.records() {
             let line = result?;
 
             let node_nr = get_field_not_null(&line, 0, "id", &node_tab_path)?.parse::<NodeID>()?;
@@ -1247,14 +1247,6 @@ fn load_node_tab(
                     textpos_table.token_by_index.insert(index, node_nr)?;
                 } // end if node has segmentation info
             } // endif if check segmentations
-
-            if (line_nr + 1) % 100_000 == 0 {
-                progress.info(&format!(
-                    "loaded {} lines from {}",
-                    line_nr + 1,
-                    node_tab_path.to_str().unwrap_or_default()
-                ))?;
-            }
         }
     } // end "scan all lines" visibility block
 
@@ -1313,8 +1305,8 @@ fn load_node_anno_tab(
 
     let mut node_anno_tab_csv = postgresql_import_reader(node_anno_tab_path.as_path())?;
 
-    for (line_nr, result) in node_anno_tab_csv.records().enumerate() {
-        let line = result?;
+    for line in node_anno_tab_csv.records() {
+        let line = line?;
 
         let col_id = get_field_not_null(&line, 0, "id", &node_anno_tab_path)?;
         let node_id: NodeID = col_id.parse()?;
@@ -1348,14 +1340,6 @@ fn load_node_anno_tab(
                 anno_name: col_name.to_string(),
                 anno_value: anno_val.to_string(),
             })?;
-        }
-
-        if (line_nr + 1) % 100_000 == 0 {
-            progress.info(&format!(
-                "loaded {} lines from {}",
-                line_nr + 1,
-                node_anno_tab_path.to_str().unwrap_or_default()
-            ))?;
         }
     }
 
