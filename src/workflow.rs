@@ -112,6 +112,7 @@ impl TryFrom<(PathBuf, bool)> for Workflow {
 /// Executes a workflow from a TOML file.
 ///
 /// * `workflow_file` - The TOML workflow file.
+/// * `read_env` - Set whether to resolve environment variables in the workflow file.
 /// * `tx` - If supported by the caller, this is a sender object that allows to send [status updates](enum.StatusMessage.html) (like information messages, warnings and module progress) to the calling entity.
 pub fn execute_from_file(
     workflow_file: &Path,
@@ -299,11 +300,14 @@ impl Workflow {
         default_workflow_directory: &Path,
         tx: Option<StatusSender>,
     ) -> Result<()> {
-        let resolved_output_path = if step.path.is_relative() {
-            default_workflow_directory.join(&step.path).normalize()?
+        let mut resolved_output_path = if step.path.is_relative() {
+            default_workflow_directory.join(&step.path)
         } else {
-            step.path.normalize()?
+            step.path.clone()
         };
+        if resolved_output_path.exists() {
+            resolved_output_path = resolved_output_path.normalize()?.into();
+        }
 
         step.module
             .writer()
@@ -386,8 +390,8 @@ mod tests {
         std::env::set_var("TEST_OUTPUT", tmp_out.path().to_string_lossy().as_ref());
 
         execute_from_file(
-            Path::new("./tests/workflows/multiple_importer.toml"),
-            false,
+            Path::new("./tests/workflows/nonexisting_dir.toml"),
+            true,
             None,
         )
         .unwrap();
