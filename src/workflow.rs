@@ -386,7 +386,7 @@ mod tests {
         std::env::set_var("TEST_OUTPUT", tmp_out.path().to_string_lossy().as_ref());
 
         execute_from_file(
-            Path::new("./tests/workflows/multiple_importer.toml"),
+            Path::new("./tests/workflows/nonexisting_dir.toml"),
             false,
             None,
         )
