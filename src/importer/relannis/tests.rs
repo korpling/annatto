@@ -194,7 +194,7 @@ fn unescape_field() {
         "0",
         "0",
         "1",
-        "default_ns",
+        "default_ns\\",
         "sTok1",
         "0",
         "12",
@@ -206,6 +206,11 @@ fn unescape_field() {
         r#"a\\b\\\\c\n\r\n\t𐌰"#,
         "TRUE",
     ]);
+    // Do not unescape the last character
+    let actual = get_field(&record, 3, "layer", path).unwrap().unwrap();
+    assert_eq!(actual, "default_ns\\");
+
+    // Test the different known escape sequences
     let actual = get_field(&record, 12, "span", path).unwrap().unwrap();
     assert_eq!(actual, "a\\b\\\\c\n\r\n\t𐌰");
 }
