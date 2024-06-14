@@ -2,7 +2,7 @@ use std::sync::mpsc::{self};
 
 use super::*;
 use crate::{test_util::import_as_graphml_string_2, workflow};
-use csv::StringRecord;
+use csv::{Position, StringRecord};
 use insta::assert_snapshot;
 use pretty_assertions::assert_eq;
 
@@ -123,8 +123,8 @@ fn import_legacy_format() {
 }
 
 #[test]
-fn import_corpus_with_escaped_id() {
-    let corpus_path = Path::new("tests/data/import/relannis/testIDEscape/");
+fn import_corpus_with_border_cases() {
+    let corpus_path = Path::new("tests/data/import/relannis/BorderCases/");
     let actual = import_as_graphml_string_2(
         ImportRelAnnis::default(),
         corpus_path,
@@ -230,12 +230,25 @@ fn invalid_column() {
 #[test]
 fn fail_on_null_column() {
     let path = Path::new("node.annis");
-    let record = StringRecord::from(vec!["0", "NULL", "NULL", "default_ns", "sTok1"]);
+    let mut record = StringRecord::from(vec!["0", "NULL", "NULL", "default_ns", "sTok1"]);
+    let mut record_position = Position::new();
+
     let actual = get_field_not_null(&record, 1, "span", path);
     assert!(actual.is_err());
     assert_eq!(
         actual.err().unwrap().to_string(),
         "unexpected value NULL in column 1 (span) in file node.annis at line <unknown>"
+    );
+
+    // Try again but this time with a position set
+    record_position.set_line(123);
+    record.set_position(Some(record_position));
+
+    let actual = get_field_not_null(&record, 1, "span", path);
+    assert!(actual.is_err());
+    assert_eq!(
+        actual.err().unwrap().to_string(),
+        "unexpected value NULL in column 1 (span) in file node.annis at line 123"
     );
 }
 
