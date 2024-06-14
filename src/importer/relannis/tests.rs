@@ -1,6 +1,8 @@
 use super::*;
 use crate::test_util::import_as_graphml_string_2;
+use csv::StringRecord;
 use insta::assert_snapshot;
+use pretty_assertions::assert_eq;
 
 #[test]
 fn import_salt_sample_relannis() {
@@ -53,6 +55,41 @@ fn import_salt_sample_relannis() {
     ]}, {
         assert_snapshot!(actual);
     });
+}
+
+#[test]
+fn unescape_field() {
+    let path = Path::new("node.annis");
+    let record = StringRecord::from(vec![
+        "0",
+        "0",
+        "1",
+        "default_ns",
+        "sTok1",
+        "0",
+        "12",
+        "0",
+        "0",
+        "0",
+        "NULL",
+        "NULL",
+        r#"a\\b\\\\c\n\r\n\t𐌰"#,
+        "TRUE",
+    ]);
+    let actual = get_field(&record, 12, "span", path).unwrap().unwrap();
+    assert_eq!(actual, "a\\b\\\\c\n\r\n\t𐌰");
+}
+
+#[test]
+fn invalid_column() {
+    let path = Path::new("node.annis");
+    let record = StringRecord::from(vec!["0", "0", "1", "default_ns", "sTok1"]);
+    let actual = get_field(&record, 12, "span", path);
+    assert!(actual.is_err());
+    assert_eq!(
+        actual.err().unwrap().to_string(),
+        "missing column at position 12 (span) in file node.annis"
+    );
 }
 
 #[test]
