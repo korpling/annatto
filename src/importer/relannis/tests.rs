@@ -142,6 +142,12 @@ fn import_corpus_with_border_cases() {
             vis_type = "arch_dependency"
             display_name = "deps"
             visibility = "hidden"
+
+            [[visualizers]]
+            element = "node"
+            vis_type = "grid"
+            display_name = "annotations"
+            visibility = "hidden"
         "#,
         ),
         false,
