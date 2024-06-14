@@ -88,6 +88,43 @@ fn import_order_relation() {
 }
 
 #[test]
+fn import_corpus_with_escaped_id() {
+    let corpus_path = Path::new("tests/data/import/relannis/testIDEscape/");
+    let actual = import_as_graphml_string_2(
+        ImportRelAnnis::default(),
+        corpus_path,
+        Some(
+            r#"
+            [[visualizers]]
+            element = "node"
+            vis_type = "kwic"
+            display_name = "Key Word in Context"
+            visibility = "permanent"
+    
+            [[visualizers]]
+            element = "edge"
+            layer = "%37%23%3D%2B%7D%7D%C3%A4%3F%C3%B6%3B"
+            vis_type = "arch_dependency"
+            display_name = "deps"
+            visibility = "hidden"
+        "#,
+        ),
+        false,
+        None,
+    )
+    .unwrap();
+
+    let path_to_remove =
+        pathdiff::diff_paths(std::env::current_dir().unwrap(), corpus_path).unwrap();
+    let path_to_remove = path_to_remove.to_str().unwrap();
+    insta::with_settings!({filters => vec![
+        (path_to_remove, "[PROJECT_DIR]"),
+    ]}, {
+        assert_snapshot!(actual);
+    });
+}
+
+#[test]
 fn unescape_field() {
     let path = Path::new("node.annis");
     let record = StringRecord::from(vec![
