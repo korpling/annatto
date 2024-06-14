@@ -1,0 +1,71 @@
+digraph G {
+ordering=out;
+<null/null_graph#sTok1> -> <null/null_graph#sText1>[color=yellow,style=filled];
+<null/null_graph#sTok1> -> <null/null_graph#sTimeline11>[color=gray,style=filled];
+<null/null_graph#sTok1> -> <null/null_graph#sTok2>[];
+<null/null_graph#sTok2> -> <null/null_graph#sText1>[color=yellow,style=filled];
+<null/null_graph#sTok2> -> <null/null_graph#sTimeline11>[color=gray,style=filled];
+<null/null_graph#sTok2> -> <null/null_graph#sTok3>[];
+<null/null_graph#sTok3> -> <null/null_graph#sText1>[color=yellow,style=filled];
+<null/null_graph#sTok3> -> <null/null_graph#sTimeline11>[color=gray,style=filled];
+<null/null_graph#sTok3> -> <null/null_graph#sTok4>[];
+<null/null_graph#sTok4> -> <null/null_graph#sText1>[color=yellow,style=filled];
+<null/null_graph#sTok4> -> <null/null_graph#sTimeline11>[color=gray,style=filled];
+<null/null_graph#sTok4> -> <null/null_graph#sTok5>[];
+<null/null_graph#sTok5> -> <null/null_graph#sText1>[color=yellow,style=filled];
+<null/null_graph#sTok5> -> <null/null_graph#sTimeline11>[color=gray,style=filled];
+<null/null_graph#sTok5> -> <null/null_graph#sTok6>[];
+<null/null_graph#sTok6> -> <null/null_graph#sText1>[color=yellow,style=filled];
+<null/null_graph#sTok6> -> <null/null_graph#sTimeline11>[color=gray,style=filled];
+<null/null_graph#sTok6> -> <null/null_graph#sTok7>[];
+<null/null_graph#sTok7> -> <null/null_graph#sText1>[color=yellow,style=filled];
+<null/null_graph#sTok7> -> <null/null_graph#sSpan1>[color=blue,style=filled,label="sTypes= [anaphoric]"];
+<null/null_graph#sSpan1> -> <null/null_graph#sTok2>[color=dodgerblue3,style=filled];
+<null/null_graph#sTok7> -> <null/null_graph#sTimeline11>[color=gray,style=filled];
+<null/null_graph#sTok7> -> <null/null_graph#sTok8>[];
+<null/null_graph#sTok8> -> <null/null_graph#sText1>[color=yellow,style=filled];
+<null/null_graph#sTok8> -> <null/null_graph#sTimeline11>[color=gray,style=filled];
+<null/null_graph#sTok8> -> <null/null_graph#sTok9>[];
+<null/null_graph#sTok9> -> <null/null_graph#sText1>[color=yellow,style=filled];
+<null/null_graph#sTok9> -> <null/null_graph#sTimeline11>[color=gray,style=filled];
+<null/null_graph#sTok9> -> <null/null_graph#sTok10>[];
+<null/null_graph#sTok10> -> <null/null_graph#sText1>[color=yellow,style=filled];
+<null/null_graph#sTok10> -> <null/null_graph#sTimeline11>[color=gray,style=filled];
+<null/null_graph#sTok11> -> <null/null_graph#sText2>[color=yellow,style=filled];
+<null/null_graph#sTok11> -> <null/null_graph#sTimeline11>[color=gray,style=filled];
+<null/null_graph#sTok11> -> <null/null_graph#sTok12>[];
+<null/null_graph#sTok12> -> <null/null_graph#sText2>[color=yellow,style=filled];
+<null/null_graph#sTok12> -> <null/null_graph#sTimeline11>[color=gray,style=filled];
+<null/null_graph#sTok12> -> <null/null_graph#sTok13>[];
+<null/null_graph#sTok13> -> <null/null_graph#sText2>[color=yellow,style=filled];
+<null/null_graph#sTok13> -> <null/null_graph#sTimeline11>[color=gray,style=filled];
+{
+rank=max;
+<null/null_graph#sText1>[shape=Mrecord,color=yellow,style=filled,label="{{null/null_graph#sText1}|{sName= sText1}|{text=Is this example more complicated than it appears to be?}}"];
+<null/null_graph#sText2>[shape=Mrecord,color=yellow,style=filled,label="{{null/null_graph#sText2}|{sName= sText2}|{text=Uhm Oh yes!}}"];
+}
+{
+rank=same;
+<null/null_graph#sTimeline11>[shape=Mrecord,color=gray,style=filled,label="{{null/null_graph#sTimeline11}|{sName= sTimeline11}|{time=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}}"];
+}
+{
+rank=same;
+<null/null_graph#sSpan1>[shape=Mrecord,color=dodgerblue3,style=filled,label="{{null/null_graph#sSpan1}|{sName= sSpan1}}"];
+}
+{
+rank=same;
+<null/null_graph#sTok1>[shape=Mrecord,color=turquoise,style=filled,label="{{null/null_graph#sTok1}|{sName= sTok1}}"];
+<null/null_graph#sTok2>[shape=Mrecord,color=turquoise,style=filled,label="{{null/null_graph#sTok2}|{sName= sTok2}}"];
+<null/null_graph#sTok3>[shape=Mrecord,color=turquoise,style=filled,label="{{null/null_graph#sTok3}|{sName= sTok3}}"];
+<null/null_graph#sTok4>[shape=Mrecord,color=turquoise,style=filled,label="{{null/null_graph#sTok4}|{sName= sTok4}}"];
+<null/null_graph#sTok5>[shape=Mrecord,color=turquoise,style=filled,label="{{null/null_graph#sTok5}|{sName= sTok5}}"];
+<null/null_graph#sTok6>[shape=Mrecord,color=turquoise,style=filled,label="{{null/null_graph#sTok6}|{sName= sTok6}}"];
+<null/null_graph#sTok7>[shape=Mrecord,color=turquoise,style=filled,label="{{null/null_graph#sTok7}|{sName= sTok7}}"];
+<null/null_graph#sTok8>[shape=Mrecord,color=turquoise,style=filled,label="{{null/null_graph#sTok8}|{sName= sTok8}}"];
+<null/null_graph#sTok9>[shape=Mrecord,color=turquoise,style=filled,label="{{null/null_graph#sTok9}|{sName= sTok9}}"];
+<null/null_graph#sTok10>[shape=Mrecord,color=turquoise,style=filled,label="{{null/null_graph#sTok10}|{sName= sTok10}}"];
+<null/null_graph#sTok11>[shape=Mrecord,color=turquoise,style=filled,label="{{null/null_graph#sTok11}|{sName= sTok11}}"];
+<null/null_graph#sTok12>[shape=Mrecord,color=turquoise,style=filled,label="{{null/null_graph#sTok12}|{sName= sTok12}}"];
+<null/null_graph#sTok13>[shape=Mrecord,color=turquoise,style=filled,label="{{null/null_graph#sTok13}|{sName= sTok13}}"];
+}
+}

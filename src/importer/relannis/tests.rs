@@ -58,6 +58,36 @@ fn import_salt_sample_relannis() {
 }
 
 #[test]
+fn import_order_relation() {
+    let corpus_path = Path::new("tests/data/import/relannis/testComplexMapSOrderRelation/");
+    let actual = import_as_graphml_string_2(
+        ImportRelAnnis::default(),
+        corpus_path,
+        Some(
+            r#"
+        [[visualizers]]
+        element = "node"
+        vis_type = "grid"
+        display_name = "annotations"
+        visibility = "permanent"
+        "#,
+        ),
+        false,
+        None,
+    )
+    .unwrap();
+
+    let path_to_remove =
+        pathdiff::diff_paths(std::env::current_dir().unwrap(), corpus_path).unwrap();
+    let path_to_remove = path_to_remove.to_str().unwrap();
+    insta::with_settings!({filters => vec![
+        (path_to_remove, "[PROJECT_DIR]"),
+    ]}, {
+        assert_snapshot!(actual);
+    });
+}
+
+#[test]
 fn unescape_field() {
     let path = Path::new("node.annis");
     let record = StringRecord::from(vec![
