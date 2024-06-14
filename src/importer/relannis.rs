@@ -5,7 +5,6 @@ use anyhow::{anyhow, Result};
 use documented::{Documented, DocumentedFields};
 use graphannis::model::AnnotationComponentType;
 use graphannis::update::{GraphUpdate, UpdateEvent};
-use log::{info, warn};
 use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
 use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
@@ -567,10 +566,9 @@ fn parse_corpus_tab(
             if *existing_count > 1 {
                 let old_name = name.clone();
                 let name = format!("{}_duplicated_document_name_{}", name, existing_count);
-                warn!(
-                    "duplicated document name \"{}\" detected: will be renamed to \"{}\"",
-                    old_name, name
-                );
+                progress.warn(&format!(
+                    "duplicated document name \"{old_name}\" detected: will be renamed to \"{name}\""
+                ))?;
             }
         }
 
@@ -873,10 +871,9 @@ fn calculate_automatic_coverage_edges(
                 load_rank_result,
             ) {
                 // output a warning but do not fail
-                warn!(
-                    "Adding coverage edges (connects spans with tokens) failed: {}",
-                    e
-                )
+                progress.warn(&format!(
+                    "Adding coverage edges (connects spans with tokens) failed: {e}"
+                ))?;
             }
         } // end if not a token
     }
@@ -1250,10 +1247,10 @@ fn load_node_tab(
         }
     } // end "scan all lines" visibility block
 
-    info!(
+    progress.info(&format!(
         "creating index for content of {}",
         &node_tab_path.to_string_lossy()
-    );
+    ))?;
     id_to_node_name.compact()?;
     nodes_by_text.compact()?;
     missing_seg_span.compact()?;
@@ -1507,10 +1504,10 @@ fn load_rank_tab(
         }
     }
 
-    info!(
+    progress.info(&format!(
         "creating index for content of {}",
         &rank_tab_path.to_string_lossy()
-    );
+    ))?;
     load_rank_result.components_by_pre.compact()?;
     load_rank_result.edges_by_pre.compact()?;
     load_rank_result.text_coverage_edges.compact()?;
