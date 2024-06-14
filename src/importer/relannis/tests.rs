@@ -272,6 +272,19 @@ fn text_property_key_serializer() {
     let actual = TextProperty::parse_key(&key).unwrap();
 
     assert_eq!(actual, expected);
+
+    // Check again with segmentation
+    let expected = TextProperty {
+        segmentation: "diplomatic".to_string(),
+        corpus_id: 123,
+        text_id: 1,
+        val: 42,
+    };
+
+    let key = expected.create_key();
+    let actual = TextProperty::parse_key(&key).unwrap();
+
+    assert_eq!(actual, expected);
 }
 
 #[test]
