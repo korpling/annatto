@@ -1,5 +1,7 @@
+use std::sync::mpsc::{self, Sender};
+
 use super::*;
-use crate::test_util::import_as_graphml_string_2;
+use crate::{test_util::import_as_graphml_string_2, StepID};
 use csv::StringRecord;
 use insta::assert_snapshot;
 use pretty_assertions::assert_eq;
@@ -155,6 +157,34 @@ fn import_corpus_with_escaped_id() {
     ]}, {
         assert_snapshot!(actual);
     });
+}
+
+#[test]
+fn import_corpus_with_duplicated_document() {
+    let corpus_path = Path::new("tests/data/import/relannis/DuplicatedDocumentName/");
+
+    let (sender, receiver) = mpsc::channel();
+    let actual = import_as_graphml_string_2(
+        ImportRelAnnis::default(),
+        corpus_path,
+        None,
+        false,
+        Some(sender),
+    )
+    .unwrap();
+    assert_snapshot!(actual);
+    let warnings: Vec<_> = receiver
+        .into_iter()
+        .filter(|msg| match msg {
+            crate::workflow::StatusMessage::Warning(_) => true,
+            _ => false,
+        })
+        .collect();
+    assert_eq!(1, warnings.len());
+    assert_eq!(
+        r#"Warning("duplicated document name \"doc1\" detected: will be renamed to \"doc1_duplicated_document_name_2\"")"#,
+        format!("{:?}", warnings[0])
+    );
 }
 
 #[test]

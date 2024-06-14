@@ -1,0 +1,26 @@
+---
+source: src/importer/relannis/tests.rs
+expression: actual
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k1" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k2" for="node" attr.name="annis::relannis-version" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <node id="DuplicatedDocumentName">
+            <data key="k1">corpus</data>
+            <data key="k2">3.3</data>
+        </node>
+        <node id="DuplicatedDocumentName/doc1">
+            <data key="k0">doc1</data>
+            <data key="k1">corpus</data>
+        </node>
+        <node id="/doc1_duplicated_document_name_2">
+            <data key="k0">doc1_duplicated_document_name_2</data>
+            <data key="k1">corpus</data>
+        </node>
+        <edge id="e0" source="DuplicatedDocumentName/doc1" target="DuplicatedDocumentName" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>
