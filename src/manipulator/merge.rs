@@ -391,10 +391,7 @@ impl Merge {
         if let Some(ref skip_component_spec) = self.skip_components {
             for spec in skip_component_spec {
                 let split_spec = split_qname(spec);
-                let layer = match split_spec.0 {
-                    None => "",
-                    Some(v) => v,
-                };
+                let layer = split_spec.0.unwrap_or_default();
                 let name = split_spec.1;
                 for c in graph.get_all_components(None, Some(name)) {
                     if c.layer == layer {
