@@ -15,7 +15,8 @@ expression: actual
     <key id="k8" for="node" attr.name="annis::relannis-version" attr.type="string"/>
     <key id="k9" for="node" attr.name="annis::tok" attr.type="string"/>
     <key id="k10" for="node" attr.name="annis::tok-whitespace-after" attr.type="string"/>
-    <key id="k11" for="node" attr.name="%2530%253E%253B%253B%2521%255D%257B%25C2%25A7::%2532%25C3%259F%257B%252E%253A%2529%25C2%25B2%252C%25C2%25B8" attr.type="string"/>
+    <key id="k11" for="node" attr.name="annis::tok-whitespace-before" attr.type="string"/>
+    <key id="k12" for="node" attr.name="%2530%253E%253B%253B%2521%255D%257B%25C2%25A7::%2532%25C3%259F%257B%252E%253A%2529%25C2%25B2%252C%25C2%25B8" attr.type="string"/>
     <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
         <data key="k0"><![CDATA[
             [[visualizers]]
@@ -32,56 +33,57 @@ expression: actual
             visibility = "hidden"
         ]]></data>
         <node id="testIDEscape/doc1#sTok1">
-            <data key="k10"> </data>
+            <data key="k10">t</data>
+            <data key="k11">This is actually Whitespace! </data>
             <data key="k2">value</data>
             <data key="k6">morphology</data>
             <data key="k7">node</data>
             <data key="k9">Is</data>
         </node>
         <node id="testIDEscape/doc1#sTok2">
-            <data key="k10"> </data>
+            <data key="k10">e</data>
             <data key="k6">morphology</data>
             <data key="k7">node</data>
             <data key="k9">this</data>
         </node>
         <node id="testIDEscape/doc1#sTok3">
-            <data key="k10"> </data>
+            <data key="k10">m</data>
             <data key="k6">morphology</data>
             <data key="k7">node</data>
             <data key="k9">example</data>
         </node>
         <node id="testIDEscape/doc1#sTok4">
-            <data key="k10"> </data>
+            <data key="k10">c</data>
             <data key="k6">morphology</data>
             <data key="k7">node</data>
             <data key="k9">more</data>
         </node>
         <node id="testIDEscape/doc1#sTok5">
-            <data key="k10"> </data>
+            <data key="k10">mplicated t</data>
             <data key="k6">morphology</data>
             <data key="k7">node</data>
             <data key="k9">complicated</data>
         </node>
         <node id="testIDEscape/doc1#sTok6">
-            <data key="k10"> </data>
+            <data key="k10">han i</data>
             <data key="k6">morphology</data>
             <data key="k7">node</data>
             <data key="k9">than</data>
         </node>
         <node id="testIDEscape/doc1#sTok7">
-            <data key="k10"> </data>
+            <data key="k10">t a</data>
             <data key="k6">morphology</data>
             <data key="k7">node</data>
             <data key="k9">it</data>
         </node>
         <node id="testIDEscape/doc1#sTok8">
-            <data key="k10"> </data>
+            <data key="k10">ppears t</data>
             <data key="k6">morphology</data>
             <data key="k7">node</data>
             <data key="k9">appears</data>
         </node>
         <node id="testIDEscape/doc1#sTok9">
-            <data key="k10"> </data>
+            <data key="k10">b</data>
             <data key="k6">morphology</data>
             <data key="k7">node</data>
             <data key="k9">to</data>
@@ -113,7 +115,7 @@ expression: actual
             <data key="k7">datasource</data>
         </node>
         <edge id="e0" source="testIDEscape/doc1#sTok1" target="testIDEscape/doc1#sTok2" label="Pointing/%37%23%3D%2B%7D%7D%C3%A4%3F%C3%B6%3B/%2D7%23%3D%2B%7D%7D%C3%A4%3F%C3%B6%3B">
-            <data key="k11">value</data>
+            <data key="k12">value</data>
         </edge>
         <edge id="e1" source="testIDEscape/doc1#sTok1" target="testIDEscape/doc1#sTok2" label="Ordering/annis/">
         </edge>

@@ -932,12 +932,13 @@ fn add_white_space_token_labels(
                     let mut covered_text_before =
                         std::string::String::with_capacity(token_left_char - current_text_offset);
                     let mut skipped_before_token = 0;
-                    for _ in current_text_offset..token_left_char {
+                    for _ in current_text_offset..(token_left_char - 1) {
                         if let Some(c) = text_char_it.next() {
                             covered_text_before.push(c);
                             skipped_before_token += 1;
                         }
                     }
+
                     current_text_offset += skipped_before_token;
 
                     if let Some(token_name) = id_to_node_name.get(&current_token_id)? {
