@@ -1,0 +1,3 @@
+1	ns	%25invalid%25%25name%24	value1
+1	ns	invalid__name_	value2
+1	ns	invalid_%C2%A7name_	value3

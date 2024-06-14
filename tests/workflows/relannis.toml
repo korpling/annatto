@@ -1,0 +1,5 @@
+[[import]]
+format = "relannis"
+path = "../data/import/relannis/does-not-exist"
+
+[import.config]

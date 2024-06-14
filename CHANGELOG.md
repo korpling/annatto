@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Importer for the relANNIS format (<http://korpling.github.io/ANNIS/3.7/developer-guide/annisimportformat.html>)
 - progress reports for `enumerate`, `link`, and `map`
 - `revise` can now rename nodes using attribute `node_names`, e. g. for renaming (top level) corpus nodes. The syntax is equivalent to renaming annotations, thus renaming with an empty value will lead to deletion. Renaming with an existing value (also rename with self) will lead to an error.
 - Add `zip` option to GraphML export to directly export as ZIP file which can be

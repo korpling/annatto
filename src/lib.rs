@@ -21,8 +21,8 @@ use exporter::{
 use importer::{
     conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
     graphml::GraphMLImporter, meta::AnnotateCorpus, none::CreateEmptyCorpus, opus::ImportOpusLinks,
-    ptb::ImportPTB, textgrid::ImportTextgrid, toolbox::ImportToolBox, treetagger::ImportTreeTagger,
-    xlsx::ImportSpreadsheet, xml::ImportXML, Importer,
+    ptb::ImportPTB, relannis::ImportRelAnnis, textgrid::ImportTextgrid, toolbox::ImportToolBox,
+    treetagger::ImportTreeTagger, xlsx::ImportSpreadsheet, xml::ImportXML, Importer,
 };
 use manipulator::{
     check::Check, chunker::Chunk, collapse::Collapse, enumerate::EnumerateMatches, link::LinkNodes,
@@ -127,6 +127,7 @@ pub enum ReadFrom {
     Opus(#[serde(default)] ImportOpusLinks),
     Path(#[serde(default)] CreateFileNodes),
     PTB(#[serde(default)] ImportPTB),
+    RelAnnis(#[serde(default)] ImportRelAnnis),
     TextGrid(#[serde(default)] ImportTextgrid),
     Toolbox(#[serde(default)] ImportToolBox),
     TreeTagger(#[serde(default)] ImportTreeTagger),
@@ -146,17 +147,18 @@ impl ReadFrom {
         match self {
             ReadFrom::CoNLLU(m) => m,
             ReadFrom::EXMARaLDA(m) => m,
-            ReadFrom::PTB(m) => m,
-            ReadFrom::TextGrid(m) => m,
-            ReadFrom::TreeTagger(m) => m,
-            ReadFrom::None(m) => m,
-            ReadFrom::Meta(m) => m,
-            ReadFrom::Xlsx(m) => m,
             ReadFrom::GraphML(m) => m,
-            ReadFrom::Path(m) => m,
-            ReadFrom::Xml(m) => m,
+            ReadFrom::Meta(m) => m,
+            ReadFrom::None(m) => m,
             ReadFrom::Opus(m) => m,
+            ReadFrom::Path(m) => m,
+            ReadFrom::PTB(m) => m,
+            ReadFrom::RelAnnis(m) => m,
+            ReadFrom::TextGrid(m) => m,
             ReadFrom::Toolbox(m) => m,
+            ReadFrom::TreeTagger(m) => m,
+            ReadFrom::Xlsx(m) => m,
+            ReadFrom::Xml(m) => m,
         }
     }
 }
@@ -172,6 +174,7 @@ impl ReadFromDiscriminants {
             ReadFromDiscriminants::Opus => ImportOpusLinks::DOCS,
             ReadFromDiscriminants::Path => CreateFileNodes::DOCS,
             ReadFromDiscriminants::PTB => ImportPTB::DOCS,
+            ReadFromDiscriminants::RelAnnis => ImportRelAnnis::DOCS,
             ReadFromDiscriminants::TextGrid => ImportTextgrid::DOCS,
             ReadFromDiscriminants::Toolbox => ImportToolBox::DOCS,
             ReadFromDiscriminants::TreeTagger => ImportTreeTagger::DOCS,
@@ -227,6 +230,10 @@ impl ReadFromDiscriminants {
             ReadFromDiscriminants::Toolbox => (
                 ImportToolBox::FIELD_NAMES_AS_SLICE,
                 ImportToolBox::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::RelAnnis => (
+                ImportRelAnnis::FIELD_NAMES_AS_SLICE,
+                ImportRelAnnis::FIELD_DOCS,
             ),
         };
         for (idx, n) in field_names.iter().enumerate() {

@@ -1,0 +1,296 @@
+0	0	1	token	sTok100	7	7	7	NULL	NULL	NULL	true	
+1	0	1	default_ns	sSpan103	7	7	NULL	phon1	0	0	true	NULL
+2	0	1	default_ns	sSpan1	7	7	NULL	NULL	NULL	NULL	true	NULL
+3	0	1	token	sTok101	8	8	8	NULL	NULL	NULL	true	
+4	0	1	token	sTok102	9	9	9	NULL	NULL	NULL	true	
+5	0	1	token	sTok103	10	10	10	NULL	NULL	NULL	true	
+6	0	1	token	sTok104	11	11	11	NULL	NULL	NULL	true	
+7	0	1	token	sTok105	12	12	12	NULL	NULL	NULL	true	
+8	0	1	token	sTok106	13	13	13	NULL	NULL	NULL	true	
+9	0	1	token	sTok107	14	14	14	NULL	NULL	NULL	true	
+10	0	1	token	sTok108	15	15	15	NULL	NULL	NULL	true	
+11	0	1	token	sTok109	16	16	16	NULL	NULL	NULL	true	
+12	0	1	token	sTok110	17	17	17	NULL	NULL	NULL	true	
+13	0	1	token	sTok111	18	18	18	NULL	NULL	NULL	true	
+14	0	1	token	sTok112	19	19	19	NULL	NULL	NULL	true	
+15	0	1	token	sTok113	20	20	20	NULL	NULL	NULL	true	
+16	0	1	token	sTok114	21	21	21	NULL	NULL	NULL	true	
+17	0	1	token	sTok115	22	22	22	NULL	NULL	NULL	true	
+18	0	1	token	sTok116	23	23	23	NULL	NULL	NULL	true	
+19	0	1	token	sTok117	24	24	24	NULL	NULL	NULL	true	
+20	0	1	token	sTok118	25	25	25	NULL	NULL	NULL	true	
+21	0	1	token	sTok119	26	26	26	NULL	NULL	NULL	true	
+22	0	1	token	sTok120	27	27	27	NULL	NULL	NULL	true	
+23	0	1	token	sTok121	28	28	28	NULL	NULL	NULL	true	
+24	0	1	token	sTok122	29	29	29	NULL	NULL	NULL	true	
+25	0	1	token	sTok123	30	30	30	NULL	NULL	NULL	true	
+26	0	1	default_ns	sSpan68	7	30	NULL	NULL	NULL	NULL	true	NULL
+27	0	1	default_ns	sSpan104	8	8	NULL	phon1	1	1	true	NULL
+28	0	1	default_ns	sSpan2	8	8	NULL	NULL	NULL	NULL	true	NULL
+29	0	1	default_ns	sSpan105	9	9	NULL	phon1	2	2	true	NULL
+30	0	1	default_ns	sSpan3	9	9	NULL	NULL	NULL	NULL	true	NULL
+31	0	1	default_ns	sSpan106	10	10	NULL	phon1	3	3	true	NULL
+32	0	1	default_ns	sSpan4	10	10	NULL	NULL	NULL	NULL	true	NULL
+33	0	1	default_ns	sSpan107	11	11	NULL	phon1	4	4	true	NULL
+34	0	1	default_ns	sSpan5	11	11	NULL	NULL	NULL	NULL	true	NULL
+35	0	1	default_ns	sSpan108	12	12	NULL	phon1	5	5	true	NULL
+36	0	1	default_ns	sSpan6	12	12	NULL	NULL	NULL	NULL	true	NULL
+37	0	1	default_ns	sSpan109	13	13	NULL	phon1	6	6	true	NULL
+38	0	1	default_ns	sSpan7	13	13	NULL	NULL	NULL	NULL	true	NULL
+39	0	1	default_ns	sSpan110	14	14	NULL	phon1	7	7	true	NULL
+40	0	1	default_ns	sSpan8	14	14	NULL	NULL	NULL	NULL	true	NULL
+41	0	1	default_ns	sSpan111	15	15	NULL	phon1	8	8	true	NULL
+42	0	1	default_ns	sSpan9	15	15	NULL	NULL	NULL	NULL	true	NULL
+43	0	1	default_ns	sSpan112	16	16	NULL	phon1	9	9	true	NULL
+44	0	1	default_ns	sSpan10	16	16	NULL	NULL	NULL	NULL	true	NULL
+45	0	1	default_ns	sSpan113	17	17	NULL	phon1	10	10	true	NULL
+46	0	1	default_ns	sSpan11	17	17	NULL	NULL	NULL	NULL	true	NULL
+47	0	1	default_ns	sSpan114	18	18	NULL	phon1	11	11	true	NULL
+48	0	1	default_ns	sSpan12	18	18	NULL	NULL	NULL	NULL	true	NULL
+49	0	1	default_ns	sSpan115	19	19	NULL	phon1	12	12	true	NULL
+50	0	1	default_ns	sSpan13	19	19	NULL	NULL	NULL	NULL	true	NULL
+51	0	1	default_ns	sSpan116	20	20	NULL	phon1	13	13	true	NULL
+52	0	1	default_ns	sSpan14	20	20	NULL	NULL	NULL	NULL	true	NULL
+53	0	1	default_ns	sSpan117	21	21	NULL	phon1	14	14	true	NULL
+54	0	1	default_ns	sSpan15	21	21	NULL	NULL	NULL	NULL	true	NULL
+55	0	1	default_ns	sSpan118	22	22	NULL	phon1	15	15	true	NULL
+56	0	1	default_ns	sSpan16	22	22	NULL	NULL	NULL	NULL	true	NULL
+57	0	1	default_ns	sSpan119	23	23	NULL	phon1	16	16	true	NULL
+58	0	1	default_ns	sSpan17	23	23	NULL	NULL	NULL	NULL	true	NULL
+59	0	1	default_ns	sSpan120	24	24	NULL	phon1	17	17	true	NULL
+60	0	1	default_ns	sSpan18	24	24	NULL	NULL	NULL	NULL	true	NULL
+61	0	1	default_ns	sSpan121	25	25	NULL	phon1	18	18	true	NULL
+62	0	1	default_ns	sSpan19	25	25	NULL	NULL	NULL	NULL	true	NULL
+63	0	1	default_ns	sSpan122	26	26	NULL	phon1	19	19	true	NULL
+64	0	1	default_ns	sSpan20	26	26	NULL	NULL	NULL	NULL	true	NULL
+65	0	1	default_ns	sSpan123	27	27	NULL	phon1	20	20	true	NULL
+66	0	1	default_ns	sSpan21	27	27	NULL	NULL	NULL	NULL	true	NULL
+67	0	1	default_ns	sSpan124	28	28	NULL	phon1	21	21	true	NULL
+68	0	1	default_ns	sSpan22	28	28	NULL	NULL	NULL	NULL	true	NULL
+69	0	1	default_ns	sSpan125	29	29	NULL	phon1	22	22	true	NULL
+70	0	1	default_ns	sSpan23	29	29	NULL	NULL	NULL	NULL	true	NULL
+71	0	1	default_ns	sSpan126	30	30	NULL	phon1	23	23	true	NULL
+72	0	1	default_ns	sSpan24	30	30	NULL	NULL	NULL	NULL	true	NULL
+73	0	1	token	sTok132	39	39	39	NULL	NULL	NULL	true	
+74	0	1	token	sTok133	40	40	40	NULL	NULL	NULL	true	
+75	0	1	token	sTok134	41	41	41	NULL	NULL	NULL	true	
+76	0	1	default_ns	sSpan127	39	41	NULL	phon1	24	24	true	NULL
+77	0	1	default_ns	sSpan25	39	41	NULL	NULL	NULL	NULL	true	NULL
+78	0	1	default_ns	sSpan69	39	41	NULL	NULL	NULL	NULL	true	NULL
+79	0	1	token	sTok124	31	31	31	NULL	NULL	NULL	true	
+80	0	1	token	sTok125	32	32	32	NULL	NULL	NULL	true	
+81	0	1	token	sTok126	33	33	33	NULL	NULL	NULL	true	
+82	0	1	token	sTok127	34	34	34	NULL	NULL	NULL	true	
+83	0	1	token	sTok128	35	35	35	NULL	NULL	NULL	true	
+84	0	1	token	sTok129	36	36	36	NULL	NULL	NULL	true	
+85	0	1	token	sTok130	37	37	37	NULL	NULL	NULL	true	
+86	0	1	token	sTok131	38	38	38	NULL	NULL	NULL	true	
+87	0	1	token	sTok135	42	42	42	NULL	NULL	NULL	true	
+88	0	1	default_ns	sSpan99	31	42	NULL	NULL	NULL	NULL	true	NULL
+89	0	1	token	sTok137	44	44	44	NULL	NULL	NULL	true	
+90	0	1	default_ns	sSpan128	44	44	NULL	phon1	25	25	true	NULL
+91	0	1	default_ns	sSpan26	44	44	NULL	NULL	NULL	NULL	true	NULL
+92	0	1	token	sTok138	45	45	45	NULL	NULL	NULL	true	
+93	0	1	token	sTok139	46	46	46	NULL	NULL	NULL	true	
+94	0	1	token	sTok140	47	47	47	NULL	NULL	NULL	true	
+95	0	1	token	sTok141	48	48	48	NULL	NULL	NULL	true	
+96	0	1	token	sTok142	49	49	49	NULL	NULL	NULL	true	
+97	0	1	token	sTok144	51	51	51	NULL	NULL	NULL	true	
+98	0	1	token	sTok145	52	52	52	NULL	NULL	NULL	true	
+99	0	1	token	sTok146	53	53	53	NULL	NULL	NULL	true	
+100	0	1	token	sTok147	54	54	54	NULL	NULL	NULL	true	
+101	0	1	token	sTok148	55	55	55	NULL	NULL	NULL	true	
+102	0	1	token	sTok149	56	56	56	NULL	NULL	NULL	true	
+103	0	1	token	sTok150	57	57	57	NULL	NULL	NULL	true	
+104	0	1	token	sTok152	59	59	59	NULL	NULL	NULL	true	
+105	0	1	token	sTok153	60	60	60	NULL	NULL	NULL	true	
+106	0	1	token	sTok154	61	61	61	NULL	NULL	NULL	true	
+107	0	1	token	sTok155	62	62	62	NULL	NULL	NULL	true	
+108	0	1	token	sTok156	63	63	63	NULL	NULL	NULL	true	
+109	0	1	default_ns	sSpan70	44	63	NULL	NULL	NULL	NULL	true	NULL
+110	0	1	default_ns	sSpan129	45	45	NULL	phon1	26	26	true	NULL
+111	0	1	default_ns	sSpan27	45	45	NULL	NULL	NULL	NULL	true	NULL
+112	0	1	default_ns	sSpan130	46	46	NULL	phon1	27	27	true	NULL
+113	0	1	default_ns	sSpan28	46	46	NULL	NULL	NULL	NULL	true	NULL
+114	0	1	default_ns	sSpan131	47	47	NULL	phon1	28	28	true	NULL
+115	0	1	default_ns	sSpan29	47	47	NULL	NULL	NULL	NULL	true	NULL
+116	0	1	default_ns	sSpan132	48	48	NULL	phon1	29	29	true	NULL
+117	0	1	default_ns	sSpan30	48	48	NULL	NULL	NULL	NULL	true	NULL
+118	0	1	default_ns	sSpan133	49	49	NULL	phon1	30	30	true	NULL
+119	0	1	default_ns	sSpan31	49	49	NULL	NULL	NULL	NULL	true	NULL
+120	0	1	default_ns	sSpan134	51	51	NULL	phon1	31	31	true	NULL
+121	0	1	default_ns	sSpan32	51	51	NULL	NULL	NULL	NULL	true	NULL
+122	0	1	default_ns	sSpan135	52	52	NULL	phon1	32	32	true	NULL
+123	0	1	default_ns	sSpan33	52	52	NULL	NULL	NULL	NULL	true	NULL
+124	0	1	default_ns	sSpan136	53	53	NULL	phon1	33	33	true	NULL
+125	0	1	default_ns	sSpan34	53	53	NULL	NULL	NULL	NULL	true	NULL
+126	0	1	default_ns	sSpan137	54	54	NULL	phon1	34	34	true	NULL
+127	0	1	default_ns	sSpan35	54	54	NULL	NULL	NULL	NULL	true	NULL
+128	0	1	default_ns	sSpan138	55	55	NULL	phon1	35	35	true	NULL
+129	0	1	default_ns	sSpan36	55	55	NULL	NULL	NULL	NULL	true	NULL
+130	0	1	default_ns	sSpan139	56	56	NULL	phon1	36	36	true	NULL
+131	0	1	default_ns	sSpan37	56	56	NULL	NULL	NULL	NULL	true	NULL
+132	0	1	default_ns	sSpan140	57	57	NULL	phon1	37	37	true	NULL
+133	0	1	default_ns	sSpan38	57	57	NULL	NULL	NULL	NULL	true	NULL
+134	0	1	default_ns	sSpan141	59	59	NULL	phon1	38	38	true	NULL
+135	0	1	default_ns	sSpan39	59	59	NULL	NULL	NULL	NULL	true	NULL
+136	0	1	default_ns	sSpan142	60	60	NULL	phon1	39	39	true	NULL
+137	0	1	default_ns	sSpan40	60	60	NULL	NULL	NULL	NULL	true	NULL
+138	0	1	default_ns	sSpan143	61	61	NULL	phon1	40	40	true	NULL
+139	0	1	default_ns	sSpan41	61	61	NULL	NULL	NULL	NULL	true	NULL
+140	0	1	default_ns	sSpan144	62	62	NULL	phon1	41	41	true	NULL
+141	0	1	default_ns	sSpan42	62	62	NULL	NULL	NULL	NULL	true	NULL
+142	0	1	default_ns	sSpan145	63	63	NULL	phon1	42	42	true	NULL
+143	0	1	token	sTok160	67	67	67	NULL	NULL	NULL	true	
+144	0	1	default_ns	sSpan146	67	67	NULL	phon1	43	43	true	NULL
+145	0	1	default_ns	sSpan43	67	67	NULL	NULL	NULL	NULL	true	NULL
+146	0	1	default_ns	sSpan71	67	67	NULL	NULL	NULL	NULL	true	NULL
+147	0	1	token	sTok161	68	68	68	NULL	NULL	NULL	true	
+148	0	1	default_ns	sSpan147	68	68	NULL	phon1	44	44	true	NULL
+149	0	1	default_ns	sSpan44	68	68	NULL	NULL	NULL	NULL	true	NULL
+150	0	1	token	sTok162	69	69	69	NULL	NULL	NULL	true	
+151	0	1	token	sTok163	70	70	70	NULL	NULL	NULL	true	
+152	0	1	token	sTok164	71	71	71	NULL	NULL	NULL	true	
+153	0	1	token	sTok165	72	72	72	NULL	NULL	NULL	true	
+154	0	1	default_ns	sSpan72	68	72	NULL	NULL	NULL	NULL	true	NULL
+155	0	1	default_ns	sSpan148	69	69	NULL	phon1	45	45	true	NULL
+156	0	1	default_ns	sSpan45	69	69	NULL	NULL	NULL	NULL	true	NULL
+157	0	1	default_ns	sSpan149	70	70	NULL	phon1	46	46	true	NULL
+158	0	1	default_ns	sSpan46	70	70	NULL	NULL	NULL	NULL	true	NULL
+159	0	1	default_ns	sSpan150	71	71	NULL	phon1	47	47	true	NULL
+160	0	1	default_ns	sSpan47	71	71	NULL	NULL	NULL	NULL	true	NULL
+161	0	1	default_ns	sSpan151	72	72	NULL	phon1	48	48	true	NULL
+162	0	1	default_ns	sSpan48	72	72	NULL	NULL	NULL	NULL	true	NULL
+163	0	1	token	sTok167	74	74	74	NULL	NULL	NULL	true	
+164	0	1	default_ns	sSpan152	74	74	NULL	phon1	49	49	true	NULL
+165	0	1	default_ns	sSpan49	74	74	NULL	NULL	NULL	NULL	true	NULL
+166	0	1	token	sTok168	75	75	75	NULL	NULL	NULL	true	
+167	0	1	token	sTok169	76	76	76	NULL	NULL	NULL	true	
+168	0	1	token	sTok170	77	77	77	NULL	NULL	NULL	true	
+169	0	1	token	sTok171	78	78	78	NULL	NULL	NULL	true	
+170	0	1	token	sTok172	79	79	79	NULL	NULL	NULL	true	
+171	0	1	token	sTok173	80	80	80	NULL	NULL	NULL	true	
+172	0	1	token	sTok176	83	83	83	NULL	NULL	NULL	true	
+173	0	1	token	sTok177	84	84	84	NULL	NULL	NULL	true	
+174	0	1	token	sTok178	85	85	85	NULL	NULL	NULL	true	
+175	0	1	token	sTok180	87	87	87	NULL	NULL	NULL	true	
+176	0	1	token	sTok181	88	88	88	NULL	NULL	NULL	true	
+177	0	1	token	sTok182	89	89	89	NULL	NULL	NULL	true	
+178	0	1	token	sTok183	90	90	90	NULL	NULL	NULL	true	
+179	0	1	token	sTok184	91	91	91	NULL	NULL	NULL	true	
+180	0	1	token	sTok185	92	92	92	NULL	NULL	NULL	true	
+181	0	1	token	sTok175	82	82	82	NULL	NULL	NULL	true	
+182	0	1	default_ns	sSpan73	74	92	NULL	NULL	NULL	NULL	true	NULL
+183	0	1	default_ns	sSpan153	75	75	NULL	phon1	50	50	true	NULL
+184	0	1	default_ns	sSpan50	75	75	NULL	NULL	NULL	NULL	true	NULL
+185	0	1	default_ns	sSpan154	76	76	NULL	phon1	51	51	true	NULL
+186	0	1	default_ns	sSpan51	76	76	NULL	NULL	NULL	NULL	true	NULL
+187	0	1	default_ns	sSpan155	77	77	NULL	phon1	52	52	true	NULL
+188	0	1	default_ns	sSpan52	77	77	NULL	NULL	NULL	NULL	true	NULL
+189	0	1	default_ns	sSpan156	78	78	NULL	phon1	53	53	true	NULL
+190	0	1	default_ns	sSpan53	78	78	NULL	NULL	NULL	NULL	true	NULL
+191	0	1	default_ns	sSpan157	79	79	NULL	phon1	54	54	true	NULL
+192	0	1	default_ns	sSpan54	79	79	NULL	NULL	NULL	NULL	true	NULL
+193	0	1	default_ns	sSpan158	80	80	NULL	phon1	55	55	true	NULL
+194	0	1	default_ns	sSpan55	80	80	NULL	NULL	NULL	NULL	true	NULL
+195	0	1	default_ns	sSpan159	83	83	NULL	phon1	56	56	true	NULL
+196	0	1	default_ns	sSpan56	83	83	NULL	NULL	NULL	NULL	true	NULL
+197	0	1	default_ns	sSpan160	84	84	NULL	phon1	57	57	true	NULL
+198	0	1	default_ns	sSpan57	84	84	NULL	NULL	NULL	NULL	true	NULL
+199	0	1	default_ns	sSpan161	85	85	NULL	phon1	58	58	true	NULL
+200	0	1	default_ns	sSpan58	85	85	NULL	NULL	NULL	NULL	true	NULL
+201	0	1	default_ns	sSpan162	87	87	NULL	phon1	59	59	true	NULL
+202	0	1	default_ns	sSpan59	87	87	NULL	NULL	NULL	NULL	true	NULL
+203	0	1	default_ns	sSpan163	88	88	NULL	phon1	60	60	true	NULL
+204	0	1	default_ns	sSpan60	88	88	NULL	NULL	NULL	NULL	true	NULL
+205	0	1	default_ns	sSpan164	89	89	NULL	phon1	61	61	true	NULL
+206	0	1	default_ns	sSpan61	89	89	NULL	NULL	NULL	NULL	true	NULL
+207	0	1	default_ns	sSpan165	90	90	NULL	phon1	62	62	true	NULL
+208	0	1	default_ns	sSpan62	90	90	NULL	NULL	NULL	NULL	true	NULL
+209	0	1	default_ns	sSpan166	91	91	NULL	phon1	63	63	true	NULL
+210	0	1	default_ns	sSpan63	91	91	NULL	NULL	NULL	NULL	true	NULL
+211	0	1	default_ns	sSpan167	92	92	NULL	phon1	64	64	true	NULL
+212	0	1	default_ns	sSpan64	92	92	NULL	NULL	NULL	NULL	true	NULL
+213	0	1	token	sTok186	93	93	93	NULL	NULL	NULL	true	
+214	0	1	default_ns	sSpan168	93	93	NULL	phon1	65	65	true	NULL
+215	0	1	default_ns	sSpan65	93	93	NULL	NULL	NULL	NULL	true	NULL
+216	0	1	default_ns	sSpan74	93	93	NULL	NULL	NULL	NULL	true	NULL
+217	0	1	token	sTok189	96	96	96	NULL	NULL	NULL	true	
+218	0	1	token	sTok190	97	97	97	NULL	NULL	NULL	true	
+219	0	1	default_ns	sSpan169	96	97	NULL	phon1	66	66	true	NULL
+220	0	1	default_ns	sSpan66	96	97	NULL	NULL	NULL	NULL	true	NULL
+221	0	1	token	sTok191	98	98	98	NULL	NULL	NULL	true	
+222	0	1	default_ns	sSpan75	96	98	NULL	NULL	NULL	NULL	true	NULL
+223	0	1	token	sTok187	94	94	94	NULL	NULL	NULL	true	
+224	0	1	token	sTok192	99	99	99	NULL	NULL	NULL	true	
+225	0	1	default_ns	sSpan102	94	99	NULL	NULL	NULL	NULL	true	NULL
+226	0	1	default_ns	sSpan170	98	98	NULL	phon1	67	67	true	NULL
+227	0	1	default_ns	sSpan67	98	98	NULL	NULL	NULL	NULL	true	NULL
+228	0	1	default_ns	sSpan97	97	99	NULL	NULL	NULL	NULL	true	NULL
+229	0	1	token	sTok93	0	0	0	NULL	NULL	NULL	true	
+230	0	1	default_ns	sSpan171	0	0	NULL	phon0	0	0	true	NULL
+231	0	1	default_ns	sSpan76	0	0	NULL	NULL	NULL	NULL	true	NULL
+232	0	1	token	sTok94	1	1	1	NULL	NULL	NULL	true	
+233	0	1	token	sTok95	2	2	2	NULL	NULL	NULL	true	
+234	0	1	token	sTok96	3	3	3	NULL	NULL	NULL	true	
+235	0	1	token	sTok97	4	4	4	NULL	NULL	NULL	true	
+236	0	1	token	sTok98	5	5	5	NULL	NULL	NULL	true	
+237	0	1	default_ns	sSpan98	0	5	NULL	NULL	NULL	NULL	true	NULL
+238	0	1	default_ns	sSpan172	1	1	NULL	phon0	1	1	true	NULL
+239	0	1	default_ns	sSpan173	2	2	NULL	phon0	2	2	true	NULL
+240	0	1	default_ns	sSpan77	2	2	NULL	NULL	NULL	NULL	true	NULL
+241	0	1	default_ns	sSpan174	3	3	NULL	phon0	3	3	true	NULL
+242	0	1	default_ns	sSpan78	3	3	NULL	NULL	NULL	NULL	true	NULL
+243	0	1	default_ns	sSpan175	4	4	NULL	phon0	4	4	true	NULL
+244	0	1	default_ns	sSpan79	4	4	NULL	NULL	NULL	NULL	true	NULL
+245	0	1	default_ns	sSpan176	5	5	NULL	phon0	5	5	true	NULL
+246	0	1	default_ns	sSpan80	5	5	NULL	NULL	NULL	NULL	true	NULL
+247	0	1	token	sTok99	6	6	6	NULL	NULL	NULL	true	
+248	0	1	default_ns	sSpan177	6	6	NULL	phon0	6	6	true	NULL
+249	0	1	default_ns	sSpan178	31	31	NULL	phon0	7	7	true	NULL
+250	0	1	default_ns	sSpan81	31	31	NULL	NULL	NULL	NULL	true	NULL
+251	0	1	default_ns	sSpan179	32	32	NULL	phon0	8	8	true	NULL
+252	0	1	default_ns	sSpan82	32	32	NULL	NULL	NULL	NULL	true	NULL
+253	0	1	default_ns	sSpan180	33	33	NULL	phon0	9	9	true	NULL
+254	0	1	default_ns	sSpan83	33	33	NULL	NULL	NULL	NULL	true	NULL
+255	0	1	default_ns	sSpan181	34	34	NULL	phon0	10	10	true	NULL
+256	0	1	default_ns	sSpan84	34	34	NULL	NULL	NULL	NULL	true	NULL
+257	0	1	default_ns	sSpan182	35	35	NULL	phon0	11	11	true	NULL
+258	0	1	default_ns	sSpan85	35	35	NULL	NULL	NULL	NULL	true	NULL
+259	0	1	default_ns	sSpan183	36	36	NULL	phon0	12	12	true	NULL
+260	0	1	default_ns	sSpan86	36	36	NULL	NULL	NULL	NULL	true	NULL
+261	0	1	default_ns	sSpan184	37	37	NULL	phon0	13	13	true	NULL
+262	0	1	default_ns	sSpan87	37	37	NULL	NULL	NULL	NULL	true	NULL
+263	0	1	default_ns	sSpan185	38	38	NULL	phon0	14	14	true	NULL
+264	0	1	default_ns	sSpan88	38	38	NULL	NULL	NULL	NULL	true	NULL
+265	0	1	default_ns	sSpan186	39	39	NULL	phon0	15	15	true	NULL
+266	0	1	default_ns	sSpan89	39	39	NULL	NULL	NULL	NULL	true	NULL
+267	0	1	default_ns	sSpan187	40	40	NULL	phon0	16	16	true	NULL
+268	0	1	default_ns	sSpan90	40	40	NULL	NULL	NULL	NULL	true	NULL
+269	0	1	default_ns	sSpan188	41	42	NULL	phon0	17	17	true	NULL
+270	0	1	default_ns	sSpan91	41	42	NULL	NULL	NULL	NULL	true	NULL
+271	0	1	token	sTok158	65	65	65	NULL	NULL	NULL	true	
+272	0	1	default_ns	sSpan189	65	65	NULL	phon0	18	18	true	NULL
+273	0	1	default_ns	sSpan92	65	65	NULL	NULL	NULL	NULL	true	NULL
+274	0	1	default_ns	sSpan100	65	65	NULL	NULL	NULL	NULL	true	NULL
+275	0	1	token	sTok166	73	73	73	NULL	NULL	NULL	true	
+276	0	1	default_ns	sSpan190	73	73	NULL	phon0	19	19	true	NULL
+277	0	1	default_ns	sSpan93	73	73	NULL	NULL	NULL	NULL	true	NULL
+278	0	1	default_ns	sSpan101	73	73	NULL	NULL	NULL	NULL	true	NULL
+279	0	1	default_ns	sSpan191	82	82	NULL	phon0	20	20	true	NULL
+280	0	1	default_ns	sSpan94	82	82	NULL	NULL	NULL	NULL	true	NULL
+281	0	1	default_ns	sSpan192	94	94	NULL	phon0	21	21	true	NULL
+282	0	1	default_ns	sSpan95	94	94	NULL	NULL	NULL	NULL	true	NULL
+283	0	1	default_ns	sSpan193	96	96	NULL	phon0	22	22	true	NULL
+284	0	1	default_ns	sSpan96	96	96	NULL	NULL	NULL	NULL	true	NULL
+285	0	1	default_ns	sSpan194	97	99	NULL	phon0	23	23	true	NULL
+286	0	1	token	sTok136	43	43	43	NULL	NULL	NULL	true	
+287	0	1	token	sTok143	50	50	50	NULL	NULL	NULL	true	
+288	0	1	token	sTok151	58	58	58	NULL	NULL	NULL	true	
+289	0	1	token	sTok157	64	64	64	NULL	NULL	NULL	true	
+290	0	1	token	sTok159	66	66	66	NULL	NULL	NULL	true	
+291	0	1	token	sTok174	81	81	81	NULL	NULL	NULL	true	
+292	0	1	token	sTok179	86	86	86	NULL	NULL	NULL	true	
+293	0	1	token	sTok188	95	95	95	NULL	NULL	NULL	true	
+294	0	1	token	sTok193	100	100	100	NULL	NULL	NULL	true	
+295	0	1	token	sTok194	101	101	101	NULL	NULL	NULL	true	
