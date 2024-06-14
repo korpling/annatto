@@ -112,18 +112,17 @@ pub const NODE_NAME_ENCODE_SET: &AsciiSet = &CONTROLS
 const TOK_WHITESPACE_BEFORE: &str = "tok-whitespace-before";
 const TOK_WHITESPACE_AFTER: &str = "tok-whitespace-after";
 
-/// Creates a byte array key from a vector of strings.
+/// Creates a byte array key from a string.
 ///
-/// The strings are terminated with `\0`.
-pub fn create_str_vec_key(val: &[&str]) -> KeyVec {
+/// The string is terminated with `\0`.
+pub fn create_str_key(val: &str) -> KeyVec {
     let mut result: KeyVec = KeyVec::default();
-    for v in val {
-        // append null-terminated string to result
-        for b in v.as_bytes() {
-            result.push(*b)
-        }
-        result.push(0);
+    // append null-terminated string to result
+    for b in val.as_bytes() {
+        result.push(*b)
     }
+    result.push(0);
+
     result
 }
 
@@ -138,7 +137,7 @@ pub struct TextProperty {
 impl KeySerializer for TextProperty {
     fn create_key(&self) -> KeyVec {
         let mut result = KeyVec::new();
-        result.extend(create_str_vec_key(&[&self.segmentation]));
+        result.extend(create_str_key(&self.segmentation));
         result.extend(self.corpus_id.to_be_bytes());
         result.extend(self.text_id.to_be_bytes());
         result.extend(self.val.to_be_bytes());
