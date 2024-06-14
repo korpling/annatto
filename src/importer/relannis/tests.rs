@@ -4,9 +4,10 @@ use insta::assert_snapshot;
 
 #[test]
 fn import_salt_sample_relannis() {
+    let corpus_path = Path::new("tests/data/import/relannis/SaltSampleCorpus/");
     let actual = import_as_graphml_string_2(
         ImportRelAnnis::default(),
-        Path::new("tests/data/import/relannis/SaltSampleCorpus/"),
+        corpus_path,
         Some(
             r#"
         [[visualizers]]
@@ -44,5 +45,57 @@ fn import_salt_sample_relannis() {
     )
     .unwrap();
 
-    assert_snapshot!(actual);
+    let path_to_remove =
+        pathdiff::diff_paths(std::env::current_dir().unwrap(), corpus_path).unwrap();
+    let path_to_remove = path_to_remove.to_str().unwrap();
+    insta::with_settings!({filters => vec![
+        (path_to_remove, "[PROJECT_DIR]"),
+    ]}, {
+        assert_snapshot!(actual);
+    });
+}
+
+#[test]
+fn text_property_key_serializer() {
+    let expected = TextProperty {
+        segmentation: "".to_string(),
+        corpus_id: 123,
+        text_id: 1,
+        val: 42,
+    };
+
+    // Serialize and unserialize the key, check they are the same
+    let key = expected.create_key();
+    let actual = TextProperty::parse_key(&key).unwrap();
+
+    assert_eq!(actual, expected);
+}
+
+#[test]
+fn text_key_serializer() {
+    let expected = TextKey {
+        id: 123,
+        corpus_ref: Some(42),
+    };
+
+    // Serialize and unserialize the key, check they are the same
+    let key = expected.create_key();
+    let actual = TextKey::parse_key(&key).unwrap();
+
+    assert_eq!(actual, expected);
+}
+
+#[test]
+fn node_by_text_entry_serializer() {
+    let expected = NodeByTextEntry {
+        corpus_ref: 123,
+        node_id: 42,
+        text_id: 1,
+    };
+
+    // Serialize and unserialize the key, check they are the same
+    let key = expected.create_key();
+    let actual = NodeByTextEntry::parse_key(&key).unwrap();
+
+    assert_eq!(actual, expected);
 }
