@@ -262,6 +262,17 @@ fn text_key_serializer() {
     let actual = TextKey::parse_key(&key).unwrap();
 
     assert_eq!(actual, expected);
+
+    let expected = TextKey {
+        id: 123,
+        corpus_ref: None,
+    };
+
+    // Serialize and unserialize the key, check they are the same
+    let key = expected.create_key();
+    let actual = TextKey::parse_key(&key).unwrap();
+
+    assert_eq!(actual, expected);
 }
 
 #[test]
