@@ -88,6 +88,39 @@ fn import_order_relation() {
 }
 
 #[test]
+fn import_legacy_format() {
+    let corpus_path = Path::new("tests/data/import/relannis/dialog.demo/");
+    let actual = import_as_graphml_string_2(
+        ImportRelAnnis::default(),
+        corpus_path,
+        Some(
+            r#"
+            [[visualizers]]
+            element = "node"
+            vis_type = "grid"
+            display_name = "speakers (grid)"
+            visibility = "permanent"
+
+            [visualizers.mappings]
+            hide_tok = "true"
+        "#,
+        ),
+        false,
+        None,
+    )
+    .unwrap();
+
+    let path_to_remove =
+        pathdiff::diff_paths(std::env::current_dir().unwrap(), corpus_path).unwrap();
+    let path_to_remove = path_to_remove.to_str().unwrap();
+    insta::with_settings!({filters => vec![
+        (path_to_remove, "[PROJECT_DIR]"),
+    ]}, {
+        assert_snapshot!(actual);
+    });
+}
+
+#[test]
 fn import_corpus_with_escaped_id() {
     let corpus_path = Path::new("tests/data/import/relannis/testIDEscape/");
     let actual = import_as_graphml_string_2(
@@ -156,6 +189,18 @@ fn invalid_column() {
     assert_eq!(
         actual.err().unwrap().to_string(),
         "missing column at position 12 (span) in file node.annis"
+    );
+}
+
+#[test]
+fn fail_on_null_column() {
+    let path = Path::new("node.annis");
+    let record = StringRecord::from(vec!["0", "NULL", "NULL", "default_ns", "sTok1"]);
+    let actual = get_field_not_null(&record, 1, "span", path);
+    assert!(actual.is_err());
+    assert_eq!(
+        actual.err().unwrap().to_string(),
+        "unexpected value NULL in column 1 (span) in file node.annis at line <unknown>"
     );
 }
 
