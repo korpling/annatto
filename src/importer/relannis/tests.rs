@@ -1,7 +1,7 @@
-use std::sync::mpsc::{self, Sender};
+use std::sync::mpsc::{self};
 
 use super::*;
-use crate::{test_util::import_as_graphml_string_2, StepID};
+use crate::test_util::import_as_graphml_string_2;
 use csv::StringRecord;
 use insta::assert_snapshot;
 use pretty_assertions::assert_eq;
