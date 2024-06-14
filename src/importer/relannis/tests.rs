@@ -1,7 +1,7 @@
 use std::sync::mpsc::{self};
 
 use super::*;
-use crate::test_util::import_as_graphml_string_2;
+use crate::{test_util::import_as_graphml_string_2, workflow};
 use csv::StringRecord;
 use insta::assert_snapshot;
 use pretty_assertions::assert_eq;
@@ -288,4 +288,15 @@ fn node_by_text_entry_serializer() {
     let actual = NodeByTextEntry::parse_key(&key).unwrap();
 
     assert_eq!(actual, expected);
+}
+
+#[test]
+fn parse_relannis_workflow() {
+    let r = workflow::execute_from_file(Path::new("./tests/workflows/relannis.toml"), true, None);
+    // This should fail, because the input directory does not exist
+    assert_eq!(true, r.is_err());
+    assert_eq!(
+        r#"Error during importing corpus to ../data/import/relannis/does-not-exist with "import_relannis": "directory ./tests/workflows/../data/import/relannis/does-not-exist not found""#,
+        r.err().unwrap().to_string()
+    )
 }
