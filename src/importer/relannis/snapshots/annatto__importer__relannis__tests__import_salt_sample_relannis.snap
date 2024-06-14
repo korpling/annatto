@@ -7,15 +7,16 @@ expression: actual
     <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>
     <key id="k1" for="node" attr.name="default_ns::Inf-Struct" attr.type="string"/>
     <key id="k2" for="node" attr.name="default_ns::const" attr.type="string"/>
-    <key id="k3" for="node" attr.name="annis::doc" attr.type="string"/>
-    <key id="k4" for="node" attr.name="annis::file" attr.type="string"/>
-    <key id="k5" for="node" attr.name="annis::layer" attr.type="string"/>
-    <key id="k6" for="node" attr.name="salt::lemma" attr.type="string"/>
-    <key id="k7" for="node" attr.name="annis::node_type" attr.type="string"/>
-    <key id="k8" for="node" attr.name="salt::pos" attr.type="string"/>
-    <key id="k9" for="node" attr.name="annis::relannis-version" attr.type="string"/>
-    <key id="k10" for="node" attr.name="annis::tok" attr.type="string"/>
-    <key id="k11" for="node" attr.name="annis::tok-whitespace-after" attr.type="string"/>
+    <key id="k3" for="node" attr.name="default_ns::description" attr.type="string"/>
+    <key id="k4" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k5" for="node" attr.name="annis::file" attr.type="string"/>
+    <key id="k6" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k7" for="node" attr.name="salt::lemma" attr.type="string"/>
+    <key id="k8" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k9" for="node" attr.name="salt::pos" attr.type="string"/>
+    <key id="k10" for="node" attr.name="annis::relannis-version" attr.type="string"/>
+    <key id="k11" for="node" attr.name="annis::tok" attr.type="string"/>
+    <key id="k12" for="node" attr.name="annis::tok-whitespace-after" attr.type="string"/>
     <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
         <data key="k0"><![CDATA[
         [[visualizers]]
@@ -48,710 +49,711 @@ expression: actual
         visibility = "hidden"
         ]]></data>
         <node id="SaltSampleCorpus/subCorpus2/doc3#sTok7">
-            <data key="k10">it</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">it</data>
-            <data key="k7">node</data>
-            <data key="k8">PRP</data>
+            <data key="k11">it</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">it</data>
+            <data key="k8">node</data>
+            <data key="k9">PRP</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#sSpan3">
-            <data key="k5">default_ns</data>
-            <data key="k7">node</data>
+            <data key="k6">default_ns</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#IS_span1">
             <data key="k1">contrast-focus</data>
-            <data key="k5">default_ns</data>
-            <data key="k7">node</data>
+            <data key="k6">default_ns</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#sTok1">
-            <data key="k10">Is</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">be</data>
-            <data key="k7">node</data>
-            <data key="k8">VBZ</data>
+            <data key="k11">Is</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">be</data>
+            <data key="k8">node</data>
+            <data key="k9">VBZ</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#IS_span2">
             <data key="k1">topic</data>
-            <data key="k5">default_ns</data>
-            <data key="k7">node</data>
+            <data key="k6">default_ns</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#sTok4">
-            <data key="k10">more</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">more</data>
-            <data key="k7">node</data>
-            <data key="k8">RBR</data>
+            <data key="k11">more</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">more</data>
+            <data key="k8">node</data>
+            <data key="k9">RBR</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#sTok5">
-            <data key="k10">complicated</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">complicated</data>
-            <data key="k7">node</data>
-            <data key="k8">JJ</data>
+            <data key="k11">complicated</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">complicated</data>
+            <data key="k8">node</data>
+            <data key="k9">JJ</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#sTok6">
-            <data key="k10">than</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">than</data>
-            <data key="k7">node</data>
-            <data key="k8">IN</data>
+            <data key="k11">than</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">than</data>
+            <data key="k8">node</data>
+            <data key="k9">IN</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#sTok8">
-            <data key="k10">appears</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">appear</data>
-            <data key="k7">node</data>
-            <data key="k8">VBZ</data>
+            <data key="k11">appears</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">appear</data>
+            <data key="k8">node</data>
+            <data key="k9">VBZ</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#sTok9">
-            <data key="k10">to</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">to</data>
-            <data key="k7">node</data>
-            <data key="k8">TO</data>
+            <data key="k11">to</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">to</data>
+            <data key="k8">node</data>
+            <data key="k9">TO</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#sTok10">
-            <data key="k10">be</data>
-            <data key="k11"></data>
-            <data key="k5">morphology</data>
-            <data key="k6">be</data>
-            <data key="k7">node</data>
-            <data key="k8">VB</data>
+            <data key="k11">be</data>
+            <data key="k12"></data>
+            <data key="k6">morphology</data>
+            <data key="k7">be</data>
+            <data key="k8">node</data>
+            <data key="k9">VB</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#sTok11">
-            <data key="k10">?</data>
-            <data key="k11"></data>
-            <data key="k5">morphology</data>
-            <data key="k6">?</data>
-            <data key="k7">node</data>
-            <data key="k8">.</data>
+            <data key="k11">?</data>
+            <data key="k12"></data>
+            <data key="k6">morphology</data>
+            <data key="k7">?</data>
+            <data key="k8">node</data>
+            <data key="k9">.</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#structure1">
             <data key="k2">ROOT</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#structure2">
             <data key="k2">SQ</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#structure3">
             <data key="k2">NP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#sTok2">
-            <data key="k10">this</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">this</data>
-            <data key="k7">node</data>
-            <data key="k8">DT</data>
+            <data key="k11">this</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">this</data>
+            <data key="k8">node</data>
+            <data key="k9">DT</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#sTok3">
-            <data key="k10">example</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">example</data>
-            <data key="k7">node</data>
-            <data key="k8">NN</data>
+            <data key="k11">example</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">example</data>
+            <data key="k8">node</data>
+            <data key="k9">NN</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#structure4">
             <data key="k2">ADJP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#structure5">
             <data key="k2">ADJP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#structure6">
             <data key="k2">SBar</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#structure7">
             <data key="k2">S</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#structure8">
             <data key="k2">NP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#structure9">
             <data key="k2">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#structure10">
             <data key="k2">S</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#structure11">
             <data key="k2">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#structure12">
             <data key="k2">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#sTok7">
-            <data key="k10">it</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">it</data>
-            <data key="k7">node</data>
-            <data key="k8">PRP</data>
+            <data key="k11">it</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">it</data>
+            <data key="k8">node</data>
+            <data key="k9">PRP</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#sSpan3">
-            <data key="k5">default_ns</data>
-            <data key="k7">node</data>
+            <data key="k6">default_ns</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#IS_span1">
             <data key="k1">contrast-focus</data>
-            <data key="k5">default_ns</data>
-            <data key="k7">node</data>
+            <data key="k6">default_ns</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#IS_span2">
             <data key="k1">topic</data>
-            <data key="k5">default_ns</data>
-            <data key="k7">node</data>
+            <data key="k6">default_ns</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#sTok8">
-            <data key="k10">appears</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">appear</data>
-            <data key="k7">node</data>
-            <data key="k8">VBZ</data>
+            <data key="k11">appears</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">appear</data>
+            <data key="k8">node</data>
+            <data key="k9">VBZ</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#sTok9">
-            <data key="k10">to</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">to</data>
-            <data key="k7">node</data>
-            <data key="k8">TO</data>
+            <data key="k11">to</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">to</data>
+            <data key="k8">node</data>
+            <data key="k9">TO</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#sTok10">
-            <data key="k10">be</data>
-            <data key="k11"></data>
-            <data key="k5">morphology</data>
-            <data key="k6">be</data>
-            <data key="k7">node</data>
-            <data key="k8">VB</data>
+            <data key="k11">be</data>
+            <data key="k12"></data>
+            <data key="k6">morphology</data>
+            <data key="k7">be</data>
+            <data key="k8">node</data>
+            <data key="k9">VB</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#sTok11">
-            <data key="k10">?</data>
-            <data key="k11"></data>
-            <data key="k5">morphology</data>
-            <data key="k6">?</data>
-            <data key="k7">node</data>
-            <data key="k8">.</data>
+            <data key="k11">?</data>
+            <data key="k12"></data>
+            <data key="k6">morphology</data>
+            <data key="k7">?</data>
+            <data key="k8">node</data>
+            <data key="k9">.</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#sTok7">
-            <data key="k10">it</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">it</data>
-            <data key="k7">node</data>
-            <data key="k8">PRP</data>
+            <data key="k11">it</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">it</data>
+            <data key="k8">node</data>
+            <data key="k9">PRP</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#sSpan3">
-            <data key="k5">default_ns</data>
-            <data key="k7">node</data>
+            <data key="k6">default_ns</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#structure1">
             <data key="k2">ROOT</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#structure2">
             <data key="k2">SQ</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#sTok1">
-            <data key="k10">Is</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">be</data>
-            <data key="k7">node</data>
-            <data key="k8">VBZ</data>
+            <data key="k11">Is</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">be</data>
+            <data key="k8">node</data>
+            <data key="k9">VBZ</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#structure3">
             <data key="k2">NP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#sTok2">
-            <data key="k10">this</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">this</data>
-            <data key="k7">node</data>
-            <data key="k8">DT</data>
+            <data key="k11">this</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">this</data>
+            <data key="k8">node</data>
+            <data key="k9">DT</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#sTok3">
-            <data key="k10">example</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">example</data>
-            <data key="k7">node</data>
-            <data key="k8">NN</data>
+            <data key="k11">example</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">example</data>
+            <data key="k8">node</data>
+            <data key="k9">NN</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#structure4">
             <data key="k2">ADJP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#structure5">
             <data key="k2">ADJP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#sTok4">
-            <data key="k10">more</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">more</data>
-            <data key="k7">node</data>
-            <data key="k8">RBR</data>
+            <data key="k11">more</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">more</data>
+            <data key="k8">node</data>
+            <data key="k9">RBR</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#sTok5">
-            <data key="k10">complicated</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">complicated</data>
-            <data key="k7">node</data>
-            <data key="k8">JJ</data>
+            <data key="k11">complicated</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">complicated</data>
+            <data key="k8">node</data>
+            <data key="k9">JJ</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#structure6">
             <data key="k2">SBar</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#sTok6">
-            <data key="k10">than</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">than</data>
-            <data key="k7">node</data>
-            <data key="k8">IN</data>
+            <data key="k11">than</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">than</data>
+            <data key="k8">node</data>
+            <data key="k9">IN</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#structure7">
             <data key="k2">S</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#structure8">
             <data key="k2">NP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#structure9">
             <data key="k2">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#structure10">
             <data key="k2">S</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#structure11">
             <data key="k2">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#structure12">
             <data key="k2">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#sTok7">
-            <data key="k10">it</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">it</data>
-            <data key="k7">node</data>
-            <data key="k8">PRP</data>
+            <data key="k11">it</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">it</data>
+            <data key="k8">node</data>
+            <data key="k9">PRP</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#sSpan3">
-            <data key="k5">default_ns</data>
-            <data key="k7">node</data>
+            <data key="k6">default_ns</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#IS_span1">
             <data key="k1">contrast-focus</data>
-            <data key="k5">default_ns</data>
-            <data key="k7">node</data>
+            <data key="k6">default_ns</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#sTok1">
-            <data key="k10">Is</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">be</data>
-            <data key="k7">node</data>
-            <data key="k8">VBZ</data>
+            <data key="k11">Is</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">be</data>
+            <data key="k8">node</data>
+            <data key="k9">VBZ</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#IS_span2">
             <data key="k1">topic</data>
-            <data key="k5">default_ns</data>
-            <data key="k7">node</data>
+            <data key="k6">default_ns</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#sTok2">
-            <data key="k10">this</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">this</data>
-            <data key="k7">node</data>
-            <data key="k8">DT</data>
+            <data key="k11">this</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">this</data>
+            <data key="k8">node</data>
+            <data key="k9">DT</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#sTok4">
-            <data key="k10">more</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">more</data>
-            <data key="k7">node</data>
-            <data key="k8">RBR</data>
+            <data key="k11">more</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">more</data>
+            <data key="k8">node</data>
+            <data key="k9">RBR</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#sTok5">
-            <data key="k10">complicated</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">complicated</data>
-            <data key="k7">node</data>
-            <data key="k8">JJ</data>
+            <data key="k11">complicated</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">complicated</data>
+            <data key="k8">node</data>
+            <data key="k9">JJ</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#sTok6">
-            <data key="k10">than</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">than</data>
-            <data key="k7">node</data>
-            <data key="k8">IN</data>
+            <data key="k11">than</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">than</data>
+            <data key="k8">node</data>
+            <data key="k9">IN</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#sTok8">
-            <data key="k10">appears</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">appear</data>
-            <data key="k7">node</data>
-            <data key="k8">VBZ</data>
+            <data key="k11">appears</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">appear</data>
+            <data key="k8">node</data>
+            <data key="k9">VBZ</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#sTok9">
-            <data key="k10">to</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">to</data>
-            <data key="k7">node</data>
-            <data key="k8">TO</data>
+            <data key="k11">to</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">to</data>
+            <data key="k8">node</data>
+            <data key="k9">TO</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#sTok10">
-            <data key="k10">be</data>
-            <data key="k11"></data>
-            <data key="k5">morphology</data>
-            <data key="k6">be</data>
-            <data key="k7">node</data>
-            <data key="k8">VB</data>
+            <data key="k11">be</data>
+            <data key="k12"></data>
+            <data key="k6">morphology</data>
+            <data key="k7">be</data>
+            <data key="k8">node</data>
+            <data key="k9">VB</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#sTok11">
-            <data key="k10">?</data>
-            <data key="k11"></data>
-            <data key="k5">morphology</data>
-            <data key="k6">?</data>
-            <data key="k7">node</data>
-            <data key="k8">.</data>
+            <data key="k11">?</data>
+            <data key="k12"></data>
+            <data key="k6">morphology</data>
+            <data key="k7">?</data>
+            <data key="k8">node</data>
+            <data key="k9">.</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#IS_span1">
             <data key="k1">contrast-focus</data>
-            <data key="k5">default_ns</data>
-            <data key="k7">node</data>
+            <data key="k6">default_ns</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#IS_span2">
             <data key="k1">topic</data>
-            <data key="k5">default_ns</data>
-            <data key="k7">node</data>
+            <data key="k6">default_ns</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#sTok8">
-            <data key="k10">appears</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">appear</data>
-            <data key="k7">node</data>
-            <data key="k8">VBZ</data>
+            <data key="k11">appears</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">appear</data>
+            <data key="k8">node</data>
+            <data key="k9">VBZ</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#sTok9">
-            <data key="k10">to</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">to</data>
-            <data key="k7">node</data>
-            <data key="k8">TO</data>
+            <data key="k11">to</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">to</data>
+            <data key="k8">node</data>
+            <data key="k9">TO</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#sTok10">
-            <data key="k10">be</data>
-            <data key="k11"></data>
-            <data key="k5">morphology</data>
-            <data key="k6">be</data>
-            <data key="k7">node</data>
-            <data key="k8">VB</data>
+            <data key="k11">be</data>
+            <data key="k12"></data>
+            <data key="k6">morphology</data>
+            <data key="k7">be</data>
+            <data key="k8">node</data>
+            <data key="k9">VB</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#sTok11">
-            <data key="k10">?</data>
-            <data key="k11"></data>
-            <data key="k5">morphology</data>
-            <data key="k6">?</data>
-            <data key="k7">node</data>
-            <data key="k8">.</data>
+            <data key="k11">?</data>
+            <data key="k12"></data>
+            <data key="k6">morphology</data>
+            <data key="k7">?</data>
+            <data key="k8">node</data>
+            <data key="k9">.</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#structure1">
             <data key="k2">ROOT</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#structure2">
             <data key="k2">SQ</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#structure3">
             <data key="k2">NP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#sTok3">
-            <data key="k10">example</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">example</data>
-            <data key="k7">node</data>
-            <data key="k8">NN</data>
+            <data key="k11">example</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">example</data>
+            <data key="k8">node</data>
+            <data key="k9">NN</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#structure4">
             <data key="k2">ADJP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#structure5">
             <data key="k2">ADJP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#structure6">
             <data key="k2">SBar</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#structure7">
             <data key="k2">S</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#structure8">
             <data key="k2">NP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#structure9">
             <data key="k2">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#structure10">
             <data key="k2">S</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#structure11">
             <data key="k2">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#structure12">
             <data key="k2">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#structure1">
             <data key="k2">ROOT</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#structure2">
             <data key="k2">SQ</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#sTok1">
-            <data key="k10">Is</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">be</data>
-            <data key="k7">node</data>
-            <data key="k8">VBZ</data>
+            <data key="k11">Is</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">be</data>
+            <data key="k8">node</data>
+            <data key="k9">VBZ</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#structure3">
             <data key="k2">NP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#sTok2">
-            <data key="k10">this</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">this</data>
-            <data key="k7">node</data>
-            <data key="k8">DT</data>
+            <data key="k11">this</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">this</data>
+            <data key="k8">node</data>
+            <data key="k9">DT</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#sTok3">
-            <data key="k10">example</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">example</data>
-            <data key="k7">node</data>
-            <data key="k8">NN</data>
+            <data key="k11">example</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">example</data>
+            <data key="k8">node</data>
+            <data key="k9">NN</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#structure4">
             <data key="k2">ADJP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#structure5">
             <data key="k2">ADJP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#sTok4">
-            <data key="k10">more</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">more</data>
-            <data key="k7">node</data>
-            <data key="k8">RBR</data>
+            <data key="k11">more</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">more</data>
+            <data key="k8">node</data>
+            <data key="k9">RBR</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#sTok5">
-            <data key="k10">complicated</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">complicated</data>
-            <data key="k7">node</data>
-            <data key="k8">JJ</data>
+            <data key="k11">complicated</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">complicated</data>
+            <data key="k8">node</data>
+            <data key="k9">JJ</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#structure6">
             <data key="k2">SBar</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#sTok6">
-            <data key="k10">than</data>
-            <data key="k11"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">than</data>
-            <data key="k7">node</data>
-            <data key="k8">IN</data>
+            <data key="k11">than</data>
+            <data key="k12"> </data>
+            <data key="k6">morphology</data>
+            <data key="k7">than</data>
+            <data key="k8">node</data>
+            <data key="k9">IN</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#structure7">
             <data key="k2">S</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#structure8">
             <data key="k2">NP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#structure9">
             <data key="k2">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#structure10">
             <data key="k2">S</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#structure11">
             <data key="k2">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#structure12">
             <data key="k2">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k6">syntax</data>
+            <data key="k8">node</data>
         </node>
         <node id="SaltSampleCorpus">
-            <data key="k7">corpus</data>
-            <data key="k9">3.3</data>
+            <data key="k10">3.3</data>
+            <data key="k3">An example corpus using a single sentence but  copied to 4 documents.</data>
+            <data key="k8">corpus</data>
         </node>
         <node id="SaltSampleCorpus/corpus.properties">
-            <data key="k4">[PROJECT_DIR]/tests/data/import/relannis/SaltSampleCorpus/ExtData/corpus.properties</data>
-            <data key="k7">file</data>
+            <data key="k5">[PROJECT_DIR]/tests/data/import/relannis/SaltSampleCorpus/ExtData/corpus.properties</data>
+            <data key="k8">file</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1">
-            <data key="k7">corpus</data>
+            <data key="k8">corpus</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1">
-            <data key="k3">doc1</data>
-            <data key="k7">corpus</data>
+            <data key="k4">doc1</data>
+            <data key="k8">corpus</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1/example.txt">
-            <data key="k4">[PROJECT_DIR]/tests/data/import/relannis/SaltSampleCorpus/ExtData/doc1/example.txt</data>
-            <data key="k7">file</data>
+            <data key="k5">[PROJECT_DIR]/tests/data/import/relannis/SaltSampleCorpus/ExtData/doc1/example.txt</data>
+            <data key="k8">file</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2">
-            <data key="k3">doc2</data>
-            <data key="k7">corpus</data>
+            <data key="k4">doc2</data>
+            <data key="k8">corpus</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2/example.txt">
-            <data key="k4">[PROJECT_DIR]/tests/data/import/relannis/SaltSampleCorpus/ExtData/doc2/example.txt</data>
-            <data key="k7">file</data>
+            <data key="k5">[PROJECT_DIR]/tests/data/import/relannis/SaltSampleCorpus/ExtData/doc2/example.txt</data>
+            <data key="k8">file</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2">
-            <data key="k7">corpus</data>
+            <data key="k8">corpus</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3">
-            <data key="k3">doc3</data>
-            <data key="k7">corpus</data>
+            <data key="k4">doc3</data>
+            <data key="k8">corpus</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3/example.txt">
-            <data key="k4">[PROJECT_DIR]/tests/data/import/relannis/SaltSampleCorpus/ExtData/doc3/example.txt</data>
-            <data key="k7">file</data>
+            <data key="k5">[PROJECT_DIR]/tests/data/import/relannis/SaltSampleCorpus/ExtData/doc3/example.txt</data>
+            <data key="k8">file</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4">
-            <data key="k3">doc4</data>
-            <data key="k7">corpus</data>
+            <data key="k4">doc4</data>
+            <data key="k8">corpus</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4/example.txt">
-            <data key="k4">[PROJECT_DIR]/tests/data/import/relannis/SaltSampleCorpus/ExtData/doc4/example.txt</data>
-            <data key="k7">file</data>
+            <data key="k5">[PROJECT_DIR]/tests/data/import/relannis/SaltSampleCorpus/ExtData/doc4/example.txt</data>
+            <data key="k8">file</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc3#sText1">
-            <data key="k7">datasource</data>
+            <data key="k8">datasource</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc1#sText1">
-            <data key="k7">datasource</data>
+            <data key="k8">datasource</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus1/doc2#sText1">
-            <data key="k7">datasource</data>
+            <data key="k8">datasource</data>
         </node>
         <node id="SaltSampleCorpus/subCorpus2/doc4#sText1">
-            <data key="k7">datasource</data>
+            <data key="k8">datasource</data>
         </node>
         <edge id="e0" source="SaltSampleCorpus/subCorpus2/doc3#structure1" target="SaltSampleCorpus/subCorpus2/doc3#sTok7" label="Coverage//">
         </edge>
