@@ -200,7 +200,7 @@ installed to perform a release. Execute the follwing `cargo` command once to
 install it.
 
 ```bash
-cargo install cargo-release
+cargo install cargo-release cargo-about
 ```
 
 To perform a release, switch to the main branch and execute:
