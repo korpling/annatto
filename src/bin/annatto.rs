@@ -9,12 +9,7 @@ use clap::Parser;
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use std::{
-    collections::HashMap,
-    convert::TryFrom,
-    path::{Path, PathBuf},
-    sync::mpsc,
-    thread,
-    time::Duration,
+    collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread, time::Duration,
 };
 use strum::IntoEnumIterator;
 use tabled::{
@@ -88,7 +83,9 @@ pub fn main() -> anyhow::Result<()> {
         }
         Cli::List => list_modules(),
         Cli::Info { name } => module_info(&name),
-        Cli::Documentation { output_directory } => create_documentation(&output_directory)?,
+        Cli::Documentation { output_directory } => {
+            documentation_generation::create(&output_directory)?
+        }
     };
     Ok(())
 }
@@ -332,39 +329,4 @@ fn print_module_fields(mut fields: Vec<ModuleConfiguration>) {
     }
 }
 
-fn create_documentation(output_directory: &Path) -> anyhow::Result<()> {
-    std::fs::create_dir_all(output_directory)?;
-    // Create a index file that contains an overview of all the modules
-    let mut table_builder = tabled::builder::Builder::new();
-    table_builder.push_record(vec!["Type", "Modules"]);
-
-    let import_row = vec![
-        "Import formats".to_string(),
-        ReadFromDiscriminants::iter()
-            .map(|m| m.as_ref().to_string())
-            .join(", "),
-    ];
-    table_builder.push_record(import_row);
-
-    let export_row = vec![
-        "Export formats".to_string(),
-        WriteAsDiscriminants::iter()
-            .map(|m| m.as_ref().to_string())
-            .join(", "),
-    ];
-    table_builder.push_record(export_row);
-
-    let graph_op_row = vec![
-        "Graph operations".to_string(),
-        GraphOpDiscriminants::iter()
-            .map(|m| m.as_ref().to_string())
-            .join(", "),
-    ];
-    table_builder.push_record(graph_op_row);
-
-    let mut table = table_builder.build();
-    table.with(tabled::settings::Style::markdown());
-    std::fs::write(output_directory.join("README.md"), table.to_string())?;
-
-    Ok(())
-}
+mod documentation_generation;
