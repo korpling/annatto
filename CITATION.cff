@@ -29,5 +29,5 @@ abstract: >-
   representation and already provides a basic set of data
   handling modules.
 license: Apache-2.0
-version: 0.8.0
-date-released: '2024-06-17'
+version: 0.8.1
+date-released: '2024-06-21'
