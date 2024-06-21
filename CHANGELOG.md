@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `sequence` export for horizontal data now also works in models with multiple segmentation and empty tokens
+
 ## [0.8.1] - 2024-06-21
 
 ### Fixed
