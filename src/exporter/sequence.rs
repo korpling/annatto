@@ -161,11 +161,12 @@ impl ExportSequence {
                     last_group = Some(ng);
                     if g != ng {
                         if self.horizontal {
+                            // build and push group
                             let joint_value = values.join(" ");
-                            values.clear();
                             blocks.push(joint_value);
+                            values.clear();
                         } else {
-                            values.push("".to_string());
+                            values.push("".to_string()); // inserts empty line to separate groups in output (such as sentences)
                         }
                     }
                 }
@@ -176,7 +177,7 @@ impl ExportSequence {
         }
         if !values.is_empty() {
             if self.horizontal {
-                let joint_value = blocks.join(" ");
+                let joint_value = values.join(" ");
                 blocks.push(joint_value);
             } else {
                 blocks.extend(values);
