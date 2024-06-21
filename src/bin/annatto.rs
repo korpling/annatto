@@ -35,7 +35,7 @@ enum Cli {
         #[structopt(long)]
         env: bool,
     },
-    /// Only check if a workflow file can be imported. Invalid workflow files will lead to a non-zero exit code.
+    /// Only check if a workflow file can be loaded. Invalid workflow files will lead to a non-zero exit code.
     Validate {
         /// The path to the workflow file.
         #[clap(value_parser)]
