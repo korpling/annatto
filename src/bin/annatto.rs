@@ -184,35 +184,53 @@ fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
 }
 
 fn list_modules() {
-    // Create a markdown styled table where each row is one type of module
-    let mut table = String::default();
-    table.push_str("|:-:|:-:|\n");
-    let importer_list = ReadFromDiscriminants::iter()
-        .map(|m| m.as_ref().to_string())
-        .join(", ");
-    table.push_str("| Import formats | ");
-    table.push_str(&importer_list);
-    table.push_str("|\n");
-    table.push_str("|:-:|:-:|\n");
+    let type_col_with: usize = 16;
+    let (term_width, _) = termimad::terminal_size();
+    let term_width = term_width as usize;
+    let list_col_width = term_width.saturating_sub(type_col_with).saturating_sub(7);
 
-    let exporter_list = WriteAsDiscriminants::iter()
-        .map(|m| m.as_ref().to_string())
-        .join(", ");
-    table.push_str("| Export formats | ");
-    table.push_str(&exporter_list);
-    table.push_str("|\n");
-    table.push_str("|:-:|:-:|\n");
+    // Create a table where each row is one type of module
+    let mut table_builder = tabled::builder::Builder::new();
+    let import_row = vec![
+        "Import formats".to_string(),
+        ReadFromDiscriminants::iter()
+            .map(|m| m.as_ref().to_string())
+            .join(", "),
+    ];
+    table_builder.push_record(import_row);
 
-    let graph_op_list = GraphOpDiscriminants::iter()
-        .map(|m| m.as_ref().to_string())
-        .join(", ");
-    table.push_str("| Graph operations | ");
-    table.push_str(&graph_op_list);
-    table.push_str("|\n");
-    table.push_str("|-\n");
+    let export_row = vec![
+        "Export formats".to_string(),
+        WriteAsDiscriminants::iter()
+            .map(|m| m.as_ref().to_string())
+            .join(", "),
+    ];
+    table_builder.push_record(export_row);
 
-    print_markdown(&table);
-    print_markdown("\nUse `annatto info <name>` to get more information about one of the formats or graph operations.\n\n");
+    let graph_op_row = vec![
+        "Graph operations".to_string(),
+        GraphOpDiscriminants::iter()
+            .map(|m| m.as_ref().to_string())
+            .join(", "),
+    ];
+    table_builder.push_record(graph_op_row);
+
+    let mut table = table_builder.build();
+
+    if *USE_ANSI_COLORS {
+        table
+            .with(tabled::settings::Style::modern())
+            .with(Modify::new(Segment::new(.., 0..1)).with(Width::wrap(type_col_with).keep_words()))
+            .with(
+                Modify::new(Segment::new(.., 1..2)).with(Width::wrap(list_col_width).keep_words()),
+            );
+    } else {
+        table.with(tabled::settings::Style::markdown());
+    }
+
+    println!("{table}\n");
+
+    print_markdown("Use `annatto info <name>` to get more information about one of the formats or graph operations.\n\n");
 }
 
 fn module_info(name: &str) {
