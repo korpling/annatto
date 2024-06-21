@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `sequence` export for horizontal data now also works in models with multiple segmentation and empty tokens
+- `check` can now save without a panic when `report` attribute is omitted. `list` is the default report level which only applies to `save`, not to the `report` attribute itself, where the default is not to print.
 
 ## [0.8.1] - 2024-06-21
 

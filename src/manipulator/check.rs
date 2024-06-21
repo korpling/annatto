@@ -26,10 +26,14 @@ use crate::{
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct Check {
+    /// The tests to run on the current graph.
     tests: Vec<Test>,
-    report: Option<ReportLevel>,
+    /// Optional level of report. No value means no printed report. Values are `list` or `verbose`.
+    report: Option<ReportLevel>, // default is None, not default report level
+    /// This policy if the process interrupts on a test failure (`fail`) or throws a warning (`warn`).
     #[serde(default)]
     policy: FailurePolicy,
+    /// Provide a path to a file containing the test report. The verbosity is defined by the report attribute.
     #[serde(default)]
     save: Option<PathBuf>,
 }
@@ -42,9 +46,10 @@ enum FailurePolicy {
     Fail,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 enum ReportLevel {
+    #[default] // default report level is required for save option
     List,
     Verbose,
 }
@@ -63,7 +68,11 @@ impl Manipulator for Check {
         }
         if let Some(path) = &self.save {
             let (sender, receiver) = mpsc::channel();
-            self.print_report(self.report.as_ref().unwrap(), &r, &sender)?;
+            self.print_report(
+                self.report.as_ref().unwrap_or(&ReportLevel::default()),
+                &r,
+                &sender,
+            )?;
             if let Some(StatusMessage::Info(msg)) = receiver.into_iter().next() {
                 let target_path = if path.is_absolute() {
                     path.to_path_buf()
