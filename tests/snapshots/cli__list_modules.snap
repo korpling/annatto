@@ -2,8 +2,9 @@
 source: tests/cli.rs
 expression: output
 ---
-| Import formats   | conllu, exmaralda, graphml, meta, none, opus, path, ptb, relannis, textgrid, toolbox, treetagger, xlsx, xml |
+| Type             | Modules                                                                                                     |
 |------------------|-------------------------------------------------------------------------------------------------------------|
+| Import formats   | conllu, exmaralda, graphml, meta, none, opus, path, ptb, relannis, textgrid, toolbox, treetagger, xlsx, xml |
 | Export formats   | graphml, exmaralda, sequence, xlsx                                                                          |
 | Graph operations | check, collapse, enumerate, link, map, merge, revise, chunk, split, none                                    |
 

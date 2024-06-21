@@ -4,3 +4,4 @@
 *.log
 py/__pycache__
 lcov.info
+/docs
