@@ -1,4 +1,8 @@
-use std::path::{Path, PathBuf};
+use std::{
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 use annatto::{GraphOpDiscriminants, ReadFromDiscriminants, WriteAsDiscriminants};
 use itertools::Itertools;
@@ -21,8 +25,10 @@ pub(crate) fn create(output_directory: &Path) -> anyhow::Result<()> {
                 .join("importers")
                 .join(format!("{module_name}.md")),
         );
-        let module_doc = m.module_doc();
-        std::fs::write(&path, module_doc)?;
+        let mut output = File::create(path)?;
+        writeln!(output, "# {module_name} (importer)")?;
+        writeln!(output)?;
+        writeln!(output, "{}", m.module_doc())?;
     }
 
     for m in WriteAsDiscriminants::iter() {
@@ -32,8 +38,10 @@ pub(crate) fn create(output_directory: &Path) -> anyhow::Result<()> {
                 .join("exporters")
                 .join(format!("{module_name}.md")),
         );
-        let module_doc = m.module_doc();
-        std::fs::write(&path, module_doc)?;
+        let mut output = File::create(path)?;
+        writeln!(output, "# {module_name} (exporter)")?;
+        writeln!(output)?;
+        writeln!(output, "{}", m.module_doc())?;
     }
 
     for m in GraphOpDiscriminants::iter() {
@@ -43,8 +51,10 @@ pub(crate) fn create(output_directory: &Path) -> anyhow::Result<()> {
                 .join("graph_ops")
                 .join(format!("{module_name}.md")),
         );
-        let module_doc = m.module_doc();
-        std::fs::write(&path, module_doc)?;
+        let mut output = File::create(path)?;
+        writeln!(output, "# {module_name} (graph_operation)")?;
+        writeln!(output)?;
+        writeln!(output, "{}", m.module_doc())?;
     }
 
     Ok(())
