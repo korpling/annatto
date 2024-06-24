@@ -2,7 +2,7 @@ on:
   push:
   merge_group:
 
-name: Rust
+name: Documentation
 
 jobs:
   format:
