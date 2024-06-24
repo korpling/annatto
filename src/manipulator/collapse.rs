@@ -31,9 +31,13 @@ use super::Manipulator;
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct Collapse {
+    /// The component type within which to find the edges to collapse.
     ctype: AnnotationComponentType,
+    /// The layer of the component within which to find the edges to collapse.
     layer: String,
+    /// The name of the component within which to find the edges to collapse.
     name: String,
+    /// If you know that any two edges in the defined component are always pairwise disjoint, set this attribute to true to save computation time.
     #[serde(default)]
     disjoint: bool, // performance boost -> if you know all edges are already disjoint, an expensive step can be skipped
 }
