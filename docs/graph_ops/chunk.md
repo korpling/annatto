@@ -10,21 +10,21 @@ to segment the text into chunks.
 
 ###  max_characters
 
-
+*No description*
 
 ###  anno_namespace
 
-
+*No description*
 
 ###  anno_name
 
-
+*No description*
 
 ###  anno_value
 
-
+*No description*
 
 ###  segmentation
 
-
+*No description*
 

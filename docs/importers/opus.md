@@ -7,17 +7,17 @@ Add alignment edges for parallel corpora from the XML format used by the
 
 ###  default_name
 
-
+*No description*
 
 ###  default_type
 
-
+*No description*
 
 ###  reverse_name
 
-
+*No description*
 
 ###  reverse_type
 
-
+*No description*
 

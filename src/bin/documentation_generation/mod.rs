@@ -114,7 +114,12 @@ where
         for f in fields {
             writeln!(output, "###  {}", f.name)?;
             writeln!(output)?;
-            writeln!(output, "{}", f.description)?;
+
+            if f.description.is_empty() {
+                writeln!(output, "*No description*")?;
+            } else {
+                writeln!(output, "{}", f.description)?;
+            }
             writeln!(output)?;
         }
     }
