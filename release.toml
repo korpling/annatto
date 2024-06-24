@@ -10,4 +10,5 @@ pre-release-replacements = [
   {file = "CHANGELOG.md", search = "## \\[Unreleased\\]", replace = "## [Unreleased]\n\n## [{{version}}] - {{date}}"},
   {file = "CITATION.cff", search = "^version: [0-9.]+", replace = "version: {{version}}"},
   {file = "CITATION.cff", search = "^date-released: '[0-9\\-]+'", replace = "date-released: '{{date}}'"},
+  {file = "README.md", search = "https://github.com/korpling/annatto/blob/[^/]+/docs/README.md", replace = "https://github.com/korpling/annatto/blob/{{version}}/docs/README.md"},
 ]
