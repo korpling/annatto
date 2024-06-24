@@ -21,6 +21,7 @@ use super::Manipulator;
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct MapAnnos {
+    /// The path of the TOML file containing the mapping rules.
     rule_file: PathBuf,
 }
 

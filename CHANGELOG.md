@@ -5,6 +5,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `link`, `map`, `enumerate`, and `collapse` have documentation visible to the user.
+
+### Fixed
+
+- documentation for import of `xlsx` showed wrong config doc string
+- `link` does not use default `0` for `source_node` and `target_node` attributes anymore, since they are 1-based indices (instead, there is no default)
+
 ## [0.8.2] - 2024-06-21
 
 ### Fixed
