@@ -20,19 +20,27 @@ use tempfile::tempdir_in;
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct LinkNodes {
+    /// The AQL query to find all source node annotations. Source and target nodes are then paired by equal value for their query match.
     source_query: String,
-    #[serde(default)]
+    /// The 1-based index selecting the value providing node in the AQL source query.    
     source_node: usize,
+    /// Contains one or multiple 1-based indexes, from which (in order of mentioning) the value for mapping source and target will be concatenated.
     source_value: Vec<usize>,
+    /// The AQL query to find all target node annotations.
     target_query: String,
-    #[serde(default)]
+    /// The 1-based index selecting the value providing node in the AQL target query.    
     target_node: usize,
+    /// Contains one or multiple 1-based indexes, from which (in order of mentioning) the value for mapping source and target will be concatenated.
     target_value: Vec<usize>,
+    /// The edge component type of the links to be built.
     link_type: AnnotationComponentType, // which edge type to use to link resources
+    /// The layer of the edge component containing the links to be built.
     #[serde(default)]
     link_layer: String,
+    /// The name of the edge component containing the links to be built.
     #[serde(default)]
     link_name: String,
+    /// In case of multiple `source_values` or `target_values` this delimiter (default empty string) will be used for value concatenation.
     #[serde(default)]
     value_sep: String,
 }

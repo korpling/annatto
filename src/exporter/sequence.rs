@@ -271,8 +271,9 @@ impl ExportSequence {
             _ => Some(key.ns.as_str()),
         };
         let name = key.name.as_str();
-        let mut groups = BTreeMap::default();
+        let mut downward_groups = BTreeMap::default();
         let node_annos = graph.get_node_annos();
+        // downward pass
         for m in node_annos.exact_anno_search(ns, name, ValueSearch::Any) {
             let node = m?.node;
             for component in graph.get_all_components(self.group_component_type.clone(), None) {
@@ -280,9 +281,29 @@ impl ExportSequence {
                     let dfs = CycleSafeDFS::new(storage.as_edgecontainer(), node, 1, usize::MAX);
                     for step in dfs {
                         let n = step?.node;
-                        if node_annos.has_value_for_item(&n, &self.anno)? {
-                            groups.insert(n, node);
+                        if node_annos.has_value_for_item(&n, &self.anno)?
+                            || !storage.has_outgoing_edges(n)?
+                        // we did not pass a relevant node, but reached terminal nodes (real tokens, which requires an upward pass)
+                        {
+                            downward_groups.insert(n, node);
                         }
+                    }
+                }
+            }
+        }
+        // upward pass, this is necessary if the segments (text nodes, whatever you want to call it) are not terminal coverage nodes
+        // we could condition the upward pass on the question whether or not we needed to insert terminals (see above), but that would
+        // rely on the fact that a model either has empty + virtual tokens XOR valued tokens, but is never mixed, which we cannot know
+        // for the future. If perfomance is ever critical, consider adding a flag for such behaviour.
+        let mut groups = BTreeMap::default();
+        for component in graph.get_all_components(Some(AnnotationComponentType::Coverage), None) {
+            if let Some(storage) = graph.get_graphstorage(&component) {
+                for (member, group) in &downward_groups {
+                    for rn in CycleSafeDFS::new_inverse(storage.as_edgecontainer(), *member, 0, 1)
+                    // start from 0 to insert self as well
+                    {
+                        let reachable_node = rn?.node;
+                        groups.insert(reachable_node, *group);
                     }
                 }
             }
@@ -293,14 +314,19 @@ impl ExportSequence {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    use std::{
+        collections::{BTreeMap, BTreeSet},
+        fs,
+        path::Path,
+    };
 
     use graphannis::{graph::AnnoKey, model::AnnotationComponentType, AnnotationGraph};
-    use graphannis_core::graph::ANNIS_NS;
+    use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
     use insta::assert_snapshot;
 
     use crate::{
         exporter::sequence::{default_anno, default_fileby_key},
+        importer::{xlsx::ImportSpreadsheet, Importer},
         test_util::export_to_string,
     };
 
@@ -355,6 +381,53 @@ mod tests {
         };
         let estr = export_to_string(&graph, exporter);
         assert!(estr.is_ok());
+        assert_snapshot!(estr.unwrap());
+    }
+
+    #[test]
+    fn with_virtual_tokens() {
+        let mut column_map = BTreeMap::default();
+        let mut columns = BTreeSet::default();
+        columns.insert("seg".to_string());
+        column_map.insert("norm".to_string(), columns);
+        let import_spec = "column_map = {\"norm\" = [\"seg\"]}";
+        let mprt: Result<ImportSpreadsheet, _> = toml::from_str(import_spec);
+        assert!(mprt.is_ok(), "Import error: {:?}", mprt.err());
+        let import = mprt.unwrap();
+        let u = import.import_corpus(
+            Path::new("tests/data/import/xlsx/clean/xlsx"),
+            crate::StepID {
+                module_name: "test_import_xlsx".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(u.is_ok());
+        let mut update = u.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let au = graph.apply_update(&mut update, |_| {});
+        assert!(au.is_ok(), "Could not apply update: {:?}", au.err());
+        assert!(graph.ensure_loaded_all().is_ok());
+        let exporter = ExportSequence {
+            anno: AnnoKey {
+                name: "norm".into(),
+                ns: "norm".into(),
+            },
+            horizontal: true,
+            fileby: default_fileby_key(),
+            groupby: Some(AnnoKey {
+                ns: "norm".into(),
+                name: "seg".into(),
+            }),
+            group_component_type: Some(AnnotationComponentType::Coverage),
+            component_type: AnnotationComponentType::Ordering,
+            component_layer: DEFAULT_NS.to_string(),
+            component_name: "norm".to_string(),
+        };
+        let estr = export_to_string(&graph, exporter);
+        assert!(estr.is_ok(), "Export failed: {:?}", estr.err());
         assert_snapshot!(estr.unwrap());
     }
 

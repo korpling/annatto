@@ -5,6 +5,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2024-06-24
+
+### Added
+
+- `link`, `map`, `enumerate`, and `collapse` have documentation visible to the user.
+
+### Fixed
+
+- documentation for import of `xlsx` showed wrong config doc string
+- `link` does not use default `0` for `source_node` and `target_node` attributes anymore, since they are 1-based indices (instead, there is no default)
+
+## [0.8.2] - 2024-06-21
+
+### Fixed
+
+- `sequence` export for horizontal data now also works in models with multiple segmentation and empty tokens
+- `check` can now save without a panic when `report` attribute is omitted. `list` is the default report level which only applies to `save`, not to the `report` attribute itself, where the default is not to print.
+
 ## [0.8.1] - 2024-06-21
 
 ### Fixed

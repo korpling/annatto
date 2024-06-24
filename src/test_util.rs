@@ -92,8 +92,8 @@ where
     };
     exporter
         .export_corpus(graph, output_path.as_ref(), step_id.clone(), None)
-        .map_err(|_| AnnattoError::Export {
-            reason: "Could not export graph to read its output.".to_string(),
+        .map_err(|e| AnnattoError::Export {
+            reason: format!("Could not export graph to read its output: {:?}", e),
             exporter: step_id.module_name.to_string(),
             path: output_path.as_ref().to_path_buf(),
         })?;
