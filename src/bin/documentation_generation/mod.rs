@@ -4,7 +4,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use annatto::{GraphOpDiscriminants, ReadFromDiscriminants, WriteAsDiscriminants};
+use annatto::{
+    GraphOpDiscriminants, ModuleConfiguration, ReadFromDiscriminants, WriteAsDiscriminants,
+};
 use itertools::Itertools;
 use strum::IntoEnumIterator;
 
@@ -29,6 +31,8 @@ pub(crate) fn create(output_directory: &Path) -> anyhow::Result<()> {
         writeln!(output, "# {module_name} (importer)")?;
         writeln!(output)?;
         writeln!(output, "{}", m.module_doc())?;
+        writeln!(output)?;
+        write_module_fields(output, &m.module_configs())?;
     }
 
     for m in WriteAsDiscriminants::iter() {
@@ -42,6 +46,8 @@ pub(crate) fn create(output_directory: &Path) -> anyhow::Result<()> {
         writeln!(output, "# {module_name} (exporter)")?;
         writeln!(output)?;
         writeln!(output, "{}", m.module_doc())?;
+        writeln!(output)?;
+        write_module_fields(output, &m.module_configs())?;
     }
 
     for m in GraphOpDiscriminants::iter() {
@@ -55,6 +61,8 @@ pub(crate) fn create(output_directory: &Path) -> anyhow::Result<()> {
         writeln!(output, "# {module_name} (graph_operation)")?;
         writeln!(output)?;
         writeln!(output, "{}", m.module_doc())?;
+        writeln!(output)?;
+        write_module_fields(output, &m.module_configs())?;
     }
 
     Ok(())
@@ -101,4 +109,25 @@ fn module_list_table() -> String {
     table.with(tabled::settings::Style::markdown());
 
     table.to_string()
+}
+
+fn write_module_fields<W>(mut output: W, fields: &[ModuleConfiguration]) -> anyhow::Result<()>
+where
+    W: Write,
+{
+    if fields.is_empty() {
+        writeln!(output, "*No Configuration*")?;
+    } else {
+        writeln!(output, "## Configuration")?;
+        writeln!(output)?;
+
+        for f in fields {
+            writeln!(output, "###  {}", f.name)?;
+            writeln!(output)?;
+            writeln!(output, "{}", f.description)?;
+            writeln!(output)?;
+        }
+    }
+
+    Ok(())
 }
