@@ -1,8 +1,4 @@
-use std::{
-    fs::File,
-    io::Write,
-    path::{Path, PathBuf},
-};
+use std::{fs::File, io::Write, path::Path};
 
 use annatto::{
     GraphOpDiscriminants, ModuleConfiguration, ReadFromDiscriminants, WriteAsDiscriminants,
@@ -22,11 +18,9 @@ pub(crate) fn create(output_directory: &Path) -> anyhow::Result<()> {
     // Create a module information for each module of all types
     for m in ReadFromDiscriminants::iter() {
         let module_name = m.as_ref().to_string();
-        let path = PathBuf::from(
-            output_directory
-                .join("importers")
-                .join(format!("{module_name}.md")),
-        );
+        let path = output_directory
+            .join("importers")
+            .join(format!("{module_name}.md"));
         let mut output = File::create(path)?;
         writeln!(output, "# {module_name} (importer)")?;
         writeln!(output)?;
@@ -37,11 +31,9 @@ pub(crate) fn create(output_directory: &Path) -> anyhow::Result<()> {
 
     for m in WriteAsDiscriminants::iter() {
         let module_name = m.as_ref().to_string();
-        let path = PathBuf::from(
-            output_directory
-                .join("exporters")
-                .join(format!("{module_name}.md")),
-        );
+        let path = output_directory
+            .join("exporters")
+            .join(format!("{module_name}.md"));
         let mut output = File::create(path)?;
         writeln!(output, "# {module_name} (exporter)")?;
         writeln!(output)?;
@@ -52,11 +44,9 @@ pub(crate) fn create(output_directory: &Path) -> anyhow::Result<()> {
 
     for m in GraphOpDiscriminants::iter() {
         let module_name = m.as_ref().to_string();
-        let path = PathBuf::from(
-            output_directory
-                .join("graph_ops")
-                .join(format!("{module_name}.md")),
-        );
+        let path = output_directory
+            .join("graph_ops")
+            .join(format!("{module_name}.md"));
         let mut output = File::create(path)?;
         writeln!(output, "# {module_name} (graph_operation)")?;
         writeln!(output)?;
