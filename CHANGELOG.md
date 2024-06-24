@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2024-06-24
+
 ### Added
 
 - `link`, `map`, `enumerate`, and `collapse` have documentation visible to the user.
