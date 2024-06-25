@@ -3,7 +3,9 @@ use std::{path::Path, sync::mpsc};
 use graphannis::{graph::AnnoKey, update::GraphUpdate};
 use insta::assert_snapshot;
 
-use crate::{test_util::import_as_graphml_string, ReadFrom, StepID};
+use crate::{
+    importer::conllu::default_comment_key, test_util::import_as_graphml_string, ReadFrom, StepID,
+};
 
 use super::ImportCoNLLU;
 
@@ -79,6 +81,28 @@ fn custom_comments() {
     );
     assert!(actual.is_ok());
     assert_snapshot!(actual.unwrap());
+}
+
+#[test]
+fn deser_default() {
+    let toml_str = "";
+    let mprt: Result<ImportCoNLLU, _> = toml::from_str(toml_str);
+    assert!(mprt.is_ok());
+    assert!(mprt.unwrap().comment_anno == default_comment_key());
+}
+
+#[test]
+fn deser_custom() {
+    let toml_str = "comment_anno = { ns = \"custom_ns\", name = \"custom_name\" }";
+    let mprt: Result<ImportCoNLLU, _> = toml::from_str(toml_str);
+    assert!(mprt.is_ok());
+    assert!(
+        mprt.unwrap().comment_anno
+            == AnnoKey {
+                ns: "custom_ns".into(),
+                name: "custom_name".into()
+            }
+    );
 }
 
 #[test]
