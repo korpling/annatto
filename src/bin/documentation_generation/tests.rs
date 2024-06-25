@@ -1,6 +1,7 @@
 use std::io::BufWriter;
 
 use insta::assert_snapshot;
+use tempfile::tempdir;
 
 use super::*;
 
@@ -10,20 +11,62 @@ fn empty_module_list_table() {
     let exporters = Vec::default();
     let graph_ops = Vec::default();
 
-    let actual = module_list_table(&importers, &exporters, &graph_ops);
+    let output_dir = tempdir().unwrap();
+
+    write_module_list_table(output_dir.path(), &importers, &exporters, &graph_ops).unwrap();
+    let actual = std::fs::read_to_string(output_dir.path().join("README.md")).unwrap();
     assert_snapshot!(actual);
 }
 
 #[test]
 fn simple_list_table() {
-    let actual = module_list_table(
-        &vec![ReadFromDiscriminants::GraphML, ReadFromDiscriminants::None],
-        &vec![
+    let output_dir = tempdir().unwrap();
+
+    write_module_list_table(
+        output_dir.path(),
+        &[ReadFromDiscriminants::GraphML, ReadFromDiscriminants::None],
+        &[
             WriteAsDiscriminants::GraphML,
             WriteAsDiscriminants::Sequence,
         ],
-        &vec![GraphOpDiscriminants::None, GraphOpDiscriminants::Chunk],
-    );
+        &[GraphOpDiscriminants::None, GraphOpDiscriminants::Chunk],
+    )
+    .unwrap();
+    let actual = std::fs::read_to_string(output_dir.path().join("README.md")).unwrap();
+
+    assert_snapshot!(actual);
+}
+
+#[test]
+fn none_importer_file() {
+    let output_dir = tempdir().unwrap();
+
+    write_importer_files(&[ReadFromDiscriminants::None], output_dir.path()).unwrap();
+    let actual =
+        std::fs::read_to_string(output_dir.path().join("importers").join("none.md")).unwrap();
+
+    assert_snapshot!(actual);
+}
+
+#[test]
+fn graphml_exporter_file() {
+    let output_dir = tempdir().unwrap();
+
+    write_exporter_files(&[WriteAsDiscriminants::GraphML], output_dir.path()).unwrap();
+    let actual =
+        std::fs::read_to_string(output_dir.path().join("exporters").join("graphml.md")).unwrap();
+
+    assert_snapshot!(actual);
+}
+
+#[test]
+fn none_graph_op_file() {
+    let output_dir = tempdir().unwrap();
+
+    write_graph_op_files(&[GraphOpDiscriminants::None], output_dir.path()).unwrap();
+    let actual =
+        std::fs::read_to_string(output_dir.path().join("graph_ops").join("none.md")).unwrap();
+
     assert_snapshot!(actual);
 }
 

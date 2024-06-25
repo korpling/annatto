@@ -7,69 +7,27 @@ use itertools::Itertools;
 use strum::IntoEnumIterator;
 
 pub(crate) fn create(output_directory: &Path) -> anyhow::Result<()> {
-    std::fs::create_dir_all(output_directory)?;
-    std::fs::create_dir_all(output_directory.join("importers"))?;
-    std::fs::create_dir_all(output_directory.join("exporters"))?;
-    std::fs::create_dir_all(output_directory.join("graph_ops"))?;
-
     let importers = ReadFromDiscriminants::iter().collect_vec();
     let exporters = WriteAsDiscriminants::iter().collect_vec();
     let graph_ops = GraphOpDiscriminants::iter().collect_vec();
 
     // Create an index file with a list of all the modules
-    std::fs::write(
-        output_directory.join("README.md"),
-        module_list_table(&importers, &exporters, &graph_ops),
-    )?;
+    write_module_list_table(output_directory, &importers, &exporters, &graph_ops)?;
 
     // Create a module information for each module of all types
-    for m in importers {
-        let module_name = m.as_ref().to_string();
-        let path = output_directory
-            .join("importers")
-            .join(format!("{module_name}.md"));
-        let mut output = File::create(path)?;
-        writeln!(output, "# {module_name} (importer)")?;
-        writeln!(output)?;
-        writeln!(output, "{}", m.module_doc())?;
-        writeln!(output)?;
-        write_module_fields(output, &m.module_configs())?;
-    }
-
-    for m in exporters {
-        let module_name = m.as_ref().to_string();
-        let path = output_directory
-            .join("exporters")
-            .join(format!("{module_name}.md"));
-        let mut output = File::create(path)?;
-        writeln!(output, "# {module_name} (exporter)")?;
-        writeln!(output)?;
-        writeln!(output, "{}", m.module_doc())?;
-        writeln!(output)?;
-        write_module_fields(output, &m.module_configs())?;
-    }
-
-    for m in graph_ops {
-        let module_name = m.as_ref().to_string();
-        let path = output_directory
-            .join("graph_ops")
-            .join(format!("{module_name}.md"));
-        let mut output = File::create(path)?;
-        writeln!(output, "# {module_name} (graph_operation)")?;
-        writeln!(output)?;
-        writeln!(output, "{}", m.module_doc())?;
-        writeln!(output)?;
-        write_module_fields(output, &m.module_configs())?;
-    }
+    write_importer_files(&importers, output_directory)?;
+    write_exporter_files(&exporters, output_directory)?;
+    write_graph_op_files(&graph_ops, output_directory)?;
 
     Ok(())
 }
 
-fn module_list_table(
+fn write_module_list_table(
+    output_directory: &Path,
     importers: &[ReadFromDiscriminants],
     exporters: &[WriteAsDiscriminants],
     graph_ops: &[GraphOpDiscriminants],
-) -> String {
+) -> anyhow::Result<()> {
     let mut table_builder = tabled::builder::Builder::new();
     table_builder.push_record(vec!["Type", "Modules"]);
 
@@ -112,7 +70,71 @@ fn module_list_table(
     let mut table = table_builder.build();
     table.with(tabled::settings::Style::markdown());
 
-    table.to_string()
+    std::fs::create_dir_all(output_directory)?;
+    std::fs::write(output_directory.join("README.md"), table.to_string())?;
+    Ok(())
+}
+
+fn write_importer_files(
+    importers: &[ReadFromDiscriminants],
+    output_directory: &Path,
+) -> anyhow::Result<()> {
+    let importers_directory = output_directory.join("importers");
+    std::fs::create_dir_all(&importers_directory)?;
+
+    for m in importers {
+        let module_name = m.as_ref().to_string();
+        let path = importers_directory.join(format!("{module_name}.md"));
+        let mut output = File::create(path)?;
+        writeln!(output, "# {module_name} (importer)")?;
+        writeln!(output)?;
+        writeln!(output, "{}", m.module_doc())?;
+        writeln!(output)?;
+        write_module_fields(output, &m.module_configs())?;
+    }
+
+    Ok(())
+}
+
+fn write_exporter_files(
+    exporters: &[WriteAsDiscriminants],
+    output_directory: &Path,
+) -> anyhow::Result<()> {
+    let exporters_directory = output_directory.join("exporters");
+    std::fs::create_dir_all(&exporters_directory)?;
+
+    for m in exporters {
+        let module_name = m.as_ref().to_string();
+        let path = exporters_directory.join(format!("{module_name}.md"));
+        let mut output = File::create(path)?;
+        writeln!(output, "# {module_name} (exporter)")?;
+        writeln!(output)?;
+        writeln!(output, "{}", m.module_doc())?;
+        writeln!(output)?;
+        write_module_fields(output, &m.module_configs())?;
+    }
+
+    Ok(())
+}
+fn write_graph_op_files(
+    graph_ops: &[GraphOpDiscriminants],
+    output_directory: &Path,
+) -> anyhow::Result<()> {
+    let graph_ops_directory = output_directory.join("graph_ops");
+    std::fs::create_dir_all(&graph_ops_directory)?;
+
+    for m in graph_ops {
+        let module_name = m.as_ref().to_string();
+        let path = graph_ops_directory.join(format!("{module_name}.md"));
+        let mut output = File::create(path)?;
+        writeln!(output, "# {module_name} (graph_operation)")?;
+        writeln!(output)?;
+        writeln!(output, "{}", m.module_doc())?;
+        writeln!(output)?;
+        write_module_fields(output, &m.module_configs())?;
+    }
+
+    Ok(())
 }
 
 fn write_module_fields<W>(mut output: W, fields: &[ModuleConfiguration]) -> anyhow::Result<()>
