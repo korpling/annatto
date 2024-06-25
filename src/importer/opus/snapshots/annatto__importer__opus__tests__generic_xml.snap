@@ -1,0 +1,529 @@
+---
+source: src/importer/opus/tests.rs
+expression: actual
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k1" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <node id="opus">
+            <data key="k1">corpus</data>
+        </node>
+        <node id="opus/bitext">
+            <data key="k0">bitext</data>
+            <data key="k1">corpus</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#1.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#1.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#1.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#1.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#2.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#2.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#2.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#2.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#3.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#3.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#4.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#4.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#4.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#4.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#4.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#4.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#4.4">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#4.4">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#5.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#5.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#5.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#5.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#5.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#5.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#5.4">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#6.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#6.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#6.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#6.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#6.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#6.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#6.4">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#6.4">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#8.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#7.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#9.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#8.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#9.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#8.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#10.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#9.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#10.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#9.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#10.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#9.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#10.4">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#9.4">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#10.5">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#9.5">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#10.6">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#9.6">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#10.7">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#9.7">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#11.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#10.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#11.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#10.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#11.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#10.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#12.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#11.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#12.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#11.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#12.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#11.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#13.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#12.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#13.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#12.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#13.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#12.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#13.4">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#12.4">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#13.5">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#12.5">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#13.6">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#12.6">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#13.7">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#12.7">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#14.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#13.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#14.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#13.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#14.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#13.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#14.4">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#13.4">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#14.5">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#13.5">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#15.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#14.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#15.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#14.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#15.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#14.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#15.4">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#14.4">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#15.5">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#14.5">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#15.6">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#14.6">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#15.7">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#14.7">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#15.8">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#14.8">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#16.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#15.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#16.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#15.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#16.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#15.3">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#16.4">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#15.4">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#16.5">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#15.5">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#16.6">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#15.6">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#17.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#16.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#18.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#17.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#18.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#17.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#19.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#18.1">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/cs/2014_09_1121#19.2">
+            <data key="k1">node</data>
+        </node>
+        <node id="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#18.2">
+            <data key="k1">node</data>
+        </node>
+        <edge id="e0" source="opus/cs/2014_09_1121#1.1" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#1.1" label="Pointing//align">
+        </edge>
+        <edge id="e1" source="opus/cs/2014_09_1121#1.2" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#1.2" label="Pointing//align">
+        </edge>
+        <edge id="e2" source="opus/cs/2014_09_1121#2.1" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#2.1" label="Pointing//align">
+        </edge>
+        <edge id="e3" source="opus/cs/2014_09_1121#2.2" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#2.2" label="Pointing//align">
+        </edge>
+        <edge id="e4" source="opus/cs/2014_09_1121#3.1" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#3.1" label="Pointing//align">
+        </edge>
+        <edge id="e5" source="opus/cs/2014_09_1121#4.1" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#4.1" label="Pointing//align">
+        </edge>
+        <edge id="e6" source="opus/cs/2014_09_1121#4.2" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#4.2" label="Pointing//align">
+        </edge>
+        <edge id="e7" source="opus/cs/2014_09_1121#4.3" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#4.3" label="Pointing//align">
+        </edge>
+        <edge id="e8" source="opus/cs/2014_09_1121#4.4" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#4.4" label="Pointing//align">
+        </edge>
+        <edge id="e9" source="opus/cs/2014_09_1121#5.1" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#5.1" label="Pointing//align">
+        </edge>
+        <edge id="e10" source="opus/cs/2014_09_1121#5.2" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#5.2" label="Pointing//align">
+        </edge>
+        <edge id="e11" source="opus/cs/2014_09_1121#5.3" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#5.3" label="Pointing//align">
+        </edge>
+        <edge id="e12" source="opus/cs/2014_09_1121#5.4" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#5.3" label="Pointing//align">
+        </edge>
+        <edge id="e13" source="opus/cs/2014_09_1121#6.1" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#6.1" label="Pointing//align">
+        </edge>
+        <edge id="e14" source="opus/cs/2014_09_1121#6.2" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#6.2" label="Pointing//align">
+        </edge>
+        <edge id="e15" source="opus/cs/2014_09_1121#6.3" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#6.3" label="Pointing//align">
+        </edge>
+        <edge id="e16" source="opus/cs/2014_09_1121#6.4" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#6.4" label="Pointing//align">
+        </edge>
+        <edge id="e17" source="opus/cs/2014_09_1121#8.3" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#7.1" label="Pointing//align">
+        </edge>
+        <edge id="e18" source="opus/cs/2014_09_1121#9.1" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#8.1" label="Pointing//align">
+        </edge>
+        <edge id="e19" source="opus/cs/2014_09_1121#9.2" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#8.2" label="Pointing//align">
+        </edge>
+        <edge id="e20" source="opus/cs/2014_09_1121#10.1" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#9.1" label="Pointing//align">
+        </edge>
+        <edge id="e21" source="opus/cs/2014_09_1121#10.2" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#9.2" label="Pointing//align">
+        </edge>
+        <edge id="e22" source="opus/cs/2014_09_1121#10.3" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#9.3" label="Pointing//align">
+        </edge>
+        <edge id="e23" source="opus/cs/2014_09_1121#10.4" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#9.4" label="Pointing//align">
+        </edge>
+        <edge id="e24" source="opus/cs/2014_09_1121#10.5" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#9.5" label="Pointing//align">
+        </edge>
+        <edge id="e25" source="opus/cs/2014_09_1121#10.6" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#9.6" label="Pointing//align">
+        </edge>
+        <edge id="e26" source="opus/cs/2014_09_1121#10.7" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#9.7" label="Pointing//align">
+        </edge>
+        <edge id="e27" source="opus/cs/2014_09_1121#11.1" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#10.1" label="Pointing//align">
+        </edge>
+        <edge id="e28" source="opus/cs/2014_09_1121#11.2" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#10.2" label="Pointing//align">
+        </edge>
+        <edge id="e29" source="opus/cs/2014_09_1121#11.3" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#10.3" label="Pointing//align">
+        </edge>
+        <edge id="e30" source="opus/cs/2014_09_1121#12.1" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#11.1" label="Pointing//align">
+        </edge>
+        <edge id="e31" source="opus/cs/2014_09_1121#12.2" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#11.2" label="Pointing//align">
+        </edge>
+        <edge id="e32" source="opus/cs/2014_09_1121#12.3" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#11.3" label="Pointing//align">
+        </edge>
+        <edge id="e33" source="opus/cs/2014_09_1121#13.1" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#12.1" label="Pointing//align">
+        </edge>
+        <edge id="e34" source="opus/cs/2014_09_1121#13.2" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#12.2" label="Pointing//align">
+        </edge>
+        <edge id="e35" source="opus/cs/2014_09_1121#13.3" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#12.3" label="Pointing//align">
+        </edge>
+        <edge id="e36" source="opus/cs/2014_09_1121#13.4" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#12.4" label="Pointing//align">
+        </edge>
+        <edge id="e37" source="opus/cs/2014_09_1121#13.5" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#12.5" label="Pointing//align">
+        </edge>
+        <edge id="e38" source="opus/cs/2014_09_1121#13.6" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#12.6" label="Pointing//align">
+        </edge>
+        <edge id="e39" source="opus/cs/2014_09_1121#13.7" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#12.7" label="Pointing//align">
+        </edge>
+        <edge id="e40" source="opus/cs/2014_09_1121#14.1" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#13.1" label="Pointing//align">
+        </edge>
+        <edge id="e41" source="opus/cs/2014_09_1121#14.2" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#13.2" label="Pointing//align">
+        </edge>
+        <edge id="e42" source="opus/cs/2014_09_1121#14.3" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#13.3" label="Pointing//align">
+        </edge>
+        <edge id="e43" source="opus/cs/2014_09_1121#14.4" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#13.4" label="Pointing//align">
+        </edge>
+        <edge id="e44" source="opus/cs/2014_09_1121#14.5" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#13.5" label="Pointing//align">
+        </edge>
+        <edge id="e45" source="opus/cs/2014_09_1121#15.1" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#14.1" label="Pointing//align">
+        </edge>
+        <edge id="e46" source="opus/cs/2014_09_1121#15.2" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#14.2" label="Pointing//align">
+        </edge>
+        <edge id="e47" source="opus/cs/2014_09_1121#15.3" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#14.3" label="Pointing//align">
+        </edge>
+        <edge id="e48" source="opus/cs/2014_09_1121#15.4" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#14.4" label="Pointing//align">
+        </edge>
+        <edge id="e49" source="opus/cs/2014_09_1121#15.5" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#14.5" label="Pointing//align">
+        </edge>
+        <edge id="e50" source="opus/cs/2014_09_1121#15.6" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#14.6" label="Pointing//align">
+        </edge>
+        <edge id="e51" source="opus/cs/2014_09_1121#15.7" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#14.7" label="Pointing//align">
+        </edge>
+        <edge id="e52" source="opus/cs/2014_09_1121#15.8" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#14.8" label="Pointing//align">
+        </edge>
+        <edge id="e53" source="opus/cs/2014_09_1121#16.1" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#15.1" label="Pointing//align">
+        </edge>
+        <edge id="e54" source="opus/cs/2014_09_1121#16.2" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#15.2" label="Pointing//align">
+        </edge>
+        <edge id="e55" source="opus/cs/2014_09_1121#16.3" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#15.3" label="Pointing//align">
+        </edge>
+        <edge id="e56" source="opus/cs/2014_09_1121#16.4" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#15.4" label="Pointing//align">
+        </edge>
+        <edge id="e57" source="opus/cs/2014_09_1121#16.5" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#15.5" label="Pointing//align">
+        </edge>
+        <edge id="e58" source="opus/cs/2014_09_1121#16.6" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#15.6" label="Pointing//align">
+        </edge>
+        <edge id="e59" source="opus/cs/2014_09_1121#17.1" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#16.1" label="Pointing//align">
+        </edge>
+        <edge id="e60" source="opus/cs/2014_09_1121#18.1" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#17.1" label="Pointing//align">
+        </edge>
+        <edge id="e61" source="opus/cs/2014_09_1121#18.2" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#17.2" label="Pointing//align">
+        </edge>
+        <edge id="e62" source="opus/cs/2014_09_1121#19.1" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#18.1" label="Pointing//align">
+        </edge>
+        <edge id="e63" source="opus/cs/2014_09_1121#19.2" target="opus/pl/2014_09_gwaltowne-starcia-pomiedzy-policja-a-pokojowo-nastawionymi-studentami-protestujacymi-w-hongkongu_#18.2" label="Pointing//align">
+        </edge>
+        <edge id="e64" source="opus/bitext" target="opus" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>

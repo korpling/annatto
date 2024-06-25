@@ -1,0 +1,712 @@
+---
+source: src/importer/toolbox.rs
+expression: graphml_is.unwrap()
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="node" attr.name="PoS" attr.type="string"/>
+    <key id="k1" for="node" attr.name="comment" attr.type="string"/>
+    <key id="k2" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k3" for="node" attr.name="id" attr.type="string"/>
+    <key id="k4" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k5" for="node" attr.name="mrph" attr.type="string"/>
+    <key id="k6" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k7" for="node" attr.name="ref" attr.type="string"/>
+    <key id="k8" for="node" attr.name="syl" attr.type="string"/>
+    <key id="k9" for="node" attr.name="tx" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <node id="toolbox">
+            <data key="k6">corpus</data>
+        </node>
+        <node id="toolbox/test_file">
+            <data key="k2">test_file</data>
+            <data key="k6">corpus</data>
+        </node>
+        <node id="toolbox/test_file#span1.0">
+            <data key="k3">Testdatei erstellt für diesen Test</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">Testsatz 1</data>
+        </node>
+        <node id="toolbox/test_file#tx1.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">Das</data>
+        </node>
+        <node id="toolbox/test_file#1">
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx2.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">ist</data>
+        </node>
+        <node id="toolbox/test_file#2">
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx3.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">ein</data>
+        </node>
+        <node id="toolbox/test_file#3">
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx4.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">Testbeispiel</data>
+        </node>
+        <node id="toolbox/test_file#4">
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx5.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">.</data>
+        </node>
+        <node id="toolbox/test_file#5">
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS1.0">
+            <data key="k0">PRON</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS2.0">
+            <data key="k0">VERB</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS3.0">
+            <data key="k0">DET</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS4.0">
+            <data key="k0">NOUN</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS5.0">
+            <data key="k0">PUNCT</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#syl1.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">das</data>
+        </node>
+        <node id="toolbox/test_file#syl2.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">ist</data>
+        </node>
+        <node id="toolbox/test_file#syl3.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">ein</data>
+        </node>
+        <node id="toolbox/test_file#syl4.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">test</data>
+        </node>
+        <node id="toolbox/test_file#syl4.2">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">-bei</data>
+        </node>
+        <node id="toolbox/test_file#syl4.4">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">-spiel</data>
+        </node>
+        <node id="toolbox/test_file#mrph1.0">
+            <data key="k4">default_layer</data>
+            <data key="k5">das</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph2.0">
+            <data key="k4">default_layer</data>
+            <data key="k5">ist</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph3.0">
+            <data key="k4">default_layer</data>
+            <data key="k5">ein</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph4.0">
+            <data key="k4">default_layer</data>
+            <data key="k5">test-</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph4.2">
+            <data key="k4">default_layer</data>
+            <data key="k5">beispiel</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#comment6.0">
+            <data key="k1">Dieser</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#comment7.0">
+            <data key="k1">Kommentar</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#comment8.0">
+            <data key="k1">sollte</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#comment9.0">
+            <data key="k1">nicht</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#comment10.0">
+            <data key="k1">im</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#comment11.0">
+            <data key="k1">Zielgraph</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#comment12.0">
+            <data key="k1">erscheinen.</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx13.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">Damit</data>
+        </node>
+        <node id="toolbox/test_file#13">
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx14.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">lassen</data>
+        </node>
+        <node id="toolbox/test_file#14">
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx15.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">sich</data>
+        </node>
+        <node id="toolbox/test_file#15">
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx16.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">Sachen</data>
+        </node>
+        <node id="toolbox/test_file#16">
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx17.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">testen</data>
+        </node>
+        <node id="toolbox/test_file#17">
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx18.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">.</data>
+        </node>
+        <node id="toolbox/test_file#18">
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS13.0">
+            <data key="k0">ADV</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS14.0">
+            <data key="k0">AUX</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS15.0">
+            <data key="k0">PRON</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS16.0">
+            <data key="k0">NOUN</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS17.0">
+            <data key="k0">VERB</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS18.0">
+            <data key="k0">.</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#syl13.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">da</data>
+        </node>
+        <node id="toolbox/test_file#syl13.2">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">-mit</data>
+        </node>
+        <node id="toolbox/test_file#syl14.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">las</data>
+        </node>
+        <node id="toolbox/test_file#syl14.2">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">-sen</data>
+        </node>
+        <node id="toolbox/test_file#syl15.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">sich</data>
+        </node>
+        <node id="toolbox/test_file#syl16.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">sa</data>
+        </node>
+        <node id="toolbox/test_file#syl16.2">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">-chen</data>
+        </node>
+        <node id="toolbox/test_file#syl17.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">tes</data>
+        </node>
+        <node id="toolbox/test_file#syl17.2">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">-ten</data>
+        </node>
+        <node id="toolbox/test_file#mrph13.0">
+            <data key="k4">default_layer</data>
+            <data key="k5">damit</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph14.0">
+            <data key="k4">default_layer</data>
+            <data key="k5">lass</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph14.2">
+            <data key="k4">default_layer</data>
+            <data key="k5">-en</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph15.0">
+            <data key="k4">default_layer</data>
+            <data key="k5">sich</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph16.0">
+            <data key="k4">default_layer</data>
+            <data key="k5">sachen</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph17.0">
+            <data key="k4">default_layer</data>
+            <data key="k5">test</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph17.2">
+            <data key="k4">default_layer</data>
+            <data key="k5">-en</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#span13.0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">Testsatz 2</data>
+        </node>
+        <edge id="e0" source="toolbox/test_file#span1.0" target="toolbox/test_file#1" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e1" source="toolbox/test_file#span1.0" target="toolbox/test_file#2" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e2" source="toolbox/test_file#span1.0" target="toolbox/test_file#3" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e3" source="toolbox/test_file#span1.0" target="toolbox/test_file#4" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e4" source="toolbox/test_file#span1.0" target="toolbox/test_file#5" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e5" source="toolbox/test_file#tx1.0" target="toolbox/test_file#1" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e6" source="toolbox/test_file#tx2.0" target="toolbox/test_file#2" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e7" source="toolbox/test_file#tx3.0" target="toolbox/test_file#3" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e8" source="toolbox/test_file#tx4.0" target="toolbox/test_file#4" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e9" source="toolbox/test_file#tx5.0" target="toolbox/test_file#5" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e10" source="toolbox/test_file#tx13.0" target="toolbox/test_file#13" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e11" source="toolbox/test_file#tx14.0" target="toolbox/test_file#14" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e12" source="toolbox/test_file#tx15.0" target="toolbox/test_file#15" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e13" source="toolbox/test_file#tx16.0" target="toolbox/test_file#16" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e14" source="toolbox/test_file#tx17.0" target="toolbox/test_file#17" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e15" source="toolbox/test_file#tx18.0" target="toolbox/test_file#18" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e16" source="toolbox/test_file#span13.0" target="toolbox/test_file#13" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e17" source="toolbox/test_file#span13.0" target="toolbox/test_file#14" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e18" source="toolbox/test_file#span13.0" target="toolbox/test_file#15" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e19" source="toolbox/test_file#span13.0" target="toolbox/test_file#16" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e20" source="toolbox/test_file#span13.0" target="toolbox/test_file#17" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e21" source="toolbox/test_file#span13.0" target="toolbox/test_file#18" label="Coverage/annis/virtual">
+        </edge>
+        <edge id="e22" source="toolbox/test_file#PoS1.0" target="toolbox/test_file#tx1.0" label="Pointing//PoS">
+        </edge>
+        <edge id="e23" source="toolbox/test_file#PoS2.0" target="toolbox/test_file#tx2.0" label="Pointing//PoS">
+        </edge>
+        <edge id="e24" source="toolbox/test_file#PoS3.0" target="toolbox/test_file#tx3.0" label="Pointing//PoS">
+        </edge>
+        <edge id="e25" source="toolbox/test_file#PoS4.0" target="toolbox/test_file#tx4.0" label="Pointing//PoS">
+        </edge>
+        <edge id="e26" source="toolbox/test_file#PoS5.0" target="toolbox/test_file#tx5.0" label="Pointing//PoS">
+        </edge>
+        <edge id="e27" source="toolbox/test_file#PoS13.0" target="toolbox/test_file#tx13.0" label="Pointing//PoS">
+        </edge>
+        <edge id="e28" source="toolbox/test_file#PoS14.0" target="toolbox/test_file#tx14.0" label="Pointing//PoS">
+        </edge>
+        <edge id="e29" source="toolbox/test_file#PoS15.0" target="toolbox/test_file#tx15.0" label="Pointing//PoS">
+        </edge>
+        <edge id="e30" source="toolbox/test_file#PoS16.0" target="toolbox/test_file#tx16.0" label="Pointing//PoS">
+        </edge>
+        <edge id="e31" source="toolbox/test_file#PoS17.0" target="toolbox/test_file#tx17.0" label="Pointing//PoS">
+        </edge>
+        <edge id="e32" source="toolbox/test_file#PoS18.0" target="toolbox/test_file#tx18.0" label="Pointing//PoS">
+        </edge>
+        <edge id="e33" source="toolbox/test_file#mrph1.0" target="toolbox/test_file#tx1.0" label="Pointing//mrph">
+        </edge>
+        <edge id="e34" source="toolbox/test_file#mrph2.0" target="toolbox/test_file#tx2.0" label="Pointing//mrph">
+        </edge>
+        <edge id="e35" source="toolbox/test_file#mrph3.0" target="toolbox/test_file#tx3.0" label="Pointing//mrph">
+        </edge>
+        <edge id="e36" source="toolbox/test_file#mrph4.0" target="toolbox/test_file#tx4.0" label="Pointing//mrph">
+        </edge>
+        <edge id="e37" source="toolbox/test_file#mrph4.2" target="toolbox/test_file#tx4.0" label="Pointing//mrph">
+        </edge>
+        <edge id="e38" source="toolbox/test_file#mrph13.0" target="toolbox/test_file#tx13.0" label="Pointing//mrph">
+        </edge>
+        <edge id="e39" source="toolbox/test_file#mrph14.0" target="toolbox/test_file#tx14.0" label="Pointing//mrph">
+        </edge>
+        <edge id="e40" source="toolbox/test_file#mrph14.2" target="toolbox/test_file#tx14.0" label="Pointing//mrph">
+        </edge>
+        <edge id="e41" source="toolbox/test_file#mrph15.0" target="toolbox/test_file#tx15.0" label="Pointing//mrph">
+        </edge>
+        <edge id="e42" source="toolbox/test_file#mrph16.0" target="toolbox/test_file#tx16.0" label="Pointing//mrph">
+        </edge>
+        <edge id="e43" source="toolbox/test_file#mrph17.0" target="toolbox/test_file#tx17.0" label="Pointing//mrph">
+        </edge>
+        <edge id="e44" source="toolbox/test_file#mrph17.2" target="toolbox/test_file#tx17.0" label="Pointing//mrph">
+        </edge>
+        <edge id="e45" source="toolbox/test_file#syl1.0" target="toolbox/test_file#tx1.0" label="Pointing//syl">
+        </edge>
+        <edge id="e46" source="toolbox/test_file#syl2.0" target="toolbox/test_file#tx2.0" label="Pointing//syl">
+        </edge>
+        <edge id="e47" source="toolbox/test_file#syl3.0" target="toolbox/test_file#tx3.0" label="Pointing//syl">
+        </edge>
+        <edge id="e48" source="toolbox/test_file#syl4.0" target="toolbox/test_file#tx4.0" label="Pointing//syl">
+        </edge>
+        <edge id="e49" source="toolbox/test_file#syl4.2" target="toolbox/test_file#tx4.0" label="Pointing//syl">
+        </edge>
+        <edge id="e50" source="toolbox/test_file#syl4.4" target="toolbox/test_file#tx4.0" label="Pointing//syl">
+        </edge>
+        <edge id="e51" source="toolbox/test_file#syl13.0" target="toolbox/test_file#tx13.0" label="Pointing//syl">
+        </edge>
+        <edge id="e52" source="toolbox/test_file#syl13.2" target="toolbox/test_file#tx13.0" label="Pointing//syl">
+        </edge>
+        <edge id="e53" source="toolbox/test_file#syl14.0" target="toolbox/test_file#tx14.0" label="Pointing//syl">
+        </edge>
+        <edge id="e54" source="toolbox/test_file#syl14.2" target="toolbox/test_file#tx14.0" label="Pointing//syl">
+        </edge>
+        <edge id="e55" source="toolbox/test_file#syl15.0" target="toolbox/test_file#tx15.0" label="Pointing//syl">
+        </edge>
+        <edge id="e56" source="toolbox/test_file#syl16.0" target="toolbox/test_file#tx16.0" label="Pointing//syl">
+        </edge>
+        <edge id="e57" source="toolbox/test_file#syl16.2" target="toolbox/test_file#tx16.0" label="Pointing//syl">
+        </edge>
+        <edge id="e58" source="toolbox/test_file#syl17.0" target="toolbox/test_file#tx17.0" label="Pointing//syl">
+        </edge>
+        <edge id="e59" source="toolbox/test_file#syl17.2" target="toolbox/test_file#tx17.0" label="Pointing//syl">
+        </edge>
+        <edge id="e60" source="toolbox/test_file#1" target="toolbox/test_file#2" label="Ordering/annis/">
+        </edge>
+        <edge id="e61" source="toolbox/test_file#2" target="toolbox/test_file#3" label="Ordering/annis/">
+        </edge>
+        <edge id="e62" source="toolbox/test_file#3" target="toolbox/test_file#4" label="Ordering/annis/">
+        </edge>
+        <edge id="e63" source="toolbox/test_file#4" target="toolbox/test_file#5" label="Ordering/annis/">
+        </edge>
+        <edge id="e64" source="toolbox/test_file#5" target="toolbox/test_file#13" label="Ordering/annis/">
+        </edge>
+        <edge id="e65" source="toolbox/test_file#13" target="toolbox/test_file#14" label="Ordering/annis/">
+        </edge>
+        <edge id="e66" source="toolbox/test_file#14" target="toolbox/test_file#15" label="Ordering/annis/">
+        </edge>
+        <edge id="e67" source="toolbox/test_file#15" target="toolbox/test_file#16" label="Ordering/annis/">
+        </edge>
+        <edge id="e68" source="toolbox/test_file#16" target="toolbox/test_file#17" label="Ordering/annis/">
+        </edge>
+        <edge id="e69" source="toolbox/test_file#17" target="toolbox/test_file#18" label="Ordering/annis/">
+        </edge>
+        <edge id="e70" source="toolbox/test_file#PoS1.0" target="toolbox/test_file#PoS2.0" label="Ordering/annis/PoS">
+        </edge>
+        <edge id="e71" source="toolbox/test_file#PoS2.0" target="toolbox/test_file#PoS3.0" label="Ordering/annis/PoS">
+        </edge>
+        <edge id="e72" source="toolbox/test_file#PoS3.0" target="toolbox/test_file#PoS4.0" label="Ordering/annis/PoS">
+        </edge>
+        <edge id="e73" source="toolbox/test_file#PoS4.0" target="toolbox/test_file#PoS5.0" label="Ordering/annis/PoS">
+        </edge>
+        <edge id="e74" source="toolbox/test_file#PoS5.0" target="toolbox/test_file#PoS13.0" label="Ordering/annis/PoS">
+        </edge>
+        <edge id="e75" source="toolbox/test_file#PoS13.0" target="toolbox/test_file#PoS14.0" label="Ordering/annis/PoS">
+        </edge>
+        <edge id="e76" source="toolbox/test_file#PoS14.0" target="toolbox/test_file#PoS15.0" label="Ordering/annis/PoS">
+        </edge>
+        <edge id="e77" source="toolbox/test_file#PoS15.0" target="toolbox/test_file#PoS16.0" label="Ordering/annis/PoS">
+        </edge>
+        <edge id="e78" source="toolbox/test_file#PoS16.0" target="toolbox/test_file#PoS17.0" label="Ordering/annis/PoS">
+        </edge>
+        <edge id="e79" source="toolbox/test_file#PoS17.0" target="toolbox/test_file#PoS18.0" label="Ordering/annis/PoS">
+        </edge>
+        <edge id="e80" source="toolbox/test_file#comment6.0" target="toolbox/test_file#comment7.0" label="Ordering/annis/comment">
+        </edge>
+        <edge id="e81" source="toolbox/test_file#comment7.0" target="toolbox/test_file#comment8.0" label="Ordering/annis/comment">
+        </edge>
+        <edge id="e82" source="toolbox/test_file#comment8.0" target="toolbox/test_file#comment9.0" label="Ordering/annis/comment">
+        </edge>
+        <edge id="e83" source="toolbox/test_file#comment9.0" target="toolbox/test_file#comment10.0" label="Ordering/annis/comment">
+        </edge>
+        <edge id="e84" source="toolbox/test_file#comment10.0" target="toolbox/test_file#comment11.0" label="Ordering/annis/comment">
+        </edge>
+        <edge id="e85" source="toolbox/test_file#comment11.0" target="toolbox/test_file#comment12.0" label="Ordering/annis/comment">
+        </edge>
+        <edge id="e86" source="toolbox/test_file#mrph1.0" target="toolbox/test_file#mrph2.0" label="Ordering/annis/mrph">
+        </edge>
+        <edge id="e87" source="toolbox/test_file#mrph2.0" target="toolbox/test_file#mrph3.0" label="Ordering/annis/mrph">
+        </edge>
+        <edge id="e88" source="toolbox/test_file#mrph3.0" target="toolbox/test_file#mrph4.0" label="Ordering/annis/mrph">
+        </edge>
+        <edge id="e89" source="toolbox/test_file#mrph4.0" target="toolbox/test_file#mrph4.2" label="Ordering/annis/mrph">
+        </edge>
+        <edge id="e90" source="toolbox/test_file#mrph4.2" target="toolbox/test_file#mrph13.0" label="Ordering/annis/mrph">
+        </edge>
+        <edge id="e91" source="toolbox/test_file#mrph13.0" target="toolbox/test_file#mrph14.0" label="Ordering/annis/mrph">
+        </edge>
+        <edge id="e92" source="toolbox/test_file#mrph14.0" target="toolbox/test_file#mrph14.2" label="Ordering/annis/mrph">
+        </edge>
+        <edge id="e93" source="toolbox/test_file#mrph14.2" target="toolbox/test_file#mrph15.0" label="Ordering/annis/mrph">
+        </edge>
+        <edge id="e94" source="toolbox/test_file#mrph15.0" target="toolbox/test_file#mrph16.0" label="Ordering/annis/mrph">
+        </edge>
+        <edge id="e95" source="toolbox/test_file#mrph16.0" target="toolbox/test_file#mrph17.0" label="Ordering/annis/mrph">
+        </edge>
+        <edge id="e96" source="toolbox/test_file#mrph17.0" target="toolbox/test_file#mrph17.2" label="Ordering/annis/mrph">
+        </edge>
+        <edge id="e97" source="toolbox/test_file#span1.0" target="toolbox/test_file#span13.0" label="Ordering/annis/ref">
+        </edge>
+        <edge id="e98" source="toolbox/test_file#syl1.0" target="toolbox/test_file#syl2.0" label="Ordering/annis/syl">
+        </edge>
+        <edge id="e99" source="toolbox/test_file#syl2.0" target="toolbox/test_file#syl3.0" label="Ordering/annis/syl">
+        </edge>
+        <edge id="e100" source="toolbox/test_file#syl3.0" target="toolbox/test_file#syl4.0" label="Ordering/annis/syl">
+        </edge>
+        <edge id="e101" source="toolbox/test_file#syl4.0" target="toolbox/test_file#syl4.2" label="Ordering/annis/syl">
+        </edge>
+        <edge id="e102" source="toolbox/test_file#syl4.2" target="toolbox/test_file#syl4.4" label="Ordering/annis/syl">
+        </edge>
+        <edge id="e103" source="toolbox/test_file#syl4.4" target="toolbox/test_file#syl13.0" label="Ordering/annis/syl">
+        </edge>
+        <edge id="e104" source="toolbox/test_file#syl13.0" target="toolbox/test_file#syl13.2" label="Ordering/annis/syl">
+        </edge>
+        <edge id="e105" source="toolbox/test_file#syl13.2" target="toolbox/test_file#syl14.0" label="Ordering/annis/syl">
+        </edge>
+        <edge id="e106" source="toolbox/test_file#syl14.0" target="toolbox/test_file#syl14.2" label="Ordering/annis/syl">
+        </edge>
+        <edge id="e107" source="toolbox/test_file#syl14.2" target="toolbox/test_file#syl15.0" label="Ordering/annis/syl">
+        </edge>
+        <edge id="e108" source="toolbox/test_file#syl15.0" target="toolbox/test_file#syl16.0" label="Ordering/annis/syl">
+        </edge>
+        <edge id="e109" source="toolbox/test_file#syl16.0" target="toolbox/test_file#syl16.2" label="Ordering/annis/syl">
+        </edge>
+        <edge id="e110" source="toolbox/test_file#syl16.2" target="toolbox/test_file#syl17.0" label="Ordering/annis/syl">
+        </edge>
+        <edge id="e111" source="toolbox/test_file#syl17.0" target="toolbox/test_file#syl17.2" label="Ordering/annis/syl">
+        </edge>
+        <edge id="e112" source="toolbox/test_file#tx1.0" target="toolbox/test_file#tx2.0" label="Ordering/annis/tx">
+        </edge>
+        <edge id="e113" source="toolbox/test_file#tx2.0" target="toolbox/test_file#tx3.0" label="Ordering/annis/tx">
+        </edge>
+        <edge id="e114" source="toolbox/test_file#tx3.0" target="toolbox/test_file#tx4.0" label="Ordering/annis/tx">
+        </edge>
+        <edge id="e115" source="toolbox/test_file#tx4.0" target="toolbox/test_file#tx5.0" label="Ordering/annis/tx">
+        </edge>
+        <edge id="e116" source="toolbox/test_file#tx5.0" target="toolbox/test_file#tx13.0" label="Ordering/annis/tx">
+        </edge>
+        <edge id="e117" source="toolbox/test_file#tx13.0" target="toolbox/test_file#tx14.0" label="Ordering/annis/tx">
+        </edge>
+        <edge id="e118" source="toolbox/test_file#tx14.0" target="toolbox/test_file#tx15.0" label="Ordering/annis/tx">
+        </edge>
+        <edge id="e119" source="toolbox/test_file#tx15.0" target="toolbox/test_file#tx16.0" label="Ordering/annis/tx">
+        </edge>
+        <edge id="e120" source="toolbox/test_file#tx16.0" target="toolbox/test_file#tx17.0" label="Ordering/annis/tx">
+        </edge>
+        <edge id="e121" source="toolbox/test_file#tx17.0" target="toolbox/test_file#tx18.0" label="Ordering/annis/tx">
+        </edge>
+        <edge id="e122" source="toolbox/test_file" target="toolbox" label="PartOf/annis/">
+        </edge>
+        <edge id="e123" source="toolbox/test_file#span1.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e124" source="toolbox/test_file#tx1.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e125" source="toolbox/test_file#tx2.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e126" source="toolbox/test_file#tx3.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e127" source="toolbox/test_file#tx4.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e128" source="toolbox/test_file#tx5.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e129" source="toolbox/test_file#PoS1.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e130" source="toolbox/test_file#PoS2.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e131" source="toolbox/test_file#PoS3.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e132" source="toolbox/test_file#PoS4.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e133" source="toolbox/test_file#PoS5.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e134" source="toolbox/test_file#syl1.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e135" source="toolbox/test_file#syl2.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e136" source="toolbox/test_file#syl3.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e137" source="toolbox/test_file#syl4.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e138" source="toolbox/test_file#syl4.2" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e139" source="toolbox/test_file#syl4.4" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e140" source="toolbox/test_file#mrph1.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e141" source="toolbox/test_file#mrph2.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e142" source="toolbox/test_file#mrph3.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e143" source="toolbox/test_file#mrph4.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e144" source="toolbox/test_file#mrph4.2" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e145" source="toolbox/test_file#comment6.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e146" source="toolbox/test_file#comment7.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e147" source="toolbox/test_file#comment8.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e148" source="toolbox/test_file#comment9.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e149" source="toolbox/test_file#comment10.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e150" source="toolbox/test_file#comment11.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e151" source="toolbox/test_file#comment12.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e152" source="toolbox/test_file#tx13.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e153" source="toolbox/test_file#tx14.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e154" source="toolbox/test_file#tx15.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e155" source="toolbox/test_file#tx16.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e156" source="toolbox/test_file#tx17.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e157" source="toolbox/test_file#tx18.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e158" source="toolbox/test_file#PoS13.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e159" source="toolbox/test_file#PoS14.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e160" source="toolbox/test_file#PoS15.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e161" source="toolbox/test_file#PoS16.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e162" source="toolbox/test_file#PoS17.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e163" source="toolbox/test_file#PoS18.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e164" source="toolbox/test_file#syl13.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e165" source="toolbox/test_file#syl13.2" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e166" source="toolbox/test_file#syl14.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e167" source="toolbox/test_file#syl14.2" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e168" source="toolbox/test_file#syl15.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e169" source="toolbox/test_file#syl16.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e170" source="toolbox/test_file#syl16.2" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e171" source="toolbox/test_file#syl17.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e172" source="toolbox/test_file#syl17.2" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e173" source="toolbox/test_file#mrph13.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e174" source="toolbox/test_file#mrph14.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e175" source="toolbox/test_file#mrph14.2" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e176" source="toolbox/test_file#mrph15.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e177" source="toolbox/test_file#mrph16.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e178" source="toolbox/test_file#mrph17.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e179" source="toolbox/test_file#mrph17.2" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e180" source="toolbox/test_file#span13.0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>

@@ -9,7 +9,7 @@ struct ProgressState {
 
 pub struct ProgressReporter {
     state: Arc<Mutex<ProgressState>>,
-    total_work: usize,
+    total_work: Option<usize>,
     step_id: StepID,
 }
 
@@ -26,7 +26,25 @@ impl ProgressReporter {
         let reporter = ProgressReporter {
             state: Arc::new(Mutex::new(state)),
             step_id,
-            total_work,
+            total_work: Some(total_work),
+        };
+        // Send a first status report so any listener can get the total number of steps to perform
+        reporter.worked(0)?;
+        Ok(reporter)
+    }
+
+    pub fn new_unknown_total_work(
+        tx: Option<StatusSender>,
+        step_id: StepID,
+    ) -> Result<ProgressReporter, AnnattoError> {
+        let state = ProgressState {
+            tx,
+            accumulated_finished_work: 0,
+        };
+        let reporter = ProgressReporter {
+            state: Arc::new(Mutex::new(state)),
+            step_id,
+            total_work: None,
         };
         // Send a first status report so any listener can get the total number of steps to perform
         reporter.worked(0)?;

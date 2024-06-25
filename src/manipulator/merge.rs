@@ -1,6 +1,8 @@
 use crate::error::{AnnattoError, StandardErrorResult};
 use crate::workflow::{StatusMessage, StatusSender};
-use crate::{Manipulator, Module};
+use crate::{Manipulator, StepID};
+use anyhow::anyhow;
+use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::{Component, Edge},
     model::{AnnotationComponent, AnnotationComponentType},
@@ -19,9 +21,16 @@ use serde_derive::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 use std::convert::TryFrom;
 use std::path::Path;
+use struct_field_names_as_array::FieldNamesAsSlice;
 
-#[derive(Default, Deserialize)]
+/// Merge multiple imported corpora into one corpus.
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(deny_unknown_fields)]
 pub struct Merge {
+    /// Define how to handle merging errrors.
+    /// Use "fail" if the whole conversion should fail, "drop" to remove the
+    /// documents having errors and "forward" to keep the documents and just
+    /// report the errors.
     #[serde(default)]
     error_policy: ErrorPolicy,
     check_names: Vec<String>,
@@ -47,7 +56,7 @@ enum ErrorPolicy {
 }
 
 impl TryFrom<Option<&String>> for ErrorPolicy {
-    type Error = AnnattoError;
+    type Error = anyhow::Error;
     fn try_from(value: Option<&String>) -> Result<Self, Self::Error> {
         match value {
             None => Ok(ErrorPolicy::default()),
@@ -57,16 +66,13 @@ impl TryFrom<Option<&String>> for ErrorPolicy {
 }
 
 impl TryFrom<&String> for ErrorPolicy {
-    type Error = AnnattoError;
+    type Error = anyhow::Error;
     fn try_from(value: &String) -> Result<Self, Self::Error> {
         match &value.trim().to_lowercase()[..] {
             "fail" => Ok(ErrorPolicy::Fail),
             "drop" => Ok(ErrorPolicy::Drop),
             "forward" => Ok(ErrorPolicy::Forward),
-            _ => Err(AnnattoError::Manipulator {
-                reason: format!("Undefined error policy: {value}"),
-                manipulator: String::from(MODULE_NAME),
-            }),
+            _ => Err(anyhow!("Undefined error policy: {value}")),
         }
     }
 }
@@ -88,6 +94,7 @@ impl Merge {
         &self,
         graph: &AnnotationGraph,
         order_names: &'a Vec<String>,
+        step_id: &StepID,
     ) -> StandardErrorResult<BTreeMap<String, BTreeMap<&'a str, NodeIdCollection>>> {
         let mut ordered_items_by_doc: BTreeMap<String, BTreeMap<&str, NodeIdCollection>> =
             BTreeMap::new();
@@ -139,7 +146,7 @@ impl Merge {
                     if nodes.is_empty() {
                         let err = AnnattoError::Manipulator {
                             reason: format!("Ordering `{order_name}` does not connect any nodes."),
-                            manipulator: self.module_name().to_string(),
+                            manipulator: step_id.module_name.to_string(),
                         };
                         return Err(Box::new(err));
                     }
@@ -151,7 +158,7 @@ impl Merge {
             } else {
                 let err = AnnattoError::Manipulator {
                     reason: format!("Required ordering `{order_name}` does not exist."),
-                    manipulator: self.module_name().to_string(),
+                    manipulator: step_id.module_name.to_string(),
                 };
                 return Err(Box::new(err));
             }
@@ -301,62 +308,75 @@ impl Merge {
         updates: &mut GraphUpdate,
         docs_with_errors: BTreeSet<String>,
         policy: &ErrorPolicy,
+        step_id: &StepID,
         tx: &Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let node_annos = graph.get_node_annos();
         let n = docs_with_errors.len();
+        let mut collected_errors = Vec::new();
         if n > 0 {
             let docs_s = docs_with_errors.iter().sorted().join("\n");
-            if let Some(sender) = &tx {
-                let message = match policy {
-                    ErrorPolicy::Fail => {
-                        let msg = format!("{n} documents with ill-merged tokens:\n{docs_s}");
-                        let err = AnnattoError::Manipulator {
-                            reason: msg,
-                            manipulator: self.module_name().to_string(),
-                        };
-                        StatusMessage::Failed(err)
-                    }
-                    ErrorPolicy::Drop => {
-                        for doc_node_name in docs_with_errors {
-                            // get all doc nodes with doc_id
-                            let corpus_nodes = node_annos
-                                .exact_anno_search(
-                                    Some(NODE_TYPE_KEY.ns.as_str()),
-                                    NODE_TYPE_KEY.name.as_str(),
-                                    ValueSearch::Some("corpus"),
-                                )
-                                .map(|m| m.unwrap().node)
-                                .collect::<BTreeSet<u64>>();
-                            let nodes_with_doc_name = node_annos
-                                .exact_anno_search(
-                                    Some(NODE_NAME_KEY.ns.as_str()),
-                                    NODE_NAME_KEY.name.as_str(),
-                                    ValueSearch::Some(doc_node_name.as_str()),
-                                )
-                                .map(|m| m.unwrap().node)
-                                .collect::<BTreeSet<u64>>();
-                            for doc_node_id in corpus_nodes.intersection(&nodes_with_doc_name) {
-                                let doc_name = node_annos
-                                    .get_value_for_item(doc_node_id, &NODE_NAME_KEY)?
-                                    .unwrap();
-                                updates.add_event(UpdateEvent::DeleteNode {
-                                    node_name: doc_name.to_string(),
-                                })?;
-                            }
+
+            match policy {
+                ErrorPolicy::Fail => {
+                    let msg = format!("{n} documents with ill-merged tokens:\n{docs_s}");
+                    let err = AnnattoError::Manipulator {
+                        reason: msg,
+                        manipulator: step_id.module_name.to_string(),
+                    };
+                    collected_errors.push(err);
+                }
+                ErrorPolicy::Drop => {
+                    for doc_node_name in docs_with_errors {
+                        // get all doc nodes with doc_id
+                        let corpus_nodes = node_annos
+                            .exact_anno_search(
+                                Some(NODE_TYPE_KEY.ns.as_str()),
+                                NODE_TYPE_KEY.name.as_str(),
+                                ValueSearch::Some("corpus"),
+                            )
+                            .map(|m| m.unwrap().node)
+                            .collect::<BTreeSet<u64>>();
+                        let nodes_with_doc_name = node_annos
+                            .exact_anno_search(
+                                Some(NODE_NAME_KEY.ns.as_str()),
+                                NODE_NAME_KEY.name.as_str(),
+                                ValueSearch::Some(doc_node_name.as_str()),
+                            )
+                            .map(|m| m.unwrap().node)
+                            .collect::<BTreeSet<u64>>();
+                        for doc_node_id in corpus_nodes.intersection(&nodes_with_doc_name) {
+                            let doc_name = node_annos
+                                .get_value_for_item(doc_node_id, &NODE_NAME_KEY)?
+                                .unwrap();
+                            updates.add_event(UpdateEvent::DeleteNode {
+                                node_name: doc_name.to_string(),
+                            })?;
                         }
+                    }
+
+                    if let Some(tx) = tx {
                         let msg = format!("{n} documents with ill-merged tokens will be dropped from the corpus:\n{docs_s}");
-                        StatusMessage::Warning(msg)
+                        tx.send(StatusMessage::Warning(msg))?;
                     }
-                    _ => {
+                }
+                _ => {
+                    if let Some(tx) = tx {
                         let msg = format!("BE AWARE that the corpus contains severe merging issues in the following {n} documents:\n{docs_s}");
-                        StatusMessage::Warning(msg)
+                        tx.send(StatusMessage::Warning(msg))?;
                     }
-                };
-                sender.send(message)?;
-            }
+                }
+            };
         }
-        Ok(())
+
+        if collected_errors.is_empty() {
+            Ok(())
+        } else {
+            Err(AnnattoError::ConversionFailed {
+                errors: collected_errors,
+            }
+            .into())
+        }
     }
 
     fn collect_skip_components(
@@ -371,10 +391,7 @@ impl Merge {
         if let Some(ref skip_component_spec) = self.skip_components {
             for spec in skip_component_spec {
                 let split_spec = split_qname(spec);
-                let layer = match split_spec.0 {
-                    None => "",
-                    Some(v) => v,
-                };
+                let layer = split_spec.0.unwrap_or_default();
                 let name = split_spec.1;
                 for c in graph.get_all_components(None, Some(name)) {
                     if c.layer == layer {
@@ -553,6 +570,7 @@ impl Manipulator for Merge {
         &self,
         graph: &mut AnnotationGraph,
         _workflow_directory: &Path,
+        step_id: StepID,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(sender) = &tx {
@@ -574,11 +592,11 @@ impl Manipulator for Merge {
         // init
         let mut updates = GraphUpdate::default();
         // merge
-        let ordered_items_by_doc = self.retrieve_ordered_nodes(graph, order_names)?;
+        let ordered_items_by_doc = self.retrieve_ordered_nodes(graph, order_names, &step_id)?;
         let reporter = if report_details { &sender_opt } else { &None };
         let mut mapper = TextNodeMapper {
             target_key: keep_name_key,
-            module_name: self.module_name().to_string(),
+            module_name: step_id.module_name.to_string(),
             docs_with_errors: BTreeSet::default(),
             optional_chars,
             optionals: optional_toks,
@@ -592,6 +610,7 @@ impl Manipulator for Merge {
             &mut updates,
             mapper.docs_with_errors,
             on_error,
+            &step_id,
             &sender_opt,
         )?;
         graph.apply_update(&mut updates, |_msg| {})?;
@@ -599,22 +618,13 @@ impl Manipulator for Merge {
     }
 }
 
-pub const MODULE_NAME: &str = "merge";
-
-impl Module for Merge {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeSet;
-    use std::env::temp_dir;
 
     use crate::manipulator::merge::{ErrorPolicy, Merge};
     use crate::manipulator::Manipulator;
-    use crate::Result;
+    use crate::{Result, StepID};
 
     use graphannis::corpusstorage::{QueryLanguage, ResultOrder, SearchQuery};
     use graphannis::model::AnnotationComponentType;
@@ -623,7 +633,7 @@ mod tests {
     use graphannis_core::annostorage::ValueSearch;
     use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY};
     use itertools::Itertools;
-    use tempfile::{tempdir_in, tempfile};
+    use tempfile::{tempdir, tempfile};
 
     #[test]
     fn test_merger_in_mem() {
@@ -655,7 +665,11 @@ mod tests {
             silent: false,
             skip_components: None,
         };
-        let merge_r = merger.manipulate_corpus(&mut g, temp_dir().as_path(), None);
+        let step_id = StepID {
+            module_name: "merger".to_string(),
+            path: None,
+        };
+        let merge_r = merger.manipulate_corpus(&mut g, tempdir()?.path(), step_id, None);
         assert_eq!(merge_r.is_ok(), true, "Probing merge result {:?}", &merge_r);
         let mut e_g = expected_output_graph(on_disk)?;
         // corpus nodes
@@ -729,8 +743,8 @@ mod tests {
             "node ->dep[deprel=/.+/] node",
         ];
         let corpus_name = "current";
-        let tmp_dir_e = tempdir_in(temp_dir())?;
-        let tmp_dir_g = tempdir_in(temp_dir())?;
+        let tmp_dir_e = tempdir()?;
+        let tmp_dir_g = tempdir()?;
         e_g.save_to(&tmp_dir_e.path().join(corpus_name))?;
         g.save_to(&tmp_dir_g.path().join(corpus_name))?;
         let cs_e = CorpusStorage::with_auto_cache_size(&tmp_dir_e.path(), true)?;
@@ -787,7 +801,7 @@ mod tests {
                 "text".to_string(),
                 "syntext".to_string(),
             ],
-            error_policy: ErrorPolicy::default(),
+            error_policy: ErrorPolicy::Drop,
             keep_name: "norm".to_string(),
             optional_chars: BTreeSet::new(),
             optional_values: BTreeSet::new(),
@@ -795,9 +809,13 @@ mod tests {
             silent: false,
             skip_components: None,
         };
+        let step_id = StepID {
+            module_name: "merger".to_string(),
+            path: None,
+        };
         assert_eq!(
             merger
-                .manipulate_corpus(&mut g, temp_dir().as_path(), None)
+                .manipulate_corpus(&mut g, tempdir()?.path(), step_id, None)
                 .is_ok(),
             true
         );
@@ -809,7 +827,7 @@ mod tests {
     }
 
     fn input_graph(on_disk: bool) -> Result<AnnotationGraph> {
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode {
             node_name: "root".to_string(),
@@ -1183,7 +1201,7 @@ mod tests {
     }
 
     fn expected_output_graph(on_disk: bool) -> Result<AnnotationGraph> {
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode {
             node_name: "root".to_string(),

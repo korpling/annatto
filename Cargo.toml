@@ -6,52 +6,53 @@ homepage = "https://github.com/korpling/annatto/"
 license = "Apache-2.0"
 name = "annatto"
 repository = "https://github.com/korpling/annatto/"
-version = "0.3.1"
+version = "0.9.0"
 
 [dependencies]
 ansi_term = "0.12"
 anyhow = "1.0"
-tiny_http = {version = "0.12", optional = true}
+clap = {version = "4.0", features = ["derive", "env"]}
+console = "0.15"
 csv = "1.1"
+documented = "0.3.0"
+encoding_rs = "0.8"
 encoding_rs_io = "0.1.7"
 glob = "0.3"
-graphannis = "2.4.5"
-graphannis-core = "2.4.5"
-include_dir = {version = "0.7", optional = true}
-indicatif = "0.16"
-itertools = "0.11"
+graphannis = "3.2.2"
+graphannis-core = "3.2.2"
+indicatif = "0.17"
+itertools = "0.12"
+lazy_static = "1.4.0"
+linked-hash-map = "0.5.6"
 log = "0.4"
-mime_guess = {version = "2", optional = true}
 normpath = "1.1"
-open = {version = "5", optional = true}
-ordered-float = {version = "3.4.0", default-features = false}
-pest = "2.0"
+ordered-float = {version = "4.1", default-features = false}
+pathdiff = "0.2"
+percent-encoding = "2.3.1"
+pest = "2.7"
 pest_derive = "2.0"
-portpicker = {version = "0.1.1", optional = true}
-quick-xml = "0.28"
+quick-xml = "0.31"
 rayon = "1.1"
 regex = "1.4"
 serde = "1.0"
 serde_derive = "1.0"
-structopt = "0.3"
-tabled = "0.12"
+struct-field-names-as-array = "0.3.0"
+strum = {version = "0.26.2", features = ["derive"]}
+tabled = {version = "0.15", features = ["ansi"]}
 tempfile = "3"
+termimad = "0.29.1"
+text-splitter = "0.6.3"
 thiserror = "1.0"
 toml = "0.8.0"
-tracing-subscriber = "0.3"
-umya-spreadsheet = "1.0"
+tracing-subscriber = {version = "0.3", features = ["env-filter"]}
+umya-spreadsheet = "~1.1.1"
 xml-rs = "0.8"
-url = {version = "2", optional = true}
+zip = "0.6.6"
 
 [dev-dependencies]
 assert_cmd = "2.0.11"
-insta = {version = "1.26.0", features = ["toml", "redactions"]}
+insta = {version = "1.26.0", features = ["toml", "filters"]}
 pretty_assertions = "1.3"
-ureq = { version = "2.7.1", default-features = false }
-
-[features]
-default = ["embed-documentation"]
-embed-documentation = ["dep:include_dir", "dep:tiny_http", "dep:mime_guess", "dep:portpicker", "dep:open", "dep:url"]
 
 # Compile some of the dependencies in release mode if when we are ourself in
 # "dev" mode (like building debug binaries or running tests)
@@ -75,13 +76,13 @@ split-debuginfo = "packed"
 
 # Config for 'cargo dist'
 [workspace.metadata.dist]
-# The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
-cargo-dist-version = "0.0.7"
-# The preferred Rust toolchain to use in CI (rustup toolchain syntax)
-rust-toolchain-version = "1.67.1"
-# CI backends to support (see 'cargo dist generate-ci')
-ci = ["github"]
+# CI backends to support
+ci = "github"
 # The installers to generate for each app
 installers = []
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["x86_64-unknown-linux-gnu", "x86_64-apple-darwin", "x86_64-pc-windows-msvc", "aarch64-apple-darwin"]
+targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]
+# The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
+cargo-dist-version = "0.16.0"
+# Publish jobs to run in CI
+pr-run-mode = "plan"

@@ -93,19 +93,21 @@ visibility = "hidden"
         </edge>
         <edge id="e5" source="brackets_in_value/doc1#n1" target="brackets_in_value/doc1#t3" label="Dominance/syntax/edge">
         </edge>
-        <edge id="e6" source="brackets_in_value/doc1#t2" target="brackets_in_value/doc1#t3" label="Ordering/annis/">
+        <edge id="e6" source="brackets_in_value/doc1#t1" target="brackets_in_value/doc1#t2" label="Ordering/annis/">
         </edge>
-        <edge id="e7" source="brackets_in_value/doc1#t1" target="brackets_in_value/doc1#t2" label="Ordering/annis/">
+        <edge id="e7" source="brackets_in_value/doc1#t2" target="brackets_in_value/doc1#t3" label="Ordering/annis/">
         </edge>
-        <edge id="e8" source="brackets_in_value/doc1#t2" target="brackets_in_value/doc1#text" label="PartOf/annis/">
+        <edge id="e8" source="brackets_in_value/doc1" target="brackets_in_value" label="PartOf/annis/">
         </edge>
         <edge id="e9" source="brackets_in_value/doc1#text" target="brackets_in_value/doc1" label="PartOf/annis/">
         </edge>
-        <edge id="e10" source="brackets_in_value/doc1#t1" target="brackets_in_value/doc1#text" label="PartOf/annis/">
+        <edge id="e10" source="brackets_in_value/doc1#n1" target="brackets_in_value/doc1" label="PartOf/annis/">
         </edge>
-        <edge id="e11" source="brackets_in_value/doc1" target="brackets_in_value" label="PartOf/annis/">
+        <edge id="e11" source="brackets_in_value/doc1#t1" target="brackets_in_value/doc1#text" label="PartOf/annis/">
         </edge>
-        <edge id="e12" source="brackets_in_value/doc1#t3" target="brackets_in_value/doc1#text" label="PartOf/annis/">
+        <edge id="e12" source="brackets_in_value/doc1#t2" target="brackets_in_value/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e13" source="brackets_in_value/doc1#t3" target="brackets_in_value/doc1#text" label="PartOf/annis/">
         </edge>
     </graph>
 </graphml>

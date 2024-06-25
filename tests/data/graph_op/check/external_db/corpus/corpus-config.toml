@@ -1,0 +1,6 @@
+[context]
+default = 5
+sizes = [0, 1, 2, 5, 10]
+
+[view]
+page_size = 10

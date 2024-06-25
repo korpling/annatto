@@ -5,6 +5,124 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2024-06-24
+
+### Added
+
+- `link`, `map`, `enumerate`, and `collapse` have documentation visible to the user.
+
+### Fixed
+
+- documentation for import of `xlsx` showed wrong config doc string
+- `link` does not use default `0` for `source_node` and `target_node` attributes anymore, since they are 1-based indices (instead, there is no default)
+
+## [0.8.2] - 2024-06-21
+
+### Fixed
+
+- `sequence` export for horizontal data now also works in models with multiple segmentation and empty tokens
+- `check` can now save without a panic when `report` attribute is omitted. `list` is the default report level which only applies to `save`, not to the `report` attribute itself, where the default is not to print.
+
+## [0.8.1] - 2024-06-21
+
+### Fixed
+
+- `sequence` export for horizontal mode now works
+
+## [0.8.0] - 2024-06-17
+
+### Added
+
+- Importer for the relANNIS format (<http://korpling.github.io/ANNIS/3.7/developer-guide/annisimportformat.html>)
+- progress reports for `enumerate`, `link`, and `map`
+- `revise` can now rename nodes using attribute `node_names`, e. g. for renaming (top level) corpus nodes. The syntax is equivalent to renaming annotations, thus renaming with an empty value will lead to deletion. Renaming with an existing value (also rename with self) will lead to an error.
+- Add `zip` option to GraphML export to directly export as ZIP file which can be
+  more easily imported in ANNIS.
+
+### Changed
+
+- update to dependencies to latest graphANNIS version
+
+### Fixed
+
+- Fix non-resolved relative path when importing EXMARaLDA files. 
+- Limit the table width when listing the module properties, so they fit in the
+  current terminal.
+
+## [0.7.0] - 2024-05-23
+
+### Added
+
+- `sequence` exports connected node's annotation values (e. g. ordered nodes) as vertical or horizontal sequences.
+- `split` breaks up conflated annotation values into parts
+- `revise` now offers to delete an entire subgraph from a node in the inverse direction of part of edges
+- `enumerate` can prefix the numeric annotation it generates with an annotation value from the query match (use attribute `value` to point in the match list with a 1-based index)
+
+### Changed
+
+- `enumerate` uses u64 internally (to be in line with graphANNIS and to be deserializable)
+- `collapse` now uses node ids that indicate the node names that entered the merge, the parent node is not indicated anymore
+- `split` has default configuration/behaviour (do nothing); attribute `keep` is now `delete` to adhere to boolean default logic
+
+### Fixed
+
+- no more `annis::tok` labels for non-terminal coverage nodes in `xlsx` import
+- hypernode id's are unified, in older versions it could happen that annotations get distributed about two or more hypernode instances due to invalid determination of the parent (part of-child)
+
+## [0.6.0] - 2024-04-22
+
+### Added
+
+- Added simple chunker module based on
+  [text-splitter](https://crates.io/crates/text-splitter).
+- `check` can write check report to file 
+- `check` can test a corpus graph comparing results to an external corpus graph loaded from a graphANNIS database
+- import `ptb` can now split node annotations to derive a label for the incoming edge, when a delimiter is provided 
+  using `edge_delimiter`. E. g., `NP-sbj` will create a node of category `NP`, whose incoming edge has function `sbj`,
+  given the following config is used: `edge_delimiter = "-"`
+- config attribute `stable_order` for exporting graphml enforces stable ordering of edges and nodes in output
+- toml workflow files now strictly need to stick to known fields of module structs
+- command line interface now has the `list` subcommand to list all modules and the `info`  subcommand to show the description and parameters of a module.o
+
+### Changed
+
+- The `check` module can now query the `AnnotationGraph` directly without using
+  the `CorpusStorageManager`.
+- `chunk` deserializes with empty config to default values
+
+### Fixed
+
+- Don't throw error if output directory for any workflow does not exist.
+- import `ptb`: Also constituents get `PartOf` edges to their respective document node.
+
+## [0.5.0] - 2024-01-19
+
+### Changed
+
+- improve progress reporting by reporting each conversion step separately
+
+### Added
+
+- graph_op `collapse` can collapse an edge component, i. e., it merges all nodes in a connected subgraph in said component
+- `collapse` can be accelerated when all edges of the component to be collapsed are known to be disjoint by providing `disjoint = true` in the step config
+- `collapse` provides more feedback on current process
+- `collapse` gives hypernodes proper names that allow to identify the subgraph they belong to. Furthermore already existing hypernode ids are not reused (in case multiple collapse operations are run on a graph).
+- `CorpusStorage` is now quiet
+- importing `exmaralda` does now has more features
+- `exmaralda` can be exported
+- `xlsx` import creates part of-edges between tokens and document nodes
+- all imports add PartOf edges from nodes to their respective document (lowest corpus node)
+
+### Fixed
+
+- `link` now considers all matching nodes for the same value, so the correct amount of edges is created
+- `exmaralda` returns error when there is no time value for a timeline item
+- fixed and simplified import of corpus node annotations
+- `exmaralda` import's paths to linked media files are relative to the working directory
+- `xlsx` importer now adds `PartOf` relations to the document nodes  
+
+## [0.4.0] - 2023-11-13
+
 ### Added
 
 - a separator for joining node values in `link` can be set with attribute `value_sep`
@@ -12,6 +130,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - graph_op `check` can now be configured to not let the entire processing chain fail, when a test fails, by setting `policy = "warn"` (default is `fail`)
 - metadata can be imported from spreadsheets alongside the linguistic data in the workbook, a data and a metadata spreadsheet name or number can now be specified for importing xlsx
 - add heuristic for KWIC visualizer in graphml export
+- `re` is now `revise`
+- `revise` can modify components
+- `path` as a import format now triggers the embedding of path names as nodes into the graph; this is supposed to help to represent configuration files for ANNIS
+- import `path` adds an `annis::file` annotation
+- import `path` adds part-of edges
+- very basic implementation of a generic xml importer
+- import opus sentence alignments
+- graph op `enumerate` to enumerate nodes, i. e., add numeric annotations to results of one or multiple queries
+- add importer for the format used by the [TreeTagger](https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/)
 
 ### Fixed
 
@@ -21,6 +148,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fixed code of spreadsheet import (merged cells might not have an end column reference)
 - relative import and export paths are interpreted as relative to the parent directory of the workflow file
 - the spreadsheet importer will use the correct namespace `default_ns` for segmentation ordering relations
+- fixed ordering of token nodes in spreadsheet import
+
+### Removed
+
+- removed `show-documentation` subcommand and moved the documentation from mdBook to the crate documentation in the source code
 
 ## [0.3.1] - 2023-08-04
 
@@ -45,6 +177,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `check` tests are now configured in main workflow as TOML fragment
 - `check` report table contains number of matches in case of failure
 - linker takes list of node indices for value nodes (source and target)
+- return an error in Workflow::execute on conversion error instead of relying on status messages
 
 ### Added
 

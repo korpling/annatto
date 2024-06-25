@@ -1,0 +1,338 @@
+---
+source: src/importer/relannis/tests.rs
+expression: actual
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>
+    <key id="k1" for="node" attr.name="default_ns::default_seg0" attr.type="string"/>
+    <key id="k2" for="node" attr.name="default_ns::default_seg1" attr.type="string"/>
+    <key id="k3" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k4" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k5" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k6" for="node" attr.name="annis::relannis-version" attr.type="string"/>
+    <key id="k7" for="node" attr.name="annis::tok" attr.type="string"/>
+    <key id="k8" for="node" attr.name="annis::tok-whitespace-after" attr.type="string"/>
+    <key id="k9" for="node" attr.name="default_ns::anno" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <data key="k0"><![CDATA[
+        [[visualizers]]
+        element = "node"
+        vis_type = "grid"
+        display_name = "annotations"
+        visibility = "permanent"
+        ]]></data>
+        <node id="testComplexMapSOrderRelation/doc1#virtualToken3">
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7"> </data>
+            <data key="k8"> </data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#sTok4_virtualSpan">
+            <data key="k1">more</data>
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7">more</data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#virtualToken4">
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7"> </data>
+            <data key="k8"> </data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#sTok5_virtualSpan">
+            <data key="k1">complicated</data>
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7">complicated</data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#virtualToken1">
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7"> </data>
+            <data key="k8"> </data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#sTok2_virtualSpan">
+            <data key="k1">this</data>
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7">this</data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#virtualToken2">
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7"> </data>
+            <data key="k8"> </data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#sTok3_virtualSpan">
+            <data key="k1">example</data>
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7">example</data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#virtualToken11">
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7"> </data>
+            <data key="k8"> </data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#sTok11_virtualSpan">
+            <data key="k1">?</data>
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7">?</data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#virtualToken0">
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7"> </data>
+            <data key="k8"> </data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#sTok1_virtualSpan">
+            <data key="k1">Is</data>
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7">Is</data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#virtualToken9">
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7"> </data>
+            <data key="k8"> </data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#sTok13_virtualSpan">
+            <data key="k2">oh</data>
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7">oh</data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#virtualToken10">
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7"> </data>
+            <data key="k8"> </data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#sTok14_virtualSpan">
+            <data key="k2">yes!</data>
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7">yes!</data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#virtualToken7">
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7"> </data>
+            <data key="k8"> </data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#sTok8_virtualSpan">
+            <data key="k1">appears</data>
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7">appears</data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#virtualToken8">
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7"> </data>
+            <data key="k8"> </data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#sTok9_virtualSpan">
+            <data key="k1">to</data>
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7">to</data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#virtualToken5">
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7"> </data>
+            <data key="k8"> </data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#sTok6_virtualSpan">
+            <data key="k1">than</data>
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7">than</data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#virtualToken6">
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7"> </data>
+            <data key="k8"> </data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#sTok7_virtualSpan">
+            <data key="k1">it</data>
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7">it</data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#sTok12_virtualSpan">
+            <data key="k2">Uhm</data>
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7">Uhm</data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#sTok10_virtualSpan">
+            <data key="k1">be</data>
+            <data key="k4">default_layer</data>
+            <data key="k5">node</data>
+            <data key="k7">be</data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#sSpan1">
+            <data key="k4">default_ns</data>
+            <data key="k5">node</data>
+        </node>
+        <node id="testComplexMapSOrderRelation">
+            <data key="k5">corpus</data>
+            <data key="k6">3.3</data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1">
+            <data key="k3">doc1</data>
+            <data key="k5">corpus</data>
+        </node>
+        <node id="testComplexMapSOrderRelation/doc1#sText0">
+            <data key="k5">datasource</data>
+        </node>
+        <edge id="e0" source="testComplexMapSOrderRelation/doc1#sSpan1" target="testComplexMapSOrderRelation/doc1#virtualToken0" label="Coverage/default_ns/">
+        </edge>
+        <edge id="e1" source="testComplexMapSOrderRelation/doc1#sTok4_virtualSpan" target="testComplexMapSOrderRelation/doc1#virtualToken3" label="Coverage/VIRTUAL/timelineRelationMapping">
+        </edge>
+        <edge id="e2" source="testComplexMapSOrderRelation/doc1#sTok5_virtualSpan" target="testComplexMapSOrderRelation/doc1#virtualToken4" label="Coverage/VIRTUAL/timelineRelationMapping">
+        </edge>
+        <edge id="e3" source="testComplexMapSOrderRelation/doc1#sTok2_virtualSpan" target="testComplexMapSOrderRelation/doc1#virtualToken1" label="Coverage/VIRTUAL/timelineRelationMapping">
+        </edge>
+        <edge id="e4" source="testComplexMapSOrderRelation/doc1#sTok3_virtualSpan" target="testComplexMapSOrderRelation/doc1#virtualToken2" label="Coverage/VIRTUAL/timelineRelationMapping">
+        </edge>
+        <edge id="e5" source="testComplexMapSOrderRelation/doc1#sTok11_virtualSpan" target="testComplexMapSOrderRelation/doc1#virtualToken11" label="Coverage/VIRTUAL/timelineRelationMapping">
+        </edge>
+        <edge id="e6" source="testComplexMapSOrderRelation/doc1#sTok1_virtualSpan" target="testComplexMapSOrderRelation/doc1#virtualToken0" label="Coverage/VIRTUAL/timelineRelationMapping">
+        </edge>
+        <edge id="e7" source="testComplexMapSOrderRelation/doc1#sTok13_virtualSpan" target="testComplexMapSOrderRelation/doc1#virtualToken9" label="Coverage/VIRTUAL/timelineRelationMapping">
+        </edge>
+        <edge id="e8" source="testComplexMapSOrderRelation/doc1#sTok14_virtualSpan" target="testComplexMapSOrderRelation/doc1#virtualToken10" label="Coverage/VIRTUAL/timelineRelationMapping">
+        </edge>
+        <edge id="e9" source="testComplexMapSOrderRelation/doc1#sTok8_virtualSpan" target="testComplexMapSOrderRelation/doc1#virtualToken7" label="Coverage/VIRTUAL/timelineRelationMapping">
+        </edge>
+        <edge id="e10" source="testComplexMapSOrderRelation/doc1#sTok9_virtualSpan" target="testComplexMapSOrderRelation/doc1#virtualToken8" label="Coverage/VIRTUAL/timelineRelationMapping">
+        </edge>
+        <edge id="e11" source="testComplexMapSOrderRelation/doc1#sTok6_virtualSpan" target="testComplexMapSOrderRelation/doc1#virtualToken5" label="Coverage/VIRTUAL/timelineRelationMapping">
+        </edge>
+        <edge id="e12" source="testComplexMapSOrderRelation/doc1#sTok7_virtualSpan" target="testComplexMapSOrderRelation/doc1#virtualToken6" label="Coverage/VIRTUAL/timelineRelationMapping">
+        </edge>
+        <edge id="e13" source="testComplexMapSOrderRelation/doc1#sTok12_virtualSpan" target="testComplexMapSOrderRelation/doc1#virtualToken7" label="Coverage/VIRTUAL/timelineRelationMapping">
+        </edge>
+        <edge id="e14" source="testComplexMapSOrderRelation/doc1#sTok12_virtualSpan" target="testComplexMapSOrderRelation/doc1#virtualToken8" label="Coverage/VIRTUAL/timelineRelationMapping">
+        </edge>
+        <edge id="e15" source="testComplexMapSOrderRelation/doc1#sTok10_virtualSpan" target="testComplexMapSOrderRelation/doc1#virtualToken9" label="Coverage/VIRTUAL/timelineRelationMapping">
+        </edge>
+        <edge id="e16" source="testComplexMapSOrderRelation/doc1#sTok10_virtualSpan" target="testComplexMapSOrderRelation/doc1#virtualToken10" label="Coverage/VIRTUAL/timelineRelationMapping">
+        </edge>
+        <edge id="e17" source="testComplexMapSOrderRelation/doc1#sTok1_virtualSpan" target="testComplexMapSOrderRelation/doc1#sTok2_virtualSpan" label="Pointing/default_ns/dep">
+            <data key="k9">test</data>
+        </edge>
+        <edge id="e18" source="testComplexMapSOrderRelation/doc1#virtualToken3" target="testComplexMapSOrderRelation/doc1#virtualToken4" label="Ordering/annis/">
+        </edge>
+        <edge id="e19" source="testComplexMapSOrderRelation/doc1#virtualToken4" target="testComplexMapSOrderRelation/doc1#virtualToken5" label="Ordering/annis/">
+        </edge>
+        <edge id="e20" source="testComplexMapSOrderRelation/doc1#virtualToken1" target="testComplexMapSOrderRelation/doc1#virtualToken2" label="Ordering/annis/">
+        </edge>
+        <edge id="e21" source="testComplexMapSOrderRelation/doc1#virtualToken2" target="testComplexMapSOrderRelation/doc1#virtualToken3" label="Ordering/annis/">
+        </edge>
+        <edge id="e22" source="testComplexMapSOrderRelation/doc1#virtualToken0" target="testComplexMapSOrderRelation/doc1#virtualToken1" label="Ordering/annis/">
+        </edge>
+        <edge id="e23" source="testComplexMapSOrderRelation/doc1#virtualToken9" target="testComplexMapSOrderRelation/doc1#virtualToken10" label="Ordering/annis/">
+        </edge>
+        <edge id="e24" source="testComplexMapSOrderRelation/doc1#virtualToken10" target="testComplexMapSOrderRelation/doc1#virtualToken11" label="Ordering/annis/">
+        </edge>
+        <edge id="e25" source="testComplexMapSOrderRelation/doc1#virtualToken7" target="testComplexMapSOrderRelation/doc1#virtualToken8" label="Ordering/annis/">
+        </edge>
+        <edge id="e26" source="testComplexMapSOrderRelation/doc1#virtualToken8" target="testComplexMapSOrderRelation/doc1#virtualToken9" label="Ordering/annis/">
+        </edge>
+        <edge id="e27" source="testComplexMapSOrderRelation/doc1#virtualToken5" target="testComplexMapSOrderRelation/doc1#virtualToken6" label="Ordering/annis/">
+        </edge>
+        <edge id="e28" source="testComplexMapSOrderRelation/doc1#virtualToken6" target="testComplexMapSOrderRelation/doc1#virtualToken7" label="Ordering/annis/">
+        </edge>
+        <edge id="e29" source="testComplexMapSOrderRelation/doc1#sTok4_virtualSpan" target="testComplexMapSOrderRelation/doc1#sTok5_virtualSpan" label="Ordering/default_ns/default_seg0">
+        </edge>
+        <edge id="e30" source="testComplexMapSOrderRelation/doc1#sTok5_virtualSpan" target="testComplexMapSOrderRelation/doc1#sTok6_virtualSpan" label="Ordering/default_ns/default_seg0">
+        </edge>
+        <edge id="e31" source="testComplexMapSOrderRelation/doc1#sTok2_virtualSpan" target="testComplexMapSOrderRelation/doc1#sTok3_virtualSpan" label="Ordering/default_ns/default_seg0">
+        </edge>
+        <edge id="e32" source="testComplexMapSOrderRelation/doc1#sTok3_virtualSpan" target="testComplexMapSOrderRelation/doc1#sTok4_virtualSpan" label="Ordering/default_ns/default_seg0">
+        </edge>
+        <edge id="e33" source="testComplexMapSOrderRelation/doc1#sTok1_virtualSpan" target="testComplexMapSOrderRelation/doc1#sTok2_virtualSpan" label="Ordering/default_ns/default_seg0">
+        </edge>
+        <edge id="e34" source="testComplexMapSOrderRelation/doc1#sTok8_virtualSpan" target="testComplexMapSOrderRelation/doc1#sTok9_virtualSpan" label="Ordering/default_ns/default_seg0">
+        </edge>
+        <edge id="e35" source="testComplexMapSOrderRelation/doc1#sTok9_virtualSpan" target="testComplexMapSOrderRelation/doc1#sTok10_virtualSpan" label="Ordering/default_ns/default_seg0">
+        </edge>
+        <edge id="e36" source="testComplexMapSOrderRelation/doc1#sTok6_virtualSpan" target="testComplexMapSOrderRelation/doc1#sTok7_virtualSpan" label="Ordering/default_ns/default_seg0">
+        </edge>
+        <edge id="e37" source="testComplexMapSOrderRelation/doc1#sTok7_virtualSpan" target="testComplexMapSOrderRelation/doc1#sTok8_virtualSpan" label="Ordering/default_ns/default_seg0">
+        </edge>
+        <edge id="e38" source="testComplexMapSOrderRelation/doc1#sTok10_virtualSpan" target="testComplexMapSOrderRelation/doc1#sTok11_virtualSpan" label="Ordering/default_ns/default_seg0">
+        </edge>
+        <edge id="e39" source="testComplexMapSOrderRelation/doc1#sTok13_virtualSpan" target="testComplexMapSOrderRelation/doc1#sTok14_virtualSpan" label="Ordering/default_ns/default_seg1">
+        </edge>
+        <edge id="e40" source="testComplexMapSOrderRelation/doc1#sTok12_virtualSpan" target="testComplexMapSOrderRelation/doc1#sTok13_virtualSpan" label="Ordering/default_ns/default_seg1">
+        </edge>
+        <edge id="e41" source="testComplexMapSOrderRelation/doc1#virtualToken3" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e42" source="testComplexMapSOrderRelation/doc1#sTok4_virtualSpan" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e43" source="testComplexMapSOrderRelation/doc1#virtualToken4" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e44" source="testComplexMapSOrderRelation/doc1#sTok5_virtualSpan" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e45" source="testComplexMapSOrderRelation/doc1#virtualToken1" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e46" source="testComplexMapSOrderRelation/doc1#sTok2_virtualSpan" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e47" source="testComplexMapSOrderRelation/doc1#virtualToken2" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e48" source="testComplexMapSOrderRelation/doc1#sTok3_virtualSpan" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e49" source="testComplexMapSOrderRelation/doc1#virtualToken11" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e50" source="testComplexMapSOrderRelation/doc1#sTok11_virtualSpan" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e51" source="testComplexMapSOrderRelation/doc1#virtualToken0" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e52" source="testComplexMapSOrderRelation/doc1#sTok1_virtualSpan" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e53" source="testComplexMapSOrderRelation/doc1#virtualToken9" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e54" source="testComplexMapSOrderRelation/doc1#sTok13_virtualSpan" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e55" source="testComplexMapSOrderRelation/doc1#virtualToken10" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e56" source="testComplexMapSOrderRelation/doc1#sTok14_virtualSpan" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e57" source="testComplexMapSOrderRelation/doc1#virtualToken7" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e58" source="testComplexMapSOrderRelation/doc1#sTok8_virtualSpan" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e59" source="testComplexMapSOrderRelation/doc1#virtualToken8" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e60" source="testComplexMapSOrderRelation/doc1#sTok9_virtualSpan" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e61" source="testComplexMapSOrderRelation/doc1#virtualToken5" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e62" source="testComplexMapSOrderRelation/doc1#sTok6_virtualSpan" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e63" source="testComplexMapSOrderRelation/doc1#virtualToken6" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e64" source="testComplexMapSOrderRelation/doc1#sTok7_virtualSpan" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e65" source="testComplexMapSOrderRelation/doc1#sTok12_virtualSpan" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e66" source="testComplexMapSOrderRelation/doc1#sTok10_virtualSpan" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e67" source="testComplexMapSOrderRelation/doc1#sSpan1" target="testComplexMapSOrderRelation/doc1#sText0" label="PartOf/annis/">
+        </edge>
+        <edge id="e68" source="testComplexMapSOrderRelation/doc1" target="testComplexMapSOrderRelation" label="PartOf/annis/">
+        </edge>
+        <edge id="e69" source="testComplexMapSOrderRelation/doc1#sText0" target="testComplexMapSOrderRelation/doc1" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>

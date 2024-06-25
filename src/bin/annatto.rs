@@ -1,56 +1,83 @@
-#[cfg(feature = "embed-documentation")]
-use annatto::documentation_server;
 use annatto::{
     error::AnnattoError,
     workflow::{execute_from_file, StatusMessage, Workflow},
-    StepID,
+    GraphOpDiscriminants, ModuleConfiguration, ReadFromDiscriminants, StepID, WriteAsDiscriminants,
 };
-#[cfg(feature = "embed-documentation")]
-use anyhow::anyhow;
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
-use std::{collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread};
-use structopt::StructOpt;
+use clap::Parser;
+use itertools::Itertools;
+use lazy_static::lazy_static;
+use std::{
+    collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread, time::Duration,
+};
+use strum::IntoEnumIterator;
+use tabled::{
+    settings::{object::Segment, themes::ColumnNames, Modify, Width},
+    Table,
+};
+use tracing_subscriber::filter::EnvFilter;
+
+lazy_static! {
+    static ref USE_ANSI_COLORS: bool = std::env::var("NO_COLOR").is_err();
+}
 
 /// Define a conversion operation
-#[derive(StructOpt)]
+#[derive(Parser)]
+#[command(version, about)]
 enum Cli {
     /// Run a conversion pipeline from a workflow file.
     Run {
         /// The path to the workflow file.
-        #[structopt(parse(from_os_str))]
+        #[clap(value_parser)]
         workflow_file: std::path::PathBuf,
         /// Adding this argument resolves environmental variables in the provided workflow file.
         #[structopt(long)]
         env: bool,
     },
-    /// Only check if a workflow files can be imported. Invalid workflow files will lead to a non-zero exit code.
+    /// Only check if a workflow file can be loaded. Invalid workflow files will lead to a non-zero exit code.
     Validate {
         /// The path to the workflow file.
-        #[structopt(parse(from_os_str))]
+        #[clap(value_parser)]
         workflow_file: std::path::PathBuf,
     },
-    #[cfg(feature = "embed-documentation")]
-    /// Show the documentation for this version of Annatto in the browser.
-    ShowDocumentation,
+    /// List all supported formats (importer, exporter) and graph operations.
+    List,
+    /// Show information about modules for the given format or graph operations having this name.
+    Info { name: String },
+}
+
+fn print_markdown(text: &str) {
+    if *USE_ANSI_COLORS {
+        termimad::print_text(text);
+    } else {
+        print!("{text}");
+    }
+}
+
+fn markdown_text(text: &str) -> String {
+    if *USE_ANSI_COLORS {
+        termimad::text(text).to_string()
+    } else {
+        text.to_string()
+    }
 }
 
 pub fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
+    let filter = EnvFilter::from_default_env().add_directive("annatto=trace".parse()?);
+    tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .compact()
+        .init();
 
-    let args = Cli::from_args();
+    let args = Parser::parse();
     match args {
         Cli::Run { workflow_file, env } => convert(workflow_file, env)?,
-        #[cfg(feature = "embed-documentation")]
-        Cli::ShowDocumentation => {
-            let (_, _, handle) = documentation_server::start_server(true)?;
-            handle
-                .join()
-                .map_err(|_e| anyhow!("Waiting for documentation server thread failed"))??;
-        }
         Cli::Validate { workflow_file } => {
             Workflow::try_from((workflow_file, false))?;
         }
+        Cli::List => list_modules(),
+        Cli::Info { name } => module_info(&name),
     };
     Ok(())
 }
@@ -58,75 +85,218 @@ pub fn main() -> anyhow::Result<()> {
 /// Execute the conversion in the background and show the status to the user
 fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
     let (tx, rx) = mpsc::channel();
-    thread::spawn(
-        move || match execute_from_file(&workflow_file, read_env, Some(tx.clone())) {
-            Ok(_) => {}
-            Err(e) => tx
-                .send(StatusMessage::Failed(e))
-                .expect("Could not send failure message"),
-        },
-    );
+    let result =
+        thread::spawn(move || execute_from_file(&workflow_file, read_env, Some(tx.clone())));
 
-    let mut steps_progress: HashMap<StepID, f32> = HashMap::new();
+    let mut all_bars: HashMap<StepID, ProgressBar> = HashMap::new();
 
-    let bar = ProgressBar::new(1000);
-    bar.set_style(ProgressStyle::default_bar().template("[{elapsed}] [{bar:40}] {percent}% {msg}"));
-    let mut errors = Vec::new();
+    let not_started_style = ProgressStyle::default_bar()
+        .template("{prefix} [{bar:30.blue}] {percent}% {msg}")
+        .expect("Could not parse progress bar template")
+        .progress_chars("=> ");
+
+    let in_progress_bar_style = ProgressStyle::default_bar()
+        .template("{prefix} [{bar:30.blue}] {percent}% {msg}  [{elapsed_precise}/est. {duration}]")
+        .expect("Could not parse progress bar template")
+        .progress_chars("=> ");
+
+    let in_progress_spinner_style = ProgressStyle::default_bar()
+        .template("{prefix} [{spinner:^30}] {msg}  [{elapsed_precise}]")
+        .expect("Could not parse progress bar template")
+        .tick_strings(&["∙∙∙", "●∙∙", "∙●∙", "∙∙●", " "]);
+
+    let finished_style = ProgressStyle::default_bar()
+        .template("{prefix} [{bar:30.blue}] {percent}% {msg}  [{elapsed_precise}]")
+        .expect("Could not parse progress bar template")
+        .progress_chars("=> ");
+
+    let multi_bar = MultiProgress::new();
+
     for status_update in rx {
         match status_update {
-            StatusMessage::Failed(e) => {
-                errors.push(e);
-            }
             StatusMessage::StepsCreated(steps) => {
                 if steps.is_empty() {
-                    bar.println("No steps in workflow file")
+                    multi_bar.println("No steps in workflow file")?;
                 } else {
-                    // Print all steps and insert empty progress for each step
-                    bar.println(format!("Conversion starts with {} steps", steps.len()));
-                    bar.println("-------------------------------");
-                    for s in steps {
-                        bar.println(format!("{}", &s));
-                        steps_progress.entry(s).or_default();
+                    // Add a progress bar for all steps
+                    for (idx, s) in steps.into_iter().enumerate() {
+                        let idx = idx + 1;
+
+                        let pb = multi_bar.insert_from_back(0, ProgressBar::new(100));
+                        pb.set_style(not_started_style.clone());
+                        pb.set_prefix(format!("#{idx:<2}"));
+                        pb.set_message(s.to_string());
+                        pb.enable_steady_tick(Duration::from_millis(250));
+                        all_bars.insert(s, pb);
                     }
-                    bar.println("-------------------------------");
                 }
-                bar.println("");
             }
             StatusMessage::Info(msg) => {
-                bar.println(msg);
+                multi_bar.println(msg)?;
             }
             StatusMessage::Warning(msg) => {
-                bar.println(format!("[WARNING] {}", &msg));
+                let msg = format!("[WARNING] {}", &msg);
+                if *USE_ANSI_COLORS {
+                    multi_bar.println(console::style(msg).red().to_string())?;
+                } else {
+                    multi_bar.println(msg)?;
+                }
             }
             StatusMessage::Progress {
                 id,
                 total_work,
                 finished_work,
             } => {
-                let progress: f32 = finished_work as f32 / total_work as f32;
-                *steps_progress.entry(id.clone()).or_default() = progress;
-                // Sum up all steps
-                let progress_sum: f32 = steps_progress.values().sum();
-                let num_entries: f32 = steps_progress.len() as f32;
-                let progress_percent = (progress_sum / num_entries) * 100.0;
-                bar.set_position((progress_percent * 10.0) as u64);
-                bar.set_message(format!("Running {}", id));
+                if let Some(pb) = all_bars.get(&id) {
+                    if let Some(total_work) = total_work {
+                        let progress: f32 = (finished_work as f32 / total_work as f32) * 100.0;
+                        let pos = progress.round() as u64;
+                        pb.set_style(in_progress_bar_style.clone());
+                        pb.set_position(pos);
+                    } else {
+                        pb.set_style(in_progress_spinner_style.clone());
+                        pb.tick();
+                    }
+                }
             }
             StatusMessage::StepDone { id } => {
-                *steps_progress.entry(id.clone()).or_default() = 1.0;
-                // Sum up all steps
-                let progress_sum: f32 = steps_progress.values().sum();
-                let num_entries: f32 = steps_progress.len() as f32;
-                let progress_percent = (progress_sum / num_entries) * 100.0;
-                bar.set_position((progress_percent * 10.0) as u64);
-                bar.set_message(format!("Finished {}", id));
+                // Finish this progress bar and reset all other non-finished ones
+                for (pb_id, pb) in all_bars.iter() {
+                    if pb_id == &id {
+                        pb.set_style(finished_style.clone());
+                        pb.finish();
+                    } else if !pb.is_finished() {
+                        pb.reset_elapsed();
+                    }
+                }
             }
         }
     }
-    if errors.is_empty() {
-        bar.finish_with_message("Conversion successful");
-        Ok(())
+    // Join the finished thread
+    let result = result.join().map_err(|_e| AnnattoError::JoinHandle)?;
+    match result {
+        Ok(_) => {
+            multi_bar.println("Conversion successful")?;
+            Ok(())
+        }
+        Err(e) => Err(e),
+    }
+}
+
+fn list_modules() {
+    // Create a markdown styled table where each row is one type of module
+    let mut table = String::default();
+    table.push_str("|:-:|:-:|\n");
+    let importer_list = ReadFromDiscriminants::iter()
+        .map(|m| m.as_ref().to_string())
+        .join(", ");
+    table.push_str("| Import formats | ");
+    table.push_str(&importer_list);
+    table.push_str("|\n");
+    table.push_str("|:-:|:-:|\n");
+
+    let exporter_list = WriteAsDiscriminants::iter()
+        .map(|m| m.as_ref().to_string())
+        .join(", ");
+    table.push_str("| Export formats | ");
+    table.push_str(&exporter_list);
+    table.push_str("|\n");
+    table.push_str("|:-:|:-:|\n");
+
+    let graph_op_list = GraphOpDiscriminants::iter()
+        .map(|m| m.as_ref().to_string())
+        .join(", ");
+    table.push_str("| Graph operations | ");
+    table.push_str(&graph_op_list);
+    table.push_str("|\n");
+    table.push_str("|-\n");
+
+    print_markdown(&table);
+    print_markdown("\nUse `annatto info <name>` to get more information about one of the formats or graph operations.\n\n");
+}
+
+fn module_info(name: &str) {
+    let matching_importers: Vec<_> = ReadFromDiscriminants::iter()
+        .filter(|m| m.as_ref() == name.to_lowercase())
+        .collect();
+    let matching_exporters: Vec<_> = WriteAsDiscriminants::iter()
+        .filter(|m| m.as_ref() == name.to_lowercase())
+        .collect();
+    let matching_graph_ops: Vec<_> = GraphOpDiscriminants::iter()
+        .filter(|m| m.as_ref() == name.to_lowercase())
+        .collect();
+
+    if matching_importers.is_empty()
+        && matching_exporters.is_empty()
+        && matching_graph_ops.is_empty()
+    {
+        println!("No module with name {name} found. Run the `annotto list` command to get a list of all modules.")
+    }
+
+    if !matching_importers.is_empty() {
+        print_markdown("# Importers\n\n");
+        for m in matching_importers {
+            let module_doc = m.module_doc();
+            print_markdown(&format!("## {} (importer)\n\n{module_doc}\n\n", m.as_ref()));
+            print_module_fields(m.module_configs());
+        }
+    }
+
+    if !matching_exporters.is_empty() {
+        print_markdown("# Exporters\n\n");
+        for m in matching_exporters {
+            let module_doc = m.module_doc();
+            print_markdown(&format!("## {} (exporter)\n\n{module_doc}\n\n", m.as_ref()));
+            print_module_fields(m.module_configs());
+        }
+    }
+
+    if !matching_graph_ops.is_empty() {
+        print_markdown("# Graph operations\n\n");
+        for m in matching_graph_ops {
+            let module_doc = m.module_doc();
+            print_markdown(&format!(
+                "## {} (graph operation)\n\n{module_doc}\n\n",
+                m.as_ref()
+            ));
+            print_module_fields(m.module_configs());
+        }
+    }
+}
+
+fn print_module_fields(mut fields: Vec<ModuleConfiguration>) {
+    if fields.is_empty() {
+        print_markdown("*No Configuration*\n\n");
     } else {
-        Err(AnnattoError::ConversionFailed { errors })
+        // Replace all descriptions with markdown
+
+        for f in &mut fields {
+            f.description = markdown_text(&f.description);
+        }
+
+        let name_col_width: usize = fields.iter().map(|f| f.name.len()).max().unwrap_or(5);
+        let (term_width, _) = termimad::terminal_size();
+        let term_width = term_width as usize;
+        let description_col_width = term_width.saturating_sub(name_col_width).saturating_sub(7);
+
+        print_markdown("*Configuration*\n\n");
+        let mut table = Table::new(fields);
+
+        if *USE_ANSI_COLORS {
+            table
+                .with(tabled::settings::Style::modern())
+                .with(ColumnNames::default())
+                .with(
+                    Modify::new(Segment::new(.., 0..1))
+                        .with(Width::wrap(name_col_width).keep_words()),
+                )
+                .with(
+                    Modify::new(Segment::new(.., 1..2))
+                        .with(Width::wrap(description_col_width).keep_words()),
+                );
+        } else {
+            table.with(tabled::settings::Style::markdown());
+        }
+        println!("{}\n", table);
     }
 }

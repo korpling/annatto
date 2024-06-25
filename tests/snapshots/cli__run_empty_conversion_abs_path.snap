@@ -1,12 +1,5 @@
 ---
 source: tests/cli.rs
-expression: output
+expression: output_err
 ---
-Conversion starts with 3 steps
--------------------------------
-create_empty_corpus [.]
-create_annotation_graph
-check
--------------------------------
-Creating annotation graph by applying the updates from the import steps
 

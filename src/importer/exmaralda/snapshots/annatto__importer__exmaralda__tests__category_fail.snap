@@ -1,0 +1,5 @@
+---
+source: src/importer/exmaralda/tests.rs
+expression: r.err().unwrap()
+---
+Error during importing corpus to ./tests/data/import/exmaralda/fail-no_category/test_doc.exb with "import_exmaralda": "Tier encountered with undefined category attribute."

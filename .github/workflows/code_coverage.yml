@@ -1,82 +1,31 @@
 name: Code Coverage
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
-    branches: [main]
   merge_group:
 
 jobs:
-  base_branch_cov:
+  coverage:
+    name: Execute tests with code coverage
     runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: always
+      RUST_BACKTRACE: 0
     steps:
-      - name: Get base branch
-        id: base
-        run: |
-          BASE_BRANCH=${{ github.base_ref }}
-          echo "base_branch=${BASE_BRANCH:-"main"}" >> $GITHUB_ENV
-      - uses: actions/checkout@v3
-        with:
-          ref: ${{ env.base_branch }}
+      - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1.4.4
         with:
-          components: llvm-tools-preview
-      - uses: SierraSoftworks/setup-grcov@v1
+          toolchain: stable
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Generate code coverage
+        run: cargo llvm-cov --all-features --ignore-filename-regex 'tests?\.rs'  --codecov --output-path codecov.json
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          version: latest
-      - name: Install latest mdbook
-        run: |
-          tag=$(curl 'https://api.github.com/repos/rust-lang/mdbook/releases/latest' | jq -r '.tag_name')
-          url="https://github.com/rust-lang/mdbook/releases/download/${tag}/mdbook-${tag}-x86_64-unknown-linux-gnu.tar.gz"
-          mkdir bin
-          curl -sSL $url | tar -xz --directory=bin
-          echo "$(pwd)/bin" >> $GITHUB_PATH
-      - run: mdbook build
-        working-directory: docs/
-      - name: Run tests with code coverage
-        run: ./test_coverage.sh
-      - name: Upload code coverage for ref branch
-        uses: actions/upload-artifact@v2
-        with:
-          name: ref-lcov.info
-          path: ./target/coverage/tests.lcov
-  checks:
-    name: "Execute tests with code coverage"
-    runs-on: ubuntu-latest
-    needs: base_branch_cov
-    steps:
-      - uses: actions/checkout@v3
-      - name: Download code coverage report from base branch
-        uses: actions/download-artifact@v2
-        with:
-          name: ref-lcov.info
-      - uses: actions-rust-lang/setup-rust-toolchain@v1.4.4
-        with:
-          components: llvm-tools-preview
-      - uses: SierraSoftworks/setup-grcov@v1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          version: latest
-      - name: Install latest mdbook
-        run: |
-          tag=$(curl 'https://api.github.com/repos/rust-lang/mdbook/releases/latest' | jq -r '.tag_name')
-          url="https://github.com/rust-lang/mdbook/releases/download/${tag}/mdbook-${tag}-x86_64-unknown-linux-gnu.tar.gz"
-          mkdir bin
-          curl -sSL $url | tar -xz --directory=bin
-          echo "$(pwd)/bin" >> $GITHUB_PATH
-      - run: mdbook build
-        working-directory: docs/
-      - name: Run tests with code coverage
-        run: ./test_coverage.sh
-
-      #  Compares two code coverage files and generates report as a comment
-      - name: Code coverage report
-        id: code-coverage
-        uses: barecheck/code-coverage-action@v1
-        with:
-          barecheck-github-app-token: ${{ secrets.BARECHECK_GITHUB_APP_TOKEN }}
-          lcov-file: "./target/coverage/tests.lcov"
-          base-lcov-file: "./tests.lcov"
-          minimum-ratio: -0.05 # Fails Github action once code coverage is decreasing too much
-          send-summary-comment: true
-          show-annotations: "warning" # Possible options warning|error
+          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+          files: codecov.json
+          fail_ci_if_error: true

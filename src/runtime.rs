@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use graphannis::AnnotationGraph;
 
 use crate::{
@@ -10,11 +12,12 @@ pub enum EnvVars {
     InMemory,
 }
 
-impl ToString for EnvVars {
-    fn to_string(&self) -> String {
-        match self {
-            EnvVars::InMemory => "ANNATTO_IN_MEMORY".to_string(),
-        }
+impl Display for EnvVars {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            EnvVars::InMemory => "ANNATTO_IN_MEMORY",
+        };
+        write!(f, "{s}")
     }
 }
 
@@ -36,7 +39,7 @@ fn on_error_default_storage(tx: &Option<StatusSender>) -> Result<bool> {
     if let Some(sender) = &tx {
         sender.send(StatusMessage::Warning(format!(
             "Could not read value of environment variable {}, working on disk.",
-            EnvVars::InMemory.to_string()
+            EnvVars::InMemory
         )))?;
     }
     Ok(true)

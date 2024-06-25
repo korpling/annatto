@@ -1,9 +1,11 @@
 use std::{
     collections::BTreeMap,
+    fmt::Display,
     io::Read,
     path::{Path, PathBuf},
 };
 
+use documented::{Documented, DocumentedFields};
 use encoding_rs_io::DecodeReaderBytes;
 use graphannis::{
     model::AnnotationComponentType,
@@ -17,66 +19,55 @@ use pest::{
 };
 use pest_derive::Parser;
 use serde_derive::Deserialize;
-
-use crate::{
-    error::AnnattoError,
-    util::graphupdate::import_corpus_graph_from_files,
-    workflow::{StatusMessage, StatusSender},
-    Module, StepID,
-};
+use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Importer;
+use crate::{
+    error::AnnattoError, util::graphupdate::import_corpus_graph_from_files, workflow::StatusSender,
+    StepID,
+};
 
-pub const MODULE_NAME: &str = "import_conllu";
-
-#[derive(Default, Deserialize)]
-#[serde(default)]
+/// Import files in the [CONLL-U format](https://universaldependencies.org/format.html)
+/// from the Universal Dependencies project.
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(default, deny_unknown_fields)]
 pub struct ImportCoNLLU {}
 
-impl Module for ImportCoNLLU {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
-    }
-}
+const FILE_EXTENSIONS: [&str; 2] = ["conll", "conllu"];
 
 impl Importer for ImportCoNLLU {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
-        _step_id: StepID,
+        step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         // TODO use ProgressReporter
         let mut update = GraphUpdate::default();
         let paths_and_node_names =
-            import_corpus_graph_from_files(&mut update, input_path, &["conll", "conllu"])?;
+            import_corpus_graph_from_files(&mut update, input_path, self.file_extensions())?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
-            if let Err(e) = self.import_document(&mut update, pathbuf.as_path(), doc_node_name, &tx)
-            {
-                if let Some(ref sender) = tx {
-                    let reason = e.to_string();
-                    sender.send(StatusMessage::Failed(AnnattoError::Import {
-                        reason,
-                        importer: self.module_name().to_string(),
-                        path: input_path.to_path_buf(),
-                    }))?;
-                }
-            }
+            self.import_document(&step_id, &mut update, pathbuf.as_path(), doc_node_name, &tx)?;
         }
         Ok(update)
     }
+
+    fn file_extensions(&self) -> &[&str] {
+        &FILE_EXTENSIONS
+    }
 }
 
-impl ToString for Rule {
-    fn to_string(&self) -> String {
-        match self {
-            Rule::lemma => "lemma".to_string(),
-            Rule::upos => "upos".to_string(),
-            Rule::xpos => "xpos".to_string(),
-            Rule::deprel => "deprel".to_string(),
-            Rule::enhanced_rel => "rel".to_string(),
-            _ => "".to_string(),
-        }
+impl Display for Rule {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            Rule::lemma => "lemma",
+            Rule::upos => "upos",
+            Rule::xpos => "xpos",
+            Rule::deprel => "deprel",
+            Rule::enhanced_rel => "rel",
+            _ => "",
+        };
+        write!(f, "{s}")
     }
 }
 
@@ -85,6 +76,7 @@ type DepSpec = (usize, Option<String>);
 impl ImportCoNLLU {
     fn import_document(
         &self,
+        step_id: &StepID,
         update: &mut GraphUpdate,
         document_path: &Path,
         document_node_name: String,
@@ -95,12 +87,13 @@ impl ImportCoNLLU {
         let mut file_content = String::new();
         decoder.read_to_string(&mut file_content)?; // TODO this needs to be buffered. UD Files can be very large
         let conllu: Pairs<Rule> = CoNLLUParser::parse(Rule::conll, &file_content)?;
-        self.map_document(update, document_node_name, conllu, tx)?;
+        self.map_document(step_id, update, document_node_name, conllu, tx)?;
         Ok(())
     }
 
     fn map_document(
         &self,
+        step_id: &StepID,
         update: &mut GraphUpdate,
         document_node_name: String,
         mut conllu: Pairs<Rule>,
@@ -113,6 +106,7 @@ impl ImportCoNLLU {
                     // iterate over sentences
                     if sentence.as_rule() == Rule::sentence {
                         token_names.extend(self.map_sentence(
+                            step_id,
                             update,
                             document_node_name.as_str(),
                             sentence,
@@ -121,14 +115,14 @@ impl ImportCoNLLU {
                     }
                 }
             }
-        } else if let Some(sender) = tx {
+        } else {
             let msg = format!("Could not parse file as conllu: {document_node_name}");
             let err = AnnattoError::Import {
                 reason: msg,
-                importer: self.module_name().to_string(),
+                importer: step_id.module_name.clone(),
                 path: PathBuf::from(document_node_name),
             };
-            sender.send(crate::workflow::StatusMessage::Failed(err))?;
+            return Err(err.into());
         }
         for (source, target) in token_names.iter().tuple_windows() {
             update.add_event(UpdateEvent::AddEdge {
@@ -144,11 +138,12 @@ impl ImportCoNLLU {
 
     fn map_sentence(
         &self,
+        step_id: &StepID,
         update: &mut GraphUpdate,
         document_node_name: &str,
         sentence: Pair<Rule>,
         tx: &Option<StatusSender>,
-    ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    ) -> anyhow::Result<Vec<String>> {
         let mut id_to_tok_name = BTreeMap::new();
         let mut dependencies = Vec::new();
         let mut s_annos = Vec::new();
@@ -157,7 +152,7 @@ impl ImportCoNLLU {
             match member.as_rule() {
                 Rule::token => {
                     let (tok_name, tok_id, dep) =
-                        self.map_token(update, document_node_name, member, tx)?;
+                        self.map_token(step_id, update, document_node_name, member, tx)?;
                     id_to_tok_name.insert(tok_id, tok_name.to_string());
                     if let Some(dependency) = dep {
                         dependencies.push((tok_name, dependency.0, dependency.1));
@@ -199,6 +194,13 @@ impl ImportCoNLLU {
                 node_name: node_name.to_string(),
                 node_type: "node".to_string(),
             })?;
+            update.add_event(UpdateEvent::AddEdge {
+                source_node: node_name.to_string(),
+                target_node: document_node_name.to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".to_string(),
+            })?;
             for (anno_name, anno_value) in s_annos {
                 update.add_event(UpdateEvent::AddNodeLabel {
                     node_name: node_name.to_string(),
@@ -238,15 +240,15 @@ impl ImportCoNLLU {
                                 anno_value: deprel_value.to_string(),
                             })?;
                         }
-                    } else if let Some(sender) = tx {
+                    } else {
                         let msg =
                             format!("Failed to build dependency tree: Unknown head id `{head_id}` ({l}, {c})");
                         let err = AnnattoError::Import {
                             reason: msg,
-                            importer: self.module_name().to_string(),
+                            importer: step_id.module_name.clone(),
                             path: Path::new(document_node_name).to_path_buf(),
                         };
-                        sender.send(StatusMessage::Failed(err))?;
+                        return Err(err.into());
                     }
                 }
             }
@@ -256,17 +258,25 @@ impl ImportCoNLLU {
 
     fn map_token(
         &self,
+        step_id: &StepID,
         update: &mut GraphUpdate,
         document_node_name: &str,
         token: Pair<Rule>,
         _tx: &Option<StatusSender>,
-    ) -> Result<(String, usize, Option<DepSpec>), Box<dyn std::error::Error>> {
+    ) -> anyhow::Result<(String, usize, Option<DepSpec>)> {
         let (l, c) = token.line_col();
         let line = token.as_str().to_string();
         let node_name = format!("{document_node_name}#t{l}_{c}");
         update.add_event(UpdateEvent::AddNode {
             node_name: node_name.to_string(),
             node_type: "node".to_string(),
+        })?;
+        update.add_event(UpdateEvent::AddEdge {
+            source_node: node_name.to_string(),
+            target_node: document_node_name.to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
         })?;
         update.add_event(UpdateEvent::AddNodeLabel {
             node_name: node_name.to_string(),
@@ -348,15 +358,18 @@ impl ImportCoNLLU {
         } else {
             // by grammar spec this branch should never be possible
             let reason = format!("Token `{line}` ({l}, {c}) has no id which is invalid.");
-            Err(Box::new(AnnattoError::Import {
+
+            Err(AnnattoError::Import {
                 reason,
-                importer: self.module_name().to_string(),
+                importer: step_id.module_name.clone(),
                 path: document_node_name.into(),
-            }))
+            }
+            .into())
         }
     }
 }
 
+/// This implements the Pest parser for the given grammar.
 #[derive(Parser)]
 #[grammar = "importer/conllu/conllu.pest"]
 struct CoNLLUParser;

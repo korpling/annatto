@@ -1,0 +1,183 @@
+---
+source: src/importer/relannis/tests.rs
+expression: actual
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>
+    <key id="k1" for="node" attr.name="ns::%2525invalid%2525%2525name%2524" attr.type="string"/>
+    <key id="k2" for="node" attr.name="%2536%253E%255D%2560%2527%255B%253B%252B%257C%255D::%2531%255C%252E%255B%2560%2526%255B%257D%25C2%25B2%252A" attr.type="string"/>
+    <key id="k3" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k4" for="node" attr.name="ns::invalid_%25C2%25A7name_" attr.type="string"/>
+    <key id="k5" for="node" attr.name="ns::invalid__name_" attr.type="string"/>
+    <key id="k6" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k7" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k8" for="node" attr.name="annis::relannis-version" attr.type="string"/>
+    <key id="k9" for="node" attr.name="annis::tok" attr.type="string"/>
+    <key id="k10" for="node" attr.name="annis::tok-whitespace-after" attr.type="string"/>
+    <key id="k11" for="node" attr.name="annis::tok-whitespace-before" attr.type="string"/>
+    <key id="k12" for="node" attr.name="%2530%253E%253B%253B%2521%255D%257B%25C2%25A7::%2532%25C3%259F%257B%252E%253A%2529%25C2%25B2%252C%25C2%25B8" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <data key="k0"><![CDATA[
+            [[visualizers]]
+            element = "node"
+            vis_type = "kwic"
+            display_name = "Key Word in Context"
+            visibility = "permanent"
+    
+            [[visualizers]]
+            element = "edge"
+            layer = "%37%23%3D%2B%7D%7D%C3%A4%3F%C3%B6%3B"
+            vis_type = "arch_dependency"
+            display_name = "deps"
+            visibility = "hidden"
+
+            [[visualizers]]
+            element = "node"
+            vis_type = "grid"
+            display_name = "annotations"
+            visibility = "hidden"
+        ]]></data>
+        <node id="BorderCases/doc1#sTok1">
+            <data key="k10">t</data>
+            <data key="k11">This is actually Whitespace! </data>
+            <data key="k2">value</data>
+            <data key="k6">morphology</data>
+            <data key="k7">node</data>
+            <data key="k9">Is</data>
+        </node>
+        <node id="BorderCases/doc1#sTok2">
+            <data key="k10">e</data>
+            <data key="k6">morphology</data>
+            <data key="k7">node</data>
+            <data key="k9">this</data>
+        </node>
+        <node id="BorderCases/doc1#sTok3">
+            <data key="k10">m</data>
+            <data key="k6">morphology</data>
+            <data key="k7">node</data>
+            <data key="k9">example</data>
+        </node>
+        <node id="BorderCases/doc1#sTok4">
+            <data key="k10">c</data>
+            <data key="k6">morphology</data>
+            <data key="k7">node</data>
+            <data key="k9">more</data>
+        </node>
+        <node id="BorderCases/doc1#sTok5">
+            <data key="k10">mplicated t</data>
+            <data key="k6">morphology</data>
+            <data key="k7">node</data>
+            <data key="k9">complicated</data>
+        </node>
+        <node id="BorderCases/doc1#sTok6">
+            <data key="k10">han i</data>
+            <data key="k6">morphology</data>
+            <data key="k7">node</data>
+            <data key="k9">than</data>
+        </node>
+        <node id="BorderCases/doc1#sTok7">
+            <data key="k10">t a</data>
+            <data key="k6">morphology</data>
+            <data key="k7">node</data>
+            <data key="k9">it</data>
+        </node>
+        <node id="BorderCases/doc1#sTok8">
+            <data key="k10">ppears t</data>
+            <data key="k6">morphology</data>
+            <data key="k7">node</data>
+            <data key="k9">appears</data>
+        </node>
+        <node id="BorderCases/doc1#sTok9">
+            <data key="k10">b</data>
+            <data key="k6">morphology</data>
+            <data key="k7">node</data>
+            <data key="k9">to</data>
+        </node>
+        <node id="BorderCases/doc1#sTok10">
+            <data key="k10"></data>
+            <data key="k6">morphology</data>
+            <data key="k7">node</data>
+            <data key="k9">be</data>
+        </node>
+        <node id="BorderCases/doc1#sTok11">
+            <data key="k10"></data>
+            <data key="k6">morphology</data>
+            <data key="k7">node</data>
+            <data key="k9">?</data>
+        </node>
+        <node id="BorderCases/doc1#span1">
+            <data key="k6">span_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="BorderCases">
+            <data key="k7">corpus</data>
+            <data key="k8">3.3</data>
+        </node>
+        <node id="BorderCases/doc1">
+            <data key="k1">value1</data>
+            <data key="k3">doc1</data>
+            <data key="k4">value3</data>
+            <data key="k5">value2</data>
+            <data key="k7">corpus</data>
+        </node>
+        <node id="BorderCases/doc1#sText1">
+            <data key="k7">datasource</data>
+        </node>
+        <edge id="e0" source="BorderCases/doc1#span1" target="BorderCases/doc1#sTok10" label="Coverage//">
+        </edge>
+        <edge id="e1" source="BorderCases/doc1#span1" target="BorderCases/doc1#sTok11" label="Coverage//">
+        </edge>
+        <edge id="e2" source="BorderCases/doc1#sTok1" target="BorderCases/doc1#sTok2" label="Pointing/%37%23%3D%2B%7D%7D%C3%A4%3F%C3%B6%3B/%2D7%23%3D%2B%7D%7D%C3%A4%3F%C3%B6%3B">
+            <data key="k12">value</data>
+        </edge>
+        <edge id="e3" source="BorderCases/doc1#sTok1" target="BorderCases/doc1#sTok2" label="Ordering/annis/">
+        </edge>
+        <edge id="e4" source="BorderCases/doc1#sTok2" target="BorderCases/doc1#sTok3" label="Ordering/annis/">
+        </edge>
+        <edge id="e5" source="BorderCases/doc1#sTok3" target="BorderCases/doc1#sTok4" label="Ordering/annis/">
+        </edge>
+        <edge id="e6" source="BorderCases/doc1#sTok4" target="BorderCases/doc1#sTok5" label="Ordering/annis/">
+        </edge>
+        <edge id="e7" source="BorderCases/doc1#sTok5" target="BorderCases/doc1#sTok6" label="Ordering/annis/">
+        </edge>
+        <edge id="e8" source="BorderCases/doc1#sTok6" target="BorderCases/doc1#sTok7" label="Ordering/annis/">
+        </edge>
+        <edge id="e9" source="BorderCases/doc1#sTok7" target="BorderCases/doc1#sTok8" label="Ordering/annis/">
+        </edge>
+        <edge id="e10" source="BorderCases/doc1#sTok8" target="BorderCases/doc1#sTok9" label="Ordering/annis/">
+        </edge>
+        <edge id="e11" source="BorderCases/doc1#sTok9" target="BorderCases/doc1#sTok10" label="Ordering/annis/">
+        </edge>
+        <edge id="e12" source="BorderCases/doc1#sTok10" target="BorderCases/doc1#sTok11" label="Ordering/annis/">
+        </edge>
+        <edge id="e13" source="BorderCases/doc1#sTok1" target="BorderCases/doc1#sText1" label="PartOf/annis/">
+        </edge>
+        <edge id="e14" source="BorderCases/doc1#sTok2" target="BorderCases/doc1#sText1" label="PartOf/annis/">
+        </edge>
+        <edge id="e15" source="BorderCases/doc1#sTok3" target="BorderCases/doc1#sText1" label="PartOf/annis/">
+        </edge>
+        <edge id="e16" source="BorderCases/doc1#sTok4" target="BorderCases/doc1#sText1" label="PartOf/annis/">
+        </edge>
+        <edge id="e17" source="BorderCases/doc1#sTok5" target="BorderCases/doc1#sText1" label="PartOf/annis/">
+        </edge>
+        <edge id="e18" source="BorderCases/doc1#sTok6" target="BorderCases/doc1#sText1" label="PartOf/annis/">
+        </edge>
+        <edge id="e19" source="BorderCases/doc1#sTok7" target="BorderCases/doc1#sText1" label="PartOf/annis/">
+        </edge>
+        <edge id="e20" source="BorderCases/doc1#sTok8" target="BorderCases/doc1#sText1" label="PartOf/annis/">
+        </edge>
+        <edge id="e21" source="BorderCases/doc1#sTok9" target="BorderCases/doc1#sText1" label="PartOf/annis/">
+        </edge>
+        <edge id="e22" source="BorderCases/doc1#sTok10" target="BorderCases/doc1#sText1" label="PartOf/annis/">
+        </edge>
+        <edge id="e23" source="BorderCases/doc1#sTok11" target="BorderCases/doc1#sText1" label="PartOf/annis/">
+        </edge>
+        <edge id="e24" source="BorderCases/doc1#span1" target="BorderCases/doc1#sText1" label="PartOf/annis/">
+        </edge>
+        <edge id="e25" source="BorderCases/doc1" target="BorderCases" label="PartOf/annis/">
+        </edge>
+        <edge id="e26" source="BorderCases/doc1#sText1" target="BorderCases/doc1" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>

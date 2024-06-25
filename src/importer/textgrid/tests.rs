@@ -1,4 +1,4 @@
-use crate::util::import_as_graphml_string;
+use crate::test_util::import_as_graphml_string;
 
 use super::*;
 use insta::assert_snapshot;
@@ -17,7 +17,7 @@ fn single_speaker() {
         .collect(),
     );
     let actual = import_as_graphml_string(
-        TextgridImporter {
+        ImportTextgrid {
             tier_groups: Some(tg),
             skip_timeline_generation: true,
             skip_audio: false,
@@ -47,7 +47,7 @@ fn two_speakers() {
     );
     tg.insert("B".to_string(), BTreeSet::new());
     let actual = import_as_graphml_string(
-        TextgridImporter {
+        ImportTextgrid {
             tier_groups: Some(tg),
             skip_timeline_generation: false,
             skip_audio: false,
@@ -77,7 +77,7 @@ fn misaligned_lemma_annotation() {
     );
     tg.insert("B".to_string(), BTreeSet::new());
     let actual = import_as_graphml_string(
-        TextgridImporter {
+        ImportTextgrid {
             tier_groups: Some(tg),
             skip_timeline_generation: false,
             skip_audio: false,

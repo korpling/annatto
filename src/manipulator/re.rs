@@ -4,6 +4,7 @@ use std::{
     path::Path,
 };
 
+use anyhow::anyhow;
 use graphannis::{
     graph::{AnnoKey, Edge, Match},
     model::{AnnotationComponent, AnnotationComponentType},
@@ -18,28 +19,219 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use serde_derive::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
     error::{AnnattoError, StandardErrorResult},
-    Manipulator, Module,
+    progress::ProgressReporter,
+    Manipulator, StepID,
 };
+use documented::{Documented, DocumentedFields};
 
-#[derive(Default, Deserialize)]
-#[serde(default)]
-pub struct Replace {
-    remove_nodes: Option<Vec<String>>,
+/// Manipulate annotations, like deleting or renaming them.
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(default, deny_unknown_fields)]
+pub struct Revise {
+    /// A map of nodes to rename, usually useful for corpus nodes. If the target name exists,
+    /// the operation will fail with an error. If the target name is empty, the node will be
+    /// deleted.
+    node_names: BTreeMap<String, String>,
+    /// a list of names of nodes to be removed
+    remove_nodes: Vec<String>,
+    /// also move annotations to other host nodes determined by namespace
     move_node_annos: bool,
-    node_annos: Option<BTreeMap<String, String>>,
-    edge_annos: Option<BTreeMap<String, String>>,
-    namespaces: Option<BTreeMap<String, String>>,
+    /// rename node annotation
+    node_annos: BTreeMap<String, String>,
+    /// rename edge annotations
+    edge_annos: BTreeMap<String, String>,
+    /// rename or erase namespaces
+    namespaces: BTreeMap<String, String>,
+    /// rename or erase components
+    components: BTreeMap<String, String>,
+    /// The given node names and all ingoing paths (incl. nodes) in PartOf/annis/ will be removed
+    remove_subgraph: Vec<String>,
 }
 
-pub const MODULE_NAME: &str = "replace";
+const DELIMITER: &str = "::";
 
-impl Module for Replace {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
+fn remove_subgraph(
+    graph: &AnnotationGraph,
+    update: &mut GraphUpdate,
+    from_node: &str,
+) -> Result<(), anyhow::Error> {
+    update.add_event(UpdateEvent::DeleteNode {
+        node_name: from_node.to_string(),
+    })?;
+    if let Some(part_of_storage) = graph.get_graphstorage(&AnnotationComponent::new(
+        AnnotationComponentType::PartOf,
+        ANNIS_NS.into(),
+        "".into(),
+    )) {
+        let node_annos = graph.get_node_annos();
+        let nid = node_annos.get_node_id_from_name(from_node)?;
+        if let Some(node_id) = nid {
+            for n in CycleSafeDFS::new_inverse(
+                part_of_storage.as_edgecontainer(),
+                node_id,
+                1,
+                usize::MAX,
+            ) {
+                let node = n?.node;
+                if let Some(node_name) = node_annos.get_value_for_item(&node, &NODE_NAME_KEY)? {
+                    update.add_event(UpdateEvent::DeleteNode {
+                        node_name: node_name.to_string(),
+                    })?;
+                }
+            }
+        }
     }
+    Ok(())
+}
+
+fn parse_component_string(value: &str) -> Result<Option<AnnotationComponent>, anyhow::Error> {
+    if value.trim().is_empty() {
+        return Ok(None);
+    }
+    if let Some((ctype_str, layer, name)) = value.splitn(3, DELIMITER).collect_tuple() {
+        let ctype = match ctype_str.to_lowercase().as_str() {
+            "partof" => AnnotationComponentType::PartOf,
+            "ordering" => AnnotationComponentType::Ordering,
+            "coverage" => AnnotationComponentType::Coverage,
+            "dominance" => AnnotationComponentType::Dominance,
+            "pointing" => AnnotationComponentType::Dominance,
+            "l" => AnnotationComponentType::LeftToken,
+            "r" => AnnotationComponentType::RightToken,
+            _ => return Err(anyhow!("Could not map component configuration `{value}`")),
+        };
+        Ok(Some(AnnotationComponent::new(
+            ctype,
+            layer.into(),
+            name.into(),
+        )))
+    } else {
+        Err(anyhow!("Could not map component configuration `{value}`"))
+    }
+}
+
+fn to_component_map(
+    str_map: &BTreeMap<String, String>,
+) -> Result<BTreeMap<AnnotationComponent, Option<AnnotationComponent>>, anyhow::Error> {
+    let mut component_map = BTreeMap::new();
+    for (old, new) in str_map {
+        if let Some(source) = parse_component_string(old)? {
+            component_map.insert(source, parse_component_string(new)?);
+        } else {
+            return Err(anyhow!("Could not parse source component: {old}"));
+        }
+    }
+    Ok(component_map)
+}
+
+fn revise_components(
+    graph: &AnnotationGraph,
+    component_config: &BTreeMap<String, String>,
+    update: &mut GraphUpdate,
+    progress_reporter: &ProgressReporter,
+) -> Result<(), anyhow::Error> {
+    let component_map = to_component_map(component_config)?;
+    for (source, target) in component_map {
+        revise_component(graph, source, target, update, progress_reporter)?;
+    }
+    Ok(())
+}
+
+fn revise_component(
+    graph: &AnnotationGraph,
+    source_component: AnnotationComponent,
+    target_component: Option<AnnotationComponent>,
+    update: &mut GraphUpdate,
+    progress_reporter: &ProgressReporter,
+) -> Result<(), AnnattoError> {
+    if let Some(source_storage) = graph.get_graphstorage(&source_component) {
+        let node_annos = graph.get_node_annos();
+        let edge_anno_storage = source_storage.get_anno_storage();
+        for node in source_storage.as_edgecontainer().source_nodes() {
+            if let Ok(node_id) = node {
+                let source_node_name = node_annos
+                    .get_value_for_item(&node_id, &NODE_NAME_KEY)?
+                    .unwrap();
+                for reachable_target in
+                    source_storage.find_connected(node_id, 1, std::ops::Bound::Included(1))
+                {
+                    if let Ok(target_id) = reachable_target {
+                        let edge = Edge {
+                            source: node_id,
+                            target: target_id,
+                        };
+                        let target_node_name = node_annos
+                            .get_value_for_item(&target_id, &NODE_NAME_KEY)?
+                            .unwrap();
+                        update.add_event(UpdateEvent::DeleteEdge {
+                            source_node: source_node_name.to_string(),
+                            target_node: target_node_name.to_string(),
+                            layer: source_component.layer.to_string(),
+                            component_type: source_component.get_type().to_string(),
+                            component_name: source_component.name.to_string(),
+                        })?;
+                        if let Some(target_c) = &target_component {
+                            update.add_event(UpdateEvent::AddEdge {
+                                source_node: source_node_name.to_string(),
+                                target_node: target_node_name.to_string(),
+                                layer: target_c.layer.to_string(),
+                                component_type: target_c.get_type().to_string(),
+                                component_name: target_c.name.to_string(),
+                            })?;
+                            for anno_key in
+                                edge_anno_storage.get_all_keys_for_item(&edge, None, None)?
+                            {
+                                if anno_key.ns == ANNIS_NS {
+                                    continue;
+                                }
+                                let edge_anno_value = edge_anno_storage
+                                    .get_value_for_item(&edge, &anno_key)?
+                                    .unwrap();
+                                update.add_event(UpdateEvent::AddEdgeLabel {
+                                    source_node: source_node_name.to_string(),
+                                    target_node: target_node_name.to_string(),
+                                    layer: target_c.layer.to_string(),
+                                    component_type: target_c.get_type().to_string(),
+                                    component_name: target_c.name.to_string(),
+                                    anno_ns: anno_key.ns.to_string(),
+                                    anno_name: anno_key.name.to_string(),
+                                    anno_value: edge_anno_value.to_string(),
+                                })?;
+                            }
+                        }
+                    } else {
+                        progress_reporter.warn(
+                            format!(
+                                "Could not retrieve target node for source node in component {}",
+                                source_component
+                            )
+                            .as_str(),
+                        )?;
+                    }
+                }
+            } else {
+                progress_reporter.warn(
+                    format!(
+                        "Could not obtain node from source nodes in component {}.",
+                        source_component
+                    )
+                    .as_str(),
+                )?;
+            }
+        }
+    } else {
+        progress_reporter.warn(
+            format!(
+                "Component {} does not exist and will not be mapped",
+                source_component
+            )
+            .as_str(),
+        )?;
+    }
+    Ok(())
 }
 
 fn remove_nodes(
@@ -165,15 +357,11 @@ fn place_at_new_target(
             }
         }
         _ => {
-            let message = format!(
+            return Err(anyhow!(
                 "Could not gather any covered nodes for name `{}`",
                 target_key.ns
-            );
-            let err = AnnattoError::Manipulator {
-                reason: message,
-                manipulator: MODULE_NAME.to_string(),
-            };
-            return Err(Box::new(err));
+            )
+            .into());
         }
     };
     Ok(())
@@ -424,28 +612,78 @@ fn read_replace_property_value(
     Ok(names)
 }
 
-impl Manipulator for Replace {
+fn rename_nodes(
+    graph: &AnnotationGraph,
+    update: &mut GraphUpdate,
+    old_name: &str,
+    new_name: &str,
+    step_id: &StepID,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let node_annos = graph.get_node_annos();
+    let trimmed_old_name = old_name.trim();
+    if node_annos.has_node_name(trimmed_old_name)? {
+        let trimmed_new_name = new_name.trim();
+        if trimmed_new_name.is_empty() {
+            // deletion by rename
+            update.add_event(UpdateEvent::DeleteNode {
+                node_name: trimmed_old_name.to_string(),
+            })?;
+        } else {
+            update.add_event(UpdateEvent::AddNodeLabel {
+                node_name: trimmed_old_name.to_string(),
+                anno_ns: NODE_NAME_KEY.ns.to_string(),
+                anno_name: NODE_NAME_KEY.name.to_string(),
+                anno_value: trimmed_new_name.to_string(),
+            })?;
+        }
+        if node_annos.has_node_name(trimmed_new_name)? {
+            // this will also be triggered when old and new name are identical (which is fine)
+            Err(Box::new(AnnattoError::Manipulator {
+                reason: format!("New node name {trimmed_new_name} is already in use"),
+                manipulator: step_id.module_name.to_string(),
+            }))
+        } else {
+            Ok(())
+        }
+    } else {
+        Err(Box::new(AnnattoError::Manipulator {
+            reason: format!("No such node to be renamed: {trimmed_old_name}"),
+            manipulator: step_id.module_name.to_string(),
+        }))
+    }
+}
+
+impl Manipulator for Revise {
     fn manipulate_corpus(
         &self,
         graph: &mut graphannis::AnnotationGraph,
         _workflow_directory: &Path,
-        _tx: Option<crate::workflow::StatusSender>,
+        step_id: StepID,
+        tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        let progress_reporter = ProgressReporter::new(tx, step_id.clone(), 7)?;
         let mut update = GraphUpdate::default();
-        let move_by_ns = self.move_node_annos;
-        if let Some(ref node_names) = self.remove_nodes {
-            remove_nodes(&mut update, node_names)?;
+        for (old_name, new_name) in &self.node_names {
+            rename_nodes(graph, &mut update, old_name, new_name, &step_id)?;
         }
-        if let Some(ref anno_name_s) = self.node_annos {
-            let node_annos = read_replace_property_value(anno_name_s)?;
+        progress_reporter.worked(1)?;
+        let move_by_ns = self.move_node_annos;
+        if !self.remove_nodes.is_empty() {
+            remove_nodes(&mut update, &self.remove_nodes)?;
+        }
+        progress_reporter.worked(1)?;
+        if !self.node_annos.is_empty() {
+            let node_annos = read_replace_property_value(&self.node_annos)?;
             replace_node_annos(graph, &mut update, node_annos, move_by_ns)?;
         }
-        if let Some(ref edge_name_s) = self.edge_annos {
-            let edge_annos = read_replace_property_value(edge_name_s)?;
+        progress_reporter.worked(1)?;
+        if !self.edge_annos.is_empty() {
+            let edge_annos = read_replace_property_value(&self.edge_annos)?;
             replace_edge_annos(graph, &mut update, edge_annos)?;
         }
-        if let Some(ref namespace_s) = self.namespaces {
-            let namespaces = read_replace_property_value(namespace_s)?;
+        progress_reporter.worked(1)?;
+        if !self.namespaces.is_empty() {
+            let namespaces = read_replace_property_value(&self.namespaces)?;
             let replacements = namespaces
                 .into_iter()
                 .map(|(k, k_opt)| {
@@ -459,7 +697,18 @@ impl Manipulator for Replace {
                 .collect_vec();
             replace_namespaces(graph, &mut update, replacements)?;
         }
+        progress_reporter.worked(1)?;
+        if !self.components.is_empty() {
+            revise_components(graph, &self.components, &mut update, &progress_reporter)?;
+        }
+        progress_reporter.worked(1)?;
+        if !self.remove_subgraph.is_empty() {
+            for node_name in &self.remove_subgraph {
+                remove_subgraph(graph, &mut update, node_name)?;
+            }
+        }
         graph.apply_update(&mut update, |_| {})?;
+        progress_reporter.worked(1)?;
         Ok(())
     }
 }
@@ -467,20 +716,27 @@ impl Manipulator for Replace {
 #[cfg(test)]
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
-    use std::env::temp_dir;
+    use std::fs;
+    use std::path::Path;
 
-    use crate::manipulator::re::Replace;
+    use crate::exporter::graphml::GraphMLExporter;
+    use crate::manipulator::re::{parse_component_string, to_component_map, Revise};
     use crate::manipulator::Manipulator;
-    use crate::Result;
+    use crate::progress::ProgressReporter;
+    use crate::test_util::export_to_string;
+    use crate::{Result, StepID};
 
     use graphannis::corpusstorage::{QueryLanguage, ResultOrder, SearchQuery};
-    use graphannis::model::AnnotationComponentType;
+    use graphannis::model::{AnnotationComponent, AnnotationComponentType};
     use graphannis::update::{GraphUpdate, UpdateEvent};
     use graphannis::{AnnotationGraph, CorpusStorage};
     use graphannis_core::annostorage::ValueSearch;
     use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY};
+    use insta::assert_snapshot;
     use itertools::Itertools;
-    use tempfile::{tempdir_in, tempfile};
+    use tempfile::{tempdir, tempfile};
+
+    use super::revise_components;
 
     #[test]
     fn test_remove_in_mem() {
@@ -515,14 +771,21 @@ mod tests {
         };
         let node_map: BTreeMap<String, String> = toml::from_str(node_anno_prop_val)?;
         let edge_map: BTreeMap<String, String> = toml::from_str(edge_anno_prop_val)?;
-        let replace = Replace {
-            remove_nodes: None,
+        let replace = Revise {
+            node_names: BTreeMap::default(),
+            remove_nodes: vec![],
             move_node_annos: false,
-            node_annos: Some(node_map),
-            edge_annos: Some(edge_map),
-            namespaces: None,
+            node_annos: node_map,
+            edge_annos: edge_map,
+            namespaces: BTreeMap::default(),
+            components: BTreeMap::default(),
+            remove_subgraph: vec![],
         };
-        let result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), None);
+        let step_id = StepID {
+            module_name: "replace".to_string(),
+            path: None,
+        };
+        let result = replace.manipulate_corpus(&mut g, tempdir()?.path(), step_id, None);
         assert_eq!(result.is_ok(), true, "Probing merge result {:?}", &result);
         let mut e_g = if rename {
             input_graph(on_disk, true)?
@@ -601,8 +864,8 @@ mod tests {
             "node ->dep[func=/.+/] node",
         ];
         let corpus_name = "current";
-        let tmp_dir_e = tempdir_in(temp_dir())?;
-        let tmp_dir_g = tempdir_in(temp_dir())?;
+        let tmp_dir_e = tempdir()?;
+        let tmp_dir_g = tempdir()?;
         e_g.save_to(&tmp_dir_e.path().join(corpus_name))?;
         g.save_to(&tmp_dir_g.path().join(corpus_name))?;
         let cs_e = CorpusStorage::with_auto_cache_size(&tmp_dir_e.path(), true)?;
@@ -648,14 +911,21 @@ mod tests {
             "norm::pos" = "dipl::derived_pos"
         "#,
         )?;
-        let replace = Replace {
+        let replace = Revise {
+            node_names: BTreeMap::default(),
             move_node_annos: true,
-            namespaces: None,
-            node_annos: Some(node_map),
-            edge_annos: None,
-            remove_nodes: None,
+            namespaces: BTreeMap::default(),
+            node_annos: node_map,
+            edge_annos: BTreeMap::default(),
+            remove_nodes: vec![],
+            components: BTreeMap::default(),
+            remove_subgraph: vec![],
         };
-        let result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), None);
+        let step_id = StepID {
+            module_name: "replace".to_string(),
+            path: None,
+        };
+        let result = replace.manipulate_corpus(&mut g, tempdir()?.path(), step_id, None);
         assert_eq!(result.is_ok(), true, "Probing merge result {:?}", &result);
         let mut e_g = expected_output_for_move(on_disk)?;
         // corpus nodes
@@ -721,8 +991,8 @@ mod tests {
         // test with queries
         let queries = ["tok", "pos", "derived_pos"];
         let corpus_name = "current";
-        let tmp_dir_e = tempdir_in(temp_dir())?;
-        let tmp_dir_g = tempdir_in(temp_dir())?;
+        let tmp_dir_e = tempdir()?;
+        let tmp_dir_g = tempdir()?;
         e_g.save_to(&tmp_dir_e.path().join(corpus_name))?;
         g.save_to(&tmp_dir_g.path().join(corpus_name))?;
         let cs_e = CorpusStorage::with_auto_cache_size(&tmp_dir_e.path(), true)?;
@@ -783,16 +1053,23 @@ mod tests {
             deprel = ""
         "#,
         )?;
-        let replace = Replace {
+        let replace = Revise {
+            node_names: BTreeMap::default(),
             move_node_annos: true,
-            namespaces: None,
-            node_annos: Some(node_map),
-            edge_annos: Some(edge_map),
-            remove_nodes: None,
+            namespaces: BTreeMap::default(),
+            node_annos: node_map,
+            edge_annos: edge_map,
+            remove_nodes: vec![],
+            components: BTreeMap::default(),
+            remove_subgraph: vec![],
+        };
+        let step_id = StepID {
+            module_name: "replace".to_string(),
+            path: None,
         };
         assert_eq!(
             replace
-                .manipulate_corpus(&mut g, temp_dir().as_path(), None)
+                .manipulate_corpus(&mut g, tempdir()?.path(), step_id, None)
                 .is_ok(),
             true
         );
@@ -837,16 +1114,23 @@ mod tests {
             deprel = ""
         "#,
         )?;
-        let replace = Replace {
+        let replace = Revise {
+            node_names: BTreeMap::default(),
             move_node_annos: true,
-            namespaces: None,
-            node_annos: Some(node_map),
-            edge_annos: Some(edge_map),
-            remove_nodes: None,
+            namespaces: BTreeMap::default(),
+            node_annos: node_map,
+            edge_annos: edge_map,
+            remove_nodes: vec![],
+            components: BTreeMap::default(),
+            remove_subgraph: vec![],
+        };
+        let step_id = StepID {
+            module_name: "replace".to_string(),
+            path: None,
         };
         assert_eq!(
             replace
-                .manipulate_corpus(&mut g, temp_dir().as_path(), None)
+                .manipulate_corpus(&mut g, tempdir()?.path(), step_id, None)
                 .is_ok(),
             true
         );
@@ -877,14 +1161,21 @@ mod tests {
             "" = "default_ns"
         "#,
         )?;
-        let replace = Replace {
-            remove_nodes: None,
+        let replace = Revise {
+            node_names: BTreeMap::default(),
+            remove_nodes: vec![],
             move_node_annos: false,
-            node_annos: None,
-            edge_annos: None,
-            namespaces: Some(ns_map),
+            node_annos: BTreeMap::default(),
+            edge_annos: BTreeMap::default(),
+            namespaces: ns_map,
+            components: BTreeMap::default(),
+            remove_subgraph: vec![],
         };
-        let op_result = replace.manipulate_corpus(&mut g, temp_dir().as_path(), None);
+        let step_id = StepID {
+            module_name: "replace".to_string(),
+            path: None,
+        };
+        let op_result = replace.manipulate_corpus(&mut g, tempdir()?.path(), step_id, None);
         assert_eq!(
             op_result.is_ok(),
             true,
@@ -965,8 +1256,8 @@ mod tests {
             "node ->dep[default_ns:func=/.*/] node",
         ];
         let corpus_name = "current";
-        let tmp_dir_e = tempdir_in(temp_dir())?;
-        let tmp_dir_g = tempdir_in(temp_dir())?;
+        let tmp_dir_e = tempdir()?;
+        let tmp_dir_g = tempdir()?;
         e_g.save_to(&tmp_dir_e.path().join(corpus_name))?;
         g.save_to(&tmp_dir_g.path().join(corpus_name))?;
         let cs_e = CorpusStorage::with_auto_cache_size(&tmp_dir_e.path(), true)?;
@@ -994,7 +1285,7 @@ mod tests {
     }
 
     fn input_graph(on_disk: bool, new_names: bool) -> Result<AnnotationGraph> {
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode {
             node_name: "root".to_string(),
@@ -1062,6 +1353,13 @@ mod tests {
                 anno_name: pos_name.to_string(),
                 anno_value: pos_label.to_string(),
             })?;
+            u.add_event(UpdateEvent::AddEdge {
+                source_node: name.to_string(),
+                target_node: "root/b/doc".to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".to_string(),
+            })?;
             if i > 1 {
                 u.add_event(UpdateEvent::AddEdge {
                     source_node: format!("root/b/doc#t{}", i - 1),
@@ -1110,7 +1408,7 @@ mod tests {
     }
 
     fn expected_output_graph(on_disk: bool) -> Result<AnnotationGraph> {
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode {
             node_name: "root".to_string(),
@@ -1202,7 +1500,7 @@ mod tests {
     }
 
     fn input_graph_for_move(on_disk: bool) -> Result<AnnotationGraph> {
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode {
             node_name: "root".to_string(),
@@ -1370,7 +1668,7 @@ mod tests {
     }
 
     fn expected_output_for_move(on_disk: bool) -> Result<AnnotationGraph> {
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode {
             node_name: "root".to_string(),
@@ -1565,7 +1863,7 @@ mod tests {
     }
 
     fn namespace_test_graph(on_disk: bool, after: bool) -> Result<AnnotationGraph> {
-        let mut g = AnnotationGraph::new(on_disk)?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
         let corpus_type = "corpus";
         let node_type = "node";
@@ -1654,5 +1952,433 @@ mod tests {
         }
         g.apply_update(&mut u, |_| {})?;
         Ok(g)
+    }
+
+    #[test]
+    fn test_deserialize_map_components() {
+        let path = Path::new("./tests/data/graph_op/re/map_component.toml");
+        let toml_string = fs::read_to_string(path);
+        assert!(toml_string.is_ok(), "Could not read test file: {:?}", path);
+        let r: std::result::Result<BTreeMap<String, String>, toml::de::Error> =
+            toml::from_str(toml_string.unwrap().as_str());
+        assert!(r.is_ok(), "Could not parse test file: {:?}", &r.err());
+    }
+
+    #[test]
+    fn test_modify_component_in_mem() {
+        let r = test_modify_component(false);
+        assert!(r.is_ok(), "Error occured: {:?}", r.err());
+    }
+
+    #[test]
+    fn test_modify_component_on_disk() {
+        let r = test_modify_component(true);
+        assert!(r.is_ok(), "Error occured: {:?}", r.err());
+    }
+
+    fn test_modify_component(on_disk: bool) -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let mut g = input_graph_for_move(on_disk)
+            .map_err(|_| assert!(false))
+            .unwrap();
+        let previous_components = g.get_all_components(None, None);
+        let mut erased_components = Vec::new();
+        let mut new_components = Vec::new();
+        let mut component_mod_config = BTreeMap::new();
+        for existing_component in previous_components {
+            let (old_ctype_str, new_ctype_str, new_ctype) = match existing_component.get_type() {
+                AnnotationComponentType::Coverage => continue,
+                AnnotationComponentType::Dominance => {
+                    ("dominance", "pointing", AnnotationComponentType::Pointing)
+                }
+                AnnotationComponentType::Pointing => {
+                    ("pointing", "dominance", AnnotationComponentType::Dominance)
+                }
+                AnnotationComponentType::Ordering => {
+                    ("ordering", "ordering", AnnotationComponentType::Ordering)
+                }
+                AnnotationComponentType::LeftToken => continue,
+                AnnotationComponentType::RightToken => continue,
+                AnnotationComponentType::PartOf => continue,
+            };
+            let key_str = format!(
+                "{old_ctype_str}::{}::{}",
+                existing_component.layer.to_string(),
+                existing_component.name.to_string()
+            );
+            let val_str = format!(
+                "{new_ctype_str}::::moved_{}",
+                existing_component.name.to_string()
+            );
+            component_mod_config.insert(key_str, val_str);
+            let new_c = AnnotationComponent::new(
+                new_ctype,
+                "".into(),
+                format!("moved_{}", existing_component.name).into(),
+            );
+            new_components.push(new_c);
+            erased_components.push(existing_component);
+        }
+        let op = Revise {
+            node_names: BTreeMap::default(),
+            remove_nodes: vec![],
+            move_node_annos: false,
+            node_annos: BTreeMap::default(),
+            edge_annos: BTreeMap::default(),
+            namespaces: BTreeMap::default(),
+            components: component_mod_config,
+            remove_subgraph: vec![],
+        };
+        let step_id = StepID {
+            module_name: "replace".to_string(),
+            path: None,
+        };
+        let r = op.manipulate_corpus(&mut g, Path::new("./"), step_id, None);
+        assert!(r.is_ok(), "graph op returned error: {:?}", r.err());
+        let current_components = g.get_all_components(None, None);
+        for ec in erased_components {
+            let storage = g.get_graphstorage(&ec);
+            assert!(
+                !current_components.contains(&ec)
+                    || (storage.is_some() && storage.unwrap().source_nodes().count() == 0)
+            );
+        }
+        for nc in new_components {
+            assert!(current_components.contains(&nc));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn deserialization_test() {
+        let toml_str = fs::read_to_string("tests/data/graph_op/re/deser_test.toml")
+            .map_err(|_| assert!(false))
+            .unwrap();
+        let revise: Revise = toml::from_str(toml_str.as_str())
+            .map_err(|e| assert!(false, "{:?}", e))
+            .unwrap();
+        assert_eq!(
+            vec!["any_weird_node_address".to_string()],
+            revise.remove_nodes
+        );
+        assert!(revise.move_node_annos);
+        let mut name_map = BTreeMap::new();
+        name_map.insert("norm::pos".to_string(), "norm::POS".to_string());
+        name_map.insert("norm::lemma".to_string(), "norm::LEMMA".to_string());
+        assert_eq!(name_map, revise.node_annos);
+        name_map = BTreeMap::new();
+        name_map.insert("deprel".to_string(), "func".to_string());
+        assert_eq!(name_map, revise.edge_annos);
+        name_map = BTreeMap::new();
+        name_map.insert("default_ns".to_string(), "".to_string());
+        assert_eq!(name_map, revise.namespaces);
+        name_map = BTreeMap::new();
+        name_map.insert(
+            "ordering::annis::text".to_string(),
+            "ordering::default_ns::text".to_string(),
+        );
+        name_map.insert(
+            "ordering::annis::".to_string(),
+            "ordering::::default_ordering".to_string(),
+        );
+        name_map.insert("dominance::annis::syntax".to_string(), "".to_string());
+        assert_eq!(name_map, revise.components);
+        let component_map = to_component_map(&revise.components)
+            .map_err(|_| assert!(false))
+            .unwrap();
+        let mut target_map = BTreeMap::new();
+        target_map.insert(
+            AnnotationComponent::new(
+                AnnotationComponentType::Ordering,
+                ANNIS_NS.into(),
+                "text".into(),
+            ),
+            Some(AnnotationComponent::new(
+                AnnotationComponentType::Ordering,
+                "default_ns".into(),
+                "text".into(),
+            )),
+        );
+        target_map.insert(
+            AnnotationComponent::new(
+                AnnotationComponentType::Ordering,
+                ANNIS_NS.into(),
+                "".into(),
+            ),
+            Some(AnnotationComponent::new(
+                AnnotationComponentType::Ordering,
+                "".into(),
+                "default_ordering".into(),
+            )),
+        );
+        target_map.insert(
+            AnnotationComponent::new(
+                AnnotationComponentType::Dominance,
+                ANNIS_NS.into(),
+                "syntax".into(),
+            ),
+            None,
+        );
+        assert_eq!(target_map, component_map);
+    }
+
+    #[test]
+    fn test_parse_component_string() {
+        assert!(parse_component_string("no_delimiter").is_err());
+        assert!(parse_component_string("invalid_type::layer::name").is_err());
+        assert!(parse_component_string("partof::layer::name").is_ok());
+        assert!(parse_component_string("ordering::layer::name").is_ok());
+        assert!(parse_component_string("coverage::layer::name").is_ok());
+        assert!(parse_component_string("dominance::layer::name").is_ok());
+        assert!(parse_component_string("pointing::layer::name").is_ok());
+        assert!(parse_component_string("l::layer::name").is_ok());
+        assert!(parse_component_string("r::layer::name").is_ok());
+        assert!(parse_component_string("partof::::").is_ok());
+    }
+
+    #[test]
+    fn test_component_updates_in_mem() {
+        let r = test_component_updates(false);
+        assert!(r.is_ok());
+    }
+
+    #[test]
+    fn test_component_updates_on_disk() {
+        let r = test_component_updates(true);
+        assert!(r.is_ok());
+    }
+
+    fn test_component_updates(
+        on_disk: bool,
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let source_node_name = "node_a";
+        let target_node_name = "node_b";
+        let source_component = AnnotationComponent::new(
+            AnnotationComponentType::Ordering,
+            ANNIS_NS.into(),
+            "".into(),
+        );
+        let target_component = AnnotationComponent::new(
+            AnnotationComponentType::Ordering,
+            "".into(),
+            "default_ordering".into(),
+        );
+        let mut build_update = GraphUpdate::default();
+        build_update.add_event(UpdateEvent::AddNode {
+            node_name: "document".to_string(),
+            node_type: "corpus".to_string(),
+        })?;
+        build_update.add_event(UpdateEvent::AddNode {
+            node_name: source_node_name.to_string(),
+            node_type: "node".to_string(),
+        })?;
+        build_update.add_event(UpdateEvent::AddNode {
+            node_name: target_node_name.to_string(),
+            node_type: "node".to_string(),
+        })?;
+        build_update.add_event(UpdateEvent::AddEdge {
+            source_node: source_node_name.to_string(),
+            target_node: "document".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
+        build_update.add_event(UpdateEvent::AddEdge {
+            source_node: target_node_name.to_string(),
+            target_node: "document".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
+        build_update.add_event(UpdateEvent::AddEdge {
+            source_node: source_node_name.to_string(),
+            target_node: target_node_name.to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::Ordering.to_string(),
+            component_name: "".to_string(),
+        })?;
+        build_update.add_event(UpdateEvent::AddEdgeLabel {
+            source_node: source_node_name.to_string(),
+            target_node: target_node_name.to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::Ordering.to_string(),
+            component_name: "".to_string(),
+            anno_ns: "".to_string(),
+            anno_name: "info".to_string(),
+            anno_value: "note this info".to_string(),
+        })?;
+        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
+        g.apply_update(&mut build_update, |_| {})?;
+        let mut expected_update = GraphUpdate::default();
+        expected_update.add_event(UpdateEvent::DeleteEdge {
+            source_node: source_node_name.to_string(),
+            target_node: target_node_name.to_string(),
+            layer: source_component.layer.to_string(),
+            component_type: source_component.get_type().to_string(),
+            component_name: source_component.name.to_string(),
+        })?;
+        expected_update.add_event(UpdateEvent::AddEdge {
+            source_node: source_node_name.to_string(),
+            target_node: target_node_name.to_string(),
+            layer: target_component.layer.to_string(),
+            component_type: target_component.get_type().to_string(),
+            component_name: target_component.name.to_string(),
+        })?;
+        expected_update.add_event(UpdateEvent::AddEdgeLabel {
+            source_node: source_node_name.to_string(),
+            target_node: target_node_name.to_string(),
+            layer: target_component.layer.to_string(),
+            component_type: target_component.get_type().to_string(),
+            component_name: target_component.name.to_string(),
+            anno_ns: "".to_string(),
+            anno_name: "info".to_string(),
+            anno_value: "note this info".to_string(),
+        })?;
+        let mut test_update = GraphUpdate::default();
+        let pg = ProgressReporter::new(
+            None,
+            StepID {
+                module_name: "test_revise".to_string(),
+                path: None,
+            },
+            1,
+        )?;
+        let mut component_config = BTreeMap::new();
+        component_config.insert(
+            "ordering::annis::".to_string(),
+            "ordering::::default_ordering".to_string(),
+        );
+        revise_components(&g, &component_config, &mut test_update, &pg)?;
+        let mut ti = test_update.iter()?;
+        for e in expected_update.iter()? {
+            let (_, ue) = e?;
+            let (_, ue_) = ti.next().unwrap()?;
+            match ue {
+                UpdateEvent::AddEdge { .. } => assert!(matches!(ue_, UpdateEvent::AddEdge { .. })),
+                UpdateEvent::DeleteEdge { .. } => {
+                    assert!(matches!(ue_, UpdateEvent::DeleteEdge { .. }))
+                }
+                UpdateEvent::AddEdgeLabel { .. } => {
+                    assert!(matches!(ue_, UpdateEvent::AddEdgeLabel { .. }))
+                }
+                _ => assert!(false),
+            };
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn delete_subgraph() {
+        let g = input_graph(true, false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let tmp = tempdir();
+        assert!(tmp.is_ok());
+        let manipulation = Revise {
+            remove_subgraph: vec!["root/b".to_string()],
+            ..Default::default()
+        }
+        .manipulate_corpus(
+            &mut graph,
+            tmp.unwrap().path(),
+            StepID {
+                module_name: "test_revise".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(manipulation.is_ok());
+        let gs = export_to_string(&graph, GraphMLExporter::default());
+        assert!(gs.is_ok());
+        let graphml = gs.unwrap();
+        assert_snapshot!(graphml);
+    }
+
+    #[test]
+    fn rename_corpus_node() {
+        let g = input_graph(true, false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let tmp = tempdir();
+        assert!(tmp.is_ok());
+        let node_names = [("root/b", "corpus/subcorpus"), ("root", "corpus")]
+            .iter()
+            .map(|(old, new)| (old.to_string(), new.to_string()))
+            .collect();
+        let manipulation = Revise {
+            node_names,
+            ..Default::default()
+        }
+        .manipulate_corpus(
+            &mut graph,
+            tmp.unwrap().path(),
+            StepID {
+                module_name: "test_rename_nodes".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(manipulation.is_ok());
+        let gs = export_to_string(&graph, GraphMLExporter::default());
+        assert!(gs.is_ok());
+        let graphml = gs.unwrap();
+        assert_snapshot!(graphml);
+    }
+
+    #[test]
+    fn rename_node_fail_in_use() {
+        let g = input_graph(true, false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let tmp = tempdir();
+        assert!(tmp.is_ok());
+        let node_names = [("root/b", "root/b/doc")]
+            .iter()
+            .map(|(old, new)| (old.to_string(), new.to_string()))
+            .collect();
+        let manipulation = Revise {
+            node_names,
+            ..Default::default()
+        }
+        .manipulate_corpus(
+            &mut graph,
+            tmp.unwrap().path(),
+            StepID {
+                module_name: "test_rename_nodes_fail_in_use".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(manipulation.is_err());
+    }
+
+    #[test]
+    fn deletion_by_rename() {
+        let g = input_graph(true, false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let tmp = tempdir();
+        assert!(tmp.is_ok());
+        let node_names = [("root/b", "")]
+            .iter()
+            .map(|(old, new)| (old.to_string(), new.to_string()))
+            .collect();
+        let manipulation = Revise {
+            node_names,
+            ..Default::default()
+        }
+        .manipulate_corpus(
+            &mut graph,
+            tmp.unwrap().path(),
+            StepID {
+                module_name: "test_deletion_by_rename".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(manipulation.is_ok());
+        let gs = export_to_string(&graph, GraphMLExporter::default());
+        assert!(gs.is_ok());
+        let graphml = gs.unwrap();
+        assert_snapshot!(graphml);
     }
 }

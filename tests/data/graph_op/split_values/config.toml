@@ -1,0 +1,13 @@
+delimiter = "."
+anno = "default_ns::pos"
+index_map = { "default_ns::pos" = 1 }
+delete = true
+[layer_map]
+Gender = ["Fem", "Neut", "Mask"]
+Case = ["Nom", "Gen", "Dat", "Akk"]
+Degree = ["Pos", "Komp", "Sup"]
+Tense = ["Präs", "Prät"]
+Mood = ["Ind", "Konj"]
+Number = ["Sg", "Pl"]
+VerbClass = ["Sw", "St", "Unr"]
+Person = ["1", "2", "3"]

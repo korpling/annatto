@@ -1,13 +1,16 @@
-//! Contains exporters and their traits.
+//! Exporter modules export the data into different formats.
 
+pub mod exmaralda;
 pub mod graphml;
+pub mod sequence;
+pub mod xlsx;
 
-use crate::{workflow::StatusSender, Module, StepID};
+use crate::{workflow::StatusSender, StepID};
 use graphannis::AnnotationGraph;
 use std::path::Path;
 
 /// An exporter is a module that takes and existing annotation graph and writes out the content into the given path in a specific format.
-pub trait Exporter: Module {
+pub trait Exporter: Sync {
     /// Export an annotation graph.
     ///
     /// # Arguments
@@ -24,4 +27,6 @@ pub trait Exporter: Module {
         step_id: StepID,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>>;
+
+    fn file_extension(&self) -> &str;
 }

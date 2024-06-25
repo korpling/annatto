@@ -1,0 +1,13 @@
+remove_nodes = ["any_weird_node_address"]
+move_node_annos = true
+[node_annos]
+"norm::pos" = "norm::POS"
+"norm::lemma" = "norm::LEMMA"
+[edge_annos]
+"deprel" = "func"
+[namespaces]
+"default_ns" = ""
+[components]
+"ordering::annis::text" = "ordering::default_ns::text"
+"ordering::annis::" = "ordering::::default_ordering"
+"dominance::annis::syntax" = ""

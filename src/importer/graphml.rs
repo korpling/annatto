@@ -1,3 +1,9 @@
+use documented::{Documented, DocumentedFields};
+use graphannis::{
+    graph::AnnoKey,
+    model::AnnotationComponent,
+    update::{GraphUpdate, UpdateEvent},
+};
 use graphannis_core::{graph::NODE_TYPE_KEY, util::split_qname};
 use quick_xml::{
     events::{attributes::Attributes, Event},
@@ -11,22 +17,18 @@ use std::{
     path::Path,
     str::FromStr,
 };
-
-use graphannis::{
-    graph::AnnoKey,
-    model::AnnotationComponent,
-    update::{GraphUpdate, UpdateEvent},
-};
+use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
     error::AnnattoError, importer::Importer, progress::ProgressReporter, workflow::StatusSender,
-    Module, StepID,
+    StepID,
 };
 
-pub const MODULE_NAME: &str = "import_graphml";
-
-#[derive(Default, Deserialize)]
-#[serde(default)]
+/// Imports files in the [GraphML](http://graphml.graphdrawing.org/) file which
+/// have to conform to the
+/// [graphANNIS data model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(default, deny_unknown_fields)]
 pub struct GraphMLImporter {}
 
 fn add_node(
@@ -266,6 +268,8 @@ fn read_graphml<R: std::io::BufRead>(
     Ok(config)
 }
 
+const FILE_EXTENSIONS: [&str; 1] = ["graphml"];
+
 impl Importer for GraphMLImporter {
     fn import_corpus(
         &self,
@@ -295,11 +299,9 @@ impl Importer for GraphMLImporter {
 
         Ok(updates)
     }
-}
 
-impl Module for GraphMLImporter {
-    fn module_name(&self) -> &str {
-        MODULE_NAME
+    fn file_extensions(&self) -> &[&str] {
+        &FILE_EXTENSIONS
     }
 }
 
@@ -309,7 +311,7 @@ mod tests {
 
     use insta::assert_snapshot;
 
-    use crate::{importer::graphml::GraphMLImporter, util::import_as_graphml_string};
+    use crate::{importer::graphml::GraphMLImporter, test_util::import_as_graphml_string};
 
     #[test]
     fn single_sentence() {

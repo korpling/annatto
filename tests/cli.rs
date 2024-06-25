@@ -1,6 +1,6 @@
-use assert_cmd::prelude::*;
+use assert_cmd::Command;
 use insta::assert_snapshot;
-use std::{path::PathBuf, process::Command};
+use std::path::PathBuf;
 
 #[test]
 fn show_help() {
@@ -28,8 +28,9 @@ fn run_empty_conversion() {
     cmd.assert().success();
 
     // Get output
-    let output = std::str::from_utf8(&output.stderr).unwrap();
-
+    let output_err = std::str::from_utf8(&output.stderr).unwrap();
+    assert_snapshot!(output_err);
+    let output = std::str::from_utf8(&output.stdout).unwrap();
     assert_snapshot!(output);
 }
 
@@ -50,7 +51,7 @@ fn convert_to_itself() {
     cmd.assert().success();
 
     // Input and output files should be the same
-    let original = include_str!("data/import/graphml/single_sentence.graphml");
+    let original = include_str!("data/import/graphml/single_sentence.graphml").trim();
     let converted =
         std::fs::read_to_string(tmp_out.path().join("single_sentence.graphml")).unwrap();
     pretty_assertions::assert_str_eq!(original, converted);
@@ -76,8 +77,9 @@ fn run_empty_conversion_abs_path() {
     cmd.assert().success();
 
     // Get output
-    let output = std::str::from_utf8(&output.stderr).unwrap();
-
+    let output_err = std::str::from_utf8(&output.stderr).unwrap();
+    assert_snapshot!(output_err);
+    let output = std::str::from_utf8(&output.stdout).unwrap();
     assert_snapshot!(output);
 }
 
@@ -93,8 +95,9 @@ fn run_failing_conversion() {
     cmd.assert().failure();
 
     // Get output
-    let output = std::str::from_utf8(&output.stderr).unwrap();
-
+    let output_err = std::str::from_utf8(&output.stderr).unwrap();
+    assert_snapshot!(output_err);
+    let output = std::str::from_utf8(&output.stdout).unwrap();
     assert_snapshot!(output);
 }
 
@@ -110,8 +113,10 @@ fn load_complex_workflow() {
     cmd.assert().success();
 
     // Get output
-    let output = std::str::from_utf8(&output.stderr).unwrap();
-    assert!(output.is_empty());
+    let output_err = std::str::from_utf8(&output.stderr).unwrap();
+    assert_snapshot!(output_err);
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+    assert_snapshot!(output);
 }
 
 #[test]
@@ -126,6 +131,85 @@ fn load_complex_workflow_attr_ommited() {
     cmd.assert().success();
 
     // Get output
-    let output = std::str::from_utf8(&output.stderr).unwrap();
-    assert!(output.is_empty());
+    let output_err = std::str::from_utf8(&output.stderr).unwrap();
+    assert_snapshot!(output_err);
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+    assert_snapshot!(output);
+}
+
+#[test]
+fn list_modules() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd.env("NO_COLOR", "1").arg("list").output().unwrap();
+    cmd.assert().success();
+
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+    assert_snapshot!(output);
+}
+
+#[test]
+fn module_info() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd
+        .env("NO_COLOR", "1")
+        .arg("info")
+        .arg("xlsx")
+        .output()
+        .unwrap();
+    cmd.assert().success();
+
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+
+    assert_snapshot!(output);
+}
+
+#[test]
+fn module_info_relannis() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd
+        .env("NO_COLOR", "1")
+        .arg("info")
+        .arg("relannis")
+        .output()
+        .unwrap();
+    cmd.assert().success();
+
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+
+    assert_snapshot!(output);
+}
+
+#[test]
+fn graph_op_info() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd
+        .env("NO_COLOR", "1")
+        .arg("info")
+        .arg("merge")
+        .output()
+        .unwrap();
+
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+
+    assert_snapshot!(output);
+}
+
+#[test]
+fn unknown_module_info() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd
+        .env("NO_COLOR", "1")
+        .arg("info")
+        .arg("thiswillnotexist")
+        .output()
+        .unwrap();
+
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+
+    assert_snapshot!(output);
 }
