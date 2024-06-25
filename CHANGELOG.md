@@ -5,6 +5,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- preconfiguration of `arch_dependency` via `guess_vis` field of graphml export now only sets `node_key` mapping for named orderings. Setting it with an empty value did not address `annis::tok` contrary to what was expected to happen.
+- some bare unwraps have been removed, thus exporting graphml is now more robust.
+
 ### Addded
 
 - New `annatto document <OUTPUT_DIR>` command that allows to generate markdown
