@@ -68,6 +68,22 @@ fn markdown_text(text: &str) -> String {
     }
 }
 
+fn set_terminal_table_style(
+    table: &mut Table,
+    first_column_width: usize,
+    second_column_width: usize,
+) {
+    table
+        .with(tabled::settings::Style::modern())
+        .with(
+            Modify::new(Segment::new(.., 0..1)).with(Width::wrap(first_column_width).keep_words()),
+        )
+        .with(
+            Modify::new(Segment::new(.., 1..2)).with(Width::wrap(second_column_width).keep_words()),
+        )
+        .with(ColumnNames::default());
+}
+
 pub fn main() -> anyhow::Result<()> {
     let filter = EnvFilter::from_default_env().add_directive("annatto=trace".parse()?);
     tracing_subscriber::fmt()
@@ -227,13 +243,7 @@ fn list_modules() {
     let mut table = table_builder.build();
 
     if *USE_ANSI_COLORS {
-        table
-            .with(tabled::settings::Style::modern())
-            .with(Modify::new(Segment::new(.., 0..1)).with(Width::wrap(type_col_with).keep_words()))
-            .with(
-                Modify::new(Segment::new(.., 1..2)).with(Width::wrap(list_col_width).keep_words()),
-            )
-            .with(ColumnNames::default());
+        set_terminal_table_style(&mut table, type_col_with, list_col_width);
     } else {
         table.with(tabled::settings::Style::markdown());
     }
@@ -311,17 +321,7 @@ fn print_module_fields(mut fields: Vec<ModuleConfiguration>) {
         let mut table = Table::new(fields);
 
         if *USE_ANSI_COLORS {
-            table
-                .with(tabled::settings::Style::modern())
-                .with(ColumnNames::default())
-                .with(
-                    Modify::new(Segment::new(.., 0..1))
-                        .with(Width::wrap(name_col_width).keep_words()),
-                )
-                .with(
-                    Modify::new(Segment::new(.., 1..2))
-                        .with(Width::wrap(description_col_width).keep_words()),
-                );
+            set_terminal_table_style(&mut table, name_col_width, description_col_width);
         } else {
             table.with(tabled::settings::Style::markdown());
         }
