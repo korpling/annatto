@@ -52,7 +52,7 @@ To show information about modules for the given format or graph operation use
 annatto info <name>
 ```
 
-The documentation for the modules are also included [here]([docs/README.md](https://github.com/korpling/annatto/blob/main/docs/README.md)).
+The documentation for the modules are also included [here](https://github.com/korpling/annatto/blob/main/docs/README.md).
 
 ## Creating a workflow file
 
