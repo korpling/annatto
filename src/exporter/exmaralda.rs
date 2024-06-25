@@ -11,6 +11,7 @@ use crate::{
     error::AnnattoError, importer::exmaralda::LANGUAGE_SEP, progress::ProgressReporter,
     util::Traverse, StepID,
 };
+use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::GraphStorage,
@@ -99,12 +100,18 @@ impl Exporter for ExportExmaralda {
         for doc_node_id in doc_nodes {
             let doc_name = node_annos
                 .get_value_for_item(doc_node_id, &NODE_NAME_KEY)?
-                .unwrap();
+                .ok_or_else(|| {
+                    anyhow!("No document path for node with internal ID {doc_node_id}")
+                })?;
             let doc_path = output_path.join(format!(
                 "{}.{extension}",
-                doc_name.split('/').last().unwrap()
+                doc_name.split('/').last().ok_or_else(|| anyhow!(
+                    "Can not get last element of the document path \"{output_path:?}\""
+                ))?
             ));
-            fs::create_dir_all(doc_path.as_path().parent().unwrap())?;
+            fs::create_dir_all(doc_path.as_path().parent().ok_or_else(|| {
+                anyhow!("Cannot the parent element of the document path \"{doc_path:?}\"")
+            })?)?;
             let file = fs::File::create(doc_path.as_path())?;
             let mut writer = Writer::new_with_indent(BufWriter::new(file), b' ', 2);
             writer.write_event(Event::Decl(BytesDecl::new("1.0", Some("UTF-8"), None)))?;
