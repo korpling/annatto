@@ -12,11 +12,18 @@ pub(crate) fn create(output_directory: &Path) -> anyhow::Result<()> {
     std::fs::create_dir_all(output_directory.join("exporters"))?;
     std::fs::create_dir_all(output_directory.join("graph_ops"))?;
 
+    let importers = ReadFromDiscriminants::iter().collect_vec();
+    let exporters = WriteAsDiscriminants::iter().collect_vec();
+    let graph_ops = GraphOpDiscriminants::iter().collect_vec();
+
     // Create an index file with a list of all the modules
-    std::fs::write(output_directory.join("README.md"), module_list_table())?;
+    std::fs::write(
+        output_directory.join("README.md"),
+        module_list_table(&importers, &exporters, &graph_ops),
+    )?;
 
     // Create a module information for each module of all types
-    for m in ReadFromDiscriminants::iter() {
+    for m in importers {
         let module_name = m.as_ref().to_string();
         let path = output_directory
             .join("importers")
@@ -29,7 +36,7 @@ pub(crate) fn create(output_directory: &Path) -> anyhow::Result<()> {
         write_module_fields(output, &m.module_configs())?;
     }
 
-    for m in WriteAsDiscriminants::iter() {
+    for m in exporters {
         let module_name = m.as_ref().to_string();
         let path = output_directory
             .join("exporters")
@@ -42,7 +49,7 @@ pub(crate) fn create(output_directory: &Path) -> anyhow::Result<()> {
         write_module_fields(output, &m.module_configs())?;
     }
 
-    for m in GraphOpDiscriminants::iter() {
+    for m in graph_ops {
         let module_name = m.as_ref().to_string();
         let path = output_directory
             .join("graph_ops")
@@ -58,13 +65,18 @@ pub(crate) fn create(output_directory: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn module_list_table() -> String {
+fn module_list_table(
+    importers: &[ReadFromDiscriminants],
+    exporters: &[WriteAsDiscriminants],
+    graph_ops: &[GraphOpDiscriminants],
+) -> String {
     let mut table_builder = tabled::builder::Builder::new();
     table_builder.push_record(vec!["Type", "Modules"]);
 
     let import_row = vec![
         "Import formats".to_string(),
-        ReadFromDiscriminants::iter()
+        importers
+            .iter()
             .map(|m| {
                 let module_name = m.as_ref().to_string();
                 format!("[{module_name}](importers/{module_name}.md)")
@@ -75,7 +87,8 @@ fn module_list_table() -> String {
 
     let export_row = vec![
         "Export formats".to_string(),
-        WriteAsDiscriminants::iter()
+        exporters
+            .iter()
             .map(|m| {
                 let module_name = m.as_ref().to_string();
                 format!("[{module_name}](exporters/{module_name}.md)")
@@ -86,7 +99,8 @@ fn module_list_table() -> String {
 
     let graph_op_row = vec![
         "Graph operations".to_string(),
-        GraphOpDiscriminants::iter()
+        graph_ops
+            .iter()
             .map(|m| {
                 let module_name = m.as_ref().to_string();
                 format!("[{module_name}](graph_ops/{module_name}.md)")
@@ -126,3 +140,6 @@ where
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;
