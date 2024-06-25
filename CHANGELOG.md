@@ -5,6 +5,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Addded
+
+- New `annatto document <OUTPUT_DIR>` command that allows to generate markdown
+  files with the module documentation in a given output directory. This command
+  is executed in every pull request to keep the documentation up to date.
+
 ## [0.9.0] - 2024-06-24
 
 ### Added
