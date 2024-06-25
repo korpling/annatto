@@ -13,9 +13,9 @@ pub struct ImportSaltXml {}
 impl Importer for ImportSaltXml {
     fn import_corpus(
         &self,
-        input_path: &std::path::Path,
-        step_id: crate::StepID,
-        tx: Option<crate::workflow::StatusSender>,
+        _input_path: &std::path::Path,
+        _step_id: crate::StepID,
+        _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         todo!()
     }
