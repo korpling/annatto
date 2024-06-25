@@ -36,6 +36,13 @@ use crate::{
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct ImportCoNLLU {
+    /// This key defines the annotation name and namespace for sentence comments, sometimes referred to as metadata in the CoNLL-X universe.
+    /// Example:
+    /// ```toml
+    /// comment_anno = { ns: "comment_namespace", name: "comment_name"}
+    ///
+    /// The field defaults to `{ ns: "conll", name: "comment" }`.
+    /// ```
     #[serde(default = "default_comment_key")]
     comment_anno: AnnoKey,
 }
