@@ -253,7 +253,7 @@ impl ImportCoNLLU {
                     node_name: node_name.to_string(),
                     anno_ns: ns.unwrap_or_default().to_string(),
                     anno_name: name.to_string(),
-                    anno_value: anno_value,
+                    anno_value,
                 })?;
             }
             for token_name in id_to_tok_name.values() {
