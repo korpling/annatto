@@ -7,13 +7,13 @@ Converts linguistic data formats based on the graphANNIS data model as intermedi
 Usage: annatto <COMMAND>
 
 Commands:
-  run       Run a conversion pipeline from a workflow file
-  validate  Only check if a workflow file can be loaded. Invalid workflow files will lead to a non-zero exit code
-  list      List all supported formats (importer, exporter) and graph operations
-  info      Show information about modules for the given format or graph operations having this name
-  help      Print this message or the help of the given subcommand(s)
+  run            Run a conversion pipeline from a workflow file
+  validate       Only check if a workflow file can be loaded. Invalid workflow files will lead to a non-zero exit code
+  list           List all supported formats (importer, exporter) and graph operations
+  info           Show information about modules for the given format or graph operations having this name
+  documentation  Create a documentation of the modules by creating markdown files in given directory
+  help           Print this message or the help of the given subcommand(s)
 
 Options:
   -h, --help     Print help
   -V, --version  Print version
-

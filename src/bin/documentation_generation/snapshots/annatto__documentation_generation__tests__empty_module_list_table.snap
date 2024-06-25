@@ -1,0 +1,9 @@
+---
+source: src/bin/documentation_generation/tests.rs
+expression: actual
+---
+| Type             | Modules |
+|------------------|---------|
+| Import formats   |         |
+| Export formats   |         |
+| Graph operations |         |
