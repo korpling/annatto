@@ -12,6 +12,8 @@ Example:
 ```toml
 comment_anno = { ns = "comment_namespace", name = "comment_name"}
 
-The field defaults to `{ ns = "conll", name = "comment" }`.
 ```
+
+The field defaults to `{ ns = "conll", name = "comment" }`.
+
 
