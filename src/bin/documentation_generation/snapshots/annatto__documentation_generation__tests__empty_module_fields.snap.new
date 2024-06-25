@@ -1,0 +1,7 @@
+---
+source: src/bin/documentation_generation/tests.rs
+assertion_line: 37
+expression: actual
+---
+*No Configuration*
+
