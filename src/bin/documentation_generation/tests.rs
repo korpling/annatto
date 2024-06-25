@@ -36,3 +36,23 @@ fn empty_module_fields() {
     let actual = String::from_utf8(buffer.into_inner().unwrap()).unwrap();
     assert_eq!("*No Configuration*\n", actual);
 }
+
+#[test]
+fn simple_module_fields() {
+    let mut buffer = BufWriter::new(Vec::new());
+
+    let m1 = ModuleConfiguration {
+        name: "test".to_string(),
+        description: "A test configuration.".to_string(),
+    };
+    let m2 = ModuleConfiguration {
+        name: "enabled".to_string(),
+        description: "Whether this module is *enabled*.".to_string(),
+    };
+
+    write_module_fields(&mut buffer, &[m1, m2]).unwrap();
+
+    let actual = String::from_utf8(buffer.into_inner().unwrap()).unwrap();
+
+    assert_snapshot!(actual);
+}
