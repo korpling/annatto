@@ -1,0 +1,19 @@
+on:
+  push:
+  merge_group:
+
+name: Documentation
+
+jobs:
+  format:
+    name: Create module documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rust-lang/setup-rust-toolchain@v1.4.4
+      - name: Update documentation
+        run: cargo run -- documentation docs/
+      - name: Commit changed documentation
+        uses: stefanzweifel/git-auto-commit-action@v5.0.1
+        with:
+          file_pattern: "docs/*"

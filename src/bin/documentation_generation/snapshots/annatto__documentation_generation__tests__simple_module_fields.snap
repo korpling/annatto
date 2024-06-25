@@ -1,0 +1,19 @@
+---
+source: src/bin/documentation_generation/tests.rs
+expression: actual
+---
+## Configuration
+
+###  test
+
+A test configuration.
+
+###  empty_description
+
+*No description*
+
+###  enabled
+
+Whether this module is *enabled*.
+
+
