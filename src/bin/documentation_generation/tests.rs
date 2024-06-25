@@ -49,8 +49,12 @@ fn simple_module_fields() {
         name: "enabled".to_string(),
         description: "Whether this module is *enabled*.".to_string(),
     };
+    let empty_description = ModuleConfiguration {
+        name: "empty_description".to_string(),
+        description: String::default(),
+    };
 
-    write_module_fields(&mut buffer, &[m1, m2]).unwrap();
+    write_module_fields(&mut buffer, &[m1, empty_description, m2]).unwrap();
 
     let actual = String::from_utf8(buffer.into_inner().unwrap()).unwrap();
 

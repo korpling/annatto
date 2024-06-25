@@ -8,6 +8,10 @@ expression: actual
 
 A test configuration.
 
+###  empty_description
+
+*No description*
+
 ###  enabled
 
 Whether this module is *enabled*.
