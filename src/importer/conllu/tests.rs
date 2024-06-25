@@ -1,6 +1,6 @@
 use std::{path::Path, sync::mpsc};
 
-use graphannis::update::GraphUpdate;
+use graphannis::{graph::AnnoKey, update::GraphUpdate};
 use insta::assert_snapshot;
 
 use crate::{test_util::import_as_graphml_string, ReadFrom, StepID};
@@ -52,6 +52,33 @@ fn test_conll_fail_cyclic() -> Result<(), Box<dyn std::error::Error>> {
     let job = import.reader().import_corpus(import_path, step_id, None);
     assert!(job.is_ok());
     Ok(())
+}
+
+#[test]
+fn comments_and_sentence_annos() {
+    let actual = import_as_graphml_string(
+        ImportCoNLLU::default(),
+        Path::new("tests/data/import/conll/comments/"),
+        None,
+    );
+    assert!(actual.is_ok());
+    assert_snapshot!(actual.unwrap());
+}
+
+#[test]
+fn custom_comments() {
+    let actual = import_as_graphml_string(
+        ImportCoNLLU {
+            comment_anno: AnnoKey {
+                ns: "custom".into(),
+                name: "comment_key".into(),
+            },
+        },
+        Path::new("tests/data/import/conll/comments/"),
+        None,
+    );
+    assert!(actual.is_ok());
+    assert_snapshot!(actual.unwrap());
 }
 
 #[test]
