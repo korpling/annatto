@@ -1,5 +1,5 @@
 use std::{
-    collections::BTreeMap,
+    collections::{btree_map::Entry, BTreeMap},
     fmt::Display,
     io::Read,
     path::{Path, PathBuf},
@@ -8,10 +8,14 @@ use std::{
 use documented::{Documented, DocumentedFields};
 use encoding_rs_io::DecodeReaderBytes;
 use graphannis::{
+    graph::AnnoKey,
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
 };
-use graphannis_core::graph::ANNIS_NS;
+use graphannis_core::{
+    graph::ANNIS_NS,
+    util::{join_qname, split_qname},
+};
 use itertools::Itertools;
 use pest::{
     iterators::{Pair, Pairs},
@@ -23,15 +27,42 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Importer;
 use crate::{
-    error::AnnattoError, util::graphupdate::import_corpus_graph_from_files, workflow::StatusSender,
-    StepID,
+    error::AnnattoError, progress::ProgressReporter,
+    util::graphupdate::import_corpus_graph_from_files, workflow::StatusSender, StepID,
 };
 
 /// Import files in the [CONLL-U format](https://universaldependencies.org/format.html)
 /// from the Universal Dependencies project.
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
-pub struct ImportCoNLLU {}
+pub struct ImportCoNLLU {
+    /// This key defines the annotation name and namespace for sentence comments, sometimes referred to as metadata in the CoNLL-X universe.
+    /// Example:
+    /// ```toml
+    /// comment_anno = { ns = "comment_namespace", name = "comment_name"}
+    ///
+    /// ```
+    ///
+    /// The field defaults to `{ ns = "conll", name = "comment" }`.
+    ///
+    #[serde(default = "default_comment_key")]
+    comment_anno: AnnoKey,
+}
+
+impl Default for ImportCoNLLU {
+    fn default() -> Self {
+        Self {
+            comment_anno: default_comment_key(),
+        }
+    }
+}
+
+fn default_comment_key() -> AnnoKey {
+    AnnoKey {
+        name: "comment".into(),
+        ns: "conll".into(),
+    }
+}
 
 const FILE_EXTENSIONS: [&str; 2] = ["conll", "conllu"];
 
@@ -42,12 +73,14 @@ impl Importer for ImportCoNLLU {
         step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        // TODO use ProgressReporter
         let mut update = GraphUpdate::default();
         let paths_and_node_names =
             import_corpus_graph_from_files(&mut update, input_path, self.file_extensions())?;
+        let progress =
+            ProgressReporter::new(tx.clone(), step_id.clone(), paths_and_node_names.len())?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
             self.import_document(&step_id, &mut update, pathbuf.as_path(), doc_node_name, &tx)?;
+            progress.worked(1)?;
         }
         Ok(update)
     }
@@ -146,7 +179,7 @@ impl ImportCoNLLU {
     ) -> anyhow::Result<Vec<String>> {
         let mut id_to_tok_name = BTreeMap::new();
         let mut dependencies = Vec::new();
-        let mut s_annos = Vec::new();
+        let mut s_annos: BTreeMap<String, Vec<String>> = BTreeMap::default();
         let (l, c) = sentence.line_col();
         for member in sentence.into_inner() {
             match member.as_rule() {
@@ -177,10 +210,22 @@ impl ImportCoNLLU {
                             }
                             _ => {}
                         }
-                        if let Some(ref n) = name {
-                            if let Some(ref v) = value {
-                                s_annos.push((n.to_string(), v.to_string()));
-                                break;
+                    }
+                    if let Some(n) = name {
+                        let (fk, fv) = if let Some(v) = value {
+                            (n, v)
+                        } else {
+                            (
+                                join_qname(&self.comment_anno.ns, &self.comment_anno.name),
+                                n,
+                            )
+                        };
+                        match s_annos.entry(fk) {
+                            Entry::Vacant(e) => {
+                                e.insert(vec![fv]);
+                            }
+                            Entry::Occupied(mut e) => {
+                                e.get_mut().push(fv);
                             }
                         }
                     }
@@ -201,12 +246,14 @@ impl ImportCoNLLU {
                 component_type: AnnotationComponentType::PartOf.to_string(),
                 component_name: "".to_string(),
             })?;
-            for (anno_name, anno_value) in s_annos {
+            for (anno_name, anno_values) in s_annos {
+                let (ns, name) = split_qname(&anno_name);
+                let anno_value = anno_values.join("\n");
                 update.add_event(UpdateEvent::AddNodeLabel {
                     node_name: node_name.to_string(),
-                    anno_ns: "".to_string(),
-                    anno_name: anno_name.to_string(),
-                    anno_value: anno_value.to_string(),
+                    anno_ns: ns.unwrap_or_default().to_string(),
+                    anno_name: name.to_string(),
+                    anno_value,
                 })?;
             }
             for token_name in id_to_tok_name.values() {
