@@ -41,8 +41,10 @@ pub struct ImportCoNLLU {
     /// ```toml
     /// comment_anno = { ns = "comment_namespace", name = "comment_name"}
     ///
-    /// The field defaults to `{ ns = "conll", name = "comment" }`.
     /// ```
+    ///
+    /// The field defaults to `{ ns = "conll", name = "comment" }`.
+    ///
     #[serde(default = "default_comment_key")]
     comment_anno: AnnoKey,
 }
