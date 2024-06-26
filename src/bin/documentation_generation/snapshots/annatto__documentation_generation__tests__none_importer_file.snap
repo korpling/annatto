@@ -1,0 +1,10 @@
+---
+source: src/bin/documentation_generation/tests.rs
+expression: actual
+---
+# none (importer)
+
+A special importer that imports nothing.
+
+*No Configuration*
+

@@ -5,6 +5,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2024-06-25
+
+### Fixed
+
+- preconfiguration of `arch_dependency` via `guess_vis` field of graphml export now only sets `node_key` mapping for named orderings. Setting it with an empty value did not address `annis::tok` contrary to what was expected to happen.
+- some bare unwraps have been removed, thus exporting graphml is now more robust.
+
+### Addded
+
+- New `annatto document <OUTPUT_DIR>` command that allows to generate markdown
+  files with the module documentation in a given output directory. This command
+  is executed in every pull request to keep the documentation up to date.
+- `conllu` format now properly imports sentence comments, i. e. sentence level annotations that are not delimited by "=". This also requires such annotations to not contain a "=" at all. Such comments will be by default imported as values of `conll::comment` annotations.
+  The annotation name can be adapted using attribute `comment_anno` of toml type `map` with keys `ns` and `name` (a serialization of graphANNIS' `AnnoKey`).
+
 ## [0.9.0] - 2024-06-24
 
 ### Added

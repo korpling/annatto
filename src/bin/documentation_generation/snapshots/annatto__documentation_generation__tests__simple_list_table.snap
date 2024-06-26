@@ -1,0 +1,9 @@
+---
+source: src/bin/documentation_generation/tests.rs
+expression: actual
+---
+| Type             | Modules                                                            |
+|------------------|--------------------------------------------------------------------|
+| Import formats   | [graphml](importers/graphml.md), [none](importers/none.md)         |
+| Export formats   | [graphml](exporters/graphml.md), [sequence](exporters/sequence.md) |
+| Graph operations | [none](graph_ops/none.md), [chunk](graph_ops/chunk.md)             |
