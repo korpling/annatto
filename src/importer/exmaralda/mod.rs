@@ -102,6 +102,7 @@ impl ImportEXMARaLDA {
         parser_cfg.trim_whitespace = true;
         let mut reader = EventReader::new_with_config(f, parser_cfg);
         let mut errors = Vec::default();
+        let empty_map = BTreeMap::default();
         loop {
             match reader.next() {
                 Ok(XmlEvent::EndDocument) => break,
@@ -111,7 +112,7 @@ impl ImportEXMARaLDA {
                     name, attributes, ..
                 }) => {
                     parent_map.insert(name.to_string(), attr_vec_to_map(&attributes));
-                    let attr_map = parent_map.get(&name.to_string()).unwrap();
+                    let attr_map = parent_map.get(&name.to_string()).unwrap_or(&empty_map);
                     match name.to_string().as_str() {
                         "referenced-file" => {
                             if let Some(file_url) = attr_vec_to_map(&attributes).get("url") {
@@ -124,12 +125,15 @@ impl ImportEXMARaLDA {
                                             absolute_audio_path,
                                             env::current_dir()?,
                                         ) {
-                                            map_audio_source(
-                                                update,
-                                                rel_path.as_path(),
-                                                doc_node_name.rsplit_once('/').unwrap().0,
-                                                doc_node_name,
-                                            )?;
+                                            if let Some(name_tuple) = doc_node_name.rsplit_once('/')
+                                            {
+                                                map_audio_source(
+                                                    update,
+                                                    rel_path.as_path(),
+                                                    name_tuple.0,
+                                                    doc_node_name,
+                                                )?;
+                                            }
                                         } else {
                                             progress.warn(
                                                 format!(
@@ -251,24 +255,32 @@ impl ImportEXMARaLDA {
                                     .collect_vec(),
                             );
                             for i in 1..ordered_tl_nodes.len() {
-                                let source = &timeline
-                                    .get(ordered_tl_nodes.get(i - 1).unwrap())
-                                    .unwrap()
-                                    .1;
-                                let target =
-                                    &timeline.get(ordered_tl_nodes.get(i).unwrap()).unwrap().1;
-                                update.add_event(UpdateEvent::AddEdge {
-                                    source_node: source.to_string(),
-                                    target_node: target.to_string(),
-                                    layer: ANNIS_NS.to_string(),
-                                    component_type: AnnotationComponentType::Ordering.to_string(),
-                                    component_name: "".to_string(),
-                                })?;
+                                if let (Some(source), Some(target)) = (
+                                    &timeline.get(&ordered_tl_nodes[i - 1]),
+                                    &timeline.get(&ordered_tl_nodes[i]),
+                                ) {
+                                    update.add_event(UpdateEvent::AddEdge {
+                                        source_node: source.1.to_string(),
+                                        target_node: target.1.to_string(),
+                                        layer: ANNIS_NS.to_string(),
+                                        component_type: AnnotationComponentType::Ordering
+                                            .to_string(),
+                                        component_name: "".to_string(),
+                                    })?;
+                                }
                             }
                         }
                         "event" => {
                             let text = char_buf.to_string();
-                            let tier_info = parent_map.get("tier").unwrap();
+                            let tier_info = if let Some(m) = parent_map.get("tier") {
+                                m
+                            } else {
+                                return Err(AnnattoError::Export {
+                                    reason: "Could not determine tier properties".to_string(),
+                                    exporter: step_id.module_name.to_string(),
+                                    path: document_path.to_path_buf(),
+                                });
+                            };
                             let speaker_id_opt = tier_info.get("speaker");
                             let speaker_id = if let Some(speaker_id_val) = speaker_id_opt {
                                 speaker_id_val
@@ -317,7 +329,7 @@ impl ImportEXMARaLDA {
                                 progress.warn(&msg)?;
                                 "a"
                             };
-                            let event_info = parent_map.get("event").unwrap();
+                            let event_info = parent_map.get("event").unwrap_or(&empty_map);
                             let start_id = if let Some(id) = event_info.get("start") {
                                 id
                             } else {
@@ -384,20 +396,20 @@ impl ImportEXMARaLDA {
                                 });
                             }
                             let overlapped = &ordered_tl_nodes[start_i..end_i];
-                            if overlapped.is_empty() {
+                            let key = if overlapped.is_empty() {
                                 if let Some(sender) = tx {
                                     let msg = format!("Event {}::{}:{}-{} does not cover any tokens and will be skipped.", &speaker_id, &anno_name, &start_id, &end_id);
                                     sender.send(StatusMessage::Warning(msg))?;
                                 }
                                 continue;
-                            }
+                            } else {
+                                &overlapped[0]
+                            };
                             let node_name = format!(
                                 "{}#{}_{}_{}-{}",
                                 doc_node_name, tier_type, speaker_id, start_id, end_id
                             ); // this is not a unique id as not intended to be
-                            let start_time = if let Some((t, _)) =
-                                timeline.get(overlapped.first().unwrap())
-                            {
+                            let start_time = if let Some((t, _)) = timeline.get(key) {
                                 t
                             } else {
                                 if let Some(sender) = tx {
@@ -424,21 +436,20 @@ impl ImportEXMARaLDA {
                                 })?;
                                 // coverage
                                 for overlapped_id in overlapped {
-                                    let (_, target_id) = timeline.get(overlapped_id).unwrap();
-                                    update.add_event(UpdateEvent::AddEdge {
-                                        source_node: node_name.to_string(),
-                                        target_node: target_id.to_string(),
-                                        layer: ANNIS_NS.to_string(),
-                                        component_type: AnnotationComponentType::Coverage
-                                            .to_string(),
-                                        component_name: "".to_string(),
-                                    })?;
+                                    if let Some((_, target_id)) = timeline.get(overlapped_id) {
+                                        update.add_event(UpdateEvent::AddEdge {
+                                            source_node: node_name.to_string(),
+                                            target_node: target_id.to_string(),
+                                            layer: ANNIS_NS.to_string(),
+                                            component_type: AnnotationComponentType::Coverage
+                                                .to_string(),
+                                            component_name: "".to_string(),
+                                        })?;
+                                    }
                                 }
-                                let (end_time, _) = if let Some(t_name) =
-                                    ordered_tl_nodes.get(end_i)
-                                {
+                                let node_tpl = if let Some(t_name) = ordered_tl_nodes.get(end_i) {
                                     // timeline and ordered tl nodes are directly dependent on each other, so we can safely unwrap
-                                    timeline.get(t_name).unwrap()
+                                    timeline.get(t_name)
                                 } else {
                                     if let Some(sender) = tx {
                                         let msg = format!(
@@ -449,13 +460,15 @@ impl ImportEXMARaLDA {
                                     }
                                     continue;
                                 };
-                                update.add_event(UpdateEvent::AddNodeLabel {
-                                    node_name: node_name.to_string(),
-                                    anno_ns: ANNIS_NS.to_string(),
-                                    anno_name: "time".to_string(),
-                                    anno_value: format!("{}-{}", start_time, end_time),
-                                })?;
-                                already_defined.insert(node_name.to_string());
+                                if let Some((end_time, _)) = node_tpl {
+                                    update.add_event(UpdateEvent::AddNodeLabel {
+                                        node_name: node_name.to_string(),
+                                        anno_ns: ANNIS_NS.to_string(),
+                                        anno_name: "time".to_string(),
+                                        anno_value: format!("{}-{}", start_time, end_time),
+                                    })?;
+                                    already_defined.insert(node_name.to_string());
+                                }
                             }
                             update.add_event(UpdateEvent::AddNodeLabel {
                                 node_name: node_name.to_string(),
@@ -472,13 +485,15 @@ impl ImportEXMARaLDA {
                                     anno_value: text.to_string(),
                                 })?;
                                 // order nodes
-                                if !named_orderings.contains_key(anno_name) {
-                                    named_orderings.insert(anno_name.to_string(), Vec::new());
+                                let order_tpl = (*start_time, node_name.to_string());
+                                match named_orderings.entry(anno_name.to_string()) {
+                                    std::collections::btree_map::Entry::Vacant(e) => {
+                                        e.insert(vec![order_tpl]);
+                                    }
+                                    std::collections::btree_map::Entry::Occupied(mut e) => {
+                                        e.get_mut().push(order_tpl);
+                                    }
                                 }
-                                named_orderings
-                                    .get_mut(anno_name)
-                                    .unwrap()
-                                    .push((*start_time, node_name.to_string()));
                             }
                             update.add_event(UpdateEvent::AddNodeLabel {
                                 node_name: node_name.to_string(),
@@ -490,7 +505,7 @@ impl ImportEXMARaLDA {
                         "ud-information" => {
                             if let Some(anno_name) = parent_map
                                 .get("ud-information")
-                                .unwrap()
+                                .unwrap_or(&empty_map)
                                 .get("attribute-name")
                             {
                                 let ns = if let Some(parent) = parent_map.get("speaker") {
