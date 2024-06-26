@@ -75,11 +75,11 @@ impl TryFrom<&str> for SaltObject {
     }
 }
 
-impl ToString for SaltObject {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for SaltObject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SaltObject::Text(val) => val.clone(),
-            SaltObject::Boolean(val) => val.to_string(),
+            SaltObject::Text(val) => write!(f, "{val}"),
+            SaltObject::Boolean(val) => write!(f, "{val}"),
         }
     }
 }
@@ -156,7 +156,7 @@ impl SaltXmlMapper {
 
                                 // Add features as annotations
                                 for (feat_qname, value) in features.iter() {
-                                    let (annos_ns, anno_name) = split_qname(&feat_qname);
+                                    let (annos_ns, anno_name) = split_qname(feat_qname);
 
                                     updates.add_event(UpdateEvent::AddNodeLabel {
                                         node_name: node_name.clone(),

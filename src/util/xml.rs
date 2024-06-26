@@ -7,8 +7,8 @@ use quick_xml::{
 };
 
 /// Extract an attribute for an XML element by the namespace and name.
-pub(crate) fn get_attribute_by_qname<'a>(
-    attribute_list: Attributes<'a>,
+pub(crate) fn get_attribute_by_qname(
+    attribute_list: Attributes,
     namespace: &str,
     name: &str,
 ) -> Result<Option<String>> {
