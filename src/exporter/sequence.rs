@@ -121,6 +121,7 @@ impl Exporter for ExportSequence {
         if let Some(storage) = graph.get_graphstorage(&component) {
             for (doc_node, start_node) in docs_and_starts {
                 self.export_document(
+                    &step_id,
                     graph,
                     storage.clone(),
                     doc_node,
@@ -142,6 +143,7 @@ impl Exporter for ExportSequence {
 impl ExportSequence {
     fn export_document(
         &self,
+        step_id: &StepID,
         graph: &AnnotationGraph,
         storage: Arc<dyn GraphStorage>,
         file_node: u64,
@@ -183,9 +185,15 @@ impl ExportSequence {
                 blocks.extend(values);
             }
         }
-        let doc_name = node_annos
-            .get_value_for_item(&file_node, &self.fileby)?
-            .unwrap(); // at this point we know there is a value
+        let doc_name = if let Some(v) = node_annos.get_value_for_item(&file_node, &self.fileby)? {
+            v
+        } else {
+            return Err(AnnattoError::Export {
+                reason: "Could not determine file name.".to_string(),
+                exporter: step_id.module_name.to_string(),
+                path: target_dir.to_path_buf(),
+            });
+        };
         let out_path = target_dir.join(format!("{doc_name}.{}", self.file_extension()));
         let mut out_file = fs::File::create(out_path)?;
         for value in blocks {
@@ -251,7 +259,7 @@ impl ExportSequence {
             let doc_node = dfs.find(|r| {
                 if let Ok(step) = r {
                     let p = node_annos.has_value_for_item(&step.node, &self.fileby);
-                    p.is_ok() && p.unwrap()
+                    p.unwrap_or_default()
                 } else {
                     false
                 }
