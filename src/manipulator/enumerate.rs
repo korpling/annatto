@@ -22,11 +22,17 @@ use super::Manipulator;
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct EnumerateMatches {
+    /// A list of queries to find the nodes that are to be enumerated.
     queries: Vec<String>,
+    /// The target node in the query that is assigned the numeric annotation. Holds for all queries. This is a 1-based index and counts by mention in the query.
     target: usize,
+    /// The namespace of the numeric annotation.
     label_ns: String,
+    /// The name of the numeric annotation.
     label_name: String,
+    /// An optional 1-based index pointing to the annotation node in the query that holds a prefix value that will be added to the numeric annotation.
     value: Option<usize>,
+    /// This can be used to offset the numeric values in the annotations.
     start: u64,
 }
 

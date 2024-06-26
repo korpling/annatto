@@ -38,7 +38,7 @@ pub struct ImportSpreadsheet {
     /// Example with the two token columns "dipl" and "norm":
     ///
     /// ```toml
-    /// [export.config]
+    /// [import.config]
     /// column_map = {"dipl" = ["sentence"], "norm" = ["pos", "lemma", "seg"]}
     /// ```
     /// The column "sentence" must be always be aligned with the "dipl" token
@@ -52,7 +52,7 @@ pub struct ImportSpreadsheet {
     /// columns except "lemma" and "pos" are mapped to the "dipl" token column:
     ///
     /// ```toml
-    /// [export.config]
+    /// [import.config]
     /// column_map = {"dipl" = [], "norm" = ["pos", "lemma"]}
     /// fallback = "dipl"
     /// ```

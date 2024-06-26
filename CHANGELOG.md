@@ -5,6 +5,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2024-06-25
+
+### Fixed
+
+- preconfiguration of `arch_dependency` via `guess_vis` field of graphml export now only sets `node_key` mapping for named orderings. Setting it with an empty value did not address `annis::tok` contrary to what was expected to happen.
+- some bare unwraps have been removed, thus exporting graphml is now more robust.
+
+### Addded
+
+- New `annatto document <OUTPUT_DIR>` command that allows to generate markdown
+  files with the module documentation in a given output directory. This command
+  is executed in every pull request to keep the documentation up to date.
+- `conllu` format now properly imports sentence comments, i. e. sentence level annotations that are not delimited by "=". This also requires such annotations to not contain a "=" at all. Such comments will be by default imported as values of `conll::comment` annotations.
+  The annotation name can be adapted using attribute `comment_anno` of toml type `map` with keys `ns` and `name` (a serialization of graphANNIS' `AnnoKey`).
+
+## [0.9.0] - 2024-06-24
+
+### Added
+
+- `link`, `map`, `enumerate`, and `collapse` have documentation visible to the user.
+
+### Fixed
+
+- documentation for import of `xlsx` showed wrong config doc string
+- `link` does not use default `0` for `source_node` and `target_node` attributes anymore, since they are 1-based indices (instead, there is no default)
+
+## [0.8.2] - 2024-06-21
+
+### Fixed
+
+- `sequence` export for horizontal data now also works in models with multiple segmentation and empty tokens
+- `check` can now save without a panic when `report` attribute is omitted. `list` is the default report level which only applies to `save`, not to the `report` attribute itself, where the default is not to print.
+
+## [0.8.1] - 2024-06-21
+
+### Fixed
+
+- `sequence` export for horizontal mode now works
+
 ## [0.8.0] - 2024-06-17
 
 ### Added

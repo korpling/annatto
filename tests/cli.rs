@@ -1,6 +1,7 @@
 use assert_cmd::Command;
 use insta::assert_snapshot;
 use std::path::PathBuf;
+use tempfile::tempdir;
 
 #[test]
 fn show_help() {
@@ -212,4 +213,28 @@ fn unknown_module_info() {
     let output = std::str::from_utf8(&output.stdout).unwrap();
 
     assert_snapshot!(output);
+}
+
+#[test]
+fn write_documentation() {
+    // Create an output directory for the documentation
+    let output_dir = tempdir().unwrap();
+
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+
+    let output = cmd
+        .arg("documentation")
+        .arg(output_dir.path())
+        .output()
+        .unwrap();
+
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+
+    assert_snapshot!(output);
+
+    // Also check that the files have been created
+    assert_eq!(true, output_dir.path().join("README.md").is_file());
+    assert_eq!(true, output_dir.path().join("importers").is_dir());
+    assert_eq!(true, output_dir.path().join("exporters").is_dir());
+    assert_eq!(true, output_dir.path().join("graph_ops").is_dir());
 }
