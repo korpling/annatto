@@ -27,8 +27,8 @@ pub(crate) fn get_attribute_by_qname<'a>(
 }
 
 /// Extract an attribute for an XML element by the name.
-pub(crate) fn get_attribute_by_local_name<'a>(
-    attribute_list: Attributes<'a>,
+pub(crate) fn get_attribute_by_local_name(
+    attribute_list: Attributes,
     name: &str,
 ) -> Result<Option<String>> {
     for att in attribute_list {

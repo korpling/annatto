@@ -2,6 +2,7 @@ use std::{collections::BTreeMap, convert::TryFrom, io::BufReader, path::PathBuf}
 
 use anyhow::{anyhow, Ok};
 use graphannis::update::{GraphUpdate, UpdateEvent};
+use graphannis_core::util::{join_qname, split_qname};
 use quick_xml::{
     events::{attributes::Attributes, BytesStart},
     Reader,
@@ -56,16 +57,29 @@ fn get_label(e: &BytesStart) -> anyhow::Result<(String, String, SaltObject)> {
 
 enum SaltObject {
     Text(String),
+    Boolean(bool),
 }
 
 impl TryFrom<&str> for SaltObject {
     type Error = anyhow::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        if value.starts_with("T::") {
-            Ok(SaltObject::Text(value[3..].to_string()))
+        if let Some(value) = value.strip_prefix("T::") {
+            Ok(SaltObject::Text(value.to_string()))
+        } else if let Some(_value) = value.strip_prefix("B::") {
+            let value = value.to_ascii_lowercase() == "true";
+            Ok(SaltObject::Boolean(value))
         } else {
             Err(anyhow!("Could not create Salt object from \"{value}\""))
+        }
+    }
+}
+
+impl ToString for SaltObject {
+    fn to_string(&self) -> String {
+        match self {
+            SaltObject::Text(val) => val.clone(),
+            SaltObject::Boolean(val) => val.to_string(),
         }
     }
 }
@@ -100,7 +114,7 @@ impl SaltXmlMapper {
         let result = BTreeMap::new();
         let mut salt_type_stack = Vec::new();
         let mut current_element_id = None;
-        //let mut features = Vec::new();
+        let mut features = BTreeMap::new();
         loop {
             match reader.read_event_into(&mut buf)? {
                 quick_xml::events::Event::Start(e) => {
@@ -114,22 +128,51 @@ impl SaltXmlMapper {
                             let (namespace, name, value) = get_label(&e)?;
                             if namespace == "salt" && name == "id" {
                                 if let SaltObject::Text(id) = value {
-                                    current_element_id = Some(id);
+                                    current_element_id =
+                                        Some(id.trim_start_matches("salt:/").to_string());
                                 }
                             }
+                        }
+                        SaltType::Feature => {
+                            let (namespace, name, value) = get_label(&e)?;
+                            let qname = join_qname(&namespace, &name);
+                            features.insert(qname, value);
                         }
                         _ => {}
                     }
                 }
                 quick_xml::events::Event::End(_e) => {
-                    if let Some(_salt_type) = salt_type_stack.pop() {
-                        // Create the element with the collected properties
-                        updates.add_event(UpdateEvent::AddNode {
-                            node_name: current_element_id.clone().ok_or_else(|| {
-                                anyhow!("Missing element ID for corpus graph node")
-                            })?,
-                            node_type: "corpus".into(),
-                        })?;
+                    if let Some(salt_type) = salt_type_stack.pop() {
+                        match salt_type {
+                            SaltType::Corpus | SaltType::Document => {
+                                let node_name = current_element_id.clone().ok_or_else(|| {
+                                    anyhow!("Missing element ID for corpus graph node")
+                                })?;
+                                // Create the element with the collected properties
+                                updates.add_event(UpdateEvent::AddNode {
+                                    node_name: node_name.clone(),
+                                    node_type: "corpus".into(),
+                                })?;
+
+                                // Add features as annotations
+                                for (feat_qname, value) in features.iter() {
+                                    let (annos_ns, anno_name) = split_qname(&feat_qname);
+
+                                    updates.add_event(UpdateEvent::AddNodeLabel {
+                                        node_name: node_name.clone(),
+                                        anno_ns: annos_ns.unwrap_or_default().to_string(),
+                                        anno_name: anno_name.to_string(),
+                                        anno_value: value.to_string(),
+                                    })?;
+                                }
+
+                                // Reset state
+                                features.clear();
+                                current_element_id = None;
+                            }
+
+                            _ => {}
+                        }
                     }
                 }
                 quick_xml::events::Event::Eof => break,
