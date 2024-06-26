@@ -544,7 +544,7 @@ impl ImportEXMARaLDA {
             let mut prev = None;
             for (_, node_name) in node_name_vec
                 .into_iter()
-                .sorted_by(|a, b| a.0.partial_cmp(&b.0).unwrap())
+                .sorted_by(|a, b| a.0.total_cmp(&b.0))
             {
                 if let Some(source) = prev {
                     update.add_event(UpdateEvent::AddEdge {
