@@ -1,0 +1,52 @@
+---
+source: src/importer/saltxml/tests.rs
+expression: actual
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <node id="corpusGraph1">
+            <data key="k0">corpus</data>
+        </node>
+        <node id="salt:/rootCorpus">
+            <data key="k0">corpus</data>
+        </node>
+        <node id="salt:/rootCorpus/subCorpus1">
+            <data key="k0">corpus</data>
+        </node>
+        <node id="salt:/rootCorpus/subCorpus2">
+            <data key="k0">corpus</data>
+        </node>
+        <node id="salt:/rootCorpus/subCorpus1/doc1">
+            <data key="k0">corpus</data>
+        </node>
+        <node id="salt:/rootCorpus/subCorpus1/doc2">
+            <data key="k0">corpus</data>
+        </node>
+        <node id="salt:/rootCorpus/subCorpus2/doc3">
+            <data key="k0">corpus</data>
+        </node>
+        <node id="salt:/rootCorpus/subCorpus2/doc4">
+            <data key="k0">corpus</data>
+        </node>
+        <node id="salt:/corpRel1">
+            <data key="k0">corpus</data>
+        </node>
+        <node id="salt:/corpRel2">
+            <data key="k0">corpus</data>
+        </node>
+        <node id="salt:/corpDocRel1">
+            <data key="k0">corpus</data>
+        </node>
+        <node id="salt:/corpDocRel2">
+            <data key="k0">corpus</data>
+        </node>
+        <node id="salt:/corpDocRel3">
+            <data key="k0">corpus</data>
+        </node>
+        <node id="salt:/corpDocRel4">
+            <data key="k0">corpus</data>
+        </node>
+    </graph>
+</graphml>
