@@ -1,7 +1,11 @@
 use std::{collections::BTreeMap, convert::TryFrom, path::PathBuf};
 
 use anyhow::{anyhow, Ok};
-use graphannis::update::{GraphUpdate, UpdateEvent};
+use graphannis::{
+    model::AnnotationComponentType,
+    update::{GraphUpdate, UpdateEvent},
+};
+use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use roxmltree::Node;
 
@@ -79,6 +83,26 @@ fn get_element_id(n: &Node) -> Option<String> {
         }
     }
     None
+}
+
+fn get_referenced_index(attribute_value: &str, tag_name: &str) -> Option<usize> {
+    let mut pattern = String::with_capacity(tag_name.len() + 4);
+    pattern.push_str("//@");
+    pattern.push_str(tag_name);
+    pattern.push('.');
+
+    let index_as_str = attribute_value.strip_prefix(&pattern)?;
+    let idx = index_as_str.parse::<usize>().ok()?;
+    Some(idx)
+}
+
+fn resolve_element<'a>(
+    attribute_value: &str,
+    tag_name: &str,
+    elements: &'a [Node],
+) -> Option<Node<'a, 'a>> {
+    let idx = get_referenced_index(attribute_value, tag_name)?;
+    elements.get(idx).copied()
 }
 
 pub(crate) struct SaltXmlMapper {
@@ -160,8 +184,26 @@ impl SaltXmlMapper {
             // Add a PartOf Edge between parent corpora and the sub-corpora/documents
             for e in cg.children().filter(|n| n.tag_name().name() == "edges") {
                 match SaltType::from(e) {
-                    SaltType::CorpusRelation => {}
-                    SaltType::DocumentRelation => {}
+                    SaltType::CorpusRelation | SaltType::DocumentRelation => {
+                        let source_ref = e.attribute("source").unwrap_or_default();
+                        let target_ref = e.attribute("target").unwrap_or_default();
+
+                        let source_node = resolve_element(source_ref, "nodes", &nodes)
+                            .and_then(|n| get_element_id(&n));
+                        let target_node = resolve_element(target_ref, "nodes", &nodes)
+                            .and_then(|n| get_element_id(&n));
+
+                        if let (Some(source_node), Some(target_node)) = (source_node, target_node) {
+                            // PartOf has the inverse meaning of the corpus and documentation relation in Salt
+                            updates.add_event(UpdateEvent::AddEdge {
+                                source_node: target_node,
+                                target_node: source_node,
+                                layer: ANNIS_NS.to_string(),
+                                component_type: AnnotationComponentType::PartOf.to_string(),
+                                component_name: "".into(),
+                            })?;
+                        }
+                    }
                     _ => {}
                 }
             }

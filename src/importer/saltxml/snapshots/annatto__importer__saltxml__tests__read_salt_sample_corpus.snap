@@ -40,5 +40,17 @@ expression: actual
             <data key="k1">doc4</data>
             <data key="k2">corpus</data>
         </node>
+        <edge id="e0" source="rootCorpus/subCorpus1" target="rootCorpus" label="PartOf/annis/">
+        </edge>
+        <edge id="e1" source="rootCorpus/subCorpus2" target="rootCorpus" label="PartOf/annis/">
+        </edge>
+        <edge id="e2" source="rootCorpus/subCorpus1/doc1" target="rootCorpus/subCorpus1" label="PartOf/annis/">
+        </edge>
+        <edge id="e3" source="rootCorpus/subCorpus1/doc2" target="rootCorpus/subCorpus1" label="PartOf/annis/">
+        </edge>
+        <edge id="e4" source="rootCorpus/subCorpus2/doc3" target="rootCorpus/subCorpus2" label="PartOf/annis/">
+        </edge>
+        <edge id="e5" source="rootCorpus/subCorpus2/doc4" target="rootCorpus/subCorpus2" label="PartOf/annis/">
+        </edge>
     </graph>
 </graphml>
