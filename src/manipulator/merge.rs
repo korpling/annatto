@@ -846,6 +846,12 @@ mod tests {
             node_name: "root/a/doc".to_string(),
             node_type: "corpus".to_string(),
         })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "root/a/doc".to_string(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "doc".to_string(),
+            anno_value: "doc".to_string(),
+        })?;
         u.add_event(UpdateEvent::AddEdge {
             source_node: "root/a/doc".to_string(),
             target_node: "root/a".to_string(),
@@ -1003,6 +1009,12 @@ mod tests {
             node_name: "root/b/doc".to_string(),
             node_type: "corpus".to_string(),
         })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "root/b/doc".to_string(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "doc".to_string(),
+            anno_value: "doc".to_string(),
+        })?;
         u.add_event(UpdateEvent::AddEdge {
             source_node: "root/b/doc".to_string(),
             target_node: "root/b".to_string(),
@@ -1095,6 +1107,12 @@ mod tests {
         u.add_event(UpdateEvent::AddNode {
             node_name: "root/c/doc".to_string(),
             node_type: "corpus".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "root/c/doc".to_string(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "doc".to_string(),
+            anno_value: "doc".to_string(),
         })?;
         u.add_event(UpdateEvent::AddEdge {
             source_node: "root/c/doc".to_string(),
@@ -1219,6 +1237,12 @@ mod tests {
         u.add_event(UpdateEvent::AddNode {
             node_name: "root/a/doc".to_string(),
             node_type: "corpus".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "root/a/doc".to_string(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "doc".to_string(),
+            anno_value: "doc".to_string(),
         })?;
         u.add_event(UpdateEvent::AddEdge {
             source_node: "root/a/doc".to_string(),
@@ -1377,6 +1401,12 @@ mod tests {
             node_name: "root/b/doc".to_string(),
             node_type: "corpus".to_string(),
         })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "root/b/doc".to_string(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "doc".to_string(),
+            anno_value: "doc".to_string(),
+        })?;
         u.add_event(UpdateEvent::AddEdge {
             source_node: "root/b/doc".to_string(),
             target_node: "root/b".to_string(),
@@ -1435,6 +1465,12 @@ mod tests {
         u.add_event(UpdateEvent::AddNode {
             node_name: "root/c/doc".to_string(),
             node_type: "corpus".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "root/c/doc".to_string(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "doc".to_string(),
+            anno_value: "doc".to_string(),
         })?;
         u.add_event(UpdateEvent::AddEdge {
             source_node: "root/c/doc".to_string(),
