@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `exmaralda` export can now be configured for the annotation key that provides a clue to which subgraph is relevant for a file
 
+### Fixed
+
+- code is more robust and more transparent to the user in case of unexpected data
+
 ## [0.10.0] - 2024-06-25
 
 ### Fixed
