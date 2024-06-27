@@ -27,3 +27,15 @@ Example:
 copy_media = true
 ```
 
+###  doc_anno
+
+Using this annotation key, the corpus nodes that define the entire subgraph relevant for a file are identified.
+The value will then be split by path delimiters and only the last segment is used.
+Example:
+
+```toml
+[export.config]
+doc_anno = { ns = "annis", name = "node_name" }
+```
+This defaults to `{ ns = "annis", name = "doc" }`.
+
