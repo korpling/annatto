@@ -279,7 +279,12 @@ impl ImportSpreadsheet {
                 };
                 let mut nodes = Vec::new();
                 if let Some(col_0i) = index_opt {
-                    let mut row_nums = rownums_by_col0i.get(col_0i).unwrap().iter().collect_vec();
+                    let mut row_nums = if let Some(indices) = rownums_by_col0i.get(col_0i) {
+                        indices.iter().collect_vec()
+                    } else {
+                        progress_reporter.warn(format!("Can not determine row indices of column {name}, thus it will be skipped.").as_str())?;
+                        continue;
+                    };
                     row_nums.sort_unstable();
                     for (start_row, end_row_excl) in row_nums.into_iter().tuple_windows() {
                         let cell = match sheet.get_cell(((col_0i + 1), *start_row)) {
@@ -412,10 +417,7 @@ impl ImportSpreadsheet {
         }
         if let Some(sheet) =
             sheet_from_address(&book, &self.metasheet, None).map_err(|_| AnnattoError::Import {
-                reason: format!(
-                    "Could not find sheet {}",
-                    &self.metasheet.as_ref().unwrap().to_string()
-                ),
+                reason: format!("Could not find sheet {:?}", &self.metasheet),
                 importer: step_id.module_name.clone(),
                 path: path.into(),
             })?
