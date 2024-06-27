@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::GraphStorage,
@@ -269,8 +270,22 @@ impl Collapse {
         update: &mut GraphUpdate,
         skip_edges: &mut BTreeSet<EdgeUId>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let random_node = hyperedge.iter().last().unwrap();
-        let target_node_name = hypernode_map.get(random_node).unwrap();
+        let random_node = if let Some(n) = hyperedge.iter().last() {
+            n
+        } else {
+            return Err(Box::new(AnnattoError::Manipulator {
+                reason: "Encountered an empty hyperedge.".to_string(),
+                manipulator: "collapse::hyperedge".to_string(),
+            }));
+        };
+        let target_node_name = if let Some(node_id) = hypernode_map.get(random_node) {
+            node_id
+        } else {
+            return Err(Box::new(AnnattoError::Manipulator {
+                reason: "Hypernode is unknown.".to_string(),
+                manipulator: "collapse::hyperedge".to_string(),
+            }));
+        };
         for node_id in hyperedge {
             self.transfer_node_annos(node_id, target_node_name, graph, update)?;
             self.reconnect_components(
@@ -293,23 +308,26 @@ impl Collapse {
         update: &mut GraphUpdate,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let node_annos = graph.get_node_annos();
-        let from_node_name = node_annos
-            .get_value_for_item(from_node, &NODE_NAME_KEY)?
-            .unwrap();
+        let from_node_name = if let Some(v) =
+            node_annos.get_value_for_item(from_node, &NODE_NAME_KEY)?
+        {
+            v
+        } else {
+            return Err(anyhow!("Original node has no name. This is a severe error that originates somewhere in the graph model.").into());
+        };
         update.add_event(UpdateEvent::DeleteNode {
             node_name: from_node_name.to_string(),
         })?;
         for key in node_annos.get_all_keys_for_item(from_node, None, None)? {
             if key.ns != ANNIS_NS {
-                let anno_value = node_annos
-                    .get_value_for_item(from_node, key.as_ref())?
-                    .unwrap(); // if that panics, graphannis broke
-                update.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: to_node.to_string(),
-                    anno_ns: key.ns.to_string(),
-                    anno_name: key.name.to_string(),
-                    anno_value: anno_value.to_string(),
-                })?;
+                if let Some(anno_value) = node_annos.get_value_for_item(from_node, key.as_ref())? {
+                    update.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: to_node.to_string(),
+                        anno_ns: key.ns.to_string(),
+                        anno_name: key.name.to_string(),
+                        anno_value: anno_value.to_string(),
+                    })?;
+                }
             }
         }
         Ok(())
@@ -332,7 +350,11 @@ impl Collapse {
                 // ignore component that is to be deleted
                 continue;
             }
-            let storage = graph.get_graphstorage(&component).unwrap();
+            let storage = if let Some(strg) = graph.get_graphstorage(&component) {
+                strg
+            } else {
+                return Err(anyhow!("Component {component} has no storage.").into());
+            };
             let annos = storage.get_anno_storage();
             for tn in storage.get_outgoing_edges(*from_node) {
                 let target_node = tn?;
@@ -340,13 +362,15 @@ impl Collapse {
                 if skip_edges.contains(&edge_id) {
                     continue;
                 }
-                let new_target_node_name = match hypernode_map.get(&target_node) {
-                    Some(name) => name.to_string(),
-                    None => graph
-                        .get_node_annos()
-                        .get_value_for_item(&target_node, &NODE_NAME_KEY)?
-                        .unwrap()
-                        .to_string(),
+                let new_target_node_name = if let Some(name) = hypernode_map.get(&target_node) {
+                    name.to_string()
+                } else if let Some(v) = graph
+                    .get_node_annos()
+                    .get_value_for_item(&target_node, &NODE_NAME_KEY)?
+                {
+                    v.to_string()
+                } else {
+                    return Err(anyhow!("Could not determine hypernode name.").into());
                 };
                 update.add_event(UpdateEvent::AddEdge {
                     source_node: to_node.to_string(),
@@ -360,17 +384,18 @@ impl Collapse {
                     target: target_node,
                 };
                 for anno_key in annos.get_all_keys_for_item(&edge, None, None)? {
-                    let anno_val = annos.get_value_for_item(&edge, &anno_key)?.unwrap();
-                    update.add_event(UpdateEvent::AddEdgeLabel {
-                        source_node: to_node.to_string(),
-                        target_node: new_target_node_name.to_string(),
-                        layer: component.layer.to_string(),
-                        component_type: component.get_type().to_string(),
-                        component_name: component.name.to_string(),
-                        anno_ns: anno_key.ns.to_string(),
-                        anno_name: anno_key.name.to_string(),
-                        anno_value: anno_val.to_string(),
-                    })?;
+                    if let Some(anno_val) = annos.get_value_for_item(&edge, &anno_key)? {
+                        update.add_event(UpdateEvent::AddEdgeLabel {
+                            source_node: to_node.to_string(),
+                            target_node: new_target_node_name.to_string(),
+                            layer: component.layer.to_string(),
+                            component_type: component.get_type().to_string(),
+                            component_name: component.name.to_string(),
+                            anno_ns: anno_key.ns.to_string(),
+                            anno_name: anno_key.name.to_string(),
+                            anno_value: anno_val.to_string(),
+                        })?;
+                    }
                 }
                 skip_edges.insert(edge_id);
             }
@@ -380,13 +405,15 @@ impl Collapse {
                 if skip_edges.contains(&edge_id) {
                     continue;
                 }
-                let new_source_node_name = match hypernode_map.get(&source_node) {
-                    Some(name) => name.to_string(),
-                    None => graph
-                        .get_node_annos()
-                        .get_value_for_item(&source_node, &NODE_NAME_KEY)?
-                        .unwrap()
-                        .to_string(),
+                let new_source_node_name = if let Some(name) = hypernode_map.get(&source_node) {
+                    name.to_string()
+                } else if let Some(v) = graph
+                    .get_node_annos()
+                    .get_value_for_item(&source_node, &NODE_NAME_KEY)?
+                {
+                    v.to_string()
+                } else {
+                    return Err(anyhow!("Could not determine hypernode name.").into());
                 };
                 update.add_event(UpdateEvent::AddEdge {
                     source_node: new_source_node_name.to_string(),
@@ -400,17 +427,18 @@ impl Collapse {
                     target: *from_node,
                 };
                 for anno_key in annos.get_all_keys_for_item(&edge, None, None)? {
-                    let anno_val = annos.get_value_for_item(&edge, &anno_key)?.unwrap();
-                    update.add_event(UpdateEvent::AddEdgeLabel {
-                        source_node: new_source_node_name.to_string(),
-                        target_node: to_node.to_string(),
-                        layer: component.layer.to_string(),
-                        component_type: component.get_type().to_string(),
-                        component_name: component.name.to_string(),
-                        anno_ns: anno_key.ns.to_string(),
-                        anno_name: anno_key.name.to_string(),
-                        anno_value: anno_val.to_string(),
-                    })?;
+                    if let Some(anno_val) = annos.get_value_for_item(&edge, &anno_key)? {
+                        update.add_event(UpdateEvent::AddEdgeLabel {
+                            source_node: new_source_node_name.to_string(),
+                            target_node: to_node.to_string(),
+                            layer: component.layer.to_string(),
+                            component_type: component.get_type().to_string(),
+                            component_name: component.name.to_string(),
+                            anno_ns: anno_key.ns.to_string(),
+                            anno_name: anno_key.name.to_string(),
+                            anno_value: anno_val.to_string(),
+                        })?;
+                    }
                 }
                 skip_edges.insert(edge_id);
             }

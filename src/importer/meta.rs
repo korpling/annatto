@@ -59,8 +59,15 @@ impl Importer for AnnotateCorpus {
         let progress = ProgressReporter::new(tx, step_id, all_files.len())?;
         let start_index = input_path.to_string_lossy().len() + 1;
         for file_path in all_files.into_iter().filter(|p| p.is_file()) {
-            let parent = &file_path.parent().unwrap();
-            let file_stem = file_path.file_stem().unwrap();
+            let parent_opt = &file_path.parent();
+            let file_stem_opt = file_path.file_stem();
+            let (parent, file_stem) = if let (Some(p), Some(s)) = (parent_opt, file_stem_opt) {
+                (p, s)
+            } else {
+                progress
+                    .warn(format!("Skipping file: {}", file_path.to_string_lossy()).as_str())?;
+                continue;
+            };
             let full_path = &parent.join(file_stem);
             let node_name = &full_path.to_string_lossy()[start_index..];
             update.add_event(UpdateEvent::AddNode {

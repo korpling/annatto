@@ -1,5 +1,4 @@
 use std::{
-    cmp::Ordering,
     collections::{BTreeMap, BTreeSet},
     path::Path,
 };
@@ -11,7 +10,7 @@ use graphannis::{
     update::{GraphUpdate, UpdateEvent},
     AnnotationGraph,
 };
-use graphannis_core::util::split_qname;
+use graphannis_core::{annostorage::NodeAnnotationStorage, util::split_qname};
 use graphannis_core::{
     annostorage::ValueSearch,
     dfs::CycleSafeDFS,
@@ -140,6 +139,20 @@ fn revise_components(
     Ok(())
 }
 
+fn node_name(
+    node_id: &u64,
+    node_annos: &dyn NodeAnnotationStorage,
+) -> Result<String, AnnattoError> {
+    if let Some(name) = node_annos.get_value_for_item(node_id, &NODE_NAME_KEY)? {
+        Ok(name.to_string())
+    } else {
+        Err(AnnattoError::Manipulator {
+            reason: "Could not determine node name in component revision".to_string(),
+            manipulator: "revise".to_string(),
+        })
+    }
+}
+
 fn revise_component(
     graph: &AnnotationGraph,
     source_component: AnnotationComponent,
@@ -152,9 +165,7 @@ fn revise_component(
         let edge_anno_storage = source_storage.get_anno_storage();
         for node in source_storage.as_edgecontainer().source_nodes() {
             if let Ok(node_id) = node {
-                let source_node_name = node_annos
-                    .get_value_for_item(&node_id, &NODE_NAME_KEY)?
-                    .unwrap();
+                let source_node_name = node_name(&node_id, node_annos)?;
                 for reachable_target in
                     source_storage.find_connected(node_id, 1, std::ops::Bound::Included(1))
                 {
@@ -163,9 +174,7 @@ fn revise_component(
                             source: node_id,
                             target: target_id,
                         };
-                        let target_node_name = node_annos
-                            .get_value_for_item(&target_id, &NODE_NAME_KEY)?
-                            .unwrap();
+                        let target_node_name = node_name(&target_id, node_annos)?;
                         update.add_event(UpdateEvent::DeleteEdge {
                             source_node: source_node_name.to_string(),
                             target_node: target_node_name.to_string(),
@@ -187,19 +196,20 @@ fn revise_component(
                                 if anno_key.ns == ANNIS_NS {
                                     continue;
                                 }
-                                let edge_anno_value = edge_anno_storage
-                                    .get_value_for_item(&edge, &anno_key)?
-                                    .unwrap();
-                                update.add_event(UpdateEvent::AddEdgeLabel {
-                                    source_node: source_node_name.to_string(),
-                                    target_node: target_node_name.to_string(),
-                                    layer: target_c.layer.to_string(),
-                                    component_type: target_c.get_type().to_string(),
-                                    component_name: target_c.name.to_string(),
-                                    anno_ns: anno_key.ns.to_string(),
-                                    anno_name: anno_key.name.to_string(),
-                                    anno_value: edge_anno_value.to_string(),
-                                })?;
+                                if let Some(edge_anno_value) =
+                                    edge_anno_storage.get_value_for_item(&edge, &anno_key)?
+                                {
+                                    update.add_event(UpdateEvent::AddEdgeLabel {
+                                        source_node: source_node_name.to_string(),
+                                        target_node: target_node_name.to_string(),
+                                        layer: target_c.layer.to_string(),
+                                        component_type: target_c.get_type().to_string(),
+                                        component_name: target_c.name.to_string(),
+                                        anno_ns: anno_key.ns.to_string(),
+                                        anno_name: anno_key.name.to_string(),
+                                        anno_value: edge_anno_value.to_string(),
+                                    })?;
+                                }
                             }
                         }
                     } else {
@@ -257,13 +267,21 @@ fn place_at_new_target(
         ANNIS_NS.into(),
         "".into(),
     );
-    let coverage_storage = graph.get_graphstorage(&coverage_component).unwrap();
+    let coverage_storage = if let Some(strg) = graph.get_graphstorage(&coverage_component) {
+        strg
+    } else {
+        return Err(anyhow!("Could not obtain storage of coverage component.").into());
+    };
     let order_component = AnnotationComponent::new(
         AnnotationComponentType::Ordering,
         ANNIS_NS.to_string().into(),
         target_key.ns.clone(),
     );
-    let order_storage = graph.get_graphstorage(&order_component).unwrap();
+    let order_storage = if let Some(strg) = graph.get_graphstorage(&order_component) {
+        strg
+    } else {
+        return Err(anyhow!("Could not obtain storage of ordering component.").into());
+    };
     let source_node = m.node;
     let mut covered_terminal_nodes = Vec::new();
     CycleSafeDFS::new(
@@ -272,8 +290,18 @@ fn place_at_new_target(
         1,
         usize::MAX,
     )
-    .map(|r| r.unwrap().node)
-    .filter(|n| !coverage_storage.has_outgoing_edges(*n).unwrap())
+    .filter_map(|sr| {
+        if let Ok(step) = sr {
+            let n = step.node;
+            if !coverage_storage.has_outgoing_edges(n).unwrap_or_default() {
+                Some(n)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    })
     .for_each(|n| covered_terminal_nodes.push(n));
     let mut covering_nodes = BTreeSet::new();
     for terminal in covered_terminal_nodes {
@@ -289,14 +317,18 @@ fn place_at_new_target(
         }
     }
     let node_annos = graph.get_node_annos();
-    let anno_value = node_annos
-        .get_value_for_item(&m.node, &m.anno_key)?
-        .unwrap();
-    match covering_nodes.len().partial_cmp(&1) {
-        Some(Ordering::Equal) => {
-            let target_name = node_annos
-                .get_value_for_item(&covering_nodes.pop_last().unwrap(), &NODE_NAME_KEY)?
-                .unwrap();
+    if let Some(anno_value) = node_annos.get_value_for_item(&m.node, &m.anno_key)? {
+        let probe_node = if let Some(nid) = covering_nodes.pop_last() {
+            nid
+        } else {
+            return Err(anyhow!(
+                "Could not gather any covered nodes for name `{}`",
+                target_key.ns
+            )
+            .into());
+        };
+        if covering_nodes.is_empty() {
+            let target_name = node_name(&probe_node, node_annos)?;
             update.add_event(UpdateEvent::DeleteNodeLabel {
                 node_name: target_name.to_string(),
                 anno_ns: target_key.ns.to_string(),
@@ -308,26 +340,18 @@ fn place_at_new_target(
                 anno_name: target_key.name.to_string(),
                 anno_value: anno_value.to_string(),
             })?;
-        }
-        Some(Ordering::Greater) => {
+        } else {
             // create new span first (we could also check for an exiting one, but it sounds expensive and not promising)
-            let probe_node = covering_nodes.pop_last().unwrap();
-            let doc_name = node_annos
-                .get_value_for_item(&probe_node, &NODE_NAME_KEY)?
-                .unwrap()
-                .rsplit_once('#')
-                .unwrap()
-                .0
-                .to_string();
+            let old_name = node_name(&probe_node, node_annos)?;
+            let name_pref = old_name.trim_end_matches(char::is_numeric);
             covering_nodes.insert(probe_node);
-            let node_name_pref = format!("{doc_name}#sSpan");
             let existing = node_annos
                 .get_all_values(&NODE_NAME_KEY, false)?
                 .iter()
-                .filter(|v| v.starts_with(node_name_pref.as_str()))
+                .filter(|v| v.starts_with(name_pref))
                 .collect_vec()
                 .len();
-            let span_name = format!("{}{}", node_name_pref, existing + 1);
+            let span_name = format!("{name_pref}{}", existing + 1);
             update.add_event(UpdateEvent::AddNode {
                 node_name: span_name.clone(),
                 node_type: "node".to_string(),
@@ -344,9 +368,7 @@ fn place_at_new_target(
                 anno_value: anno_value.to_string(),
             })?;
             for member in covering_nodes {
-                let member_name = node_annos
-                    .get_value_for_item(&member, &NODE_NAME_KEY)?
-                    .unwrap();
+                let member_name = node_name(&member, node_annos)?;
                 update.add_event(UpdateEvent::AddEdge {
                     source_node: span_name.clone(),
                     target_node: member_name.to_string(),
@@ -355,15 +377,8 @@ fn place_at_new_target(
                     component_name: "".to_string(),
                 })?;
             }
-        }
-        _ => {
-            return Err(anyhow!(
-                "Could not gather any covered nodes for name `{}`",
-                target_key.ns
-            )
-            .into());
-        }
-    };
+        };
+    }
     Ok(())
 }
 
@@ -381,7 +396,7 @@ fn replace_node_annos(
             ValueSearch::Any,
         ) {
             let m = r?;
-            let node_name = annos.get_value_for_item(&m.node, &NODE_NAME_KEY)?.unwrap();
+            let node_name = node_name(&m.node, annos)?;
             update.add_event(UpdateEvent::DeleteNodeLabel {
                 node_name: node_name.to_string(),
                 anno_ns: old_key.ns.to_string(),
@@ -390,8 +405,7 @@ fn replace_node_annos(
             if let Some(ref new_key) = new_key_opt {
                 if move_by_ns {
                     place_at_new_target(graph, update, &m, new_key)?;
-                } else {
-                    let value = annos.get_value_for_item(&m.node, &old_key)?.unwrap();
+                } else if let Some(value) = annos.get_value_for_item(&m.node, &old_key)? {
                     update.add_event(UpdateEvent::AddNodeLabel {
                         node_name: node_name.to_string(),
                         anno_ns: new_key.ns.to_string(),
@@ -422,14 +436,10 @@ fn replace_edge_annos(
             ) {
                 let m = r?;
                 let source_node = m.node;
-                let source_node_name = node_annos
-                    .get_value_for_item(&source_node, &NODE_NAME_KEY)?
-                    .unwrap();
+                let source_node_name = node_name(&source_node, node_annos)?;
                 for out_edge_opt in component_storage.get_outgoing_edges(source_node) {
                     let target_node = out_edge_opt?;
-                    let target_node_name = node_annos
-                        .get_value_for_item(&target_node, &NODE_NAME_KEY)?
-                        .unwrap();
+                    let target_node_name = node_name(&target_node, node_annos)?;
                     update.add_event(UpdateEvent::DeleteEdgeLabel {
                         source_node: source_node_name.to_string(),
                         target_node: target_node_name.to_string(),
@@ -440,25 +450,24 @@ fn replace_edge_annos(
                         anno_name: old_key.name.to_string(),
                     })?;
                     if let Some(ref new_key) = new_key_opt {
-                        let value = edge_annos
-                            .get_value_for_item(
-                                &Edge {
-                                    source: source_node,
-                                    target: target_node,
-                                },
-                                &m.anno_key,
-                            )?
-                            .unwrap();
-                        update.add_event(UpdateEvent::AddEdgeLabel {
-                            source_node: source_node_name.to_string(),
-                            target_node: target_node_name.to_string(),
-                            layer: component.layer.to_string(),
-                            component_type: component.get_type().to_string(),
-                            component_name: component.name.to_string(),
-                            anno_ns: new_key.ns.to_string(),
-                            anno_name: new_key.name.to_string(),
-                            anno_value: value.to_string(),
-                        })?;
+                        if let Some(value) = edge_annos.get_value_for_item(
+                            &Edge {
+                                source: source_node,
+                                target: target_node,
+                            },
+                            &m.anno_key,
+                        )? {
+                            update.add_event(UpdateEvent::AddEdgeLabel {
+                                source_node: source_node_name.to_string(),
+                                target_node: target_node_name.to_string(),
+                                layer: component.layer.to_string(),
+                                component_type: component.get_type().to_string(),
+                                component_name: component.name.to_string(),
+                                anno_ns: new_key.ns.to_string(),
+                                anno_name: new_key.name.to_string(),
+                                anno_value: value.to_string(),
+                            })?;
+                        }
                     }
                 }
             }
@@ -490,29 +499,30 @@ fn replace_namespaces(
                 ValueSearch::Any,
             ) {
                 let m = m_r?;
-                let node_name = node_annos
-                    .get_value_for_item(&m.node, &NODE_NAME_KEY)?
-                    .unwrap();
-                let value = node_annos
-                    .get_value_for_item(&m.node, &m.anno_key)?
-                    .unwrap();
-                update.add_event(UpdateEvent::DeleteNodeLabel {
-                    node_name: node_name.to_string(),
-                    anno_ns: m.anno_key.ns.to_string(),
-                    anno_name: m.anno_key.name.to_string(),
-                })?;
-                update.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: node_name.to_string(),
-                    anno_ns: new_ns.to_string(),
-                    anno_name: m.anno_key.name.to_string(),
-                    anno_value: value.to_string(),
-                })?;
+                let node_name = node_name(&m.node, node_annos)?;
+                if let Some(value) = node_annos.get_value_for_item(&m.node, &m.anno_key)? {
+                    update.add_event(UpdateEvent::DeleteNodeLabel {
+                        node_name: node_name.to_string(),
+                        anno_ns: m.anno_key.ns.to_string(),
+                        anno_name: m.anno_key.name.to_string(),
+                    })?;
+                    update.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: node_name.to_string(),
+                        anno_ns: new_ns.to_string(),
+                        anno_name: m.anno_key.name.to_string(),
+                        anno_value: value.to_string(),
+                    })?;
+                }
             }
         }
     }
     // for edge annotations
     for component in graph.get_all_components(None, None) {
-        let storage = graph.get_graphstorage(&component).unwrap();
+        let storage = if let Some(strg) = graph.get_graphstorage(&component) {
+            strg
+        } else {
+            return Err(anyhow!("Could not obtain component storage: {}", &component).into());
+        };
         for (old_namespace, new_namespace_opt) in renamings.iter() {
             let new_ns = match new_namespace_opt {
                 None => "".to_string(),
@@ -531,9 +541,7 @@ fn replace_namespaces(
                 ) {
                     let m = m_r?;
                     let source_node = m.node;
-                    let source_node_name = node_annos
-                        .get_value_for_item(&source_node, &NODE_NAME_KEY)?
-                        .unwrap();
+                    let source_node_name = node_name(&source_node, node_annos)?;
                     for target_r in storage.get_outgoing_edges(source_node) {
                         let target_node = target_r?;
                         if let Some(value) = storage.get_anno_storage().get_value_for_item(
@@ -543,9 +551,7 @@ fn replace_namespaces(
                             },
                             &m.anno_key,
                         )? {
-                            let target_node_name = node_annos
-                                .get_value_for_item(&target_node, &NODE_NAME_KEY)?
-                                .unwrap();
+                            let target_node_name = node_name(&target_node, node_annos)?;
                             update.add_event(UpdateEvent::DeleteEdgeLabel {
                                 source_node: source_node_name.to_string(),
                                 target_node: target_node_name.to_string(),
@@ -1012,7 +1018,11 @@ mod tests {
                 "Failed with query: {}",
                 query_s
             );
-            for (m_e, m_g) in matches_e.into_iter().zip(matches_g.into_iter()) {
+            for (m_e, m_g) in matches_e
+                .into_iter()
+                .sorted()
+                .zip(matches_g.into_iter().sorted())
+            {
                 assert_eq!(m_e, m_g);
             }
         }
@@ -1791,7 +1801,7 @@ mod tests {
                 })?;
             }
         }
-        let span_name = "root/a/doc#sSpan1";
+        let span_name = "root/a/doc#s10";
         u.add_event(UpdateEvent::AddNode {
             node_name: span_name.to_string(),
             node_type: "node".to_string(),
@@ -1821,7 +1831,7 @@ mod tests {
             .iter()
             .enumerate()
         {
-            let i = ii + 5;
+            let i = ii + 6;
             let name = format!("root/a/doc#s{}", i);
             u.add_event(UpdateEvent::AddNode {
                 node_name: name.to_string(),

@@ -1,4 +1,5 @@
 use std::{
+    cmp::Ordering,
     collections::{BTreeMap, BTreeSet},
     env, fs,
     io::{BufWriter, Write},
@@ -11,7 +12,6 @@ use crate::{
     error::AnnattoError, importer::exmaralda::LANGUAGE_SEP, progress::ProgressReporter,
     util::Traverse, StepID,
 };
-use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::GraphStorage,
@@ -20,7 +20,7 @@ use graphannis::{
 };
 use graphannis_core::{
     dfs::CycleSafeDFS,
-    graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY},
+    graph::{ANNIS_NS, NODE_TYPE_KEY},
     types::AnnoKey,
 };
 use itertools::Itertools;
@@ -47,7 +47,7 @@ use super::Exporter;
 /// [export.config]
 /// copy_media = false
 /// ```
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct ExportExmaralda {
     /// If `true`, copy linked media files to the output location.
@@ -60,6 +60,33 @@ pub struct ExportExmaralda {
     /// ```
     #[serde(default)]
     copy_media: bool,
+    /// Using this annotation key, the corpus nodes that define the entire subgraph relevant for a file are identified.
+    /// The value will then be split by path delimiters and only the last segment is used.
+    /// Example:
+    ///
+    /// ```toml
+    /// [export.config]
+    /// doc_anno = { ns = "annis", name = "node_name" }
+    /// ```
+    /// This defaults to `{ ns = "annis", name = "doc" }`.
+    #[serde(default = "default_doc_key")]
+    doc_anno: AnnoKey,
+}
+
+impl Default for ExportExmaralda {
+    fn default() -> Self {
+        Self {
+            copy_media: Default::default(),
+            doc_anno: default_doc_key(),
+        }
+    }
+}
+
+fn default_doc_key() -> AnnoKey {
+    AnnoKey {
+        name: "doc".into(),
+        ns: ANNIS_NS.into(),
+    }
 }
 
 const MEDIA_DIR_NAME: &str = "media";
@@ -88,7 +115,9 @@ impl Exporter for ExportExmaralda {
         let (ordering_data, media_data) = edge_buffer;
         let doc_nodes = start_data.iter().map(|((d, _), _)| d).collect_vec();
         let node_annos = graph.get_node_annos();
-        let media_dir = if !media_data.is_empty() & self.copy_media {
+        dbg!(&self.copy_media);
+        dbg!(&media_data);
+        let media_dir_opt = if !media_data.is_empty() & self.copy_media {
             let d = output_path.join(MEDIA_DIR_NAME);
             fs::create_dir_all(d.clone())?;
             Some(d)
@@ -98,20 +127,28 @@ impl Exporter for ExportExmaralda {
         let progress = ProgressReporter::new(tx, step_id.clone(), doc_nodes.len())?;
         let extension = self.file_extension();
         for doc_node_id in doc_nodes {
-            let doc_name = node_annos
-                .get_value_for_item(doc_node_id, &NODE_NAME_KEY)?
-                .ok_or_else(|| {
-                    anyhow!("No document path for node with internal ID {doc_node_id}")
-                })?;
+            let doc_name =
+                if let Some(dn) = node_annos.get_value_for_item(doc_node_id, &self.doc_anno)? {
+                    dn
+                } else {
+                    continue;
+                };
             let doc_path = output_path.join(format!(
                 "{}.{extension}",
-                doc_name.split('/').last().ok_or_else(|| anyhow!(
-                    "Can not get last element of the document path \"{output_path:?}\""
-                ))?
+                doc_name
+                    .split(|c| c == '/' || c == '\\')
+                    .last()
+                    .unwrap_or(&doc_name) // This always has a last
             ));
-            fs::create_dir_all(doc_path.as_path().parent().ok_or_else(|| {
-                anyhow!("Cannot the parent element of the document path \"{doc_path:?}\"")
-            })?)?;
+            if let Some(doc_parent) = doc_path.as_path().parent() {
+                fs::create_dir_all(doc_parent)?;
+            } else {
+                return Err(Box::new(AnnattoError::Export {
+                    reason: "Could not determine parent.".to_string(),
+                    exporter: step_id.module_name.to_string(),
+                    path: doc_path,
+                }));
+            }
             let file = fs::File::create(doc_path.as_path())?;
             let mut writer = Writer::new_with_indent(BufWriter::new(file), b' ', 2);
             writer.write_event(Event::Decl(BytesDecl::new("1.0", Some("UTF-8"), None)))?;
@@ -120,24 +157,32 @@ impl Exporter for ExportExmaralda {
             writer.write_event(Event::Start(BytesStart::new("meta-information")))?;
             writer.create_element("project-name").write_empty()?;
             writer.create_element("transcription-name").write_empty()?;
+            dbg!(&media_dir_opt);
+            dbg!(media_data.get(doc_node_id));
+            dbg!(&doc_node_id);
             if let Some(paths) = media_data.get(doc_node_id) {
                 for ref_path in paths {
                     let url = if self.copy_media {
-                        let target = media_dir
-                            .as_ref()
-                            .unwrap()
-                            .join(ref_path.file_name().unwrap());
-                        fs::copy(ref_path, target)?;
-                        Path::new(MEDIA_DIR_NAME)
-                            .join(ref_path.file_name().unwrap())
-                            .to_string_lossy()
-                            .to_string()
+                        if let (Some(media_dir), Some(media_file_name)) =
+                            (&media_dir_opt, ref_path.file_name())
+                        {
+                            let target = media_dir.join(media_file_name);
+                            fs::copy(ref_path, target)?;
+                            Some(
+                                Path::new(MEDIA_DIR_NAME)
+                                    .join(media_file_name)
+                                    .to_string_lossy()
+                                    .to_string(),
+                            )
+                        } else {
+                            None
+                        }
                     } else {
                         // express path to original media file relative to newly created exmaralda file
                         if let Some(relative_path) =
                             pathdiff::diff_paths(env::current_dir()?.join(ref_path), output_path)
                         {
-                            relative_path.to_string_lossy().to_string()
+                            Some(relative_path.to_string_lossy().to_string())
                         } else {
                             return Err(Box::new(AnnattoError::Export {
                                 reason: format!(
@@ -149,10 +194,13 @@ impl Exporter for ExportExmaralda {
                             }));
                         }
                     };
-                    writer
-                        .create_element("referenced-file")
-                        .with_attribute(("url", url.as_str()))
-                        .write_empty()?;
+                    dbg!(&url);
+                    if let Some(url_str) = url {
+                        writer
+                            .create_element("referenced-file")
+                            .with_attribute(("url", url_str.as_str()))
+                            .write_empty()?;
+                    }
                 }
             };
             writer.create_element("ud-meta-information").write_empty()?;
@@ -300,11 +348,21 @@ impl Exporter for ExportExmaralda {
                     let sorted_entries = entries.iter().sorted_unstable_by(|a, b| {
                         let node_a = a.0;
                         let node_b = b.0;
-                        let start_a = start_data.get(&(*doc_node_id, node_a)).unwrap();
-                        let start_b = start_data.get(&(*doc_node_id, node_b)).unwrap();
-                        let time_a = timeline.get(&(*doc_node_id, start_a.to_string())).unwrap();
-                        let time_b = timeline.get(&(*doc_node_id, start_b.to_string())).unwrap();
-                        time_a.total_cmp(time_b)
+                        if let (Some(start_a), Some(start_b)) = (
+                            start_data.get(&(*doc_node_id, node_a)),
+                            start_data.get(&(*doc_node_id, node_b)),
+                        ) {
+                            if let (Some(time_a), Some(time_b)) = (
+                                timeline.get(&(*doc_node_id, start_a.to_string())),
+                                timeline.get(&(*doc_node_id, start_b.to_string())),
+                            ) {
+                                time_a.total_cmp(time_b)
+                            } else {
+                                Ordering::Equal // will never happen
+                            }
+                        } else {
+                            Ordering::Equal // will never happen
+                        }
                     });
                     let tier_type = if let Some((node_id, _)) = entries.last() {
                         if ordering_data.contains(node_id) {
@@ -328,14 +386,17 @@ impl Exporter for ExportExmaralda {
                     let tier = BytesStart::new("tier").with_attributes(tier_attributes);
                     writer.write_event(Event::Start(tier))?;
                     for (node_id, anno_value) in sorted_entries {
-                        let start = start_data.get(&(*doc_node_id, *node_id)).unwrap();
-                        let end = end_data.get(&(*doc_node_id, *node_id)).unwrap();
-                        let mut event = BytesStart::new("event");
-                        event.push_attribute(("start", start.as_str()));
-                        event.push_attribute(("end", end.as_str()));
-                        writer.write_event(Event::Start(event))?;
-                        writer.write_event(Event::Text(BytesText::new(anno_value)))?;
-                        writer.write_event(Event::End(BytesEnd::new("event")))?;
+                        if let (Some(start), Some(end)) = (
+                            start_data.get(&(*doc_node_id, *node_id)),
+                            end_data.get(&(*doc_node_id, *node_id)),
+                        ) {
+                            let mut event = BytesStart::new("event");
+                            event.push_attribute(("start", start.as_str()));
+                            event.push_attribute(("end", end.as_str()));
+                            writer.write_event(Event::Start(event))?;
+                            writer.write_event(Event::Text(BytesText::new(anno_value)))?;
+                            writer.write_event(Event::End(BytesEnd::new("event")))?;
+                        }
                     }
                     writer.write_event(Event::End(BytesEnd::new("tier")))?;
                 }
@@ -402,11 +463,16 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
             // get the root nodes of the base (timeline) ordering
             let base_ordering_root_nodes = storage
                 .source_nodes()
-                .filter(|r| match r {
-                    Ok(n) => storage.get_ingoing_edges(*n).count() == 0,
-                    Err(_) => false,
+                .filter_map(|r| match r {
+                    Ok(n) => {
+                        if !storage.has_ingoing_edges(n).unwrap_or_default() {
+                            Some(n)
+                        } else {
+                            None
+                        }
+                    }
+                    Err(_) => None,
                 })
-                .map(|r| r.unwrap())
                 .collect_vec();
             // map all roots to a document
             let part_of_c = AnnotationComponent::new(
@@ -414,10 +480,10 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                 ANNIS_NS.into(),
                 "".into(),
             );
-            let part_of_storage = graph.get_graphstorage(&part_of_c).unwrap(); // "PartOf/annis" is a required component
-            let annis_doc = AnnoKey {
-                ns: ANNIS_NS.into(),
-                name: "doc".into(),
+            let part_of_storage = if let Some(strg) = graph.get_graphstorage(&part_of_c) {
+                strg
+            } else {
+                return Err(AnnattoError::Export { reason: "Graph has no part of component, which makes it impossible to identify document nodes.".to_string(), exporter: step_id.module_name.to_string(), path: step_id.clone().path.unwrap_or(Path::new("./").to_path_buf()) });
             };
             // note: the following produces multiple entries for the same document node
             // in case this exporter gets a graph that cannot be represented in EXMARaLDA
@@ -428,11 +494,12 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                     let dfs =
                         CycleSafeDFS::new(part_of_storage.as_edgecontainer(), *n, 0, usize::MAX);
                     let mut ret = None;
-                    for r in dfs {
-                        let node = r.unwrap().node;
-                        let terminate =
-                            graph.get_node_annos().has_value_for_item(&node, &annis_doc);
-                        if terminate.is_ok() && terminate.unwrap() {
+                    for step in dfs.flatten() {
+                        let node = step.node;
+                        let terminate = graph
+                            .get_node_annos()
+                            .has_value_for_item(&node, &self.doc_anno);
+                        if terminate.unwrap_or_default() {
                             ret = Some((node, *n));
                             break;
                         }
@@ -555,7 +622,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                 }
                 audio_data.insert(doc_node, media_vec);
             }
-            // collecting ordering data
+            // collecting named ordering data
             let mut storages = Vec::new();
             for ordering in graph.get_all_components(Some(AnnotationComponentType::Ordering), None)
             {
@@ -567,7 +634,10 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                 }
             }
             // (this might be a rather expensive approach to) mark nodes as members of an ordering
-            let node_range: Range<u64> = 0..graph.get_node_annos().get_largest_item()?.unwrap();
+            let node_range: Range<u64> = 0..graph
+                .get_node_annos()
+                .get_largest_item()?
+                .unwrap_or(u64::MAX); // let's hope it'll never be necessary to use u64::MAX
             let node_annos = graph.get_node_annos();
             for node_id in node_range.filter(|n| {
                 let r = node_annos.get_value_for_item(n, &NODE_TYPE_KEY);
@@ -578,9 +648,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                 }
             }) {
                 for storage in &storages {
-                    if storage.has_outgoing_edges(node_id)?
-                        || storage.get_ingoing_edges(node_id).next().is_some()
-                    {
+                    if storage.has_outgoing_edges(node_id)? || storage.has_ingoing_edges(node_id)? {
                         ordering_data.insert(node_id);
                         break;
                     }
@@ -696,7 +764,13 @@ mod tests {
         assert!(g.is_ok());
         let mut graph = g.unwrap();
         assert!(graph.apply_update(&mut update, |_| {}).is_ok());
-        let actual = export_to_string(&graph, ExportExmaralda { copy_media: true });
+        let actual = export_to_string(
+            &graph,
+            ExportExmaralda {
+                copy_media: true,
+                ..Default::default()
+            },
+        );
         assert!(actual.is_ok());
 
         assert_snapshot!(actual.unwrap());

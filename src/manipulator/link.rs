@@ -1,6 +1,7 @@
 //! Created edges between nodes based on their annotation value.
 use super::Manipulator;
 use crate::{error::AnnattoError, progress::ProgressReporter, workflow::StatusSender, StepID};
+use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
     corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
@@ -147,14 +148,22 @@ fn gather_link_data(
                 if let Some((Some(anno_key), carrying_node_name)) =
                     group_of_bundles.get(*value_index - 1)
                 {
-                    let node_id_o = node_annos.get_node_id_from_name(carrying_node_name)?;
-                    let value_node_id = node_id_o.unwrap();
-                    let anno_value = node_annos
-                        .get_value_for_item(&value_node_id, anno_key)?
-                        .unwrap() // this CANNOT be None
-                        .trim()
-                        .to_lowercase();
-                    value_segments.push(anno_value); // simply concatenate values
+                    let value_node_id = if let Some(node_id) =
+                        node_annos.get_node_id_from_name(carrying_node_name)?
+                    {
+                        node_id
+                    } else {
+                        return Err(anyhow!(
+                            "Could not determine node id from name {}",
+                            carrying_node_name
+                        )
+                        .into());
+                    };
+                    if let Some(anno_value) =
+                        node_annos.get_value_for_item(&value_node_id, anno_key)?
+                    {
+                        value_segments.push(anno_value.trim().to_lowercase()); // simply concatenate values
+                    }
                 } else {
                     return Err(AnnattoError::Manipulator {
                         reason: format!(
