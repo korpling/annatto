@@ -6,39 +6,40 @@ expression: actual
 <graphml>
     <key id="k0" for="node" attr.name="salt::SDOCUMENT_GRAPH_LOCATION" attr.type="string"/>
     <key id="k1" for="node" attr.name="salt::SNAME" attr.type="string"/>
-    <key id="k2" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k2" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k3" for="node" attr.name="annis::node_type" attr.type="string"/>
     <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
         <node id="rootCorpus">
             <data key="k1">rootCorpus</data>
-            <data key="k2">corpus</data>
+            <data key="k3">corpus</data>
         </node>
         <node id="rootCorpus/subCorpus1">
             <data key="k1">subCorpus1</data>
-            <data key="k2">corpus</data>
+            <data key="k3">corpus</data>
         </node>
         <node id="rootCorpus/subCorpus2">
             <data key="k1">subCorpus2</data>
-            <data key="k2">corpus</data>
+            <data key="k3">corpus</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1">
             <data key="k0">file:/home/thomas/korpora/SaltSampleCorpus/rootCorpus/subCorpus1/doc1.salt</data>
-            <data key="k1">doc1</data>
-            <data key="k2">corpus</data>
+            <data key="k2">doc1</data>
+            <data key="k3">corpus</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2">
             <data key="k0">file:/home/thomas/korpora/SaltSampleCorpus/rootCorpus/subCorpus1/doc2.salt</data>
-            <data key="k1">doc2</data>
-            <data key="k2">corpus</data>
+            <data key="k2">doc2</data>
+            <data key="k3">corpus</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3">
             <data key="k0">file:/home/thomas/korpora/SaltSampleCorpus/rootCorpus/subCorpus2/doc3.salt</data>
-            <data key="k1">doc3</data>
-            <data key="k2">corpus</data>
+            <data key="k2">doc3</data>
+            <data key="k3">corpus</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4">
             <data key="k0">file:/home/thomas/korpora/SaltSampleCorpus/rootCorpus/subCorpus2/doc4.salt</data>
-            <data key="k1">doc4</data>
-            <data key="k2">corpus</data>
+            <data key="k2">doc4</data>
+            <data key="k3">corpus</data>
         </node>
         <edge id="e0" source="rootCorpus/subCorpus1" target="rootCorpus" label="PartOf/annis/">
         </edge>

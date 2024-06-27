@@ -1,7 +1,10 @@
-use std::fs::File;
+use std::{convert::TryFrom, fs::File};
 
+use anyhow::anyhow;
+use document::DocumentMapper;
 use documented::{Documented, DocumentedFields};
 use graphannis::update::GraphUpdate;
+use roxmltree::Node;
 use serde::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
@@ -25,20 +28,26 @@ impl Importer for ImportSaltXml {
         let mut updates = GraphUpdate::new();
         // Start  with an undetermined progress reporter
         let reporter = ProgressReporter::new_unknown_total_work(tx.clone(), step_id.clone())?;
-        let mut mapper = mapper::SaltXmlMapper::new(reporter);
+        let mapper = corpus_structure::SaltCorpusStructureMapper::new(reporter.clone());
 
         // Read the corpus structure from the Salt project and get the number of documents to create
-        mapper.reporter.info("Reading SaltXML project structure")?;
+        reporter.info("Reading SaltXML project structure")?;
         let project_file = std::fs::read_to_string(input_path.join("saltProject.salt"))?;
         let documents = mapper.map_corpus_structure(&project_file, &mut updates)?;
 
         // Create a new progress reporter that can now estimate the work based on the number of documents
-        mapper.reporter = ProgressReporter::new(tx, step_id, documents.len())?;
-        for (document_node_name, document_path) in documents.iter() {
-            mapper.reporter.info("Reading document {document_path}")?;
+        let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
+        for document_node_name in documents {
+            let mut relative_document_path = document_node_name.clone();
+            relative_document_path.push_str(".salt");
+            dbg!(&relative_document_path);
+            // Get the path from the node name
+            let document_path = input_path.join(relative_document_path);
+            reporter.info("Reading document {document_path}")?;
             let mut document_file = File::open(document_path)?;
-            mapper.read_document(&mut document_file, document_node_name, &mut updates)?;
-            mapper.reporter.worked(1)?;
+            let document_mapper = DocumentMapper::new(reporter.clone());
+            document_mapper.read_document(&mut document_file, &document_node_name, &mut updates)?;
+            reporter.worked(1)?;
         }
 
         Ok(updates)
@@ -49,7 +58,102 @@ impl Importer for ImportSaltXml {
     }
 }
 
-mod mapper;
+const XSI_NAMESPACE: &str = "http://www.w3.org/2001/XMLSchema-instance";
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum SaltType {
+    Corpus,
+    Document,
+    ElementId,
+    Feature,
+    CorpusRelation,
+    DocumentRelation,
+    Unknown,
+}
+
+impl<'a, 'input> From<Node<'a, 'input>> for SaltType {
+    fn from(n: Node) -> Self {
+        // Use the xsi:type attribute to determine the type
+        if let Some(type_id) = n.attribute((XSI_NAMESPACE, "type")) {
+            match type_id {
+                "sCorpusStructure:SCorpus" => SaltType::Corpus,
+                "sCorpusStructure:SDocument" => SaltType::Document,
+                "saltCore:SElementId" => SaltType::ElementId,
+                "saltCore:SFeature" => SaltType::Feature,
+                "sCorpusStructure:SCorpusRelation" => SaltType::CorpusRelation,
+                "sCorpusStructure:SCorpusDocumentRelation" => SaltType::DocumentRelation,
+                _ => SaltType::Unknown,
+            }
+        } else {
+            SaltType::Unknown
+        }
+    }
+}
+
+enum SaltObject {
+    Text(String),
+    Boolean(bool),
+}
+
+impl TryFrom<&str> for SaltObject {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        if let Some(value) = value.strip_prefix("T::") {
+            Ok(SaltObject::Text(value.to_string()))
+        } else if let Some(_value) = value.strip_prefix("B::") {
+            let value = value.to_ascii_lowercase() == "true";
+            Ok(SaltObject::Boolean(value))
+        } else {
+            Err(anyhow!("Could not create Salt object from \"{value}\""))
+        }
+    }
+}
+
+impl std::fmt::Display for SaltObject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SaltObject::Text(val) => write!(f, "{val}"),
+            SaltObject::Boolean(val) => write!(f, "{val}"),
+        }
+    }
+}
+
+fn get_element_id(n: &Node) -> Option<String> {
+    for element_id_label in n
+        .children()
+        .filter(|c| c.tag_name().name() == "labels" && SaltType::from(*c) == SaltType::ElementId)
+    {
+        if let Some(id) = element_id_label.attribute("value") {
+            let id = SaltObject::try_from(id).ok()?;
+            return Some(id.to_string().trim_start_matches("salt:/").to_string());
+        }
+    }
+    None
+}
+
+fn get_referenced_index(attribute_value: &str, tag_name: &str) -> Option<usize> {
+    let mut pattern = String::with_capacity(tag_name.len() + 4);
+    pattern.push_str("//@");
+    pattern.push_str(tag_name);
+    pattern.push('.');
+
+    let index_as_str = attribute_value.strip_prefix(&pattern)?;
+    let idx = index_as_str.parse::<usize>().ok()?;
+    Some(idx)
+}
+
+fn resolve_element<'a>(
+    attribute_value: &str,
+    tag_name: &str,
+    elements: &'a [Node],
+) -> Option<Node<'a, 'a>> {
+    let idx = get_referenced_index(attribute_value, tag_name)?;
+    elements.get(idx).copied()
+}
+
+mod corpus_structure;
+mod document;
 
 #[cfg(test)]
 mod tests;

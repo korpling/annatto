@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, convert::TryFrom, path::PathBuf};
+use std::{collections::BTreeSet, convert::TryFrom};
 
 use anyhow::{anyhow, Ok};
 use graphannis::{
@@ -7,118 +7,25 @@ use graphannis::{
 };
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
-use roxmltree::Node;
 
 use crate::progress::ProgressReporter;
 
-const XSI_NAMESPACE: &str = "http://www.w3.org/2001/XMLSchema-instance";
+use super::{get_element_id, resolve_element, SaltObject, SaltType};
 
-#[derive(Debug, Clone, PartialEq)]
-enum SaltType {
-    Corpus,
-    Document,
-    ElementId,
-    Feature,
-    CorpusRelation,
-    DocumentRelation,
-    Unknown,
+pub(super) struct SaltCorpusStructureMapper {
+    reporter: ProgressReporter,
 }
 
-impl<'a, 'input> From<Node<'a, 'input>> for SaltType {
-    fn from(n: Node) -> Self {
-        // Use the xsi:type attribute to determine the type
-        if let Some(type_id) = n.attribute((XSI_NAMESPACE, "type")) {
-            match type_id {
-                "sCorpusStructure:SCorpus" => SaltType::Corpus,
-                "sCorpusStructure:SDocument" => SaltType::Document,
-                "saltCore:SElementId" => SaltType::ElementId,
-                "saltCore:SFeature" => SaltType::Feature,
-                "sCorpusStructure:SCorpusRelation" => SaltType::CorpusRelation,
-                "sCorpusStructure:SCorpusDocumentRelation" => SaltType::DocumentRelation,
-                _ => SaltType::Unknown,
-            }
-        } else {
-            SaltType::Unknown
-        }
-    }
-}
-
-enum SaltObject {
-    Text(String),
-    Boolean(bool),
-}
-
-impl TryFrom<&str> for SaltObject {
-    type Error = anyhow::Error;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        if let Some(value) = value.strip_prefix("T::") {
-            Ok(SaltObject::Text(value.to_string()))
-        } else if let Some(_value) = value.strip_prefix("B::") {
-            let value = value.to_ascii_lowercase() == "true";
-            Ok(SaltObject::Boolean(value))
-        } else {
-            Err(anyhow!("Could not create Salt object from \"{value}\""))
-        }
-    }
-}
-
-impl std::fmt::Display for SaltObject {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            SaltObject::Text(val) => write!(f, "{val}"),
-            SaltObject::Boolean(val) => write!(f, "{val}"),
-        }
-    }
-}
-
-fn get_element_id(n: &Node) -> Option<String> {
-    for element_id_label in n
-        .children()
-        .filter(|c| c.tag_name().name() == "labels" && SaltType::from(*c) == SaltType::ElementId)
-    {
-        if let Some(id) = element_id_label.attribute("value") {
-            let id = SaltObject::try_from(id).ok()?;
-            return Some(id.to_string().trim_start_matches("salt:/").to_string());
-        }
-    }
-    None
-}
-
-fn get_referenced_index(attribute_value: &str, tag_name: &str) -> Option<usize> {
-    let mut pattern = String::with_capacity(tag_name.len() + 4);
-    pattern.push_str("//@");
-    pattern.push_str(tag_name);
-    pattern.push('.');
-
-    let index_as_str = attribute_value.strip_prefix(&pattern)?;
-    let idx = index_as_str.parse::<usize>().ok()?;
-    Some(idx)
-}
-
-fn resolve_element<'a>(
-    attribute_value: &str,
-    tag_name: &str,
-    elements: &'a [Node],
-) -> Option<Node<'a, 'a>> {
-    let idx = get_referenced_index(attribute_value, tag_name)?;
-    elements.get(idx).copied()
-}
-
-pub(crate) struct SaltXmlMapper {
-    pub(crate) reporter: ProgressReporter,
-}
-
-impl SaltXmlMapper {
-    pub(crate) fn new(reporter: ProgressReporter) -> SaltXmlMapper {
-        SaltXmlMapper { reporter }
+impl SaltCorpusStructureMapper {
+    pub(super) fn new(reporter: ProgressReporter) -> SaltCorpusStructureMapper {
+        SaltCorpusStructureMapper { reporter }
     }
 
-    pub(crate) fn map_corpus_structure(
+    pub(super) fn map_corpus_structure(
         &self,
         input: &str,
         updates: &mut GraphUpdate,
-    ) -> anyhow::Result<BTreeMap<String, PathBuf>> {
+    ) -> anyhow::Result<BTreeSet<String>> {
         let doc = roxmltree::Document::parse(input)?;
 
         let root = doc.root_element();
@@ -128,7 +35,7 @@ impl SaltXmlMapper {
             ));
         }
 
-        let result = BTreeMap::new();
+        let mut documents = BTreeSet::new();
 
         // Iterate over all corpus graphs
         for cg in root
@@ -144,7 +51,8 @@ impl SaltXmlMapper {
                 .collect_vec();
 
             for node in nodes.iter() {
-                match SaltType::from(*node) {
+                let salt_type = SaltType::from(*node);
+                match salt_type {
                     SaltType::Corpus | SaltType::Document => {
                         // Get the element ID from the label
                         let node_name = get_element_id(node)
@@ -154,6 +62,11 @@ impl SaltXmlMapper {
                             node_name: node_name.to_string(),
                             node_type: "corpus".into(),
                         })?;
+
+                        // Add the document ID to the result
+                        if SaltType::Document == salt_type {
+                            documents.insert(node_name.to_string());
+                        }
 
                         // Add features as annotations
                         let features = node.children().filter(|n| {
@@ -169,13 +82,27 @@ impl SaltXmlMapper {
                                 feature_node.attribute("value").unwrap_or_default(),
                             )?;
 
-                            updates.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: node_name.to_string(),
-                                anno_ns: annos_ns.unwrap_or_default().to_string(),
-                                anno_name: anno_name.to_string(),
-                                anno_value: anno_value.to_string(),
-                            })?;
+                            if salt_type == SaltType::Document
+                                && annos_ns == Some("salt")
+                                && anno_name == "SNAME"
+                            {
+                                updates.add_event(UpdateEvent::AddNodeLabel {
+                                    node_name: node_name.to_string(),
+                                    anno_ns: ANNIS_NS.to_string(),
+                                    anno_name: "doc".to_string(),
+                                    anno_value: anno_value.to_string(),
+                                })?;
+                            } else {
+                                updates.add_event(UpdateEvent::AddNodeLabel {
+                                    node_name: node_name.to_string(),
+                                    anno_ns: annos_ns.unwrap_or_default().to_string(),
+                                    anno_name: anno_name.to_string(),
+                                    anno_value: anno_value.to_string(),
+                                })?;
+                            }
                         }
+
+                        // TODO: map annotations (that are not features)
                     }
                     _ => {}
                 }
@@ -209,15 +136,6 @@ impl SaltXmlMapper {
             }
         }
 
-        Ok(result)
-    }
-
-    pub(crate) fn read_document<R: std::io::Read>(
-        &self,
-        _input: &mut R,
-        _document_node_name: &str,
-        _updates: &mut GraphUpdate,
-    ) -> anyhow::Result<()> {
-        Ok(())
+        Ok(documents)
     }
 }
