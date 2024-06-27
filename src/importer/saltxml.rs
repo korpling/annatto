@@ -45,8 +45,7 @@ impl Importer for ImportSaltXml {
             // Get the path from the node name
             let document_path = input_path.join(relative_document_path);
             let document_file = std::fs::read_to_string(document_path)?;
-            let document_mapper = DocumentMapper::new();
-            document_mapper.read_document(&document_file, &document_node_name, &mut updates)?;
+            DocumentMapper::read_document(&document_file, &document_node_name, &mut updates)?;
             reporter.worked(1)?;
         }
 
@@ -68,6 +67,9 @@ enum SaltType {
     Feature,
     CorpusRelation,
     DocumentRelation,
+    Layer,
+    Token,
+    TextualDs,
     Unknown,
 }
 
@@ -82,6 +84,9 @@ impl<'a, 'input> From<Node<'a, 'input>> for SaltType {
                 "saltCore:SFeature" => SaltType::Feature,
                 "sCorpusStructure:SCorpusRelation" => SaltType::CorpusRelation,
                 "sCorpusStructure:SCorpusDocumentRelation" => SaltType::DocumentRelation,
+                "saltCore:SLayer" => SaltType::Layer,
+                "sDocumentStructure:SToken" => SaltType::Token,
+                "sDocumentStructure:STextualDS" => SaltType::TextualDs,
                 _ => SaltType::Unknown,
             }
         } else {
