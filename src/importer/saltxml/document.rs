@@ -1,22 +1,28 @@
+use anyhow::anyhow;
 use graphannis::update::GraphUpdate;
 
-use crate::progress::ProgressReporter;
-
-pub(super) struct DocumentMapper {
-    reporter: ProgressReporter,
-}
+pub(super) struct DocumentMapper {}
 
 impl DocumentMapper {
-    pub(super) fn new(reporter: ProgressReporter) -> DocumentMapper {
-        DocumentMapper { reporter }
+    pub(super) fn new() -> DocumentMapper {
+        DocumentMapper {}
     }
 
-    pub(super) fn read_document<R: std::io::Read>(
+    pub(super) fn read_document(
         &self,
-        _input: &mut R,
+        input: &str,
         _document_node_name: &str,
         _updates: &mut GraphUpdate,
     ) -> anyhow::Result<()> {
+        let doc = roxmltree::Document::parse(input)?;
+
+        let root = doc.root_element();
+        if root.tag_name().name() != "SDocumentGraph" {
+            return Err(anyhow!(
+                "SaltXML document file must start with <SDocumentGraph> tag"
+            ));
+        }
+
         Ok(())
     }
 }

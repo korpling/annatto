@@ -8,17 +8,13 @@ use graphannis::{
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 
-use crate::progress::ProgressReporter;
-
 use super::{get_element_id, resolve_element, SaltObject, SaltType};
 
-pub(super) struct SaltCorpusStructureMapper {
-    reporter: ProgressReporter,
-}
+pub(super) struct SaltCorpusStructureMapper {}
 
 impl SaltCorpusStructureMapper {
-    pub(super) fn new(reporter: ProgressReporter) -> SaltCorpusStructureMapper {
-        SaltCorpusStructureMapper { reporter }
+    pub(super) fn new() -> SaltCorpusStructureMapper {
+        SaltCorpusStructureMapper {}
     }
 
     pub(super) fn map_corpus_structure(

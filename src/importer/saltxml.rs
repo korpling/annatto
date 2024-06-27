@@ -1,4 +1,4 @@
-use std::{convert::TryFrom, fs::File};
+use std::convert::TryFrom;
 
 use anyhow::anyhow;
 use document::DocumentMapper;
@@ -28,7 +28,7 @@ impl Importer for ImportSaltXml {
         let mut updates = GraphUpdate::new();
         // Start  with an undetermined progress reporter
         let reporter = ProgressReporter::new_unknown_total_work(tx.clone(), step_id.clone())?;
-        let mapper = corpus_structure::SaltCorpusStructureMapper::new(reporter.clone());
+        let mapper = corpus_structure::SaltCorpusStructureMapper::new();
 
         // Read the corpus structure from the Salt project and get the number of documents to create
         reporter.info("Reading SaltXML project structure")?;
@@ -38,15 +38,15 @@ impl Importer for ImportSaltXml {
         // Create a new progress reporter that can now estimate the work based on the number of documents
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
         for document_node_name in documents {
+            reporter.info(&format!("Reading document {document_node_name}"))?;
+
             let mut relative_document_path = document_node_name.clone();
             relative_document_path.push_str(".salt");
-            dbg!(&relative_document_path);
             // Get the path from the node name
             let document_path = input_path.join(relative_document_path);
-            reporter.info("Reading document {document_path}")?;
-            let mut document_file = File::open(document_path)?;
-            let document_mapper = DocumentMapper::new(reporter.clone());
-            document_mapper.read_document(&mut document_file, &document_node_name, &mut updates)?;
+            let document_file = std::fs::read_to_string(document_path)?;
+            let document_mapper = DocumentMapper::new();
+            document_mapper.read_document(&document_file, &document_node_name, &mut updates)?;
             reporter.worked(1)?;
         }
 

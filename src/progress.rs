@@ -7,7 +7,6 @@ struct ProgressState {
     accumulated_finished_work: usize,
 }
 
-#[derive(Clone)]
 pub struct ProgressReporter {
     state: Arc<Mutex<ProgressState>>,
     total_work: Option<usize>,
