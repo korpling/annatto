@@ -28,7 +28,7 @@ use importer::{
 };
 use manipulator::{
     check::Check, chunker::Chunk, collapse::Collapse, enumerate::EnumerateMatches, link::LinkNodes,
-    map::MapAnnos, merge::Merge, no_op::NoOp, re::Revise, split::SplitValues, Manipulator,
+    map::MapAnnos, no_op::NoOp, re::Revise, split::SplitValues, Manipulator,
 };
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
@@ -265,7 +265,6 @@ pub enum GraphOp {
     Enumerate(#[serde(default)] EnumerateMatches),
     Link(LinkNodes),                  // no default, has required attributes
     Map(MapAnnos),                    // no default, has a (required) path attribute
-    Merge(Merge),                     // no default, has required attributes
     Revise(#[serde(default)] Revise), // does nothing on default
     Chunk(#[serde(default)] Chunk),
     Split(#[serde(default)] SplitValues), // default does nothing
@@ -286,7 +285,6 @@ impl GraphOp {
             GraphOp::Collapse(m) => m,
             GraphOp::Link(m) => m,
             GraphOp::Map(m) => m,
-            GraphOp::Merge(m) => m,
             GraphOp::Revise(m) => m,
             GraphOp::None(m) => m,
             GraphOp::Enumerate(m) => m,
@@ -304,7 +302,6 @@ impl GraphOpDiscriminants {
             GraphOpDiscriminants::Enumerate => EnumerateMatches::DOCS,
             GraphOpDiscriminants::Link => LinkNodes::DOCS,
             GraphOpDiscriminants::Map => MapAnnos::DOCS,
-            GraphOpDiscriminants::Merge => Merge::DOCS,
             GraphOpDiscriminants::Revise => Revise::DOCS,
             GraphOpDiscriminants::Chunk => Chunk::DOCS,
             GraphOpDiscriminants::None => NoOp::DOCS,
@@ -325,7 +322,6 @@ impl GraphOpDiscriminants {
             ),
             GraphOpDiscriminants::Link => (LinkNodes::FIELD_NAMES_AS_SLICE, LinkNodes::FIELD_DOCS),
             GraphOpDiscriminants::Map => (MapAnnos::FIELD_NAMES_AS_SLICE, MapAnnos::FIELD_DOCS),
-            GraphOpDiscriminants::Merge => (Merge::FIELD_NAMES_AS_SLICE, Merge::FIELD_DOCS),
             GraphOpDiscriminants::Revise => (Revise::FIELD_NAMES_AS_SLICE, Revise::FIELD_DOCS),
             GraphOpDiscriminants::Chunk => (Chunk::FIELD_NAMES_AS_SLICE, Chunk::FIELD_DOCS),
             GraphOpDiscriminants::None => (NoOp::FIELD_NAMES_AS_SLICE, NoOp::FIELD_DOCS),
