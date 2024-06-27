@@ -63,8 +63,8 @@ impl Manipulator for Check {
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let r = self.run_tests(graph)?;
-        if self.report.is_some() && tx.is_some() {
-            self.print_report(self.report.as_ref().unwrap(), &r, tx.as_ref().unwrap())?;
+        if let (Some(level), Some(sender)) = (&self.report, &tx) {
+            self.print_report(level, &r, sender)?;
         }
         if let Some(path) = &self.save {
             let (sender, receiver) = mpsc::channel();
@@ -189,7 +189,11 @@ impl Check {
                 ExpectedQueryResult::Numeric(n_is) => &n == n_is,
                 ExpectedQueryResult::Query(alt_query) => {
                     let alt_result = Check::run_query(g, &alt_query[..]);
-                    alt_result.is_ok() && alt_result.unwrap().len() == n
+                    if let Ok(alt_matches) = alt_result {
+                        alt_matches.len() == n
+                    } else {
+                        false
+                    }
                 }
                 ExpectedQueryResult::ClosedInterval(lower, upper) => n.ge(lower) && n.le(upper),
                 ExpectedQueryResult::SemiOpenInterval(lower, upper) => {
@@ -203,26 +207,34 @@ impl Check {
                 ExpectedQueryResult::CorpusQuery(db_dir, corpus_name, query) => {
                     let path = db_dir.join(corpus_name);
                     let path_string = path.to_string_lossy().to_string();
-                    if let Entry::Vacant(e) = graph_cache.entry(path_string.to_string()) {
-                        let eg = AnnotationGraph::with_default_graphstorages(false);
-                        if eg.is_err() {
-                            return TestResult::ProcessingError {
-                                error: Box::new(eg.err().unwrap()),
-                            };
+                    let entry = graph_cache.entry(path_string.to_string());
+                    let external_g = match entry {
+                        Entry::Vacant(e) => {
+                            let eg = AnnotationGraph::with_default_graphstorages(false);
+                            match eg {
+                                Err(err) => {
+                                    return TestResult::ProcessingError {
+                                        error: Box::new(err),
+                                    };
+                                }
+                                Ok(mut external_g) => {
+                                    if let Err(e) =
+                                        external_g.load_from(&db_dir.join(corpus_name), true)
+                                    {
+                                        return TestResult::ProcessingError { error: Box::new(e) };
+                                    }
+                                    e.insert(external_g)
+                                }
+                            }
                         }
-                        let mut external_g = eg.unwrap();
-                        if let Err(e) = external_g.load_from(&db_dir.join(corpus_name), true) {
-                            return TestResult::ProcessingError { error: Box::new(e) };
-                        }
-                        e.insert(external_g);
-                    }
-                    let external_g = graph_cache.get_mut(&path_string).unwrap();
+                        Entry::Occupied(e) => e.into_mut(),
+                    };
                     if external_g.ensure_loaded_all().is_err() {
                         return TestResult::ProcessingError {
                             error: anyhow!("Could not load corpus entirely.").into(),
                         };
                     }
-                    let e_n = Check::run_query(external_g, query);
+                    let e_n = Check::run_query(&external_g, query);
                     e_n.is_ok() && e_n.unwrap().len() == n
                 }
             };

@@ -396,14 +396,14 @@ impl ImportEXMARaLDA {
                                 });
                             }
                             let overlapped = &ordered_tl_nodes[start_i..end_i];
-                            let key = if overlapped.is_empty() {
+                            let key = if let Some(k) = overlapped.get(0) {
+                                k
+                            } else {
                                 if let Some(sender) = tx {
                                     let msg = format!("Event {}::{}:{}-{} does not cover any tokens and will be skipped.", &speaker_id, &anno_name, &start_id, &end_id);
                                     sender.send(StatusMessage::Warning(msg))?;
                                 }
                                 continue;
-                            } else {
-                                &overlapped[0]
                             };
                             let node_name = format!(
                                 "{}#{}_{}_{}-{}",
