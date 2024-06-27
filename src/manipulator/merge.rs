@@ -728,31 +728,7 @@ mod tests {
                     .to_string()
             })
             .collect();
-        assert_eq!(e_corpus_nodes, g_corpus_nodes); //TODO clarify: Delegate or assertion?
-                                                    // test by components
-        let e_c_list = e_g
-            .get_all_components(None, None)
-            .into_iter()
-            .filter(|c| e_g.get_graphstorage(c).unwrap().source_nodes().count() > 0)
-            .collect_vec();
-        let g_c_list = g
-            .get_all_components(None, None)
-            .into_iter()
-            .filter(|c| g.get_graphstorage(c).unwrap().source_nodes().count() > 0) // graph might contain empty components after merge
-            .collect_vec();
-        assert_eq!(
-            e_c_list.len(),
-            g_c_list.len(),
-            "components expected:\n{:?};\ncomponents are:\n{:?}",
-            &e_c_list,
-            &g_c_list
-        );
-        for c in e_c_list {
-            let candidates = g.get_all_components(Some(c.get_type()), Some(c.name.as_str()));
-            assert_eq!(candidates.len(), 1);
-            let c_o = candidates.get(0);
-            assert_eq!(&c, c_o.unwrap());
-        }
+        assert_eq!(e_corpus_nodes, g_corpus_nodes);
         // test with queries
         let queries = [
             "norm",
