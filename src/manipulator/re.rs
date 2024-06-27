@@ -1,12 +1,11 @@
 use std::{
-    cmp::Ordering,
     collections::{BTreeMap, BTreeSet},
     path::Path,
 };
 
 use anyhow::anyhow;
 use graphannis::{
-    graph::{AnnoKey, Edge, GraphStorage, Match, NodeID},
+    graph::{AnnoKey, Edge, Match},
     model::{AnnotationComponent, AnnotationComponentType},
     update::{GraphUpdate, UpdateEvent},
     AnnotationGraph,
@@ -344,14 +343,15 @@ fn place_at_new_target(
         } else {
             // create new span first (we could also check for an exiting one, but it sounds expensive and not promising)
             let old_name = node_name(&probe_node, node_annos)?;
+            let name_pref = old_name.trim_end_matches(char::is_numeric);
             covering_nodes.insert(probe_node);
             let existing = node_annos
                 .get_all_values(&NODE_NAME_KEY, false)?
                 .iter()
-                .filter(|v| v.starts_with(old_name.as_str()))
+                .filter(|v| v.starts_with(name_pref))
                 .collect_vec()
                 .len();
-            let span_name = format!("{old_name}{}", existing + 1);
+            let span_name = format!("{name_pref}{}", existing + 1);
             update.add_event(UpdateEvent::AddNode {
                 node_name: span_name.clone(),
                 node_type: "node".to_string(),
@@ -1018,7 +1018,11 @@ mod tests {
                 "Failed with query: {}",
                 query_s
             );
-            for (m_e, m_g) in matches_e.into_iter().zip(matches_g.into_iter()) {
+            for (m_e, m_g) in matches_e
+                .into_iter()
+                .sorted()
+                .zip(matches_g.into_iter().sorted())
+            {
                 assert_eq!(m_e, m_g);
             }
         }
@@ -1797,7 +1801,7 @@ mod tests {
                 })?;
             }
         }
-        let span_name = "root/a/doc#sSpan1";
+        let span_name = "root/a/doc#s10";
         u.add_event(UpdateEvent::AddNode {
             node_name: span_name.to_string(),
             node_type: "node".to_string(),
@@ -1827,7 +1831,7 @@ mod tests {
             .iter()
             .enumerate()
         {
-            let i = ii + 5;
+            let i = ii + 6;
             let name = format!("root/a/doc#s{}", i);
             u.add_event(UpdateEvent::AddNode {
                 node_name: name.to_string(),
