@@ -494,16 +494,14 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                     let dfs =
                         CycleSafeDFS::new(part_of_storage.as_edgecontainer(), *n, 0, usize::MAX);
                     let mut ret = None;
-                    for r in dfs {
-                        if let Ok(step) = r {
-                            let node = step.node;
-                            let terminate = graph
-                                .get_node_annos()
-                                .has_value_for_item(&node, &self.doc_anno);
-                            if terminate.unwrap_or_default() {
-                                ret = Some((node, *n));
-                                break;
-                            }
+                    for step in dfs.flatten() {
+                        let node = step.node;
+                        let terminate = graph
+                            .get_node_annos()
+                            .has_value_for_item(&node, &self.doc_anno);
+                        if terminate.unwrap_or_default() {
+                            ret = Some((node, *n));
+                            break;
                         }
                     }
                     ret

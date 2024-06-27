@@ -144,13 +144,13 @@ fn node_name(
     node_annos: &dyn NodeAnnotationStorage,
 ) -> Result<String, AnnattoError> {
     if let Some(name) = node_annos.get_value_for_item(node_id, &NODE_NAME_KEY)? {
-        return Ok(name.to_string());
+        Ok(name.to_string())
     } else {
-        return Err(AnnattoError::Manipulator {
+        Err(AnnattoError::Manipulator {
             reason: "Could not determine node name in component revision".to_string(),
             manipulator: "revise".to_string(),
-        });
-    };
+        })
+    }
 }
 
 fn revise_component(

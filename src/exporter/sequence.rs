@@ -121,7 +121,6 @@ impl Exporter for ExportSequence {
         if let Some(storage) = graph.get_graphstorage(&component) {
             for (doc_node, start_node) in docs_and_starts {
                 self.export_document(
-                    &step_id,
                     graph,
                     storage.clone(),
                     doc_node,
@@ -143,7 +142,6 @@ impl Exporter for ExportSequence {
 impl ExportSequence {
     fn export_document(
         &self,
-        step_id: &StepID,
         graph: &AnnotationGraph,
         storage: Arc<dyn GraphStorage>,
         file_node: u64,
@@ -190,7 +188,7 @@ impl ExportSequence {
         } else {
             return Err(AnnattoError::Export {
                 reason: "Could not determine file name.".to_string(),
-                exporter: step_id.module_name.to_string(),
+                exporter: "text sequence".to_string(),
                 path: target_dir.to_path_buf(),
             });
         };

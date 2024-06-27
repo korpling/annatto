@@ -396,7 +396,7 @@ impl ImportEXMARaLDA {
                                 });
                             }
                             let overlapped = &ordered_tl_nodes[start_i..end_i];
-                            let key = if let Some(k) = overlapped.get(0) {
+                            let key = if let Some(k) = overlapped.first() {
                                 k
                             } else {
                                 if let Some(sender) = tx {

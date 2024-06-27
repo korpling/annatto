@@ -234,7 +234,7 @@ impl Check {
                             error: anyhow!("Could not load corpus entirely.").into(),
                         };
                     }
-                    let e_n = Check::run_query(&external_g, query);
+                    let e_n = Check::run_query(external_g, query);
                     e_n.is_ok() && e_n.unwrap().len() == n
                 }
             };
