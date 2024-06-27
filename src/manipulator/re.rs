@@ -427,7 +427,11 @@ fn replace_edge_annos(
     let node_annos = graph.get_node_annos();
     for (old_key, new_key_opt) in anno_keys {
         for component in graph.get_all_components(None, None) {
-            let component_storage = graph.get_graphstorage(&component).unwrap();
+            let component_storage = if let Some(strg) = graph.get_graphstorage(&component) {
+                strg
+            } else {
+                return Err(anyhow!("Could not obtain storage of component {}", &component).into());
+            };
             let edge_annos = component_storage.get_anno_storage();
             for r in edge_annos.exact_anno_search(
                 ns_from_key(&old_key),

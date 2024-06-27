@@ -5,7 +5,6 @@ pub mod collapse;
 pub mod enumerate;
 pub mod link;
 pub mod map;
-pub mod merge;
 pub mod no_op;
 pub mod re;
 pub mod split;
