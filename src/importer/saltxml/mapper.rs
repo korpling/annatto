@@ -1,19 +1,15 @@
-use std::{collections::BTreeMap, convert::TryFrom, io::BufReader, path::PathBuf};
+use std::{collections::BTreeMap, convert::TryFrom, path::PathBuf};
 
 use anyhow::{anyhow, Ok};
 use graphannis::update::{GraphUpdate, UpdateEvent};
-use graphannis_core::util::{join_qname, split_qname};
-use quick_xml::{
-    events::{attributes::Attributes, BytesStart},
-    Reader,
-};
+use itertools::Itertools;
+use roxmltree::Node;
 
-use crate::{
-    progress::ProgressReporter,
-    util::xml::{consume_start_tag_with_name, get_attribute_by_local_name, get_attribute_by_qname},
-};
+use crate::progress::ProgressReporter;
 
-#[derive(Clone)]
+const XSI_NAMESPACE: &str = "http://www.w3.org/2001/XMLSchema-instance";
+
+#[derive(Debug, Clone, PartialEq)]
 enum SaltType {
     Corpus,
     Document,
@@ -21,38 +17,26 @@ enum SaltType {
     Feature,
     CorpusRelation,
     DocumentRelation,
+    Unknown,
 }
 
-impl<'a> TryFrom<Attributes<'a>> for SaltType {
-    type Error = anyhow::Error;
-
-    fn try_from(value: Attributes<'a>) -> Result<Self, Self::Error> {
+impl<'a, 'input> From<Node<'a, 'input>> for SaltType {
+    fn from(n: Node) -> Self {
         // Use the xsi:type attribute to determine the type
-        if let Some(type_id) = get_attribute_by_qname(value, "xsi", "type")? {
-            match type_id.as_str() {
-                "sCorpusStructure:SCorpus" => Ok(SaltType::Corpus),
-                "sCorpusStructure:SDocument" => Ok(SaltType::Document),
-                "saltCore:SElementId" => Ok(SaltType::ElementId),
-                "saltCore:SFeature" => Ok(SaltType::Feature),
-                "sCorpusStructure:SCorpusRelation" => Ok(SaltType::CorpusRelation),
-                "sCorpusStructure:SCorpusDocumentRelation" => Ok(SaltType::DocumentRelation),
-                _ => Err(anyhow!("Unknown Salt type {type_id}")),
+        if let Some(type_id) = n.attribute((XSI_NAMESPACE, "type")) {
+            match type_id {
+                "sCorpusStructure:SCorpus" => SaltType::Corpus,
+                "sCorpusStructure:SDocument" => SaltType::Document,
+                "saltCore:SElementId" => SaltType::ElementId,
+                "saltCore:SFeature" => SaltType::Feature,
+                "sCorpusStructure:SCorpusRelation" => SaltType::CorpusRelation,
+                "sCorpusStructure:SCorpusDocumentRelation" => SaltType::DocumentRelation,
+                _ => SaltType::Unknown,
             }
         } else {
-            Err(anyhow!("Missing attribute xsi:type"))
+            SaltType::Unknown
         }
     }
-}
-
-fn get_label(e: &BytesStart) -> anyhow::Result<(String, String, SaltObject)> {
-    let namespace = get_attribute_by_local_name(e.attributes(), "namespace")?
-        .ok_or_else(|| anyhow!("Missing \"namespace\" attribute for label"))?;
-    let name = get_attribute_by_local_name(e.attributes(), "name")?
-        .ok_or_else(|| anyhow!("Missing \"name\" attribute for label"))?;
-    let value = get_attribute_by_local_name(e.attributes(), "value")?
-        .ok_or_else(|| anyhow!("Missing \"value\" attribute for label"))?;
-    let value = SaltObject::try_from(value.as_str())?;
-    Ok((namespace, name, value))
 }
 
 enum SaltObject {
@@ -84,6 +68,19 @@ impl std::fmt::Display for SaltObject {
     }
 }
 
+fn get_element_id(n: &Node) -> Option<String> {
+    for element_id_label in n
+        .children()
+        .filter(|c| c.tag_name().name() == "labels" && SaltType::from(*c) == SaltType::ElementId)
+    {
+        if let Some(id) = element_id_label.attribute("value") {
+            let id = SaltObject::try_from(id).ok()?;
+            return Some(id.to_string().trim_start_matches("salt:/").to_string());
+        }
+    }
+    None
+}
+
 pub(crate) struct SaltXmlMapper {
     pub(crate) reporter: ProgressReporter,
 }
@@ -93,92 +90,83 @@ impl SaltXmlMapper {
         SaltXmlMapper { reporter }
     }
 
-    pub(crate) fn map_corpus_structure<R: std::io::Read>(
+    pub(crate) fn map_corpus_structure(
         &self,
-        input: &mut R,
+        input: &str,
         updates: &mut GraphUpdate,
     ) -> anyhow::Result<BTreeMap<String, PathBuf>> {
-        let input = BufReader::new(input);
-        let mut reader = Reader::from_reader(input);
-        reader.config_mut().expand_empty_elements = true;
+        let doc = roxmltree::Document::parse(input)?;
 
-        let mut buf = Vec::new();
+        let root = doc.root_element();
+        if root.tag_name().name() != "SaltProject" {
+            return Err(anyhow!(
+                "SaltXML project file must start with <SaltProject> tag"
+            ));
+        }
 
-        // Consume the root SaltProject and sCorpusGraphs XML elements, which do not have the "xsi:type" attribute
-        consume_start_tag_with_name(&mut reader, "SaltProject")?;
-        consume_start_tag_with_name(&mut reader, "sCorpusGraphs")?;
-
-        // TODO: map corpus graph labels
-
-        // Iterate over all child elements of the corpus graph, which are the corpus and document nodes
         let result = BTreeMap::new();
-        let mut salt_type_stack = Vec::new();
-        let mut current_element_id = None;
-        let mut features = BTreeMap::new();
-        loop {
-            match reader.read_event_into(&mut buf)? {
-                quick_xml::events::Event::Start(e) => {
-                    let salt_type = SaltType::try_from(e.attributes())?;
-                    salt_type_stack.push(salt_type.clone());
 
-                    match salt_type {
-                        SaltType::ElementId => {
-                            current_element_id = None;
+        // Iterate over all corpus graphs
+        for cg in root
+            .children()
+            .filter(|t| t.tag_name().name() == "sCorpusGraphs")
+        {
+            // TODO: map corpus graph labels
 
-                            let (namespace, name, value) = get_label(&e)?;
-                            if namespace == "salt" && name == "id" {
-                                if let SaltObject::Text(id) = value {
-                                    current_element_id =
-                                        Some(id.trim_start_matches("salt:/").to_string());
-                                }
-                            }
-                        }
-                        SaltType::Feature => {
-                            let (namespace, name, value) = get_label(&e)?;
-                            let qname = join_qname(&namespace, &name);
-                            features.insert(qname, value);
-                        }
-                        _ => {}
-                    }
-                }
-                quick_xml::events::Event::End(_e) => {
-                    if let Some(salt_type) = salt_type_stack.pop() {
-                        match salt_type {
-                            SaltType::Corpus | SaltType::Document => {
-                                let node_name = current_element_id.clone().ok_or_else(|| {
-                                    anyhow!("Missing element ID for corpus graph node")
-                                })?;
-                                // Create the element with the collected properties
-                                updates.add_event(UpdateEvent::AddNode {
-                                    node_name: node_name.clone(),
-                                    node_type: "corpus".into(),
-                                })?;
+            // Get all nodes
+            let nodes = cg
+                .children()
+                .filter(|t| t.tag_name().name() == "nodes")
+                .collect_vec();
 
-                                // Add features as annotations
-                                for (feat_qname, value) in features.iter() {
-                                    let (annos_ns, anno_name) = split_qname(feat_qname);
+            for node in nodes.iter() {
+                match SaltType::from(*node) {
+                    SaltType::Corpus | SaltType::Document => {
+                        // Get the element ID from the label
+                        let node_name = get_element_id(node)
+                            .ok_or_else(|| anyhow!("Missing element ID for corpus graph node"))?;
+                        // Create the element with the collected properties
+                        updates.add_event(UpdateEvent::AddNode {
+                            node_name: node_name.to_string(),
+                            node_type: "corpus".into(),
+                        })?;
 
-                                    updates.add_event(UpdateEvent::AddNodeLabel {
-                                        node_name: node_name.clone(),
-                                        anno_ns: annos_ns.unwrap_or_default().to_string(),
-                                        anno_name: anno_name.to_string(),
-                                        anno_value: value.to_string(),
-                                    })?;
-                                }
+                        // Add features as annotations
+                        let features = node.children().filter(|n| {
+                            n.tag_name().name() == "labels"
+                                && SaltType::from(*n) == SaltType::Feature
+                        });
+                        for feature_node in features {
+                            let annos_ns = feature_node.attribute("namespace");
+                            let anno_name = feature_node.attribute("name").ok_or_else(|| {
+                                anyhow!("Missing \"name\" attribute for node \"{node_name}\"")
+                            })?;
+                            let anno_value = SaltObject::try_from(
+                                feature_node.attribute("value").unwrap_or_default(),
+                            )?;
 
-                                // Reset state
-                                features.clear();
-                                current_element_id = None;
-                            }
-
-                            _ => {}
+                            updates.add_event(UpdateEvent::AddNodeLabel {
+                                node_name: node_name.to_string(),
+                                anno_ns: annos_ns.unwrap_or_default().to_string(),
+                                anno_name: anno_name.to_string(),
+                                anno_value: anno_value.to_string(),
+                            })?;
                         }
                     }
+                    _ => {}
                 }
-                quick_xml::events::Event::Eof => break,
-                _ => {}
+            }
+
+            // Add a PartOf Edge between parent corpora and the sub-corpora/documents
+            for e in cg.children().filter(|n| n.tag_name().name() == "edges") {
+                match SaltType::from(e) {
+                    SaltType::CorpusRelation => {}
+                    SaltType::DocumentRelation => {}
+                    _ => {}
+                }
             }
         }
+
         Ok(result)
     }
 

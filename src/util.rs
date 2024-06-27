@@ -11,7 +11,6 @@ use std::path::{Path, PathBuf};
 pub(crate) mod example_generator;
 pub(crate) mod graphupdate;
 pub(crate) mod token_helper;
-pub(crate) mod xml;
 
 /// Get all files with a given extension in a directory.
 pub fn get_all_files(

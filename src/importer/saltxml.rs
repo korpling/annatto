@@ -29,8 +29,8 @@ impl Importer for ImportSaltXml {
 
         // Read the corpus structure from the Salt project and get the number of documents to create
         mapper.reporter.info("Reading SaltXML project structure")?;
-        let mut project_file = File::open(input_path.join("saltProject.salt"))?;
-        let documents = mapper.map_corpus_structure(&mut project_file, &mut updates)?;
+        let project_file = std::fs::read_to_string(input_path.join("saltProject.salt"))?;
+        let documents = mapper.map_corpus_structure(&project_file, &mut updates)?;
 
         // Create a new progress reporter that can now estimate the work based on the number of documents
         mapper.reporter = ProgressReporter::new(tx, step_id, documents.len())?;
