@@ -9,6 +9,7 @@ use graphannis::{
     update::{GraphUpdate, UpdateEvent},
     AnnotationGraph,
 };
+use graphannis_core::annostorage::NodeAnnotationStorage;
 use graphannis_core::{
     annostorage::ValueSearch,
     dfs::CycleSafeDFS,
@@ -87,6 +88,18 @@ fn clean_value(value: &str, remove_chars: &BTreeSet<char>) -> String {
     cleaned_value
 }
 
+fn anno_lookup(
+    node_id: u64,
+    node_annos: &dyn NodeAnnotationStorage,
+    key: &AnnoKey,
+) -> Result<String, Box<dyn std::error::Error>> {
+    if let Some(v) = node_annos.get_value_for_item(&node_id, key)? {
+        Ok(v.to_string())
+    } else {
+        Err(anyhow!("Could not find value of {:?} for item {node_id}", key).into())
+    }
+}
+
 type NodeIdCollection = std::vec::IntoIter<u64>;
 
 impl Merge {
@@ -108,34 +121,40 @@ impl Merge {
             if let Some(ordering) = graph.get_graphstorage(&c) {
                 let start_nodes = ordering
                     .source_nodes()
-                    .filter(|n| ordering.get_ingoing_edges(*n.as_ref().unwrap()).count() == 0)
+                    .filter_map(|n| {
+                        if let Ok(nde) = n {
+                            if !ordering.has_ingoing_edges(nde).unwrap_or_default() {
+                                Some(nde)
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        }
+                    })
                     .collect_vec();
                 // there should be one start node per document
                 let doc_names = start_nodes
                     .iter()
-                    .map(|n| {
+                    .filter_map(|n| {
                         node_annos
-                            .get_value_for_item(n.as_ref().unwrap(), &NODE_NAME_KEY)
-                            .unwrap()
-                            .unwrap()
+                            .get_value_for_item(
+                                n,
+                                &AnnoKey {
+                                    name: "doc".into(),
+                                    ns: ANNIS_NS.into(),
+                                },
+                            )
+                            .unwrap_or(None)
                     })
-                    .map(|v| {
-                        v.split('/')
-                            .last()
-                            .unwrap()
-                            .split('#')
-                            .next()
-                            .unwrap()
-                            .to_string()
-                    })
+                    .map(|s| s.to_string())
                     .collect_vec();
                 for doc_name in &doc_names {
                     if !ordered_items_by_doc.contains_key(doc_name) {
                         ordered_items_by_doc.insert(doc_name.to_string(), BTreeMap::new());
                     }
                 }
-                for (start_node_r, doc_name) in start_nodes.into_iter().zip(doc_names) {
-                    let start_node = start_node_r?;
+                for (start_node, doc_name) in start_nodes.into_iter().zip(doc_names) {
                     let mut nodes: Vec<u64> = Vec::new();
                     nodes.push(start_node);
                     let dfs =
@@ -150,10 +169,17 @@ impl Merge {
                         };
                         return Err(Box::new(err));
                     }
-                    ordered_items_by_doc
-                        .get_mut(&doc_name)
-                        .unwrap()
-                        .insert(order_name, nodes.into_iter());
+                    let node_iter = nodes.into_iter();
+                    match ordered_items_by_doc.entry(doc_name) {
+                        std::collections::btree_map::Entry::Vacant(e) => {
+                            let mut specific_order_map = BTreeMap::default();
+                            specific_order_map.insert(order_name.as_str(), node_iter);
+                            e.insert(specific_order_map);
+                        }
+                        std::collections::btree_map::Entry::Occupied(mut e) => {
+                            e.get_mut().insert(order_name.as_str(), node_iter);
+                        }
+                    };
                 }
             } else {
                 let err = AnnattoError::Manipulator {
@@ -213,15 +239,10 @@ impl Merge {
             let edge_annos = edge_storage.get_anno_storage();
             for source_node_r in edge_storage.source_nodes() {
                 let source_node = source_node_r?;
-                let source_node_name = node_annos
-                    .get_value_for_item(&source_node, &NODE_NAME_KEY)?
-                    .unwrap(); // existence guaranteed
+                let source_node_name = anno_lookup(source_node, node_annos, &NODE_NAME_KEY)?;
                 let new_source_name = if switch_source {
                     if let Some(new_source_node) = node_map.get(&source_node) {
-                        node_annos
-                            .get_value_for_item(new_source_node, &NODE_NAME_KEY)?
-                            .unwrap()
-                            .to_string()
+                        anno_lookup(*new_source_node, node_annos, &NODE_NAME_KEY)?
                     } else {
                         if let Some(sender) = tx {
                             let message = format!("Could not determine new source of an edge in component {}/{}, the edge will be dropped", &edge_component_type.to_string(), &edge_component_name);
@@ -239,12 +260,8 @@ impl Merge {
                     let target = target_r?.node;
                     if let Some(new_target) = node_map.get(&target) {
                         // new child still exists in target graph
-                        let target_name = node_annos
-                            .get_value_for_item(&target, &NODE_NAME_KEY)?
-                            .unwrap(); // existence guaranteed
-                        let new_target_name = node_annos
-                            .get_value_for_item(new_target, &NODE_NAME_KEY)?
-                            .unwrap();
+                        let target_name = anno_lookup(target, node_annos, &NODE_NAME_KEY)?;
+                        let new_target_name = anno_lookup(*new_target, node_annos, &NODE_NAME_KEY)?;
                         updates.add_event(UpdateEvent::DeleteEdge {
                             source_node: source_node_name.to_string(),
                             target_node: target_name.to_string(),
@@ -266,36 +283,34 @@ impl Merge {
                         }; // TODO at least for the case of pointing relations the same container might contain more than one edge, or am I wrong?
                         for k in edge_annos.get_all_keys_for_item(&edge, None, None)? {
                             if k.ns != ANNIS_NS {
-                                let v = edge_annos.get_value_for_item(&edge, &k)?.unwrap(); // guaranteed to exist
-                                let u = UpdateEvent::AddEdgeLabel {
-                                    source_node: new_source_name.clone(),
-                                    target_node: new_target_name.to_string(),
-                                    layer: layer_name.to_string(),
-                                    component_type: edge_component_type.to_string(),
-                                    component_name: edge_component_name.to_string(),
-                                    anno_ns: k.ns.to_string(),
-                                    anno_name: k.name.to_string(),
-                                    anno_value: v.to_string(),
-                                };
-                                updates.add_event(u)?;
+                                if let Some(v) = edge_annos.get_value_for_item(&edge, &k)? {
+                                    let u = UpdateEvent::AddEdgeLabel {
+                                        source_node: new_source_name.clone(),
+                                        target_node: new_target_name.to_string(),
+                                        layer: layer_name.to_string(),
+                                        component_type: edge_component_type.to_string(),
+                                        component_name: edge_component_name.to_string(),
+                                        anno_ns: k.ns.to_string(),
+                                        anno_name: k.name.to_string(),
+                                        anno_value: v.to_string(),
+                                    };
+                                    updates.add_event(u)?;
+                                }
                             }
                         }
                     } else {
                         // child does not exist in target graph, which must be legal if we allow texts to only partially match (e. g. in the case of dropped punctuation)
                         // it could also be the case that the source and target node are not in the node_map bc they are not ordered nodes and thus don't require to be modified
-                        report_missing.insert(
-                            node_annos
-                                .get_value_for_item(&target, &NODE_NAME_KEY)?
-                                .unwrap(),
-                        );
+                        report_missing.insert(anno_lookup(target, node_annos, &NODE_NAME_KEY)?);
                     }
                 }
-                if !report_missing.is_empty() && tx.is_some() {
-                    let sender = tx.as_ref().unwrap();
-                    sender.send(StatusMessage::Info(format!(
-                        "Not all children of node {} ({}::{}) available in target graph: {:?}",
-                        &source_node_name, &layer_name, &edge_component_name, &report_missing
-                    )))?;
+                if !report_missing.is_empty() {
+                    if let Some(sender) = &tx {
+                        sender.send(StatusMessage::Info(format!(
+                            "Not all children of node {} ({}::{}) available in target graph: {:?}",
+                            source_node_name, &layer_name, &edge_component_name, &report_missing
+                        )))?;
+                    }
                 }
             }
         }
@@ -335,7 +350,13 @@ impl Merge {
                                 NODE_TYPE_KEY.name.as_str(),
                                 ValueSearch::Some("corpus"),
                             )
-                            .map(|m| m.unwrap().node)
+                            .filter_map(|m| {
+                                if let Ok(mtch) = m {
+                                    Some(mtch.node)
+                                } else {
+                                    None
+                                }
+                            })
                             .collect::<BTreeSet<u64>>();
                         let nodes_with_doc_name = node_annos
                             .exact_anno_search(
@@ -343,12 +364,16 @@ impl Merge {
                                 NODE_NAME_KEY.name.as_str(),
                                 ValueSearch::Some(doc_node_name.as_str()),
                             )
-                            .map(|m| m.unwrap().node)
+                            .filter_map(|m| {
+                                if let Ok(mtch) = m {
+                                    Some(mtch.node)
+                                } else {
+                                    None
+                                }
+                            })
                             .collect::<BTreeSet<u64>>();
                         for doc_node_id in corpus_nodes.intersection(&nodes_with_doc_name) {
-                            let doc_name = node_annos
-                                .get_value_for_item(doc_node_id, &NODE_NAME_KEY)?
-                                .unwrap();
+                            let doc_name = anno_lookup(*doc_node_id, node_annos, &NODE_NAME_KEY)?;
                             updates.add_event(UpdateEvent::DeleteNode {
                                 node_name: doc_name.to_string(),
                             })?;
@@ -440,7 +465,7 @@ impl TextNodeMapper {
                 self.docs_with_errors.insert(doc_name);
                 continue;
             }
-            let ordered_keep_items = ordered_keep_items_opt.unwrap();
+            let ordered_keep_items = ordered_keep_items_opt.unwrap_or_default();
             let mut order_names = BTreeSet::new();
             for k in ordered_items_by_name.keys() {
                 order_names.insert(k.to_string());
@@ -450,9 +475,7 @@ impl TextNodeMapper {
                 let ref_val = match node_annos.get_value_for_item(&item, &self.target_key)? {
                     Some(v) => v,
                     None => {
-                        let critical_node = node_annos
-                            .get_value_for_item(&item, &NODE_NAME_KEY)?
-                            .unwrap();
+                        let critical_node = anno_lookup(item, node_annos, &NODE_NAME_KEY)?;
                         return Err(Box::new(AnnattoError::Manipulator {
                             reason: format!(
                                 "Could not determine annotation value for key {}::{} @ {}",
@@ -463,9 +486,7 @@ impl TextNodeMapper {
                     }
                 };
                 let ref_is_optional = self.optionals.contains(&ref_val.to_string());
-                let ref_node_name = node_annos
-                    .get_value_for_item(&item, &NODE_NAME_KEY)?
-                    .unwrap(); // existence guaranteed
+                let ref_node_name = anno_lookup(item, node_annos, &NODE_NAME_KEY)?;
                 for other_name in &order_names {
                     let mut finished = false;
                     while !finished {
@@ -474,7 +495,7 @@ impl TextNodeMapper {
                         } else {
                             ordered_items_by_name
                                 .get_mut(other_name.as_str())
-                                .unwrap()
+                                .unwrap_or(&mut vec![].into_iter())
                                 .next()
                         };
                         if let Some(other_item) = other_opt {
@@ -482,9 +503,7 @@ impl TextNodeMapper {
                                 ns: "".into(),
                                 name: other_name.into(),
                             };
-                            let other_val = node_annos
-                                .get_value_for_item(&other_item, &other_key)?
-                                .unwrap();
+                            let other_val = anno_lookup(other_item, node_annos, &other_key)?;
                             if ref_val == other_val
                                 || !self.optional_chars.is_empty()
                                     && clean_value(&ref_val, &self.optional_chars)
@@ -497,9 +516,7 @@ impl TextNodeMapper {
                                 for ak in anno_keys {
                                     let anno_name = ak.name.to_string();
                                     if ak.ns != ANNIS_NS && !order_names.contains(&anno_name) {
-                                        let av = node_annos
-                                            .get_value_for_item(&other_item, ak.as_ref())?
-                                            .unwrap(); // existence guaranteed
+                                        let av = anno_lookup(other_item, node_annos, &ak)?;
                                         updates.add_event(UpdateEvent::AddNodeLabel {
                                             node_name: ref_node_name.to_string(),
                                             anno_ns: ak.ns.to_string(),
@@ -509,10 +526,8 @@ impl TextNodeMapper {
                                     }
                                 }
                                 // delete ordered node, the rest (edges and labels) should theoretically die as a consequence
-                                let other_node_name = node_annos
-                                    .get_value_for_item(&other_item, &NODE_NAME_KEY)?
-                                    .unwrap()
-                                    .to_string(); // existence guaranteed
+                                let other_node_name =
+                                    anno_lookup(other_item, node_annos, &NODE_NAME_KEY)?;
                                 updates.add_event(UpdateEvent::DeleteNode {
                                     node_name: other_node_name,
                                 })?;
@@ -681,7 +696,13 @@ mod tests {
                 ValueSearch::Some("corpus"),
             )
             .into_iter()
-            .map(|r| r.unwrap().node)
+            .filter_map(|r| {
+                if let Ok(mtch) = r {
+                    Some(mtch.node)
+                } else {
+                    None
+                }
+            })
             .map(|id_| {
                 e_g.get_node_annos()
                     .get_value_for_item(&id_, &NODE_NAME_KEY)

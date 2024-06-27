@@ -64,13 +64,13 @@ impl Manipulator for Check {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let r = self.run_tests(graph)?;
         if let (Some(level), Some(sender)) = (&self.report, &tx) {
-            self.print_report(level, &r, sender)?;
+            self.print_report(level, &r[..], sender)?;
         }
         if let Some(path) = &self.save {
             let (sender, receiver) = mpsc::channel();
             self.print_report(
                 self.report.as_ref().unwrap_or(&ReportLevel::default()),
-                &r,
+                &r[..],
                 &sender,
             )?;
             if let Some(StatusMessage::Info(msg)) = receiver.into_iter().next() {
@@ -161,7 +161,7 @@ impl Check {
         &self,
         graph: &mut AnnotationGraph,
     ) -> Result<Vec<(String, TestResult)>, Box<dyn std::error::Error>> {
-        let mut results = Vec::new();
+        let mut results = Vec::with_capacity(self.tests.len());
         let mut graph_cache = BTreeMap::default();
         for test in &self.tests {
             let aql_tests: Vec<AQLTest> = test.into();
@@ -183,73 +183,78 @@ impl Check {
         let query_s = &test.query[..];
         let expected_result = &test.expected;
         let result = Check::run_query(g, query_s);
-        if let Ok(r) = result {
-            let n = r.len();
-            let passes = match expected_result {
-                ExpectedQueryResult::Numeric(n_is) => &n == n_is,
-                ExpectedQueryResult::Query(alt_query) => {
-                    let alt_result = Check::run_query(g, &alt_query[..]);
-                    if let Ok(alt_matches) = alt_result {
-                        alt_matches.len() == n
-                    } else {
-                        false
+        match result {
+            Ok(r) => {
+                let n = r.len();
+                let passes = match expected_result {
+                    ExpectedQueryResult::Numeric(n_is) => &n == n_is,
+                    ExpectedQueryResult::Query(alt_query) => {
+                        let alt_result = Check::run_query(g, &alt_query[..]);
+                        if let Ok(alt_matches) = alt_result {
+                            alt_matches.len() == n
+                        } else {
+                            false
+                        }
                     }
-                }
-                ExpectedQueryResult::ClosedInterval(lower, upper) => n.ge(lower) && n.le(upper),
-                ExpectedQueryResult::SemiOpenInterval(lower, upper) => {
-                    if upper.is_infinite() || upper.is_nan() {
-                        n.ge(lower)
-                    } else {
-                        let u = upper.abs().ceil() as usize;
-                        n.ge(lower) && u.gt(&n)
+                    ExpectedQueryResult::ClosedInterval(lower, upper) => n.ge(lower) && n.le(upper),
+                    ExpectedQueryResult::SemiOpenInterval(lower, upper) => {
+                        if upper.is_infinite() || upper.is_nan() {
+                            n.ge(lower)
+                        } else {
+                            let u = upper.abs().ceil() as usize;
+                            n.ge(lower) && u.gt(&n)
+                        }
                     }
-                }
-                ExpectedQueryResult::CorpusQuery(db_dir, corpus_name, query) => {
-                    let path = db_dir.join(corpus_name);
-                    let path_string = path.to_string_lossy().to_string();
-                    let entry = graph_cache.entry(path_string.to_string());
-                    let external_g = match entry {
-                        Entry::Vacant(e) => {
-                            let eg = AnnotationGraph::with_default_graphstorages(false);
-                            match eg {
-                                Err(err) => {
-                                    return TestResult::ProcessingError {
-                                        error: Box::new(err),
-                                    };
-                                }
-                                Ok(mut external_g) => {
-                                    if let Err(e) =
-                                        external_g.load_from(&db_dir.join(corpus_name), true)
-                                    {
-                                        return TestResult::ProcessingError { error: Box::new(e) };
+                    ExpectedQueryResult::CorpusQuery(db_dir, corpus_name, query) => {
+                        let path = db_dir.join(corpus_name);
+                        let path_string = path.to_string_lossy().to_string();
+                        let entry = graph_cache.entry(path_string.to_string());
+                        let external_g = match entry {
+                            Entry::Vacant(e) => {
+                                let eg = AnnotationGraph::with_default_graphstorages(false);
+                                match eg {
+                                    Err(err) => {
+                                        return TestResult::ProcessingError {
+                                            error: Box::new(err),
+                                        };
                                     }
-                                    e.insert(external_g)
+                                    Ok(mut external_g) => {
+                                        if let Err(e) =
+                                            external_g.load_from(&db_dir.join(corpus_name), true)
+                                        {
+                                            return TestResult::ProcessingError {
+                                                error: Box::new(e),
+                                            };
+                                        }
+                                        e.insert(external_g)
+                                    }
                                 }
                             }
-                        }
-                        Entry::Occupied(e) => e.into_mut(),
-                    };
-                    if external_g.ensure_loaded_all().is_err() {
-                        return TestResult::ProcessingError {
-                            error: anyhow!("Could not load corpus entirely.").into(),
+                            Entry::Occupied(e) => e.into_mut(),
                         };
+                        if external_g.ensure_loaded_all().is_err() {
+                            return TestResult::ProcessingError {
+                                error: anyhow!("Could not load corpus entirely.").into(),
+                            };
+                        }
+                        let e_n = Check::run_query(external_g, query);
+                        if let Ok(v) = e_n {
+                            v.len() == n
+                        } else {
+                            false
+                        }
                     }
-                    let e_n = Check::run_query(external_g, query);
-                    e_n.is_ok() && e_n.unwrap().len() == n
-                }
-            };
-            if passes {
-                TestResult::Passed
-            } else {
-                TestResult::Failed {
-                    query: test.query.to_string(),
-                    matches: r,
+                };
+                if passes {
+                    TestResult::Passed
+                } else {
+                    TestResult::Failed {
+                        query: test.query.to_string(),
+                        matches: r,
+                    }
                 }
             }
-        } else {
-            TestResult::ProcessingError {
-                error: result.err().unwrap(),
-            }
+            Err(e) => TestResult::ProcessingError { error: e },
         }
     }
 
