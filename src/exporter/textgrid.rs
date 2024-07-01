@@ -155,6 +155,8 @@ fn parse_time_tuple(
     }
 }
 
+type TierData = BTreeMap<AnnoKey, Vec<(OrderedFloat<f64>, OrderedFloat<f64>, String)>>;
+
 impl ExportTextGrid {
     fn export_document<I: Iterator<Item = NodeID>>(
         &self,
@@ -163,8 +165,7 @@ impl ExportTextGrid {
         path: PathBuf,
     ) -> Result<(), Box<dyn std::error::Error>> {
         // gather data
-        let mut tier_data: BTreeMap<AnnoKey, Vec<(OrderedFloat<f64>, OrderedFloat<f64>, String)>> =
-            BTreeMap::default();
+        let mut tier_data: TierData = BTreeMap::default();
         let node_annos = graph.get_node_annos();
         let mut xmin: OrderedFloat<f64> = f64::MAX.into();
         let mut xmax: OrderedFloat<f64> = 0f64.into();
