@@ -17,14 +17,15 @@ use std::{fmt::Display, path::PathBuf};
 use documented::{Documented, DocumentedFields};
 use error::Result;
 use exporter::{
-    exmaralda::ExportExmaralda, graphml::GraphMLExporter, sequence::ExportSequence,
-    xlsx::XlsxExporter, Exporter,
+    exmaralda::ExportExmaralda, graphml::GraphMLExporter, saltxml::SaltXmlExporter,
+    sequence::ExportSequence, xlsx::XlsxExporter, Exporter,
 };
 use importer::{
     conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
     graphml::GraphMLImporter, meta::AnnotateCorpus, none::CreateEmptyCorpus, opus::ImportOpusLinks,
-    ptb::ImportPTB, relannis::ImportRelAnnis, textgrid::ImportTextgrid, toolbox::ImportToolBox,
-    treetagger::ImportTreeTagger, xlsx::ImportSpreadsheet, xml::ImportXML, Importer,
+    ptb::ImportPTB, relannis::ImportRelAnnis, saltxml::ImportSaltXml, textgrid::ImportTextgrid,
+    toolbox::ImportToolBox, treetagger::ImportTreeTagger, xlsx::ImportSpreadsheet, xml::ImportXML,
+    Importer,
 };
 use manipulator::{
     check::Check, chunker::Chunk, collapse::Collapse, enumerate::EnumerateMatches, link::LinkNodes,
@@ -48,6 +49,7 @@ pub struct ModuleConfiguration {
 pub enum WriteAs {
     GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
     EXMARaLDA(#[serde(default)] ExportExmaralda),
+    SaltXml(#[serde(default)] SaltXmlExporter),
     Sequence(#[serde(default)] ExportSequence),
     Xlsx(#[serde(default)] XlsxExporter),
 }
@@ -64,6 +66,7 @@ impl WriteAs {
         match self {
             WriteAs::GraphML(m) => m,
             WriteAs::EXMARaLDA(m) => m,
+            WriteAs::SaltXml(m) => m,
             WriteAs::Sequence(m) => m,
             WriteAs::Xlsx(m) => m,
         }
@@ -75,6 +78,7 @@ impl WriteAsDiscriminants {
         match self {
             WriteAsDiscriminants::GraphML => GraphMLExporter::DOCS,
             WriteAsDiscriminants::EXMARaLDA => ExportExmaralda::DOCS,
+            WriteAsDiscriminants::SaltXml => SaltXmlExporter::DOCS,
             WriteAsDiscriminants::Sequence => ExportSequence::DOCS,
             WriteAsDiscriminants::Xlsx => XlsxExporter::DOCS,
         }
@@ -90,6 +94,10 @@ impl WriteAsDiscriminants {
             WriteAsDiscriminants::EXMARaLDA => (
                 ExportExmaralda::FIELD_NAMES_AS_SLICE,
                 ExportExmaralda::FIELD_DOCS,
+            ),
+            WriteAsDiscriminants::SaltXml => (
+                SaltXmlExporter::FIELD_NAMES_AS_SLICE,
+                SaltXmlExporter::FIELD_DOCS,
             ),
             WriteAsDiscriminants::Sequence => (
                 ExportSequence::FIELD_NAMES_AS_SLICE,
@@ -130,6 +138,7 @@ pub enum ReadFrom {
     Path(#[serde(default)] CreateFileNodes),
     PTB(#[serde(default)] ImportPTB),
     RelAnnis(#[serde(default)] ImportRelAnnis),
+    SaltXml(#[serde(default)] ImportSaltXml),
     TextGrid(#[serde(default)] ImportTextgrid),
     Toolbox(#[serde(default)] ImportToolBox),
     TreeTagger(#[serde(default)] ImportTreeTagger),
@@ -156,6 +165,7 @@ impl ReadFrom {
             ReadFrom::Path(m) => m,
             ReadFrom::PTB(m) => m,
             ReadFrom::RelAnnis(m) => m,
+            ReadFrom::SaltXml(m) => m,
             ReadFrom::TextGrid(m) => m,
             ReadFrom::Toolbox(m) => m,
             ReadFrom::TreeTagger(m) => m,
@@ -177,6 +187,7 @@ impl ReadFromDiscriminants {
             ReadFromDiscriminants::Path => CreateFileNodes::DOCS,
             ReadFromDiscriminants::PTB => ImportPTB::DOCS,
             ReadFromDiscriminants::RelAnnis => ImportRelAnnis::DOCS,
+            ReadFromDiscriminants::SaltXml => ImportSaltXml::DOCS,
             ReadFromDiscriminants::TextGrid => ImportTextgrid::DOCS,
             ReadFromDiscriminants::Toolbox => ImportToolBox::DOCS,
             ReadFromDiscriminants::TreeTagger => ImportTreeTagger::DOCS,
@@ -236,6 +247,10 @@ impl ReadFromDiscriminants {
             ReadFromDiscriminants::RelAnnis => (
                 ImportRelAnnis::FIELD_NAMES_AS_SLICE,
                 ImportRelAnnis::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::SaltXml => (
+                ImportSaltXml::FIELD_NAMES_AS_SLICE,
+                ImportSaltXml::FIELD_DOCS,
             ),
         };
         for (idx, n) in field_names.iter().enumerate() {

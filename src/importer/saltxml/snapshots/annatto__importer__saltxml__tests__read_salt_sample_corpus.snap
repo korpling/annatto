@@ -1,0 +1,201 @@
+---
+source: src/importer/saltxml/tests.rs
+expression: actual
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="node" attr.name="salt::SDOCUMENT_GRAPH_LOCATION" attr.type="string"/>
+    <key id="k1" for="node" attr.name="salt::SNAME" attr.type="string"/>
+    <key id="k2" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k3" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <node id="rootCorpus">
+            <data key="k1">rootCorpus</data>
+            <data key="k3">corpus</data>
+        </node>
+        <node id="rootCorpus/subCorpus1">
+            <data key="k1">subCorpus1</data>
+            <data key="k3">corpus</data>
+        </node>
+        <node id="rootCorpus/subCorpus2">
+            <data key="k1">subCorpus2</data>
+            <data key="k3">corpus</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc1">
+            <data key="k0">file:/home/thomas/korpora/SaltSampleCorpus/rootCorpus/subCorpus1/doc1.salt</data>
+            <data key="k2">doc1</data>
+            <data key="k3">corpus</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc2">
+            <data key="k0">file:/home/thomas/korpora/SaltSampleCorpus/rootCorpus/subCorpus1/doc2.salt</data>
+            <data key="k2">doc2</data>
+            <data key="k3">corpus</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc3">
+            <data key="k0">file:/home/thomas/korpora/SaltSampleCorpus/rootCorpus/subCorpus2/doc3.salt</data>
+            <data key="k2">doc3</data>
+            <data key="k3">corpus</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc4">
+            <data key="k0">file:/home/thomas/korpora/SaltSampleCorpus/rootCorpus/subCorpus2/doc4.salt</data>
+            <data key="k2">doc4</data>
+            <data key="k3">corpus</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc1#sText1">
+            <data key="k3">datasource</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc1#sTok1">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc1#sTok2">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc1#sTok3">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc1#sTok4">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc1#sTok5">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc1#sTok6">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc1#sTok7">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc1#sTok8">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc1#sTok9">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc1#sTok10">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc1#sTok11">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc2#sText1">
+            <data key="k3">datasource</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc2#sTok1">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc2#sTok2">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc2#sTok3">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc2#sTok4">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc2#sTok5">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc2#sTok6">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc2#sTok7">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc2#sTok8">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc2#sTok9">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc2#sTok10">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc2#sTok11">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc3#sText1">
+            <data key="k3">datasource</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc3#sTok1">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc3#sTok2">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc3#sTok3">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc3#sTok4">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc3#sTok5">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc3#sTok6">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc3#sTok7">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc3#sTok8">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc3#sTok9">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc3#sTok10">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc3#sTok11">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc4#sText1">
+            <data key="k3">datasource</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc4#sTok1">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc4#sTok2">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc4#sTok3">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc4#sTok4">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc4#sTok5">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc4#sTok6">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc4#sTok7">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc4#sTok8">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc4#sTok9">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc4#sTok10">
+            <data key="k3">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc4#sTok11">
+            <data key="k3">node</data>
+        </node>
+        <edge id="e0" source="rootCorpus/subCorpus1" target="rootCorpus" label="PartOf/annis/">
+        </edge>
+        <edge id="e1" source="rootCorpus/subCorpus2" target="rootCorpus" label="PartOf/annis/">
+        </edge>
+        <edge id="e2" source="rootCorpus/subCorpus1/doc1" target="rootCorpus/subCorpus1" label="PartOf/annis/">
+        </edge>
+        <edge id="e3" source="rootCorpus/subCorpus1/doc2" target="rootCorpus/subCorpus1" label="PartOf/annis/">
+        </edge>
+        <edge id="e4" source="rootCorpus/subCorpus2/doc3" target="rootCorpus/subCorpus2" label="PartOf/annis/">
+        </edge>
+        <edge id="e5" source="rootCorpus/subCorpus2/doc4" target="rootCorpus/subCorpus2" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>

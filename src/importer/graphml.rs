@@ -136,7 +136,7 @@ fn read_graphml<R: std::io::BufRead>(
     edge_updates: &mut GraphUpdate,
 ) -> Result<Option<String>, AnnattoError> {
     let mut reader = Reader::from_reader(input);
-    reader.expand_empty_elements(true);
+    reader.config_mut().expand_empty_elements = true;
 
     let mut buf = Vec::new();
 
