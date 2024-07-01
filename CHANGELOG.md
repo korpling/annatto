@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `textgrid` export now creates PRAAT TextGrid files from annotation graphs
+
+### Added
+
 - `exmaralda` export can now be configured for the annotation key that provides a clue to which subgraph is relevant for a file
 
 ### Fixed
