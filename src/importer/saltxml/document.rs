@@ -88,7 +88,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             .map(|t| {
                 let id = get_element_id(&t)
                     .ok_or_else(|| anyhow!("Missing element ID for token source"))?;
-                Ok((t, id))
+                Ok((*t, id))
             })
             .collect();
         let tokens = tokens?;
@@ -105,17 +105,24 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             .iter()
             .filter(|n| SaltType::from(**n) == SaltType::TextualRelation)
         {
-            let token = resolve_element(
-                text_rel.attribute("source").unwrap_or_default(),
-                "nodes",
-                &self.nodes,
-            );
-            let datasource = resolve_element(
-                text_rel.attribute("target").unwrap_or_default(),
-                "nodes",
-                &self.nodes,
-            );
-            if let (Some(_token), Some(_datasource)) = (token, datasource) {}
+            let source_att_val = text_rel.attribute("source").unwrap_or_default();
+            let token = resolve_element(source_att_val, "nodes", &self.nodes).ok_or_else(|| {
+                anyhow!("Textual relation source \"{source_att_val}\" could not be resolved")
+            })?;
+
+            let target_att_val = text_rel.attribute("target").unwrap_or_default();
+            let datasource =
+                resolve_element(target_att_val, "nodes", &self.nodes).ok_or_else(|| {
+                    anyhow!("Textual relation target \"{target_att_val}\" could not be resolved")
+                })?;
+            let _token_id =
+                get_element_id(&token).ok_or_else(|| anyhow!("Missing ID for token"))?;
+            let _datasource_id =
+                get_element_id(&datasource).ok_or_else(|| anyhow!("Missing ID for token"))?;
+
+            // TODO Get the string for this token
+
+            // TODO also get whitespace after/before
         }
 
         Ok(())
