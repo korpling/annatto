@@ -41,6 +41,18 @@ expression: actual
             <data key="k2">doc4</data>
             <data key="k3">corpus</data>
         </node>
+        <node id="rootCorpus/subCorpus1/doc1#sText1">
+            <data key="k3">datasource</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc2#sText1">
+            <data key="k3">datasource</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc3#sText1">
+            <data key="k3">datasource</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc4#sText1">
+            <data key="k3">datasource</data>
+        </node>
         <edge id="e0" source="rootCorpus/subCorpus1" target="rootCorpus" label="PartOf/annis/">
         </edge>
         <edge id="e1" source="rootCorpus/subCorpus2" target="rootCorpus" label="PartOf/annis/">

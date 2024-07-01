@@ -1,4 +1,4 @@
-use std::{collections::BTreeSet, convert::TryFrom};
+use std::collections::BTreeSet;
 
 use anyhow::{anyhow, Ok};
 use graphannis::{
@@ -8,7 +8,7 @@ use graphannis::{
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 
-use super::{get_element_id, resolve_element, SaltObject, SaltType};
+use super::{get_element_id, get_features, resolve_element, SaltObject, SaltType};
 
 pub(super) struct SaltCorpusStructureMapper {}
 
@@ -65,18 +65,14 @@ impl SaltCorpusStructureMapper {
                         }
 
                         // Add features as annotations
-                        let features = node.children().filter(|n| {
-                            n.tag_name().name() == "labels"
-                                && SaltType::from(*n) == SaltType::Feature
-                        });
-                        for feature_node in features {
+                        for feature_node in get_features(node) {
                             let annos_ns = feature_node.attribute("namespace");
                             let anno_name = feature_node.attribute("name").ok_or_else(|| {
                                 anyhow!("Missing \"name\" attribute for node \"{node_name}\"")
                             })?;
-                            let anno_value = SaltObject::try_from(
+                            let anno_value = SaltObject::from(
                                 feature_node.attribute("value").unwrap_or_default(),
-                            )?;
+                            );
 
                             if salt_type == SaltType::Document
                                 && annos_ns == Some("salt")

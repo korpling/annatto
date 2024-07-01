@@ -1,6 +1,3 @@
-use std::convert::TryFrom;
-
-use anyhow::anyhow;
 use document::DocumentMapper;
 use documented::{Documented, DocumentedFields};
 use graphannis::update::GraphUpdate;
@@ -98,19 +95,18 @@ impl<'a, 'input> From<Node<'a, 'input>> for SaltType {
 enum SaltObject {
     Text(String),
     Boolean(bool),
+    Null,
 }
 
-impl TryFrom<&str> for SaltObject {
-    type Error = anyhow::Error;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
+impl From<&str> for SaltObject {
+    fn from(value: &str) -> Self {
         if let Some(value) = value.strip_prefix("T::") {
-            Ok(SaltObject::Text(value.to_string()))
+            SaltObject::Text(value.to_string())
         } else if let Some(_value) = value.strip_prefix("B::") {
             let value = value.to_ascii_lowercase() == "true";
-            Ok(SaltObject::Boolean(value))
+            SaltObject::Boolean(value)
         } else {
-            Err(anyhow!("Could not create Salt object from \"{value}\""))
+            SaltObject::Null
         }
     }
 }
@@ -120,6 +116,7 @@ impl std::fmt::Display for SaltObject {
         match self {
             SaltObject::Text(val) => write!(f, "{val}"),
             SaltObject::Boolean(val) => write!(f, "{val}"),
+            SaltObject::Null => write!(f, ""),
         }
     }
 }
@@ -130,11 +127,26 @@ fn get_element_id(n: &Node) -> Option<String> {
         .filter(|c| c.tag_name().name() == "labels" && SaltType::from(*c) == SaltType::ElementId)
     {
         if let Some(id) = element_id_label.attribute("value") {
-            let id = SaltObject::try_from(id).ok()?;
+            let id = SaltObject::from(id);
             return Some(id.to_string().trim_start_matches("salt:/").to_string());
         }
     }
     None
+}
+
+fn get_features<'a, 'input>(n: &'a Node<'a, 'input>) -> impl Iterator<Item = Node<'a, 'input>> {
+    n.children()
+        .filter(|n| n.tag_name().name() == "labels" && SaltType::from(*n) == SaltType::Feature)
+}
+
+fn get_feature_by_qname(n: &Node, namespace: &str, name: &str) -> Option<SaltObject> {
+    get_features(n)
+        .filter(|f| {
+            f.attribute("namespace") == Some(namespace) && f.attribute("name") == Some(name)
+        })
+        .filter_map(|f| f.attribute("value"))
+        .map(|v| SaltObject::from(v))
+        .next()
 }
 
 fn get_referenced_index(attribute_value: &str, tag_name: &str) -> Option<usize> {
