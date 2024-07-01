@@ -66,7 +66,7 @@ pub struct ExportTextGrid {
     /// Example:
     /// ```toml
     /// [export.config]
-    /// remove_ns = "true"
+    /// remove_ns = true
     /// ```
     #[serde(default)]
     remove_ns: bool,
