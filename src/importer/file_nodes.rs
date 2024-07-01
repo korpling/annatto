@@ -1,3 +1,5 @@
+use crate::error::AnnattoError;
+
 use super::Importer;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
@@ -20,46 +22,54 @@ impl Importer for CreateFileNodes {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
-        _step_id: crate::StepID,
+        step_id: crate::StepID,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
         let base_dir = input_path.normalize()?;
-        let base_dir_name = base_dir.file_name().unwrap();
-        let start_index = base_dir.as_path().to_string_lossy().len() - base_dir_name.len();
-        if let Some(link_target) = &self.corpus_name {
-            update.add_event(UpdateEvent::AddNode {
-                node_name: link_target.to_string(),
-                node_type: "corpus".to_string(),
-            })?;
-        }
-        for path_r in glob::glob(format!("{}/**/*", base_dir.as_path().to_string_lossy()).as_str())?
-        {
-            let path = path_r?;
-            let node_name = path.to_str().unwrap()[start_index..].to_string();
-            if path.is_file() {
+        if let Some(base_dir_name) = base_dir.file_name() {
+            let start_index = base_dir.as_path().to_string_lossy().len() - base_dir_name.len();
+            if let Some(link_target) = &self.corpus_name {
                 update.add_event(UpdateEvent::AddNode {
-                    node_name: node_name.to_string(),
-                    node_type: "file".to_string(),
+                    node_name: link_target.to_string(),
+                    node_type: "corpus".to_string(),
                 })?;
-                update.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: node_name.to_string(),
-                    anno_ns: ANNIS_NS.to_string(),
-                    anno_name: "file".to_string(),
-                    anno_value: node_name.to_string(),
-                })?;
-                if let Some(link_target) = &self.corpus_name {
-                    update.add_event(UpdateEvent::AddEdge {
-                        source_node: node_name,
-                        target_node: link_target.to_string(),
-                        layer: ANNIS_NS.to_string(),
-                        component_type: AnnotationComponentType::PartOf.to_string(),
-                        component_name: "".to_string(),
+            }
+            for path_r in
+                glob::glob(format!("{}/**/*", base_dir.as_path().to_string_lossy()).as_str())?
+            {
+                let path = path_r?;
+                let node_name = path.to_string_lossy()[start_index..].to_string();
+                if path.is_file() {
+                    update.add_event(UpdateEvent::AddNode {
+                        node_name: node_name.to_string(),
+                        node_type: "file".to_string(),
                     })?;
+                    update.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: node_name.to_string(),
+                        anno_ns: ANNIS_NS.to_string(),
+                        anno_name: "file".to_string(),
+                        anno_value: node_name.to_string(),
+                    })?;
+                    if let Some(link_target) = &self.corpus_name {
+                        update.add_event(UpdateEvent::AddEdge {
+                            source_node: node_name,
+                            target_node: link_target.to_string(),
+                            layer: ANNIS_NS.to_string(),
+                            component_type: AnnotationComponentType::PartOf.to_string(),
+                            component_name: "".to_string(),
+                        })?;
+                    }
                 }
             }
+            Ok(update)
+        } else {
+            Err(Box::new(AnnattoError::Import {
+                reason: "Could not determine base dir.".to_string(),
+                importer: step_id.module_name.to_string(),
+                path: input_path.to_path_buf(),
+            }))
         }
-        Ok(update)
     }
 
     fn file_extensions(&self) -> &[&str] {

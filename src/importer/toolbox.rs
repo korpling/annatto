@@ -139,19 +139,26 @@ impl ImportToolBox {
                 }
             }
         }
-        let max_end = end_ids.into_iter().max().unwrap();
-        for (i, anno) in block_annos.into_iter().enumerate() {
-            let tokens = (start_id..max_end).map(NodeSpec::Terminal).collect_vec();
-            self.annotate(
-                update,
-                doc_node_name,
-                (start_id, i as u8, "span".to_string()),
-                tokens,
-                (&anno.key.ns, &anno.key.name, anno.val.trim()),
-                ordering,
-            )?;
+        if let Some(max_end) = end_ids.into_iter().max() {
+            for (i, anno) in block_annos.into_iter().enumerate() {
+                let tokens = (start_id..max_end).map(NodeSpec::Terminal).collect_vec();
+                self.annotate(
+                    update,
+                    doc_node_name,
+                    (start_id, i as u8, "span".to_string()),
+                    tokens,
+                    (&anno.key.ns, &anno.key.name, anno.val.trim()),
+                    ordering,
+                )?;
+            }
+            Ok(max_end)
+        } else {
+            Err(AnnattoError::Import {
+                reason: "Could not determine end of span.".to_string(),
+                importer: "toolbox".to_string(),
+                path: Path::new(doc_node_name).to_path_buf(),
+            })
         }
-        Ok(max_end)
     }
 
     fn map_annotation_line(
@@ -220,7 +227,11 @@ impl ImportToolBox {
                         join_list.push(entry_or_space.as_str());
                     } else {
                         let mut inner = entry_or_space.clone().into_inner();
-                        let entry_node = inner.next().unwrap();
+                        let entry_node = if let Some(nxt) = inner.next() {
+                            nxt
+                        } else {
+                            continue;
+                        };
                         match entry_node.as_rule() {
                             Rule::complex => {
                                 let sub_entries = entry_node.into_inner();

@@ -369,12 +369,12 @@ impl ImportCoNLLU {
                                 } else if feature_rule == Rule::value {
                                     anno_value = Some(name_or_value.as_str().to_string());
                                 }
-                                if anno_name.is_some() && anno_value.is_some() {
+                                if let (Some(n), Some(v)) = (&anno_name, &anno_value) {
                                     update.add_event(UpdateEvent::AddNodeLabel {
                                         node_name: node_name.to_string(),
                                         anno_ns: "".to_string(),
-                                        anno_name: anno_name.unwrap().trim().to_string(),
-                                        anno_value: anno_value.unwrap().trim().to_string(),
+                                        anno_name: n.trim().to_string(),
+                                        anno_value: v.trim().to_string(),
                                     })?;
                                     break;
                                 }
