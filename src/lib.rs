@@ -18,7 +18,7 @@ use documented::{Documented, DocumentedFields};
 use error::Result;
 use exporter::{
     exmaralda::ExportExmaralda, graphml::GraphMLExporter, sequence::ExportSequence,
-    xlsx::XlsxExporter, Exporter,
+    textgrid::ExportTextGrid, xlsx::XlsxExporter, Exporter,
 };
 use importer::{
     conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
@@ -49,6 +49,7 @@ pub enum WriteAs {
     GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
     EXMARaLDA(#[serde(default)] ExportExmaralda),
     Sequence(#[serde(default)] ExportSequence),
+    TextGrid(#[serde(default)] ExportTextGrid),
     Xlsx(#[serde(default)] XlsxExporter),
 }
 
@@ -65,6 +66,7 @@ impl WriteAs {
             WriteAs::GraphML(m) => m,
             WriteAs::EXMARaLDA(m) => m,
             WriteAs::Sequence(m) => m,
+            WriteAs::TextGrid(m) => m,
             WriteAs::Xlsx(m) => m,
         }
     }
@@ -76,6 +78,7 @@ impl WriteAsDiscriminants {
             WriteAsDiscriminants::GraphML => GraphMLExporter::DOCS,
             WriteAsDiscriminants::EXMARaLDA => ExportExmaralda::DOCS,
             WriteAsDiscriminants::Sequence => ExportSequence::DOCS,
+            WriteAsDiscriminants::TextGrid => ExportTextGrid::DOCS,
             WriteAsDiscriminants::Xlsx => XlsxExporter::DOCS,
         }
     }
@@ -94,6 +97,10 @@ impl WriteAsDiscriminants {
             WriteAsDiscriminants::Sequence => (
                 ExportSequence::FIELD_NAMES_AS_SLICE,
                 ExportSequence::FIELD_DOCS,
+            ),
+            WriteAsDiscriminants::TextGrid => (
+                ExportTextGrid::FIELD_NAMES_AS_SLICE,
+                ExportTextGrid::FIELD_DOCS,
             ),
             WriteAsDiscriminants::Xlsx => {
                 (XlsxExporter::FIELD_NAMES_AS_SLICE, XlsxExporter::FIELD_DOCS)

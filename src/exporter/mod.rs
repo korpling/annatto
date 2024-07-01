@@ -3,6 +3,7 @@
 pub mod exmaralda;
 pub mod graphml;
 pub mod sequence;
+pub mod textgrid;
 pub mod xlsx;
 
 use crate::{workflow::StatusSender, StepID};
