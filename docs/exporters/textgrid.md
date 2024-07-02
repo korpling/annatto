@@ -54,6 +54,36 @@ If used incorrectly, more than one layer could be merged into a single tier.
 Example:
 ```toml
 [export.config]
-remove_ns = "true"
+remove_ns = true
+```
+
+###  tier_order
+
+Use this attribute to provide a list of anno keys in the order that you would like them to appear in the textgrid file.
+If you want this to be an explicit allow list, i. e. you do not want to export other names than the ones in this list,
+additionally set `ignore_others` to `true`.
+Example:
+```toml
+[export.config]
+tier_order = [
+{ ns: "", name: "norm" },
+{ ns: "norm", name: "pos" }
+{ ns: "norm", name: "lemma" }
+]
+ignore_others = true
+```
+
+###  ignore_others
+
+Set this attribute to `true` to ignore all annotations whose key is not mentioned in attribute `tier_order`.
+Example:
+```toml
+[export.config]
+tier_order = [
+{ ns: "", name: "norm" },
+{ ns: "norm", name: "pos" }
+{ ns: "norm", name: "lemma" }
+]
+ignore_others = true    ///
 ```
 
