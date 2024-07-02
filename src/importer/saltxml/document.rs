@@ -1,4 +1,7 @@
-use std::{collections::BTreeMap, convert::TryFrom};
+use std::{
+    collections::BTreeMap,
+    convert::{TryFrom, TryInto},
+};
 
 use anyhow::{anyhow, Context, Result};
 use graphannis::{
@@ -122,7 +125,8 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
 
         // Connect the token to the texts by the textual relations
         let mut previous_token = None;
-        for (_, text_rel) in sorted_text_rels {
+        let mut sorted_text_rels = sorted_text_rels.into_iter().peekable();
+        while let Some((_, text_rel)) = sorted_text_rels.next() {
             let source_att_val = text_rel.attribute("source").unwrap_or_default();
             let token =
                 resolve_element(source_att_val, "nodes", &self.nodes).with_context(|| {
@@ -156,6 +160,35 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                     anno_name: "tok".to_string(),
                     anno_value: covered_text.to_string(),
                 })?;
+
+                // Get the whitespace before the first token
+                if previous_token.is_none() && start > 0 {
+                    let whitespace = &matching_base_text[0..start];
+                    updates.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: token_id.clone(),
+                        anno_ns: ANNIS_NS.to_string(),
+                        anno_name: "tok-whitespace-before".to_string(),
+                        anno_value: whitespace.to_string(),
+                    })?;
+                }
+
+                // Add whitespace after this token
+
+                let next_token_offset = sorted_text_rels
+                    .peek()
+                    .map(|(offset, _)| *offset)
+                    .unwrap_or_else(|| matching_base_text.len().try_into().unwrap_or(i64::MAX));
+                let next_token_offset = usize::try_from(next_token_offset).unwrap_or(0);
+
+                if next_token_offset > end && (next_token_offset - end) >= 1 {
+                    let whitespace = &matching_base_text[end..next_token_offset];
+                    updates.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: token_id.clone(),
+                        anno_ns: ANNIS_NS.to_string(),
+                        anno_name: "tok-whitespace-after".to_string(),
+                        anno_value: whitespace.to_string(),
+                    })?;
+                }
             }
             // Add ordering edges between the tokens for the base token layer
             if let Some(previous_token) = previous_token {
@@ -168,8 +201,6 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                 })?;
             }
             previous_token = Some(token_id);
-
-            // TODO also get whitespace after/before
         }
 
         Ok(())
