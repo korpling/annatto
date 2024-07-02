@@ -49,7 +49,7 @@ pub enum WriteAs {
     GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
     EXMARaLDA(#[serde(default)] ExportExmaralda),
     Sequence(#[serde(default)] ExportSequence),
-    TextGrid(#[serde(default)] ExportTextGrid),
+    TextGrid(ExportTextGrid), // do not use default, as all attributes have their individual defaults
     Xlsx(#[serde(default)] XlsxExporter),
 }
 

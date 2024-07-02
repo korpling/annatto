@@ -1,0 +1,46 @@
+---
+source: src/exporter/textgrid.rs
+expression: export.unwrap()
+---
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0
+xmax = 5.55555
+tiers? <exists>
+size = 2
+item []:
+    item [1]:
+        class = "IntervalTier"
+        name = "dipl::dipl"
+        xmin = 0
+        xmax = 5.55555
+        intervals: size = 4
+        intervals [1]:
+            xmin = 0
+            xmax = 2.22222
+            text = "I'm"
+        intervals [2]:
+            xmin = 2.22222
+            xmax = 3.33333
+            text = "in"
+        intervals [3]:
+            xmin = 3.33333
+            xmax = 4.44444
+            text = "New"
+        intervals [4]:
+            xmin = 4.44444
+            xmax = 5.55555
+            text = "York"
+    item [2]:
+        class = "IntervalTier"
+        name = "dipl::sentence"
+        xmin = 0
+        xmax = 5.55555
+        intervals: size = 1
+        intervals [1]:
+            xmin = 0
+            xmax = 5.55555
+            text = "1"
+
+
