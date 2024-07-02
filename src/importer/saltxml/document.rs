@@ -70,10 +70,10 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             .filter(|n| SaltType::from(**n) == SaltType::TextualDs)
         {
             let element_id =
-                get_element_id(&text_node).context("Missing element ID for textual data source")?;
+                get_element_id(text_node).context("Missing element ID for textual data source")?;
 
             if let Some(SaltObject::Text(anno_value)) =
-                get_feature_by_qname(&text_node, "saltCommon", "SDATA")
+                get_feature_by_qname(text_node, "saltCommon", "SDATA")
             {
                 self.base_texts.insert(element_id.clone(), anno_value);
                 updates.add_event(UpdateEvent::AddNode {
@@ -92,7 +92,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             .iter()
             .filter(|n| SaltType::from(**n) == SaltType::Token)
             .map(|t| {
-                let id = get_element_id(&t).context("Missing element ID for token source")?;
+                let id = get_element_id(t).context("Missing element ID for token source")?;
                 Ok((*t, id))
             })
             .collect();

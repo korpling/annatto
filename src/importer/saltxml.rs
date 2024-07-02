@@ -152,7 +152,7 @@ fn get_feature_by_qname(n: &Node, namespace: &str, name: &str) -> Option<SaltObj
             f.attribute("namespace") == Some(namespace) && f.attribute("name") == Some(name)
         })
         .filter_map(|f| f.attribute("value"))
-        .map(|v| SaltObject::from(v))
+        .map(SaltObject::from)
         .next()
 }
 
