@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, fs, io::Write, path::PathBuf};
+use std::{cmp::Ordering, collections::BTreeMap, fs, io::Write, path::PathBuf};
 
 use anyhow::{anyhow, bail};
 use documented::{Documented, DocumentedFields};
@@ -70,6 +70,34 @@ pub struct ExportTextGrid {
     /// ```
     #[serde(default)]
     remove_ns: bool,
+    /// Use this attribute to provide a list of anno keys in the order that you would like them to appear in the textgrid file.
+    /// If you want this to be an explicit allow list, i. e. you do not want to export other names than the ones in this list,
+    /// additionally set `ignore_others` to `true`.
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// tier_order = [
+    ///   { ns: "", name: "norm" },
+    ///   { ns: "norm", name: "pos" }
+    ///   { ns: "norm", name: "lemma" }
+    /// ]
+    /// ignore_others = true
+    /// ```
+    #[serde(default)]
+    tier_order: Vec<AnnoKey>,
+    /// Set this attribute to `true` to ignore all annotations whose key is not mentioned in attribute `tier_order`.
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// tier_order = [
+    ///   { ns: "", name: "norm" },
+    ///   { ns: "norm", name: "pos" }
+    ///   { ns: "norm", name: "lemma" }
+    /// ]
+    /// ignore_others = true    ///
+    /// ```
+    #[serde(default)]
+    ignore_others: bool,
 }
 
 fn default_file_key() -> AnnoKey {
@@ -176,7 +204,9 @@ impl ExportTextGrid {
                 xmin = xmin.min(start);
                 xmax = xmax.max(end);
                 for annotation in node_annos.get_annotations_for_item(&node)? {
-                    if annotation.key.ns == ANNIS_NS {
+                    if annotation.key.ns == ANNIS_NS
+                        || (!self.tier_order.contains(&annotation.key) && self.ignore_others)
+                    {
                         continue;
                     }
                     let anno_val = annotation.val.to_string();
@@ -193,7 +223,30 @@ impl ExportTextGrid {
             }
         }
         let mut textgrid_tiers = Vec::with_capacity(tier_data.len());
-        for (key, mut tuples) in tier_data {
+        let sorted_data = if self.tier_order.is_empty() {
+            tier_data.into_iter().sorted_by(|a, b| a.0.cmp(&b.0))
+        } else {
+            let index_map: BTreeMap<&AnnoKey, usize> = self
+                .tier_order
+                .iter()
+                .enumerate()
+                .map(|(i, k)| (k, i))
+                .collect();
+            tier_data.into_iter().sorted_by(|a, b| {
+                let ka = &a.0;
+                let kb = &b.0;
+                if let (Some(i), Some(j)) = (index_map.get(ka), index_map.get(kb)) {
+                    (*i).cmp(j)
+                } else if !self.tier_order.contains(ka) && !self.tier_order.contains(kb) {
+                    (*ka).cmp(kb)
+                } else if self.tier_order.contains(ka) {
+                    Ordering::Less
+                } else {
+                    Ordering::Greater
+                }
+            })
+        };
+        for (key, mut tuples) in sorted_data {
             tuples.sort();
             let is_point_tier = self.point_tiers.contains(&key);
             let mut entries = Vec::with_capacity(tuples.len());
@@ -394,7 +447,7 @@ impl From<(OrderedFloat<f64>, String)> for TierEntry {
 mod tests {
     use std::path::Path;
 
-    use graphannis::AnnotationGraph;
+    use graphannis::{graph::AnnoKey, AnnotationGraph};
     use insta::assert_snapshot;
 
     use crate::{
@@ -405,6 +458,20 @@ mod tests {
     };
 
     use super::ExportTextGrid;
+
+    // we only need this implementation for test purposes (shorter code)
+    impl Default for ExportTextGrid {
+        fn default() -> Self {
+            Self {
+                file_key: default_file_key(),
+                time_key: default_time_key(),
+                point_tiers: Vec::default(),
+                remove_ns: bool::default(),
+                tier_order: Vec::default(),
+                ignore_others: bool::default(),
+            }
+        }
+    }
 
     #[test]
     fn deserialize_default() {
@@ -435,7 +502,30 @@ point_tiers = [
     }
 
     #[test]
-    fn core_functionality() {
+    fn default_functionality() {
+        let exmaralda = ImportEXMARaLDA {};
+        let mprt = exmaralda.import_corpus(
+            Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
+            StepID {
+                module_name: "test_import_exb".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(mprt.is_ok());
+        let mut update_import = mprt.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update_import, |_| {}).is_ok());
+        let export = export_to_string(&graph, ExportTextGrid::default());
+        assert!(export.is_ok());
+        dbg!(&export);
+        assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
+    fn customization() {
         let exmaralda = ImportEXMARaLDA {};
         let mprt = exmaralda.import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
@@ -454,10 +544,129 @@ point_tiers = [
         let export = export_to_string(
             &graph,
             ExportTextGrid {
-                file_key: default_file_key(),
-                time_key: default_time_key(),
-                point_tiers: vec![],
-                remove_ns: true,
+                ignore_others: true,
+                tier_order: vec![
+                    AnnoKey {
+                        ns: "dipl".into(),
+                        name: "dipl".into(),
+                    },
+                    AnnoKey {
+                        ns: "dipl".into(),
+                        name: "sentence".into(),
+                    },
+                ],
+                ..Default::default()
+            },
+        );
+        assert!(export.is_ok());
+        dbg!(&export);
+        assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
+    fn customization_no_ignore() {
+        let exmaralda = ImportEXMARaLDA {};
+        let mprt = exmaralda.import_corpus(
+            Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
+            StepID {
+                module_name: "test_import_exb".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(mprt.is_ok());
+        let mut update_import = mprt.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update_import, |_| {}).is_ok());
+        let export = export_to_string(
+            &graph,
+            ExportTextGrid {
+                ignore_others: false,
+                tier_order: vec![
+                    AnnoKey {
+                        ns: "dipl".into(),
+                        name: "dipl".into(),
+                    },
+                    AnnoKey {
+                        ns: "dipl".into(),
+                        name: "sentence".into(),
+                    },
+                ],
+                ..Default::default()
+            },
+        );
+        assert!(export.is_ok());
+        dbg!(&export);
+        assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
+    fn with_point_tiers() {
+        let exmaralda = ImportEXMARaLDA {};
+        let mprt = exmaralda.import_corpus(
+            Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
+            StepID {
+                module_name: "test_import_exb".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(mprt.is_ok());
+        let mut update_import = mprt.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update_import, |_| {}).is_ok());
+        let export = export_to_string(
+            &graph,
+            ExportTextGrid {
+                ignore_others: false,
+                tier_order: vec![
+                    AnnoKey {
+                        ns: "dipl".into(),
+                        name: "dipl".into(),
+                    },
+                    AnnoKey {
+                        ns: "dipl".into(),
+                        name: "sentence".into(),
+                    },
+                ],
+                point_tiers: vec![AnnoKey {
+                    ns: "norm".into(),
+                    name: "norm".into(),
+                }],
+                ..Default::default()
+            },
+        );
+        assert!(export.is_ok());
+        dbg!(&export);
+        assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
+    fn ignore_only() {
+        let exmaralda = ImportEXMARaLDA {};
+        let mprt = exmaralda.import_corpus(
+            Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
+            StepID {
+                module_name: "test_import_exb".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(mprt.is_ok());
+        let mut update_import = mprt.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update_import, |_| {}).is_ok());
+        let export = export_to_string(
+            &graph,
+            ExportTextGrid {
+                ignore_others: true,
+                ..Default::default()
             },
         );
         assert!(export.is_ok());

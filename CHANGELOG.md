@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `textgrid` export now creates PRAAT TextGrid files from annotation graphs
+- `textgrid` export can be configured for a desired order of tiers in the output files; the order of tiers can be incomplete, attribute `ignore_others` can be used to interprete the order as an allowlist
 
 ### Added
 

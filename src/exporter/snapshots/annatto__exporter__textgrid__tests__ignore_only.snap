@@ -1,0 +1,14 @@
+---
+source: src/exporter/textgrid.rs
+expression: export.unwrap()
+---
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0
+xmax = 5.55555
+tiers? <exists>
+size = 0
+item []:
+
+
