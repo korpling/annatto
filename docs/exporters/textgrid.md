@@ -54,6 +54,6 @@ If used incorrectly, more than one layer could be merged into a single tier.
 Example:
 ```toml
 [export.config]
-remove_ns = "true"
+remove_ns = true
 ```
 
