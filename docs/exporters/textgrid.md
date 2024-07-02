@@ -66,23 +66,24 @@ Example:
 ```toml
 [export.config]
 tier_order = [
-{ ns: "", name: "norm" },
-{ ns: "norm", name: "pos" }
-{ ns: "norm", name: "lemma" }
+{ ns = "", name = "norm" },
+{ ns = "norm", name = "pos" }
+{ ns = "norm", name = "lemma" }
 ]
 ignore_others = true
 ```
 
 ###  ignore_others
 
-Set this attribute to `true` to ignore all annotations whose key is not mentioned in attribute `tier_order`.
+Set this attribute to `true` to ignore all annotations whose key is not mentioned in attribute `tier_order` or `point_tiers`.
 Example:
 ```toml
 [export.config]
+point_tiers = [ { ns = "phonetics", name = "boundary_tone" } ]
 tier_order = [
-{ ns: "", name: "norm" },
-{ ns: "norm", name: "pos" }
-{ ns: "norm", name: "lemma" }
+{ ns = "", name = "norm" },
+{ ns = "norm", name = "pos" }
+{ ns = "norm", name = "lemma" }
 ]
 ignore_others = true    ///
 ```
