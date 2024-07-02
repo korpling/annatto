@@ -62,6 +62,7 @@ enum SaltType {
     Document,
     ElementId,
     Feature,
+    Annotation,
     CorpusRelation,
     DocumentRelation,
     TextualRelation,
@@ -80,6 +81,7 @@ impl<'a, 'input> From<Node<'a, 'input>> for SaltType {
                 "sCorpusStructure:SDocument" => SaltType::Document,
                 "saltCore:SElementId" => SaltType::ElementId,
                 "saltCore:SFeature" => SaltType::Feature,
+                "saltCore:SAnnotation" => SaltType::Annotation,
                 "sCorpusStructure:SCorpusRelation" => SaltType::CorpusRelation,
                 "sCorpusStructure:SCorpusDocumentRelation" => SaltType::DocumentRelation,
                 "sDocumentStructure:STextualRelation" => SaltType::TextualRelation,
@@ -144,6 +146,11 @@ fn get_element_id(n: &Node) -> Option<String> {
 fn get_features<'a, 'input>(n: &'a Node<'a, 'input>) -> impl Iterator<Item = Node<'a, 'input>> {
     n.children()
         .filter(|n| n.tag_name().name() == "labels" && SaltType::from(*n) == SaltType::Feature)
+}
+
+fn get_annotations<'a, 'input>(n: &'a Node<'a, 'input>) -> impl Iterator<Item = Node<'a, 'input>> {
+    n.children()
+        .filter(|n| n.tag_name().name() == "labels" && SaltType::from(*n) == SaltType::Annotation)
 }
 
 fn get_feature_by_qname(n: &Node, namespace: &str, name: &str) -> Option<SaltObject> {

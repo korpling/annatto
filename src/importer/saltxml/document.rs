@@ -12,7 +12,9 @@ use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use roxmltree::Node;
 
-use super::{get_element_id, get_feature_by_qname, resolve_element, SaltObject, SaltType};
+use super::{
+    get_annotations, get_element_id, get_feature_by_qname, resolve_element, SaltObject, SaltType,
+};
 
 pub(super) struct DocumentMapper<'a, 'input> {
     nodes: Vec<Node<'a, 'input>>,
@@ -120,6 +122,25 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                     }
                 }
             }
+
+            for label_node in get_annotations(token_node) {
+                let anno_ns = label_node
+                    .attribute("namespace")
+                    .unwrap_or_default()
+                    .to_string();
+                let anno_name = label_node
+                    .attribute("name")
+                    .context("Missing annotation name for token")?
+                    .to_string();
+                let anno_value =
+                    SaltObject::from(label_node.attribute("value").unwrap_or_default()).to_string();
+                updates.add_event(UpdateEvent::AddNodeLabel {
+                    node_name: t_id.clone(),
+                    anno_ns,
+                    anno_name,
+                    anno_value,
+                })?;
+            }
         }
 
         // Order textual relations by their start offset, so we iterate in the
@@ -189,7 +210,6 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                 }
 
                 // Add whitespace after this token
-
                 let next_token_offset = sorted_text_rels
                     .peek()
                     .map(|(offset, _)| *offset)
