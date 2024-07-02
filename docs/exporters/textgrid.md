@@ -84,6 +84,6 @@ tier_order = [
 { ns: "norm", name: "pos" }
 { ns: "norm", name: "lemma" }
 ]
-ignore_others = true
+ignore_others = true    ///
 ```
 
