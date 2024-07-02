@@ -603,6 +603,49 @@ point_tiers = [
     }
 
     #[test]
+    fn with_point_tiers() {
+        let exmaralda = ImportEXMARaLDA {};
+        let mprt = exmaralda.import_corpus(
+            Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
+            StepID {
+                module_name: "test_import_exb".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(mprt.is_ok());
+        let mut update_import = mprt.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update_import, |_| {}).is_ok());
+        let export = export_to_string(
+            &graph,
+            ExportTextGrid {
+                ignore_others: false,
+                tier_order: vec![
+                    AnnoKey {
+                        ns: "dipl".into(),
+                        name: "dipl".into(),
+                    },
+                    AnnoKey {
+                        ns: "dipl".into(),
+                        name: "sentence".into(),
+                    },
+                ],
+                point_tiers: vec![AnnoKey {
+                    ns: "norm".into(),
+                    name: "norm".into(),
+                }],
+                ..Default::default()
+            },
+        );
+        assert!(export.is_ok());
+        dbg!(&export);
+        assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
     fn ignore_only() {
         let exmaralda = ImportEXMARaLDA {};
         let mprt = exmaralda.import_corpus(
