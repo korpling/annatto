@@ -1,7 +1,8 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, convert::TryFrom};
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use graphannis::update::{GraphUpdate, UpdateEvent};
+use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use roxmltree::Node;
 
@@ -63,8 +64,8 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             .iter()
             .filter(|n| SaltType::from(**n) == SaltType::TextualDs)
         {
-            let element_id = get_element_id(&text_node)
-                .ok_or_else(|| anyhow!("Missing element ID for textual data source"))?;
+            let element_id =
+                get_element_id(&text_node).context("Missing element ID for textual data source")?;
 
             if let Some(SaltObject::Text(anno_value)) =
                 get_feature_by_qname(&text_node, "saltCommon", "SDATA")
@@ -86,8 +87,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             .iter()
             .filter(|n| SaltType::from(**n) == SaltType::Token)
             .map(|t| {
-                let id = get_element_id(&t)
-                    .ok_or_else(|| anyhow!("Missing element ID for token source"))?;
+                let id = get_element_id(&t).context("Missing element ID for token source")?;
                 Ok((*t, id))
             })
             .collect();
@@ -106,21 +106,41 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             .filter(|n| SaltType::from(**n) == SaltType::TextualRelation)
         {
             let source_att_val = text_rel.attribute("source").unwrap_or_default();
-            let token = resolve_element(source_att_val, "nodes", &self.nodes).ok_or_else(|| {
-                anyhow!("Textual relation source \"{source_att_val}\" could not be resolved")
-            })?;
+            let token =
+                resolve_element(source_att_val, "nodes", &self.nodes).with_context(|| {
+                    format!("Textual relation source \"{source_att_val}\" could not be resolved")
+                })?;
 
             let target_att_val = text_rel.attribute("target").unwrap_or_default();
             let datasource =
-                resolve_element(target_att_val, "nodes", &self.nodes).ok_or_else(|| {
-                    anyhow!("Textual relation target \"{target_att_val}\" could not be resolved")
+                resolve_element(target_att_val, "nodes", &self.nodes).with_context(|| {
+                    format!("Textual relation target \"{target_att_val}\" could not be resolved")
                 })?;
-            let _token_id =
-                get_element_id(&token).ok_or_else(|| anyhow!("Missing ID for token"))?;
-            let _datasource_id =
-                get_element_id(&datasource).ok_or_else(|| anyhow!("Missing ID for token"))?;
+            let token_id = get_element_id(&token).context("Missing ID for token")?;
+            let datasource_id = get_element_id(&datasource).context("Missing ID for token")?;
 
-            // TODO Get the string for this token
+            // Get the string for this token
+            let matching_base_text = self
+                .base_texts
+                .get(&datasource_id)
+                .with_context(|| format!("Missing base text for token {token_id}"))?;
+            let start_offset =
+                get_feature_by_qname(text_rel, "salt", "SSTART").context("Missing start value")?;
+            let end_offset =
+                get_feature_by_qname(text_rel, "salt", "SEND").context("Missing end value")?;
+            if let (SaltObject::Integer(start), SaltObject::Integer(end)) =
+                (start_offset, end_offset)
+            {
+                let start = usize::try_from(start)?;
+                let end = usize::try_from(end)?;
+                let covered_text = &matching_base_text[start..end];
+                updates.add_event(UpdateEvent::AddNodeLabel {
+                    node_name: token_id,
+                    anno_ns: ANNIS_NS.to_string(),
+                    anno_name: "tok".to_string(),
+                    anno_value: covered_text.to_string(),
+                })?;
+            }
 
             // TODO also get whitespace after/before
         }

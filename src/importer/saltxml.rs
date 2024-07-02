@@ -97,6 +97,7 @@ impl<'a, 'input> From<Node<'a, 'input>> for SaltType {
 enum SaltObject {
     Text(String),
     Boolean(bool),
+    Integer(i64),
     Null,
 }
 
@@ -104,9 +105,12 @@ impl From<&str> for SaltObject {
     fn from(value: &str) -> Self {
         if let Some(value) = value.strip_prefix("T::") {
             SaltObject::Text(value.to_string())
-        } else if let Some(_value) = value.strip_prefix("B::") {
+        } else if let Some(value) = value.strip_prefix("B::") {
             let value = value.to_ascii_lowercase() == "true";
             SaltObject::Boolean(value)
+        } else if let Some(value) = value.strip_prefix("N::") {
+            let value = value.parse::<i64>().unwrap_or_default();
+            SaltObject::Integer(value)
         } else {
             SaltObject::Null
         }
@@ -118,6 +122,7 @@ impl std::fmt::Display for SaltObject {
         match self {
             SaltObject::Text(val) => write!(f, "{val}"),
             SaltObject::Boolean(val) => write!(f, "{val}"),
+            SaltObject::Integer(val) => write!(f, "{val}"),
             SaltObject::Null => write!(f, ""),
         }
     }

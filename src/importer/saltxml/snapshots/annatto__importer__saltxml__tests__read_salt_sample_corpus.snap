@@ -8,6 +8,7 @@ expression: actual
     <key id="k1" for="node" attr.name="salt::SNAME" attr.type="string"/>
     <key id="k2" for="node" attr.name="annis::doc" attr.type="string"/>
     <key id="k3" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k4" for="node" attr.name="annis::tok" attr.type="string"/>
     <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
         <node id="rootCorpus">
             <data key="k1">rootCorpus</data>
@@ -46,144 +47,188 @@ expression: actual
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok1">
             <data key="k3">node</data>
+            <data key="k4">Is</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok2">
             <data key="k3">node</data>
+            <data key="k4">this</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok3">
             <data key="k3">node</data>
+            <data key="k4">example</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok4">
             <data key="k3">node</data>
+            <data key="k4">more</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok5">
             <data key="k3">node</data>
+            <data key="k4">complicated</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok6">
             <data key="k3">node</data>
+            <data key="k4">than</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok7">
             <data key="k3">node</data>
+            <data key="k4">it</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok8">
             <data key="k3">node</data>
+            <data key="k4">appears</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok9">
             <data key="k3">node</data>
+            <data key="k4">to</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok10">
             <data key="k3">node</data>
+            <data key="k4">be</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok11">
             <data key="k3">node</data>
+            <data key="k4">?</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sText1">
             <data key="k3">datasource</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok1">
             <data key="k3">node</data>
+            <data key="k4">Is</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok2">
             <data key="k3">node</data>
+            <data key="k4">this</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok3">
             <data key="k3">node</data>
+            <data key="k4">example</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok4">
             <data key="k3">node</data>
+            <data key="k4">more</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok5">
             <data key="k3">node</data>
+            <data key="k4">complicated</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok6">
             <data key="k3">node</data>
+            <data key="k4">than</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok7">
             <data key="k3">node</data>
+            <data key="k4">it</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok8">
             <data key="k3">node</data>
+            <data key="k4">appears</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok9">
             <data key="k3">node</data>
+            <data key="k4">to</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok10">
             <data key="k3">node</data>
+            <data key="k4">be</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok11">
             <data key="k3">node</data>
+            <data key="k4">?</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sText1">
             <data key="k3">datasource</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok1">
             <data key="k3">node</data>
+            <data key="k4">Is</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok2">
             <data key="k3">node</data>
+            <data key="k4">this</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok3">
             <data key="k3">node</data>
+            <data key="k4">example</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok4">
             <data key="k3">node</data>
+            <data key="k4">more</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok5">
             <data key="k3">node</data>
+            <data key="k4">complicated</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok6">
             <data key="k3">node</data>
+            <data key="k4">than</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok7">
             <data key="k3">node</data>
+            <data key="k4">it</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok8">
             <data key="k3">node</data>
+            <data key="k4">appears</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok9">
             <data key="k3">node</data>
+            <data key="k4">to</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok10">
             <data key="k3">node</data>
+            <data key="k4">be</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok11">
             <data key="k3">node</data>
+            <data key="k4">?</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sText1">
             <data key="k3">datasource</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok1">
             <data key="k3">node</data>
+            <data key="k4">Is</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok2">
             <data key="k3">node</data>
+            <data key="k4">this</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok3">
             <data key="k3">node</data>
+            <data key="k4">example</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok4">
             <data key="k3">node</data>
+            <data key="k4">more</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok5">
             <data key="k3">node</data>
+            <data key="k4">complicated</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok6">
             <data key="k3">node</data>
+            <data key="k4">than</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok7">
             <data key="k3">node</data>
+            <data key="k4">it</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok8">
             <data key="k3">node</data>
+            <data key="k4">appears</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok9">
             <data key="k3">node</data>
+            <data key="k4">to</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok10">
             <data key="k3">node</data>
+            <data key="k4">be</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok11">
             <data key="k3">node</data>
+            <data key="k4">?</data>
         </node>
         <edge id="e0" source="rootCorpus/subCorpus1" target="rootCorpus" label="PartOf/annis/">
         </edge>
