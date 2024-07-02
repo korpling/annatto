@@ -3,7 +3,7 @@ use std::{
     convert::{TryFrom, TryInto},
 };
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{bail, Context, Result};
 use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
@@ -30,9 +30,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         let doc = roxmltree::Document::parse(input)?;
         let root = doc.root_element();
         if root.tag_name().name() != "SDocumentGraph" {
-            return Err(anyhow!(
-                "SaltXML document file must start with <SDocumentGraph> tag"
-            ));
+            bail!("SaltXML document file must start with <SDocumentGraph> tag");
         }
 
         let nodes = doc
@@ -52,6 +50,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             .children()
             .filter(|n| n.tag_name().name() == "layers")
             .collect_vec();
+
         let mut mapper = DocumentMapper {
             base_texts: BTreeMap::new(),
             nodes,
@@ -99,11 +98,28 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             .collect();
         let tokens = tokens?;
 
-        for (_, t_id) in tokens.iter() {
+        for (token_node, t_id) in tokens.iter() {
             updates.add_event(UpdateEvent::AddNode {
                 node_name: t_id.clone(),
                 node_type: "node".to_string(),
             })?;
+
+            if let Some(layers_attribute) = token_node.attribute("layers") {
+                for layer_ref in layers_attribute.split(' ') {
+                    let layer_node = resolve_element(layer_ref, "layers", &self.layers)
+                        .context("Could not resolve layer")?;
+                    if let Some(SaltObject::Text(layer_name)) =
+                        get_feature_by_qname(&layer_node, "salt", "SNAME")
+                    {
+                        updates.add_event(UpdateEvent::AddNodeLabel {
+                            node_name: t_id.clone(),
+                            anno_ns: ANNIS_NS.to_owned(),
+                            anno_name: "layer".to_owned(),
+                            anno_value: layer_name,
+                        })?;
+                    }
+                }
+            }
         }
 
         // Order textual relations by their start offset, so we iterate in the
