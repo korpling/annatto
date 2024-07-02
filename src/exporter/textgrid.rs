@@ -491,6 +491,7 @@ point_tiers = [
   {ns = "phonetics", name = "pitch_accent"},
   {ns = "phonetics", name = "boundary_tone"}
 ]
+ignore_others = true
 "#;
         let exp: Result<ExportTextGrid, _> = toml::from_str(&toml_str);
         assert!(exp.is_ok());
@@ -502,6 +503,7 @@ point_tiers = [
         assert_eq!(export.point_tiers[0].name.as_str(), "pitch_accent");
         assert_eq!(export.point_tiers[1].ns.as_str(), "phonetics");
         assert_eq!(export.point_tiers[1].name.as_str(), "boundary_tone");
+        assert!(export.ignore_others);
     }
 
     #[test]
