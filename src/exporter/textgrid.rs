@@ -77,22 +77,23 @@ pub struct ExportTextGrid {
     /// ```toml
     /// [export.config]
     /// tier_order = [
-    ///   { ns: "", name: "norm" },
-    ///   { ns: "norm", name: "pos" }
-    ///   { ns: "norm", name: "lemma" }
+    ///   { ns = "", name = "norm" },
+    ///   { ns = "norm", name = "pos" }
+    ///   { ns = "norm", name = "lemma" }
     /// ]
     /// ignore_others = true
     /// ```
     #[serde(default)]
     tier_order: Vec<AnnoKey>,
-    /// Set this attribute to `true` to ignore all annotations whose key is not mentioned in attribute `tier_order`.
+    /// Set this attribute to `true` to ignore all annotations whose key is not mentioned in attribute `tier_order` or `point_tiers`.
     /// Example:
     /// ```toml
     /// [export.config]
+    /// point_tiers = [ { ns = "phonetics", name = "boundary_tone" } ]
     /// tier_order = [
-    ///   { ns: "", name: "norm" },
-    ///   { ns: "norm", name: "pos" }
-    ///   { ns: "norm", name: "lemma" }
+    ///   { ns = "", name = "norm" },
+    ///   { ns = "norm", name = "pos" }
+    ///   { ns = "norm", name = "lemma" }
     /// ]
     /// ignore_others = true    ///
     /// ```
@@ -205,7 +206,9 @@ impl ExportTextGrid {
                 xmax = xmax.max(end);
                 for annotation in node_annos.get_annotations_for_item(&node)? {
                     if annotation.key.ns == ANNIS_NS
-                        || (!self.tier_order.contains(&annotation.key) && self.ignore_others)
+                        || (!self.tier_order.contains(&annotation.key)
+                            && !self.point_tiers.contains(&annotation.key)
+                            && self.ignore_others)
                     {
                         continue;
                     }
@@ -284,6 +287,37 @@ struct TextGrid {
     xmin: f64,
     xmax: f64,
     items: Vec<Tier>,
+}
+
+#[derive(Debug)]
+struct Tier {
+    name: String,
+    entries: Vec<TierEntry>,
+}
+
+#[derive(Debug)]
+enum TierEntry {
+    Interval { xmin: f64, xmax: f64, text: String },
+    Point { number: f64, mark: String },
+}
+
+impl From<(OrderedFloat<f64>, OrderedFloat<f64>, String)> for TierEntry {
+    fn from(value: (OrderedFloat<f64>, OrderedFloat<f64>, String)) -> Self {
+        TierEntry::Interval {
+            xmin: value.0.into_inner(),
+            xmax: value.1.into_inner(),
+            text: value.2,
+        }
+    }
+}
+
+impl From<(OrderedFloat<f64>, String)> for TierEntry {
+    fn from(value: (OrderedFloat<f64>, String)) -> Self {
+        TierEntry::Point {
+            number: value.0.into_inner(),
+            mark: value.1,
+        }
+    }
 }
 
 struct TextGridWriter {
@@ -412,37 +446,6 @@ impl TextGridWriter {
     }
 }
 
-#[derive(Debug)]
-struct Tier {
-    name: String,
-    entries: Vec<TierEntry>,
-}
-
-#[derive(Debug)]
-enum TierEntry {
-    Interval { xmin: f64, xmax: f64, text: String },
-    Point { number: f64, mark: String },
-}
-
-impl From<(OrderedFloat<f64>, OrderedFloat<f64>, String)> for TierEntry {
-    fn from(value: (OrderedFloat<f64>, OrderedFloat<f64>, String)) -> Self {
-        TierEntry::Interval {
-            xmin: value.0.into_inner(),
-            xmax: value.1.into_inner(),
-            text: value.2,
-        }
-    }
-}
-
-impl From<(OrderedFloat<f64>, String)> for TierEntry {
-    fn from(value: (OrderedFloat<f64>, String)) -> Self {
-        TierEntry::Point {
-            number: value.0.into_inner(),
-            mark: value.1,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::path::Path;
@@ -488,6 +491,7 @@ point_tiers = [
   {ns = "phonetics", name = "pitch_accent"},
   {ns = "phonetics", name = "boundary_tone"}
 ]
+ignore_others = true
 "#;
         let exp: Result<ExportTextGrid, _> = toml::from_str(&toml_str);
         assert!(exp.is_ok());
@@ -499,6 +503,7 @@ point_tiers = [
         assert_eq!(export.point_tiers[0].name.as_str(), "pitch_accent");
         assert_eq!(export.point_tiers[1].ns.as_str(), "phonetics");
         assert_eq!(export.point_tiers[1].name.as_str(), "boundary_tone");
+        assert!(export.ignore_others);
     }
 
     #[test]
@@ -637,6 +642,49 @@ point_tiers = [
                     ns: "norm".into(),
                     name: "norm".into(),
                 }],
+                ..Default::default()
+            },
+        );
+        assert!(export.is_ok());
+        dbg!(&export);
+        assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
+    fn ignore_with_point_tiers() {
+        let exmaralda = ImportEXMARaLDA {};
+        let mprt = exmaralda.import_corpus(
+            Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
+            StepID {
+                module_name: "test_import_exb".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(mprt.is_ok());
+        let mut update_import = mprt.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update_import, |_| {}).is_ok());
+        let export = export_to_string(
+            &graph,
+            ExportTextGrid {
+                ignore_others: true,
+                point_tiers: vec![
+                    AnnoKey {
+                        ns: "dipl".into(),
+                        name: "dipl".into(),
+                    },
+                    AnnoKey {
+                        ns: "dipl".into(),
+                        name: "sentence".into(),
+                    },
+                    AnnoKey {
+                        ns: "norm".into(),
+                        name: "norm".into(),
+                    },
+                ],
                 ..Default::default()
             },
         );
