@@ -1,7 +1,10 @@
 use std::{collections::BTreeMap, convert::TryFrom};
 
 use anyhow::{anyhow, Context, Result};
-use graphannis::update::{GraphUpdate, UpdateEvent};
+use graphannis::{
+    model::AnnotationComponentType,
+    update::{GraphUpdate, UpdateEvent},
+};
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use roxmltree::Node;
@@ -99,12 +102,27 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                 node_type: "node".to_string(),
             })?;
         }
-        // Connect the token to the texts by the textual relations
-        for text_rel in self
+
+        // Order textual relations by their start offset, so we iterate in the
+        // actual order of the tokens.
+        let sorted_text_rels: BTreeMap<i64, _> = self
             .edges
             .iter()
             .filter(|n| SaltType::from(**n) == SaltType::TextualRelation)
-        {
+            .map(|text_rel| {
+                let start =
+                    get_feature_by_qname(text_rel, "salt", "SSTART").unwrap_or(SaltObject::Null);
+                if let SaltObject::Integer(start) = start {
+                    (start, *text_rel)
+                } else {
+                    (-1, *text_rel)
+                }
+            })
+            .collect();
+
+        // Connect the token to the texts by the textual relations
+        let mut previous_token = None;
+        for (_, text_rel) in sorted_text_rels {
             let source_att_val = text_rel.attribute("source").unwrap_or_default();
             let token =
                 resolve_element(source_att_val, "nodes", &self.nodes).with_context(|| {
@@ -124,23 +142,32 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                 .base_texts
                 .get(&datasource_id)
                 .with_context(|| format!("Missing base text for token {token_id}"))?;
-            let start_offset =
-                get_feature_by_qname(text_rel, "salt", "SSTART").context("Missing start value")?;
-            let end_offset =
-                get_feature_by_qname(text_rel, "salt", "SEND").context("Missing end value")?;
-            if let (SaltObject::Integer(start), SaltObject::Integer(end)) =
-                (start_offset, end_offset)
-            {
+            let start =
+                get_feature_by_qname(&text_rel, "salt", "SSTART").context("Missing start value")?;
+            let end =
+                get_feature_by_qname(&text_rel, "salt", "SEND").context("Missing end value")?;
+            if let (SaltObject::Integer(start), SaltObject::Integer(end)) = (start, end) {
                 let start = usize::try_from(start)?;
                 let end = usize::try_from(end)?;
                 let covered_text = &matching_base_text[start..end];
                 updates.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: token_id,
+                    node_name: token_id.clone(),
                     anno_ns: ANNIS_NS.to_string(),
                     anno_name: "tok".to_string(),
                     anno_value: covered_text.to_string(),
                 })?;
             }
+            // Add ordering edges between the tokens for the base token layer
+            if let Some(previous_token) = previous_token {
+                updates.add_event(UpdateEvent::AddEdge {
+                    source_node: previous_token,
+                    target_node: token_id.clone(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::Ordering.to_string(),
+                    component_name: "".to_string(),
+                })?;
+            }
+            previous_token = Some(token_id);
 
             // TODO also get whitespace after/before
         }
