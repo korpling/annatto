@@ -1,0 +1,59 @@
+---
+source: src/exporter/textgrid.rs
+expression: export.unwrap()
+---
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0
+xmax = 5.55555
+tiers? <exists>
+size = 3
+item []:
+    item [1]:
+        class = "TextTier"
+        name = "dipl::dipl"
+        xmin = 0
+        xmax = 5.55555
+        points: size = 4
+        points [1]:
+            number = 0
+            mark = "I'm"
+        points [2]:
+            number = 2.22222
+            mark = "in"
+        points [3]:
+            number = 3.33333
+            mark = "New"
+        points [4]:
+            number = 4.44444
+            mark = "York"
+    item [2]:
+        class = "TextTier"
+        name = "norm::norm"
+        xmin = 0
+        xmax = 5.55555
+        points: size = 4
+        points [1]:
+            number = 0
+            mark = "I"
+        points [2]:
+            number = 1.11111
+            mark = "am"
+        points [3]:
+            number = 2.22222
+            mark = "in"
+        points [4]:
+            number = 3.33333
+            mark = "New York"
+    item [3]:
+        class = "TextTier"
+        name = "dipl::sentence"
+        xmin = 0
+        xmax = 5.55555
+        points: size = 1
+        points [1]:
+            number = 0
+            mark = "1"
+
+

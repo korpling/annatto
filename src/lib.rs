@@ -18,7 +18,7 @@ use documented::{Documented, DocumentedFields};
 use error::Result;
 use exporter::{
     exmaralda::ExportExmaralda, graphml::GraphMLExporter, saltxml::SaltXmlExporter,
-    sequence::ExportSequence, xlsx::XlsxExporter, Exporter,
+    sequence::ExportSequence, textgrid::ExportTextGrid, xlsx::XlsxExporter, Exporter,
 };
 use importer::{
     conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
@@ -51,6 +51,7 @@ pub enum WriteAs {
     EXMARaLDA(#[serde(default)] ExportExmaralda),
     SaltXml(#[serde(default)] SaltXmlExporter),
     Sequence(#[serde(default)] ExportSequence),
+    TextGrid(ExportTextGrid), // do not use default, as all attributes have their individual defaults
     Xlsx(#[serde(default)] XlsxExporter),
 }
 
@@ -68,6 +69,7 @@ impl WriteAs {
             WriteAs::EXMARaLDA(m) => m,
             WriteAs::SaltXml(m) => m,
             WriteAs::Sequence(m) => m,
+            WriteAs::TextGrid(m) => m,
             WriteAs::Xlsx(m) => m,
         }
     }
@@ -80,6 +82,7 @@ impl WriteAsDiscriminants {
             WriteAsDiscriminants::EXMARaLDA => ExportExmaralda::DOCS,
             WriteAsDiscriminants::SaltXml => SaltXmlExporter::DOCS,
             WriteAsDiscriminants::Sequence => ExportSequence::DOCS,
+            WriteAsDiscriminants::TextGrid => ExportTextGrid::DOCS,
             WriteAsDiscriminants::Xlsx => XlsxExporter::DOCS,
         }
     }
@@ -102,6 +105,10 @@ impl WriteAsDiscriminants {
             WriteAsDiscriminants::Sequence => (
                 ExportSequence::FIELD_NAMES_AS_SLICE,
                 ExportSequence::FIELD_DOCS,
+            ),
+            WriteAsDiscriminants::TextGrid => (
+                ExportTextGrid::FIELD_NAMES_AS_SLICE,
+                ExportTextGrid::FIELD_DOCS,
             ),
             WriteAsDiscriminants::Xlsx => {
                 (XlsxExporter::FIELD_NAMES_AS_SLICE, XlsxExporter::FIELD_DOCS)

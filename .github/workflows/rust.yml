@@ -9,9 +9,9 @@ jobs:
     name: Format Code
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1.4.4
-      - uses: mbrobbel/rustfmt-check@0.5.0
+      - uses: mbrobbel/rustfmt-check@0.12.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
   static_code_analysis:
@@ -19,10 +19,10 @@ jobs:
     needs: format
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1.4.4
         with:
           components: clippy
-      - uses: actions/checkout@v3
       - name: Check code without default features
         run: cargo check --no-default-features
       - name: Check with clippy with all features enabled
@@ -31,10 +31,11 @@ jobs:
     env:
       RUST_BACKTRACE: 0
     name: Unit tests
-    needs: static_code_analysis
+    needs: format
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1.4.4
-      - uses: actions/checkout@v3
       - name: Run unit tests
         run: cargo test
+
