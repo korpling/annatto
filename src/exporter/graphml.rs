@@ -141,7 +141,7 @@ fn tree_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::err
                             .get_value_for_item(
                                 &random_struct,
                                 &AnnoKey {
-                     ns: ANNIS_NS.into(),
+                                    ns: ANNIS_NS.into(),
                                     name: "layer".into(),
                                 },
                             )?
