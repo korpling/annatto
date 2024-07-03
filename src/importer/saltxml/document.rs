@@ -62,8 +62,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         mapper.map_textual_datasources(updates)?;
         mapper.map_tokens(updates)?;
 
-        mapper.map_spans(updates)?;
-        // TODO map SStructure and SDominanceRelation;
+        mapper.map_non_token_nodes(updates)?;
         // TODO map SPointingRelation
 
         // TODO map STimeline and STimelineRelation
@@ -175,6 +174,17 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             component_type: component_type.to_string(),
             component_name: component_name.clone(),
         })?;
+
+        if component_type == AnnotationComponentType::Dominance {
+            // Also add to the special component with the empty name, which includes all dominance edges from all STypes.
+            updates.add_event(UpdateEvent::AddEdge {
+                source_node: source_id.clone(),
+                target_node: target_id.clone(),
+                layer: ANNIS_NS.to_string(),
+                component_type: component_type.to_string(),
+                component_name: "".to_string(),
+            })?;
+        }
 
         for label_element in get_annotations(rel) {
             let anno_ns = label_element
@@ -310,12 +320,11 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         Ok(())
     }
 
-    fn map_spans(&self, updates: &mut GraphUpdate) -> Result<()> {
-        for span_node in self
-            .nodes
-            .iter()
-            .filter(|n| SaltType::from_node(n) == SaltType::Span)
-        {
+    fn map_non_token_nodes(&self, updates: &mut GraphUpdate) -> Result<()> {
+        for span_node in self.nodes.iter().filter(|n| {
+            let t = SaltType::from_node(n);
+            t == SaltType::Span || t == SaltType::Structure
+        }) {
             self.map_node(span_node, updates)?;
         }
 
@@ -326,6 +335,25 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             .filter(|rel| SaltType::from_node(rel) == SaltType::SpanningRelation)
         {
             self.map_edge(spanning_rel, AnnotationComponentType::Coverage, "", updates)?;
+        }
+        // Add all dominance relations
+        for dominance_rel in self
+            .edges
+            .iter()
+            .filter(|rel| SaltType::from_node(rel) == SaltType::DominanceRelation)
+        {
+            self.map_edge(
+                dominance_rel,
+                AnnotationComponentType::Dominance,
+                "",
+                updates,
+            )?;
+            self.map_edge(
+                dominance_rel,
+                AnnotationComponentType::Dominance,
+                "edge",
+                updates,
+            )?;
         }
         Ok(())
     }

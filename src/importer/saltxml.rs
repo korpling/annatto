@@ -58,19 +58,21 @@ const XSI_NAMESPACE: &str = "http://www.w3.org/2001/XMLSchema-instance";
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum SaltType {
+    Annotation,
     Corpus,
+    CorpusRelation,
     Document,
+    DocumentRelation,
+    DominanceRelation,
     ElementId,
     Feature,
-    Annotation,
-    CorpusRelation,
-    DocumentRelation,
-    TextualRelation,
-    SpanningRelation,
     Layer,
-    Token,
     Span,
+    SpanningRelation,
+    Structure,
     TextualDs,
+    TextualRelation,
+    Token,
     Unknown,
 }
 
@@ -79,19 +81,21 @@ impl SaltType {
         // Use the xsi:type attribute to determine the type
         if let Some(type_id) = n.attribute((XSI_NAMESPACE, "type")) {
             match type_id {
-                "sCorpusStructure:SCorpus" => SaltType::Corpus,
-                "sCorpusStructure:SDocument" => SaltType::Document,
+                "saltCore:SAnnotation" => SaltType::Annotation,
                 "saltCore:SElementId" => SaltType::ElementId,
                 "saltCore:SFeature" => SaltType::Feature,
-                "saltCore:SAnnotation" => SaltType::Annotation,
-                "sCorpusStructure:SCorpusRelation" => SaltType::CorpusRelation,
-                "sCorpusStructure:SCorpusDocumentRelation" => SaltType::DocumentRelation,
-                "sDocumentStructure:STextualRelation" => SaltType::TextualRelation,
-                "sDocumentStructure:SSpanningRelation" => SaltType::SpanningRelation,
                 "saltCore:SLayer" => SaltType::Layer,
-                "sDocumentStructure:SToken" => SaltType::Token,
+                "sCorpusStructure:SCorpus" => SaltType::Corpus,
+                "sCorpusStructure:SCorpusDocumentRelation" => SaltType::DocumentRelation,
+                "sCorpusStructure:SCorpusRelation" => SaltType::CorpusRelation,
+                "sCorpusStructure:SDocument" => SaltType::Document,
+                "sDocumentStructure:SDominanceRelation" => SaltType::DominanceRelation,
                 "sDocumentStructure:SSpan" => SaltType::Span,
+                "sDocumentStructure:SSpanningRelation" => SaltType::SpanningRelation,
+                "sDocumentStructure:SStructure" => SaltType::Structure,
                 "sDocumentStructure:STextualDS" => SaltType::TextualDs,
+                "sDocumentStructure:STextualRelation" => SaltType::TextualRelation,
+                "sDocumentStructure:SToken" => SaltType::Token,
                 _ => SaltType::Unknown,
             }
         } else {
