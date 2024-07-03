@@ -58,7 +58,7 @@ jobs:
         with:
           name: annatto-cli-debug
       - name: Update documentation
-        run: ./target/debug/annatto documentation docs/
+        run: ./annatto documentation docs/
       - name: Commit changed documentation
         uses: stefanzweifel/git-auto-commit-action@v5.0.1
         with:
