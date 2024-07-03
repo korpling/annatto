@@ -57,6 +57,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: annatto-cli-debug
+      - run: chmod +x annatto
       - name: Update documentation
         run: ./annatto documentation docs/
       - name: Commit changed documentation
