@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1.4.4
-      - uses: mbrobbel/rustfmt-check@0.5.0
+      - uses: mbrobbel/rustfmt-check@0.12.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
   static_code_analysis:
@@ -31,10 +31,27 @@ jobs:
     env:
       RUST_BACKTRACE: 0
     name: Unit tests
-    needs: static_code_analysis
+    needs: format
     runs-on: ubuntu-latest
     steps:
       - uses: actions-rust-lang/setup-rust-toolchain@v1.4.4
       - uses: actions/checkout@v4
       - name: Run unit tests
         run: cargo test
+  module_doc:
+    name: Create module documentation
+    runs-on: ubuntu-latest
+    needs: [format, static_code_analysis, unit-tests]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1.4.4
+      - name: Compile CLI
+        run: cargo build
+      - name: Update documentation
+        run: ./target/debug/annatto documentation docs/
+      - name: Commit changed documentation
+        uses: stefanzweifel/git-auto-commit-action@v5.0.1
+        with:
+          file_pattern: "docs/*"
+          commit_message: Updating module documentation
+
