@@ -47,7 +47,7 @@ impl SaltCorpusStructureMapper {
                 .collect_vec();
 
             for node in nodes.iter() {
-                let salt_type = SaltType::from(*node);
+                let salt_type = SaltType::from_node(node);
                 match salt_type {
                     SaltType::Corpus | SaltType::Document => {
                         // Get the element ID from the label
@@ -102,7 +102,7 @@ impl SaltCorpusStructureMapper {
 
             // Add a PartOf Edge between parent corpora and the sub-corpora/documents
             for e in cg.children().filter(|n| n.tag_name().name() == "edges") {
-                match SaltType::from(e) {
+                match SaltType::from_node(&e) {
                     SaltType::CorpusRelation | SaltType::DocumentRelation => {
                         let source_ref = e.attribute("source").unwrap_or_default();
                         let target_ref = e.attribute("target").unwrap_or_default();

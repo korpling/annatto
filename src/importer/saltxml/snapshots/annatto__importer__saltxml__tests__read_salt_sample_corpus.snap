@@ -4,495 +4,644 @@ expression: actual
 ---
 <?xml version="1.0" encoding="UTF-8"?>
 <graphml>
-    <key id="k0" for="node" attr.name="salt::SDOCUMENT_GRAPH_LOCATION" attr.type="string"/>
-    <key id="k1" for="node" attr.name="salt::SNAME" attr.type="string"/>
-    <key id="k2" for="node" attr.name="annis::doc" attr.type="string"/>
-    <key id="k3" for="node" attr.name="annis::layer" attr.type="string"/>
-    <key id="k4" for="node" attr.name="salt::lemma" attr.type="string"/>
-    <key id="k5" for="node" attr.name="annis::node_type" attr.type="string"/>
-    <key id="k6" for="node" attr.name="salt::pos" attr.type="string"/>
-    <key id="k7" for="node" attr.name="annis::tok" attr.type="string"/>
-    <key id="k8" for="node" attr.name="annis::tok-whitespace-after" attr.type="string"/>
+    <key id="k0" for="node" attr.name="Inf-Struct" attr.type="string"/>
+    <key id="k1" for="node" attr.name="salt::SDOCUMENT_GRAPH_LOCATION" attr.type="string"/>
+    <key id="k2" for="node" attr.name="salt::SNAME" attr.type="string"/>
+    <key id="k3" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k4" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k5" for="node" attr.name="salt::lemma" attr.type="string"/>
+    <key id="k6" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k7" for="node" attr.name="salt::pos" attr.type="string"/>
+    <key id="k8" for="node" attr.name="annis::tok" attr.type="string"/>
+    <key id="k9" for="node" attr.name="annis::tok-whitespace-after" attr.type="string"/>
     <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
         <node id="rootCorpus">
-            <data key="k1">rootCorpus</data>
-            <data key="k5">corpus</data>
+            <data key="k2">rootCorpus</data>
+            <data key="k6">corpus</data>
         </node>
         <node id="rootCorpus/subCorpus1">
-            <data key="k1">subCorpus1</data>
-            <data key="k5">corpus</data>
+            <data key="k2">subCorpus1</data>
+            <data key="k6">corpus</data>
         </node>
         <node id="rootCorpus/subCorpus2">
-            <data key="k1">subCorpus2</data>
-            <data key="k5">corpus</data>
+            <data key="k2">subCorpus2</data>
+            <data key="k6">corpus</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1">
-            <data key="k0">file:/home/thomas/korpora/SaltSampleCorpus/rootCorpus/subCorpus1/doc1.salt</data>
-            <data key="k2">doc1</data>
-            <data key="k5">corpus</data>
+            <data key="k1">file:/home/thomas/korpora/SaltSampleCorpus/rootCorpus/subCorpus1/doc1.salt</data>
+            <data key="k3">doc1</data>
+            <data key="k6">corpus</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2">
-            <data key="k0">file:/home/thomas/korpora/SaltSampleCorpus/rootCorpus/subCorpus1/doc2.salt</data>
-            <data key="k2">doc2</data>
-            <data key="k5">corpus</data>
+            <data key="k1">file:/home/thomas/korpora/SaltSampleCorpus/rootCorpus/subCorpus1/doc2.salt</data>
+            <data key="k3">doc2</data>
+            <data key="k6">corpus</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3">
-            <data key="k0">file:/home/thomas/korpora/SaltSampleCorpus/rootCorpus/subCorpus2/doc3.salt</data>
-            <data key="k2">doc3</data>
-            <data key="k5">corpus</data>
+            <data key="k1">file:/home/thomas/korpora/SaltSampleCorpus/rootCorpus/subCorpus2/doc3.salt</data>
+            <data key="k3">doc3</data>
+            <data key="k6">corpus</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4">
-            <data key="k0">file:/home/thomas/korpora/SaltSampleCorpus/rootCorpus/subCorpus2/doc4.salt</data>
-            <data key="k2">doc4</data>
-            <data key="k5">corpus</data>
+            <data key="k1">file:/home/thomas/korpora/SaltSampleCorpus/rootCorpus/subCorpus2/doc4.salt</data>
+            <data key="k3">doc4</data>
+            <data key="k6">corpus</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sText1">
-            <data key="k5">datasource</data>
+            <data key="k6">datasource</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok1">
-            <data key="k3">morphology</data>
-            <data key="k4">be</data>
-            <data key="k5">node</data>
-            <data key="k6">VBZ</data>
-            <data key="k7">Is</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">be</data>
+            <data key="k6">node</data>
+            <data key="k7">VBZ</data>
+            <data key="k8">Is</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok2">
-            <data key="k3">morphology</data>
-            <data key="k4">this</data>
-            <data key="k5">node</data>
-            <data key="k6">DT</data>
-            <data key="k7">this</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">this</data>
+            <data key="k6">node</data>
+            <data key="k7">DT</data>
+            <data key="k8">this</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok3">
-            <data key="k3">morphology</data>
-            <data key="k4">example</data>
-            <data key="k5">node</data>
-            <data key="k6">NN</data>
-            <data key="k7">example</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">example</data>
+            <data key="k6">node</data>
+            <data key="k7">NN</data>
+            <data key="k8">example</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok4">
-            <data key="k3">morphology</data>
-            <data key="k4">more</data>
-            <data key="k5">node</data>
-            <data key="k6">RBR</data>
-            <data key="k7">more</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">more</data>
+            <data key="k6">node</data>
+            <data key="k7">RBR</data>
+            <data key="k8">more</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok5">
-            <data key="k3">morphology</data>
-            <data key="k4">complicated</data>
-            <data key="k5">node</data>
-            <data key="k6">JJ</data>
-            <data key="k7">complicated</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">complicated</data>
+            <data key="k6">node</data>
+            <data key="k7">JJ</data>
+            <data key="k8">complicated</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok6">
-            <data key="k3">morphology</data>
-            <data key="k4">than</data>
-            <data key="k5">node</data>
-            <data key="k6">IN</data>
-            <data key="k7">than</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">than</data>
+            <data key="k6">node</data>
+            <data key="k7">IN</data>
+            <data key="k8">than</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok7">
-            <data key="k3">morphology</data>
-            <data key="k4">it</data>
-            <data key="k5">node</data>
-            <data key="k6">PRP</data>
-            <data key="k7">it</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">it</data>
+            <data key="k6">node</data>
+            <data key="k7">PRP</data>
+            <data key="k8">it</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok8">
-            <data key="k3">morphology</data>
-            <data key="k4">appear</data>
-            <data key="k5">node</data>
-            <data key="k6">VBZ</data>
-            <data key="k7">appears</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">appear</data>
+            <data key="k6">node</data>
+            <data key="k7">VBZ</data>
+            <data key="k8">appears</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok9">
-            <data key="k3">morphology</data>
-            <data key="k4">to</data>
-            <data key="k5">node</data>
-            <data key="k6">TO</data>
-            <data key="k7">to</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">to</data>
+            <data key="k6">node</data>
+            <data key="k7">TO</data>
+            <data key="k8">to</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok10">
-            <data key="k3">morphology</data>
-            <data key="k4">be</data>
-            <data key="k5">node</data>
-            <data key="k6">VB</data>
-            <data key="k7">be</data>
+            <data key="k4">morphology</data>
+            <data key="k5">be</data>
+            <data key="k6">node</data>
+            <data key="k7">VB</data>
+            <data key="k8">be</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok11">
-            <data key="k3">morphology</data>
-            <data key="k4">?</data>
-            <data key="k5">node</data>
-            <data key="k6">.</data>
-            <data key="k7">?</data>
+            <data key="k4">morphology</data>
+            <data key="k5">?</data>
+            <data key="k6">node</data>
+            <data key="k7">.</data>
+            <data key="k8">?</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc1#IS_span1">
+            <data key="k0">contrast-focus</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc1#IS_span2">
+            <data key="k0">topic</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc1#sSpan3">
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sText1">
-            <data key="k5">datasource</data>
+            <data key="k6">datasource</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok1">
-            <data key="k3">morphology</data>
-            <data key="k4">be</data>
-            <data key="k5">node</data>
-            <data key="k6">VBZ</data>
-            <data key="k7">Is</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">be</data>
+            <data key="k6">node</data>
+            <data key="k7">VBZ</data>
+            <data key="k8">Is</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok2">
-            <data key="k3">morphology</data>
-            <data key="k4">this</data>
-            <data key="k5">node</data>
-            <data key="k6">DT</data>
-            <data key="k7">this</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">this</data>
+            <data key="k6">node</data>
+            <data key="k7">DT</data>
+            <data key="k8">this</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok3">
-            <data key="k3">morphology</data>
-            <data key="k4">example</data>
-            <data key="k5">node</data>
-            <data key="k6">NN</data>
-            <data key="k7">example</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">example</data>
+            <data key="k6">node</data>
+            <data key="k7">NN</data>
+            <data key="k8">example</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok4">
-            <data key="k3">morphology</data>
-            <data key="k4">more</data>
-            <data key="k5">node</data>
-            <data key="k6">RBR</data>
-            <data key="k7">more</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">more</data>
+            <data key="k6">node</data>
+            <data key="k7">RBR</data>
+            <data key="k8">more</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok5">
-            <data key="k3">morphology</data>
-            <data key="k4">complicated</data>
-            <data key="k5">node</data>
-            <data key="k6">JJ</data>
-            <data key="k7">complicated</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">complicated</data>
+            <data key="k6">node</data>
+            <data key="k7">JJ</data>
+            <data key="k8">complicated</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok6">
-            <data key="k3">morphology</data>
-            <data key="k4">than</data>
-            <data key="k5">node</data>
-            <data key="k6">IN</data>
-            <data key="k7">than</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">than</data>
+            <data key="k6">node</data>
+            <data key="k7">IN</data>
+            <data key="k8">than</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok7">
-            <data key="k3">morphology</data>
-            <data key="k4">it</data>
-            <data key="k5">node</data>
-            <data key="k6">PRP</data>
-            <data key="k7">it</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">it</data>
+            <data key="k6">node</data>
+            <data key="k7">PRP</data>
+            <data key="k8">it</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok8">
-            <data key="k3">morphology</data>
-            <data key="k4">appear</data>
-            <data key="k5">node</data>
-            <data key="k6">VBZ</data>
-            <data key="k7">appears</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">appear</data>
+            <data key="k6">node</data>
+            <data key="k7">VBZ</data>
+            <data key="k8">appears</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok9">
-            <data key="k3">morphology</data>
-            <data key="k4">to</data>
-            <data key="k5">node</data>
-            <data key="k6">TO</data>
-            <data key="k7">to</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">to</data>
+            <data key="k6">node</data>
+            <data key="k7">TO</data>
+            <data key="k8">to</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok10">
-            <data key="k3">morphology</data>
-            <data key="k4">be</data>
-            <data key="k5">node</data>
-            <data key="k6">VB</data>
-            <data key="k7">be</data>
+            <data key="k4">morphology</data>
+            <data key="k5">be</data>
+            <data key="k6">node</data>
+            <data key="k7">VB</data>
+            <data key="k8">be</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok11">
-            <data key="k3">morphology</data>
-            <data key="k4">?</data>
-            <data key="k5">node</data>
-            <data key="k6">.</data>
-            <data key="k7">?</data>
+            <data key="k4">morphology</data>
+            <data key="k5">?</data>
+            <data key="k6">node</data>
+            <data key="k7">.</data>
+            <data key="k8">?</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc2#IS_span1">
+            <data key="k0">contrast-focus</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc2#IS_span2">
+            <data key="k0">topic</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc2#sSpan3">
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sText1">
-            <data key="k5">datasource</data>
+            <data key="k6">datasource</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok1">
-            <data key="k3">morphology</data>
-            <data key="k4">be</data>
-            <data key="k5">node</data>
-            <data key="k6">VBZ</data>
-            <data key="k7">Is</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">be</data>
+            <data key="k6">node</data>
+            <data key="k7">VBZ</data>
+            <data key="k8">Is</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok2">
-            <data key="k3">morphology</data>
-            <data key="k4">this</data>
-            <data key="k5">node</data>
-            <data key="k6">DT</data>
-            <data key="k7">this</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">this</data>
+            <data key="k6">node</data>
+            <data key="k7">DT</data>
+            <data key="k8">this</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok3">
-            <data key="k3">morphology</data>
-            <data key="k4">example</data>
-            <data key="k5">node</data>
-            <data key="k6">NN</data>
-            <data key="k7">example</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">example</data>
+            <data key="k6">node</data>
+            <data key="k7">NN</data>
+            <data key="k8">example</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok4">
-            <data key="k3">morphology</data>
-            <data key="k4">more</data>
-            <data key="k5">node</data>
-            <data key="k6">RBR</data>
-            <data key="k7">more</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">more</data>
+            <data key="k6">node</data>
+            <data key="k7">RBR</data>
+            <data key="k8">more</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok5">
-            <data key="k3">morphology</data>
-            <data key="k4">complicated</data>
-            <data key="k5">node</data>
-            <data key="k6">JJ</data>
-            <data key="k7">complicated</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">complicated</data>
+            <data key="k6">node</data>
+            <data key="k7">JJ</data>
+            <data key="k8">complicated</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok6">
-            <data key="k3">morphology</data>
-            <data key="k4">than</data>
-            <data key="k5">node</data>
-            <data key="k6">IN</data>
-            <data key="k7">than</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">than</data>
+            <data key="k6">node</data>
+            <data key="k7">IN</data>
+            <data key="k8">than</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok7">
-            <data key="k3">morphology</data>
-            <data key="k4">it</data>
-            <data key="k5">node</data>
-            <data key="k6">PRP</data>
-            <data key="k7">it</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">it</data>
+            <data key="k6">node</data>
+            <data key="k7">PRP</data>
+            <data key="k8">it</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok8">
-            <data key="k3">morphology</data>
-            <data key="k4">appear</data>
-            <data key="k5">node</data>
-            <data key="k6">VBZ</data>
-            <data key="k7">appears</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">appear</data>
+            <data key="k6">node</data>
+            <data key="k7">VBZ</data>
+            <data key="k8">appears</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok9">
-            <data key="k3">morphology</data>
-            <data key="k4">to</data>
-            <data key="k5">node</data>
-            <data key="k6">TO</data>
-            <data key="k7">to</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">to</data>
+            <data key="k6">node</data>
+            <data key="k7">TO</data>
+            <data key="k8">to</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok10">
-            <data key="k3">morphology</data>
-            <data key="k4">be</data>
-            <data key="k5">node</data>
-            <data key="k6">VB</data>
-            <data key="k7">be</data>
+            <data key="k4">morphology</data>
+            <data key="k5">be</data>
+            <data key="k6">node</data>
+            <data key="k7">VB</data>
+            <data key="k8">be</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok11">
-            <data key="k3">morphology</data>
-            <data key="k4">?</data>
-            <data key="k5">node</data>
-            <data key="k6">.</data>
-            <data key="k7">?</data>
+            <data key="k4">morphology</data>
+            <data key="k5">?</data>
+            <data key="k6">node</data>
+            <data key="k7">.</data>
+            <data key="k8">?</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc3#IS_span1">
+            <data key="k0">contrast-focus</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc3#IS_span2">
+            <data key="k0">topic</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc3#sSpan3">
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sText1">
-            <data key="k5">datasource</data>
+            <data key="k6">datasource</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok1">
-            <data key="k3">morphology</data>
-            <data key="k4">be</data>
-            <data key="k5">node</data>
-            <data key="k6">VBZ</data>
-            <data key="k7">Is</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">be</data>
+            <data key="k6">node</data>
+            <data key="k7">VBZ</data>
+            <data key="k8">Is</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok2">
-            <data key="k3">morphology</data>
-            <data key="k4">this</data>
-            <data key="k5">node</data>
-            <data key="k6">DT</data>
-            <data key="k7">this</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">this</data>
+            <data key="k6">node</data>
+            <data key="k7">DT</data>
+            <data key="k8">this</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok3">
-            <data key="k3">morphology</data>
-            <data key="k4">example</data>
-            <data key="k5">node</data>
-            <data key="k6">NN</data>
-            <data key="k7">example</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">example</data>
+            <data key="k6">node</data>
+            <data key="k7">NN</data>
+            <data key="k8">example</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok4">
-            <data key="k3">morphology</data>
-            <data key="k4">more</data>
-            <data key="k5">node</data>
-            <data key="k6">RBR</data>
-            <data key="k7">more</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">more</data>
+            <data key="k6">node</data>
+            <data key="k7">RBR</data>
+            <data key="k8">more</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok5">
-            <data key="k3">morphology</data>
-            <data key="k4">complicated</data>
-            <data key="k5">node</data>
-            <data key="k6">JJ</data>
-            <data key="k7">complicated</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">complicated</data>
+            <data key="k6">node</data>
+            <data key="k7">JJ</data>
+            <data key="k8">complicated</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok6">
-            <data key="k3">morphology</data>
-            <data key="k4">than</data>
-            <data key="k5">node</data>
-            <data key="k6">IN</data>
-            <data key="k7">than</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">than</data>
+            <data key="k6">node</data>
+            <data key="k7">IN</data>
+            <data key="k8">than</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok7">
-            <data key="k3">morphology</data>
-            <data key="k4">it</data>
-            <data key="k5">node</data>
-            <data key="k6">PRP</data>
-            <data key="k7">it</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">it</data>
+            <data key="k6">node</data>
+            <data key="k7">PRP</data>
+            <data key="k8">it</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok8">
-            <data key="k3">morphology</data>
-            <data key="k4">appear</data>
-            <data key="k5">node</data>
-            <data key="k6">VBZ</data>
-            <data key="k7">appears</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">appear</data>
+            <data key="k6">node</data>
+            <data key="k7">VBZ</data>
+            <data key="k8">appears</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok9">
-            <data key="k3">morphology</data>
-            <data key="k4">to</data>
-            <data key="k5">node</data>
-            <data key="k6">TO</data>
-            <data key="k7">to</data>
-            <data key="k8"> </data>
+            <data key="k4">morphology</data>
+            <data key="k5">to</data>
+            <data key="k6">node</data>
+            <data key="k7">TO</data>
+            <data key="k8">to</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok10">
-            <data key="k3">morphology</data>
-            <data key="k4">be</data>
-            <data key="k5">node</data>
-            <data key="k6">VB</data>
-            <data key="k7">be</data>
+            <data key="k4">morphology</data>
+            <data key="k5">be</data>
+            <data key="k6">node</data>
+            <data key="k7">VB</data>
+            <data key="k8">be</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok11">
-            <data key="k3">morphology</data>
-            <data key="k4">?</data>
-            <data key="k5">node</data>
-            <data key="k6">.</data>
-            <data key="k7">?</data>
+            <data key="k4">morphology</data>
+            <data key="k5">?</data>
+            <data key="k6">node</data>
+            <data key="k7">.</data>
+            <data key="k8">?</data>
         </node>
-        <edge id="e0" source="rootCorpus/subCorpus1/doc1#sTok1" target="rootCorpus/subCorpus1/doc1#sTok2" label="Ordering/annis/">
+        <node id="rootCorpus/subCorpus2/doc4#IS_span1">
+            <data key="k0">contrast-focus</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc4#IS_span2">
+            <data key="k0">topic</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc4#sSpan3">
+            <data key="k6">node</data>
+        </node>
+        <edge id="e0" source="rootCorpus/subCorpus1/doc1#IS_span1" target="rootCorpus/subCorpus1/doc1#sTok1" label="Coverage/default_ns/">
         </edge>
-        <edge id="e1" source="rootCorpus/subCorpus1/doc1#sTok2" target="rootCorpus/subCorpus1/doc1#sTok3" label="Ordering/annis/">
+        <edge id="e1" source="rootCorpus/subCorpus1/doc1#IS_span2" target="rootCorpus/subCorpus1/doc1#sTok2" label="Coverage/default_ns/">
         </edge>
-        <edge id="e2" source="rootCorpus/subCorpus1/doc1#sTok3" target="rootCorpus/subCorpus1/doc1#sTok4" label="Ordering/annis/">
+        <edge id="e2" source="rootCorpus/subCorpus1/doc1#IS_span2" target="rootCorpus/subCorpus1/doc1#sTok3" label="Coverage/default_ns/">
         </edge>
-        <edge id="e3" source="rootCorpus/subCorpus1/doc1#sTok4" target="rootCorpus/subCorpus1/doc1#sTok5" label="Ordering/annis/">
+        <edge id="e3" source="rootCorpus/subCorpus1/doc1#IS_span2" target="rootCorpus/subCorpus1/doc1#sTok4" label="Coverage/default_ns/">
         </edge>
-        <edge id="e4" source="rootCorpus/subCorpus1/doc1#sTok5" target="rootCorpus/subCorpus1/doc1#sTok6" label="Ordering/annis/">
+        <edge id="e4" source="rootCorpus/subCorpus1/doc1#IS_span2" target="rootCorpus/subCorpus1/doc1#sTok5" label="Coverage/default_ns/">
         </edge>
-        <edge id="e5" source="rootCorpus/subCorpus1/doc1#sTok6" target="rootCorpus/subCorpus1/doc1#sTok7" label="Ordering/annis/">
+        <edge id="e5" source="rootCorpus/subCorpus1/doc1#IS_span2" target="rootCorpus/subCorpus1/doc1#sTok6" label="Coverage/default_ns/">
         </edge>
-        <edge id="e6" source="rootCorpus/subCorpus1/doc1#sTok7" target="rootCorpus/subCorpus1/doc1#sTok8" label="Ordering/annis/">
+        <edge id="e6" source="rootCorpus/subCorpus1/doc1#IS_span2" target="rootCorpus/subCorpus1/doc1#sTok7" label="Coverage/default_ns/">
         </edge>
-        <edge id="e7" source="rootCorpus/subCorpus1/doc1#sTok8" target="rootCorpus/subCorpus1/doc1#sTok9" label="Ordering/annis/">
+        <edge id="e7" source="rootCorpus/subCorpus1/doc1#IS_span2" target="rootCorpus/subCorpus1/doc1#sTok8" label="Coverage/default_ns/">
         </edge>
-        <edge id="e8" source="rootCorpus/subCorpus1/doc1#sTok9" target="rootCorpus/subCorpus1/doc1#sTok10" label="Ordering/annis/">
+        <edge id="e8" source="rootCorpus/subCorpus1/doc1#IS_span2" target="rootCorpus/subCorpus1/doc1#sTok9" label="Coverage/default_ns/">
         </edge>
-        <edge id="e9" source="rootCorpus/subCorpus1/doc1#sTok10" target="rootCorpus/subCorpus1/doc1#sTok11" label="Ordering/annis/">
+        <edge id="e9" source="rootCorpus/subCorpus1/doc1#IS_span2" target="rootCorpus/subCorpus1/doc1#sTok10" label="Coverage/default_ns/">
         </edge>
-        <edge id="e10" source="rootCorpus/subCorpus1/doc2#sTok1" target="rootCorpus/subCorpus1/doc2#sTok2" label="Ordering/annis/">
+        <edge id="e10" source="rootCorpus/subCorpus1/doc1#IS_span2" target="rootCorpus/subCorpus1/doc1#sTok11" label="Coverage/default_ns/">
         </edge>
-        <edge id="e11" source="rootCorpus/subCorpus1/doc2#sTok2" target="rootCorpus/subCorpus1/doc2#sTok3" label="Ordering/annis/">
+        <edge id="e11" source="rootCorpus/subCorpus1/doc1#sSpan3" target="rootCorpus/subCorpus1/doc1#sTok2" label="Coverage/default_ns/">
         </edge>
-        <edge id="e12" source="rootCorpus/subCorpus1/doc2#sTok3" target="rootCorpus/subCorpus1/doc2#sTok4" label="Ordering/annis/">
+        <edge id="e12" source="rootCorpus/subCorpus1/doc1#sSpan3" target="rootCorpus/subCorpus1/doc1#sTok3" label="Coverage/default_ns/">
         </edge>
-        <edge id="e13" source="rootCorpus/subCorpus1/doc2#sTok4" target="rootCorpus/subCorpus1/doc2#sTok5" label="Ordering/annis/">
+        <edge id="e13" source="rootCorpus/subCorpus1/doc2#IS_span1" target="rootCorpus/subCorpus1/doc2#sTok1" label="Coverage/default_ns/">
         </edge>
-        <edge id="e14" source="rootCorpus/subCorpus1/doc2#sTok5" target="rootCorpus/subCorpus1/doc2#sTok6" label="Ordering/annis/">
+        <edge id="e14" source="rootCorpus/subCorpus1/doc2#IS_span2" target="rootCorpus/subCorpus1/doc2#sTok2" label="Coverage/default_ns/">
         </edge>
-        <edge id="e15" source="rootCorpus/subCorpus1/doc2#sTok6" target="rootCorpus/subCorpus1/doc2#sTok7" label="Ordering/annis/">
+        <edge id="e15" source="rootCorpus/subCorpus1/doc2#IS_span2" target="rootCorpus/subCorpus1/doc2#sTok3" label="Coverage/default_ns/">
         </edge>
-        <edge id="e16" source="rootCorpus/subCorpus1/doc2#sTok7" target="rootCorpus/subCorpus1/doc2#sTok8" label="Ordering/annis/">
+        <edge id="e16" source="rootCorpus/subCorpus1/doc2#IS_span2" target="rootCorpus/subCorpus1/doc2#sTok4" label="Coverage/default_ns/">
         </edge>
-        <edge id="e17" source="rootCorpus/subCorpus1/doc2#sTok8" target="rootCorpus/subCorpus1/doc2#sTok9" label="Ordering/annis/">
+        <edge id="e17" source="rootCorpus/subCorpus1/doc2#IS_span2" target="rootCorpus/subCorpus1/doc2#sTok5" label="Coverage/default_ns/">
         </edge>
-        <edge id="e18" source="rootCorpus/subCorpus1/doc2#sTok9" target="rootCorpus/subCorpus1/doc2#sTok10" label="Ordering/annis/">
+        <edge id="e18" source="rootCorpus/subCorpus1/doc2#IS_span2" target="rootCorpus/subCorpus1/doc2#sTok6" label="Coverage/default_ns/">
         </edge>
-        <edge id="e19" source="rootCorpus/subCorpus1/doc2#sTok10" target="rootCorpus/subCorpus1/doc2#sTok11" label="Ordering/annis/">
+        <edge id="e19" source="rootCorpus/subCorpus1/doc2#IS_span2" target="rootCorpus/subCorpus1/doc2#sTok7" label="Coverage/default_ns/">
         </edge>
-        <edge id="e20" source="rootCorpus/subCorpus2/doc3#sTok1" target="rootCorpus/subCorpus2/doc3#sTok2" label="Ordering/annis/">
+        <edge id="e20" source="rootCorpus/subCorpus1/doc2#IS_span2" target="rootCorpus/subCorpus1/doc2#sTok8" label="Coverage/default_ns/">
         </edge>
-        <edge id="e21" source="rootCorpus/subCorpus2/doc3#sTok2" target="rootCorpus/subCorpus2/doc3#sTok3" label="Ordering/annis/">
+        <edge id="e21" source="rootCorpus/subCorpus1/doc2#IS_span2" target="rootCorpus/subCorpus1/doc2#sTok9" label="Coverage/default_ns/">
         </edge>
-        <edge id="e22" source="rootCorpus/subCorpus2/doc3#sTok3" target="rootCorpus/subCorpus2/doc3#sTok4" label="Ordering/annis/">
+        <edge id="e22" source="rootCorpus/subCorpus1/doc2#IS_span2" target="rootCorpus/subCorpus1/doc2#sTok10" label="Coverage/default_ns/">
         </edge>
-        <edge id="e23" source="rootCorpus/subCorpus2/doc3#sTok4" target="rootCorpus/subCorpus2/doc3#sTok5" label="Ordering/annis/">
+        <edge id="e23" source="rootCorpus/subCorpus1/doc2#IS_span2" target="rootCorpus/subCorpus1/doc2#sTok11" label="Coverage/default_ns/">
         </edge>
-        <edge id="e24" source="rootCorpus/subCorpus2/doc3#sTok5" target="rootCorpus/subCorpus2/doc3#sTok6" label="Ordering/annis/">
+        <edge id="e24" source="rootCorpus/subCorpus1/doc2#sSpan3" target="rootCorpus/subCorpus1/doc2#sTok2" label="Coverage/default_ns/">
         </edge>
-        <edge id="e25" source="rootCorpus/subCorpus2/doc3#sTok6" target="rootCorpus/subCorpus2/doc3#sTok7" label="Ordering/annis/">
+        <edge id="e25" source="rootCorpus/subCorpus1/doc2#sSpan3" target="rootCorpus/subCorpus1/doc2#sTok3" label="Coverage/default_ns/">
         </edge>
-        <edge id="e26" source="rootCorpus/subCorpus2/doc3#sTok7" target="rootCorpus/subCorpus2/doc3#sTok8" label="Ordering/annis/">
+        <edge id="e26" source="rootCorpus/subCorpus2/doc3#IS_span1" target="rootCorpus/subCorpus2/doc3#sTok1" label="Coverage/default_ns/">
         </edge>
-        <edge id="e27" source="rootCorpus/subCorpus2/doc3#sTok8" target="rootCorpus/subCorpus2/doc3#sTok9" label="Ordering/annis/">
+        <edge id="e27" source="rootCorpus/subCorpus2/doc3#IS_span2" target="rootCorpus/subCorpus2/doc3#sTok2" label="Coverage/default_ns/">
         </edge>
-        <edge id="e28" source="rootCorpus/subCorpus2/doc3#sTok9" target="rootCorpus/subCorpus2/doc3#sTok10" label="Ordering/annis/">
+        <edge id="e28" source="rootCorpus/subCorpus2/doc3#IS_span2" target="rootCorpus/subCorpus2/doc3#sTok3" label="Coverage/default_ns/">
         </edge>
-        <edge id="e29" source="rootCorpus/subCorpus2/doc3#sTok10" target="rootCorpus/subCorpus2/doc3#sTok11" label="Ordering/annis/">
+        <edge id="e29" source="rootCorpus/subCorpus2/doc3#IS_span2" target="rootCorpus/subCorpus2/doc3#sTok4" label="Coverage/default_ns/">
         </edge>
-        <edge id="e30" source="rootCorpus/subCorpus2/doc4#sTok1" target="rootCorpus/subCorpus2/doc4#sTok2" label="Ordering/annis/">
+        <edge id="e30" source="rootCorpus/subCorpus2/doc3#IS_span2" target="rootCorpus/subCorpus2/doc3#sTok5" label="Coverage/default_ns/">
         </edge>
-        <edge id="e31" source="rootCorpus/subCorpus2/doc4#sTok2" target="rootCorpus/subCorpus2/doc4#sTok3" label="Ordering/annis/">
+        <edge id="e31" source="rootCorpus/subCorpus2/doc3#IS_span2" target="rootCorpus/subCorpus2/doc3#sTok6" label="Coverage/default_ns/">
         </edge>
-        <edge id="e32" source="rootCorpus/subCorpus2/doc4#sTok3" target="rootCorpus/subCorpus2/doc4#sTok4" label="Ordering/annis/">
+        <edge id="e32" source="rootCorpus/subCorpus2/doc3#IS_span2" target="rootCorpus/subCorpus2/doc3#sTok7" label="Coverage/default_ns/">
         </edge>
-        <edge id="e33" source="rootCorpus/subCorpus2/doc4#sTok4" target="rootCorpus/subCorpus2/doc4#sTok5" label="Ordering/annis/">
+        <edge id="e33" source="rootCorpus/subCorpus2/doc3#IS_span2" target="rootCorpus/subCorpus2/doc3#sTok8" label="Coverage/default_ns/">
         </edge>
-        <edge id="e34" source="rootCorpus/subCorpus2/doc4#sTok5" target="rootCorpus/subCorpus2/doc4#sTok6" label="Ordering/annis/">
+        <edge id="e34" source="rootCorpus/subCorpus2/doc3#IS_span2" target="rootCorpus/subCorpus2/doc3#sTok9" label="Coverage/default_ns/">
         </edge>
-        <edge id="e35" source="rootCorpus/subCorpus2/doc4#sTok6" target="rootCorpus/subCorpus2/doc4#sTok7" label="Ordering/annis/">
+        <edge id="e35" source="rootCorpus/subCorpus2/doc3#IS_span2" target="rootCorpus/subCorpus2/doc3#sTok10" label="Coverage/default_ns/">
         </edge>
-        <edge id="e36" source="rootCorpus/subCorpus2/doc4#sTok7" target="rootCorpus/subCorpus2/doc4#sTok8" label="Ordering/annis/">
+        <edge id="e36" source="rootCorpus/subCorpus2/doc3#IS_span2" target="rootCorpus/subCorpus2/doc3#sTok11" label="Coverage/default_ns/">
         </edge>
-        <edge id="e37" source="rootCorpus/subCorpus2/doc4#sTok8" target="rootCorpus/subCorpus2/doc4#sTok9" label="Ordering/annis/">
+        <edge id="e37" source="rootCorpus/subCorpus2/doc3#sSpan3" target="rootCorpus/subCorpus2/doc3#sTok2" label="Coverage/default_ns/">
         </edge>
-        <edge id="e38" source="rootCorpus/subCorpus2/doc4#sTok9" target="rootCorpus/subCorpus2/doc4#sTok10" label="Ordering/annis/">
+        <edge id="e38" source="rootCorpus/subCorpus2/doc3#sSpan3" target="rootCorpus/subCorpus2/doc3#sTok3" label="Coverage/default_ns/">
         </edge>
-        <edge id="e39" source="rootCorpus/subCorpus2/doc4#sTok10" target="rootCorpus/subCorpus2/doc4#sTok11" label="Ordering/annis/">
+        <edge id="e39" source="rootCorpus/subCorpus2/doc4#IS_span1" target="rootCorpus/subCorpus2/doc4#sTok1" label="Coverage/default_ns/">
         </edge>
-        <edge id="e40" source="rootCorpus/subCorpus1" target="rootCorpus" label="PartOf/annis/">
+        <edge id="e40" source="rootCorpus/subCorpus2/doc4#IS_span2" target="rootCorpus/subCorpus2/doc4#sTok2" label="Coverage/default_ns/">
         </edge>
-        <edge id="e41" source="rootCorpus/subCorpus2" target="rootCorpus" label="PartOf/annis/">
+        <edge id="e41" source="rootCorpus/subCorpus2/doc4#IS_span2" target="rootCorpus/subCorpus2/doc4#sTok3" label="Coverage/default_ns/">
         </edge>
-        <edge id="e42" source="rootCorpus/subCorpus1/doc1" target="rootCorpus/subCorpus1" label="PartOf/annis/">
+        <edge id="e42" source="rootCorpus/subCorpus2/doc4#IS_span2" target="rootCorpus/subCorpus2/doc4#sTok4" label="Coverage/default_ns/">
         </edge>
-        <edge id="e43" source="rootCorpus/subCorpus1/doc2" target="rootCorpus/subCorpus1" label="PartOf/annis/">
+        <edge id="e43" source="rootCorpus/subCorpus2/doc4#IS_span2" target="rootCorpus/subCorpus2/doc4#sTok5" label="Coverage/default_ns/">
         </edge>
-        <edge id="e44" source="rootCorpus/subCorpus2/doc3" target="rootCorpus/subCorpus2" label="PartOf/annis/">
+        <edge id="e44" source="rootCorpus/subCorpus2/doc4#IS_span2" target="rootCorpus/subCorpus2/doc4#sTok6" label="Coverage/default_ns/">
         </edge>
-        <edge id="e45" source="rootCorpus/subCorpus2/doc4" target="rootCorpus/subCorpus2" label="PartOf/annis/">
+        <edge id="e45" source="rootCorpus/subCorpus2/doc4#IS_span2" target="rootCorpus/subCorpus2/doc4#sTok7" label="Coverage/default_ns/">
+        </edge>
+        <edge id="e46" source="rootCorpus/subCorpus2/doc4#IS_span2" target="rootCorpus/subCorpus2/doc4#sTok8" label="Coverage/default_ns/">
+        </edge>
+        <edge id="e47" source="rootCorpus/subCorpus2/doc4#IS_span2" target="rootCorpus/subCorpus2/doc4#sTok9" label="Coverage/default_ns/">
+        </edge>
+        <edge id="e48" source="rootCorpus/subCorpus2/doc4#IS_span2" target="rootCorpus/subCorpus2/doc4#sTok10" label="Coverage/default_ns/">
+        </edge>
+        <edge id="e49" source="rootCorpus/subCorpus2/doc4#IS_span2" target="rootCorpus/subCorpus2/doc4#sTok11" label="Coverage/default_ns/">
+        </edge>
+        <edge id="e50" source="rootCorpus/subCorpus2/doc4#sSpan3" target="rootCorpus/subCorpus2/doc4#sTok2" label="Coverage/default_ns/">
+        </edge>
+        <edge id="e51" source="rootCorpus/subCorpus2/doc4#sSpan3" target="rootCorpus/subCorpus2/doc4#sTok3" label="Coverage/default_ns/">
+        </edge>
+        <edge id="e52" source="rootCorpus/subCorpus1/doc1#sTok1" target="rootCorpus/subCorpus1/doc1#sTok2" label="Ordering/annis/">
+        </edge>
+        <edge id="e53" source="rootCorpus/subCorpus1/doc1#sTok2" target="rootCorpus/subCorpus1/doc1#sTok3" label="Ordering/annis/">
+        </edge>
+        <edge id="e54" source="rootCorpus/subCorpus1/doc1#sTok3" target="rootCorpus/subCorpus1/doc1#sTok4" label="Ordering/annis/">
+        </edge>
+        <edge id="e55" source="rootCorpus/subCorpus1/doc1#sTok4" target="rootCorpus/subCorpus1/doc1#sTok5" label="Ordering/annis/">
+        </edge>
+        <edge id="e56" source="rootCorpus/subCorpus1/doc1#sTok5" target="rootCorpus/subCorpus1/doc1#sTok6" label="Ordering/annis/">
+        </edge>
+        <edge id="e57" source="rootCorpus/subCorpus1/doc1#sTok6" target="rootCorpus/subCorpus1/doc1#sTok7" label="Ordering/annis/">
+        </edge>
+        <edge id="e58" source="rootCorpus/subCorpus1/doc1#sTok7" target="rootCorpus/subCorpus1/doc1#sTok8" label="Ordering/annis/">
+        </edge>
+        <edge id="e59" source="rootCorpus/subCorpus1/doc1#sTok8" target="rootCorpus/subCorpus1/doc1#sTok9" label="Ordering/annis/">
+        </edge>
+        <edge id="e60" source="rootCorpus/subCorpus1/doc1#sTok9" target="rootCorpus/subCorpus1/doc1#sTok10" label="Ordering/annis/">
+        </edge>
+        <edge id="e61" source="rootCorpus/subCorpus1/doc1#sTok10" target="rootCorpus/subCorpus1/doc1#sTok11" label="Ordering/annis/">
+        </edge>
+        <edge id="e62" source="rootCorpus/subCorpus1/doc2#sTok1" target="rootCorpus/subCorpus1/doc2#sTok2" label="Ordering/annis/">
+        </edge>
+        <edge id="e63" source="rootCorpus/subCorpus1/doc2#sTok2" target="rootCorpus/subCorpus1/doc2#sTok3" label="Ordering/annis/">
+        </edge>
+        <edge id="e64" source="rootCorpus/subCorpus1/doc2#sTok3" target="rootCorpus/subCorpus1/doc2#sTok4" label="Ordering/annis/">
+        </edge>
+        <edge id="e65" source="rootCorpus/subCorpus1/doc2#sTok4" target="rootCorpus/subCorpus1/doc2#sTok5" label="Ordering/annis/">
+        </edge>
+        <edge id="e66" source="rootCorpus/subCorpus1/doc2#sTok5" target="rootCorpus/subCorpus1/doc2#sTok6" label="Ordering/annis/">
+        </edge>
+        <edge id="e67" source="rootCorpus/subCorpus1/doc2#sTok6" target="rootCorpus/subCorpus1/doc2#sTok7" label="Ordering/annis/">
+        </edge>
+        <edge id="e68" source="rootCorpus/subCorpus1/doc2#sTok7" target="rootCorpus/subCorpus1/doc2#sTok8" label="Ordering/annis/">
+        </edge>
+        <edge id="e69" source="rootCorpus/subCorpus1/doc2#sTok8" target="rootCorpus/subCorpus1/doc2#sTok9" label="Ordering/annis/">
+        </edge>
+        <edge id="e70" source="rootCorpus/subCorpus1/doc2#sTok9" target="rootCorpus/subCorpus1/doc2#sTok10" label="Ordering/annis/">
+        </edge>
+        <edge id="e71" source="rootCorpus/subCorpus1/doc2#sTok10" target="rootCorpus/subCorpus1/doc2#sTok11" label="Ordering/annis/">
+        </edge>
+        <edge id="e72" source="rootCorpus/subCorpus2/doc3#sTok1" target="rootCorpus/subCorpus2/doc3#sTok2" label="Ordering/annis/">
+        </edge>
+        <edge id="e73" source="rootCorpus/subCorpus2/doc3#sTok2" target="rootCorpus/subCorpus2/doc3#sTok3" label="Ordering/annis/">
+        </edge>
+        <edge id="e74" source="rootCorpus/subCorpus2/doc3#sTok3" target="rootCorpus/subCorpus2/doc3#sTok4" label="Ordering/annis/">
+        </edge>
+        <edge id="e75" source="rootCorpus/subCorpus2/doc3#sTok4" target="rootCorpus/subCorpus2/doc3#sTok5" label="Ordering/annis/">
+        </edge>
+        <edge id="e76" source="rootCorpus/subCorpus2/doc3#sTok5" target="rootCorpus/subCorpus2/doc3#sTok6" label="Ordering/annis/">
+        </edge>
+        <edge id="e77" source="rootCorpus/subCorpus2/doc3#sTok6" target="rootCorpus/subCorpus2/doc3#sTok7" label="Ordering/annis/">
+        </edge>
+        <edge id="e78" source="rootCorpus/subCorpus2/doc3#sTok7" target="rootCorpus/subCorpus2/doc3#sTok8" label="Ordering/annis/">
+        </edge>
+        <edge id="e79" source="rootCorpus/subCorpus2/doc3#sTok8" target="rootCorpus/subCorpus2/doc3#sTok9" label="Ordering/annis/">
+        </edge>
+        <edge id="e80" source="rootCorpus/subCorpus2/doc3#sTok9" target="rootCorpus/subCorpus2/doc3#sTok10" label="Ordering/annis/">
+        </edge>
+        <edge id="e81" source="rootCorpus/subCorpus2/doc3#sTok10" target="rootCorpus/subCorpus2/doc3#sTok11" label="Ordering/annis/">
+        </edge>
+        <edge id="e82" source="rootCorpus/subCorpus2/doc4#sTok1" target="rootCorpus/subCorpus2/doc4#sTok2" label="Ordering/annis/">
+        </edge>
+        <edge id="e83" source="rootCorpus/subCorpus2/doc4#sTok2" target="rootCorpus/subCorpus2/doc4#sTok3" label="Ordering/annis/">
+        </edge>
+        <edge id="e84" source="rootCorpus/subCorpus2/doc4#sTok3" target="rootCorpus/subCorpus2/doc4#sTok4" label="Ordering/annis/">
+        </edge>
+        <edge id="e85" source="rootCorpus/subCorpus2/doc4#sTok4" target="rootCorpus/subCorpus2/doc4#sTok5" label="Ordering/annis/">
+        </edge>
+        <edge id="e86" source="rootCorpus/subCorpus2/doc4#sTok5" target="rootCorpus/subCorpus2/doc4#sTok6" label="Ordering/annis/">
+        </edge>
+        <edge id="e87" source="rootCorpus/subCorpus2/doc4#sTok6" target="rootCorpus/subCorpus2/doc4#sTok7" label="Ordering/annis/">
+        </edge>
+        <edge id="e88" source="rootCorpus/subCorpus2/doc4#sTok7" target="rootCorpus/subCorpus2/doc4#sTok8" label="Ordering/annis/">
+        </edge>
+        <edge id="e89" source="rootCorpus/subCorpus2/doc4#sTok8" target="rootCorpus/subCorpus2/doc4#sTok9" label="Ordering/annis/">
+        </edge>
+        <edge id="e90" source="rootCorpus/subCorpus2/doc4#sTok9" target="rootCorpus/subCorpus2/doc4#sTok10" label="Ordering/annis/">
+        </edge>
+        <edge id="e91" source="rootCorpus/subCorpus2/doc4#sTok10" target="rootCorpus/subCorpus2/doc4#sTok11" label="Ordering/annis/">
+        </edge>
+        <edge id="e92" source="rootCorpus/subCorpus1" target="rootCorpus" label="PartOf/annis/">
+        </edge>
+        <edge id="e93" source="rootCorpus/subCorpus2" target="rootCorpus" label="PartOf/annis/">
+        </edge>
+        <edge id="e94" source="rootCorpus/subCorpus1/doc1" target="rootCorpus/subCorpus1" label="PartOf/annis/">
+        </edge>
+        <edge id="e95" source="rootCorpus/subCorpus1/doc2" target="rootCorpus/subCorpus1" label="PartOf/annis/">
+        </edge>
+        <edge id="e96" source="rootCorpus/subCorpus2/doc3" target="rootCorpus/subCorpus2" label="PartOf/annis/">
+        </edge>
+        <edge id="e97" source="rootCorpus/subCorpus2/doc4" target="rootCorpus/subCorpus2" label="PartOf/annis/">
         </edge>
     </graph>
 </graphml>

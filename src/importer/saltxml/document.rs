@@ -59,17 +59,25 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             edges,
             layers,
         };
-        mapper.map_textual_ds(updates)?;
-        mapper.map_token(updates)?;
+        mapper.map_textual_datasources(updates)?;
+        mapper.map_tokens(updates)?;
+
+        mapper.map_spans(updates)?;
+        // TODO map SStructure and SDominanceRelation;
+        // TODO map SPointingRelation
+
+        // TODO map STimeline and STimelineRelation
+        // TODO map SOrderRelation for segmentation nodes
+        // TODO map SAudioDS and SAudioRelation
 
         Ok(())
     }
 
-    fn map_textual_ds(&mut self, updates: &mut GraphUpdate) -> Result<()> {
+    fn map_textual_datasources(&mut self, updates: &mut GraphUpdate) -> Result<()> {
         for text_node in self
             .nodes
             .iter()
-            .filter(|n| SaltType::from(**n) == SaltType::TextualDs)
+            .filter(|n| SaltType::from_node(n) == SaltType::TextualDs)
         {
             let element_id =
                 get_element_id(text_node).context("Missing element ID for textual data source")?;
@@ -87,60 +95,120 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         Ok(())
     }
 
-    fn map_token(&self, updates: &mut GraphUpdate) -> Result<()> {
-        // Get the list of token in the same order as in the SaltXML file
-        let tokens: Result<Vec<_>> = self
-            .nodes
-            .iter()
-            .filter(|n| SaltType::from(**n) == SaltType::Token)
-            .map(|t| {
-                let id = get_element_id(t).context("Missing element ID for token source")?;
-                Ok((*t, id))
-            })
-            .collect();
-        let tokens = tokens?;
+    fn map_node(&self, n: &Node, updates: &mut GraphUpdate) -> Result<()> {
+        let id = get_element_id(n).context("Missing element ID for node")?;
+        updates.add_event(UpdateEvent::AddNode {
+            node_name: id.clone(),
+            node_type: "node".to_string(),
+        })?;
 
-        for (token_node, t_id) in tokens.iter() {
-            updates.add_event(UpdateEvent::AddNode {
-                node_name: t_id.clone(),
-                node_type: "node".to_string(),
-            })?;
-
-            if let Some(layers_attribute) = token_node.attribute("layers") {
-                for layer_ref in layers_attribute.split(' ') {
-                    let layer_node = resolve_element(layer_ref, "layers", &self.layers)
-                        .context("Could not resolve layer")?;
-                    if let Some(SaltObject::Text(layer_name)) =
-                        get_feature_by_qname(&layer_node, "salt", "SNAME")
-                    {
-                        updates.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: t_id.clone(),
-                            anno_ns: ANNIS_NS.to_owned(),
-                            anno_name: "layer".to_owned(),
-                            anno_value: layer_name,
-                        })?;
-                    }
+        if let Some(layers_attribute) = n.attribute("layers") {
+            for layer_ref in layers_attribute.split(' ') {
+                let layer_node = resolve_element(layer_ref, "layers", &self.layers)
+                    .context("Could not resolve layer")?;
+                if let Some(SaltObject::Text(layer_name)) =
+                    get_feature_by_qname(&layer_node, "salt", "SNAME")
+                {
+                    updates.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: id.clone(),
+                        anno_ns: ANNIS_NS.to_owned(),
+                        anno_name: "layer".to_owned(),
+                        anno_value: layer_name,
+                    })?;
                 }
             }
+        }
 
-            for label_node in get_annotations(token_node) {
-                let anno_ns = label_node
-                    .attribute("namespace")
-                    .unwrap_or_default()
-                    .to_string();
-                let anno_name = label_node
-                    .attribute("name")
-                    .context("Missing annotation name for token")?
-                    .to_string();
-                let anno_value =
-                    SaltObject::from(label_node.attribute("value").unwrap_or_default()).to_string();
-                updates.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: t_id.clone(),
-                    anno_ns,
-                    anno_name,
-                    anno_value,
-                })?;
+        for label_node in get_annotations(n) {
+            let anno_ns = label_node
+                .attribute("namespace")
+                .unwrap_or_default()
+                .to_string();
+            let anno_name = label_node
+                .attribute("name")
+                .context("Missing annotation name for node")?
+                .to_string();
+            let anno_value =
+                SaltObject::from(label_node.attribute("value").unwrap_or_default()).to_string();
+            updates.add_event(UpdateEvent::AddNodeLabel {
+                node_name: id.clone(),
+                anno_ns,
+                anno_name,
+                anno_value,
+            })?;
+        }
+        Ok(())
+    }
+
+    fn map_edge(
+        &self,
+        rel: &Node,
+        component_type: AnnotationComponentType,
+        fallback_component_name: &str,
+        updates: &mut GraphUpdate,
+    ) -> Result<()> {
+        let source_att_val = rel.attribute("source").unwrap_or_default();
+        let source_element =
+            resolve_element(source_att_val, "nodes", &self.nodes).context("Missing source node")?;
+        let source_id = get_element_id(&source_element).context("Missing source node ID")?;
+
+        let target_att_val = rel.attribute("target").unwrap_or_default();
+        let target_element =
+            resolve_element(target_att_val, "nodes", &self.nodes).context("Missing target node")?;
+        let target_id = get_element_id(&target_element).context("Missing target node ID")?;
+
+        let component_name = get_feature_by_qname(rel, "salt", "STYPE")
+            .map(|t| t.to_string())
+            .unwrap_or_else(|| fallback_component_name.to_string());
+
+        let mut component_layer = "default_ns".to_string();
+        if let Some(layers_attribute) = rel.attribute("layers") {
+            if let Some(first_layer) = layers_attribute.split(' ').next() {
+                component_layer = first_layer.to_string();
             }
+        }
+
+        updates.add_event(UpdateEvent::AddEdge {
+            source_node: source_id.clone(),
+            target_node: target_id.clone(),
+            layer: component_layer.clone(),
+            component_type: component_type.to_string(),
+            component_name: component_name.clone(),
+        })?;
+
+        for label_element in get_annotations(rel) {
+            let anno_ns = label_element
+                .attribute("namespace")
+                .unwrap_or_default()
+                .to_string();
+            let anno_name = label_element
+                .attribute("name")
+                .context("Missing annotation name for edge")?
+                .to_string();
+            let anno_value =
+                SaltObject::from(label_element.attribute("value").unwrap_or_default()).to_string();
+            updates.add_event(UpdateEvent::AddEdgeLabel {
+                source_node: source_id.clone(),
+                target_node: target_id.clone(),
+                layer: component_layer.clone(),
+                component_type: component_type.to_string(),
+                component_name: component_name.clone(),
+                anno_ns,
+                anno_name,
+                anno_value,
+            })?;
+        }
+        Ok(())
+    }
+
+    fn map_tokens(&self, updates: &mut GraphUpdate) -> Result<()> {
+        // Map the token nodes in the same order as in the SaltXML file
+        for token_node in self
+            .nodes
+            .iter()
+            .filter(|n| SaltType::from_node(n) == SaltType::Token)
+        {
+            self.map_node(token_node, updates)?;
         }
 
         // Order textual relations by their start offset, so we iterate in the
@@ -148,7 +216,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         let sorted_text_rels: BTreeMap<i64, _> = self
             .edges
             .iter()
-            .filter(|n| SaltType::from(**n) == SaltType::TextualRelation)
+            .filter(|n| SaltType::from_node(n) == SaltType::TextualRelation)
             .map(|text_rel| {
                 let start =
                     get_feature_by_qname(text_rel, "salt", "SSTART").unwrap_or(SaltObject::Null);
@@ -239,6 +307,26 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             previous_token = Some(token_id);
         }
 
+        Ok(())
+    }
+
+    fn map_spans(&self, updates: &mut GraphUpdate) -> Result<()> {
+        for span_node in self
+            .nodes
+            .iter()
+            .filter(|n| SaltType::from_node(n) == SaltType::Span)
+        {
+            self.map_node(span_node, updates)?;
+        }
+
+        // Connect all spans with the token using the spanning relations
+        for spanning_rel in self
+            .edges
+            .iter()
+            .filter(|rel| SaltType::from_node(rel) == SaltType::SpanningRelation)
+        {
+            self.map_edge(spanning_rel, AnnotationComponentType::Coverage, "", updates)?;
+        }
         Ok(())
     }
 }

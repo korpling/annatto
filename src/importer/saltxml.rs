@@ -66,14 +66,16 @@ enum SaltType {
     CorpusRelation,
     DocumentRelation,
     TextualRelation,
+    SpanningRelation,
     Layer,
     Token,
+    Span,
     TextualDs,
     Unknown,
 }
 
-impl<'a, 'input> From<Node<'a, 'input>> for SaltType {
-    fn from(n: Node) -> Self {
+impl SaltType {
+    fn from_node(n: &Node) -> SaltType {
         // Use the xsi:type attribute to determine the type
         if let Some(type_id) = n.attribute((XSI_NAMESPACE, "type")) {
             match type_id {
@@ -85,8 +87,10 @@ impl<'a, 'input> From<Node<'a, 'input>> for SaltType {
                 "sCorpusStructure:SCorpusRelation" => SaltType::CorpusRelation,
                 "sCorpusStructure:SCorpusDocumentRelation" => SaltType::DocumentRelation,
                 "sDocumentStructure:STextualRelation" => SaltType::TextualRelation,
+                "sDocumentStructure:SSpanningRelation" => SaltType::SpanningRelation,
                 "saltCore:SLayer" => SaltType::Layer,
                 "sDocumentStructure:SToken" => SaltType::Token,
+                "sDocumentStructure:SSpan" => SaltType::Span,
                 "sDocumentStructure:STextualDS" => SaltType::TextualDs,
                 _ => SaltType::Unknown,
             }
@@ -131,10 +135,9 @@ impl std::fmt::Display for SaltObject {
 }
 
 fn get_element_id(n: &Node) -> Option<String> {
-    for element_id_label in n
-        .children()
-        .filter(|c| c.tag_name().name() == "labels" && SaltType::from(*c) == SaltType::ElementId)
-    {
+    for element_id_label in n.children().filter(|c| {
+        c.tag_name().name() == "labels" && SaltType::from_node(c) == SaltType::ElementId
+    }) {
         if let Some(id) = element_id_label.attribute("value") {
             let id = SaltObject::from(id);
             return Some(id.to_string().trim_start_matches("salt:/").to_string());
@@ -145,12 +148,13 @@ fn get_element_id(n: &Node) -> Option<String> {
 
 fn get_features<'a, 'input>(n: &'a Node<'a, 'input>) -> impl Iterator<Item = Node<'a, 'input>> {
     n.children()
-        .filter(|n| n.tag_name().name() == "labels" && SaltType::from(*n) == SaltType::Feature)
+        .filter(|n| n.tag_name().name() == "labels" && SaltType::from_node(n) == SaltType::Feature)
 }
 
 fn get_annotations<'a, 'input>(n: &'a Node<'a, 'input>) -> impl Iterator<Item = Node<'a, 'input>> {
-    n.children()
-        .filter(|n| n.tag_name().name() == "labels" && SaltType::from(*n) == SaltType::Annotation)
+    n.children().filter(|n| {
+        n.tag_name().name() == "labels" && SaltType::from_node(n) == SaltType::Annotation
+    })
 }
 
 fn get_feature_by_qname(n: &Node, namespace: &str, name: &str) -> Option<SaltObject> {
