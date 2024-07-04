@@ -10,14 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `textgrid` export now creates PRAAT TextGrid files from annotation graphs
 - `textgrid` export can be configured for a desired order of tiers in the output files; the order of tiers can be incomplete, attribute `ignore_others` can be used to interprete the order as an allowlist
 - `textgrid` export also looks into `point_tiers` `ignore_others` is on, since it is a reasonable expection the user could have. Thus, setting `ignore_others = true` with an empty `tier_order` would result in an export of all point tiers if at least one is set.
-
-### Added
-
 - `exmaralda` export can now be configured for the annotation key that provides a clue to which subgraph is relevant for a file
 
 ### Fixed
 
 - code is more robust and more transparent to the user in case of unexpected data
+- `textgrid` import now allows correct file type specification for short files
 
 ## [0.10.0] - 2024-06-25
 
