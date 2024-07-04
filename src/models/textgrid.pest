@@ -21,7 +21,9 @@ COMMENT = _{line_comment | comment_number | (!(comment_number|number|text|flag) 
 // files which we can assume are TextGrid files.
 textgrid = {
     SOI ~ 
-    "\"ooTextFile\"" ~
+    "\"ooTextFile" ~
+    " short"? ~
+    "\"" ~
     "\"TextGrid\"" ~
     (number | flag | text)* ~
     EOI 
