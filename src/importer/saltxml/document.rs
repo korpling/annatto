@@ -21,12 +21,13 @@ pub(super) struct DocumentMapper<'a, 'input> {
     edges: Vec<Node<'a, 'input>>,
     layers: Vec<Node<'a, 'input>>,
     base_texts: BTreeMap<String, String>,
+    missing_anno_ns_from_layer: bool,
 }
 
 impl<'a, 'input> DocumentMapper<'a, 'input> {
     pub(super) fn read_document(
         input: &'input str,
-        _document_node_name: &str,
+        missing_anno_ns_from_layer: bool,
         updates: &mut GraphUpdate,
     ) -> Result<()> {
         let doc = roxmltree::Document::parse(input)?;
@@ -55,6 +56,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
 
         let mut mapper = DocumentMapper {
             base_texts: BTreeMap::new(),
+            missing_anno_ns_from_layer,
             nodes,
             edges,
             layers,
@@ -101,6 +103,8 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             node_type: "node".to_string(),
         })?;
 
+        let mut fallback_annotation_namespace = "".to_string();
+
         if let Some(layers_attribute) = n.attribute("layers") {
             for layer_ref in layers_attribute.split(' ') {
                 let layer_node = resolve_element(layer_ref, "layers", &self.layers)
@@ -108,6 +112,13 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                 if let Some(SaltObject::Text(layer_name)) =
                     get_feature_by_qname(&layer_node, "salt", "SNAME")
                 {
+                    // Use the edge layer as fallback annotation namespace. This is
+                    // consistent with e.g. the ANNIS Tree Visualizer handles
+                    // annotations without any namespace.
+                    if self.missing_anno_ns_from_layer {
+                        fallback_annotation_namespace = layer_name.clone();
+                    }
+
                     updates.add_event(UpdateEvent::AddNodeLabel {
                         node_name: id.clone(),
                         anno_ns: ANNIS_NS.to_owned(),
@@ -121,7 +132,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         for label_node in get_annotations(n) {
             let anno_ns = label_node
                 .attribute("namespace")
-                .unwrap_or_default()
+                .unwrap_or(&fallback_annotation_namespace)
                 .to_string();
             let anno_name = label_node
                 .attribute("name")
@@ -186,11 +197,18 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             })?;
         }
 
+        let fallback_annotation_namespace = if self.missing_anno_ns_from_layer {
+            &component_layer
+        } else {
+            ""
+        };
+
         for label_element in get_annotations(rel) {
             let anno_ns = label_element
                 .attribute("namespace")
-                .unwrap_or_default()
+                .unwrap_or(fallback_annotation_namespace)
                 .to_string();
+
             let anno_name = label_element
                 .attribute("name")
                 .context("Missing annotation name for edge")?
@@ -342,12 +360,6 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             .iter()
             .filter(|rel| SaltType::from_node(rel) == SaltType::DominanceRelation)
         {
-            self.map_edge(
-                dominance_rel,
-                AnnotationComponentType::Dominance,
-                "",
-                updates,
-            )?;
             self.map_edge(
                 dominance_rel,
                 AnnotationComponentType::Dominance,

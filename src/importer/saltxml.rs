@@ -11,9 +11,23 @@ use super::Importer;
 
 /// Imports the SaltXML format used by Pepper (<https://corpus-tools.org/pepper/>).
 /// SaltXML is an XMI serialization of the [Salt model](https://raw.githubusercontent.com/korpling/salt/master/gh-site/doc/salt_modelGuide.pdf).
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
-pub struct ImportSaltXml {}
+pub struct ImportSaltXml {
+    /// If `true`, use the layer name as fallback for the namespace annotations
+    /// if none is given. This is consistent with how the ANNIS tree visualizer
+    /// handles annotations without any namespace. If `false`, use an empty
+    /// string as annotation namespace.
+    missing_anno_ns_from_layer: bool,
+}
+
+impl Default for ImportSaltXml {
+    fn default() -> Self {
+        Self {
+            missing_anno_ns_from_layer: true,
+        }
+    }
+}
 
 impl Importer for ImportSaltXml {
     fn import_corpus(
@@ -42,7 +56,11 @@ impl Importer for ImportSaltXml {
             // Get the path from the node name
             let document_path = input_path.join(relative_document_path);
             let document_file = std::fs::read_to_string(document_path)?;
-            DocumentMapper::read_document(&document_file, &document_node_name, &mut updates)?;
+            DocumentMapper::read_document(
+                &document_file,
+                self.missing_anno_ns_from_layer,
+                &mut updates,
+            )?;
             reporter.worked(1)?;
         }
 

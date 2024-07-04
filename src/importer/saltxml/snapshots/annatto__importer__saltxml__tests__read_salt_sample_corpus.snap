@@ -6,7 +6,7 @@ expression: actual
 <graphml>
     <key id="k0" for="node" attr.name="Inf-Struct" attr.type="string"/>
     <key id="k1" for="node" attr.name="salt::SDOCUMENT_GRAPH_LOCATION" attr.type="string"/>
-    <key id="k2" for="node" attr.name="const" attr.type="string"/>
+    <key id="k2" for="node" attr.name="syntax::const" attr.type="string"/>
     <key id="k3" for="node" attr.name="annis::doc" attr.type="string"/>
     <key id="k4" for="node" attr.name="annis::layer" attr.type="string"/>
     <key id="k5" for="node" attr.name="salt::lemma" attr.type="string"/>
@@ -964,449 +964,273 @@ expression: actual
         </edge>
         <edge id="e139" source="rootCorpus/subCorpus2/doc4#structure12" target="rootCorpus/subCorpus2/doc4#sTok10" label="Dominance/annis/">
         </edge>
-        <edge id="e140" source="rootCorpus/subCorpus1/doc1#structure1" target="rootCorpus/subCorpus1/doc1#sTok11" label="Dominance/default_ns/">
+        <edge id="e140" source="rootCorpus/subCorpus1/doc1#structure1" target="rootCorpus/subCorpus1/doc1#sTok11" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e141" source="rootCorpus/subCorpus1/doc1#structure1" target="rootCorpus/subCorpus1/doc1#structure2" label="Dominance/default_ns/">
+        <edge id="e141" source="rootCorpus/subCorpus1/doc1#structure1" target="rootCorpus/subCorpus1/doc1#structure2" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e142" source="rootCorpus/subCorpus1/doc1#structure2" target="rootCorpus/subCorpus1/doc1#sTok1" label="Dominance/default_ns/">
+        <edge id="e142" source="rootCorpus/subCorpus1/doc1#structure2" target="rootCorpus/subCorpus1/doc1#sTok1" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e143" source="rootCorpus/subCorpus1/doc1#structure2" target="rootCorpus/subCorpus1/doc1#structure3" label="Dominance/default_ns/">
+        <edge id="e143" source="rootCorpus/subCorpus1/doc1#structure2" target="rootCorpus/subCorpus1/doc1#structure3" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e144" source="rootCorpus/subCorpus1/doc1#structure2" target="rootCorpus/subCorpus1/doc1#structure4" label="Dominance/default_ns/">
+        <edge id="e144" source="rootCorpus/subCorpus1/doc1#structure2" target="rootCorpus/subCorpus1/doc1#structure4" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e145" source="rootCorpus/subCorpus1/doc1#structure3" target="rootCorpus/subCorpus1/doc1#sTok2" label="Dominance/default_ns/">
+        <edge id="e145" source="rootCorpus/subCorpus1/doc1#structure3" target="rootCorpus/subCorpus1/doc1#sTok2" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e146" source="rootCorpus/subCorpus1/doc1#structure3" target="rootCorpus/subCorpus1/doc1#sTok3" label="Dominance/default_ns/">
+        <edge id="e146" source="rootCorpus/subCorpus1/doc1#structure3" target="rootCorpus/subCorpus1/doc1#sTok3" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e147" source="rootCorpus/subCorpus1/doc1#structure4" target="rootCorpus/subCorpus1/doc1#structure5" label="Dominance/default_ns/">
+        <edge id="e147" source="rootCorpus/subCorpus1/doc1#structure4" target="rootCorpus/subCorpus1/doc1#structure5" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e148" source="rootCorpus/subCorpus1/doc1#structure4" target="rootCorpus/subCorpus1/doc1#structure6" label="Dominance/default_ns/">
+        <edge id="e148" source="rootCorpus/subCorpus1/doc1#structure4" target="rootCorpus/subCorpus1/doc1#structure6" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e149" source="rootCorpus/subCorpus1/doc1#structure5" target="rootCorpus/subCorpus1/doc1#sTok4" label="Dominance/default_ns/">
+        <edge id="e149" source="rootCorpus/subCorpus1/doc1#structure5" target="rootCorpus/subCorpus1/doc1#sTok4" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e150" source="rootCorpus/subCorpus1/doc1#structure5" target="rootCorpus/subCorpus1/doc1#sTok5" label="Dominance/default_ns/">
+        <edge id="e150" source="rootCorpus/subCorpus1/doc1#structure5" target="rootCorpus/subCorpus1/doc1#sTok5" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e151" source="rootCorpus/subCorpus1/doc1#structure6" target="rootCorpus/subCorpus1/doc1#sTok6" label="Dominance/default_ns/">
+        <edge id="e151" source="rootCorpus/subCorpus1/doc1#structure6" target="rootCorpus/subCorpus1/doc1#sTok6" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e152" source="rootCorpus/subCorpus1/doc1#structure6" target="rootCorpus/subCorpus1/doc1#structure7" label="Dominance/default_ns/">
+        <edge id="e152" source="rootCorpus/subCorpus1/doc1#structure6" target="rootCorpus/subCorpus1/doc1#structure7" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e153" source="rootCorpus/subCorpus1/doc1#structure7" target="rootCorpus/subCorpus1/doc1#structure8" label="Dominance/default_ns/">
+        <edge id="e153" source="rootCorpus/subCorpus1/doc1#structure7" target="rootCorpus/subCorpus1/doc1#structure8" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e154" source="rootCorpus/subCorpus1/doc1#structure7" target="rootCorpus/subCorpus1/doc1#structure9" label="Dominance/default_ns/">
+        <edge id="e154" source="rootCorpus/subCorpus1/doc1#structure7" target="rootCorpus/subCorpus1/doc1#structure9" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e155" source="rootCorpus/subCorpus1/doc1#structure8" target="rootCorpus/subCorpus1/doc1#sTok7" label="Dominance/default_ns/">
+        <edge id="e155" source="rootCorpus/subCorpus1/doc1#structure8" target="rootCorpus/subCorpus1/doc1#sTok7" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e156" source="rootCorpus/subCorpus1/doc1#structure9" target="rootCorpus/subCorpus1/doc1#sTok8" label="Dominance/default_ns/">
+        <edge id="e156" source="rootCorpus/subCorpus1/doc1#structure9" target="rootCorpus/subCorpus1/doc1#sTok8" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e157" source="rootCorpus/subCorpus1/doc1#structure9" target="rootCorpus/subCorpus1/doc1#structure10" label="Dominance/default_ns/">
+        <edge id="e157" source="rootCorpus/subCorpus1/doc1#structure9" target="rootCorpus/subCorpus1/doc1#structure10" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e158" source="rootCorpus/subCorpus1/doc1#structure10" target="rootCorpus/subCorpus1/doc1#structure11" label="Dominance/default_ns/">
+        <edge id="e158" source="rootCorpus/subCorpus1/doc1#structure10" target="rootCorpus/subCorpus1/doc1#structure11" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e159" source="rootCorpus/subCorpus1/doc1#structure11" target="rootCorpus/subCorpus1/doc1#sTok9" label="Dominance/default_ns/">
+        <edge id="e159" source="rootCorpus/subCorpus1/doc1#structure11" target="rootCorpus/subCorpus1/doc1#sTok9" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e160" source="rootCorpus/subCorpus1/doc1#structure11" target="rootCorpus/subCorpus1/doc1#structure12" label="Dominance/default_ns/">
+        <edge id="e160" source="rootCorpus/subCorpus1/doc1#structure11" target="rootCorpus/subCorpus1/doc1#structure12" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e161" source="rootCorpus/subCorpus1/doc1#structure12" target="rootCorpus/subCorpus1/doc1#sTok10" label="Dominance/default_ns/">
+        <edge id="e161" source="rootCorpus/subCorpus1/doc1#structure12" target="rootCorpus/subCorpus1/doc1#sTok10" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e162" source="rootCorpus/subCorpus1/doc2#structure1" target="rootCorpus/subCorpus1/doc2#sTok11" label="Dominance/default_ns/">
+        <edge id="e162" source="rootCorpus/subCorpus1/doc2#structure1" target="rootCorpus/subCorpus1/doc2#sTok11" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e163" source="rootCorpus/subCorpus1/doc2#structure1" target="rootCorpus/subCorpus1/doc2#structure2" label="Dominance/default_ns/">
+        <edge id="e163" source="rootCorpus/subCorpus1/doc2#structure1" target="rootCorpus/subCorpus1/doc2#structure2" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e164" source="rootCorpus/subCorpus1/doc2#structure2" target="rootCorpus/subCorpus1/doc2#sTok1" label="Dominance/default_ns/">
+        <edge id="e164" source="rootCorpus/subCorpus1/doc2#structure2" target="rootCorpus/subCorpus1/doc2#sTok1" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e165" source="rootCorpus/subCorpus1/doc2#structure2" target="rootCorpus/subCorpus1/doc2#structure3" label="Dominance/default_ns/">
+        <edge id="e165" source="rootCorpus/subCorpus1/doc2#structure2" target="rootCorpus/subCorpus1/doc2#structure3" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e166" source="rootCorpus/subCorpus1/doc2#structure2" target="rootCorpus/subCorpus1/doc2#structure4" label="Dominance/default_ns/">
+        <edge id="e166" source="rootCorpus/subCorpus1/doc2#structure2" target="rootCorpus/subCorpus1/doc2#structure4" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e167" source="rootCorpus/subCorpus1/doc2#structure3" target="rootCorpus/subCorpus1/doc2#sTok2" label="Dominance/default_ns/">
+        <edge id="e167" source="rootCorpus/subCorpus1/doc2#structure3" target="rootCorpus/subCorpus1/doc2#sTok2" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e168" source="rootCorpus/subCorpus1/doc2#structure3" target="rootCorpus/subCorpus1/doc2#sTok3" label="Dominance/default_ns/">
+        <edge id="e168" source="rootCorpus/subCorpus1/doc2#structure3" target="rootCorpus/subCorpus1/doc2#sTok3" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e169" source="rootCorpus/subCorpus1/doc2#structure4" target="rootCorpus/subCorpus1/doc2#structure5" label="Dominance/default_ns/">
+        <edge id="e169" source="rootCorpus/subCorpus1/doc2#structure4" target="rootCorpus/subCorpus1/doc2#structure5" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e170" source="rootCorpus/subCorpus1/doc2#structure4" target="rootCorpus/subCorpus1/doc2#structure6" label="Dominance/default_ns/">
+        <edge id="e170" source="rootCorpus/subCorpus1/doc2#structure4" target="rootCorpus/subCorpus1/doc2#structure6" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e171" source="rootCorpus/subCorpus1/doc2#structure5" target="rootCorpus/subCorpus1/doc2#sTok4" label="Dominance/default_ns/">
+        <edge id="e171" source="rootCorpus/subCorpus1/doc2#structure5" target="rootCorpus/subCorpus1/doc2#sTok4" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e172" source="rootCorpus/subCorpus1/doc2#structure5" target="rootCorpus/subCorpus1/doc2#sTok5" label="Dominance/default_ns/">
+        <edge id="e172" source="rootCorpus/subCorpus1/doc2#structure5" target="rootCorpus/subCorpus1/doc2#sTok5" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e173" source="rootCorpus/subCorpus1/doc2#structure6" target="rootCorpus/subCorpus1/doc2#sTok6" label="Dominance/default_ns/">
+        <edge id="e173" source="rootCorpus/subCorpus1/doc2#structure6" target="rootCorpus/subCorpus1/doc2#sTok6" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e174" source="rootCorpus/subCorpus1/doc2#structure6" target="rootCorpus/subCorpus1/doc2#structure7" label="Dominance/default_ns/">
+        <edge id="e174" source="rootCorpus/subCorpus1/doc2#structure6" target="rootCorpus/subCorpus1/doc2#structure7" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e175" source="rootCorpus/subCorpus1/doc2#structure7" target="rootCorpus/subCorpus1/doc2#structure8" label="Dominance/default_ns/">
+        <edge id="e175" source="rootCorpus/subCorpus1/doc2#structure7" target="rootCorpus/subCorpus1/doc2#structure8" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e176" source="rootCorpus/subCorpus1/doc2#structure7" target="rootCorpus/subCorpus1/doc2#structure9" label="Dominance/default_ns/">
+        <edge id="e176" source="rootCorpus/subCorpus1/doc2#structure7" target="rootCorpus/subCorpus1/doc2#structure9" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e177" source="rootCorpus/subCorpus1/doc2#structure8" target="rootCorpus/subCorpus1/doc2#sTok7" label="Dominance/default_ns/">
+        <edge id="e177" source="rootCorpus/subCorpus1/doc2#structure8" target="rootCorpus/subCorpus1/doc2#sTok7" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e178" source="rootCorpus/subCorpus1/doc2#structure9" target="rootCorpus/subCorpus1/doc2#sTok8" label="Dominance/default_ns/">
+        <edge id="e178" source="rootCorpus/subCorpus1/doc2#structure9" target="rootCorpus/subCorpus1/doc2#sTok8" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e179" source="rootCorpus/subCorpus1/doc2#structure9" target="rootCorpus/subCorpus1/doc2#structure10" label="Dominance/default_ns/">
+        <edge id="e179" source="rootCorpus/subCorpus1/doc2#structure9" target="rootCorpus/subCorpus1/doc2#structure10" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e180" source="rootCorpus/subCorpus1/doc2#structure10" target="rootCorpus/subCorpus1/doc2#structure11" label="Dominance/default_ns/">
+        <edge id="e180" source="rootCorpus/subCorpus1/doc2#structure10" target="rootCorpus/subCorpus1/doc2#structure11" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e181" source="rootCorpus/subCorpus1/doc2#structure11" target="rootCorpus/subCorpus1/doc2#sTok9" label="Dominance/default_ns/">
+        <edge id="e181" source="rootCorpus/subCorpus1/doc2#structure11" target="rootCorpus/subCorpus1/doc2#sTok9" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e182" source="rootCorpus/subCorpus1/doc2#structure11" target="rootCorpus/subCorpus1/doc2#structure12" label="Dominance/default_ns/">
+        <edge id="e182" source="rootCorpus/subCorpus1/doc2#structure11" target="rootCorpus/subCorpus1/doc2#structure12" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e183" source="rootCorpus/subCorpus1/doc2#structure12" target="rootCorpus/subCorpus1/doc2#sTok10" label="Dominance/default_ns/">
+        <edge id="e183" source="rootCorpus/subCorpus1/doc2#structure12" target="rootCorpus/subCorpus1/doc2#sTok10" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e184" source="rootCorpus/subCorpus2/doc3#structure1" target="rootCorpus/subCorpus2/doc3#sTok11" label="Dominance/default_ns/">
+        <edge id="e184" source="rootCorpus/subCorpus2/doc3#structure1" target="rootCorpus/subCorpus2/doc3#sTok11" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e185" source="rootCorpus/subCorpus2/doc3#structure1" target="rootCorpus/subCorpus2/doc3#structure2" label="Dominance/default_ns/">
+        <edge id="e185" source="rootCorpus/subCorpus2/doc3#structure1" target="rootCorpus/subCorpus2/doc3#structure2" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e186" source="rootCorpus/subCorpus2/doc3#structure2" target="rootCorpus/subCorpus2/doc3#sTok1" label="Dominance/default_ns/">
+        <edge id="e186" source="rootCorpus/subCorpus2/doc3#structure2" target="rootCorpus/subCorpus2/doc3#sTok1" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e187" source="rootCorpus/subCorpus2/doc3#structure2" target="rootCorpus/subCorpus2/doc3#structure3" label="Dominance/default_ns/">
+        <edge id="e187" source="rootCorpus/subCorpus2/doc3#structure2" target="rootCorpus/subCorpus2/doc3#structure3" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e188" source="rootCorpus/subCorpus2/doc3#structure2" target="rootCorpus/subCorpus2/doc3#structure4" label="Dominance/default_ns/">
+        <edge id="e188" source="rootCorpus/subCorpus2/doc3#structure2" target="rootCorpus/subCorpus2/doc3#structure4" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e189" source="rootCorpus/subCorpus2/doc3#structure3" target="rootCorpus/subCorpus2/doc3#sTok2" label="Dominance/default_ns/">
+        <edge id="e189" source="rootCorpus/subCorpus2/doc3#structure3" target="rootCorpus/subCorpus2/doc3#sTok2" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e190" source="rootCorpus/subCorpus2/doc3#structure3" target="rootCorpus/subCorpus2/doc3#sTok3" label="Dominance/default_ns/">
+        <edge id="e190" source="rootCorpus/subCorpus2/doc3#structure3" target="rootCorpus/subCorpus2/doc3#sTok3" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e191" source="rootCorpus/subCorpus2/doc3#structure4" target="rootCorpus/subCorpus2/doc3#structure5" label="Dominance/default_ns/">
+        <edge id="e191" source="rootCorpus/subCorpus2/doc3#structure4" target="rootCorpus/subCorpus2/doc3#structure5" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e192" source="rootCorpus/subCorpus2/doc3#structure4" target="rootCorpus/subCorpus2/doc3#structure6" label="Dominance/default_ns/">
+        <edge id="e192" source="rootCorpus/subCorpus2/doc3#structure4" target="rootCorpus/subCorpus2/doc3#structure6" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e193" source="rootCorpus/subCorpus2/doc3#structure5" target="rootCorpus/subCorpus2/doc3#sTok4" label="Dominance/default_ns/">
+        <edge id="e193" source="rootCorpus/subCorpus2/doc3#structure5" target="rootCorpus/subCorpus2/doc3#sTok4" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e194" source="rootCorpus/subCorpus2/doc3#structure5" target="rootCorpus/subCorpus2/doc3#sTok5" label="Dominance/default_ns/">
+        <edge id="e194" source="rootCorpus/subCorpus2/doc3#structure5" target="rootCorpus/subCorpus2/doc3#sTok5" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e195" source="rootCorpus/subCorpus2/doc3#structure6" target="rootCorpus/subCorpus2/doc3#sTok6" label="Dominance/default_ns/">
+        <edge id="e195" source="rootCorpus/subCorpus2/doc3#structure6" target="rootCorpus/subCorpus2/doc3#sTok6" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e196" source="rootCorpus/subCorpus2/doc3#structure6" target="rootCorpus/subCorpus2/doc3#structure7" label="Dominance/default_ns/">
+        <edge id="e196" source="rootCorpus/subCorpus2/doc3#structure6" target="rootCorpus/subCorpus2/doc3#structure7" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e197" source="rootCorpus/subCorpus2/doc3#structure7" target="rootCorpus/subCorpus2/doc3#structure8" label="Dominance/default_ns/">
+        <edge id="e197" source="rootCorpus/subCorpus2/doc3#structure7" target="rootCorpus/subCorpus2/doc3#structure8" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e198" source="rootCorpus/subCorpus2/doc3#structure7" target="rootCorpus/subCorpus2/doc3#structure9" label="Dominance/default_ns/">
+        <edge id="e198" source="rootCorpus/subCorpus2/doc3#structure7" target="rootCorpus/subCorpus2/doc3#structure9" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e199" source="rootCorpus/subCorpus2/doc3#structure8" target="rootCorpus/subCorpus2/doc3#sTok7" label="Dominance/default_ns/">
+        <edge id="e199" source="rootCorpus/subCorpus2/doc3#structure8" target="rootCorpus/subCorpus2/doc3#sTok7" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e200" source="rootCorpus/subCorpus2/doc3#structure9" target="rootCorpus/subCorpus2/doc3#sTok8" label="Dominance/default_ns/">
+        <edge id="e200" source="rootCorpus/subCorpus2/doc3#structure9" target="rootCorpus/subCorpus2/doc3#sTok8" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e201" source="rootCorpus/subCorpus2/doc3#structure9" target="rootCorpus/subCorpus2/doc3#structure10" label="Dominance/default_ns/">
+        <edge id="e201" source="rootCorpus/subCorpus2/doc3#structure9" target="rootCorpus/subCorpus2/doc3#structure10" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e202" source="rootCorpus/subCorpus2/doc3#structure10" target="rootCorpus/subCorpus2/doc3#structure11" label="Dominance/default_ns/">
+        <edge id="e202" source="rootCorpus/subCorpus2/doc3#structure10" target="rootCorpus/subCorpus2/doc3#structure11" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e203" source="rootCorpus/subCorpus2/doc3#structure11" target="rootCorpus/subCorpus2/doc3#sTok9" label="Dominance/default_ns/">
+        <edge id="e203" source="rootCorpus/subCorpus2/doc3#structure11" target="rootCorpus/subCorpus2/doc3#sTok9" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e204" source="rootCorpus/subCorpus2/doc3#structure11" target="rootCorpus/subCorpus2/doc3#structure12" label="Dominance/default_ns/">
+        <edge id="e204" source="rootCorpus/subCorpus2/doc3#structure11" target="rootCorpus/subCorpus2/doc3#structure12" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e205" source="rootCorpus/subCorpus2/doc3#structure12" target="rootCorpus/subCorpus2/doc3#sTok10" label="Dominance/default_ns/">
+        <edge id="e205" source="rootCorpus/subCorpus2/doc3#structure12" target="rootCorpus/subCorpus2/doc3#sTok10" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e206" source="rootCorpus/subCorpus2/doc4#structure1" target="rootCorpus/subCorpus2/doc4#sTok11" label="Dominance/default_ns/">
+        <edge id="e206" source="rootCorpus/subCorpus2/doc4#structure1" target="rootCorpus/subCorpus2/doc4#sTok11" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e207" source="rootCorpus/subCorpus2/doc4#structure1" target="rootCorpus/subCorpus2/doc4#structure2" label="Dominance/default_ns/">
+        <edge id="e207" source="rootCorpus/subCorpus2/doc4#structure1" target="rootCorpus/subCorpus2/doc4#structure2" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e208" source="rootCorpus/subCorpus2/doc4#structure2" target="rootCorpus/subCorpus2/doc4#sTok1" label="Dominance/default_ns/">
+        <edge id="e208" source="rootCorpus/subCorpus2/doc4#structure2" target="rootCorpus/subCorpus2/doc4#sTok1" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e209" source="rootCorpus/subCorpus2/doc4#structure2" target="rootCorpus/subCorpus2/doc4#structure3" label="Dominance/default_ns/">
+        <edge id="e209" source="rootCorpus/subCorpus2/doc4#structure2" target="rootCorpus/subCorpus2/doc4#structure3" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e210" source="rootCorpus/subCorpus2/doc4#structure2" target="rootCorpus/subCorpus2/doc4#structure4" label="Dominance/default_ns/">
+        <edge id="e210" source="rootCorpus/subCorpus2/doc4#structure2" target="rootCorpus/subCorpus2/doc4#structure4" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e211" source="rootCorpus/subCorpus2/doc4#structure3" target="rootCorpus/subCorpus2/doc4#sTok2" label="Dominance/default_ns/">
+        <edge id="e211" source="rootCorpus/subCorpus2/doc4#structure3" target="rootCorpus/subCorpus2/doc4#sTok2" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e212" source="rootCorpus/subCorpus2/doc4#structure3" target="rootCorpus/subCorpus2/doc4#sTok3" label="Dominance/default_ns/">
+        <edge id="e212" source="rootCorpus/subCorpus2/doc4#structure3" target="rootCorpus/subCorpus2/doc4#sTok3" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e213" source="rootCorpus/subCorpus2/doc4#structure4" target="rootCorpus/subCorpus2/doc4#structure5" label="Dominance/default_ns/">
+        <edge id="e213" source="rootCorpus/subCorpus2/doc4#structure4" target="rootCorpus/subCorpus2/doc4#structure5" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e214" source="rootCorpus/subCorpus2/doc4#structure4" target="rootCorpus/subCorpus2/doc4#structure6" label="Dominance/default_ns/">
+        <edge id="e214" source="rootCorpus/subCorpus2/doc4#structure4" target="rootCorpus/subCorpus2/doc4#structure6" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e215" source="rootCorpus/subCorpus2/doc4#structure5" target="rootCorpus/subCorpus2/doc4#sTok4" label="Dominance/default_ns/">
+        <edge id="e215" source="rootCorpus/subCorpus2/doc4#structure5" target="rootCorpus/subCorpus2/doc4#sTok4" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e216" source="rootCorpus/subCorpus2/doc4#structure5" target="rootCorpus/subCorpus2/doc4#sTok5" label="Dominance/default_ns/">
+        <edge id="e216" source="rootCorpus/subCorpus2/doc4#structure5" target="rootCorpus/subCorpus2/doc4#sTok5" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e217" source="rootCorpus/subCorpus2/doc4#structure6" target="rootCorpus/subCorpus2/doc4#sTok6" label="Dominance/default_ns/">
+        <edge id="e217" source="rootCorpus/subCorpus2/doc4#structure6" target="rootCorpus/subCorpus2/doc4#sTok6" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e218" source="rootCorpus/subCorpus2/doc4#structure6" target="rootCorpus/subCorpus2/doc4#structure7" label="Dominance/default_ns/">
+        <edge id="e218" source="rootCorpus/subCorpus2/doc4#structure6" target="rootCorpus/subCorpus2/doc4#structure7" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e219" source="rootCorpus/subCorpus2/doc4#structure7" target="rootCorpus/subCorpus2/doc4#structure8" label="Dominance/default_ns/">
+        <edge id="e219" source="rootCorpus/subCorpus2/doc4#structure7" target="rootCorpus/subCorpus2/doc4#structure8" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e220" source="rootCorpus/subCorpus2/doc4#structure7" target="rootCorpus/subCorpus2/doc4#structure9" label="Dominance/default_ns/">
+        <edge id="e220" source="rootCorpus/subCorpus2/doc4#structure7" target="rootCorpus/subCorpus2/doc4#structure9" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e221" source="rootCorpus/subCorpus2/doc4#structure8" target="rootCorpus/subCorpus2/doc4#sTok7" label="Dominance/default_ns/">
+        <edge id="e221" source="rootCorpus/subCorpus2/doc4#structure8" target="rootCorpus/subCorpus2/doc4#sTok7" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e222" source="rootCorpus/subCorpus2/doc4#structure9" target="rootCorpus/subCorpus2/doc4#sTok8" label="Dominance/default_ns/">
+        <edge id="e222" source="rootCorpus/subCorpus2/doc4#structure9" target="rootCorpus/subCorpus2/doc4#sTok8" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e223" source="rootCorpus/subCorpus2/doc4#structure9" target="rootCorpus/subCorpus2/doc4#structure10" label="Dominance/default_ns/">
+        <edge id="e223" source="rootCorpus/subCorpus2/doc4#structure9" target="rootCorpus/subCorpus2/doc4#structure10" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e224" source="rootCorpus/subCorpus2/doc4#structure10" target="rootCorpus/subCorpus2/doc4#structure11" label="Dominance/default_ns/">
+        <edge id="e224" source="rootCorpus/subCorpus2/doc4#structure10" target="rootCorpus/subCorpus2/doc4#structure11" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e225" source="rootCorpus/subCorpus2/doc4#structure11" target="rootCorpus/subCorpus2/doc4#sTok9" label="Dominance/default_ns/">
+        <edge id="e225" source="rootCorpus/subCorpus2/doc4#structure11" target="rootCorpus/subCorpus2/doc4#sTok9" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e226" source="rootCorpus/subCorpus2/doc4#structure11" target="rootCorpus/subCorpus2/doc4#structure12" label="Dominance/default_ns/">
+        <edge id="e226" source="rootCorpus/subCorpus2/doc4#structure11" target="rootCorpus/subCorpus2/doc4#structure12" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e227" source="rootCorpus/subCorpus2/doc4#structure12" target="rootCorpus/subCorpus2/doc4#sTok10" label="Dominance/default_ns/">
+        <edge id="e227" source="rootCorpus/subCorpus2/doc4#structure12" target="rootCorpus/subCorpus2/doc4#sTok10" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e228" source="rootCorpus/subCorpus1/doc1#structure1" target="rootCorpus/subCorpus1/doc1#sTok11" label="Dominance/default_ns/edge">
+        <edge id="e228" source="rootCorpus/subCorpus1/doc1#sTok1" target="rootCorpus/subCorpus1/doc1#sTok2" label="Ordering/annis/">
         </edge>
-        <edge id="e229" source="rootCorpus/subCorpus1/doc1#structure1" target="rootCorpus/subCorpus1/doc1#structure2" label="Dominance/default_ns/edge">
+        <edge id="e229" source="rootCorpus/subCorpus1/doc1#sTok2" target="rootCorpus/subCorpus1/doc1#sTok3" label="Ordering/annis/">
         </edge>
-        <edge id="e230" source="rootCorpus/subCorpus1/doc1#structure2" target="rootCorpus/subCorpus1/doc1#sTok1" label="Dominance/default_ns/edge">
+        <edge id="e230" source="rootCorpus/subCorpus1/doc1#sTok3" target="rootCorpus/subCorpus1/doc1#sTok4" label="Ordering/annis/">
         </edge>
-        <edge id="e231" source="rootCorpus/subCorpus1/doc1#structure2" target="rootCorpus/subCorpus1/doc1#structure3" label="Dominance/default_ns/edge">
+        <edge id="e231" source="rootCorpus/subCorpus1/doc1#sTok4" target="rootCorpus/subCorpus1/doc1#sTok5" label="Ordering/annis/">
         </edge>
-        <edge id="e232" source="rootCorpus/subCorpus1/doc1#structure2" target="rootCorpus/subCorpus1/doc1#structure4" label="Dominance/default_ns/edge">
+        <edge id="e232" source="rootCorpus/subCorpus1/doc1#sTok5" target="rootCorpus/subCorpus1/doc1#sTok6" label="Ordering/annis/">
         </edge>
-        <edge id="e233" source="rootCorpus/subCorpus1/doc1#structure3" target="rootCorpus/subCorpus1/doc1#sTok2" label="Dominance/default_ns/edge">
+        <edge id="e233" source="rootCorpus/subCorpus1/doc1#sTok6" target="rootCorpus/subCorpus1/doc1#sTok7" label="Ordering/annis/">
         </edge>
-        <edge id="e234" source="rootCorpus/subCorpus1/doc1#structure3" target="rootCorpus/subCorpus1/doc1#sTok3" label="Dominance/default_ns/edge">
+        <edge id="e234" source="rootCorpus/subCorpus1/doc1#sTok7" target="rootCorpus/subCorpus1/doc1#sTok8" label="Ordering/annis/">
         </edge>
-        <edge id="e235" source="rootCorpus/subCorpus1/doc1#structure4" target="rootCorpus/subCorpus1/doc1#structure5" label="Dominance/default_ns/edge">
+        <edge id="e235" source="rootCorpus/subCorpus1/doc1#sTok8" target="rootCorpus/subCorpus1/doc1#sTok9" label="Ordering/annis/">
         </edge>
-        <edge id="e236" source="rootCorpus/subCorpus1/doc1#structure4" target="rootCorpus/subCorpus1/doc1#structure6" label="Dominance/default_ns/edge">
+        <edge id="e236" source="rootCorpus/subCorpus1/doc1#sTok9" target="rootCorpus/subCorpus1/doc1#sTok10" label="Ordering/annis/">
         </edge>
-        <edge id="e237" source="rootCorpus/subCorpus1/doc1#structure5" target="rootCorpus/subCorpus1/doc1#sTok4" label="Dominance/default_ns/edge">
+        <edge id="e237" source="rootCorpus/subCorpus1/doc1#sTok10" target="rootCorpus/subCorpus1/doc1#sTok11" label="Ordering/annis/">
         </edge>
-        <edge id="e238" source="rootCorpus/subCorpus1/doc1#structure5" target="rootCorpus/subCorpus1/doc1#sTok5" label="Dominance/default_ns/edge">
+        <edge id="e238" source="rootCorpus/subCorpus1/doc2#sTok1" target="rootCorpus/subCorpus1/doc2#sTok2" label="Ordering/annis/">
         </edge>
-        <edge id="e239" source="rootCorpus/subCorpus1/doc1#structure6" target="rootCorpus/subCorpus1/doc1#sTok6" label="Dominance/default_ns/edge">
+        <edge id="e239" source="rootCorpus/subCorpus1/doc2#sTok2" target="rootCorpus/subCorpus1/doc2#sTok3" label="Ordering/annis/">
         </edge>
-        <edge id="e240" source="rootCorpus/subCorpus1/doc1#structure6" target="rootCorpus/subCorpus1/doc1#structure7" label="Dominance/default_ns/edge">
+        <edge id="e240" source="rootCorpus/subCorpus1/doc2#sTok3" target="rootCorpus/subCorpus1/doc2#sTok4" label="Ordering/annis/">
         </edge>
-        <edge id="e241" source="rootCorpus/subCorpus1/doc1#structure7" target="rootCorpus/subCorpus1/doc1#structure8" label="Dominance/default_ns/edge">
+        <edge id="e241" source="rootCorpus/subCorpus1/doc2#sTok4" target="rootCorpus/subCorpus1/doc2#sTok5" label="Ordering/annis/">
         </edge>
-        <edge id="e242" source="rootCorpus/subCorpus1/doc1#structure7" target="rootCorpus/subCorpus1/doc1#structure9" label="Dominance/default_ns/edge">
+        <edge id="e242" source="rootCorpus/subCorpus1/doc2#sTok5" target="rootCorpus/subCorpus1/doc2#sTok6" label="Ordering/annis/">
         </edge>
-        <edge id="e243" source="rootCorpus/subCorpus1/doc1#structure8" target="rootCorpus/subCorpus1/doc1#sTok7" label="Dominance/default_ns/edge">
+        <edge id="e243" source="rootCorpus/subCorpus1/doc2#sTok6" target="rootCorpus/subCorpus1/doc2#sTok7" label="Ordering/annis/">
         </edge>
-        <edge id="e244" source="rootCorpus/subCorpus1/doc1#structure9" target="rootCorpus/subCorpus1/doc1#sTok8" label="Dominance/default_ns/edge">
+        <edge id="e244" source="rootCorpus/subCorpus1/doc2#sTok7" target="rootCorpus/subCorpus1/doc2#sTok8" label="Ordering/annis/">
         </edge>
-        <edge id="e245" source="rootCorpus/subCorpus1/doc1#structure9" target="rootCorpus/subCorpus1/doc1#structure10" label="Dominance/default_ns/edge">
+        <edge id="e245" source="rootCorpus/subCorpus1/doc2#sTok8" target="rootCorpus/subCorpus1/doc2#sTok9" label="Ordering/annis/">
         </edge>
-        <edge id="e246" source="rootCorpus/subCorpus1/doc1#structure10" target="rootCorpus/subCorpus1/doc1#structure11" label="Dominance/default_ns/edge">
+        <edge id="e246" source="rootCorpus/subCorpus1/doc2#sTok9" target="rootCorpus/subCorpus1/doc2#sTok10" label="Ordering/annis/">
         </edge>
-        <edge id="e247" source="rootCorpus/subCorpus1/doc1#structure11" target="rootCorpus/subCorpus1/doc1#sTok9" label="Dominance/default_ns/edge">
+        <edge id="e247" source="rootCorpus/subCorpus1/doc2#sTok10" target="rootCorpus/subCorpus1/doc2#sTok11" label="Ordering/annis/">
         </edge>
-        <edge id="e248" source="rootCorpus/subCorpus1/doc1#structure11" target="rootCorpus/subCorpus1/doc1#structure12" label="Dominance/default_ns/edge">
+        <edge id="e248" source="rootCorpus/subCorpus2/doc3#sTok1" target="rootCorpus/subCorpus2/doc3#sTok2" label="Ordering/annis/">
         </edge>
-        <edge id="e249" source="rootCorpus/subCorpus1/doc1#structure12" target="rootCorpus/subCorpus1/doc1#sTok10" label="Dominance/default_ns/edge">
+        <edge id="e249" source="rootCorpus/subCorpus2/doc3#sTok2" target="rootCorpus/subCorpus2/doc3#sTok3" label="Ordering/annis/">
         </edge>
-        <edge id="e250" source="rootCorpus/subCorpus1/doc2#structure1" target="rootCorpus/subCorpus1/doc2#sTok11" label="Dominance/default_ns/edge">
+        <edge id="e250" source="rootCorpus/subCorpus2/doc3#sTok3" target="rootCorpus/subCorpus2/doc3#sTok4" label="Ordering/annis/">
         </edge>
-        <edge id="e251" source="rootCorpus/subCorpus1/doc2#structure1" target="rootCorpus/subCorpus1/doc2#structure2" label="Dominance/default_ns/edge">
+        <edge id="e251" source="rootCorpus/subCorpus2/doc3#sTok4" target="rootCorpus/subCorpus2/doc3#sTok5" label="Ordering/annis/">
         </edge>
-        <edge id="e252" source="rootCorpus/subCorpus1/doc2#structure2" target="rootCorpus/subCorpus1/doc2#sTok1" label="Dominance/default_ns/edge">
+        <edge id="e252" source="rootCorpus/subCorpus2/doc3#sTok5" target="rootCorpus/subCorpus2/doc3#sTok6" label="Ordering/annis/">
         </edge>
-        <edge id="e253" source="rootCorpus/subCorpus1/doc2#structure2" target="rootCorpus/subCorpus1/doc2#structure3" label="Dominance/default_ns/edge">
+        <edge id="e253" source="rootCorpus/subCorpus2/doc3#sTok6" target="rootCorpus/subCorpus2/doc3#sTok7" label="Ordering/annis/">
         </edge>
-        <edge id="e254" source="rootCorpus/subCorpus1/doc2#structure2" target="rootCorpus/subCorpus1/doc2#structure4" label="Dominance/default_ns/edge">
+        <edge id="e254" source="rootCorpus/subCorpus2/doc3#sTok7" target="rootCorpus/subCorpus2/doc3#sTok8" label="Ordering/annis/">
         </edge>
-        <edge id="e255" source="rootCorpus/subCorpus1/doc2#structure3" target="rootCorpus/subCorpus1/doc2#sTok2" label="Dominance/default_ns/edge">
+        <edge id="e255" source="rootCorpus/subCorpus2/doc3#sTok8" target="rootCorpus/subCorpus2/doc3#sTok9" label="Ordering/annis/">
         </edge>
-        <edge id="e256" source="rootCorpus/subCorpus1/doc2#structure3" target="rootCorpus/subCorpus1/doc2#sTok3" label="Dominance/default_ns/edge">
+        <edge id="e256" source="rootCorpus/subCorpus2/doc3#sTok9" target="rootCorpus/subCorpus2/doc3#sTok10" label="Ordering/annis/">
         </edge>
-        <edge id="e257" source="rootCorpus/subCorpus1/doc2#structure4" target="rootCorpus/subCorpus1/doc2#structure5" label="Dominance/default_ns/edge">
+        <edge id="e257" source="rootCorpus/subCorpus2/doc3#sTok10" target="rootCorpus/subCorpus2/doc3#sTok11" label="Ordering/annis/">
         </edge>
-        <edge id="e258" source="rootCorpus/subCorpus1/doc2#structure4" target="rootCorpus/subCorpus1/doc2#structure6" label="Dominance/default_ns/edge">
+        <edge id="e258" source="rootCorpus/subCorpus2/doc4#sTok1" target="rootCorpus/subCorpus2/doc4#sTok2" label="Ordering/annis/">
         </edge>
-        <edge id="e259" source="rootCorpus/subCorpus1/doc2#structure5" target="rootCorpus/subCorpus1/doc2#sTok4" label="Dominance/default_ns/edge">
+        <edge id="e259" source="rootCorpus/subCorpus2/doc4#sTok2" target="rootCorpus/subCorpus2/doc4#sTok3" label="Ordering/annis/">
         </edge>
-        <edge id="e260" source="rootCorpus/subCorpus1/doc2#structure5" target="rootCorpus/subCorpus1/doc2#sTok5" label="Dominance/default_ns/edge">
+        <edge id="e260" source="rootCorpus/subCorpus2/doc4#sTok3" target="rootCorpus/subCorpus2/doc4#sTok4" label="Ordering/annis/">
         </edge>
-        <edge id="e261" source="rootCorpus/subCorpus1/doc2#structure6" target="rootCorpus/subCorpus1/doc2#sTok6" label="Dominance/default_ns/edge">
+        <edge id="e261" source="rootCorpus/subCorpus2/doc4#sTok4" target="rootCorpus/subCorpus2/doc4#sTok5" label="Ordering/annis/">
         </edge>
-        <edge id="e262" source="rootCorpus/subCorpus1/doc2#structure6" target="rootCorpus/subCorpus1/doc2#structure7" label="Dominance/default_ns/edge">
+        <edge id="e262" source="rootCorpus/subCorpus2/doc4#sTok5" target="rootCorpus/subCorpus2/doc4#sTok6" label="Ordering/annis/">
         </edge>
-        <edge id="e263" source="rootCorpus/subCorpus1/doc2#structure7" target="rootCorpus/subCorpus1/doc2#structure8" label="Dominance/default_ns/edge">
+        <edge id="e263" source="rootCorpus/subCorpus2/doc4#sTok6" target="rootCorpus/subCorpus2/doc4#sTok7" label="Ordering/annis/">
         </edge>
-        <edge id="e264" source="rootCorpus/subCorpus1/doc2#structure7" target="rootCorpus/subCorpus1/doc2#structure9" label="Dominance/default_ns/edge">
+        <edge id="e264" source="rootCorpus/subCorpus2/doc4#sTok7" target="rootCorpus/subCorpus2/doc4#sTok8" label="Ordering/annis/">
         </edge>
-        <edge id="e265" source="rootCorpus/subCorpus1/doc2#structure8" target="rootCorpus/subCorpus1/doc2#sTok7" label="Dominance/default_ns/edge">
+        <edge id="e265" source="rootCorpus/subCorpus2/doc4#sTok8" target="rootCorpus/subCorpus2/doc4#sTok9" label="Ordering/annis/">
         </edge>
-        <edge id="e266" source="rootCorpus/subCorpus1/doc2#structure9" target="rootCorpus/subCorpus1/doc2#sTok8" label="Dominance/default_ns/edge">
+        <edge id="e266" source="rootCorpus/subCorpus2/doc4#sTok9" target="rootCorpus/subCorpus2/doc4#sTok10" label="Ordering/annis/">
         </edge>
-        <edge id="e267" source="rootCorpus/subCorpus1/doc2#structure9" target="rootCorpus/subCorpus1/doc2#structure10" label="Dominance/default_ns/edge">
+        <edge id="e267" source="rootCorpus/subCorpus2/doc4#sTok10" target="rootCorpus/subCorpus2/doc4#sTok11" label="Ordering/annis/">
         </edge>
-        <edge id="e268" source="rootCorpus/subCorpus1/doc2#structure10" target="rootCorpus/subCorpus1/doc2#structure11" label="Dominance/default_ns/edge">
+        <edge id="e268" source="rootCorpus/subCorpus1" target="rootCorpus" label="PartOf/annis/">
         </edge>
-        <edge id="e269" source="rootCorpus/subCorpus1/doc2#structure11" target="rootCorpus/subCorpus1/doc2#sTok9" label="Dominance/default_ns/edge">
+        <edge id="e269" source="rootCorpus/subCorpus2" target="rootCorpus" label="PartOf/annis/">
         </edge>
-        <edge id="e270" source="rootCorpus/subCorpus1/doc2#structure11" target="rootCorpus/subCorpus1/doc2#structure12" label="Dominance/default_ns/edge">
+        <edge id="e270" source="rootCorpus/subCorpus1/doc1" target="rootCorpus/subCorpus1" label="PartOf/annis/">
         </edge>
-        <edge id="e271" source="rootCorpus/subCorpus1/doc2#structure12" target="rootCorpus/subCorpus1/doc2#sTok10" label="Dominance/default_ns/edge">
+        <edge id="e271" source="rootCorpus/subCorpus1/doc2" target="rootCorpus/subCorpus1" label="PartOf/annis/">
         </edge>
-        <edge id="e272" source="rootCorpus/subCorpus2/doc3#structure1" target="rootCorpus/subCorpus2/doc3#sTok11" label="Dominance/default_ns/edge">
+        <edge id="e272" source="rootCorpus/subCorpus2/doc3" target="rootCorpus/subCorpus2" label="PartOf/annis/">
         </edge>
-        <edge id="e273" source="rootCorpus/subCorpus2/doc3#structure1" target="rootCorpus/subCorpus2/doc3#structure2" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e274" source="rootCorpus/subCorpus2/doc3#structure2" target="rootCorpus/subCorpus2/doc3#sTok1" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e275" source="rootCorpus/subCorpus2/doc3#structure2" target="rootCorpus/subCorpus2/doc3#structure3" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e276" source="rootCorpus/subCorpus2/doc3#structure2" target="rootCorpus/subCorpus2/doc3#structure4" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e277" source="rootCorpus/subCorpus2/doc3#structure3" target="rootCorpus/subCorpus2/doc3#sTok2" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e278" source="rootCorpus/subCorpus2/doc3#structure3" target="rootCorpus/subCorpus2/doc3#sTok3" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e279" source="rootCorpus/subCorpus2/doc3#structure4" target="rootCorpus/subCorpus2/doc3#structure5" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e280" source="rootCorpus/subCorpus2/doc3#structure4" target="rootCorpus/subCorpus2/doc3#structure6" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e281" source="rootCorpus/subCorpus2/doc3#structure5" target="rootCorpus/subCorpus2/doc3#sTok4" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e282" source="rootCorpus/subCorpus2/doc3#structure5" target="rootCorpus/subCorpus2/doc3#sTok5" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e283" source="rootCorpus/subCorpus2/doc3#structure6" target="rootCorpus/subCorpus2/doc3#sTok6" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e284" source="rootCorpus/subCorpus2/doc3#structure6" target="rootCorpus/subCorpus2/doc3#structure7" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e285" source="rootCorpus/subCorpus2/doc3#structure7" target="rootCorpus/subCorpus2/doc3#structure8" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e286" source="rootCorpus/subCorpus2/doc3#structure7" target="rootCorpus/subCorpus2/doc3#structure9" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e287" source="rootCorpus/subCorpus2/doc3#structure8" target="rootCorpus/subCorpus2/doc3#sTok7" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e288" source="rootCorpus/subCorpus2/doc3#structure9" target="rootCorpus/subCorpus2/doc3#sTok8" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e289" source="rootCorpus/subCorpus2/doc3#structure9" target="rootCorpus/subCorpus2/doc3#structure10" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e290" source="rootCorpus/subCorpus2/doc3#structure10" target="rootCorpus/subCorpus2/doc3#structure11" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e291" source="rootCorpus/subCorpus2/doc3#structure11" target="rootCorpus/subCorpus2/doc3#sTok9" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e292" source="rootCorpus/subCorpus2/doc3#structure11" target="rootCorpus/subCorpus2/doc3#structure12" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e293" source="rootCorpus/subCorpus2/doc3#structure12" target="rootCorpus/subCorpus2/doc3#sTok10" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e294" source="rootCorpus/subCorpus2/doc4#structure1" target="rootCorpus/subCorpus2/doc4#sTok11" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e295" source="rootCorpus/subCorpus2/doc4#structure1" target="rootCorpus/subCorpus2/doc4#structure2" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e296" source="rootCorpus/subCorpus2/doc4#structure2" target="rootCorpus/subCorpus2/doc4#sTok1" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e297" source="rootCorpus/subCorpus2/doc4#structure2" target="rootCorpus/subCorpus2/doc4#structure3" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e298" source="rootCorpus/subCorpus2/doc4#structure2" target="rootCorpus/subCorpus2/doc4#structure4" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e299" source="rootCorpus/subCorpus2/doc4#structure3" target="rootCorpus/subCorpus2/doc4#sTok2" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e300" source="rootCorpus/subCorpus2/doc4#structure3" target="rootCorpus/subCorpus2/doc4#sTok3" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e301" source="rootCorpus/subCorpus2/doc4#structure4" target="rootCorpus/subCorpus2/doc4#structure5" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e302" source="rootCorpus/subCorpus2/doc4#structure4" target="rootCorpus/subCorpus2/doc4#structure6" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e303" source="rootCorpus/subCorpus2/doc4#structure5" target="rootCorpus/subCorpus2/doc4#sTok4" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e304" source="rootCorpus/subCorpus2/doc4#structure5" target="rootCorpus/subCorpus2/doc4#sTok5" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e305" source="rootCorpus/subCorpus2/doc4#structure6" target="rootCorpus/subCorpus2/doc4#sTok6" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e306" source="rootCorpus/subCorpus2/doc4#structure6" target="rootCorpus/subCorpus2/doc4#structure7" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e307" source="rootCorpus/subCorpus2/doc4#structure7" target="rootCorpus/subCorpus2/doc4#structure8" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e308" source="rootCorpus/subCorpus2/doc4#structure7" target="rootCorpus/subCorpus2/doc4#structure9" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e309" source="rootCorpus/subCorpus2/doc4#structure8" target="rootCorpus/subCorpus2/doc4#sTok7" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e310" source="rootCorpus/subCorpus2/doc4#structure9" target="rootCorpus/subCorpus2/doc4#sTok8" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e311" source="rootCorpus/subCorpus2/doc4#structure9" target="rootCorpus/subCorpus2/doc4#structure10" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e312" source="rootCorpus/subCorpus2/doc4#structure10" target="rootCorpus/subCorpus2/doc4#structure11" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e313" source="rootCorpus/subCorpus2/doc4#structure11" target="rootCorpus/subCorpus2/doc4#sTok9" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e314" source="rootCorpus/subCorpus2/doc4#structure11" target="rootCorpus/subCorpus2/doc4#structure12" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e315" source="rootCorpus/subCorpus2/doc4#structure12" target="rootCorpus/subCorpus2/doc4#sTok10" label="Dominance/default_ns/edge">
-        </edge>
-        <edge id="e316" source="rootCorpus/subCorpus1/doc1#sTok1" target="rootCorpus/subCorpus1/doc1#sTok2" label="Ordering/annis/">
-        </edge>
-        <edge id="e317" source="rootCorpus/subCorpus1/doc1#sTok2" target="rootCorpus/subCorpus1/doc1#sTok3" label="Ordering/annis/">
-        </edge>
-        <edge id="e318" source="rootCorpus/subCorpus1/doc1#sTok3" target="rootCorpus/subCorpus1/doc1#sTok4" label="Ordering/annis/">
-        </edge>
-        <edge id="e319" source="rootCorpus/subCorpus1/doc1#sTok4" target="rootCorpus/subCorpus1/doc1#sTok5" label="Ordering/annis/">
-        </edge>
-        <edge id="e320" source="rootCorpus/subCorpus1/doc1#sTok5" target="rootCorpus/subCorpus1/doc1#sTok6" label="Ordering/annis/">
-        </edge>
-        <edge id="e321" source="rootCorpus/subCorpus1/doc1#sTok6" target="rootCorpus/subCorpus1/doc1#sTok7" label="Ordering/annis/">
-        </edge>
-        <edge id="e322" source="rootCorpus/subCorpus1/doc1#sTok7" target="rootCorpus/subCorpus1/doc1#sTok8" label="Ordering/annis/">
-        </edge>
-        <edge id="e323" source="rootCorpus/subCorpus1/doc1#sTok8" target="rootCorpus/subCorpus1/doc1#sTok9" label="Ordering/annis/">
-        </edge>
-        <edge id="e324" source="rootCorpus/subCorpus1/doc1#sTok9" target="rootCorpus/subCorpus1/doc1#sTok10" label="Ordering/annis/">
-        </edge>
-        <edge id="e325" source="rootCorpus/subCorpus1/doc1#sTok10" target="rootCorpus/subCorpus1/doc1#sTok11" label="Ordering/annis/">
-        </edge>
-        <edge id="e326" source="rootCorpus/subCorpus1/doc2#sTok1" target="rootCorpus/subCorpus1/doc2#sTok2" label="Ordering/annis/">
-        </edge>
-        <edge id="e327" source="rootCorpus/subCorpus1/doc2#sTok2" target="rootCorpus/subCorpus1/doc2#sTok3" label="Ordering/annis/">
-        </edge>
-        <edge id="e328" source="rootCorpus/subCorpus1/doc2#sTok3" target="rootCorpus/subCorpus1/doc2#sTok4" label="Ordering/annis/">
-        </edge>
-        <edge id="e329" source="rootCorpus/subCorpus1/doc2#sTok4" target="rootCorpus/subCorpus1/doc2#sTok5" label="Ordering/annis/">
-        </edge>
-        <edge id="e330" source="rootCorpus/subCorpus1/doc2#sTok5" target="rootCorpus/subCorpus1/doc2#sTok6" label="Ordering/annis/">
-        </edge>
-        <edge id="e331" source="rootCorpus/subCorpus1/doc2#sTok6" target="rootCorpus/subCorpus1/doc2#sTok7" label="Ordering/annis/">
-        </edge>
-        <edge id="e332" source="rootCorpus/subCorpus1/doc2#sTok7" target="rootCorpus/subCorpus1/doc2#sTok8" label="Ordering/annis/">
-        </edge>
-        <edge id="e333" source="rootCorpus/subCorpus1/doc2#sTok8" target="rootCorpus/subCorpus1/doc2#sTok9" label="Ordering/annis/">
-        </edge>
-        <edge id="e334" source="rootCorpus/subCorpus1/doc2#sTok9" target="rootCorpus/subCorpus1/doc2#sTok10" label="Ordering/annis/">
-        </edge>
-        <edge id="e335" source="rootCorpus/subCorpus1/doc2#sTok10" target="rootCorpus/subCorpus1/doc2#sTok11" label="Ordering/annis/">
-        </edge>
-        <edge id="e336" source="rootCorpus/subCorpus2/doc3#sTok1" target="rootCorpus/subCorpus2/doc3#sTok2" label="Ordering/annis/">
-        </edge>
-        <edge id="e337" source="rootCorpus/subCorpus2/doc3#sTok2" target="rootCorpus/subCorpus2/doc3#sTok3" label="Ordering/annis/">
-        </edge>
-        <edge id="e338" source="rootCorpus/subCorpus2/doc3#sTok3" target="rootCorpus/subCorpus2/doc3#sTok4" label="Ordering/annis/">
-        </edge>
-        <edge id="e339" source="rootCorpus/subCorpus2/doc3#sTok4" target="rootCorpus/subCorpus2/doc3#sTok5" label="Ordering/annis/">
-        </edge>
-        <edge id="e340" source="rootCorpus/subCorpus2/doc3#sTok5" target="rootCorpus/subCorpus2/doc3#sTok6" label="Ordering/annis/">
-        </edge>
-        <edge id="e341" source="rootCorpus/subCorpus2/doc3#sTok6" target="rootCorpus/subCorpus2/doc3#sTok7" label="Ordering/annis/">
-        </edge>
-        <edge id="e342" source="rootCorpus/subCorpus2/doc3#sTok7" target="rootCorpus/subCorpus2/doc3#sTok8" label="Ordering/annis/">
-        </edge>
-        <edge id="e343" source="rootCorpus/subCorpus2/doc3#sTok8" target="rootCorpus/subCorpus2/doc3#sTok9" label="Ordering/annis/">
-        </edge>
-        <edge id="e344" source="rootCorpus/subCorpus2/doc3#sTok9" target="rootCorpus/subCorpus2/doc3#sTok10" label="Ordering/annis/">
-        </edge>
-        <edge id="e345" source="rootCorpus/subCorpus2/doc3#sTok10" target="rootCorpus/subCorpus2/doc3#sTok11" label="Ordering/annis/">
-        </edge>
-        <edge id="e346" source="rootCorpus/subCorpus2/doc4#sTok1" target="rootCorpus/subCorpus2/doc4#sTok2" label="Ordering/annis/">
-        </edge>
-        <edge id="e347" source="rootCorpus/subCorpus2/doc4#sTok2" target="rootCorpus/subCorpus2/doc4#sTok3" label="Ordering/annis/">
-        </edge>
-        <edge id="e348" source="rootCorpus/subCorpus2/doc4#sTok3" target="rootCorpus/subCorpus2/doc4#sTok4" label="Ordering/annis/">
-        </edge>
-        <edge id="e349" source="rootCorpus/subCorpus2/doc4#sTok4" target="rootCorpus/subCorpus2/doc4#sTok5" label="Ordering/annis/">
-        </edge>
-        <edge id="e350" source="rootCorpus/subCorpus2/doc4#sTok5" target="rootCorpus/subCorpus2/doc4#sTok6" label="Ordering/annis/">
-        </edge>
-        <edge id="e351" source="rootCorpus/subCorpus2/doc4#sTok6" target="rootCorpus/subCorpus2/doc4#sTok7" label="Ordering/annis/">
-        </edge>
-        <edge id="e352" source="rootCorpus/subCorpus2/doc4#sTok7" target="rootCorpus/subCorpus2/doc4#sTok8" label="Ordering/annis/">
-        </edge>
-        <edge id="e353" source="rootCorpus/subCorpus2/doc4#sTok8" target="rootCorpus/subCorpus2/doc4#sTok9" label="Ordering/annis/">
-        </edge>
-        <edge id="e354" source="rootCorpus/subCorpus2/doc4#sTok9" target="rootCorpus/subCorpus2/doc4#sTok10" label="Ordering/annis/">
-        </edge>
-        <edge id="e355" source="rootCorpus/subCorpus2/doc4#sTok10" target="rootCorpus/subCorpus2/doc4#sTok11" label="Ordering/annis/">
-        </edge>
-        <edge id="e356" source="rootCorpus/subCorpus1" target="rootCorpus" label="PartOf/annis/">
-        </edge>
-        <edge id="e357" source="rootCorpus/subCorpus2" target="rootCorpus" label="PartOf/annis/">
-        </edge>
-        <edge id="e358" source="rootCorpus/subCorpus1/doc1" target="rootCorpus/subCorpus1" label="PartOf/annis/">
-        </edge>
-        <edge id="e359" source="rootCorpus/subCorpus1/doc2" target="rootCorpus/subCorpus1" label="PartOf/annis/">
-        </edge>
-        <edge id="e360" source="rootCorpus/subCorpus2/doc3" target="rootCorpus/subCorpus2" label="PartOf/annis/">
-        </edge>
-        <edge id="e361" source="rootCorpus/subCorpus2/doc4" target="rootCorpus/subCorpus2" label="PartOf/annis/">
+        <edge id="e273" source="rootCorpus/subCorpus2/doc4" target="rootCorpus/subCorpus2" label="PartOf/annis/">
         </edge>
     </graph>
 </graphml>
