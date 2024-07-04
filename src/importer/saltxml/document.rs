@@ -103,7 +103,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             node_type: "node".to_string(),
         })?;
 
-        let mut fallback_annotation_namespace = "".to_string();
+        let mut fallback_annotation_namespace = "default_ns".to_string();
 
         if let Some(layers_attribute) = n.attribute("layers") {
             for layer_ref in layers_attribute.split(' ') {
@@ -200,7 +200,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         let fallback_annotation_namespace = if self.missing_anno_ns_from_layer {
             &component_layer
         } else {
-            ""
+            "default_ns"
         };
 
         for label_element in get_annotations(rel) {

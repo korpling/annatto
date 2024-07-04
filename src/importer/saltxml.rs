@@ -16,8 +16,8 @@ use super::Importer;
 pub struct ImportSaltXml {
     /// If `true`, use the layer name as fallback for the namespace annotations
     /// if none is given. This is consistent with how the ANNIS tree visualizer
-    /// handles annotations without any namespace. If `false`, use an empty
-    /// string as annotation namespace.
+    /// handles annotations without any namespace. If `false`, use the
+    /// `default_ns` namespace as fallback.
     missing_anno_ns_from_layer: bool,
 }
 
