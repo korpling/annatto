@@ -39,7 +39,7 @@ visibility = "hidden"
 [visualizers.mappings]
 annos = "/default_ns::pos/,/syntax::cat/"
 escape_html = "false"
-hide_tok = "true"
+hide_tok = "false"
 show_ns = "false"
 
 ]]></data>

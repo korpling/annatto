@@ -350,35 +350,36 @@ fn node_annos_vis(graph: &AnnotationGraph) -> Result<Visualizer, Box<dyn std::er
     mappings.insert("annos".to_string(), node_names);
     mappings.insert("escape_html".to_string(), "false".to_string());
 
-    let more_than_one_ordering = order_names.len() > 1;
-    let ordered_nodes_are_identical = {
-        more_than_one_ordering && {
-            let ordering_components =
-                graph.get_all_components(Some(AnnotationComponentType::Ordering), None);
-            let node_sets = ordering_components
-                .iter()
-                .map(|c| {
-                    if let Some(strge) = graph.get_graphstorage(c) {
-                        strge
-                            .source_nodes()
-                            .filter_map(|r| if let Ok(n) = r { Some(n) } else { None })
-                            .collect::<BTreeSet<u64>>()
-                    } else {
-                        BTreeSet::default()
-                    }
-                })
-                .collect_vec();
-            let mut all_same = true;
-            //for i in 1..node_sets.len()
-            for (a, b) in node_sets.into_iter().tuple_windows() {
-                all_same &= matches!(a.cmp(&b), Ordering::Equal);
-            }
-            all_same
+    let ordered_components_contain_identical_nodes = if order_names.len() > 1 {
+        let ordering_components =
+            graph.get_all_components(Some(AnnotationComponentType::Ordering), None);
+        let node_sets = ordering_components
+            .iter()
+            .map(|c| {
+                if let Some(strge) = graph.get_graphstorage(c) {
+                    strge
+                        .source_nodes()
+                        .filter_map(|r| if let Ok(n) = r { Some(n) } else { None })
+                        .collect::<BTreeSet<u64>>()
+                } else {
+                    BTreeSet::default()
+                }
+            })
+            .collect_vec();
+        let mut all_same = true;
+        //for i in 1..node_sets.len()
+        for (a, b) in node_sets.into_iter().tuple_windows() {
+            all_same &= matches!(a.cmp(&b), Ordering::Equal);
         }
+        all_same
+    } else {
+        // There is only one ordering component
+        true
     };
+
     mappings.insert(
         "hide_tok".to_string(),
-        (!ordered_nodes_are_identical).to_string(),
+        (!ordered_components_contain_identical_nodes).to_string(),
     );
     mappings.insert("show_ns".to_string(), "false".to_string());
     Ok(Visualizer {
