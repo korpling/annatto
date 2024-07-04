@@ -74,16 +74,16 @@ impl SaltCorpusStructureMapper {
                                 feature_node.attribute("value").unwrap_or_default(),
                             );
 
-                            if salt_type == SaltType::Document
-                                && annos_ns == Some("salt")
-                                && anno_name == "SNAME"
-                            {
-                                updates.add_event(UpdateEvent::AddNodeLabel {
-                                    node_name: node_name.to_string(),
-                                    anno_ns: ANNIS_NS.to_string(),
-                                    anno_name: "doc".to_string(),
-                                    anno_value: anno_value.to_string(),
-                                })?;
+                            if annos_ns == Some("salt") && anno_name == "SNAME" {
+                                // Only map this specific feature as document name
+                                if salt_type == SaltType::Document {
+                                    updates.add_event(UpdateEvent::AddNodeLabel {
+                                        node_name: node_name.to_string(),
+                                        anno_ns: ANNIS_NS.to_string(),
+                                        anno_name: "doc".to_string(),
+                                        anno_value: anno_value.to_string(),
+                                    })?;
+                                }
                             } else {
                                 updates.add_event(UpdateEvent::AddNodeLabel {
                                     node_name: node_name.to_string(),

@@ -6,687 +6,683 @@ expression: actual
 <graphml>
     <key id="k0" for="node" attr.name="Inf-Struct" attr.type="string"/>
     <key id="k1" for="node" attr.name="salt::SDOCUMENT_GRAPH_LOCATION" attr.type="string"/>
-    <key id="k2" for="node" attr.name="salt::SNAME" attr.type="string"/>
-    <key id="k3" for="node" attr.name="const" attr.type="string"/>
-    <key id="k4" for="node" attr.name="annis::doc" attr.type="string"/>
-    <key id="k5" for="node" attr.name="annis::layer" attr.type="string"/>
-    <key id="k6" for="node" attr.name="salt::lemma" attr.type="string"/>
-    <key id="k7" for="node" attr.name="annis::node_type" attr.type="string"/>
-    <key id="k8" for="node" attr.name="salt::pos" attr.type="string"/>
-    <key id="k9" for="node" attr.name="annis::tok" attr.type="string"/>
-    <key id="k10" for="node" attr.name="annis::tok-whitespace-after" attr.type="string"/>
+    <key id="k2" for="node" attr.name="const" attr.type="string"/>
+    <key id="k3" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k4" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k5" for="node" attr.name="salt::lemma" attr.type="string"/>
+    <key id="k6" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k7" for="node" attr.name="salt::pos" attr.type="string"/>
+    <key id="k8" for="node" attr.name="annis::tok" attr.type="string"/>
+    <key id="k9" for="node" attr.name="annis::tok-whitespace-after" attr.type="string"/>
     <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
         <node id="rootCorpus">
-            <data key="k2">rootCorpus</data>
-            <data key="k7">corpus</data>
+            <data key="k6">corpus</data>
         </node>
         <node id="rootCorpus/subCorpus1">
-            <data key="k2">subCorpus1</data>
-            <data key="k7">corpus</data>
+            <data key="k6">corpus</data>
         </node>
         <node id="rootCorpus/subCorpus2">
-            <data key="k2">subCorpus2</data>
-            <data key="k7">corpus</data>
+            <data key="k6">corpus</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1">
             <data key="k1">file:/home/thomas/korpora/SaltSampleCorpus/rootCorpus/subCorpus1/doc1.salt</data>
-            <data key="k4">doc1</data>
-            <data key="k7">corpus</data>
+            <data key="k3">doc1</data>
+            <data key="k6">corpus</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2">
             <data key="k1">file:/home/thomas/korpora/SaltSampleCorpus/rootCorpus/subCorpus1/doc2.salt</data>
-            <data key="k4">doc2</data>
-            <data key="k7">corpus</data>
+            <data key="k3">doc2</data>
+            <data key="k6">corpus</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3">
             <data key="k1">file:/home/thomas/korpora/SaltSampleCorpus/rootCorpus/subCorpus2/doc3.salt</data>
-            <data key="k4">doc3</data>
-            <data key="k7">corpus</data>
+            <data key="k3">doc3</data>
+            <data key="k6">corpus</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4">
             <data key="k1">file:/home/thomas/korpora/SaltSampleCorpus/rootCorpus/subCorpus2/doc4.salt</data>
-            <data key="k4">doc4</data>
-            <data key="k7">corpus</data>
+            <data key="k3">doc4</data>
+            <data key="k6">corpus</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sText1">
-            <data key="k7">datasource</data>
+            <data key="k6">datasource</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok1">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">be</data>
-            <data key="k7">node</data>
-            <data key="k8">VBZ</data>
-            <data key="k9">Is</data>
+            <data key="k4">morphology</data>
+            <data key="k5">be</data>
+            <data key="k6">node</data>
+            <data key="k7">VBZ</data>
+            <data key="k8">Is</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok2">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">this</data>
-            <data key="k7">node</data>
-            <data key="k8">DT</data>
-            <data key="k9">this</data>
+            <data key="k4">morphology</data>
+            <data key="k5">this</data>
+            <data key="k6">node</data>
+            <data key="k7">DT</data>
+            <data key="k8">this</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok3">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">example</data>
-            <data key="k7">node</data>
-            <data key="k8">NN</data>
-            <data key="k9">example</data>
+            <data key="k4">morphology</data>
+            <data key="k5">example</data>
+            <data key="k6">node</data>
+            <data key="k7">NN</data>
+            <data key="k8">example</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok4">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">more</data>
-            <data key="k7">node</data>
-            <data key="k8">RBR</data>
-            <data key="k9">more</data>
+            <data key="k4">morphology</data>
+            <data key="k5">more</data>
+            <data key="k6">node</data>
+            <data key="k7">RBR</data>
+            <data key="k8">more</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok5">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">complicated</data>
-            <data key="k7">node</data>
-            <data key="k8">JJ</data>
-            <data key="k9">complicated</data>
+            <data key="k4">morphology</data>
+            <data key="k5">complicated</data>
+            <data key="k6">node</data>
+            <data key="k7">JJ</data>
+            <data key="k8">complicated</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok6">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">than</data>
-            <data key="k7">node</data>
-            <data key="k8">IN</data>
-            <data key="k9">than</data>
+            <data key="k4">morphology</data>
+            <data key="k5">than</data>
+            <data key="k6">node</data>
+            <data key="k7">IN</data>
+            <data key="k8">than</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok7">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">it</data>
-            <data key="k7">node</data>
-            <data key="k8">PRP</data>
-            <data key="k9">it</data>
+            <data key="k4">morphology</data>
+            <data key="k5">it</data>
+            <data key="k6">node</data>
+            <data key="k7">PRP</data>
+            <data key="k8">it</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok8">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">appear</data>
-            <data key="k7">node</data>
-            <data key="k8">VBZ</data>
-            <data key="k9">appears</data>
+            <data key="k4">morphology</data>
+            <data key="k5">appear</data>
+            <data key="k6">node</data>
+            <data key="k7">VBZ</data>
+            <data key="k8">appears</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok9">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">to</data>
-            <data key="k7">node</data>
-            <data key="k8">TO</data>
-            <data key="k9">to</data>
+            <data key="k4">morphology</data>
+            <data key="k5">to</data>
+            <data key="k6">node</data>
+            <data key="k7">TO</data>
+            <data key="k8">to</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok10">
-            <data key="k5">morphology</data>
-            <data key="k6">be</data>
-            <data key="k7">node</data>
-            <data key="k8">VB</data>
-            <data key="k9">be</data>
+            <data key="k4">morphology</data>
+            <data key="k5">be</data>
+            <data key="k6">node</data>
+            <data key="k7">VB</data>
+            <data key="k8">be</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sTok11">
-            <data key="k5">morphology</data>
-            <data key="k6">?</data>
-            <data key="k7">node</data>
-            <data key="k8">.</data>
-            <data key="k9">?</data>
+            <data key="k4">morphology</data>
+            <data key="k5">?</data>
+            <data key="k6">node</data>
+            <data key="k7">.</data>
+            <data key="k8">?</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#IS_span1">
             <data key="k0">contrast-focus</data>
-            <data key="k7">node</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#IS_span2">
             <data key="k0">topic</data>
-            <data key="k7">node</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#structure1">
-            <data key="k3">ROOT</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">ROOT</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#structure2">
-            <data key="k3">SQ</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">SQ</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#structure3">
-            <data key="k3">NP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">NP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#structure4">
-            <data key="k3">ADJP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">ADJP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#structure5">
-            <data key="k3">ADJP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">ADJP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#structure6">
-            <data key="k3">SBar</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">SBar</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#structure7">
-            <data key="k3">S</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">S</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#structure8">
-            <data key="k3">NP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">NP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#structure9">
-            <data key="k3">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">VP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#structure10">
-            <data key="k3">S</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">S</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#structure11">
-            <data key="k3">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">VP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#structure12">
-            <data key="k3">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">VP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc1#sSpan3">
-            <data key="k7">node</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sText1">
-            <data key="k7">datasource</data>
+            <data key="k6">datasource</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok1">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">be</data>
-            <data key="k7">node</data>
-            <data key="k8">VBZ</data>
-            <data key="k9">Is</data>
+            <data key="k4">morphology</data>
+            <data key="k5">be</data>
+            <data key="k6">node</data>
+            <data key="k7">VBZ</data>
+            <data key="k8">Is</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok2">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">this</data>
-            <data key="k7">node</data>
-            <data key="k8">DT</data>
-            <data key="k9">this</data>
+            <data key="k4">morphology</data>
+            <data key="k5">this</data>
+            <data key="k6">node</data>
+            <data key="k7">DT</data>
+            <data key="k8">this</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok3">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">example</data>
-            <data key="k7">node</data>
-            <data key="k8">NN</data>
-            <data key="k9">example</data>
+            <data key="k4">morphology</data>
+            <data key="k5">example</data>
+            <data key="k6">node</data>
+            <data key="k7">NN</data>
+            <data key="k8">example</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok4">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">more</data>
-            <data key="k7">node</data>
-            <data key="k8">RBR</data>
-            <data key="k9">more</data>
+            <data key="k4">morphology</data>
+            <data key="k5">more</data>
+            <data key="k6">node</data>
+            <data key="k7">RBR</data>
+            <data key="k8">more</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok5">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">complicated</data>
-            <data key="k7">node</data>
-            <data key="k8">JJ</data>
-            <data key="k9">complicated</data>
+            <data key="k4">morphology</data>
+            <data key="k5">complicated</data>
+            <data key="k6">node</data>
+            <data key="k7">JJ</data>
+            <data key="k8">complicated</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok6">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">than</data>
-            <data key="k7">node</data>
-            <data key="k8">IN</data>
-            <data key="k9">than</data>
+            <data key="k4">morphology</data>
+            <data key="k5">than</data>
+            <data key="k6">node</data>
+            <data key="k7">IN</data>
+            <data key="k8">than</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok7">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">it</data>
-            <data key="k7">node</data>
-            <data key="k8">PRP</data>
-            <data key="k9">it</data>
+            <data key="k4">morphology</data>
+            <data key="k5">it</data>
+            <data key="k6">node</data>
+            <data key="k7">PRP</data>
+            <data key="k8">it</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok8">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">appear</data>
-            <data key="k7">node</data>
-            <data key="k8">VBZ</data>
-            <data key="k9">appears</data>
+            <data key="k4">morphology</data>
+            <data key="k5">appear</data>
+            <data key="k6">node</data>
+            <data key="k7">VBZ</data>
+            <data key="k8">appears</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok9">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">to</data>
-            <data key="k7">node</data>
-            <data key="k8">TO</data>
-            <data key="k9">to</data>
+            <data key="k4">morphology</data>
+            <data key="k5">to</data>
+            <data key="k6">node</data>
+            <data key="k7">TO</data>
+            <data key="k8">to</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok10">
-            <data key="k5">morphology</data>
-            <data key="k6">be</data>
-            <data key="k7">node</data>
-            <data key="k8">VB</data>
-            <data key="k9">be</data>
+            <data key="k4">morphology</data>
+            <data key="k5">be</data>
+            <data key="k6">node</data>
+            <data key="k7">VB</data>
+            <data key="k8">be</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sTok11">
-            <data key="k5">morphology</data>
-            <data key="k6">?</data>
-            <data key="k7">node</data>
-            <data key="k8">.</data>
-            <data key="k9">?</data>
+            <data key="k4">morphology</data>
+            <data key="k5">?</data>
+            <data key="k6">node</data>
+            <data key="k7">.</data>
+            <data key="k8">?</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#IS_span1">
             <data key="k0">contrast-focus</data>
-            <data key="k7">node</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#IS_span2">
             <data key="k0">topic</data>
-            <data key="k7">node</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#structure1">
-            <data key="k3">ROOT</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">ROOT</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#structure2">
-            <data key="k3">SQ</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">SQ</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#structure3">
-            <data key="k3">NP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">NP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#structure4">
-            <data key="k3">ADJP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">ADJP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#structure5">
-            <data key="k3">ADJP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">ADJP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#structure6">
-            <data key="k3">SBar</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">SBar</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#structure7">
-            <data key="k3">S</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">S</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#structure8">
-            <data key="k3">NP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">NP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#structure9">
-            <data key="k3">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">VP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#structure10">
-            <data key="k3">S</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">S</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#structure11">
-            <data key="k3">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">VP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#structure12">
-            <data key="k3">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">VP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus1/doc2#sSpan3">
-            <data key="k7">node</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sText1">
-            <data key="k7">datasource</data>
+            <data key="k6">datasource</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok1">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">be</data>
-            <data key="k7">node</data>
-            <data key="k8">VBZ</data>
-            <data key="k9">Is</data>
+            <data key="k4">morphology</data>
+            <data key="k5">be</data>
+            <data key="k6">node</data>
+            <data key="k7">VBZ</data>
+            <data key="k8">Is</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok2">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">this</data>
-            <data key="k7">node</data>
-            <data key="k8">DT</data>
-            <data key="k9">this</data>
+            <data key="k4">morphology</data>
+            <data key="k5">this</data>
+            <data key="k6">node</data>
+            <data key="k7">DT</data>
+            <data key="k8">this</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok3">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">example</data>
-            <data key="k7">node</data>
-            <data key="k8">NN</data>
-            <data key="k9">example</data>
+            <data key="k4">morphology</data>
+            <data key="k5">example</data>
+            <data key="k6">node</data>
+            <data key="k7">NN</data>
+            <data key="k8">example</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok4">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">more</data>
-            <data key="k7">node</data>
-            <data key="k8">RBR</data>
-            <data key="k9">more</data>
+            <data key="k4">morphology</data>
+            <data key="k5">more</data>
+            <data key="k6">node</data>
+            <data key="k7">RBR</data>
+            <data key="k8">more</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok5">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">complicated</data>
-            <data key="k7">node</data>
-            <data key="k8">JJ</data>
-            <data key="k9">complicated</data>
+            <data key="k4">morphology</data>
+            <data key="k5">complicated</data>
+            <data key="k6">node</data>
+            <data key="k7">JJ</data>
+            <data key="k8">complicated</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok6">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">than</data>
-            <data key="k7">node</data>
-            <data key="k8">IN</data>
-            <data key="k9">than</data>
+            <data key="k4">morphology</data>
+            <data key="k5">than</data>
+            <data key="k6">node</data>
+            <data key="k7">IN</data>
+            <data key="k8">than</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok7">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">it</data>
-            <data key="k7">node</data>
-            <data key="k8">PRP</data>
-            <data key="k9">it</data>
+            <data key="k4">morphology</data>
+            <data key="k5">it</data>
+            <data key="k6">node</data>
+            <data key="k7">PRP</data>
+            <data key="k8">it</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok8">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">appear</data>
-            <data key="k7">node</data>
-            <data key="k8">VBZ</data>
-            <data key="k9">appears</data>
+            <data key="k4">morphology</data>
+            <data key="k5">appear</data>
+            <data key="k6">node</data>
+            <data key="k7">VBZ</data>
+            <data key="k8">appears</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok9">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">to</data>
-            <data key="k7">node</data>
-            <data key="k8">TO</data>
-            <data key="k9">to</data>
+            <data key="k4">morphology</data>
+            <data key="k5">to</data>
+            <data key="k6">node</data>
+            <data key="k7">TO</data>
+            <data key="k8">to</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok10">
-            <data key="k5">morphology</data>
-            <data key="k6">be</data>
-            <data key="k7">node</data>
-            <data key="k8">VB</data>
-            <data key="k9">be</data>
+            <data key="k4">morphology</data>
+            <data key="k5">be</data>
+            <data key="k6">node</data>
+            <data key="k7">VB</data>
+            <data key="k8">be</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sTok11">
-            <data key="k5">morphology</data>
-            <data key="k6">?</data>
-            <data key="k7">node</data>
-            <data key="k8">.</data>
-            <data key="k9">?</data>
+            <data key="k4">morphology</data>
+            <data key="k5">?</data>
+            <data key="k6">node</data>
+            <data key="k7">.</data>
+            <data key="k8">?</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#IS_span1">
             <data key="k0">contrast-focus</data>
-            <data key="k7">node</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#IS_span2">
             <data key="k0">topic</data>
-            <data key="k7">node</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#structure1">
-            <data key="k3">ROOT</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">ROOT</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#structure2">
-            <data key="k3">SQ</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">SQ</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#structure3">
-            <data key="k3">NP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">NP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#structure4">
-            <data key="k3">ADJP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">ADJP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#structure5">
-            <data key="k3">ADJP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">ADJP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#structure6">
-            <data key="k3">SBar</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">SBar</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#structure7">
-            <data key="k3">S</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">S</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#structure8">
-            <data key="k3">NP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">NP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#structure9">
-            <data key="k3">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">VP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#structure10">
-            <data key="k3">S</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">S</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#structure11">
-            <data key="k3">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">VP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#structure12">
-            <data key="k3">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">VP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc3#sSpan3">
-            <data key="k7">node</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sText1">
-            <data key="k7">datasource</data>
+            <data key="k6">datasource</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok1">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">be</data>
-            <data key="k7">node</data>
-            <data key="k8">VBZ</data>
-            <data key="k9">Is</data>
+            <data key="k4">morphology</data>
+            <data key="k5">be</data>
+            <data key="k6">node</data>
+            <data key="k7">VBZ</data>
+            <data key="k8">Is</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok2">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">this</data>
-            <data key="k7">node</data>
-            <data key="k8">DT</data>
-            <data key="k9">this</data>
+            <data key="k4">morphology</data>
+            <data key="k5">this</data>
+            <data key="k6">node</data>
+            <data key="k7">DT</data>
+            <data key="k8">this</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok3">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">example</data>
-            <data key="k7">node</data>
-            <data key="k8">NN</data>
-            <data key="k9">example</data>
+            <data key="k4">morphology</data>
+            <data key="k5">example</data>
+            <data key="k6">node</data>
+            <data key="k7">NN</data>
+            <data key="k8">example</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok4">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">more</data>
-            <data key="k7">node</data>
-            <data key="k8">RBR</data>
-            <data key="k9">more</data>
+            <data key="k4">morphology</data>
+            <data key="k5">more</data>
+            <data key="k6">node</data>
+            <data key="k7">RBR</data>
+            <data key="k8">more</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok5">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">complicated</data>
-            <data key="k7">node</data>
-            <data key="k8">JJ</data>
-            <data key="k9">complicated</data>
+            <data key="k4">morphology</data>
+            <data key="k5">complicated</data>
+            <data key="k6">node</data>
+            <data key="k7">JJ</data>
+            <data key="k8">complicated</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok6">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">than</data>
-            <data key="k7">node</data>
-            <data key="k8">IN</data>
-            <data key="k9">than</data>
+            <data key="k4">morphology</data>
+            <data key="k5">than</data>
+            <data key="k6">node</data>
+            <data key="k7">IN</data>
+            <data key="k8">than</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok7">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">it</data>
-            <data key="k7">node</data>
-            <data key="k8">PRP</data>
-            <data key="k9">it</data>
+            <data key="k4">morphology</data>
+            <data key="k5">it</data>
+            <data key="k6">node</data>
+            <data key="k7">PRP</data>
+            <data key="k8">it</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok8">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">appear</data>
-            <data key="k7">node</data>
-            <data key="k8">VBZ</data>
-            <data key="k9">appears</data>
+            <data key="k4">morphology</data>
+            <data key="k5">appear</data>
+            <data key="k6">node</data>
+            <data key="k7">VBZ</data>
+            <data key="k8">appears</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok9">
-            <data key="k10"> </data>
-            <data key="k5">morphology</data>
-            <data key="k6">to</data>
-            <data key="k7">node</data>
-            <data key="k8">TO</data>
-            <data key="k9">to</data>
+            <data key="k4">morphology</data>
+            <data key="k5">to</data>
+            <data key="k6">node</data>
+            <data key="k7">TO</data>
+            <data key="k8">to</data>
+            <data key="k9"> </data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok10">
-            <data key="k5">morphology</data>
-            <data key="k6">be</data>
-            <data key="k7">node</data>
-            <data key="k8">VB</data>
-            <data key="k9">be</data>
+            <data key="k4">morphology</data>
+            <data key="k5">be</data>
+            <data key="k6">node</data>
+            <data key="k7">VB</data>
+            <data key="k8">be</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sTok11">
-            <data key="k5">morphology</data>
-            <data key="k6">?</data>
-            <data key="k7">node</data>
-            <data key="k8">.</data>
-            <data key="k9">?</data>
+            <data key="k4">morphology</data>
+            <data key="k5">?</data>
+            <data key="k6">node</data>
+            <data key="k7">.</data>
+            <data key="k8">?</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#IS_span1">
             <data key="k0">contrast-focus</data>
-            <data key="k7">node</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#IS_span2">
             <data key="k0">topic</data>
-            <data key="k7">node</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#structure1">
-            <data key="k3">ROOT</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">ROOT</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#structure2">
-            <data key="k3">SQ</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">SQ</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#structure3">
-            <data key="k3">NP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">NP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#structure4">
-            <data key="k3">ADJP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">ADJP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#structure5">
-            <data key="k3">ADJP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">ADJP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#structure6">
-            <data key="k3">SBar</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">SBar</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#structure7">
-            <data key="k3">S</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">S</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#structure8">
-            <data key="k3">NP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">NP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#structure9">
-            <data key="k3">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">VP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#structure10">
-            <data key="k3">S</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">S</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#structure11">
-            <data key="k3">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">VP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#structure12">
-            <data key="k3">VP</data>
-            <data key="k5">syntax</data>
-            <data key="k7">node</data>
+            <data key="k2">VP</data>
+            <data key="k4">syntax</data>
+            <data key="k6">node</data>
         </node>
         <node id="rootCorpus/subCorpus2/doc4#sSpan3">
-            <data key="k7">node</data>
+            <data key="k6">node</data>
         </node>
         <edge id="e0" source="rootCorpus/subCorpus1/doc1#IS_span1" target="rootCorpus/subCorpus1/doc1#sTok1" label="Coverage/default_ns/">
         </edge>
