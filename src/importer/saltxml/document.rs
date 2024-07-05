@@ -79,14 +79,12 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             .next();
 
         mapper.map_textual_datasources(updates)?;
+        mapper.map_tokens(&document_node_name, timeline.as_ref(), updates)?;
         if let Some(timeline) = timeline {
             mapper.map_timeline(&timeline, &document_node_name, updates)?;
         }
 
-        mapper.map_tokens(&document_node_name, timeline.as_ref(), updates)?;
         mapper.map_non_token_nodes(&document_node_name, updates)?;
-
-        // TODO map SOrderRelation for segmentation nodes
         // TODO map SAudioDS and SAudioRelation
 
         Ok(())
@@ -132,6 +130,38 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         } else {
             bail!("SDATA attribute for timeline is not a number.")
         }
+
+        // Connect the existing non-timeline tokens with the the timeline tokens
+        for timeline_rel in self
+            .edges
+            .iter()
+            .filter(|rel| SaltType::from_node(*rel) == SaltType::TimelineRelation)
+        {
+            let source_att = timeline_rel.attribute("source").unwrap_or_default();
+            let token_node = resolve_element(&source_att, "nodes", &self.nodes)
+                .context("Token referenced in STimelineRelation cannot be resolved")?;
+            let token_id = get_element_id(&token_node).context("Token has no ID")?;
+
+            let start = get_feature_by_qname(timeline_rel, "salt", "SSTART")
+                .context("Missing SSTART attribute for timeline relation")?;
+            let end = get_feature_by_qname(timeline_rel, "salt", "SEND")
+                .context("Missing SEND attribute for timeline relation")?;
+
+            if let (SaltObject::Integer(start), SaltObject::Integer(end)) = (start, end) {
+                for tli in start..end {
+                    updates.add_event(UpdateEvent::AddEdge {
+                        source_node: token_id.clone(),
+                        target_node: format!("{document_node_name}#tli{tli}"),
+                        layer: ANNIS_NS.to_string(),
+                        component_type: AnnotationComponentType::Coverage.to_string(),
+                        component_name: "".to_string(),
+                    })?;
+                }
+            } else {
+                bail!("SSTART/SEND not an integer")
+            }
+        }
+
         Ok(())
     }
 
@@ -457,6 +487,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         }
 
         // Connect all spans with the token using the spanning relations
+        // TODO: use the covered timeline token as target if there is a timeline
         for spanning_rel in self
             .edges
             .iter()
