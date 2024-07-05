@@ -278,6 +278,8 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                 .base_texts
                 .get(&datasource_id)
                 .with_context(|| format!("Missing base text for token {token_id}"))?;
+            // Our indices are refering to characters not bytes
+            let matching_base_text = matching_base_text.chars().collect_vec();
             let start =
                 get_feature_by_qname(&text_rel, "salt", "SSTART").context("Missing start value")?;
             let end =
@@ -290,7 +292,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                     node_name: token_id.clone(),
                     anno_ns: ANNIS_NS.to_string(),
                     anno_name: "tok".to_string(),
-                    anno_value: covered_text.to_string(),
+                    anno_value: covered_text.iter().collect(),
                 })?;
 
                 // Get the whitespace before the first token
@@ -300,7 +302,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                         node_name: token_id.clone(),
                         anno_ns: ANNIS_NS.to_string(),
                         anno_name: "tok-whitespace-before".to_string(),
-                        anno_value: whitespace.to_string(),
+                        anno_value: whitespace.iter().collect(),
                     })?;
                 }
 
@@ -317,7 +319,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                         node_name: token_id.clone(),
                         anno_ns: ANNIS_NS.to_string(),
                         anno_name: "tok-whitespace-after".to_string(),
-                        anno_value: whitespace.to_string(),
+                        anno_value: whitespace.iter().collect(),
                     })?;
                 }
             }
