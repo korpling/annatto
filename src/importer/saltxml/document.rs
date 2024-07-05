@@ -27,6 +27,7 @@ pub(super) struct DocumentMapper<'a, 'input> {
     edges: Vec<Node<'a, 'input>>,
     layers: Vec<Node<'a, 'input>>,
     base_texts: BTreeMap<String, String>,
+    document_node_name: String,
     missing_anno_ns_from_layer: bool,
 }
 
@@ -59,6 +60,8 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             .children()
             .filter(|n| n.tag_name().name() == "layers")
             .collect_vec();
+        let document_node_name =
+            get_element_id(&doc.root_element()).context("Missing document ID")?;
 
         let mut mapper = DocumentMapper {
             base_texts: BTreeMap::new(),
@@ -66,10 +69,8 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             nodes,
             edges,
             layers,
+            document_node_name,
         };
-
-        let document_node_name =
-            get_element_id(&doc.root_element()).context("Missing document ID")?;
 
         let timeline = mapper
             .nodes
@@ -79,29 +80,24 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             .next();
 
         mapper.map_textual_datasources(updates)?;
-        mapper.map_tokens(&document_node_name, timeline.as_ref(), updates)?;
+        mapper.map_tokens(timeline.as_ref(), updates)?;
         if let Some(timeline) = timeline {
-            mapper.map_timeline(&timeline, &document_node_name, updates)?;
+            mapper.map_timeline(&timeline, updates)?;
         }
 
-        mapper.map_non_token_nodes(&document_node_name, updates)?;
+        mapper.map_non_token_nodes(timeline.as_ref(), updates)?;
         // TODO map SAudioDS and SAudioRelation
 
         Ok(())
     }
 
-    fn map_timeline(
-        &self,
-        timeline: &Node,
-        document_node_name: &str,
-        updates: &mut GraphUpdate,
-    ) -> Result<()> {
+    fn map_timeline(&self, timeline: &Node, updates: &mut GraphUpdate) -> Result<()> {
         let number_of_tlis = get_feature_by_qname(timeline, "saltCommon", "SDATA")
             .context("Missing SDATA attribute for timeline.")?;
         if let SaltObject::Integer(number_of_tlis) = number_of_tlis {
             let mut previous_tli = None;
             for i in 0..number_of_tlis {
-                let tli_node_name = format!("{document_node_name}#tli{i}");
+                let tli_node_name = format!("{}#tli{i}", self.document_node_name);
                 updates.add_event(UpdateEvent::AddNode {
                     node_name: tli_node_name.clone(),
                     node_type: "node".to_string(),
@@ -109,7 +105,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
 
                 updates.add_event(UpdateEvent::AddEdge {
                     source_node: tli_node_name.clone(),
-                    target_node: document_node_name.to_string(),
+                    target_node: self.document_node_name.clone(),
                     layer: ANNIS_NS.to_string(),
                     component_type: AnnotationComponentType::PartOf.to_string(),
                     component_name: "".to_string(),
@@ -151,7 +147,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                 for tli in start..end {
                     updates.add_event(UpdateEvent::AddEdge {
                         source_node: token_id.clone(),
-                        target_node: format!("{document_node_name}#tli{tli}"),
+                        target_node: format!("{}#tli{tli}", self.document_node_name),
                         layer: ANNIS_NS.to_string(),
                         component_type: AnnotationComponentType::Coverage.to_string(),
                         component_name: "".to_string(),
@@ -333,19 +329,14 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         Ok(())
     }
 
-    fn map_tokens(
-        &self,
-        document_node_name: &str,
-        timeline: Option<&Node>,
-        updates: &mut GraphUpdate,
-    ) -> Result<()> {
+    fn map_tokens(&self, timeline: Option<&Node>, updates: &mut GraphUpdate) -> Result<()> {
         // Map the token nodes in the same order as in the SaltXML file
         for token_node in self
             .nodes
             .iter()
             .filter(|n| SaltType::from_node(n) == SaltType::Token)
         {
-            self.map_node(token_node, document_node_name, updates)?;
+            self.map_node(token_node, &self.document_node_name, updates)?;
         }
 
         // Order textual relations by their start offset, so we iterate in the
@@ -476,14 +467,14 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
 
     fn map_non_token_nodes(
         &self,
-        document_node_name: &str,
+        timeline: Option<&Node>,
         updates: &mut GraphUpdate,
     ) -> Result<()> {
         for span_node in self.nodes.iter().filter(|n| {
             let t = SaltType::from_node(n);
             t == SaltType::Span || t == SaltType::Structure
         }) {
-            self.map_node(span_node, document_node_name, updates)?;
+            self.map_node(span_node, &self.document_node_name, updates)?;
         }
 
         // Connect all spans with the token using the spanning relations
