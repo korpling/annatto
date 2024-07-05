@@ -1140,97 +1140,105 @@ expression: actual
         </edge>
         <edge id="e227" source="rootCorpus/subCorpus2/doc4#structure12" target="rootCorpus/subCorpus2/doc4#sTok10" label="Dominance/default_ns/edge">
         </edge>
-        <edge id="e228" source="rootCorpus/subCorpus1/doc1#sTok1" target="rootCorpus/subCorpus1/doc1#sTok2" label="Ordering/annis/">
+        <edge id="e228" source="rootCorpus/subCorpus1/doc1#sTok7" target="rootCorpus/subCorpus1/doc1#sSpan3" label="Pointing/default_ns/anaphoric">
         </edge>
-        <edge id="e229" source="rootCorpus/subCorpus1/doc1#sTok2" target="rootCorpus/subCorpus1/doc1#sTok3" label="Ordering/annis/">
+        <edge id="e229" source="rootCorpus/subCorpus1/doc2#sTok7" target="rootCorpus/subCorpus1/doc2#sSpan3" label="Pointing/default_ns/anaphoric">
         </edge>
-        <edge id="e230" source="rootCorpus/subCorpus1/doc1#sTok3" target="rootCorpus/subCorpus1/doc1#sTok4" label="Ordering/annis/">
+        <edge id="e230" source="rootCorpus/subCorpus2/doc3#sTok7" target="rootCorpus/subCorpus2/doc3#sSpan3" label="Pointing/default_ns/anaphoric">
         </edge>
-        <edge id="e231" source="rootCorpus/subCorpus1/doc1#sTok4" target="rootCorpus/subCorpus1/doc1#sTok5" label="Ordering/annis/">
+        <edge id="e231" source="rootCorpus/subCorpus2/doc4#sTok7" target="rootCorpus/subCorpus2/doc4#sSpan3" label="Pointing/default_ns/anaphoric">
         </edge>
-        <edge id="e232" source="rootCorpus/subCorpus1/doc1#sTok5" target="rootCorpus/subCorpus1/doc1#sTok6" label="Ordering/annis/">
+        <edge id="e232" source="rootCorpus/subCorpus1/doc1#sTok1" target="rootCorpus/subCorpus1/doc1#sTok2" label="Ordering/annis/">
         </edge>
-        <edge id="e233" source="rootCorpus/subCorpus1/doc1#sTok6" target="rootCorpus/subCorpus1/doc1#sTok7" label="Ordering/annis/">
+        <edge id="e233" source="rootCorpus/subCorpus1/doc1#sTok2" target="rootCorpus/subCorpus1/doc1#sTok3" label="Ordering/annis/">
         </edge>
-        <edge id="e234" source="rootCorpus/subCorpus1/doc1#sTok7" target="rootCorpus/subCorpus1/doc1#sTok8" label="Ordering/annis/">
+        <edge id="e234" source="rootCorpus/subCorpus1/doc1#sTok3" target="rootCorpus/subCorpus1/doc1#sTok4" label="Ordering/annis/">
         </edge>
-        <edge id="e235" source="rootCorpus/subCorpus1/doc1#sTok8" target="rootCorpus/subCorpus1/doc1#sTok9" label="Ordering/annis/">
+        <edge id="e235" source="rootCorpus/subCorpus1/doc1#sTok4" target="rootCorpus/subCorpus1/doc1#sTok5" label="Ordering/annis/">
         </edge>
-        <edge id="e236" source="rootCorpus/subCorpus1/doc1#sTok9" target="rootCorpus/subCorpus1/doc1#sTok10" label="Ordering/annis/">
+        <edge id="e236" source="rootCorpus/subCorpus1/doc1#sTok5" target="rootCorpus/subCorpus1/doc1#sTok6" label="Ordering/annis/">
         </edge>
-        <edge id="e237" source="rootCorpus/subCorpus1/doc1#sTok10" target="rootCorpus/subCorpus1/doc1#sTok11" label="Ordering/annis/">
+        <edge id="e237" source="rootCorpus/subCorpus1/doc1#sTok6" target="rootCorpus/subCorpus1/doc1#sTok7" label="Ordering/annis/">
         </edge>
-        <edge id="e238" source="rootCorpus/subCorpus1/doc2#sTok1" target="rootCorpus/subCorpus1/doc2#sTok2" label="Ordering/annis/">
+        <edge id="e238" source="rootCorpus/subCorpus1/doc1#sTok7" target="rootCorpus/subCorpus1/doc1#sTok8" label="Ordering/annis/">
         </edge>
-        <edge id="e239" source="rootCorpus/subCorpus1/doc2#sTok2" target="rootCorpus/subCorpus1/doc2#sTok3" label="Ordering/annis/">
+        <edge id="e239" source="rootCorpus/subCorpus1/doc1#sTok8" target="rootCorpus/subCorpus1/doc1#sTok9" label="Ordering/annis/">
         </edge>
-        <edge id="e240" source="rootCorpus/subCorpus1/doc2#sTok3" target="rootCorpus/subCorpus1/doc2#sTok4" label="Ordering/annis/">
+        <edge id="e240" source="rootCorpus/subCorpus1/doc1#sTok9" target="rootCorpus/subCorpus1/doc1#sTok10" label="Ordering/annis/">
         </edge>
-        <edge id="e241" source="rootCorpus/subCorpus1/doc2#sTok4" target="rootCorpus/subCorpus1/doc2#sTok5" label="Ordering/annis/">
+        <edge id="e241" source="rootCorpus/subCorpus1/doc1#sTok10" target="rootCorpus/subCorpus1/doc1#sTok11" label="Ordering/annis/">
         </edge>
-        <edge id="e242" source="rootCorpus/subCorpus1/doc2#sTok5" target="rootCorpus/subCorpus1/doc2#sTok6" label="Ordering/annis/">
+        <edge id="e242" source="rootCorpus/subCorpus1/doc2#sTok1" target="rootCorpus/subCorpus1/doc2#sTok2" label="Ordering/annis/">
         </edge>
-        <edge id="e243" source="rootCorpus/subCorpus1/doc2#sTok6" target="rootCorpus/subCorpus1/doc2#sTok7" label="Ordering/annis/">
+        <edge id="e243" source="rootCorpus/subCorpus1/doc2#sTok2" target="rootCorpus/subCorpus1/doc2#sTok3" label="Ordering/annis/">
         </edge>
-        <edge id="e244" source="rootCorpus/subCorpus1/doc2#sTok7" target="rootCorpus/subCorpus1/doc2#sTok8" label="Ordering/annis/">
+        <edge id="e244" source="rootCorpus/subCorpus1/doc2#sTok3" target="rootCorpus/subCorpus1/doc2#sTok4" label="Ordering/annis/">
         </edge>
-        <edge id="e245" source="rootCorpus/subCorpus1/doc2#sTok8" target="rootCorpus/subCorpus1/doc2#sTok9" label="Ordering/annis/">
+        <edge id="e245" source="rootCorpus/subCorpus1/doc2#sTok4" target="rootCorpus/subCorpus1/doc2#sTok5" label="Ordering/annis/">
         </edge>
-        <edge id="e246" source="rootCorpus/subCorpus1/doc2#sTok9" target="rootCorpus/subCorpus1/doc2#sTok10" label="Ordering/annis/">
+        <edge id="e246" source="rootCorpus/subCorpus1/doc2#sTok5" target="rootCorpus/subCorpus1/doc2#sTok6" label="Ordering/annis/">
         </edge>
-        <edge id="e247" source="rootCorpus/subCorpus1/doc2#sTok10" target="rootCorpus/subCorpus1/doc2#sTok11" label="Ordering/annis/">
+        <edge id="e247" source="rootCorpus/subCorpus1/doc2#sTok6" target="rootCorpus/subCorpus1/doc2#sTok7" label="Ordering/annis/">
         </edge>
-        <edge id="e248" source="rootCorpus/subCorpus2/doc3#sTok1" target="rootCorpus/subCorpus2/doc3#sTok2" label="Ordering/annis/">
+        <edge id="e248" source="rootCorpus/subCorpus1/doc2#sTok7" target="rootCorpus/subCorpus1/doc2#sTok8" label="Ordering/annis/">
         </edge>
-        <edge id="e249" source="rootCorpus/subCorpus2/doc3#sTok2" target="rootCorpus/subCorpus2/doc3#sTok3" label="Ordering/annis/">
+        <edge id="e249" source="rootCorpus/subCorpus1/doc2#sTok8" target="rootCorpus/subCorpus1/doc2#sTok9" label="Ordering/annis/">
         </edge>
-        <edge id="e250" source="rootCorpus/subCorpus2/doc3#sTok3" target="rootCorpus/subCorpus2/doc3#sTok4" label="Ordering/annis/">
+        <edge id="e250" source="rootCorpus/subCorpus1/doc2#sTok9" target="rootCorpus/subCorpus1/doc2#sTok10" label="Ordering/annis/">
         </edge>
-        <edge id="e251" source="rootCorpus/subCorpus2/doc3#sTok4" target="rootCorpus/subCorpus2/doc3#sTok5" label="Ordering/annis/">
+        <edge id="e251" source="rootCorpus/subCorpus1/doc2#sTok10" target="rootCorpus/subCorpus1/doc2#sTok11" label="Ordering/annis/">
         </edge>
-        <edge id="e252" source="rootCorpus/subCorpus2/doc3#sTok5" target="rootCorpus/subCorpus2/doc3#sTok6" label="Ordering/annis/">
+        <edge id="e252" source="rootCorpus/subCorpus2/doc3#sTok1" target="rootCorpus/subCorpus2/doc3#sTok2" label="Ordering/annis/">
         </edge>
-        <edge id="e253" source="rootCorpus/subCorpus2/doc3#sTok6" target="rootCorpus/subCorpus2/doc3#sTok7" label="Ordering/annis/">
+        <edge id="e253" source="rootCorpus/subCorpus2/doc3#sTok2" target="rootCorpus/subCorpus2/doc3#sTok3" label="Ordering/annis/">
         </edge>
-        <edge id="e254" source="rootCorpus/subCorpus2/doc3#sTok7" target="rootCorpus/subCorpus2/doc3#sTok8" label="Ordering/annis/">
+        <edge id="e254" source="rootCorpus/subCorpus2/doc3#sTok3" target="rootCorpus/subCorpus2/doc3#sTok4" label="Ordering/annis/">
         </edge>
-        <edge id="e255" source="rootCorpus/subCorpus2/doc3#sTok8" target="rootCorpus/subCorpus2/doc3#sTok9" label="Ordering/annis/">
+        <edge id="e255" source="rootCorpus/subCorpus2/doc3#sTok4" target="rootCorpus/subCorpus2/doc3#sTok5" label="Ordering/annis/">
         </edge>
-        <edge id="e256" source="rootCorpus/subCorpus2/doc3#sTok9" target="rootCorpus/subCorpus2/doc3#sTok10" label="Ordering/annis/">
+        <edge id="e256" source="rootCorpus/subCorpus2/doc3#sTok5" target="rootCorpus/subCorpus2/doc3#sTok6" label="Ordering/annis/">
         </edge>
-        <edge id="e257" source="rootCorpus/subCorpus2/doc3#sTok10" target="rootCorpus/subCorpus2/doc3#sTok11" label="Ordering/annis/">
+        <edge id="e257" source="rootCorpus/subCorpus2/doc3#sTok6" target="rootCorpus/subCorpus2/doc3#sTok7" label="Ordering/annis/">
         </edge>
-        <edge id="e258" source="rootCorpus/subCorpus2/doc4#sTok1" target="rootCorpus/subCorpus2/doc4#sTok2" label="Ordering/annis/">
+        <edge id="e258" source="rootCorpus/subCorpus2/doc3#sTok7" target="rootCorpus/subCorpus2/doc3#sTok8" label="Ordering/annis/">
         </edge>
-        <edge id="e259" source="rootCorpus/subCorpus2/doc4#sTok2" target="rootCorpus/subCorpus2/doc4#sTok3" label="Ordering/annis/">
+        <edge id="e259" source="rootCorpus/subCorpus2/doc3#sTok8" target="rootCorpus/subCorpus2/doc3#sTok9" label="Ordering/annis/">
         </edge>
-        <edge id="e260" source="rootCorpus/subCorpus2/doc4#sTok3" target="rootCorpus/subCorpus2/doc4#sTok4" label="Ordering/annis/">
+        <edge id="e260" source="rootCorpus/subCorpus2/doc3#sTok9" target="rootCorpus/subCorpus2/doc3#sTok10" label="Ordering/annis/">
         </edge>
-        <edge id="e261" source="rootCorpus/subCorpus2/doc4#sTok4" target="rootCorpus/subCorpus2/doc4#sTok5" label="Ordering/annis/">
+        <edge id="e261" source="rootCorpus/subCorpus2/doc3#sTok10" target="rootCorpus/subCorpus2/doc3#sTok11" label="Ordering/annis/">
         </edge>
-        <edge id="e262" source="rootCorpus/subCorpus2/doc4#sTok5" target="rootCorpus/subCorpus2/doc4#sTok6" label="Ordering/annis/">
+        <edge id="e262" source="rootCorpus/subCorpus2/doc4#sTok1" target="rootCorpus/subCorpus2/doc4#sTok2" label="Ordering/annis/">
         </edge>
-        <edge id="e263" source="rootCorpus/subCorpus2/doc4#sTok6" target="rootCorpus/subCorpus2/doc4#sTok7" label="Ordering/annis/">
+        <edge id="e263" source="rootCorpus/subCorpus2/doc4#sTok2" target="rootCorpus/subCorpus2/doc4#sTok3" label="Ordering/annis/">
         </edge>
-        <edge id="e264" source="rootCorpus/subCorpus2/doc4#sTok7" target="rootCorpus/subCorpus2/doc4#sTok8" label="Ordering/annis/">
+        <edge id="e264" source="rootCorpus/subCorpus2/doc4#sTok3" target="rootCorpus/subCorpus2/doc4#sTok4" label="Ordering/annis/">
         </edge>
-        <edge id="e265" source="rootCorpus/subCorpus2/doc4#sTok8" target="rootCorpus/subCorpus2/doc4#sTok9" label="Ordering/annis/">
+        <edge id="e265" source="rootCorpus/subCorpus2/doc4#sTok4" target="rootCorpus/subCorpus2/doc4#sTok5" label="Ordering/annis/">
         </edge>
-        <edge id="e266" source="rootCorpus/subCorpus2/doc4#sTok9" target="rootCorpus/subCorpus2/doc4#sTok10" label="Ordering/annis/">
+        <edge id="e266" source="rootCorpus/subCorpus2/doc4#sTok5" target="rootCorpus/subCorpus2/doc4#sTok6" label="Ordering/annis/">
         </edge>
-        <edge id="e267" source="rootCorpus/subCorpus2/doc4#sTok10" target="rootCorpus/subCorpus2/doc4#sTok11" label="Ordering/annis/">
+        <edge id="e267" source="rootCorpus/subCorpus2/doc4#sTok6" target="rootCorpus/subCorpus2/doc4#sTok7" label="Ordering/annis/">
         </edge>
-        <edge id="e268" source="rootCorpus/subCorpus1" target="rootCorpus" label="PartOf/annis/">
+        <edge id="e268" source="rootCorpus/subCorpus2/doc4#sTok7" target="rootCorpus/subCorpus2/doc4#sTok8" label="Ordering/annis/">
         </edge>
-        <edge id="e269" source="rootCorpus/subCorpus2" target="rootCorpus" label="PartOf/annis/">
+        <edge id="e269" source="rootCorpus/subCorpus2/doc4#sTok8" target="rootCorpus/subCorpus2/doc4#sTok9" label="Ordering/annis/">
         </edge>
-        <edge id="e270" source="rootCorpus/subCorpus1/doc1" target="rootCorpus/subCorpus1" label="PartOf/annis/">
+        <edge id="e270" source="rootCorpus/subCorpus2/doc4#sTok9" target="rootCorpus/subCorpus2/doc4#sTok10" label="Ordering/annis/">
         </edge>
-        <edge id="e271" source="rootCorpus/subCorpus1/doc2" target="rootCorpus/subCorpus1" label="PartOf/annis/">
+        <edge id="e271" source="rootCorpus/subCorpus2/doc4#sTok10" target="rootCorpus/subCorpus2/doc4#sTok11" label="Ordering/annis/">
         </edge>
-        <edge id="e272" source="rootCorpus/subCorpus2/doc3" target="rootCorpus/subCorpus2" label="PartOf/annis/">
+        <edge id="e272" source="rootCorpus/subCorpus1" target="rootCorpus" label="PartOf/annis/">
         </edge>
-        <edge id="e273" source="rootCorpus/subCorpus2/doc4" target="rootCorpus/subCorpus2" label="PartOf/annis/">
+        <edge id="e273" source="rootCorpus/subCorpus2" target="rootCorpus" label="PartOf/annis/">
+        </edge>
+        <edge id="e274" source="rootCorpus/subCorpus1/doc1" target="rootCorpus/subCorpus1" label="PartOf/annis/">
+        </edge>
+        <edge id="e275" source="rootCorpus/subCorpus1/doc2" target="rootCorpus/subCorpus1" label="PartOf/annis/">
+        </edge>
+        <edge id="e276" source="rootCorpus/subCorpus2/doc3" target="rootCorpus/subCorpus2" label="PartOf/annis/">
+        </edge>
+        <edge id="e277" source="rootCorpus/subCorpus2/doc4" target="rootCorpus/subCorpus2" label="PartOf/annis/">
         </edge>
     </graph>
 </graphml>

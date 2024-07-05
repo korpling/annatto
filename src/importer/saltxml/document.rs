@@ -65,7 +65,6 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         mapper.map_tokens(updates)?;
 
         mapper.map_non_token_nodes(updates)?;
-        // TODO map SPointingRelation
 
         // TODO map STimeline and STimelineRelation
         // TODO map SOrderRelation for segmentation nodes
@@ -363,6 +362,20 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             self.map_edge(
                 dominance_rel,
                 AnnotationComponentType::Dominance,
+                "edge",
+                updates,
+            )?;
+        }
+
+        // Add all pointing relations
+        for pointing_rel in self
+            .edges
+            .iter()
+            .filter(|rel| SaltType::from_node(rel) == SaltType::PointingRelation)
+        {
+            self.map_edge(
+                pointing_rel,
+                AnnotationComponentType::Pointing,
                 "edge",
                 updates,
             )?;
