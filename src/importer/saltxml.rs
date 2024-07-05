@@ -91,6 +91,7 @@ enum SaltType {
     Structure,
     TextualDs,
     TextualRelation,
+    Timeline,
     Token,
     Unknown,
 }
@@ -115,6 +116,7 @@ impl SaltType {
                 "sDocumentStructure:SStructure" => SaltType::Structure,
                 "sDocumentStructure:STextualDS" => SaltType::TextualDs,
                 "sDocumentStructure:STextualRelation" => SaltType::TextualRelation,
+                "sDocumentStructure:STimeline" => SaltType::Timeline,
                 "sDocumentStructure:SToken" => SaltType::Token,
                 _ => SaltType::Unknown,
             }

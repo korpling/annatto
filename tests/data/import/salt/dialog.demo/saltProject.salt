@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<saltCommon:SaltProject xmlns:sCorpusStructure="sCorpusStructure" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:saltCore="saltCore" xmlns:saltCommon="saltCommon" xmi:version="2.0">
+	<sCorpusGraphs>
+	<labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::dialog.demo"/>
+	<nodes xsi:type="sCorpusStructure:SCorpus">
+		<labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/dialog.demo"/>
+		<labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::dialog.demo"/>
+	</nodes>
+	<nodes xsi:type="sCorpusStructure:SDocument">
+		<labels xsi:type="saltCore:SMetaAnnotation" namespace="SPK0" name="abbreviation" value="T::SPK0"/>
+		<labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::dialog.demo"/>
+		<labels xsi:type="saltCore:SMetaAnnotation" name="corpus_name" value="T::dialog.demo"/>
+		<labels xsi:type="saltCore:SMetaAnnotation" namespace="SPK0" name="l1" value="T::deu"/>
+		<labels xsi:type="saltCore:SMetaAnnotation" name="description" value="T::Part of a dialog recorded in a map task setting"/>
+		<labels xsi:type="saltCore:SMetaAnnotation" name="language" value="T::German"/>
+		<labels xsi:type="saltCore:SMetaAnnotation" namespace="SPK0" name="languages-used" value="T::deu"/>
+		<labels xsi:type="saltCore:SMetaAnnotation" name="corpus_source" value="T::BeMaTaC"/>
+		<labels xsi:type="saltCore:SMetaAnnotation" namespace="SPK1" name="sex" value="T::m"/>
+		<labels xsi:type="saltCore:SMetaAnnotation" name="institution" value="T::HU Berlin"/>
+		<labels xsi:type="saltCore:SMetaAnnotation" namespace="SPK0" name="sex" value="T::m"/>
+		<labels xsi:type="saltCore:SMetaAnnotation" namespace="SPK1" name="l1" value="T::deu"/>
+		<labels xsi:type="saltCore:SFeature" namespace="salt" name="SDOCUMENT_GRAPH"/>
+		<labels xsi:type="saltCore:SMetaAnnotation" namespace="SPK1" name="languages-used" value="T::deu"/>
+		<labels xsi:type="saltCore:SMetaAnnotation" name="transcriptionName" value="T::dialog.demo"/>
+		<labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/dialog.demo/dialog.demo"/>
+		<labels xsi:type="saltCore:SFeature" namespace="salt" name="SDOCUMENT_GRAPH_LOCATION" value="T::file:/tmp/pepper_thomas/workspace/rdr3o1mf/dialog.demo5661470868672726454.salt"/>
+		<labels xsi:type="saltCore:SMetaAnnotation" namespace="SPK1" name="abbreviation" value="T::SPK1"/>
+	</nodes>
+	<edges xsi:type="sCorpusStructure:SCorpusDocumentRelation" source="//@nodes.0" target="//@nodes.1">
+		<labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/corpDocRel1"/>
+		<labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::corpDocRel1"/>
+	</edges>
+	</sCorpusGraphs>
+</saltCommon:SaltProject>
