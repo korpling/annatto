@@ -16,6 +16,12 @@ use super::{
     get_annotations, get_element_id, get_feature_by_qname, resolve_element, SaltObject, SaltType,
 };
 
+#[derive(Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Debug)]
+pub struct TextProperty {
+    segmentation: String,
+    val: i64,
+}
+
 pub(super) struct DocumentMapper<'a, 'input> {
     nodes: Vec<Node<'a, 'input>>,
     edges: Vec<Node<'a, 'input>>,
@@ -77,7 +83,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             mapper.map_timeline(&timeline, &document_node_name, updates)?;
         }
 
-        mapper.map_tokens(&document_node_name, updates)?;
+        mapper.map_tokens(&document_node_name, timeline.as_ref(), updates)?;
         mapper.map_non_token_nodes(&document_node_name, updates)?;
 
         // TODO map SOrderRelation for segmentation nodes
@@ -297,7 +303,12 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         Ok(())
     }
 
-    fn map_tokens(&self, document_node_name: &str, updates: &mut GraphUpdate) -> Result<()> {
+    fn map_tokens(
+        &self,
+        document_node_name: &str,
+        _timeline: Option<&Node>,
+        updates: &mut GraphUpdate,
+    ) -> Result<()> {
         // Map the token nodes in the same order as in the SaltXML file
         for token_node in self
             .nodes
@@ -309,37 +320,53 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
 
         // Order textual relations by their start offset, so we iterate in the
         // actual order of the tokens.
-        let sorted_text_rels: BTreeMap<i64, _> = self
+        let sorted_text_rels: BTreeMap<TextProperty, _> = self
             .edges
             .iter()
             .filter(|n| SaltType::from_node(n) == SaltType::TextualRelation)
             .map(|text_rel| {
                 let start =
                     get_feature_by_qname(text_rel, "salt", "SSTART").unwrap_or(SaltObject::Null);
-                if let SaltObject::Integer(start) = start {
-                    (start, *text_rel)
+                let referenced_text_node = resolve_element("target", "nodes", &self.nodes)
+                    .and_then(|n| get_feature_by_qname(&n, "salt", "SNAME"))
+                    .map(|o| o.to_string())
+                    .unwrap_or_default();
+                let val = if let SaltObject::Integer(start) = start {
+                    start
                 } else {
-                    (-1, *text_rel)
-                }
+                    -1
+                };
+                let prop = TextProperty {
+                    segmentation: referenced_text_node,
+                    val,
+                };
+                (prop, *text_rel)
             })
             .collect();
 
         // Connect the token to the texts by the textual relations
-        let mut previous_token = None;
+        let mut previous_token: Option<(TextProperty, String)> = None;
         let mut sorted_text_rels = sorted_text_rels.into_iter().peekable();
-        while let Some((_, text_rel)) = sorted_text_rels.next() {
+        while let Some((prop, text_rel)) = sorted_text_rels.next() {
+            if let Some(p) = &previous_token {
+                // If the segmentation changes, there is no previous token
+                if p.0.segmentation != prop.segmentation {
+                    previous_token = None;
+                }
+            }
+
             let source_att_val = text_rel.attribute("source").unwrap_or_default();
             let token =
                 resolve_element(source_att_val, "nodes", &self.nodes).with_context(|| {
                     format!("Textual relation source \"{source_att_val}\" could not be resolved")
                 })?;
+            let token_id = get_element_id(&token).context("Missing ID for token")?;
 
             let target_att_val = text_rel.attribute("target").unwrap_or_default();
             let datasource =
                 resolve_element(target_att_val, "nodes", &self.nodes).with_context(|| {
                     format!("Textual relation target \"{target_att_val}\" could not be resolved")
                 })?;
-            let token_id = get_element_id(&token).context("Missing ID for token")?;
             let datasource_id = get_element_id(&datasource).context("Missing ID for token")?;
 
             // Get the string for this token
@@ -378,7 +405,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                 // Add whitespace after this token
                 let next_token_offset = sorted_text_rels
                     .peek()
-                    .map(|(offset, _)| *offset)
+                    .map(|(prop, _)| prop.val)
                     .unwrap_or_else(|| matching_base_text.len().try_into().unwrap_or(i64::MAX));
                 let next_token_offset = usize::try_from(next_token_offset).unwrap_or(0);
 
@@ -395,14 +422,14 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             // Add ordering edges between the tokens for the base token layer
             if let Some(previous_token) = previous_token {
                 updates.add_event(UpdateEvent::AddEdge {
-                    source_node: previous_token,
+                    source_node: previous_token.1.clone(),
                     target_node: token_id.clone(),
                     layer: ANNIS_NS.to_string(),
                     component_type: AnnotationComponentType::Ordering.to_string(),
                     component_name: "".to_string(),
                 })?;
             }
-            previous_token = Some(token_id);
+            previous_token = Some((prop, token_id));
         }
 
         Ok(())
