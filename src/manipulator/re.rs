@@ -46,7 +46,18 @@ pub struct Revise {
     edge_annos: BTreeMap<String, String>,
     /// rename or erase namespaces
     namespaces: BTreeMap<String, String>,
-    /// rename or erase components
+    /// rename or erase components. Specify a list of entries `from` and `to` keys, where the `to` key is optional
+    /// and can be dropped to remove the component.
+    /// Example:
+    /// ```toml
+    /// [graph_op.config]
+    /// [[graph_op.config.components]]
+    /// from = { ctype = "Pointing", layer = "syntax", name = "dependencies" }
+    /// to = { ctype = "Dominance", layer = "syntax", name = "constituents" }
+    ///
+    /// [[graph_op.config.components]]  # this component will be deleted
+    /// from = { ctype = "Ordering", layer = "annis", "custom" }
+    /// ```
     components: Vec<ComponentMapping>,
     /// The given node names and all ingoing paths (incl. nodes) in PartOf/annis/ will be removed
     remove_subgraph: Vec<String>,

@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - code is more robust and more transparent to the user in case of unexpected data
 - `textgrid` import now allows correct file type specification for short files
 
+### Changed
+
+- `revise` now deserialized components directly and uses different syntax. They are provided as a list of `from` and `to` component specifications.
+
 ## [0.10.0] - 2024-06-25
 
 ### Fixed
