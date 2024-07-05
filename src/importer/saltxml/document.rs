@@ -116,7 +116,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                     // consistent with e.g. the ANNIS Tree Visualizer handles
                     // annotations without any namespace.
                     if self.missing_anno_ns_from_layer {
-                        fallback_annotation_namespace = layer_name.clone();
+                        fallback_annotation_namespace.clone_from(&layer_name);
                     }
 
                     updates.add_event(UpdateEvent::AddNodeLabel {
