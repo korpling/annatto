@@ -103,7 +103,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         if let SaltObject::Integer(number_of_tlis) = number_of_tlis {
             let mut previous_tli = None;
             for i in 0..number_of_tlis {
-                let tli_node_name = format!("{document_node_name}/tli{i}");
+                let tli_node_name = format!("{document_node_name}#tli{i}");
                 updates.add_event(UpdateEvent::AddNode {
                     node_name: tli_node_name.clone(),
                     node_type: "node".to_string(),
@@ -306,7 +306,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
     fn map_tokens(
         &self,
         document_node_name: &str,
-        _timeline: Option<&Node>,
+        timeline: Option<&Node>,
         updates: &mut GraphUpdate,
     ) -> Result<()> {
         // Map the token nodes in the same order as in the SaltXML file
@@ -327,10 +327,14 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             .map(|text_rel| {
                 let start =
                     get_feature_by_qname(text_rel, "salt", "SSTART").unwrap_or(SaltObject::Null);
-                let referenced_text_node = resolve_element("target", "nodes", &self.nodes)
-                    .and_then(|n| get_feature_by_qname(&n, "salt", "SNAME"))
-                    .map(|o| o.to_string())
-                    .unwrap_or_default();
+                let referenced_text_node = resolve_element(
+                    text_rel.attribute("target").unwrap_or_default(),
+                    "nodes",
+                    &self.nodes,
+                )
+                .and_then(|n| get_feature_by_qname(&n, "salt", "SNAME"))
+                .map(|o| o.to_string())
+                .unwrap_or_default();
                 let val = if let SaltObject::Integer(start) = start {
                     start
                 } else {
@@ -347,10 +351,10 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         // Connect the token to the texts by the textual relations
         let mut previous_token: Option<(TextProperty, String)> = None;
         let mut sorted_text_rels = sorted_text_rels.into_iter().peekable();
-        while let Some((prop, text_rel)) = sorted_text_rels.next() {
+        while let Some((text_prop, text_rel)) = sorted_text_rels.next() {
             if let Some(p) = &previous_token {
                 // If the segmentation changes, there is no previous token
-                if p.0.segmentation != prop.segmentation {
+                if p.0.segmentation != text_prop.segmentation {
                     previous_token = None;
                 }
             }
@@ -421,15 +425,20 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             }
             // Add ordering edges between the tokens for the base token layer
             if let Some(previous_token) = previous_token {
+                let component_name = if timeline.is_some() {
+                    text_prop.segmentation.clone()
+                } else {
+                    "".to_string()
+                };
                 updates.add_event(UpdateEvent::AddEdge {
                     source_node: previous_token.1.clone(),
                     target_node: token_id.clone(),
                     layer: ANNIS_NS.to_string(),
                     component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: "".to_string(),
+                    component_name,
                 })?;
             }
-            previous_token = Some((prop, token_id));
+            previous_token = Some((text_prop, token_id));
         }
 
         Ok(())
