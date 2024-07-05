@@ -16,3 +16,15 @@ fn read_salt_sample_corpus() {
     .unwrap();
     assert_snapshot!(actual);
 }
+
+#[test]
+fn read_salt_with_timeline() {
+    let importer = ImportSaltXml::default();
+    let actual = test_util::import_as_graphml_string(
+        importer,
+        Path::new("tests/data/import/salt/dialog.demo"),
+        None,
+    )
+    .unwrap();
+    assert_snapshot!(actual);
+}
