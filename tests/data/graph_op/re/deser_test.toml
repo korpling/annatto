@@ -7,7 +7,14 @@ move_node_annos = true
 "deprel" = "func"
 [namespaces]
 "default_ns" = ""
-[components]
-"ordering::annis::text" = "ordering::default_ns::text"
-"ordering::annis::" = "ordering::::default_ordering"
-"dominance::annis::syntax" = ""
+
+[[components]]
+from = { ctype = "Ordering", layer = "annis", name = "text" } 
+to = { ctype = "Ordering", layer = "default_ns", name = "text" }
+
+[[components]]
+from = { ctype = "Ordering", layer = "annis", name = "" } 
+to = { ctype = "Ordering", layer = "", name = "default_ordering" } 
+
+[[components]]
+from = { ctype = "Dominance", layer = "annis", name = "syntax" } 
