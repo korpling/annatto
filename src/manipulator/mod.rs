@@ -2,6 +2,7 @@
 pub mod check;
 pub mod chunker;
 pub mod collapse;
+pub mod dot;
 pub mod enumerate;
 pub mod link;
 pub mod map;
