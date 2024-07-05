@@ -28,6 +28,7 @@ pub(super) struct DocumentMapper<'a, 'input> {
     layers: Vec<Node<'a, 'input>>,
     base_texts: BTreeMap<String, String>,
     document_node_name: String,
+    token_to_tli: BTreeMap<String, Vec<i64>>,
     missing_anno_ns_from_layer: bool,
 }
 
@@ -70,6 +71,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             edges,
             layers,
             document_node_name,
+            token_to_tli: BTreeMap::new(),
         };
 
         let timeline = mapper
@@ -85,13 +87,13 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             mapper.map_timeline(&timeline, updates)?;
         }
 
-        mapper.map_non_token_nodes(timeline.as_ref(), updates)?;
+        mapper.map_non_token_nodes(updates)?;
         // TODO map SAudioDS and SAudioRelation
 
         Ok(())
     }
 
-    fn map_timeline(&self, timeline: &Node, updates: &mut GraphUpdate) -> Result<()> {
+    fn map_timeline(&mut self, timeline: &Node, updates: &mut GraphUpdate) -> Result<()> {
         let number_of_tlis = get_feature_by_qname(timeline, "saltCommon", "SDATA")
             .context("Missing SDATA attribute for timeline.")?;
         if let SaltObject::Integer(number_of_tlis) = number_of_tlis {
@@ -153,6 +155,8 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                         component_name: "".to_string(),
                     })?;
                 }
+                self.token_to_tli
+                    .insert(token_id, (start..end).collect_vec());
             } else {
                 bail!("SSTART/SEND not an integer")
             }
@@ -253,6 +257,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
     fn map_edge(
         &self,
         rel: &Node,
+        overwrite_target_node: Option<String>,
         component_type: AnnotationComponentType,
         fallback_component_name: &str,
         updates: &mut GraphUpdate,
@@ -262,10 +267,15 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             resolve_element(source_att_val, "nodes", &self.nodes).context("Missing source node")?;
         let source_id = get_element_id(&source_element).context("Missing source node ID")?;
 
-        let target_att_val = rel.attribute("target").unwrap_or_default();
-        let target_element =
-            resolve_element(target_att_val, "nodes", &self.nodes).context("Missing target node")?;
-        let target_id = get_element_id(&target_element).context("Missing target node ID")?;
+        let target_id = if let Some(target_id) = overwrite_target_node {
+            target_id
+        } else {
+            let target_att_val = rel.attribute("target").unwrap_or_default();
+            let target_element = resolve_element(target_att_val, "nodes", &self.nodes)
+                .context("Missing target node")?;
+            let target_id = get_element_id(&target_element).context("Missing target node ID")?;
+            target_id
+        };
 
         let component_name = get_feature_by_qname(rel, "salt", "STYPE")
             .map(|t| t.to_string())
@@ -415,6 +425,15 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                     anno_name: "tok".to_string(),
                     anno_value: covered_text.iter().collect(),
                 })?;
+                if timeline.is_some() {
+                    // Add the token value as additional annotation
+                    updates.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: token_id.clone(),
+                        anno_ns: text_prop.segmentation.clone(),
+                        anno_name: text_prop.segmentation.clone(),
+                        anno_value: covered_text.iter().collect(),
+                    })?;
+                }
 
                 // Get the whitespace before the first token
                 if previous_token.is_none() && start > 0 {
@@ -465,11 +484,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         Ok(())
     }
 
-    fn map_non_token_nodes(
-        &self,
-        timeline: Option<&Node>,
-        updates: &mut GraphUpdate,
-    ) -> Result<()> {
+    fn map_non_token_nodes(&self, updates: &mut GraphUpdate) -> Result<()> {
         for span_node in self.nodes.iter().filter(|n| {
             let t = SaltType::from_node(n);
             t == SaltType::Span || t == SaltType::Structure
@@ -478,13 +493,41 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         }
 
         // Connect all spans with the token using the spanning relations
-        // TODO: use the covered timeline token as target if there is a timeline
+
         for spanning_rel in self
             .edges
             .iter()
             .filter(|rel| SaltType::from_node(rel) == SaltType::SpanningRelation)
         {
-            self.map_edge(spanning_rel, AnnotationComponentType::Coverage, "", updates)?;
+            let target_att = spanning_rel
+                .attribute("target")
+                .context("Missing target attribute for SSpanningRelation")?;
+            let target_node = resolve_element(&target_att, "nodes", &self.nodes)
+                .context("Could not resolve target for SSpanningRelation")?;
+            let target_node_id = get_element_id(&target_node).context("Target token has no ID")?;
+
+            if let Some(tli_token) = self.token_to_tli.get(&target_node_id) {
+                // Add a coverage edge to the indirectly covered timeline item token
+                for tli in tli_token {
+                    let tli_id = format!("{}#tli{tli}", &self.document_node_name);
+                    self.map_edge(
+                        spanning_rel,
+                        Some(tli_id),
+                        AnnotationComponentType::Coverage,
+                        "",
+                        updates,
+                    )?;
+                }
+            } else {
+                // Directly map the coverage edge
+                self.map_edge(
+                    spanning_rel,
+                    None,
+                    AnnotationComponentType::Coverage,
+                    "",
+                    updates,
+                )?;
+            }
         }
         // Add all dominance relations
         for dominance_rel in self
@@ -494,6 +537,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         {
             self.map_edge(
                 dominance_rel,
+                None,
                 AnnotationComponentType::Dominance,
                 "edge",
                 updates,
@@ -508,6 +552,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         {
             self.map_edge(
                 pointing_rel,
+                None,
                 AnnotationComponentType::Pointing,
                 "edge",
                 updates,
