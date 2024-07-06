@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `collapse` now also transfers annotations with namespace "annis" with the exception of "annis::node_name". This could lead to unstable results in case of conflicting values, such as for "annis::layer", but for most use cases this is not relevant yet. Not adding many of the before dropped annotations, though, was much more severe.
+
 ## [0.11.0] - 2024-07-05
 
 ### Added
