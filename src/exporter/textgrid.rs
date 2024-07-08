@@ -454,6 +454,7 @@ mod tests {
 
     use graphannis::{graph::AnnoKey, AnnotationGraph};
     use insta::assert_snapshot;
+    use ordered_float::OrderedFloat;
 
     use crate::{
         exporter::textgrid::{default_file_key, default_time_key},
@@ -462,7 +463,7 @@ mod tests {
         StepID,
     };
 
-    use super::ExportTextGrid;
+    use super::{parse_time_tuple, ExportTextGrid};
 
     // we only need this implementation for test purposes (shorter code)
     impl Default for ExportTextGrid {
@@ -722,5 +723,25 @@ ignore_others = true
         assert!(export.is_ok());
         dbg!(&export);
         assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
+    fn test_parse_time_anno() {
+        let interval = ".123-1";
+        let r = parse_time_tuple(interval, "-");
+        assert!(r.is_ok());
+        let (start, end) = r.unwrap();
+        assert_eq!(start, 0.123);
+        assert!(end.is_some());
+        let expected = OrderedFloat::from(1.0);
+        assert_eq!(expected, end.unwrap());
+        let interval2 = "0.5-";
+        let r2 = parse_time_tuple(interval2, "-");
+        assert!(r2.is_ok());
+        let (start2, end2) = r2.unwrap();
+        let expected2 = OrderedFloat::from(0.5);
+        assert_eq!(expected2, start2);
+        assert!(end2.is_none());
+        assert!(parse_time_tuple("-", "-").is_err());
     }
 }
