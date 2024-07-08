@@ -9,6 +9,11 @@ use graphannis_core::{
     types::NodeID,
 };
 use itertools::Itertools;
+use layout::core::utils::save_to_file;
+use layout::{
+    backends::svg::SVGWriter,
+    gv::{self, GraphBuilder},
+};
 use serde::Deserialize;
 use std::{borrow::Cow, fs::File, io::Write};
 use struct_field_names_as_array::FieldNamesAsSlice;
@@ -101,6 +106,24 @@ impl Manipulator for DotDebug {
             &output_path.display()
         ))?;
 
-        todo!()
+        let dot_content = std::fs::read_to_string(&output_path)?;
+        let mut parser = gv::DotParser::new(&dot_content);
+        let g = parser.process()?;
+        let mut gb = GraphBuilder::new();
+        gb.visit_graph(&g);
+        let mut vg = gb.get();
+
+        let mut svg = SVGWriter::new();
+        vg.do_it(false, false, false, &mut svg);
+        let content = svg.finalize();
+
+        save_to_file(
+            workflow_directory
+                .join("graph-debug.svg")
+                .to_string_lossy()
+                .as_ref(),
+            &content,
+        )?;
+        Ok(())
     }
 }
