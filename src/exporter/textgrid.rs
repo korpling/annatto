@@ -173,12 +173,14 @@ impl Exporter for ExportTextGrid {
     }
 }
 
+type AnnisInterval = (OrderedFloat<f64>, Option<OrderedFloat<f64>>);
+
 fn parse_time_tuple(
     value: &str,
     delimiter: &str,
-) -> Result<(OrderedFloat<f64>, Option<OrderedFloat<f64>>), Box<dyn std::error::Error>> {
+) -> Result<AnnisInterval, Box<dyn std::error::Error>> {
     if let Some((start, end)) = value.split_once(delimiter) {
-        Ok((start.parse()?, end.parse().map_or(None, |v| Some(v))))
+        Ok((start.parse()?, end.parse().ok()))
     } else {
         Err(anyhow!("Could not parse time values from input {value}").into())
     }
