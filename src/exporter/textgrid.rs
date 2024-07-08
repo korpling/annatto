@@ -176,9 +176,9 @@ impl Exporter for ExportTextGrid {
 fn parse_time_tuple(
     value: &str,
     delimiter: &str,
-) -> Result<(OrderedFloat<f64>, OrderedFloat<f64>), Box<dyn std::error::Error>> {
+) -> Result<(OrderedFloat<f64>, Option<OrderedFloat<f64>>), Box<dyn std::error::Error>> {
     if let Some((start, end)) = value.split_once(delimiter) {
-        Ok((start.parse()?, end.parse()?))
+        Ok((start.parse()?, end.parse().map_or(None, |v| Some(v))))
     } else {
         Err(anyhow!("Could not parse time values from input {value}").into())
     }
@@ -201,25 +201,27 @@ impl ExportTextGrid {
         for node in nodes {
             // for now only export nodes with time values (TODO extend by following coverage until times are found)
             if let Some(value) = node_annos.get_value_for_item(&node, &self.time_key)? {
-                let (start, end) = parse_time_tuple(&value, "-")?; // TODO make configurable
-                xmin = xmin.min(start);
-                xmax = xmax.max(end);
-                for annotation in node_annos.get_annotations_for_item(&node)? {
-                    if annotation.key.ns == ANNIS_NS
-                        || (!self.tier_order.contains(&annotation.key)
-                            && !self.point_tiers.contains(&annotation.key)
-                            && self.ignore_others)
-                    {
-                        continue;
-                    }
-                    let anno_val = annotation.val.to_string();
-                    let tuple = (start, end, anno_val);
-                    match tier_data.entry(annotation.key) {
-                        std::collections::btree_map::Entry::Vacant(e) => {
-                            e.insert(vec![tuple]);
+                let (start, end_opt) = parse_time_tuple(&value, "-")?;
+                if let Some(end) = end_opt {
+                    xmin = xmin.min(start);
+                    xmax = xmax.max(end);
+                    for annotation in node_annos.get_annotations_for_item(&node)? {
+                        if annotation.key.ns == ANNIS_NS
+                            || (!self.tier_order.contains(&annotation.key)
+                                && !self.point_tiers.contains(&annotation.key)
+                                && self.ignore_others)
+                        {
+                            continue;
                         }
-                        std::collections::btree_map::Entry::Occupied(mut e) => {
-                            e.get_mut().push(tuple);
+                        let anno_val = annotation.val.to_string();
+                        let tuple = (start, end, anno_val);
+                        match tier_data.entry(annotation.key) {
+                            std::collections::btree_map::Entry::Vacant(e) => {
+                                e.insert(vec![tuple]);
+                            }
+                            std::collections::btree_map::Entry::Occupied(mut e) => {
+                                e.get_mut().push(tuple);
+                            }
                         }
                     }
                 }
