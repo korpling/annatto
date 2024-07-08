@@ -201,43 +201,44 @@ impl ExportTextGrid {
         let mut xmin: OrderedFloat<f64> = f64::MAX.into();
         let mut xmax: OrderedFloat<f64> = 0f64.into();
         for node in nodes {
-            let (start, end_opt) = if let Some(value) =
-                node_annos.get_value_for_item(&node, &self.time_key)?
-            {
-                parse_time_tuple(&value, "-")?
-            } else {
-                // follow coverage edges to terminals
-                let mut time_annos = Vec::new();
-                for coverage_component in
-                    graph.get_all_components(Some(AnnotationComponentType::Coverage), None)
-                {
-                    if let Some(storage) = graph.get_graphstorage(&coverage_component) {
-                        for connected_node in
-                            storage.find_connected(node, 1, std::ops::Bound::Included(1))
-                        {
-                            if let Some(time_tuple) =
-                                node_annos.get_value_for_item(&connected_node?, &self.time_key)?
+            let (start, end_opt) =
+                if let Some(value) = node_annos.get_value_for_item(&node, &self.time_key)? {
+                    parse_time_tuple(&value, "-")?
+                } else {
+                    // follow coverage edges to terminals
+                    let mut time_annos = Vec::new();
+                    for coverage_component in
+                        graph.get_all_components(Some(AnnotationComponentType::Coverage), None)
+                    {
+                        if let Some(storage) = graph.get_graphstorage(&coverage_component) {
+                            for connected_node in
+                                storage.find_connected(node, 1, std::ops::Bound::Included(1))
                             {
-                                time_annos.push(time_tuple);
+                                if let Some(time_tuple) = node_annos
+                                    .get_value_for_item(&connected_node?, &self.time_key)?
+                                {
+                                    time_annos.push(time_tuple);
+                                }
                             }
                         }
                     }
-                }
-                let mut start = OrderedFloat::from(f64::MAX);
-                let mut end = OrderedFloat::from(f64::MIN);
-                for time_tuple in time_annos {
-                    let (start_v, end_v) = parse_time_tuple(&time_tuple, "-")?;
-                    if let Some(ev) = end_v {
-                        // also only consider start value with fully defined intervals
-                        start = start.min(start_v);
-                        end = end.min(ev);
+                    let mut start = OrderedFloat::from(f64::MAX);
+                    let mut end = OrderedFloat::from(f64::MIN);
+                    let mut untouched = true;
+                    for time_tuple in time_annos {
+                        let (start_v, end_v) = parse_time_tuple(&time_tuple, "-")?;
+                        if let Some(ev) = end_v {
+                            // also only consider start value with fully defined intervals
+                            untouched = false;
+                            start = start.min(start_v);
+                            end = end.min(ev);
+                        }
                     }
-                }
-                if start == OrderedFloat::from(f64::MAX) || end == OrderedFloat::from(f64::MIN) {
-                    continue;
-                }
-                (start, Some(end))
-            };
+                    if untouched {
+                        continue;
+                    }
+                    (start, Some(end))
+                };
             if let Some(end) = end_opt {
                 xmin = xmin.min(start);
                 xmax = xmax.max(end);
