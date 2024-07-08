@@ -201,29 +201,61 @@ impl ExportTextGrid {
         let mut xmin: OrderedFloat<f64> = f64::MAX.into();
         let mut xmax: OrderedFloat<f64> = 0f64.into();
         for node in nodes {
-            // for now only export nodes with time values (TODO extend by following coverage until times are found)
-            if let Some(value) = node_annos.get_value_for_item(&node, &self.time_key)? {
-                let (start, end_opt) = parse_time_tuple(&value, "-")?;
-                if let Some(end) = end_opt {
-                    xmin = xmin.min(start);
-                    xmax = xmax.max(end);
-                    for annotation in node_annos.get_annotations_for_item(&node)? {
-                        if annotation.key.ns == ANNIS_NS
-                            || (!self.tier_order.contains(&annotation.key)
-                                && !self.point_tiers.contains(&annotation.key)
-                                && self.ignore_others)
-                        {
-                            continue;
+            let (start, end_opt) =
+                if let Some(value) = node_annos.get_value_for_item(&node, &self.time_key)? {
+                    parse_time_tuple(&value, "-")?
+                } else {
+                    // follow coverage edges to terminals
+                    let mut time_annos = Vec::new();
+                    for coverage_component in
+                        graph.get_all_components(Some(AnnotationComponentType::Coverage), None)
+                    {
+                        if let Some(storage) = graph.get_graphstorage(&coverage_component) {
+                            for connected_node in
+                                storage.find_connected(node, 1, std::ops::Bound::Included(1))
+                            {
+                                if let Some(time_tuple) = node_annos
+                                    .get_value_for_item(&connected_node?, &self.time_key)?
+                                {
+                                    time_annos.push(time_tuple);
+                                }
+                            }
                         }
-                        let anno_val = annotation.val.to_string();
-                        let tuple = (start, end, anno_val);
-                        match tier_data.entry(annotation.key) {
-                            std::collections::btree_map::Entry::Vacant(e) => {
-                                e.insert(vec![tuple]);
-                            }
-                            std::collections::btree_map::Entry::Occupied(mut e) => {
-                                e.get_mut().push(tuple);
-                            }
+                    }
+                    if time_annos.is_empty() {
+                        // hopeless node, no time annotations available
+                        continue;
+                    }
+                    let mut start = OrderedFloat::from(f64::MAX);
+                    let mut end = OrderedFloat::from(f64::MIN);
+                    for time_tuple in time_annos {
+                        let (start_v, end_v) = parse_time_tuple(&time_tuple, "-")?;
+                        start = start.min(start_v);
+                        if let Some(ev) = end_v {
+                            end = end.min(ev);
+                        }
+                    }
+                    (start, Some(end))
+                };
+            if let Some(end) = end_opt {
+                xmin = xmin.min(start);
+                xmax = xmax.max(end);
+                for annotation in node_annos.get_annotations_for_item(&node)? {
+                    if annotation.key.ns == ANNIS_NS
+                        || (!self.tier_order.contains(&annotation.key)
+                            && !self.point_tiers.contains(&annotation.key)
+                            && self.ignore_others)
+                    {
+                        continue;
+                    }
+                    let anno_val = annotation.val.to_string();
+                    let tuple = (start, end, anno_val);
+                    match tier_data.entry(annotation.key) {
+                        std::collections::btree_map::Entry::Vacant(e) => {
+                            e.insert(vec![tuple]);
+                        }
+                        std::collections::btree_map::Entry::Occupied(mut e) => {
+                            e.get_mut().push(tuple);
                         }
                     }
                 }
