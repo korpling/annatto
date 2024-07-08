@@ -1,0 +1,178 @@
+---
+source: src/exporter/textgrid.rs
+expression: a.unwrap()
+---
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0
+xmax = 11
+tiers? <exists>
+size = 4
+item []:
+    item [1]:
+        class = "IntervalTier"
+        name = "tok"
+        xmin = 0
+        xmax = 11
+        intervals: size = 11
+        intervals [1]:
+            xmin = 0
+            xmax = 1
+            text = "Is"
+        intervals [2]:
+            xmin = 1
+            xmax = 2
+            text = "this"
+        intervals [3]:
+            xmin = 2
+            xmax = 3
+            text = "example"
+        intervals [4]:
+            xmin = 3
+            xmax = 4
+            text = "more"
+        intervals [5]:
+            xmin = 4
+            xmax = 5
+            text = "complicated"
+        intervals [6]:
+            xmin = 5
+            xmax = 6
+            text = "than"
+        intervals [7]:
+            xmin = 6
+            xmax = 7
+            text = "it"
+        intervals [8]:
+            xmin = 7
+            xmax = 8
+            text = "appears"
+        intervals [9]:
+            xmin = 8
+            xmax = 9
+            text = "to"
+        intervals [10]:
+            xmin = 9
+            xmax = 10
+            text = "be"
+        intervals [11]:
+            xmin = 10
+            xmax = 11
+            text = "?"
+    item [2]:
+        class = "IntervalTier"
+        name = "pos"
+        xmin = 0
+        xmax = 11
+        intervals: size = 11
+        intervals [1]:
+            xmin = 0
+            xmax = 1
+            text = "VBZ"
+        intervals [2]:
+            xmin = 1
+            xmax = 2
+            text = "DT"
+        intervals [3]:
+            xmin = 2
+            xmax = 3
+            text = "NN"
+        intervals [4]:
+            xmin = 3
+            xmax = 4
+            text = "RBR"
+        intervals [5]:
+            xmin = 4
+            xmax = 5
+            text = "JJ"
+        intervals [6]:
+            xmin = 5
+            xmax = 6
+            text = "IN"
+        intervals [7]:
+            xmin = 6
+            xmax = 7
+            text = "PRP"
+        intervals [8]:
+            xmin = 7
+            xmax = 8
+            text = "VBZ"
+        intervals [9]:
+            xmin = 8
+            xmax = 9
+            text = "TO"
+        intervals [10]:
+            xmin = 9
+            xmax = 10
+            text = "VB"
+        intervals [11]:
+            xmin = 10
+            xmax = 11
+            text = "."
+    item [3]:
+        class = "IntervalTier"
+        name = "lemma"
+        xmin = 0
+        xmax = 11
+        intervals: size = 11
+        intervals [1]:
+            xmin = 0
+            xmax = 1
+            text = "be"
+        intervals [2]:
+            xmin = 1
+            xmax = 2
+            text = "this"
+        intervals [3]:
+            xmin = 2
+            xmax = 3
+            text = "example"
+        intervals [4]:
+            xmin = 3
+            xmax = 4
+            text = "more"
+        intervals [5]:
+            xmin = 4
+            xmax = 5
+            text = "complicated"
+        intervals [6]:
+            xmin = 5
+            xmax = 6
+            text = "than"
+        intervals [7]:
+            xmin = 6
+            xmax = 7
+            text = "it"
+        intervals [8]:
+            xmin = 7
+            xmax = 8
+            text = "appear"
+        intervals [9]:
+            xmin = 8
+            xmax = 9
+            text = "to"
+        intervals [10]:
+            xmin = 9
+            xmax = 10
+            text = "be"
+        intervals [11]:
+            xmin = 10
+            xmax = 11
+            text = "?"
+    item [4]:
+        class = "IntervalTier"
+        name = "Inf-Struct"
+        xmin = 0
+        xmax = 11
+        intervals: size = 2
+        intervals [1]:
+            xmin = 0
+            xmax = 1
+            text = "contrast-focus"
+        intervals [2]:
+            xmin = 1
+            xmax = 11
+            text = "topic"
+
+
