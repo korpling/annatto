@@ -173,12 +173,14 @@ impl Exporter for ExportTextGrid {
     }
 }
 
+type AnnisInterval = (OrderedFloat<f64>, Option<OrderedFloat<f64>>);
+
 fn parse_time_tuple(
     value: &str,
     delimiter: &str,
-) -> Result<(OrderedFloat<f64>, OrderedFloat<f64>), Box<dyn std::error::Error>> {
+) -> Result<AnnisInterval, Box<dyn std::error::Error>> {
     if let Some((start, end)) = value.split_once(delimiter) {
-        Ok((start.parse()?, end.parse()?))
+        Ok((start.parse()?, end.parse().ok()))
     } else {
         Err(anyhow!("Could not parse time values from input {value}").into())
     }
@@ -201,25 +203,27 @@ impl ExportTextGrid {
         for node in nodes {
             // for now only export nodes with time values (TODO extend by following coverage until times are found)
             if let Some(value) = node_annos.get_value_for_item(&node, &self.time_key)? {
-                let (start, end) = parse_time_tuple(&value, "-")?; // TODO make configurable
-                xmin = xmin.min(start);
-                xmax = xmax.max(end);
-                for annotation in node_annos.get_annotations_for_item(&node)? {
-                    if annotation.key.ns == ANNIS_NS
-                        || (!self.tier_order.contains(&annotation.key)
-                            && !self.point_tiers.contains(&annotation.key)
-                            && self.ignore_others)
-                    {
-                        continue;
-                    }
-                    let anno_val = annotation.val.to_string();
-                    let tuple = (start, end, anno_val);
-                    match tier_data.entry(annotation.key) {
-                        std::collections::btree_map::Entry::Vacant(e) => {
-                            e.insert(vec![tuple]);
+                let (start, end_opt) = parse_time_tuple(&value, "-")?;
+                if let Some(end) = end_opt {
+                    xmin = xmin.min(start);
+                    xmax = xmax.max(end);
+                    for annotation in node_annos.get_annotations_for_item(&node)? {
+                        if annotation.key.ns == ANNIS_NS
+                            || (!self.tier_order.contains(&annotation.key)
+                                && !self.point_tiers.contains(&annotation.key)
+                                && self.ignore_others)
+                        {
+                            continue;
                         }
-                        std::collections::btree_map::Entry::Occupied(mut e) => {
-                            e.get_mut().push(tuple);
+                        let anno_val = annotation.val.to_string();
+                        let tuple = (start, end, anno_val);
+                        match tier_data.entry(annotation.key) {
+                            std::collections::btree_map::Entry::Vacant(e) => {
+                                e.insert(vec![tuple]);
+                            }
+                            std::collections::btree_map::Entry::Occupied(mut e) => {
+                                e.get_mut().push(tuple);
+                            }
                         }
                     }
                 }
@@ -452,6 +456,7 @@ mod tests {
 
     use graphannis::{graph::AnnoKey, AnnotationGraph};
     use insta::assert_snapshot;
+    use ordered_float::OrderedFloat;
 
     use crate::{
         exporter::textgrid::{default_file_key, default_time_key},
@@ -460,7 +465,7 @@ mod tests {
         StepID,
     };
 
-    use super::ExportTextGrid;
+    use super::{parse_time_tuple, ExportTextGrid};
 
     // we only need this implementation for test purposes (shorter code)
     impl Default for ExportTextGrid {
@@ -720,5 +725,25 @@ ignore_others = true
         assert!(export.is_ok());
         dbg!(&export);
         assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
+    fn test_parse_time_anno() {
+        let interval = ".123-1";
+        let r = parse_time_tuple(interval, "-");
+        assert!(r.is_ok());
+        let (start, end) = r.unwrap();
+        assert_eq!(start, 0.123);
+        assert!(end.is_some());
+        let expected = OrderedFloat::from(1.0);
+        assert_eq!(expected, end.unwrap());
+        let interval2 = "0.5-";
+        let r2 = parse_time_tuple(interval2, "-");
+        assert!(r2.is_ok());
+        let (start2, end2) = r2.unwrap();
+        let expected2 = OrderedFloat::from(0.5);
+        assert_eq!(expected2, start2);
+        assert!(end2.is_none());
+        assert!(parse_time_tuple("-", "-").is_err());
     }
 }
