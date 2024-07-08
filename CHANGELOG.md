@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `textgrid` export considers time annotations of covered nodes as well
+
 ### Fixed
 
 - `textgrid` export can now handle `annis::time` intervals with an undefined right boundary (such intervals will be skipped)
