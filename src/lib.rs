@@ -20,7 +20,6 @@ use exporter::{
     exmaralda::ExportExmaralda, graphml::GraphMLExporter, sequence::ExportSequence,
     textgrid::ExportTextGrid, xlsx::XlsxExporter, Exporter,
 };
-use graphannis::Graph;
 use importer::{
     conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
     graphml::GraphMLImporter, meta::AnnotateCorpus, none::CreateEmptyCorpus, opus::ImportOpusLinks,
