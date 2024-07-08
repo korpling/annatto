@@ -6,7 +6,7 @@ homepage = "https://github.com/korpling/annatto/"
 license = "Apache-2.0"
 name = "annatto"
 repository = "https://github.com/korpling/annatto/"
-version = "0.11.0"
+version = "0.12.0"
 
 [dependencies]
 ansi_term = "0.12"
