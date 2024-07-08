@@ -231,7 +231,7 @@ impl ExportTextGrid {
                             // also only consider start value with fully defined intervals
                             untouched = false;
                             start = start.min(start_v);
-                            end = end.min(ev);
+                            end = end.max(ev);
                         }
                     }
                     if untouched {
@@ -494,7 +494,7 @@ mod tests {
 
     use crate::{
         exporter::textgrid::{default_file_key, default_time_key},
-        importer::{exmaralda::ImportEXMARaLDA, Importer},
+        importer::{exmaralda::ImportEXMARaLDA, textgrid::ImportTextgrid, Importer},
         test_util::export_to_string,
         StepID,
     };
@@ -779,5 +779,54 @@ ignore_others = true
         assert_eq!(expected2, start2);
         assert!(end2.is_none());
         assert!(parse_time_tuple("-", "-").is_err());
+    }
+
+    #[test]
+    fn textgrid_to_textgrid() {
+        let import_path = Path::new("tests/data/import/textgrid/singleSpeaker/");
+        let import_config = r#"
+skip_audio = true
+tier_groups = { tok = ["pos", "lemma", "Inf-Struct"] }
+        "#;
+        let import_textgrid: Result<ImportTextgrid, _> = toml::from_str(import_config);
+        assert!(import_textgrid.is_ok());
+        let u = import_textgrid.unwrap().import_corpus(
+            import_path,
+            StepID {
+                module_name: "test_import_textgrid".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(u.is_ok());
+        let mut update = u.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update, |_| {}).is_ok());
+        let export_textgrid = ExportTextGrid {
+            tier_order: vec![
+                AnnoKey {
+                    ns: "".into(),
+                    name: "tok".into(),
+                },
+                AnnoKey {
+                    ns: "".into(),
+                    name: "pos".into(),
+                },
+                AnnoKey {
+                    ns: "".into(),
+                    name: "lemma".into(),
+                },
+                AnnoKey {
+                    ns: "".into(),
+                    name: "Inf-Struct".into(),
+                },
+            ],
+            ..Default::default()
+        };
+        let a = export_to_string(&graph, export_textgrid);
+        assert!(a.is_ok());
+        assert_snapshot!(a.unwrap());
     }
 }
