@@ -27,8 +27,8 @@ use importer::{
     treetagger::ImportTreeTagger, xlsx::ImportSpreadsheet, xml::ImportXML, Importer,
 };
 use manipulator::{
-    check::Check, chunker::Chunk, collapse::Collapse, dot::DotDebug, enumerate::EnumerateMatches,
-    link::LinkNodes, map::MapAnnos, no_op::NoOp, re::Revise, split::SplitValues, Manipulator,
+    check::Check, chunker::Chunk, collapse::Collapse, enumerate::EnumerateMatches, link::LinkNodes,
+    map::MapAnnos, no_op::NoOp, re::Revise, split::SplitValues, visualize::Visualize, Manipulator,
 };
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
@@ -269,7 +269,7 @@ impl ReadFromDiscriminants {
 pub enum GraphOp {
     Check(Check),       // no default, has a (required) path attribute
     Collapse(Collapse), // no default, there is no such thing as a default component
-    DotDebug(#[serde(default)] DotDebug),
+    Visualize(#[serde(default)] Visualize),
     Enumerate(#[serde(default)] EnumerateMatches),
     Link(LinkNodes),                  // no default, has required attributes
     Map(MapAnnos),                    // no default, has a (required) path attribute
@@ -291,7 +291,7 @@ impl GraphOp {
         match self {
             GraphOp::Check(m) => m,
             GraphOp::Collapse(m) => m,
-            GraphOp::DotDebug(m) => m,
+            GraphOp::Visualize(m) => m,
             GraphOp::Link(m) => m,
             GraphOp::Map(m) => m,
             GraphOp::Revise(m) => m,
@@ -308,7 +308,7 @@ impl GraphOpDiscriminants {
         match self {
             GraphOpDiscriminants::Check => Check::DOCS,
             GraphOpDiscriminants::Collapse => Collapse::DOCS,
-            GraphOpDiscriminants::DotDebug => DotDebug::DOCS,
+            GraphOpDiscriminants::Visualize => Visualize::DOCS,
             GraphOpDiscriminants::Enumerate => EnumerateMatches::DOCS,
             GraphOpDiscriminants::Link => LinkNodes::DOCS,
             GraphOpDiscriminants::Map => MapAnnos::DOCS,
@@ -326,8 +326,8 @@ impl GraphOpDiscriminants {
             GraphOpDiscriminants::Collapse => {
                 (Collapse::FIELD_NAMES_AS_SLICE, Collapse::FIELD_DOCS)
             }
-            GraphOpDiscriminants::DotDebug => {
-                (DotDebug::FIELD_NAMES_AS_SLICE, DotDebug::FIELD_DOCS)
+            GraphOpDiscriminants::Visualize => {
+                (Visualize::FIELD_NAMES_AS_SLICE, Visualize::FIELD_DOCS)
             }
             GraphOpDiscriminants::Enumerate => (
                 EnumerateMatches::FIELD_NAMES_AS_SLICE,

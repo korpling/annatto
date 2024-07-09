@@ -2,13 +2,13 @@
 pub mod check;
 pub mod chunker;
 pub mod collapse;
-pub mod dot;
 pub mod enumerate;
 pub mod link;
 pub mod map;
 pub mod no_op;
 pub mod re;
 pub mod split;
+pub mod visualize;
 
 use crate::{workflow::StatusSender, StepID};
 use graphannis::AnnotationGraph;
