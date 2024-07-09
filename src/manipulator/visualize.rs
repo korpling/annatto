@@ -78,9 +78,11 @@ impl Visualize {
             all_token
         };
 
+        let mut subgraph = subgraph!("token"; attr!("rank", "same"));
         for t in included_token {
-            self.add_node(t, graph, &mut output)?;
+            subgraph.stmts.push(self.create_node_stmt(t, graph)?);
         }
+        output.add_stmt(stmt!(subgraph));
 
         // Output all edges
         for component in graph.get_all_components(None, None) {
@@ -120,7 +122,7 @@ impl Visualize {
         }
     }
 
-    fn add_node(&self, n: NodeID, input: &AnnotationGraph, output: &mut Graph) -> Result<()> {
+    fn create_node_stmt(&self, n: NodeID, input: &AnnotationGraph) -> Result<Stmt> {
         let node_name = input
             .get_node_annos()
             .get_value_for_item(&n, &NODE_NAME_KEY)?
@@ -140,9 +142,9 @@ impl Visualize {
 
         let label = format!("\"{node_name}\\n \\n{anno_string}\"");
 
-        output.add_stmt(stmt!(node!(n.to_string(); attr!("label", label))));
-
-        Ok(())
+        Ok(stmt!(
+            node!(n.to_string(); attr!("shape", "box"), attr!("label", label))
+        ))
     }
 }
 
