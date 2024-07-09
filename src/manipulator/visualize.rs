@@ -28,7 +28,8 @@ use std::{borrow::Cow, collections::HashSet};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 #[derive(Default, Deserialize)]
-pub enum Include {
+#[serde(rename_all = "snake_case", untagged)]
+pub(crate) enum Include {
     All,
     #[default]
     FirstDocument,
@@ -39,16 +40,40 @@ pub enum Include {
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct Visualize {
-    /// Limit number of token visualized. If given, only the first token and the
-    /// nodes connected to these token are included. The default value is `10`.
-    #[serde(default = "default_token_number")]
-    max_token_number: Option<usize>,
+    /// Configure whether to limit the number of tokens visualized. If `true`,
+    /// the only the first `limit_tokens_n` tokens and the nodes connected to
+    /// these token are included. Per default, the output is limited to 10
+    /// tokens.
+    ///
+    /// ```toml
+    /// [[graph_op]]
+    /// action = "visualize"
+    ///
+    /// [graph_op.config]
+    /// limit_tokens = true
+    /// token_limit = 10
+    /// ```
+    ///
+    /// To include all token, use the value `false`.
+    /// ```toml
+    /// [[graph_op]]
+    /// action = "visualize"
+    ///
+    /// [graph_op.config]
+    /// limit_tokens = false
+    /// ```
+    #[serde(default = "default_limit_tokens")]
+    limit_tokens: bool,
+    /// If `limit_tokens` is set to `true`, the number of tokens to include.
+    /// Default is `10`.
+    #[serde(default = "default_token_limit")]
+    token_limit: usize,
+
     /// Which root node should be used. Per default, this visualization only
     /// includes the first document.
     ///
     /// ```toml
     /// [[graph_op]]
-    ///
     /// action = "visualize"
     ///
     /// [graph_op.config]
@@ -64,8 +89,12 @@ pub struct Visualize {
     root: Include,
 }
 
-fn default_token_number() -> Option<usize> {
-    Some(10)
+fn default_limit_tokens() -> bool {
+    true
+}
+
+fn default_token_limit() -> usize {
+    10
 }
 
 impl Visualize {
@@ -80,8 +109,8 @@ impl Visualize {
 
         let parent_id = self.get_root_node_name(graph)?;
         let all_token = token_helper.get_ordered_token(&parent_id, None)?;
-        let included_token = if let Some(limit) = self.max_token_number {
-            all_token.into_iter().take(limit).collect_vec()
+        let included_token = if self.limit_tokens {
+            all_token.into_iter().take(self.token_limit).collect_vec()
         } else {
             all_token
         };
