@@ -5,7 +5,7 @@ use crate::{
 };
 use anyhow::{Context, Result};
 use documented::{Documented, DocumentedFields};
-use graphannis::AnnotationGraph;
+use graphannis::{model::AnnotationComponentType, AnnotationGraph};
 use graphannis_core::{graph::NODE_NAME_KEY, types::NodeID};
 use graphviz_rust::{
     cmd::Format,
@@ -90,14 +90,47 @@ impl Visualize {
                 .get_graphstorage_as_ref(&component)
                 .context("Missing graph storage")?;
 
+            let component_short_code = match component.get_type() {
+                AnnotationComponentType::Coverage => "C",
+                AnnotationComponentType::Dominance => ">",
+                AnnotationComponentType::Pointing => "->",
+                AnnotationComponentType::Ordering => ".",
+                AnnotationComponentType::LeftToken => "LT",
+                AnnotationComponentType::RightToken => "RT",
+                AnnotationComponentType::PartOf => "@",
+            };
+
             for source_node in gs.source_nodes() {
                 let source_node = source_node?;
                 for target_node in gs.get_outgoing_edges(source_node) {
                     let target_node = target_node?.to_string();
-                    let label = format!("\"{component}\"");
 
+                    let label = format!(
+                        "\"{}/{} ({component_short_code})\"",
+                        component.layer, component.name
+                    );
+                    let color = match component.get_type() {
+                        AnnotationComponentType::Ordering => "blue",
+                        AnnotationComponentType::Dominance => "red",
+                        AnnotationComponentType::Coverage => "darkgreen",
+                        AnnotationComponentType::LeftToken
+                        | AnnotationComponentType::RightToken => "dimgray",
+                        AnnotationComponentType::PartOf => "gold",
+                        _ => "black",
+                    };
+                    let style = match component.get_type() {
+                        AnnotationComponentType::Coverage => "dotted",
+                        AnnotationComponentType::LeftToken
+                        | AnnotationComponentType::RightToken => "dashed",
+                        _ => "solid",
+                    };
                     output.add_stmt(stmt!(
-                        edge!(node_id!(source_node.to_string()) => node_id!(target_node); attr!("label", label))
+                        edge!(node_id!(source_node.to_string()) => node_id!(target_node);
+                            attr!("label", label),
+                            attr!("color", color),
+                            attr!("fontcolor", color),
+                            attr!("style", style)
+                        )
                     ));
                 }
             }
