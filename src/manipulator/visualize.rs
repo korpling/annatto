@@ -40,6 +40,18 @@ pub(crate) enum Include {
 ///
 /// **Important:** You need to have the[GraphViz](https://graphviz.org/)
 /// software installed to use this graph operation.
+///
+/// ## Example configuration
+///
+/// ```toml
+/// [[graph_op]]
+/// action = "visualize"
+///
+/// [graph_op.config]
+/// output_svg = "debug.svg"
+/// limit_tokens = true
+/// token_limit = 10
+/// ```
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct Visualize {
@@ -96,8 +108,8 @@ pub struct Visualize {
     #[serde(default)]
     output_dot: Option<PathBuf>,
     /// If set, a SVG file is created at this path, which must is relative to the workflow directory.
-    /// The default is to create a SVG file at the path `graph-visualization.svg`.
-    #[serde(default = "default_output_svg")]
+    // /The default is to not create a SVG file.
+    #[serde(default)]
     output_svg: Option<PathBuf>,
 }
 
@@ -107,10 +119,6 @@ fn default_limit_tokens() -> bool {
 
 fn default_token_limit() -> usize {
     10
-}
-
-fn default_output_svg() -> Option<PathBuf> {
-    Some("graph-visualization.svg".into())
 }
 
 impl Visualize {
@@ -322,7 +330,6 @@ mod tests {
             &workflow_file,
         )
         .unwrap();
-        dbg!(std::fs::read_to_string(&workflow_file).unwrap());
         execute_from_file(&workflow_file, true, None).unwrap();
         let result_dot = std::fs::read_to_string(workflow_dir.path().join("test.dot")).unwrap();
         assert_snapshot!(result_dot);

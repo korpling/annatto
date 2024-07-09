@@ -5,6 +5,18 @@ Output the currrent graph as SVG or DOT file for debugging it.
 **Important:** You need to have the[GraphViz](https://graphviz.org/)
 software installed to use this graph operation.
 
+## Example configuration
+
+```toml
+[[graph_op]]
+action = "visualize"
+
+[graph_op.config]
+output_svg = "debug.svg"
+limit_tokens = true
+token_limit = 10
+```
+
 ## Configuration
 
 ###  limit_tokens
@@ -65,5 +77,4 @@ The default is to not create a DOT file.
 ###  output_svg
 
 If set, a SVG file is created at this path, which must is relative to the workflow directory.
-The default is to create a SVG file at the path `graph-visualization.svg`.
 
