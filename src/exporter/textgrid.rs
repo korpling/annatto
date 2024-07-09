@@ -173,12 +173,14 @@ impl Exporter for ExportTextGrid {
     }
 }
 
+type AnnisInterval = (OrderedFloat<f64>, Option<OrderedFloat<f64>>);
+
 fn parse_time_tuple(
     value: &str,
     delimiter: &str,
-) -> Result<(OrderedFloat<f64>, OrderedFloat<f64>), Box<dyn std::error::Error>> {
+) -> Result<AnnisInterval, Box<dyn std::error::Error>> {
     if let Some((start, end)) = value.split_once(delimiter) {
-        Ok((start.parse()?, end.parse()?))
+        Ok((start.parse()?, end.parse().ok()))
     } else {
         Err(anyhow!("Could not parse time values from input {value}").into())
     }
@@ -199,9 +201,45 @@ impl ExportTextGrid {
         let mut xmin: OrderedFloat<f64> = f64::MAX.into();
         let mut xmax: OrderedFloat<f64> = 0f64.into();
         for node in nodes {
-            // for now only export nodes with time values (TODO extend by following coverage until times are found)
-            if let Some(value) = node_annos.get_value_for_item(&node, &self.time_key)? {
-                let (start, end) = parse_time_tuple(&value, "-")?; // TODO make configurable
+            let (start, end_opt) =
+                if let Some(value) = node_annos.get_value_for_item(&node, &self.time_key)? {
+                    parse_time_tuple(&value, "-")?
+                } else {
+                    // follow coverage edges to terminals
+                    let mut time_annos = Vec::new();
+                    for coverage_component in
+                        graph.get_all_components(Some(AnnotationComponentType::Coverage), None)
+                    {
+                        if let Some(storage) = graph.get_graphstorage(&coverage_component) {
+                            for connected_node in
+                                storage.find_connected(node, 1, std::ops::Bound::Included(1))
+                            {
+                                if let Some(time_tuple) = node_annos
+                                    .get_value_for_item(&connected_node?, &self.time_key)?
+                                {
+                                    time_annos.push(time_tuple);
+                                }
+                            }
+                        }
+                    }
+                    let mut start = OrderedFloat::from(f64::MAX);
+                    let mut end = OrderedFloat::from(f64::MIN);
+                    let mut untouched = true;
+                    for time_tuple in time_annos {
+                        let (start_v, end_v) = parse_time_tuple(&time_tuple, "-")?;
+                        if let Some(ev) = end_v {
+                            // also only consider start value with fully defined intervals
+                            untouched = false;
+                            start = start.min(start_v);
+                            end = end.max(ev);
+                        }
+                    }
+                    if untouched {
+                        continue;
+                    }
+                    (start, Some(end))
+                };
+            if let Some(end) = end_opt {
                 xmin = xmin.min(start);
                 xmax = xmax.max(end);
                 for annotation in node_annos.get_annotations_for_item(&node)? {
@@ -452,15 +490,16 @@ mod tests {
 
     use graphannis::{graph::AnnoKey, AnnotationGraph};
     use insta::assert_snapshot;
+    use ordered_float::OrderedFloat;
 
     use crate::{
         exporter::textgrid::{default_file_key, default_time_key},
-        importer::{exmaralda::ImportEXMARaLDA, Importer},
+        importer::{exmaralda::ImportEXMARaLDA, textgrid::ImportTextgrid, Importer},
         test_util::export_to_string,
         StepID,
     };
 
-    use super::ExportTextGrid;
+    use super::{parse_time_tuple, ExportTextGrid};
 
     // we only need this implementation for test purposes (shorter code)
     impl Default for ExportTextGrid {
@@ -720,5 +759,74 @@ ignore_others = true
         assert!(export.is_ok());
         dbg!(&export);
         assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
+    fn test_parse_time_anno() {
+        let interval = ".123-1";
+        let r = parse_time_tuple(interval, "-");
+        assert!(r.is_ok());
+        let (start, end) = r.unwrap();
+        assert_eq!(start, 0.123);
+        assert!(end.is_some());
+        let expected = OrderedFloat::from(1.0);
+        assert_eq!(expected, end.unwrap());
+        let interval2 = "0.5-";
+        let r2 = parse_time_tuple(interval2, "-");
+        assert!(r2.is_ok());
+        let (start2, end2) = r2.unwrap();
+        let expected2 = OrderedFloat::from(0.5);
+        assert_eq!(expected2, start2);
+        assert!(end2.is_none());
+        assert!(parse_time_tuple("-", "-").is_err());
+    }
+
+    #[test]
+    fn textgrid_to_textgrid() {
+        let import_path = Path::new("tests/data/import/textgrid/singleSpeaker/");
+        let import_config = r#"
+skip_audio = true
+tier_groups = { tok = ["pos", "lemma", "Inf-Struct"] }
+        "#;
+        let import_textgrid: Result<ImportTextgrid, _> = toml::from_str(import_config);
+        assert!(import_textgrid.is_ok());
+        let u = import_textgrid.unwrap().import_corpus(
+            import_path,
+            StepID {
+                module_name: "test_import_textgrid".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(u.is_ok());
+        let mut update = u.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update, |_| {}).is_ok());
+        let export_textgrid = ExportTextGrid {
+            tier_order: vec![
+                AnnoKey {
+                    ns: "".into(),
+                    name: "tok".into(),
+                },
+                AnnoKey {
+                    ns: "".into(),
+                    name: "pos".into(),
+                },
+                AnnoKey {
+                    ns: "".into(),
+                    name: "lemma".into(),
+                },
+                AnnoKey {
+                    ns: "".into(),
+                    name: "Inf-Struct".into(),
+                },
+            ],
+            ..Default::default()
+        };
+        let a = export_to_string(&graph, export_textgrid);
+        assert!(a.is_ok());
+        assert_snapshot!(a.unwrap());
     }
 }

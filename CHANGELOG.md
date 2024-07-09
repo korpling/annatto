@@ -5,6 +5,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2024-07-08
+
+### Added
+
+- `textgrid` export considers time annotations of covered nodes as well
+
+### Fixed
+
+- `textgrid` export can now handle `annis::time` intervals with an undefined right boundary (such intervals will be skipped)
+
+### Changed
+
+- `collapse` now also transfers annotations with namespace "annis" with the exception of "annis::node_name". This could lead to unstable results in case of conflicting values, such as for "annis::layer", but for most use cases this is not relevant yet. Not adding many of the before dropped annotations, though, was much more severe.
+
+## [0.11.0] - 2024-07-05
+
 ### Added
 
 - `textgrid` export now creates PRAAT TextGrid files from annotation graphs
@@ -16,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - code is more robust and more transparent to the user in case of unexpected data
 - `textgrid` import now allows correct file type specification for short files
+
+### Changed
+
+- `revise` now deserialized components directly and uses different syntax. They are provided as a list of `from` and `to` component specifications.
 
 ## [0.10.0] - 2024-06-25
 
