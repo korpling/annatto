@@ -109,31 +109,19 @@ pub(crate) fn get_root_corpus_node_names(graph: &AnnotationGraph) -> anyhow::Res
 /// Returns a sorted list of node names of all the corpus graph nodes without any ingoing `PartOf` edge.
 pub(crate) fn get_document_node_names(graph: &AnnotationGraph) -> anyhow::Result<Vec<String>> {
     let mut documents: BTreeSet<String> = BTreeSet::new();
-    let all_part_of_gs = graph
-        .get_all_components(Some(AnnotationComponentType::PartOf), None)
-        .into_iter()
-        .filter_map(|c| graph.get_graphstorage(&c))
-        .collect_vec();
-    let all_part_of_edge_container = all_part_of_gs
-        .iter()
-        .map(|gs| gs.as_edgecontainer())
-        .collect_vec();
-    let part_of_gs = UnionEdgeContainer::new(all_part_of_edge_container);
 
-    for candidate in graph.get_node_annos().exact_anno_search(
-        Some(ANNIS_NS),
-        NODE_TYPE,
-        ValueSearch::Some("corpus"),
-    ) {
+    for candidate in
+        graph
+            .get_node_annos()
+            .exact_anno_search(Some(ANNIS_NS), "doc", ValueSearch::Any)
+    {
         let candidate = candidate?;
-        if !part_of_gs.has_ingoing_edges(candidate.node)? {
-            let root_node_name = graph
-                .get_node_annos()
-                .get_value_for_item(&candidate.node, &NODE_NAME_KEY)?
-                .context("Missing node name")?
-                .to_string();
-            documents.insert(root_node_name);
-        }
+        let root_node_name = graph
+            .get_node_annos()
+            .get_value_for_item(&candidate.node, &NODE_NAME_KEY)?
+            .context("Missing node name")?
+            .to_string();
+        documents.insert(root_node_name);
     }
     Ok(documents.into_iter().collect_vec())
 }

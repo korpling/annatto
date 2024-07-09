@@ -344,10 +344,13 @@ impl Manipulator for Visualize {
 mod tests {
     use std::path::Path;
 
+    use graphannis::{update::GraphUpdate, AnnotationGraph};
     use insta::assert_snapshot;
     use tempfile::tempdir;
 
-    use crate::workflow::execute_from_file;
+    use crate::{util::example_generator, workflow::execute_from_file};
+
+    use super::Visualize;
 
     #[test]
     fn dot_single_sentence_limit() {
@@ -375,5 +378,40 @@ mod tests {
         execute_from_file(&workflow_file, true, None).unwrap();
         let result_dot = std::fs::read_to_string(workflow_dir.path().join("test.dot")).unwrap();
         assert_snapshot!(result_dot);
+    }
+
+    #[test]
+    fn root_node_restriction() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_two_documents(&mut updates);
+        let mut g = AnnotationGraph::with_default_graphstorages(true).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let op = Visualize {
+            limit_tokens: false,
+            token_limit: 0,
+            root: super::Include::All,
+            output_dot: None,
+            output_svg: None,
+        };
+        assert_eq!("root", op.get_root_node_name(&g).unwrap());
+
+        let op = Visualize {
+            limit_tokens: false,
+            token_limit: 0,
+            root: super::Include::Document("root/doc2".to_string()),
+            output_dot: None,
+            output_svg: None,
+        };
+        assert_eq!("root/doc2", op.get_root_node_name(&g).unwrap());
+
+        let op = Visualize {
+            limit_tokens: false,
+            token_limit: 0,
+            root: super::Include::FirstDocument,
+            output_dot: None,
+            output_svg: None,
+        };
+        assert_eq!("root/doc1", op.get_root_node_name(&g).unwrap());
     }
 }
