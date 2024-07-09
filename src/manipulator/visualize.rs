@@ -303,3 +303,41 @@ impl Manipulator for Visualize {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use insta::assert_snapshot;
+    use tempfile::tempdir;
+
+    use crate::workflow::execute_from_file;
+
+    #[test]
+    fn dot_single_sentence_limit() {
+        let workflow_dir = tempdir().unwrap();
+        let workflow_file = workflow_dir.path().join("visualize.toml");
+        std::fs::copy(
+            Path::new("./tests/workflows/visualize_limit.toml"),
+            &workflow_file,
+        )
+        .unwrap();
+        execute_from_file(&workflow_file, true, None).unwrap();
+        let result_dot = std::fs::read_to_string(workflow_dir.path().join("test.dot")).unwrap();
+        assert_snapshot!(result_dot);
+    }
+
+    #[test]
+    fn dot_single_sentence_full() {
+        let workflow_dir = tempdir().unwrap();
+        let workflow_file = workflow_dir.path().join("visualize.toml");
+        std::fs::copy(
+            Path::new("./tests/workflows/visualize_full.toml"),
+            &workflow_file,
+        )
+        .unwrap();
+        execute_from_file(&workflow_file, true, None).unwrap();
+        let result_dot = std::fs::read_to_string(workflow_dir.path().join("test.dot")).unwrap();
+        assert_snapshot!(result_dot);
+    }
+}
