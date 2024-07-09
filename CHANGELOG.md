@@ -5,6 +5,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `visualize` graph operation that allows to output the current graph (somehwere
+  in the conversion process) to SVG or DOT for debugging.
+
 ## [0.12.0] - 2024-07-08
 
 ### Added

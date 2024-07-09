@@ -1,0 +1,13 @@
+[[import]]
+format = "graphml"
+path = "$CARGO_MANIFEST_DIR/tests/data/import/graphml/single_sentence with_pointing.graphml"
+
+[import.config]
+
+[[graph_op]]
+
+action = "visualize"
+
+[graph_op.config]
+limit_tokens = false
+output_dot = "test.dot"
