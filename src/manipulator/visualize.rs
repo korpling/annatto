@@ -5,8 +5,15 @@ use crate::{
 };
 use anyhow::{Context, Result};
 use documented::{Documented, DocumentedFields};
-use graphannis::{model::AnnotationComponentType, AnnotationGraph};
-use graphannis_core::{graph::NODE_NAME_KEY, types::NodeID};
+use graphannis::{
+    model::{AnnotationComponent, AnnotationComponentType},
+    AnnotationGraph,
+};
+use graphannis_core::types::NodeID as GraphAnnisNodeID;
+use graphannis_core::{
+    dfs,
+    graph::{storage::union::UnionEdgeContainer, NODE_NAME_KEY},
+};
 use graphviz_rust::{
     cmd::Format,
     dot_generator::*,
@@ -17,7 +24,7 @@ use graphviz_rust::{
 use itertools::Itertools;
 
 use serde::Deserialize;
-use std::borrow::Cow;
+use std::{borrow::Cow, collections::HashSet};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 #[derive(Default, Deserialize)]
@@ -33,13 +40,13 @@ pub enum Include {
 #[serde(deny_unknown_fields)]
 pub struct Visualize {
     /// Limit number of token visualized. If given, only the first token and the
-    /// nodes connected to these token are included. The default value is `50`.
+    /// nodes connected to these token are included. The default value is `10`.
     #[serde(default = "default_token_number")]
     max_token_number: Option<usize>,
     /// Which root node should be used. Per default, this visualization only
     /// includes the first document.
     ///
-    /// ``toml
+    /// ```toml
     /// [[graph_op]]
     ///
     /// action = "visualize"
@@ -47,6 +54,7 @@ pub struct Visualize {
     /// [graph_op.config]
     /// root = "first_document"
     /// ```
+    ///
     /// Alternativly it can be configured to include all documents (`root = "all"`) or you can give the ID of the document as argument.
     /// ``toml
     /// [graph_op.config]
@@ -57,7 +65,7 @@ pub struct Visualize {
 }
 
 fn default_token_number() -> Option<usize> {
-    Some(50)
+    Some(10)
 }
 
 impl Visualize {
@@ -79,59 +87,59 @@ impl Visualize {
         };
 
         let mut subgraph = subgraph!("token"; attr!("rank", "same"));
-        for t in included_token {
-            subgraph.stmts.push(self.create_node_stmt(t, graph)?);
+        for t in included_token.iter() {
+            subgraph.stmts.push(self.create_node_stmt(*t, graph)?);
         }
         output.add_stmt(stmt!(subgraph));
 
-        // Output all edges
-        for component in graph.get_all_components(None, None) {
-            let gs = graph
-                .get_graphstorage_as_ref(&component)
-                .context("Missing graph storage")?;
+        // Add all other nodes that are somehow connected to the included token
+        let all_components = graph.get_all_components(None, None);
+        let all_gs = all_components
+            .iter()
+            .filter_map(|c| graph.get_graphstorage(c))
+            .collect_vec();
+        let all_edge_container =
+            UnionEdgeContainer::new(all_gs.iter().map(|gs| gs.as_edgecontainer()).collect_vec());
 
-            let component_short_code = match component.get_type() {
-                AnnotationComponentType::Coverage => "C",
-                AnnotationComponentType::Dominance => ">",
-                AnnotationComponentType::Pointing => "->",
-                AnnotationComponentType::Ordering => ".",
-                AnnotationComponentType::LeftToken => "LT",
-                AnnotationComponentType::RightToken => "RT",
-                AnnotationComponentType::PartOf => "@",
-            };
+        let mut included_nodes: HashSet<graphannis_core::types::NodeID> =
+            included_token.iter().copied().collect();
+        for t in included_token {
+            for step in dfs::CycleSafeDFS::new(&all_edge_container, t, 1, usize::MAX) {
+                let n = step?.node;
+                if !token_helper.is_token(n)? && included_nodes.insert(n) {
+                    output.add_stmt(self.create_node_stmt(n, graph)?);
+                }
+            }
+            for step in dfs::CycleSafeDFS::new_inverse(&all_edge_container, t, 1, usize::MAX) {
+                let n = step?.node;
+                if !token_helper.is_token(n)? && included_nodes.insert(n) {
+                    output.add_stmt(self.create_node_stmt(n, graph)?);
+                }
+            }
+        }
+
+        // Output all edges grouped by their component
+        for component in all_components.iter() {
+            let gs = graph
+                .get_graphstorage_as_ref(component)
+                .context("Missing graph storage")?;
 
             for source_node in gs.source_nodes() {
                 let source_node = source_node?;
-                for target_node in gs.get_outgoing_edges(source_node) {
-                    let target_node = target_node?.to_string();
+                if included_nodes.contains(&source_node) {
+                    for target_node in gs.get_outgoing_edges(source_node) {
+                        let target_node = target_node?;
 
-                    let label = format!(
-                        "\"{}/{} ({component_short_code})\"",
-                        component.layer, component.name
-                    );
-                    let color = match component.get_type() {
-                        AnnotationComponentType::Ordering => "blue",
-                        AnnotationComponentType::Dominance => "red",
-                        AnnotationComponentType::Coverage => "darkgreen",
-                        AnnotationComponentType::LeftToken
-                        | AnnotationComponentType::RightToken => "dimgray",
-                        AnnotationComponentType::PartOf => "gold",
-                        _ => "black",
-                    };
-                    let style = match component.get_type() {
-                        AnnotationComponentType::Coverage => "dotted",
-                        AnnotationComponentType::LeftToken
-                        | AnnotationComponentType::RightToken => "dashed",
-                        _ => "solid",
-                    };
-                    output.add_stmt(stmt!(
-                        edge!(node_id!(source_node.to_string()) => node_id!(target_node);
-                            attr!("label", label),
-                            attr!("color", color),
-                            attr!("fontcolor", color),
-                            attr!("style", style)
-                        )
-                    ));
+                        if included_nodes.contains(&source_node)
+                            && included_nodes.contains(&target_node)
+                        {
+                            output.add_stmt(self.create_edge_stmt(
+                                source_node,
+                                target_node,
+                                component,
+                            )?);
+                        }
+                    }
                 }
             }
         }
@@ -155,7 +163,7 @@ impl Visualize {
         }
     }
 
-    fn create_node_stmt(&self, n: NodeID, input: &AnnotationGraph) -> Result<Stmt> {
+    fn create_node_stmt(&self, n: GraphAnnisNodeID, input: &AnnotationGraph) -> Result<Stmt> {
         let node_name = input
             .get_node_annos()
             .get_value_for_item(&n, &NODE_NAME_KEY)?
@@ -178,6 +186,46 @@ impl Visualize {
         Ok(stmt!(
             node!(n.to_string(); attr!("shape", "box"), attr!("label", label))
         ))
+    }
+
+    fn create_edge_stmt(
+        &self,
+        source_node: GraphAnnisNodeID,
+        target_node: GraphAnnisNodeID,
+        component: &AnnotationComponent,
+    ) -> Result<Stmt> {
+        let component_short_code = match component.get_type() {
+            AnnotationComponentType::Coverage => "C",
+            AnnotationComponentType::Dominance => ">",
+            AnnotationComponentType::Pointing => "->",
+            AnnotationComponentType::Ordering => ".",
+            AnnotationComponentType::LeftToken => "LT",
+            AnnotationComponentType::RightToken => "RT",
+            AnnotationComponentType::PartOf => "@",
+        };
+        let label = format!(
+            "\"{}/{} ({component_short_code})\"",
+            component.layer, component.name
+        );
+        let color = match component.get_type() {
+            AnnotationComponentType::Ordering => "blue",
+            AnnotationComponentType::Dominance => "red",
+            AnnotationComponentType::Coverage => "darkgreen",
+            AnnotationComponentType::LeftToken | AnnotationComponentType::RightToken => "dimgray",
+            AnnotationComponentType::PartOf => "gold",
+            _ => "black",
+        };
+        let style = match component.get_type() {
+            AnnotationComponentType::Coverage => "dotted",
+            AnnotationComponentType::LeftToken | AnnotationComponentType::RightToken => "dashed",
+            _ => "solid",
+        };
+        Ok(stmt!(edge!(node_id!(source_node) => node_id!(target_node);
+            attr!("label", label),
+            attr!("color", color),
+            attr!("fontcolor", color),
+            attr!("style", style)
+        )))
     }
 }
 
