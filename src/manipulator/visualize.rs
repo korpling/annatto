@@ -6,6 +6,7 @@ use crate::{
 use anyhow::{Context, Result};
 use documented::{Documented, DocumentedFields};
 use graphannis::{
+    graph::GraphStorage,
     model::{AnnotationComponent, AnnotationComponentType},
     AnnotationGraph,
 };
@@ -190,6 +191,7 @@ impl Visualize {
                                 source_node,
                                 target_node,
                                 component,
+                                gs,
                             )?);
                         }
                     }
@@ -246,6 +248,7 @@ impl Visualize {
         source_node: GraphAnnisNodeID,
         target_node: GraphAnnisNodeID,
         component: &AnnotationComponent,
+        gs: &dyn GraphStorage,
     ) -> Result<Stmt> {
         let component_short_code = match component.get_type() {
             AnnotationComponentType::Coverage => "C",
@@ -256,23 +259,48 @@ impl Visualize {
             AnnotationComponentType::RightToken => "RT",
             AnnotationComponentType::PartOf => "@",
         };
-        let label = format!(
-            "\"{}/{} ({component_short_code})\"",
-            component.layer, component.name
-        );
+
+        let annos = gs
+            .get_anno_storage()
+            .get_annotations_for_item(&graphannis_core::types::Edge::from((
+                source_node,
+                target_node,
+            )))?
+            .into_iter()
+            .sorted()
+            .collect_vec();
+
+        let label = if annos.is_empty() {
+            format!(
+                "\"{}/{} ({component_short_code})\"",
+                component.layer, component.name
+            )
+        } else {
+            let anno_string = annos
+                .into_iter()
+                .map(|a| format!("{}:{}={}", a.key.ns, a.key.name, a.val))
+                .join("\\n");
+
+            format!(
+                "\"{}/{} ({component_short_code})\\n{anno_string}\"",
+                component.layer, component.name
+            )
+        };
+
         let color = match component.get_type() {
             AnnotationComponentType::Ordering => "blue",
             AnnotationComponentType::Dominance => "red",
             AnnotationComponentType::Coverage => "darkgreen",
             AnnotationComponentType::LeftToken | AnnotationComponentType::RightToken => "dimgray",
             AnnotationComponentType::PartOf => "gold",
-            _ => "black",
+            AnnotationComponentType::Pointing => "black",
         };
         let style = match component.get_type() {
             AnnotationComponentType::Coverage => "dotted",
             AnnotationComponentType::LeftToken | AnnotationComponentType::RightToken => "dashed",
             _ => "solid",
         };
+
         Ok(stmt!(edge!(node_id!(source_node) => node_id!(target_node);
             attr!("label", label),
             attr!("color", color),

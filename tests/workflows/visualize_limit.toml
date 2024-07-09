@@ -1,6 +1,6 @@
 [[import]]
 format = "graphml"
-path = "$CARGO_MANIFEST_DIR/tests/data/import/graphml/single_sentence.graphml"
+path = "$CARGO_MANIFEST_DIR/tests/data/import/graphml/single_sentence with_pointing.graphml"
 
 [import.config]
 

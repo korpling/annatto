@@ -69,6 +69,7 @@ digraph G {
   8 -> 10 [label="syntax/edge (>)",color=red,fontcolor=red,style=solid]
   12 -> 13 [label="syntax/edge (>)",color=red,fontcolor=red,style=solid]
   12 -> 14 [label="syntax/edge (>)",color=red,fontcolor=red,style=solid]
+  6 -> 11 [label="dep/ (->)\ndefault_ns:deprel=unknown",color=black,fontcolor=black,style=solid]
   6 -> 7 [label="annis/ (.)",color=blue,fontcolor=blue,style=solid]
   7 -> 9 [label="annis/ (.)",color=blue,fontcolor=blue,style=solid]
   9 -> 10 [label="annis/ (.)",color=blue,fontcolor=blue,style=solid]
