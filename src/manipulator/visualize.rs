@@ -24,7 +24,7 @@ use graphviz_rust::{
 use itertools::Itertools;
 
 use serde::Deserialize;
-use std::{borrow::Cow, collections::HashSet};
+use std::{borrow::Cow, collections::HashSet, path::PathBuf};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 #[derive(Default, Deserialize)]
@@ -36,14 +36,18 @@ pub(crate) enum Include {
     Document(String),
 }
 
-/// Output the currrent graph as SVG for debugging it.
+/// Output the currrent graph as SVG or DOT file for debugging it.
+///
+/// **Important:** You need to have the[GraphViz](https://graphviz.org/)
+/// software installed to use this graph operation.
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct Visualize {
     /// Configure whether to limit the number of tokens visualized. If `true`,
-    /// the only the first `limit_tokens_n` tokens and the nodes connected to
-    /// these token are included. Per default, the output is limited to 10
-    /// tokens.
+    ///  only the first tokens and the nodes connected to these token are
+    /// included. The specific number can be configured with the parameter
+    /// `token_limit`.
+    /// **Per default, limiting the number of tokens is enabled**
     ///
     /// ```toml
     /// [[graph_op]]
@@ -87,6 +91,14 @@ pub struct Visualize {
     /// ```
     #[serde(default)]
     root: Include,
+    /// If set, a DOT file is created at this path (relative to the workflow directory).
+    /// The default is to not create a DOT file.
+    #[serde(default)]
+    output_dot: Option<PathBuf>,
+    /// If set, a SVG file is created at this path, which must is relative to the workflow directory.
+    /// The default is to create a SVG file at the path `graph-visualization.svg`.
+    #[serde(default = "default_output_svg")]
+    output_svg: Option<PathBuf>,
 }
 
 fn default_limit_tokens() -> bool {
@@ -95,6 +107,10 @@ fn default_limit_tokens() -> bool {
 
 fn default_token_limit() -> usize {
     10
+}
+
+fn default_output_svg() -> Option<PathBuf> {
+    Some("graph-visualization.svg".into())
 }
 
 impl Visualize {
@@ -269,15 +285,21 @@ impl Manipulator for Visualize {
         //        let progress = ProgressReporter::new_unknown_total_work(tx, step_id)?;
 
         let output = self.create_graph(graph)?;
-        let graph_dot = output.print(&mut PrinterContext::default());
-        std::fs::write(workflow_directory.join("graph-debug.dot"), graph_dot)?;
 
-        let graph_svg = exec(
-            output,
-            &mut PrinterContext::default(),
-            vec![Format::Svg.into()],
-        )?;
-        std::fs::write(workflow_directory.join("graph-debug.svg"), graph_svg)?;
+        if let Some(file_path) = &self.output_dot {
+            let graph_dot = output.print(&mut PrinterContext::default());
+            std::fs::write(workflow_directory.join(file_path), graph_dot)?;
+        }
+
+        if let Some(file_path) = &self.output_svg {
+            let graph_svg = exec(
+                output,
+                &mut PrinterContext::default(),
+                vec![Format::Svg.into()],
+            )?;
+            std::fs::write(workflow_directory.join(file_path), graph_svg)?;
+        }
+
         Ok(())
     }
 }
