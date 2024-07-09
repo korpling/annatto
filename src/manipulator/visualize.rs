@@ -7,19 +7,17 @@ use anyhow::{Context, Result};
 use documented::{Documented, DocumentedFields};
 use graphannis::AnnotationGraph;
 use graphannis_core::{graph::NODE_NAME_KEY, types::NodeID};
-use itertools::Itertools;
-use layout::{
-    adt::dag::NodeHandle,
-    backends::svg::SVGWriter,
-    core::{base::Orientation, style::StyleAttr},
-    std_shapes::{
-        render::get_shape_size,
-        shapes::{Arrow, Element, ShapeKind},
-    },
+use graphviz_rust::{
+    cmd::Format,
+    dot_generator::*,
+    dot_structures::*,
+    exec,
+    printer::{DotPrinter, PrinterContext},
 };
-use layout::{core::utils::save_to_file, topo::layout::VisualGraph};
+use itertools::Itertools;
+
 use serde::Deserialize;
-use std::{borrow::Cow, collections::HashMap};
+use std::borrow::Cow;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 #[derive(Default, Deserialize)]
@@ -63,8 +61,12 @@ fn default_token_number() -> Option<usize> {
 }
 
 impl Visualize {
-    fn create_graph(&self, graph: &AnnotationGraph) -> Result<VisualGraph> {
-        let mut result = VisualGraph::new(Orientation::TopToBottom);
+    fn create_graph(&self, graph: &AnnotationGraph) -> Result<Graph> {
+        let mut output = Graph::DiGraph {
+            id: Id::Plain("G".to_string()),
+            strict: false,
+            stmts: Vec::new(),
+        };
 
         let token_helper = TokenHelper::new(graph)?;
 
@@ -76,11 +78,8 @@ impl Visualize {
             all_token
         };
 
-        let mut node_to_handle = HashMap::new();
-
         for t in included_token {
-            let h = self.add_node(&mut result, t, graph)?;
-            node_to_handle.insert(t, h);
+            self.add_node(t, graph, &mut output)?;
         }
 
         // Output all edges
@@ -92,41 +91,17 @@ impl Visualize {
             for source_node in gs.source_nodes() {
                 let source_node = source_node?;
                 for target_node in gs.get_outgoing_edges(source_node) {
-                    let target_node = target_node?;
-                    let source_handle = node_to_handle.entry(source_node).or_insert_with(|| {
-                        let shape_kind = ShapeKind::new_box(&source_node.to_string());
-                        let shape_size =
-                            get_shape_size(Orientation::LeftToRight, &shape_kind, 14, false);
-                        result.add_node(Element::create(
-                            shape_kind,
-                            StyleAttr::simple(),
-                            Orientation::LeftToRight,
-                            shape_size,
-                        ))
-                    });
-                    let source_handle = *source_handle;
-                    let target_handle = node_to_handle.entry(target_node).or_insert_with(|| {
-                        let shape_kind = ShapeKind::new_box(&target_node.to_string());
-                        let shape_size =
-                            get_shape_size(Orientation::LeftToRight, &shape_kind, 14, false);
-                        result.add_node(Element::create(
-                            shape_kind,
-                            StyleAttr::simple(),
-                            Orientation::LeftToRight,
-                            shape_size,
-                        ))
-                    });
-                    let target_handle = *target_handle;
-                    result.add_edge(
-                        Arrow::simple(&component.to_string()),
-                        source_handle,
-                        target_handle,
-                    );
+                    let target_node = target_node?.to_string();
+                    let label = format!("\"{component}\"");
+
+                    output.add_stmt(stmt!(
+                        edge!(node_id!(source_node.to_string()) => node_id!(target_node); attr!("label", label))
+                    ));
                 }
             }
         }
 
-        Ok(result)
+        Ok(output)
     }
 
     fn get_root_node_name(&self, graph: &AnnotationGraph) -> Result<String> {
@@ -145,18 +120,13 @@ impl Visualize {
         }
     }
 
-    fn add_node(
-        &self,
-        output: &mut VisualGraph,
-        n: NodeID,
-        graph: &AnnotationGraph,
-    ) -> Result<NodeHandle> {
-        let node_name = graph
+    fn add_node(&self, n: NodeID, input: &AnnotationGraph, output: &mut Graph) -> Result<()> {
+        let node_name = input
             .get_node_annos()
             .get_value_for_item(&n, &NODE_NAME_KEY)?
             .unwrap_or_else(|| Cow::Owned(n.to_string()));
 
-        let annos = graph.get_node_annos().get_annotations_for_item(&n)?;
+        let annos = input.get_node_annos().get_annotations_for_item(&n)?;
         let annos = annos
             .into_iter()
             .filter(|a| &a.key != NODE_NAME_KEY.as_ref())
@@ -166,23 +136,13 @@ impl Visualize {
         let anno_string = annos
             .into_iter()
             .map(|a| format!("{}:{}={}", a.key.ns, a.key.name, a.val))
-            .join("\n");
+            .join("\\n");
 
-        let label = format!("{node_name}\n \n{anno_string}");
+        let label = format!("\"{node_name}\\n \\n{anno_string}\"");
 
-        let shape_kind = ShapeKind::Box(label.to_string());
-        let shape_size = get_shape_size(Orientation::LeftToRight, &shape_kind, 14, false);
+        output.add_stmt(stmt!(node!(n.to_string(); attr!("label", label))));
 
-        let node_element = Element::create(
-            shape_kind,
-            StyleAttr::simple(),
-            Orientation::TopToBottom,
-            shape_size,
-        );
-
-        let handle = output.add_node(node_element);
-
-        Ok(handle)
+        Ok(())
     }
 }
 
@@ -196,19 +156,16 @@ impl Manipulator for Visualize {
     ) -> Result<(), Box<dyn std::error::Error>> {
         //        let progress = ProgressReporter::new_unknown_total_work(tx, step_id)?;
 
-        let mut vg = self.create_graph(graph)?;
-        // Layout the graph and create an SVG file
-        let mut svg = SVGWriter::new();
-        vg.do_it(false, false, false, &mut svg);
-        let content = svg.finalize();
+        let output = self.create_graph(graph)?;
+        let graph_dot = output.print(&mut PrinterContext::default());
+        std::fs::write(workflow_directory.join("graph-debug.dot"), graph_dot)?;
 
-        save_to_file(
-            workflow_directory
-                .join("graph-debug.svg")
-                .to_string_lossy()
-                .as_ref(),
-            &content,
+        let graph_svg = exec(
+            output,
+            &mut PrinterContext::default(),
+            vec![Format::Svg.into()],
         )?;
+        std::fs::write(workflow_directory.join("graph-debug.svg"), graph_svg)?;
         Ok(())
     }
 }
