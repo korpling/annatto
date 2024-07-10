@@ -115,8 +115,6 @@ impl Exporter for ExportExmaralda {
         let (ordering_data, media_data) = edge_buffer;
         let doc_nodes = start_data.iter().map(|((d, _), _)| d).collect_vec();
         let node_annos = graph.get_node_annos();
-        dbg!(&self.copy_media);
-        dbg!(&media_data);
         let media_dir_opt = if !media_data.is_empty() & self.copy_media {
             let d = output_path.join(MEDIA_DIR_NAME);
             fs::create_dir_all(d.clone())?;
@@ -157,9 +155,6 @@ impl Exporter for ExportExmaralda {
             writer.write_event(Event::Start(BytesStart::new("meta-information")))?;
             writer.create_element("project-name").write_empty()?;
             writer.create_element("transcription-name").write_empty()?;
-            dbg!(&media_dir_opt);
-            dbg!(media_data.get(doc_node_id));
-            dbg!(&doc_node_id);
             if let Some(paths) = media_data.get(doc_node_id) {
                 for ref_path in paths {
                     let url = if self.copy_media {
@@ -194,7 +189,6 @@ impl Exporter for ExportExmaralda {
                             }));
                         }
                     };
-                    dbg!(&url);
                     if let Some(url_str) = url {
                         writer
                             .create_element("referenced-file")
