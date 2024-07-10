@@ -21,6 +21,7 @@ use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
+    deserialize::{AsInner, DeserializableComponent},
     error::{AnnattoError, StandardErrorResult},
     progress::ProgressReporter,
     Manipulator, StepID,
@@ -45,13 +46,28 @@ pub struct Revise {
     edge_annos: BTreeMap<String, String>,
     /// rename or erase namespaces
     namespaces: BTreeMap<String, String>,
-    /// rename or erase components
-    components: BTreeMap<String, String>,
+    /// rename or erase components. Specify a list of entries `from` and `to` keys, where the `to` key is optional
+    /// and can be dropped to remove the component.
+    /// Example:
+    /// ```toml
+    /// [graph_op.config]
+    /// [[graph_op.config.components]]
+    /// from = { ctype = "Pointing", layer = "syntax", name = "dependencies" }
+    /// to = { ctype = "Dominance", layer = "syntax", name = "constituents" }
+    ///
+    /// [[graph_op.config.components]]  # this component will be deleted
+    /// from = { ctype = "Ordering", layer = "annis", "custom" }
+    /// ```
+    components: Vec<ComponentMapping>,
     /// The given node names and all ingoing paths (incl. nodes) in PartOf/annis/ will be removed
     remove_subgraph: Vec<String>,
 }
 
-const DELIMITER: &str = "::";
+#[derive(Deserialize)]
+struct ComponentMapping {
+    from: DeserializableComponent,
+    to: Option<DeserializableComponent>,
+}
 
 fn remove_subgraph(
     graph: &AnnotationGraph,
@@ -87,54 +103,20 @@ fn remove_subgraph(
     Ok(())
 }
 
-fn parse_component_string(value: &str) -> Result<Option<AnnotationComponent>, anyhow::Error> {
-    if value.trim().is_empty() {
-        return Ok(None);
-    }
-    if let Some((ctype_str, layer, name)) = value.splitn(3, DELIMITER).collect_tuple() {
-        let ctype = match ctype_str.to_lowercase().as_str() {
-            "partof" => AnnotationComponentType::PartOf,
-            "ordering" => AnnotationComponentType::Ordering,
-            "coverage" => AnnotationComponentType::Coverage,
-            "dominance" => AnnotationComponentType::Dominance,
-            "pointing" => AnnotationComponentType::Dominance,
-            "l" => AnnotationComponentType::LeftToken,
-            "r" => AnnotationComponentType::RightToken,
-            _ => return Err(anyhow!("Could not map component configuration `{value}`")),
-        };
-        Ok(Some(AnnotationComponent::new(
-            ctype,
-            layer.into(),
-            name.into(),
-        )))
-    } else {
-        Err(anyhow!("Could not map component configuration `{value}`"))
-    }
-}
-
-fn to_component_map(
-    str_map: &BTreeMap<String, String>,
-) -> Result<BTreeMap<AnnotationComponent, Option<AnnotationComponent>>, anyhow::Error> {
-    let mut component_map = BTreeMap::new();
-    for (old, new) in str_map {
-        if let Some(source) = parse_component_string(old)? {
-            component_map.insert(source, parse_component_string(new)?);
-        } else {
-            return Err(anyhow!("Could not parse source component: {old}"));
-        }
-    }
-    Ok(component_map)
-}
-
 fn revise_components(
     graph: &AnnotationGraph,
-    component_config: &BTreeMap<String, String>,
+    component_config: &Vec<ComponentMapping>,
     update: &mut GraphUpdate,
     progress_reporter: &ProgressReporter,
 ) -> Result<(), anyhow::Error> {
-    let component_map = to_component_map(component_config)?;
-    for (source, target) in component_map {
-        revise_component(graph, source, target, update, progress_reporter)?;
+    for entry in component_config {
+        revise_component(
+            graph,
+            entry.from.as_inner(),
+            entry.to.as_ref().map(|dc| dc.as_inner()),
+            update,
+            progress_reporter,
+        )?;
     }
     Ok(())
 }
@@ -729,8 +711,9 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
+    use crate::deserialize::{AsInner, DeserializableComponent};
     use crate::exporter::graphml::GraphMLExporter;
-    use crate::manipulator::re::{parse_component_string, to_component_map, Revise};
+    use crate::manipulator::re::{ComponentMapping, Revise};
     use crate::manipulator::Manipulator;
     use crate::progress::ProgressReporter;
     use crate::test_util::export_to_string;
@@ -788,7 +771,7 @@ mod tests {
             node_annos: node_map,
             edge_annos: edge_map,
             namespaces: BTreeMap::default(),
-            components: BTreeMap::default(),
+            components: vec![],
             remove_subgraph: vec![],
         };
         let step_id = StepID {
@@ -928,7 +911,7 @@ mod tests {
             node_annos: node_map,
             edge_annos: BTreeMap::default(),
             remove_nodes: vec![],
-            components: BTreeMap::default(),
+            components: vec![],
             remove_subgraph: vec![],
         };
         let step_id = StepID {
@@ -1074,7 +1057,7 @@ mod tests {
             node_annos: node_map,
             edge_annos: edge_map,
             remove_nodes: vec![],
-            components: BTreeMap::default(),
+            components: vec![],
             remove_subgraph: vec![],
         };
         let step_id = StepID {
@@ -1135,7 +1118,7 @@ mod tests {
             node_annos: node_map,
             edge_annos: edge_map,
             remove_nodes: vec![],
-            components: BTreeMap::default(),
+            components: vec![],
             remove_subgraph: vec![],
         };
         let step_id = StepID {
@@ -1182,7 +1165,7 @@ mod tests {
             node_annos: BTreeMap::default(),
             edge_annos: BTreeMap::default(),
             namespaces: ns_map,
-            components: BTreeMap::default(),
+            components: vec![],
             remove_subgraph: vec![],
         };
         let step_id = StepID {
@@ -1997,38 +1980,28 @@ mod tests {
         let previous_components = g.get_all_components(None, None);
         let mut erased_components = Vec::new();
         let mut new_components = Vec::new();
-        let mut component_mod_config = BTreeMap::new();
+        let mut component_mod_config = Vec::default();
         for existing_component in previous_components {
-            let (old_ctype_str, new_ctype_str, new_ctype) = match existing_component.get_type() {
+            let new_ctype = match existing_component.get_type() {
                 AnnotationComponentType::Coverage => continue,
-                AnnotationComponentType::Dominance => {
-                    ("dominance", "pointing", AnnotationComponentType::Pointing)
-                }
-                AnnotationComponentType::Pointing => {
-                    ("pointing", "dominance", AnnotationComponentType::Dominance)
-                }
-                AnnotationComponentType::Ordering => {
-                    ("ordering", "ordering", AnnotationComponentType::Ordering)
-                }
+                AnnotationComponentType::Dominance => AnnotationComponentType::Pointing,
+                AnnotationComponentType::Pointing => AnnotationComponentType::Dominance,
+                AnnotationComponentType::Ordering => AnnotationComponentType::Ordering,
                 AnnotationComponentType::LeftToken => continue,
                 AnnotationComponentType::RightToken => continue,
                 AnnotationComponentType::PartOf => continue,
             };
-            let key_str = format!(
-                "{old_ctype_str}::{}::{}",
-                existing_component.layer.to_string(),
-                existing_component.name.to_string()
-            );
-            let val_str = format!(
-                "{new_ctype_str}::::moved_{}",
-                existing_component.name.to_string()
-            );
-            component_mod_config.insert(key_str, val_str);
+            let key = DeserializableComponent::from(existing_component.clone());
             let new_c = AnnotationComponent::new(
                 new_ctype,
                 "".into(),
-                format!("moved_{}", existing_component.name).into(),
+                format!("moved_{}", key.name.as_str()).into(),
             );
+            let val = DeserializableComponent::from(new_c.clone());
+            component_mod_config.push(ComponentMapping {
+                from: key,
+                to: Some(val),
+            });
             new_components.push(new_c);
             erased_components.push(existing_component);
         }
@@ -2085,68 +2058,6 @@ mod tests {
         name_map = BTreeMap::new();
         name_map.insert("default_ns".to_string(), "".to_string());
         assert_eq!(name_map, revise.namespaces);
-        name_map = BTreeMap::new();
-        name_map.insert(
-            "ordering::annis::text".to_string(),
-            "ordering::default_ns::text".to_string(),
-        );
-        name_map.insert(
-            "ordering::annis::".to_string(),
-            "ordering::::default_ordering".to_string(),
-        );
-        name_map.insert("dominance::annis::syntax".to_string(), "".to_string());
-        assert_eq!(name_map, revise.components);
-        let component_map = to_component_map(&revise.components)
-            .map_err(|_| assert!(false))
-            .unwrap();
-        let mut target_map = BTreeMap::new();
-        target_map.insert(
-            AnnotationComponent::new(
-                AnnotationComponentType::Ordering,
-                ANNIS_NS.into(),
-                "text".into(),
-            ),
-            Some(AnnotationComponent::new(
-                AnnotationComponentType::Ordering,
-                "default_ns".into(),
-                "text".into(),
-            )),
-        );
-        target_map.insert(
-            AnnotationComponent::new(
-                AnnotationComponentType::Ordering,
-                ANNIS_NS.into(),
-                "".into(),
-            ),
-            Some(AnnotationComponent::new(
-                AnnotationComponentType::Ordering,
-                "".into(),
-                "default_ordering".into(),
-            )),
-        );
-        target_map.insert(
-            AnnotationComponent::new(
-                AnnotationComponentType::Dominance,
-                ANNIS_NS.into(),
-                "syntax".into(),
-            ),
-            None,
-        );
-        assert_eq!(target_map, component_map);
-    }
-
-    #[test]
-    fn test_parse_component_string() {
-        assert!(parse_component_string("no_delimiter").is_err());
-        assert!(parse_component_string("invalid_type::layer::name").is_err());
-        assert!(parse_component_string("partof::layer::name").is_ok());
-        assert!(parse_component_string("ordering::layer::name").is_ok());
-        assert!(parse_component_string("coverage::layer::name").is_ok());
-        assert!(parse_component_string("dominance::layer::name").is_ok());
-        assert!(parse_component_string("pointing::layer::name").is_ok());
-        assert!(parse_component_string("l::layer::name").is_ok());
-        assert!(parse_component_string("r::layer::name").is_ok());
-        assert!(parse_component_string("partof::::").is_ok());
     }
 
     #[test]
@@ -2256,11 +2167,18 @@ mod tests {
             },
             1,
         )?;
-        let mut component_config = BTreeMap::new();
-        component_config.insert(
-            "ordering::annis::".to_string(),
-            "ordering::::default_ordering".to_string(),
-        );
+        let component_config = vec![ComponentMapping {
+            from: DeserializableComponent {
+                ctype: AnnotationComponentType::Ordering,
+                layer: ANNIS_NS.to_string(),
+                name: "".to_string(),
+            },
+            to: Some(DeserializableComponent {
+                ctype: AnnotationComponentType::Ordering,
+                layer: "".to_string(),
+                name: "default_ordering".to_string(),
+            }),
+        }];
         revise_components(&g, &component_config, &mut test_update, &pg)?;
         let mut ti = test_update.iter()?;
         for e in expected_update.iter()? {
@@ -2394,5 +2312,33 @@ mod tests {
         assert!(gs.is_ok());
         let graphml = gs.unwrap();
         assert_snapshot!(graphml);
+    }
+
+    #[test]
+    fn component_mapping_deser() {
+        let toml_str = r#"
+components = [
+  { from = { ctype = "Pointing", layer = "syntax", name = "dependencies" }, to = { ctype = "Dominance", layer = "syntax", name = "constituents" } }
+]
+        "#;
+        let r: std::result::Result<Revise, _> = toml::from_str(toml_str);
+        assert!(r.is_ok());
+        let rev = r.unwrap();
+        assert_eq!(rev.components.len(), 1);
+        assert!(matches!(
+            rev.components[0].from.ctype,
+            AnnotationComponentType::Pointing
+        ));
+        assert!(rev.components[0].to.is_some());
+        let to_c = rev.components[0]
+            .to
+            .as_ref()
+            .map(|dc| DeserializableComponent::from(dc.as_inner()))
+            .unwrap();
+        assert!(matches!(to_c.ctype, AnnotationComponentType::Dominance));
+        assert_eq!(to_c.layer.as_str(), "syntax");
+        assert_eq!(to_c.name.as_str(), "constituents");
+        assert_eq!(rev.components[0].from.layer.as_str(), "syntax");
+        assert_eq!(rev.components[0].from.name.as_str(), "dependencies");
     }
 }

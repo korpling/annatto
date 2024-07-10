@@ -7,7 +7,7 @@ use graphannis_core::graph::{
 /// Create update events for the following corpus structure:
 ///
 /// ```
-///  rootCorpus
+///     root
 ///       |
 ///      docc1
 /// ```
@@ -56,6 +56,108 @@ pub fn create_corpus_structure_simple(update: &mut GraphUpdate) {
         .add_event(UpdateEvent::AddEdge {
             source_node: "root/doc1#text1".to_string(),
             target_node: "root/doc1".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: "PartOf".to_string(),
+            component_name: "".to_string(),
+        })
+        .unwrap();
+}
+
+/// Create update events for the following corpus structure:
+///
+/// ```
+///      root
+///    /     \
+///  docc1   doc2
+/// ```
+pub fn create_corpus_structure_two_documents(update: &mut GraphUpdate) {
+    update
+        .add_event(UpdateEvent::AddNode {
+            node_name: "root".to_string(),
+            node_type: "corpus".to_string(),
+        })
+        .unwrap();
+
+    update
+        .add_event(UpdateEvent::AddNode {
+            node_name: "root/doc1".to_string(),
+            node_type: "corpus".to_string(),
+        })
+        .unwrap();
+
+    update
+        .add_event(UpdateEvent::AddNodeLabel {
+            node_name: "root/doc1".to_string(),
+            anno_ns: ANNIS_NS.into(),
+            anno_name: "doc".into(),
+            anno_value: "doc1".into(),
+        })
+        .unwrap();
+
+    update
+        .add_event(UpdateEvent::AddEdge {
+            source_node: "root/doc1".to_string(),
+            target_node: "root".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: "PartOf".to_string(),
+            component_name: "".to_string(),
+        })
+        .unwrap();
+
+    update
+        .add_event(UpdateEvent::AddNode {
+            node_name: "root/doc1#text1".to_string(),
+            node_type: "datasource".to_string(),
+        })
+        .unwrap();
+
+    update
+        .add_event(UpdateEvent::AddEdge {
+            source_node: "root/doc1#text1".to_string(),
+            target_node: "root/doc1".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: "PartOf".to_string(),
+            component_name: "".to_string(),
+        })
+        .unwrap();
+
+    update
+        .add_event(UpdateEvent::AddNode {
+            node_name: "root/doc2".to_string(),
+            node_type: "corpus".to_string(),
+        })
+        .unwrap();
+
+    update
+        .add_event(UpdateEvent::AddNodeLabel {
+            node_name: "root/doc2".to_string(),
+            anno_ns: ANNIS_NS.into(),
+            anno_name: "doc".into(),
+            anno_value: "doc2".into(),
+        })
+        .unwrap();
+
+    update
+        .add_event(UpdateEvent::AddEdge {
+            source_node: "root/doc2".to_string(),
+            target_node: "root".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: "PartOf".to_string(),
+            component_name: "".to_string(),
+        })
+        .unwrap();
+
+    update
+        .add_event(UpdateEvent::AddNode {
+            node_name: "root/doc2#text1".to_string(),
+            node_type: "datasource".to_string(),
+        })
+        .unwrap();
+
+    update
+        .add_event(UpdateEvent::AddEdge {
+            source_node: "root/doc2#text1".to_string(),
+            target_node: "root/doc2".to_string(),
             layer: ANNIS_NS.to_string(),
             component_type: "PartOf".to_string(),
             component_name: "".to_string(),

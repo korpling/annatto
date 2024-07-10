@@ -319,7 +319,7 @@ impl Collapse {
             node_name: from_node_name.to_string(),
         })?;
         for key in node_annos.get_all_keys_for_item(from_node, None, None)? {
-            if key.ns != ANNIS_NS {
+            if key != *NODE_NAME_KEY {
                 if let Some(anno_value) = node_annos.get_value_for_item(from_node, key.as_ref())? {
                     update.add_event(UpdateEvent::AddNodeLabel {
                         node_name: to_node.to_string(),
