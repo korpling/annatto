@@ -564,7 +564,6 @@ ignore_others = true
         assert!(graph.apply_update(&mut update_import, |_| {}).is_ok());
         let export = export_to_string(&graph, ExportTextGrid::default());
         assert!(export.is_ok());
-        dbg!(&export);
         assert_snapshot!(export.unwrap());
     }
 
@@ -603,7 +602,6 @@ ignore_others = true
             },
         );
         assert!(export.is_ok());
-        dbg!(&export);
         assert_snapshot!(export.unwrap());
     }
 
@@ -642,7 +640,6 @@ ignore_others = true
             },
         );
         assert!(export.is_ok());
-        dbg!(&export);
         assert_snapshot!(export.unwrap());
     }
 
@@ -685,7 +682,6 @@ ignore_others = true
             },
         );
         assert!(export.is_ok());
-        dbg!(&export);
         assert_snapshot!(export.unwrap());
     }
 
@@ -728,7 +724,6 @@ ignore_others = true
             },
         );
         assert!(export.is_ok());
-        dbg!(&export);
         assert_snapshot!(export.unwrap());
     }
 
@@ -757,7 +752,6 @@ ignore_others = true
             },
         );
         assert!(export.is_ok());
-        dbg!(&export);
         assert_snapshot!(export.unwrap());
     }
 
