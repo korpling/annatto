@@ -188,6 +188,14 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                     node_name: element_id.clone(),
                     node_type: "datasource".to_string(),
                 })?;
+
+                updates.add_event(UpdateEvent::AddEdge {
+                    source_node: element_id.clone(),
+                    target_node: self.document_node_name.clone(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::PartOf.to_string(),
+                    component_name: "".to_string(),
+                })?;
             }
         }
         Ok(())

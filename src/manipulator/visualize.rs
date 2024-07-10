@@ -10,7 +10,11 @@ use graphannis::{
     model::{AnnotationComponent, AnnotationComponentType},
     AnnotationGraph,
 };
-use graphannis_core::types::NodeID as GraphAnnisNodeID;
+use graphannis_core::{
+    annostorage::ValueSearch,
+    graph::{ANNIS_NS, NODE_TYPE},
+    types::NodeID as GraphAnnisNodeID,
+};
 use graphannis_core::{
     dfs,
     graph::{storage::union::UnionEdgeContainer, NODE_NAME_KEY},
@@ -146,7 +150,7 @@ impl Visualize {
         }
         output.add_stmt(stmt!(subgraph));
 
-        // Add all other nodes that are somehow connected to the included token
+        // Add all other nodes that are somehow connected to the included token and the document
         let all_components = graph.get_all_components(None, None);
         let all_gs = all_components
             .iter()
@@ -168,6 +172,32 @@ impl Visualize {
                 let n = step?.node;
                 if !token_helper.is_token(n)? && included_nodes.insert(n) {
                     output.add_stmt(self.create_node_stmt(n, graph)?);
+                }
+            }
+        }
+        // Add all datasource nodes if they are connected to the included documents have not been already added
+        let part_of_gs = graph
+            .get_all_components(Some(AnnotationComponentType::PartOf), None)
+            .into_iter()
+            .filter_map(|c| graph.get_graphstorage(&c))
+            .collect_vec();
+        for ds in graph.get_node_annos().exact_anno_search(
+            Some(ANNIS_NS),
+            NODE_TYPE,
+            ValueSearch::Some("datasource"),
+        ) {
+            let ds = ds?.node;
+            if !included_nodes.contains(&ds) {
+                // The datsource must be part of a document node that is already included
+                let mut outgoing = HashSet::new();
+                for gs in part_of_gs.iter() {
+                    for o in gs.get_outgoing_edges(ds) {
+                        outgoing.insert(o?);
+                    }
+                }
+                if outgoing.intersection(&included_nodes).next().is_some() {
+                    output.add_stmt(self.create_node_stmt(ds, graph)?);
+                    included_nodes.insert(ds);
                 }
             }
         }
