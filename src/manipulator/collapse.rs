@@ -20,7 +20,7 @@ use std::{
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
-    deserialize::deserialze_annotation_component, error::AnnattoError, progress::ProgressReporter,
+    deserialize::deserialize_annotation_component, error::AnnattoError, progress::ProgressReporter,
     workflow::StatusSender, StepID,
 };
 
@@ -36,7 +36,7 @@ use super::Manipulator;
 #[serde(deny_unknown_fields)]
 pub struct Collapse {
     /// The component type within which to find the edges to collapse.
-    #[serde(deserialize_with = "deserialze_annotation_component")]
+    #[serde(deserialize_with = "deserialize_annotation_component")]
     component: AnnotationComponent,
     /// If you know that any two edges in the defined component are always pairwise disjoint, set this attribute to true to save computation time.
     #[serde(default)]

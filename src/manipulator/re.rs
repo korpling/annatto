@@ -21,7 +21,7 @@ use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
-    deserialize::{deserialze_annotation_component, deserialze_annotation_component_opt},
+    deserialize::{deserialize_annotation_component, deserialize_annotation_component_opt},
     error::{AnnattoError, StandardErrorResult},
     progress::ProgressReporter,
     Manipulator, StepID,
@@ -65,9 +65,9 @@ pub struct Revise {
 
 #[derive(Deserialize)]
 struct ComponentMapping {
-    #[serde(deserialize_with = "deserialze_annotation_component")]
+    #[serde(deserialize_with = "deserialize_annotation_component")]
     from: AnnotationComponent,
-    #[serde(deserialize_with = "deserialze_annotation_component_opt", default)]
+    #[serde(deserialize_with = "deserialize_annotation_component_opt", default)]
     to: Option<AnnotationComponent>,
 }
 

@@ -1,6 +1,9 @@
 // This module provides intermediate structs for types that cannot be deserialized easily.
 
-use graphannis::model::{AnnotationComponent, AnnotationComponentType};
+use graphannis::{
+    graph::AnnoKey,
+    model::{AnnotationComponent, AnnotationComponentType},
+};
 use serde::{Deserialize, Deserializer};
 
 pub trait IntoInner {
@@ -26,14 +29,14 @@ impl IntoInner for DeserializableComponent {
     }
 }
 
-pub fn deserialze_annotation_component<'de, D: Deserializer<'de>>(
+pub fn deserialize_annotation_component<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<AnnotationComponent, D::Error> {
     let dc = DeserializableComponent::deserialize(deserializer)?;
     Ok(dc.into_inner())
 }
 
-pub fn deserialze_annotation_component_opt<'de, D: Deserializer<'de>>(
+pub fn deserialize_annotation_component_opt<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Option<AnnotationComponent>, D::Error> {
     let dc_opt = Option::<DeserializableComponent>::deserialize(deserializer)?;
