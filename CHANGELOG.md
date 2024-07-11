@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.1] - 2024-07-11
+
 ### Fixed
 
 - `textgrid` export did not generate intermediate empty intervals when xmax of an interval did not match xmin of the subsequent interval, which leads to hardly editable intervals in praat. This has been fixed.
