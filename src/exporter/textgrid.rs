@@ -291,10 +291,17 @@ impl ExportTextGrid {
             tuples.sort();
             let is_point_tier = self.point_tiers.contains(&key);
             let mut entries = Vec::with_capacity(tuples.len());
+            let mut prev_end = None;
             for (start, end, value) in tuples {
                 let entry: TierEntry = if is_point_tier {
                     (start, value).into()
                 } else {
+                    if let Some(t) = prev_end {
+                        if t < start {
+                            entries.push((t, start, "".to_string()).into()); // filler entry to leave no gaps
+                        }
+                    }
+                    prev_end = Some(end);
                     (start, end, value).into()
                 };
                 entries.push(entry);
