@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - removed debug output
 
+### Changed
+
+- `collapse` uses deserializable component, thus attributes `ctype`, `layer`, and `name` are now under key `component`
+- `collapse` only keeps annotations with namespace `annis` for nodes that were terminals in the collapsed components when transferring to the merged nodes to keep node status intact (e. g. token vs. not a token in terms of `annis::tok`).
+
 ## [0.12.0] - 2024-07-08
 
 ### Added
