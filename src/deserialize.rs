@@ -12,7 +12,7 @@ pub trait IntoInner {
 /// Fortunately, their parts can.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct DeserializableComponent {
+struct DeserializableComponent {
     ctype: AnnotationComponentType,
     layer: String,
     name: String,
