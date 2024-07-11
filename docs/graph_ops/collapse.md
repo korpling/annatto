@@ -9,17 +9,9 @@ node of choice, the other node(s) is/are deleted.
 
 ## Configuration
 
-###  ctype
+###  component
 
 The component type within which to find the edges to collapse.
-
-###  layer
-
-The layer of the component within which to find the edges to collapse.
-
-###  name
-
-The name of the component within which to find the edges to collapse.
 
 ###  disjoint
 
