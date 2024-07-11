@@ -1,2 +1,3 @@
-ctype = "Pointing"
 disjoint = false
+[component]
+ctype = "Pointing"
