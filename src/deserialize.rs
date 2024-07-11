@@ -1,11 +1,11 @@
 // This module provides intermediate structs for types that cannot be deserialized easily.
 
 use graphannis::model::{AnnotationComponent, AnnotationComponentType};
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 
-pub trait AsInner {
+pub trait IntoInner {
     type I;
-    fn as_inner(&self) -> Self::I;
+    fn into_inner(self) -> Self::I;
 }
 
 /// graphannis' annotation components cannot be deserialized from toml as they use the C representation.
@@ -13,37 +13,38 @@ pub trait AsInner {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct DeserializableComponent {
-    pub ctype: AnnotationComponentType,
-    pub layer: String,
-    pub name: String,
+    ctype: AnnotationComponentType,
+    layer: String,
+    name: String,
 }
 
-impl AsInner for DeserializableComponent {
+impl IntoInner for DeserializableComponent {
     type I = AnnotationComponent;
-    fn as_inner(&self) -> graphannis::graph::Component<AnnotationComponentType> {
-        AnnotationComponent::new(
-            self.ctype.clone(),
-            self.layer.clone().into(),
-            self.name.clone().into(),
-        )
+
+    fn into_inner(self) -> Self::I {
+        AnnotationComponent::new(self.ctype, self.layer.into(), self.name.into())
     }
 }
 
-impl From<AnnotationComponent> for DeserializableComponent {
-    fn from(value: AnnotationComponent) -> Self {
-        DeserializableComponent {
-            ctype: value.get_type(),
-            layer: value.layer.to_string(),
-            name: value.name.to_string(),
-        }
-    }
+pub fn deserialze_annotation_component<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<AnnotationComponent, D::Error> {
+    let dc = DeserializableComponent::deserialize(deserializer)?;
+    Ok(dc.into_inner())
+}
+
+pub fn deserialze_annotation_component_opt<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<AnnotationComponent>, D::Error> {
+    let dc_opt = Option::<DeserializableComponent>::deserialize(deserializer)?;
+    Ok(dc_opt.map(|d| d.into_inner()))
 }
 
 #[cfg(test)]
 mod tests {
     use graphannis::model::AnnotationComponentType;
 
-    use crate::deserialize::AsInner;
+    use crate::deserialize::IntoInner;
 
     use super::DeserializableComponent;
 
@@ -57,7 +58,7 @@ name = "dependency"
         let r: Result<DeserializableComponent, _> = toml::from_str(toml_str);
         assert!(r.is_ok());
         let dc = r.unwrap();
-        let c = dc.as_inner();
+        let c = dc.into_inner();
         assert!(matches!(c.get_type(), AnnotationComponentType::Pointing));
         assert_eq!(c.layer.as_str(), "syntax");
         assert_eq!(c.name.as_str(), "dependency");

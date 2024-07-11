@@ -21,7 +21,7 @@ use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
-    deserialize::{AsInner, DeserializableComponent},
+    deserialize::{deserialze_annotation_component, deserialze_annotation_component_opt},
     error::{AnnattoError, StandardErrorResult},
     progress::ProgressReporter,
     Manipulator, StepID,
@@ -65,8 +65,10 @@ pub struct Revise {
 
 #[derive(Deserialize)]
 struct ComponentMapping {
-    from: DeserializableComponent,
-    to: Option<DeserializableComponent>,
+    #[serde(deserialize_with = "deserialze_annotation_component")]
+    from: AnnotationComponent,
+    #[serde(deserialize_with = "deserialze_annotation_component_opt", default)]
+    to: Option<AnnotationComponent>,
 }
 
 fn remove_subgraph(
@@ -112,8 +114,8 @@ fn revise_components(
     for entry in component_config {
         revise_component(
             graph,
-            entry.from.as_inner(),
-            entry.to.as_ref().map(|dc| dc.as_inner()),
+            &entry.from,
+            entry.to.as_ref(),
             update,
             progress_reporter,
         )?;
@@ -137,8 +139,8 @@ fn node_name(
 
 fn revise_component(
     graph: &AnnotationGraph,
-    source_component: AnnotationComponent,
-    target_component: Option<AnnotationComponent>,
+    source_component: &AnnotationComponent,
+    target_component: Option<&AnnotationComponent>,
     update: &mut GraphUpdate,
     progress_reporter: &ProgressReporter,
 ) -> Result<(), AnnattoError> {
@@ -711,7 +713,6 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use crate::deserialize::{AsInner, DeserializableComponent};
     use crate::exporter::graphml::GraphMLExporter;
     use crate::manipulator::re::{ComponentMapping, Revise};
     use crate::manipulator::Manipulator;
@@ -1991,16 +1992,15 @@ mod tests {
                 AnnotationComponentType::RightToken => continue,
                 AnnotationComponentType::PartOf => continue,
             };
-            let key = DeserializableComponent::from(existing_component.clone());
+            let key = existing_component.clone();
             let new_c = AnnotationComponent::new(
                 new_ctype,
                 "".into(),
                 format!("moved_{}", key.name.as_str()).into(),
             );
-            let val = DeserializableComponent::from(new_c.clone());
             component_mod_config.push(ComponentMapping {
                 from: key,
-                to: Some(val),
+                to: Some(new_c.clone()),
             });
             new_components.push(new_c);
             erased_components.push(existing_component);
@@ -2168,16 +2168,16 @@ mod tests {
             1,
         )?;
         let component_config = vec![ComponentMapping {
-            from: DeserializableComponent {
-                ctype: AnnotationComponentType::Ordering,
-                layer: ANNIS_NS.to_string(),
-                name: "".to_string(),
-            },
-            to: Some(DeserializableComponent {
-                ctype: AnnotationComponentType::Ordering,
-                layer: "".to_string(),
-                name: "default_ordering".to_string(),
-            }),
+            from: AnnotationComponent::new(
+                AnnotationComponentType::Ordering,
+                ANNIS_NS.into(),
+                "".into(),
+            ),
+            to: Some(AnnotationComponent::new(
+                AnnotationComponentType::Ordering,
+                "".into(),
+                "default_ordering".into(),
+            )),
         }];
         revise_components(&g, &component_config, &mut test_update, &pg)?;
         let mut ti = test_update.iter()?;
@@ -2326,16 +2326,15 @@ components = [
         let rev = r.unwrap();
         assert_eq!(rev.components.len(), 1);
         assert!(matches!(
-            rev.components[0].from.ctype,
+            rev.components[0].from.get_type(),
             AnnotationComponentType::Pointing
         ));
         assert!(rev.components[0].to.is_some());
-        let to_c = rev.components[0]
-            .to
-            .as_ref()
-            .map(|dc| DeserializableComponent::from(dc.as_inner()))
-            .unwrap();
-        assert!(matches!(to_c.ctype, AnnotationComponentType::Dominance));
+        let to_c = rev.components[0].to.as_ref().unwrap();
+        assert!(matches!(
+            to_c.get_type(),
+            AnnotationComponentType::Dominance
+        ));
         assert_eq!(to_c.layer.as_str(), "syntax");
         assert_eq!(to_c.name.as_str(), "constituents");
         assert_eq!(rev.components[0].from.layer.as_str(), "syntax");
