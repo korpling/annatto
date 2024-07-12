@@ -4,6 +4,7 @@ use graphannis::update::GraphUpdate;
 use roxmltree::Node;
 use serde::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
+use url::Url;
 
 use crate::progress::ProgressReporter;
 
@@ -85,6 +86,8 @@ enum SaltType {
     ElementId,
     Feature,
     Layer,
+    MediaDs,
+    MediaRelation,
     PointingRelation,
     Span,
     SpanningRelation,
@@ -110,6 +113,8 @@ impl SaltType {
                 "sCorpusStructure:SCorpusDocumentRelation" => SaltType::DocumentRelation,
                 "sCorpusStructure:SCorpusRelation" => SaltType::CorpusRelation,
                 "sCorpusStructure:SDocument" => SaltType::Document,
+                "sDocumentStructure:SAudioDS" => SaltType::MediaDs,
+                "sDocumentStructure:SAudioRelation" => SaltType::MediaRelation,
                 "sDocumentStructure:SDominanceRelation" => SaltType::DominanceRelation,
                 "sDocumentStructure:SPointingRelation" => SaltType::PointingRelation,
                 "sDocumentStructure:SSpan" => SaltType::Span,
@@ -120,6 +125,7 @@ impl SaltType {
                 "sDocumentStructure:STimeline" => SaltType::Timeline,
                 "sDocumentStructure:STimelineRelation" => SaltType::TimelineRelation,
                 "sDocumentStructure:SToken" => SaltType::Token,
+
                 _ => SaltType::Unknown,
             }
         } else {
@@ -132,6 +138,7 @@ enum SaltObject {
     Text(String),
     Boolean(bool),
     Integer(i64),
+    Url(Url),
     Null,
 }
 
@@ -139,6 +146,12 @@ impl From<&str> for SaltObject {
     fn from(value: &str) -> Self {
         if let Some(value) = value.strip_prefix("T::") {
             SaltObject::Text(value.to_string())
+        } else if let Some(value) = value.strip_prefix("U::") {
+            if let Ok(o) = Url::parse(value) {
+                SaltObject::Url(o)
+            } else {
+                SaltObject::Null
+            }
         } else if let Some(value) = value.strip_prefix("B::") {
             let value = value.to_ascii_lowercase() == "true";
             SaltObject::Boolean(value)
@@ -155,6 +168,7 @@ impl std::fmt::Display for SaltObject {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SaltObject::Text(val) => write!(f, "{val}"),
+            SaltObject::Url(val) => write!(f, "{val}"),
             SaltObject::Boolean(val) => write!(f, "{val}"),
             SaltObject::Integer(val) => write!(f, "{val}"),
             SaltObject::Null => write!(f, ""),

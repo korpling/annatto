@@ -27,6 +27,7 @@ pub(super) struct DocumentMapper<'a, 'input> {
     edges: Vec<Node<'a, 'input>>,
     layers: Vec<Node<'a, 'input>>,
     base_texts: BTreeMap<String, String>,
+    media_files: BTreeMap<String, String>,
     document_node_name: String,
     token_to_tli: BTreeMap<String, Vec<i64>>,
     missing_anno_ns_from_layer: bool,
@@ -66,6 +67,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
 
         let mut mapper = DocumentMapper {
             base_texts: BTreeMap::new(),
+            media_files: BTreeMap::new(),
             missing_anno_ns_from_layer,
             nodes,
             edges,
@@ -82,13 +84,13 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             .next();
 
         mapper.map_textual_datasources(updates)?;
+        mapper.map_media_datasources(updates)?;
         mapper.map_tokens(timeline.as_ref(), updates)?;
         if let Some(timeline) = timeline {
             mapper.map_timeline(&timeline, updates)?;
         }
 
         mapper.map_non_token_nodes(updates)?;
-        // TODO map SAudioDS and SAudioRelation
 
         Ok(())
     }
@@ -186,6 +188,45 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                 updates.add_event(UpdateEvent::AddNode {
                     node_name: element_id.clone(),
                     node_type: "datasource".to_string(),
+                })?;
+
+                updates.add_event(UpdateEvent::AddEdge {
+                    source_node: element_id.clone(),
+                    target_node: self.document_node_name.clone(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::PartOf.to_string(),
+                    component_name: "".to_string(),
+                })?;
+            }
+        }
+        Ok(())
+    }
+
+    fn map_media_datasources(&mut self, updates: &mut GraphUpdate) -> Result<()> {
+        for media_node in self
+            .nodes
+            .iter()
+            .filter(|n| SaltType::from_node(n) == SaltType::MediaDs)
+        {
+            let element_id = get_element_id(media_node)
+                .context("Missing element ID for media/audio data source")?;
+
+            if let Some(SaltObject::Url(anno_value)) =
+                get_feature_by_qname(media_node, "salt", "SAUDIO_REFERENCE")
+            {
+                let file_path = anno_value.to_file_path().unwrap();
+                self.media_files
+                    .insert(element_id.clone(), file_path.to_string_lossy().to_string());
+
+                updates.add_event(UpdateEvent::AddNode {
+                    node_name: element_id.clone(),
+                    node_type: "file".to_string(),
+                })?;
+                updates.add_event(UpdateEvent::AddNodeLabel {
+                    node_name: element_id.clone(),
+                    anno_ns: ANNIS_NS.to_string(),
+                    anno_name: "file".to_string(),
+                    anno_value: file_path.to_string_lossy().to_string(),
                 })?;
 
                 updates.add_event(UpdateEvent::AddEdge {
