@@ -183,7 +183,10 @@ mod tests {
     use std::{collections::BTreeSet, path::Path};
 
     use graphannis::{
-        aql, graph::AnnoKey, update::{GraphUpdate, UpdateEvent}, AnnotationGraph
+        aql,
+        graph::AnnoKey,
+        update::{GraphUpdate, UpdateEvent},
+        AnnotationGraph,
     };
     use graphannis_core::graph::ANNIS_NS;
 
