@@ -324,8 +324,8 @@ mod tests {
         let chunker = Chunk {
             max_characters: 10,
             anno_key: AnnoKey {
-                ns: "segment".into(),
-                name: "chunk".into(),
+                ns: "chunk".into(),
+                name: "segment".into(),
             },
             anno_value: "s".into(),
             segmentation: Some("seg".into()),
