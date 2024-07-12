@@ -9,8 +9,8 @@ use std::{
 };
 
 use crate::{
-    error::AnnattoError, importer::exmaralda::LANGUAGE_SEP, progress::ProgressReporter,
-    util::Traverse, StepID,
+    deserialize::deserialize_anno_key, error::AnnattoError, importer::exmaralda::LANGUAGE_SEP,
+    progress::ProgressReporter, util::Traverse, StepID,
 };
 use documented::{Documented, DocumentedFields};
 use graphannis::{
@@ -69,7 +69,7 @@ pub struct ExportExmaralda {
     /// doc_anno = { ns = "annis", name = "node_name" }
     /// ```
     /// This defaults to `{ ns = "annis", name = "doc" }`.
-    #[serde(default = "default_doc_key")]
+    #[serde(default = "default_doc_key", deserialize_with = "deserialize_anno_key")]
     doc_anno: AnnoKey,
 }
 
