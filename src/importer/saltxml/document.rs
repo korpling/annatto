@@ -110,6 +110,12 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                     anno_name: "tok".to_string(),
                     anno_value: "".to_string(),
                 })?;
+                updates.add_event(UpdateEvent::AddNodeLabel {
+                    node_name: tli_node_name.clone(),
+                    anno_ns: ANNIS_NS.to_string(),
+                    anno_name: "tok-whitespace-after".to_string(),
+                    anno_value: " ".to_string(),
+                })?;
 
                 updates.add_event(UpdateEvent::AddEdge {
                     source_node: tli_node_name.clone(),
