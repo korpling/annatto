@@ -21,7 +21,10 @@ use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
-    deserialize::{deserialize_annotation_component, deserialize_annotation_component_opt},
+    deserialize::{
+        deserialize_anno_key, deserialize_anno_key_opt, deserialize_annotation_component,
+        deserialize_annotation_component_opt,
+    },
     error::{AnnattoError, StandardErrorResult},
     progress::ProgressReporter,
     Manipulator, StepID,
@@ -41,9 +44,9 @@ pub struct Revise {
     /// also move annotations to other host nodes determined by namespace
     move_node_annos: bool,
     /// rename node annotation
-    node_annos: BTreeMap<String, String>,
+    node_annos: Vec<KeyMapping>,
     /// rename edge annotations
-    edge_annos: BTreeMap<String, String>,
+    edge_annos: Vec<KeyMapping>,
     /// rename or erase namespaces
     namespaces: BTreeMap<String, String>,
     /// rename or erase components. Specify a list of entries `from` and `to` keys, where the `to` key is optional
@@ -63,7 +66,15 @@ pub struct Revise {
     remove_subgraph: Vec<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug, PartialEq)]
+struct KeyMapping {
+    #[serde(deserialize_with = "deserialize_anno_key")]
+    from: AnnoKey,
+    #[serde(default, deserialize_with = "deserialize_anno_key_opt")]
+    to: Option<AnnoKey>,
+}
+
+#[derive(Deserialize, Debug)]
 struct ComponentMapping {
     #[serde(deserialize_with = "deserialize_annotation_component")]
     from: AnnotationComponent,
@@ -369,13 +380,15 @@ fn place_at_new_target(
 fn replace_node_annos(
     graph: &mut AnnotationGraph,
     update: &mut GraphUpdate,
-    anno_keys: Vec<(AnnoKey, Option<AnnoKey>)>,
+    anno_keys: &Vec<KeyMapping>,
     move_by_ns: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let annos = graph.get_node_annos();
-    for (old_key, new_key_opt) in anno_keys.into_iter() {
+    for mapping in anno_keys {
+        let old_key = &mapping.from;
+        let new_key_opt = &mapping.to;
         for r in annos.exact_anno_search(
-            ns_from_key(&old_key),
+            ns_from_key(old_key),
             old_key.name.as_str(),
             ValueSearch::Any,
         ) {
@@ -389,7 +402,7 @@ fn replace_node_annos(
             if let Some(ref new_key) = new_key_opt {
                 if move_by_ns {
                     place_at_new_target(graph, update, &m, new_key)?;
-                } else if let Some(value) = annos.get_value_for_item(&m.node, &old_key)? {
+                } else if let Some(value) = annos.get_value_for_item(&m.node, old_key)? {
                     update.add_event(UpdateEvent::AddNodeLabel {
                         node_name: node_name.to_string(),
                         anno_ns: new_key.ns.to_string(),
@@ -406,10 +419,11 @@ fn replace_node_annos(
 fn replace_edge_annos(
     graph: &mut AnnotationGraph,
     update: &mut GraphUpdate,
-    anno_keys: Vec<(AnnoKey, Option<AnnoKey>)>,
+    anno_keys: &Vec<KeyMapping>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let node_annos = graph.get_node_annos();
-    for (old_key, new_key_opt) in anno_keys {
+    for mapping in anno_keys {
+        let (old_key, new_key_opt) = (&mapping.from, mapping.to.as_ref());
         for component in graph.get_all_components(None, None) {
             let component_storage = if let Some(strg) = graph.get_graphstorage(&component) {
                 strg
@@ -418,7 +432,7 @@ fn replace_edge_annos(
             };
             let edge_annos = component_storage.get_anno_storage();
             for r in edge_annos.exact_anno_search(
-                ns_from_key(&old_key),
+                ns_from_key(old_key),
                 old_key.name.as_str(),
                 ValueSearch::Any,
             ) {
@@ -667,13 +681,11 @@ impl Manipulator for Revise {
         }
         progress_reporter.worked(1)?;
         if !self.node_annos.is_empty() {
-            let node_annos = read_replace_property_value(&self.node_annos)?;
-            replace_node_annos(graph, &mut update, node_annos, move_by_ns)?;
+            replace_node_annos(graph, &mut update, &self.node_annos, move_by_ns)?;
         }
         progress_reporter.worked(1)?;
         if !self.edge_annos.is_empty() {
-            let edge_annos = read_replace_property_value(&self.edge_annos)?;
-            replace_edge_annos(graph, &mut update, edge_annos)?;
+            replace_edge_annos(graph, &mut update, &self.edge_annos)?;
         }
         progress_reporter.worked(1)?;
         if !self.namespaces.is_empty() {
@@ -714,13 +726,14 @@ mod tests {
     use std::path::Path;
 
     use crate::exporter::graphml::GraphMLExporter;
-    use crate::manipulator::re::{ComponentMapping, Revise};
+    use crate::manipulator::re::{ComponentMapping, KeyMapping, Revise};
     use crate::manipulator::Manipulator;
     use crate::progress::ProgressReporter;
     use crate::test_util::export_to_string;
     use crate::{Result, StepID};
 
     use graphannis::corpusstorage::{QueryLanguage, ResultOrder, SearchQuery};
+    use graphannis::graph::AnnoKey;
     use graphannis::model::{AnnotationComponent, AnnotationComponentType};
     use graphannis::update::{GraphUpdate, UpdateEvent};
     use graphannis::{AnnotationGraph, CorpusStorage};
@@ -759,18 +772,21 @@ mod tests {
     fn core_test(on_disk: bool, rename: bool) -> Result<()> {
         let mut g = input_graph(on_disk, false)?;
         let (node_anno_prop_val, edge_anno_prop_val) = if rename {
-            ("pos = \"upos\"", "deprel = \"func\"")
+            (
+                "from = \"pos\"\nto = \"upos\"",
+                "from = \"deprel\"\nto = \"func\"",
+            )
         } else {
-            ("pos = \"\"", "deprel = \"\"")
+            ("from = \"pos\"", "from = \"deprel\"")
         };
-        let node_map: BTreeMap<String, String> = toml::from_str(node_anno_prop_val)?;
-        let edge_map: BTreeMap<String, String> = toml::from_str(edge_anno_prop_val)?;
+        let node_map: KeyMapping = toml::from_str(node_anno_prop_val)?;
+        let edge_map: KeyMapping = toml::from_str(edge_anno_prop_val)?;
         let replace = Revise {
             node_names: BTreeMap::default(),
             remove_nodes: vec![],
             move_node_annos: false,
-            node_annos: node_map,
-            edge_annos: edge_map,
+            node_annos: vec![node_map],
+            edge_annos: vec![edge_map],
             namespaces: BTreeMap::default(),
             components: vec![],
             remove_subgraph: vec![],
@@ -900,17 +916,18 @@ mod tests {
 
     fn move_test(on_disk: bool) -> Result<()> {
         let mut g = input_graph_for_move(on_disk)?;
-        let node_map: BTreeMap<String, String> = toml::from_str(
+        let node_map: KeyMapping = toml::from_str(
             r#"
-            "norm::pos" = "dipl::derived_pos"
+from = "norm::pos" 
+to = "dipl::derived_pos"
         "#,
         )?;
         let replace = Revise {
             node_names: BTreeMap::default(),
             move_node_annos: true,
             namespaces: BTreeMap::default(),
-            node_annos: node_map,
-            edge_annos: BTreeMap::default(),
+            node_annos: vec![node_map],
+            edge_annos: vec![],
             remove_nodes: vec![],
             components: vec![],
             remove_subgraph: vec![],
@@ -1041,22 +1058,22 @@ mod tests {
 
     fn export_test(on_disk: bool) -> Result<()> {
         let mut g = input_graph(on_disk, false)?;
-        let node_map: BTreeMap<String, String> = toml::from_str(
+        let node_map: KeyMapping = toml::from_str(
             r#"
-            pos = ""
+from = "pos"
         "#,
         )?;
-        let edge_map: BTreeMap<String, String> = toml::from_str(
+        let edge_map: KeyMapping = toml::from_str(
             r#"
-            deprel = ""
+from = "deprel"
         "#,
         )?;
         let replace = Revise {
             node_names: BTreeMap::default(),
             move_node_annos: true,
             namespaces: BTreeMap::default(),
-            node_annos: node_map,
-            edge_annos: edge_map,
+            node_annos: vec![node_map],
+            edge_annos: vec![edge_map],
             remove_nodes: vec![],
             components: vec![],
             remove_subgraph: vec![],
@@ -1102,22 +1119,23 @@ mod tests {
 
     fn export_test_move_result(on_disk: bool) -> Result<()> {
         let mut g = input_graph_for_move(on_disk)?;
-        let node_map: BTreeMap<String, String> = toml::from_str(
+        let node_map: KeyMapping = toml::from_str(
             r#"
-            "norm::pos" = "dipl::derived_pos"
+from = "norm::pos" 
+to = "dipl::derived_pos"
         "#,
         )?;
-        let edge_map: BTreeMap<String, String> = toml::from_str(
+        let edge_map: KeyMapping = toml::from_str(
             r#"
-            deprel = ""
+from = "deprel"
         "#,
         )?;
         let replace = Revise {
             node_names: BTreeMap::default(),
             move_node_annos: true,
             namespaces: BTreeMap::default(),
-            node_annos: node_map,
-            edge_annos: edge_map,
+            node_annos: vec![node_map],
+            edge_annos: vec![edge_map],
             remove_nodes: vec![],
             components: vec![],
             remove_subgraph: vec![],
@@ -1163,8 +1181,8 @@ mod tests {
             node_names: BTreeMap::default(),
             remove_nodes: vec![],
             move_node_annos: false,
-            node_annos: BTreeMap::default(),
-            edge_annos: BTreeMap::default(),
+            node_annos: vec![],
+            edge_annos: vec![],
             namespaces: ns_map,
             components: vec![],
             remove_subgraph: vec![],
@@ -2009,8 +2027,8 @@ mod tests {
             node_names: BTreeMap::default(),
             remove_nodes: vec![],
             move_node_annos: false,
-            node_annos: BTreeMap::default(),
-            edge_annos: BTreeMap::default(),
+            node_annos: vec![],
+            edge_annos: vec![],
             namespaces: BTreeMap::default(),
             components: component_mod_config,
             remove_subgraph: vec![],
@@ -2048,16 +2066,42 @@ mod tests {
             revise.remove_nodes
         );
         assert!(revise.move_node_annos);
-        let mut name_map = BTreeMap::new();
-        name_map.insert("norm::pos".to_string(), "norm::POS".to_string());
-        name_map.insert("norm::lemma".to_string(), "norm::LEMMA".to_string());
-        assert_eq!(name_map, revise.node_annos);
-        name_map = BTreeMap::new();
-        name_map.insert("deprel".to_string(), "func".to_string());
-        assert_eq!(name_map, revise.edge_annos);
-        name_map = BTreeMap::new();
-        name_map.insert("default_ns".to_string(), "".to_string());
-        assert_eq!(name_map, revise.namespaces);
+        let mut node_key_vec = Vec::new();
+        node_key_vec.push(KeyMapping {
+            from: AnnoKey {
+                ns: "norm".into(),
+                name: "pos".into(),
+            },
+            to: Some(AnnoKey {
+                name: "POS".into(),
+                ns: "norm".into(),
+            }),
+        });
+        node_key_vec.push(KeyMapping {
+            from: AnnoKey {
+                name: "lemma".into(),
+                ns: "norm".into(),
+            },
+            to: Some(AnnoKey {
+                name: "LEMMA".into(),
+                ns: "norm".into(),
+            }),
+        });
+        assert_eq!(node_key_vec, revise.node_annos);
+        let node_key_vec = vec![KeyMapping {
+            from: AnnoKey {
+                name: "deprel".into(),
+                ns: "".into(),
+            },
+            to: Some(AnnoKey {
+                name: "func".into(),
+                ns: "".into(),
+            }),
+        }];
+        assert_eq!(node_key_vec, revise.edge_annos);
+        let mut namespace_map = BTreeMap::default();
+        namespace_map.insert("default_ns".to_string(), "".to_string());
+        assert_eq!(namespace_map, revise.namespaces);
     }
 
     #[test]

@@ -1,10 +1,15 @@
 remove_nodes = ["any_weird_node_address"]
 move_node_annos = true
-[node_annos]
-"norm::pos" = "norm::POS"
-"norm::lemma" = "norm::LEMMA"
-[edge_annos]
-"deprel" = "func"
+[[node_annos]]
+from = "norm::pos"
+to = "norm::POS"
+
+[[node_annos]]
+from = "norm::lemma"
+to = "norm::LEMMA"
+[[edge_annos]]
+from = "deprel"
+to = "func"
 [namespaces]
 "default_ns" = ""
 
