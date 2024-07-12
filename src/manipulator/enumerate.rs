@@ -13,7 +13,9 @@ use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 use tempfile::tempdir;
 
-use crate::{error::AnnattoError, progress::ProgressReporter, StepID};
+use crate::{
+    deserialize::deserialize_anno_key, error::AnnattoError, progress::ProgressReporter, StepID,
+};
 
 use super::Manipulator;
 
@@ -26,14 +28,31 @@ pub struct EnumerateMatches {
     queries: Vec<String>,
     /// The target node in the query that is assigned the numeric annotation. Holds for all queries. This is a 1-based index and counts by mention in the query.
     target: usize,
-    /// The namespace of the numeric annotation.
-    label_ns: String,
-    /// The name of the numeric annotation.
-    label_name: String,
+    /// The anno key of the numeric annotation that should be created.
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// label = { ns = "order", name = "i" }
+    /// ```
+    ///
+    /// You can also provide this as a string:
+    /// ```toml
+    /// [export.config]
+    /// label = "order::i"
+    /// ```
+    #[serde(default = "default_label", deserialize_with = "deserialize_anno_key")]
+    label: AnnoKey,
     /// An optional 1-based index pointing to the annotation node in the query that holds a prefix value that will be added to the numeric annotation.
     value: Option<usize>,
     /// This can be used to offset the numeric values in the annotations.
     start: u64,
+}
+
+fn default_label() -> AnnoKey {
+    AnnoKey {
+        name: "i".into(),
+        ns: "".into(),
+    }
 }
 
 impl Default for EnumerateMatches {
@@ -41,8 +60,7 @@ impl Default for EnumerateMatches {
         Self {
             queries: vec!["node".to_string()],
             target: 1,
-            label_ns: "".to_string(),
-            label_name: "i".to_string(),
+            label: default_label(),
             value: None,
             start: 0,
         }
@@ -115,8 +133,8 @@ impl Manipulator for EnumerateMatches {
                                     {
                                         update.add_event(UpdateEvent::AddNodeLabel {
                                             node_name: target_node.to_string(),
-                                            anno_ns: self.label_ns.to_string(),
-                                            anno_name: self.label_name.to_string(),
+                                            anno_ns: self.label.ns.to_string(),
+                                            anno_name: self.label.name.to_string(),
                                             anno_value: format!(
                                                 "{prefix}-{}",
                                                 i as u64 + self.start - offset
@@ -128,8 +146,8 @@ impl Manipulator for EnumerateMatches {
                         } else {
                             update.add_event(UpdateEvent::AddNodeLabel {
                                 node_name: target_node.to_string(),
-                                anno_ns: self.label_ns.to_string(),
-                                anno_name: self.label_name.to_string(),
+                                anno_ns: self.label.ns.to_string(),
+                                anno_name: self.label.name.to_string(),
                                 anno_value: (i as u64 + self.start - offset).to_string(),
                             })?;
                         }
@@ -206,8 +224,10 @@ mod tests {
         }
         expected_g.apply_update(&mut u, |_| {})?;
         let manipulate = EnumerateMatches {
-            label_name: "i".to_string(),
-            label_ns: "count".to_string(),
+            label: AnnoKey {
+                name: "i".into(),
+                ns: "count".into(),
+            },
             queries: vec!["annis:node_type=\"node\"".to_string()],
             target: 1,
             start: 1,
@@ -261,8 +281,10 @@ mod tests {
         }
         expected_g.apply_update(&mut u, |_| {})?;
         let manipulate = EnumerateMatches {
-            label_name: "i".to_string(),
-            label_ns: "count".to_string(),
+            label: AnnoKey {
+                name: "i".into(),
+                ns: "count".into(),
+            },
             queries: vec!["sentiment".to_string()],
             target: 1,
             start: 1,

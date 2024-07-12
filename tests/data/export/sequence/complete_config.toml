@@ -1,8 +1,6 @@
 horizontal = true
-fileby = { ns = "annis", name = "doc" }
+fileby = "annis::doc"  # anno keys can be specified as strings and as map, so here we test both, see also `anno` below
 groupby = { ns = "", name = "sentence" }
 group_component_type = "Coverage"
-component_type = "Ordering"
-component_layer = "annis"
-component_name = "norm"
+component = { ctype = "Ordering", layer = "annis", name = "norm" }
 anno = { ns = "", name = "norm" }

@@ -1,11 +1,14 @@
 //! Created edges between nodes based on their annotation value.
 use super::Manipulator;
-use crate::{error::AnnattoError, progress::ProgressReporter, workflow::StatusSender, StepID};
+use crate::{
+    deserialize::deserialize_annotation_component, error::AnnattoError, progress::ProgressReporter,
+    workflow::StatusSender, StepID,
+};
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
     corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
-    model::AnnotationComponentType,
+    model::AnnotationComponent,
     update::{GraphUpdate, UpdateEvent},
     AnnotationGraph, CorpusStorage,
 };
@@ -33,14 +36,9 @@ pub struct LinkNodes {
     target_node: usize,
     /// Contains one or multiple 1-based indexes, from which (in order of mentioning) the value for mapping source and target will be concatenated.
     target_value: Vec<usize>,
-    /// The edge component type of the links to be built.
-    link_type: AnnotationComponentType, // which edge type to use to link resources
-    /// The layer of the edge component containing the links to be built.
-    #[serde(default)]
-    link_layer: String,
-    /// The name of the edge component containing the links to be built.
-    #[serde(default)]
-    link_name: String,
+    /// The edge component to be built.
+    #[serde(deserialize_with = "deserialize_annotation_component")]
+    component: AnnotationComponent,
     /// In case of multiple `source_values` or `target_values` this delimiter (default empty string) will be used for value concatenation.
     #[serde(default)]
     value_sep: String,
@@ -212,9 +210,9 @@ impl LinkNodes {
                     update.add_event(UpdateEvent::AddEdge {
                         source_node: source.to_string(),
                         target_node: target.to_string(),
-                        layer: self.link_layer.to_string(),
-                        component_type: self.link_type.to_string(),
-                        component_name: self.link_name.to_string(),
+                        layer: self.component.layer.to_string(),
+                        component_type: self.component.get_type().to_string(),
+                        component_name: self.component.name.to_string(),
                     })?;
                 }
             }
@@ -233,7 +231,7 @@ mod tests {
 
     use graphannis::{
         corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
-        model::AnnotationComponentType,
+        model::{AnnotationComponent, AnnotationComponentType},
         update::{GraphUpdate, UpdateEvent},
         AnnotationGraph, CorpusStorage,
     };
@@ -277,9 +275,11 @@ mod tests {
             target_query: "morph & node? !> #1".to_string(),
             target_node: 1,
             target_value: vec![1],
-            link_type: AnnotationComponentType::Pointing,
-            link_layer: "".to_string(),
-            link_name: "morphology".to_string(),
+            component: AnnotationComponent::new(
+                AnnotationComponentType::Pointing,
+                "".into(),
+                "morphology".into(),
+            ),
             value_sep: "".to_string(),
         };
         let dummy_dir = tempdir()?;
@@ -534,9 +534,11 @@ mod tests {
             target_query: "dummy query -- value not used".to_string(),
             target_node: 1,        // dummy value
             target_value: vec![1], // dummy value
-            link_type: AnnotationComponentType::Pointing,
-            link_layer: "".to_string(),
-            link_name: "link".to_string(),
+            component: AnnotationComponent::new(
+                AnnotationComponentType::Pointing,
+                "".into(),
+                "link".into(),
+            ),
             value_sep: "dummy value".to_string(),
         };
         let source_map = vec![

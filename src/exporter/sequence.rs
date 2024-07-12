@@ -12,6 +12,9 @@ use serde::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
+    deserialize::{
+        deserialize_anno_key, deserialize_anno_key_opt, deserialize_annotation_component,
+    },
     error::{AnnattoError, Result},
     progress::ProgressReporter,
     StepID,
@@ -29,29 +32,33 @@ pub struct ExportSequence {
     #[serde(default)]
     horizontal: bool,
     /// The annotation key that determines which nodes in the graph bunble a document in the part of component.
-    #[serde(default = "default_fileby_key")]
+    #[serde(
+        default = "default_fileby_key",
+        deserialize_with = "deserialize_anno_key"
+    )]
     fileby: AnnoKey,
     /// The optional annotation key, that groups the sequence elements.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_anno_key_opt")]
     groupby: Option<AnnoKey>,
     /// the group component type can be optionally provided to define which edges to follow
     /// to find the nodes holding the groupby anno key. The default value is `Coverage`.
     #[serde(default = "default_groupby_ctype")]
     group_component_type: Option<AnnotationComponentType>,
-    /// The type of the edge component that contains the sequences that you wish to export.
-    /// The default value is `ordering`.
-    #[serde(default = "default_ctype")]
-    component_type: AnnotationComponentType,
-    /// The layer of the edge component that contains the sequences that you wish to export.
-    /// The default value is `annis`.
-    #[serde(default = "default_clayer")]
-    component_layer: String,
-    /// The name of the edge component that contains the sequences that you wish to export.
-    /// The default value is the empty string.
-    #[serde(default)]
-    component_name: String,
+    #[serde(
+        default = "default_component",
+        deserialize_with = "deserialize_annotation_component"
+    )]
+    /// This configures the edge component that contains the sequences that you wish to export.    
+    /// The default value ctype is `Ordering`, the default layer is `annis`, and the default
+    /// name is empty.
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// component = { ctype = "Pointing", layer = "", "coreference" }
+    /// ```
+    component: AnnotationComponent,
     /// The annotation key that determines the values in the exported sequence (annis::tok by default).
-    #[serde(default = "default_anno")]
+    #[serde(default = "default_anno", deserialize_with = "deserialize_anno_key")]
     anno: AnnoKey,
 }
 
@@ -60,6 +67,10 @@ fn default_anno() -> AnnoKey {
         name: "tok".into(),
         ns: ANNIS_NS.into(),
     }
+}
+
+fn default_component() -> AnnotationComponent {
+    AnnotationComponent::new(default_ctype(), default_clayer().into(), "".into())
 }
 
 const fn default_ctype() -> AnnotationComponentType {
@@ -88,9 +99,7 @@ impl Default for ExportSequence {
             fileby: default_fileby_key(),
             groupby: Default::default(),
             group_component_type: default_groupby_ctype(),
-            component_type: default_ctype(),
-            component_layer: default_clayer(),
-            component_name: "".to_string(),
+            component: default_component(),
             anno: default_anno(),
         }
     }
@@ -106,11 +115,6 @@ impl Exporter for ExportSequence {
         step_id: crate::StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<(), Box<dyn std::error::Error>> {
-        let component = AnnotationComponent::new(
-            self.component_type.clone(),
-            self.component_layer.as_str().into(),
-            self.component_name.as_str().into(),
-        );
         let docs_and_starts = self.start_nodes_by_file_node(graph, &step_id)?;
         let groups = if let Some(k) = &self.groupby {
             self.group_nodes(graph, k)?
@@ -118,7 +122,7 @@ impl Exporter for ExportSequence {
             BTreeMap::default()
         };
         let progress = ProgressReporter::new(tx, step_id.clone(), docs_and_starts.len())?;
-        if let Some(storage) = graph.get_graphstorage(&component) {
+        if let Some(storage) = graph.get_graphstorage(&self.component) {
             for (doc_node, start_node) in docs_and_starts {
                 self.export_document(
                     graph,
@@ -211,18 +215,14 @@ impl ExportSequence {
         graph: &AnnotationGraph,
         step_id: &StepID,
     ) -> Result<Vec<(u64, u64)>> {
-        let component = AnnotationComponent::new(
-            self.component_type.clone(),
-            self.component_layer.as_str().into(),
-            self.component_name.as_str().into(),
-        );
-        let component_storage = graph
-            .get_graphstorage(&component)
-            .ok_or(AnnattoError::Export {
-                reason: format!("Source component undefined: {}", &component),
-                exporter: step_id.module_name.to_string(),
-                path: Path::new("./").to_path_buf(),
-            })?;
+        let component_storage =
+            graph
+                .get_graphstorage(&self.component)
+                .ok_or(AnnattoError::Export {
+                    reason: format!("Source component undefined: {}", &self.component),
+                    exporter: step_id.module_name.to_string(),
+                    path: Path::new("./").to_path_buf(),
+                })?;
         let part_of_storage = graph
             .get_graphstorage(&AnnotationComponent::new(
                 AnnotationComponentType::PartOf,
@@ -326,8 +326,12 @@ mod tests {
         path::Path,
     };
 
-    use graphannis::{graph::AnnoKey, model::AnnotationComponentType, AnnotationGraph};
-    use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
+    use graphannis::{
+        graph::AnnoKey,
+        model::{AnnotationComponent, AnnotationComponentType},
+        AnnotationGraph,
+    };
+    use graphannis_core::graph::DEFAULT_NS;
     use insta::assert_snapshot;
 
     use crate::{
@@ -355,9 +359,7 @@ mod tests {
                 name: "sent_id".into(),
             }),
             group_component_type: Some(AnnotationComponentType::Coverage),
-            component_type: AnnotationComponentType::Ordering,
-            component_layer: ANNIS_NS.to_string(),
-            component_name: "".to_string(),
+            ..Default::default()
         };
         let estr = export_to_string(&graph, exporter);
         assert!(estr.is_ok());
@@ -381,9 +383,7 @@ mod tests {
                 name: "sent_id".into(),
             }),
             group_component_type: Some(AnnotationComponentType::Coverage),
-            component_type: AnnotationComponentType::Ordering,
-            component_layer: ANNIS_NS.to_string(),
-            component_name: "".to_string(),
+            ..Default::default()
         };
         let estr = export_to_string(&graph, exporter);
         assert!(estr.is_ok());
@@ -428,9 +428,11 @@ mod tests {
                 name: "seg".into(),
             }),
             group_component_type: Some(AnnotationComponentType::Coverage),
-            component_type: AnnotationComponentType::Ordering,
-            component_layer: DEFAULT_NS.to_string(),
-            component_name: "norm".to_string(),
+            component: AnnotationComponent::new(
+                AnnotationComponentType::Ordering,
+                DEFAULT_NS.into(),
+                "norm".into(),
+            ),
         };
         let estr = export_to_string(&graph, exporter);
         assert!(estr.is_ok(), "Export failed: {:?}", estr.err());

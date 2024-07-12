@@ -20,11 +20,8 @@ use std::{
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
-    deserialize::{AsInner, DeserializableComponent},
-    error::AnnattoError,
-    progress::ProgressReporter,
-    workflow::StatusSender,
-    StepID,
+    deserialize::deserialize_annotation_component, error::AnnattoError, progress::ProgressReporter,
+    workflow::StatusSender, StepID,
 };
 
 use super::Manipulator;
@@ -39,7 +36,8 @@ use super::Manipulator;
 #[serde(deny_unknown_fields)]
 pub struct Collapse {
     /// The component type within which to find the edges to collapse.
-    component: DeserializableComponent,
+    #[serde(deserialize_with = "deserialize_annotation_component")]
+    component: AnnotationComponent,
     /// If you know that any two edges in the defined component are always pairwise disjoint, set this attribute to true to save computation time.
     #[serde(default)]
     disjoint: bool, // performance boost -> if you know all edges are already disjoint, an expensive step can be skipped
@@ -103,8 +101,8 @@ impl Collapse {
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let component = self.component.as_inner();
-        if let Some(component_storage) = graph.get_graphstorage(&component) {
+        let component = &self.component;
+        if let Some(component_storage) = graph.get_graphstorage(component) {
             let hyperedges = self.collect_hyperedges(component_storage, step_id, tx.clone())?;
             let mut hypernode_map = BTreeMap::new();
             let offset = graph
@@ -316,7 +314,7 @@ impl Collapse {
         update.add_event(UpdateEvent::DeleteNode {
             node_name: from_node_name.to_string(),
         })?;
-        if let Some(component_storage) = graph.get_graphstorage(&self.component.as_inner()) {
+        if let Some(component_storage) = graph.get_graphstorage(&self.component) {
             for key in node_annos.get_all_keys_for_item(from_node, None, None)? {
                 // only transfer `annis::` annotations for terminal nodes of the component and never transfer the node name key
                 if key.ns.as_str() != ANNIS_NS
@@ -336,7 +334,7 @@ impl Collapse {
             }
             Ok(())
         } else {
-            Err(anyhow!("Could not obtain storage of component {:?}, which is required to determine node status.", &self.component.as_inner()).into())
+            Err(anyhow!("Could not obtain storage of component {:?}, which is required to determine node status.", &self.component).into())
         }
     }
 
@@ -350,7 +348,7 @@ impl Collapse {
         skip_edges: &mut BTreeSet<EdgeUId>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         for component in graph.get_all_components(None, None) {
-            if component == self.component.as_inner() {
+            if component == self.component {
                 // ignore component that is to be deleted
                 continue;
             }
@@ -456,7 +454,7 @@ mod tests {
     use std::{fs, path::Path, sync::mpsc};
 
     use graphannis::{
-        model::AnnotationComponentType,
+        model::{AnnotationComponent, AnnotationComponentType},
         update::{GraphUpdate, UpdateEvent},
         AnnotationGraph,
     };
@@ -465,7 +463,6 @@ mod tests {
     use serde_derive::Deserialize;
 
     use crate::{
-        deserialize::DeserializableComponent,
         manipulator::{check::Check, Manipulator},
         StepID,
     };
@@ -519,11 +516,11 @@ mod tests {
         assert!(g_.is_ok());
         let mut g = g_.unwrap();
         let collapse = Collapse {
-            component: DeserializableComponent {
-                ctype: AnnotationComponentType::Pointing,
-                layer: "".to_string(),
-                name: "align".to_string(),
-            },
+            component: AnnotationComponent::new(
+                AnnotationComponentType::Pointing,
+                "".into(),
+                "align".into(),
+            ),
             disjoint,
         };
         let step_id = StepID {
