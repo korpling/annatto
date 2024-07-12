@@ -1,9 +1,13 @@
 use std::collections::BTreeMap;
 
 use super::Manipulator;
-use crate::{progress::ProgressReporter, util::token_helper::TokenHelper, StepID};
+use crate::{
+    deserialize::deserialize_anno_key, progress::ProgressReporter, util::token_helper::TokenHelper,
+    StepID,
+};
 use documented::{Documented, DocumentedFields};
 use graphannis::{
+    graph::AnnoKey,
     model::AnnotationComponentType,
     update::{
         GraphUpdate,
@@ -30,14 +34,22 @@ use text_splitter::TextSplitter;
 pub struct Chunk {
     #[serde(default)]
     max_characters: usize,
-    #[serde(default)]
-    anno_namespace: String,
-    #[serde(default = "default_chunk_name")]
-    anno_name: String,
+    #[serde(
+        default = "default_anno_key",
+        deserialize_with = "deserialize_anno_key"
+    )]
+    anno_key: AnnoKey,
     #[serde(default)]
     anno_value: String,
     #[serde(default)]
     segmentation: Option<String>,
+}
+
+fn default_anno_key() -> AnnoKey {
+    AnnoKey {
+        name: default_chunk_name().into(),
+        ns: "".into(),
+    }
 }
 
 fn default_chunk_name() -> String {
@@ -48,8 +60,7 @@ impl Default for Chunk {
     fn default() -> Self {
         Self {
             max_characters: 100,
-            anno_name: default_chunk_name(),
-            anno_namespace: "".into(),
+            anno_key: default_anno_key(),
             anno_value: "".into(),
             segmentation: None,
         }
@@ -124,8 +135,8 @@ impl Manipulator for Chunk {
                         })?;
                         updates.add_event(AddNodeLabel {
                             node_name: node_name.clone(),
-                            anno_ns: self.anno_namespace.clone(),
-                            anno_name: self.anno_name.clone(),
+                            anno_ns: self.anno_key.ns.to_string(),
+                            anno_name: self.anno_key.name.to_string(),
                             anno_value: self.anno_value.clone(),
                         })?;
                         updates.add_event(AddEdge {
@@ -172,9 +183,7 @@ mod tests {
     use std::{collections::BTreeSet, path::Path};
 
     use graphannis::{
-        aql,
-        update::{GraphUpdate, UpdateEvent},
-        AnnotationGraph,
+        aql, graph::AnnoKey, update::{GraphUpdate, UpdateEvent}, AnnotationGraph
     };
     use graphannis_core::graph::ANNIS_NS;
 
@@ -311,8 +320,10 @@ mod tests {
 
         let chunker = Chunk {
             max_characters: 10,
-            anno_name: "segment".into(),
-            anno_namespace: "chunk".into(),
+            anno_key: AnnoKey {
+                ns: "segment".into(),
+                name: "chunk".into(),
+            },
             anno_value: "s".into(),
             segmentation: Some("seg".into()),
         };
