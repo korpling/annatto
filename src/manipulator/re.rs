@@ -155,7 +155,7 @@ fn revise_component(
     update: &mut GraphUpdate,
     progress_reporter: &ProgressReporter,
 ) -> Result<(), AnnattoError> {
-    if let Some(source_storage) = graph.get_graphstorage(&source_component) {
+    if let Some(source_storage) = graph.get_graphstorage(source_component) {
         let node_annos = graph.get_node_annos();
         let edge_anno_storage = source_storage.get_anno_storage();
         for node in source_storage.as_edgecontainer().source_nodes() {
@@ -451,7 +451,7 @@ fn replace_edge_annos(
                         anno_ns: m.anno_key.ns.to_string(),
                         anno_name: old_key.name.to_string(),
                     })?;
-                    if let Some(ref new_key) = new_key_opt {
+                    if let Some(new_key) = new_key_opt {
                         if let Some(value) = edge_annos.get_value_for_item(
                             &Edge {
                                 source: source_node,
