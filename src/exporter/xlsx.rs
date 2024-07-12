@@ -18,6 +18,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 use umya_spreadsheet::{helper::coordinate::string_from_column_index, Worksheet};
 
 use crate::{
+    deserialize::deserialize_anno_key_seq,
     progress::ProgressReporter,
     util::token_helper::{TokenHelper, TOKEN_KEY},
 };
@@ -30,10 +31,10 @@ use super::Exporter;
 /// spans and merged cells can be used for spans that cover more than one token.
 #[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
-pub struct XlsxExporter {
+pub struct ExportXlsx {
     /// If `true`, include the annotation namespace in the column header.
     include_namespace: bool,
-    /// Specify the order of the exported columns as array of annotation names.
+    /// Specify the order of the exported columns as array of annotation keys.
     ///
     /// Example:
     ///
@@ -43,7 +44,8 @@ pub struct XlsxExporter {
     /// ```
     ///
     /// Has no effect if the vector is empty.
-    annotation_order: Vec<String>,
+    #[serde(default, deserialize_with = "deserialize_anno_key_seq")]
+    annotation_order: Vec<AnnoKey>,
 }
 
 fn find_token_roots(
@@ -86,16 +88,13 @@ fn is_span_column(
 
 fn overwritten_position_for_key(
     anno_key: &AnnoKey,
-    position_overwrite: &HashMap<String, u32>,
+    position_overwrite: &HashMap<AnnoKey, u32>,
 ) -> Option<u32> {
     // Try the fully qualified name first, then check if the unspecific name is configured
-    position_overwrite
-        .get(&join_qname(&anno_key.ns, &anno_key.name))
-        .or_else(|| position_overwrite.get(anno_key.name.as_str()))
-        .copied()
+    position_overwrite.get(anno_key).copied()
 }
 
-impl XlsxExporter {
+impl ExportXlsx {
     fn export_document(
         &self,
         doc_name: &str,
@@ -143,7 +142,7 @@ impl XlsxExporter {
         column_offset: u32,
     ) -> anyhow::Result<LinkedHashMap<AnnoKey, u32>> {
         // create a hash map from the configuration value
-        let position_overwrite: HashMap<String, u32> = self
+        let position_overwrite: HashMap<AnnoKey, u32> = self
             .annotation_order
             .iter()
             .enumerate()
@@ -310,7 +309,7 @@ impl XlsxExporter {
     }
 }
 
-impl Exporter for XlsxExporter {
+impl Exporter for ExportXlsx {
     fn export_corpus(
         &self,
         graph: &graphannis::AnnotationGraph,
@@ -377,7 +376,7 @@ mod tests {
             "#,
         )
         .unwrap();
-        let exporter = XlsxExporter::default();
+        let exporter = ExportXlsx::default();
 
         // Import an example document
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
@@ -419,7 +418,7 @@ mod tests {
             "#,
         )
         .unwrap();
-        let exporter = XlsxExporter::default();
+        let exporter = ExportXlsx::default();
 
         // Import an example document
         let path = Path::new("./tests/data/import/xlsx/sample_sentence/");
@@ -475,9 +474,12 @@ mod tests {
         )
         .unwrap();
         let importer = ReadFrom::Xlsx(importer);
-        let mut exporter = XlsxExporter::default();
+        let mut exporter = ExportXlsx::default();
         exporter.include_namespace = true;
-        exporter.annotation_order = vec!["tok".into()];
+        exporter.annotation_order = vec![AnnoKey {
+            ns: ANNIS_NS.into(),
+            name: "tok".into(),
+        }];
         let exporter = WriteAs::Xlsx(exporter);
 
         // Import an example document
