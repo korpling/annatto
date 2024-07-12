@@ -1,16 +1,16 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, ops::Not};
 
 use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::AnnoKey,
     update::{GraphUpdate, UpdateEvent},
 };
-use graphannis_core::{annostorage::ValueSearch, graph::NODE_NAME_KEY, util::split_qname};
+use graphannis_core::{annostorage::ValueSearch, graph::NODE_NAME_KEY};
 use itertools::Itertools;
 use serde::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
-use crate::{error::Result, progress::ProgressReporter};
+use crate::{deserialize::deserialize_anno_key, error::Result, progress::ProgressReporter};
 
 use super::Manipulator;
 
@@ -21,17 +21,30 @@ pub struct SplitValues {
     /// This is the delimiter between the parts of the conflated annotation in the input graph
     #[serde(default = "default_delimiter")]
     delimiter: String,
-    /// The annotation that holds the conflated values. Can be qualified with a namespace using `::` as delimiter.
-    anno: String,
+    /// The annotation that holds the conflated values.
+    #[serde(deserialize_with = "deserialize_anno_key")]
+    anno: AnnoKey,
     /// This maps a target annotation name to a list of potential values to be found in the split parts.
     #[serde(default)]
-    layer_map: BTreeMap<String, Vec<String>>,
-    /// This maps annotation names that occur in a fixed position in the conflation sequence. This is easier especially for large numbers of annotation values.
-    #[serde(default)]
-    index_map: BTreeMap<String, usize>,
-    /// Whether or not to delete the original annotation.
+    layers: Vec<Layer>,
     #[serde(default)]
     delete: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum Layer {
+    ByIndex {
+        index: usize,
+        #[serde(deserialize_with = "deserialize_anno_key")]
+        key: AnnoKey,
+    },
+    ByValues {
+        #[serde(deserialize_with = "deserialize_anno_key")]
+        key: AnnoKey,
+        #[serde(default)]
+        values: Vec<String>,
+    },
 }
 
 const DEFAULT_DELIMITER: &str = "-";
@@ -50,24 +63,28 @@ impl Manipulator for SplitValues {
     ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
         let node_annos = graph.get_node_annos();
-        let (ns, name) = split_qname(&self.anno);
+        let (ns, name) = {
+            (
+                self.anno.ns.is_empty().not().then(|| self.anno.ns.as_str()),
+                self.anno.name.as_str(),
+            )
+        };
         let value_map = self
-            .layer_map
+            .layers
             .iter()
-            .flat_map(|(k, v)| v.iter().map(|vv| (vv.as_str(), k.as_str())).collect_vec())
-            .collect::<BTreeMap<&str, &str>>();
-        let index_to_key: BTreeMap<usize, AnnoKey> = self
-            .index_map
+            .flat_map(|l| match l {
+                Layer::ByIndex { .. } => vec![],
+                Layer::ByValues { key, values } => {
+                    values.iter().map(|vv| (vv.as_str(), key)).collect_vec()
+                }
+            })
+            .collect::<BTreeMap<&str, &AnnoKey>>();
+        let index_to_key: BTreeMap<usize, &AnnoKey> = self
+            .layers
             .iter()
-            .map(|(k, i)| {
-                let (ns, name) = split_qname(k);
-                (
-                    *i,
-                    AnnoKey {
-                        ns: ns.unwrap_or("").into(),
-                        name: name.into(),
-                    },
-                )
+            .filter_map(|l| match l {
+                Layer::ByIndex { index, key } => Some((*index, key)),
+                Layer::ByValues { .. } => None,
             })
             .collect();
         let match_vec = node_annos
@@ -108,8 +125,8 @@ impl SplitValues {
         update: &mut GraphUpdate,
         node_name: &str,
         value: &str,
-        value_map: &BTreeMap<&str, &str>,
-        index_map: &BTreeMap<usize, AnnoKey>,
+        value_map: &BTreeMap<&str, &AnnoKey>,
+        index_map: &BTreeMap<usize, &AnnoKey>,
     ) -> Result<()> {
         for (i, v) in value.split(&self.delimiter).enumerate() {
             if let Some(key) = index_map.get(&(i + 1)) {
@@ -121,12 +138,11 @@ impl SplitValues {
                 })?;
             } else {
                 // use value map
-                if let Some(anno_key_str) = value_map.get(v) {
-                    let (ns, name) = split_qname(anno_key_str);
+                if let Some(anno_key) = value_map.get(v) {
                     update.add_event(UpdateEvent::AddNodeLabel {
                         node_name: node_name.to_string(),
-                        anno_ns: ns.unwrap_or("").to_string(),
-                        anno_name: name.to_string(),
+                        anno_ns: anno_key.ns.to_string(),
+                        anno_name: anno_key.name.to_string(),
                         anno_value: v.to_string(),
                     })?;
                 }

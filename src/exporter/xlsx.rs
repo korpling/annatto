@@ -91,7 +91,15 @@ fn overwritten_position_for_key(
     position_overwrite: &HashMap<AnnoKey, u32>,
 ) -> Option<u32> {
     // Try the fully qualified name first, then check if the unspecific name is configured
-    position_overwrite.get(anno_key).copied()
+    position_overwrite
+        .get(anno_key)
+        .or_else(|| {
+            position_overwrite
+                .iter()
+                .find(|(k, _)| k.name.as_str() == anno_key.name.as_str())
+                .map(|(_, ix)| ix)
+        })
+        .copied()
 }
 
 impl ExportXlsx {
