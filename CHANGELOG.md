@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- internal changes in deserialization of annotation components
+- internal changes in deserialization of annotation components and annotation keys, which changes the api and the way some workflow configurations are organised. Use `annatto info [module]` for more details. It does not affect behaviour once older workflows are adapted to the new interface.
 
 ## [0.13.1] - 2024-07-11
 
