@@ -1,5 +1,3 @@
 horizontal = false
-component_type = "Ordering"
-component_layer = "default_ns"
-component_name = "norm"
+component = { ctype = "Ordering", layer = "default_ns", name = "norm" }
 anno = { ns = "norm", name = "norm" }

@@ -19,7 +19,10 @@ use std::{
 };
 use struct_field_names_as_array::FieldNamesAsSlice;
 
-use crate::{error::AnnattoError, progress::ProgressReporter, workflow::StatusSender, StepID};
+use crate::{
+    deserialize::deserialize_annotation_component, error::AnnattoError, progress::ProgressReporter,
+    workflow::StatusSender, StepID,
+};
 
 use super::Manipulator;
 
@@ -33,11 +36,8 @@ use super::Manipulator;
 #[serde(deny_unknown_fields)]
 pub struct Collapse {
     /// The component type within which to find the edges to collapse.
-    ctype: AnnotationComponentType,
-    /// The layer of the component within which to find the edges to collapse.
-    layer: String,
-    /// The name of the component within which to find the edges to collapse.
-    name: String,
+    #[serde(deserialize_with = "deserialize_annotation_component")]
+    component: AnnotationComponent,
     /// If you know that any two edges in the defined component are always pairwise disjoint, set this attribute to true to save computation time.
     #[serde(default)]
     disjoint: bool, // performance boost -> if you know all edges are already disjoint, an expensive step can be skipped
@@ -101,12 +101,8 @@ impl Collapse {
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let component = AnnotationComponent::new(
-            self.ctype.clone(),
-            (&self.layer).into(),
-            (&self.name).into(),
-        );
-        if let Some(component_storage) = graph.get_graphstorage(&component) {
+        let component = &self.component;
+        if let Some(component_storage) = graph.get_graphstorage(component) {
             let hyperedges = self.collect_hyperedges(component_storage, step_id, tx.clone())?;
             let mut hypernode_map = BTreeMap::new();
             let offset = graph
@@ -318,19 +314,28 @@ impl Collapse {
         update.add_event(UpdateEvent::DeleteNode {
             node_name: from_node_name.to_string(),
         })?;
-        for key in node_annos.get_all_keys_for_item(from_node, None, None)? {
-            if key != *NODE_NAME_KEY {
-                if let Some(anno_value) = node_annos.get_value_for_item(from_node, key.as_ref())? {
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: to_node.to_string(),
-                        anno_ns: key.ns.to_string(),
-                        anno_name: key.name.to_string(),
-                        anno_value: anno_value.to_string(),
-                    })?;
+        if let Some(component_storage) = graph.get_graphstorage(&self.component) {
+            for key in node_annos.get_all_keys_for_item(from_node, None, None)? {
+                // only transfer `annis::` annotations for terminal nodes of the component and never transfer the node name key
+                if key.ns.as_str() != ANNIS_NS
+                    || !component_storage.has_outgoing_edges(*from_node)? && key != *NODE_NAME_KEY
+                {
+                    if let Some(anno_value) =
+                        node_annos.get_value_for_item(from_node, key.as_ref())?
+                    {
+                        update.add_event(UpdateEvent::AddNodeLabel {
+                            node_name: to_node.to_string(),
+                            anno_ns: key.ns.to_string(),
+                            anno_name: key.name.to_string(),
+                            anno_value: anno_value.to_string(),
+                        })?;
+                    }
                 }
             }
+            Ok(())
+        } else {
+            Err(anyhow!("Could not obtain storage of component {:?}, which is required to determine node status.", &self.component).into())
         }
-        Ok(())
     }
 
     fn reconnect_components(
@@ -343,10 +348,7 @@ impl Collapse {
         skip_edges: &mut BTreeSet<EdgeUId>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         for component in graph.get_all_components(None, None) {
-            if component.get_type() == self.ctype
-                && component.layer == self.layer
-                && component.name == self.name
-            {
+            if component == self.component {
                 // ignore component that is to be deleted
                 continue;
             }
@@ -452,7 +454,7 @@ mod tests {
     use std::{fs, path::Path, sync::mpsc};
 
     use graphannis::{
-        model::AnnotationComponentType,
+        model::{AnnotationComponent, AnnotationComponentType},
         update::{GraphUpdate, UpdateEvent},
         AnnotationGraph,
     };
@@ -514,9 +516,11 @@ mod tests {
         assert!(g_.is_ok());
         let mut g = g_.unwrap();
         let collapse = Collapse {
-            ctype: AnnotationComponentType::Pointing,
-            layer: "".to_string(),
-            name: "align".to_string(),
+            component: AnnotationComponent::new(
+                AnnotationComponentType::Pointing,
+                "".into(),
+                "align".into(),
+            ),
             disjoint,
         };
         let step_id = StepID {

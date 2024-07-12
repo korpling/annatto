@@ -51,18 +51,18 @@ spans and merged cells can be used for spans that cover more than one token.
 
 *Configuration*
 
-| name              | description                                                             |
-|-------------------|-------------------------------------------------------------------------|
-| include_namespace | If `true`, include the annotation namespace in the column header.       |
-| annotation_order  | Specify the order of the exported columns as array of annotation names. |
-|                   |                                                                         |
-|                   | Example:                                                                |
-|                   |                                                                         |
-|                   | ```toml                                                                 |
-|                   | [export.config]                                                         |
-|                   | annotation_order = ["tok", "lemma", "pos"]                              |
-|                   | ```                                                                     |
-|                   |                                                                         |
-|                   | Has no effect if the vector is empty.                                   |
+| name              | description                                                            |
+|-------------------|------------------------------------------------------------------------|
+| include_namespace | If `true`, include the annotation namespace in the column header.      |
+| annotation_order  | Specify the order of the exported columns as array of annotation keys. |
+|                   |                                                                        |
+|                   | Example:                                                               |
+|                   |                                                                        |
+|                   | ```toml                                                                |
+|                   | [export.config]                                                        |
+|                   | annotation_order = ["tok", "lemma", "pos"]                             |
+|                   | ```                                                                    |
+|                   |                                                                        |
+|                   | Has no effect if the vector is empty.                                  |
 
 

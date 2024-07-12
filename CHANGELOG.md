@@ -5,10 +5,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- internal changes in deserialization of annotation components and annotation keys (keys can be provided as string or in map notation), which changes the api and the way some workflow configurations are organised. Use `annatto info [module]` for more details. It does not affect behaviour once older workflows are adapted to the new interface.
+
+## [0.13.1] - 2024-07-11
+
+### Fixed
+
+- `textgrid` export did not generate intermediate empty intervals when xmax of an interval did not match xmin of the subsequent interval, which leads to hardly editable intervals in praat. This has been fixed.
+
+## [0.13.0] - 2024-07-11
+
 ### Added
 
 - `visualize` graph operation that allows to output the current graph (somehwere
   in the conversion process) to SVG or DOT for debugging.
+  
+### Fixed
+
+- removed debug output
+
+### Changed
+
+- `collapse` uses deserializable component, thus attributes `ctype`, `layer`, and `name` are now under key `component`
+- `collapse` only keeps annotations with namespace `annis` for nodes that were terminals in the collapsed components when transferring to the merged nodes to keep node status intact (e. g. token vs. not a token in terms of `annis::tok`).
 
 ## [0.12.0] - 2024-07-08
 

@@ -27,7 +27,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Importer;
 use crate::{
-    error::AnnattoError, progress::ProgressReporter,
+    deserialize::deserialize_anno_key, error::AnnattoError, progress::ProgressReporter,
     util::graphupdate::import_corpus_graph_from_files, workflow::StatusSender, StepID,
 };
 
@@ -45,7 +45,10 @@ pub struct ImportCoNLLU {
     ///
     /// The field defaults to `{ ns = "conll", name = "comment" }`.
     ///
-    #[serde(default = "default_comment_key")]
+    #[serde(
+        default = "default_comment_key",
+        deserialize_with = "deserialize_anno_key"
+    )]
     comment_anno: AnnoKey,
 }
 

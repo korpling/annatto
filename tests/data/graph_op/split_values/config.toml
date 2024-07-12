@@ -1,13 +1,39 @@
 delimiter = "."
 anno = "default_ns::pos"
-index_map = { "default_ns::pos" = 1 }
 delete = true
-[layer_map]
-Gender = ["Fem", "Neut", "Mask"]
-Case = ["Nom", "Gen", "Dat", "Akk"]
-Degree = ["Pos", "Komp", "Sup"]
-Tense = ["Präs", "Prät"]
-Mood = ["Ind", "Konj"]
-Number = ["Sg", "Pl"]
-VerbClass = ["Sw", "St", "Unr"]
-Person = ["1", "2", "3"]
+
+[[layers]]
+key = "Gender"
+values = ["Fem", "Neut", "Mask"]
+
+[[layers]]
+key = "Case"
+values = ["Nom", "Gen", "Dat", "Akk"]
+
+[[layers]]
+key = "Degree"
+values = ["Pos", "Komp", "Sup"]
+
+[[layers]]
+key = "Tense"
+values = ["Präs", "Prät"]
+
+[[layers]]
+key = "Mood"
+values = ["Ind", "Konj"]
+
+[[layers]]
+key = "Number"
+values = ["Sg", "Pl"]
+
+[[layers]]
+key = "VerbClass"
+values = ["Sw", "St", "Unr"]
+
+[[layers]]
+key = "Person"
+values = ["1", "2", "3"]
+
+[[layers]]
+key = "default_ns::pos" 
+index = 1

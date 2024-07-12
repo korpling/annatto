@@ -19,7 +19,7 @@ use documented::{Documented, DocumentedFields};
 use error::Result;
 use exporter::{
     exmaralda::ExportExmaralda, graphml::GraphMLExporter, sequence::ExportSequence,
-    textgrid::ExportTextGrid, xlsx::XlsxExporter, Exporter,
+    textgrid::ExportTextGrid, xlsx::ExportXlsx, Exporter,
 };
 use importer::{
     conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
@@ -52,7 +52,7 @@ pub enum WriteAs {
     EXMARaLDA(#[serde(default)] ExportExmaralda),
     Sequence(#[serde(default)] ExportSequence),
     TextGrid(ExportTextGrid), // do not use default, as all attributes have their individual defaults
-    Xlsx(#[serde(default)] XlsxExporter),
+    Xlsx(#[serde(default)] ExportXlsx),
 }
 
 impl Default for WriteAs {
@@ -81,7 +81,7 @@ impl WriteAsDiscriminants {
             WriteAsDiscriminants::EXMARaLDA => ExportExmaralda::DOCS,
             WriteAsDiscriminants::Sequence => ExportSequence::DOCS,
             WriteAsDiscriminants::TextGrid => ExportTextGrid::DOCS,
-            WriteAsDiscriminants::Xlsx => XlsxExporter::DOCS,
+            WriteAsDiscriminants::Xlsx => ExportXlsx::DOCS,
         }
     }
 
@@ -105,7 +105,7 @@ impl WriteAsDiscriminants {
                 ExportTextGrid::FIELD_DOCS,
             ),
             WriteAsDiscriminants::Xlsx => {
-                (XlsxExporter::FIELD_NAMES_AS_SLICE, XlsxExporter::FIELD_DOCS)
+                (ExportXlsx::FIELD_NAMES_AS_SLICE, ExportXlsx::FIELD_DOCS)
             }
         };
         for (idx, n) in field_names.iter().enumerate() {
