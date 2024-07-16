@@ -300,7 +300,7 @@ impl ExportTextGrid {
             tuples.sort();
             let is_point_tier = self.point_tiers.contains(&key);
             let mut entries = Vec::with_capacity(tuples.len());
-            let mut prev_end = None;
+            let mut prev_end = Some(xmin);
             for (start, end, value) in tuples {
                 let entry: TierEntry = if is_point_tier {
                     (start, value).into()
@@ -320,6 +320,11 @@ impl ExportTextGrid {
             } else {
                 join_qname(&key.ns, &key.name)
             };
+            if let Some(end_v) = prev_end {
+                if end_v < xmax && !is_point_tier {
+                    entries.push((end_v, xmax, "".to_string()).into())
+                }
+            }
             textgrid_tiers.push(Tier {
                 name: tier_name,
                 entries,
