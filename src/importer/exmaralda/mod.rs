@@ -116,6 +116,9 @@ impl ImportEXMARaLDA {
                     match name.to_string().as_str() {
                         "referenced-file" => {
                             if let Some(file_url) = attr_vec_to_map(&attributes).get("url") {
+                                if file_url.trim().is_empty() {
+                                    continue;
+                                }
                                 if let Some(parent_path) = document_path.parent() {
                                     let audio_path = parent_path.join(file_url);
                                     // only link files, no directories or symlinks
