@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `revise` now offers to delete nodes that match a query using list entry `[[remove_match]]` with keys `query` and `remove`.
+
 ### Changed
 
 - internal changes in deserialization of annotation components and annotation keys (keys can be provided as string or in map notation), which changes the api and the way some workflow configurations are organised. Use `annatto info [module]` for more details. It does not affect behaviour once older workflows are adapted to the new interface.
