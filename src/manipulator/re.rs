@@ -3,8 +3,9 @@ use std::{
     path::Path,
 };
 
-use anyhow::anyhow;
+use anyhow::{anyhow, bail};
 use graphannis::{
+    aql,
     graph::{AnnoKey, Edge, Match},
     model::{AnnotationComponent, AnnotationComponentType},
     update::{GraphUpdate, UpdateEvent},
@@ -41,6 +42,9 @@ pub struct Revise {
     node_names: BTreeMap<String, String>,
     /// a list of names of nodes to be removed
     remove_nodes: Vec<String>,
+    /// Remove nodes that match a query result.
+    #[serde(default)]
+    remove_match: Vec<RemoveMatch>,
     /// also move annotations to other host nodes determined by namespace
     move_node_annos: bool,
     /// rename node annotation
@@ -64,6 +68,15 @@ pub struct Revise {
     components: Vec<ComponentMapping>,
     /// The given node names and all ingoing paths (incl. nodes) in PartOf/annis/ will be removed
     remove_subgraph: Vec<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RemoveMatch {
+    /// The query to obtain the results.
+    query: String,
+    /// The node indices (starting at 1) from the query of nodes to be removed.
+    remove: Vec<usize>,
 }
 
 #[derive(Deserialize, Debug, PartialEq)]
@@ -109,6 +122,37 @@ fn remove_subgraph(
                     update.add_event(UpdateEvent::DeleteNode {
                         node_name: node_name.to_string(),
                     })?;
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn remove_by_query(
+    graph: &AnnotationGraph,
+    config: &Vec<RemoveMatch>,
+    update: &mut GraphUpdate,
+) -> Result<(), anyhow::Error> {
+    for match_definition in config {
+        let disj = aql::parse(&match_definition.query, false)?;
+        for m in aql::execute_query_on_graph(graph, &disj, true, None)? {
+            let matching_nodes = m?;
+            for index in &match_definition.remove {
+                if (*index - 1) < matching_nodes.len() {
+                    let node_id = matching_nodes[*index - 1].node;
+                    if let Some(node_name) = graph
+                        .get_node_annos()
+                        .get_value_for_item(&node_id, &NODE_NAME_KEY)?
+                    {
+                        update.add_event(UpdateEvent::DeleteNode {
+                            node_name: node_name.to_string(),
+                        })?;
+                    } else {
+                        bail!("Could not obtain node name of node {node_id}, thus it could not be deleted.");
+                    }
+                } else {
+                    bail!("Could not obtain matching node from result, index {index} out of bounds for query {}", match_definition.query.as_str());
                 }
             }
         }
@@ -669,7 +713,7 @@ impl Manipulator for Revise {
         step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let progress_reporter = ProgressReporter::new(tx, step_id.clone(), 7)?;
+        let progress_reporter = ProgressReporter::new(tx, step_id.clone(), 8)?;
         let mut update = GraphUpdate::default();
         for (old_name, new_name) in &self.node_names {
             rename_nodes(graph, &mut update, old_name, new_name, &step_id)?;
@@ -678,6 +722,10 @@ impl Manipulator for Revise {
         let move_by_ns = self.move_node_annos;
         if !self.remove_nodes.is_empty() {
             remove_nodes(&mut update, &self.remove_nodes)?;
+        }
+        progress_reporter.worked(1)?;
+        if !self.remove_match.is_empty() {
+            remove_by_query(graph, &self.remove_match, &mut update)?;
         }
         progress_reporter.worked(1)?;
         if !self.node_annos.is_empty() {
@@ -726,6 +774,8 @@ mod tests {
     use std::path::Path;
 
     use crate::exporter::graphml::GraphMLExporter;
+    use crate::importer::exmaralda::ImportEXMARaLDA;
+    use crate::importer::Importer;
     use crate::manipulator::re::{ComponentMapping, KeyMapping, Revise};
     use crate::manipulator::Manipulator;
     use crate::progress::ProgressReporter;
@@ -743,7 +793,7 @@ mod tests {
     use itertools::Itertools;
     use tempfile::{tempdir, tempfile};
 
-    use super::revise_components;
+    use super::{revise_components, RemoveMatch};
 
     #[test]
     fn test_remove_in_mem() {
@@ -790,6 +840,7 @@ mod tests {
             namespaces: BTreeMap::default(),
             components: vec![],
             remove_subgraph: vec![],
+            remove_match: vec![],
         };
         let step_id = StepID {
             module_name: "replace".to_string(),
@@ -931,6 +982,7 @@ to = "dipl::derived_pos"
             remove_nodes: vec![],
             components: vec![],
             remove_subgraph: vec![],
+            remove_match: vec![],
         };
         let step_id = StepID {
             module_name: "replace".to_string(),
@@ -1077,6 +1129,7 @@ from = "deprel"
             remove_nodes: vec![],
             components: vec![],
             remove_subgraph: vec![],
+            remove_match: vec![],
         };
         let step_id = StepID {
             module_name: "replace".to_string(),
@@ -1139,6 +1192,7 @@ from = "deprel"
             remove_nodes: vec![],
             components: vec![],
             remove_subgraph: vec![],
+            remove_match: vec![],
         };
         let step_id = StepID {
             module_name: "replace".to_string(),
@@ -1186,6 +1240,7 @@ from = "deprel"
             namespaces: ns_map,
             components: vec![],
             remove_subgraph: vec![],
+            remove_match: vec![],
         };
         let step_id = StepID {
             module_name: "replace".to_string(),
@@ -2032,6 +2087,7 @@ from = "deprel"
             namespaces: BTreeMap::default(),
             components: component_mod_config,
             remove_subgraph: vec![],
+            remove_match: vec![],
         };
         let step_id = StepID {
             module_name: "replace".to_string(),
@@ -2383,5 +2439,38 @@ components = [
         assert_eq!(to_c.name.as_str(), "constituents");
         assert_eq!(rev.components[0].from.layer.as_str(), "syntax");
         assert_eq!(rev.components[0].from.name.as_str(), "dependencies");
+    }
+
+    #[test]
+    fn remove_by_query() {
+        let toml_str = r#"
+query = "norm _o_ dipl"
+remove = [1, 2]
+        "#;
+        let rmm: std::result::Result<RemoveMatch, _> = toml::from_str(toml_str);
+        assert!(rmm.is_ok());
+        let remove_match = rmm.unwrap();
+        let import = ImportEXMARaLDA::default();
+        let u = import.import_corpus(
+            Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
+            StepID {
+                module_name: "_test_helper_import".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(u.is_ok());
+        let mut import_update = u.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut import_update, |_| {}).is_ok());
+        let mut update = GraphUpdate::default();
+        let gen_update = super::remove_by_query(&graph, &vec![remove_match], &mut update);
+        assert!(gen_update.is_ok(), "{:?}", gen_update.err());
+        assert!(graph.apply_update(&mut update, |_| {}).is_ok());
+        let export = export_to_string(&graph, GraphMLExporter::default());
+        assert!(export.is_ok());
+        assert_snapshot!(export.unwrap());
     }
 }
