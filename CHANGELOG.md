@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2024-07-24
+
 ### Added
 
 - `revise` now offers to delete nodes that match a query using list entry `[[remove_match]]` with keys `query` and `remove`.

@@ -12,11 +12,7 @@ to segment the text into chunks.
 
 *No description*
 
-###  anno_namespace
-
-*No description*
-
-###  anno_name
+###  anno_key
 
 *No description*
 

@@ -29,17 +29,9 @@ The 1-based index selecting the value providing node in the AQL target query.
 
 Contains one or multiple 1-based indexes, from which (in order of mentioning) the value for mapping source and target will be concatenated.
 
-###  link_type
+###  component
 
-The edge component type of the links to be built.
-
-###  link_layer
-
-The layer of the edge component containing the links to be built.
-
-###  link_name
-
-The name of the edge component containing the links to be built.
+The edge component to be built.
 
 ###  value_sep
 

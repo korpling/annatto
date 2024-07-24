@@ -23,20 +23,16 @@ The optional annotation key, that groups the sequence elements.
 the group component type can be optionally provided to define which edges to follow
 to find the nodes holding the groupby anno key. The default value is `Coverage`.
 
-###  component_type
+###  component
 
-The type of the edge component that contains the sequences that you wish to export.
-The default value is `ordering`.
-
-###  component_layer
-
-The layer of the edge component that contains the sequences that you wish to export.
-The default value is `annis`.
-
-###  component_name
-
-The name of the edge component that contains the sequences that you wish to export.
-The default value is the empty string.
+This configures the edge component that contains the sequences that you wish to export.
+The default value ctype is `Ordering`, the default layer is `annis`, and the default
+name is empty.
+Example:
+```toml
+[export.config]
+component = { ctype = "Pointing", layer = "", "coreference" }
+```
 
 ###  anno
 

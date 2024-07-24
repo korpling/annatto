@@ -14,6 +14,30 @@ deleted.
 
 a list of names of nodes to be removed
 
+###  remove_match
+
+Remove nodes that match a query result. The `query` defines the aql search query and
+`remove` is a list of indices (starting at 1) that defines which nodes from the query are actually
+the ones to be removed. Please remember that two query terms can actually be one underlying node,
+depending on the graph you apply it to.
+Example:
+```toml
+[[graph_op]]
+action = "revise"
+
+[[graph_op.config.remove_match]]
+query = "cat > node"  # remove all structural nodes with a cat annotation that dominate other nodes
+remove = [1]
+
+[[graph_op.config.remove_match]]
+query = "annis:doc"  # remove all document nodes (this divides the part-of component into two connected graphs)
+remove = [1]
+
+[[graph_op.config.remove_match]]
+query = "pos=/PROPN/ _=_ norm"  # remove all proper nouns and their norm entry as well
+remove = [1, 2]
+```
+
 ###  move_node_annos
 
 also move annotations to other host nodes determined by namespace
