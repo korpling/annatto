@@ -21,7 +21,22 @@ use super::Manipulator;
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct MapAnnos {
-    /// The path of the TOML file containing the mapping rules.
+    /// The path of the TOML file containing an array of mapping rules.
+    ///
+    /// Each rule can contain a `query` field which describes the nodes the
+    /// annotation are added to. The `target` field defines which node of the
+    /// query the annotation should be added to. The annotation itself is
+    /// defined by the `ns` (namespace), `name` and `value` fields. The `value`
+    /// is currently a fixed value.
+    ///
+    /// ```toml
+    /// [[rules]]
+    /// query = "clean _o_ pos_lang=/(APPR)?ART/ _=_ lemma!=/[Dd](ie|as|er|ies)?/"
+    /// target = 1
+    /// ns = ""
+    /// name = "indef"
+    /// value = ""
+    /// ```
     rule_file: PathBuf,
 }
 
@@ -177,7 +192,7 @@ mod tests {
             query = "tok=/New York/"
             target = 1
             ns = ""
-            name = "pos"
+            name = "pos"query
             value = "PROPN"
         "#;
         let mapping: Mapping = toml::from_str(config)?;
