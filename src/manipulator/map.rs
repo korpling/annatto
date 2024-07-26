@@ -238,7 +238,7 @@ impl Rule {
                     .get_value_for_item(&m.node, &anno_key)?
                     .unwrap_or_default();
                 // replace all occurences of the value
-                let search = Regex::new(&search)?;
+                let search = Regex::new(search)?;
 
                 Ok(search.replace_all(&orig_val, replace).to_string())
             }
@@ -297,7 +297,7 @@ impl<'a> MapperImpl<'a> {
                 node_name: match_node_name.to_string(),
                 anno_ns: rule.ns.to_string(),
                 anno_name: rule.name.to_string(),
-                anno_value: rule.resolve_value(&self.graph, &match_group)?,
+                anno_value: rule.resolve_value(self.graph, match_group)?,
             })?;
         }
         Ok(())
@@ -340,7 +340,7 @@ impl<'a> MapperImpl<'a> {
                 node_name: new_node_name.clone(),
                 anno_ns: rule.ns.to_string(),
                 anno_name: rule.name.to_string(),
-                anno_value: rule.resolve_value(&self.graph, &match_group)?,
+                anno_value: rule.resolve_value(self.graph, match_group)?,
             })?;
 
             // Add the new node to the common parent
