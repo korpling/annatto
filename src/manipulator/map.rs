@@ -8,11 +8,14 @@ use crate::{progress::ProgressReporter, util::token_helper::TokenHelper, StepID}
 use anyhow::Context;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
-    graph::Match,
+    graph::{EdgeContainer, Match},
+    model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
     AnnotationGraph,
 };
-use graphannis_core::graph::NODE_NAME_KEY;
+use graphannis_core::graph::{
+    storage::union::UnionEdgeContainer, ANNIS_NS, DEFAULT_NS, NODE_NAME_KEY,
+};
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
@@ -64,10 +67,21 @@ impl Manipulator for MapAnnos {
         let progress = ProgressReporter::new(tx.clone(), step_id.clone(), config.rules.len())?;
         let mut updates = {
             let tok_helper = TokenHelper::new(graph)?;
+            let all_part_of_gs: Vec<_> = graph
+                .get_all_components(Some(AnnotationComponentType::PartOf), None)
+                .into_iter()
+                .filter_map(|c| graph.get_graphstorage(&c))
+                .collect();
+            let all_part_of_edge_container: Vec<_> = all_part_of_gs
+                .iter()
+                .map(|gs| gs.as_edgecontainer())
+                .collect();
+            let part_of_gs = UnionEdgeContainer::new(all_part_of_edge_container);
             let mut map_impl = MapperImpl {
                 config,
-                _added_spans: 0,
-                graph: &graph,
+                added_spans: 0,
+                graph,
+                part_of_gs,
                 tok_helper,
                 progress,
             };
@@ -90,14 +104,14 @@ struct Mapping {
     rules: Vec<Rule>,
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(untagged)]
 enum TargetRef {
     Node(usize),
     Span(Vec<usize>),
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 struct Rule {
     query: String,
     target: TargetRef,
@@ -108,8 +122,9 @@ struct Rule {
 
 struct MapperImpl<'a> {
     config: Mapping,
-    _added_spans: usize,
+    added_spans: usize,
     graph: &'a AnnotationGraph,
+    part_of_gs: UnionEdgeContainer<'a>,
     tok_helper: TokenHelper<'a>,
     progress: ProgressReporter,
 }
@@ -117,10 +132,10 @@ struct MapperImpl<'a> {
 impl<'a> MapperImpl<'a> {
     fn run(&mut self) -> anyhow::Result<GraphUpdate> {
         let mut update = GraphUpdate::default();
-        for rule in &self.config.rules {
+        for rule in self.config.rules.clone() {
             let query = graphannis::aql::parse(&rule.query, false)?;
             let result_it =
-                graphannis::aql::execute_query_on_graph(&self.graph, &query, true, None)?;
+                graphannis::aql::execute_query_on_graph(self.graph, &query, true, None)?;
             for match_group in result_it {
                 let match_group = match_group?;
 
@@ -129,7 +144,7 @@ impl<'a> MapperImpl<'a> {
                         self.map_single_node(&rule, target, &match_group, &mut update)?;
                     }
                     TargetRef::Span(ref all_targets) => {
-                        self.map_span(&rule, &all_targets, &match_group, &mut update)?;
+                        self.map_span(&rule, all_targets, &match_group, &mut update)?;
                     }
                 }
             }
@@ -163,13 +178,13 @@ impl<'a> MapperImpl<'a> {
     }
 
     fn map_span(
-        &self,
-        _rule: &Rule,
+        &mut self,
+        rule: &Rule,
         targets: &[usize],
         match_group: &[Match],
-        _update: &mut GraphUpdate,
+        update: &mut GraphUpdate,
     ) -> anyhow::Result<()> {
-        if let Some(first_match) = targets.get(0).copied().and_then(|t| match_group.get(t)) {
+        if let Some(first_match) = targets.first().copied().and_then(|t| match_group.get(t)) {
             // Calculate all token that should be covered by the newly create span
             let mut covered_token = BTreeSet::new();
             for t in targets {
@@ -183,9 +198,52 @@ impl<'a> MapperImpl<'a> {
                 .get_node_annos()
                 .get_value_for_item(&first_match.node, &NODE_NAME_KEY)?
                 .context("Missing node name")?;
-            let _new_node_name = format!("{first_node_name}_map_");
+            let new_node_name = format!("{first_node_name}_map_{}", self.added_spans);
+            self.added_spans += 1;
 
-            todo!()
+            // Add the node and the annotation value according to the rule
+            update.add_event(UpdateEvent::AddNode {
+                node_name: new_node_name.clone(),
+                node_type: "node".to_string(),
+            })?;
+            update.add_event(UpdateEvent::AddNodeLabel {
+                node_name: new_node_name.clone(),
+                anno_ns: rule.ns.to_string(),
+                anno_name: rule.name.to_string(),
+                anno_value: rule.value.to_string(),
+            })?;
+
+            // Add the new node to the common parent
+            if let Some(parent_node) = self.part_of_gs.get_outgoing_edges(first_match.node).next() {
+                let parent_node = parent_node?;
+                let parent_node_name = self
+                    .graph
+                    .get_node_annos()
+                    .get_value_for_item(&parent_node, &NODE_NAME_KEY)?
+                    .context("Missing node name for parent node")?;
+                update.add_event(UpdateEvent::AddEdge {
+                    source_node: new_node_name.clone(),
+                    target_node: parent_node_name.to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::PartOf.to_string(),
+                    component_name: "".to_string(),
+                })?;
+            }
+            // Add the coverage edges to the covered tokens
+            for t in covered_token {
+                let token_node_name = self
+                    .graph
+                    .get_node_annos()
+                    .get_value_for_item(&t, &NODE_NAME_KEY)?
+                    .context("Missing node name for covered token")?;
+                update.add_event(UpdateEvent::AddEdge {
+                    source_node: new_node_name.clone(),
+                    target_node: token_node_name.to_string(),
+                    layer: DEFAULT_NS.to_string(),
+                    component_type: AnnotationComponentType::Coverage.to_string(),
+                    component_name: "".to_string(),
+                })?;
+            }
         }
 
         Ok(())
