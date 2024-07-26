@@ -225,10 +225,8 @@ value = "PROPN"
             matches_e.sort();
             matches_g.sort();
             assert_eq!(
-                matches_e.len(),
-                matches_g.len(),
-                "Failed with query: {}",
-                query_s
+                matches_e, matches_g,
+                "Matches for query '{query_s}' are not equal. {matches_e:?} != {matches_g:?}"
             );
         }
         Ok(())
