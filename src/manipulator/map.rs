@@ -35,8 +35,7 @@ pub struct MapAnnos {
     /// Each rule can contain a `query` field which describes the nodes the
     /// annotation are added to. The `target` field defines which node of the
     /// query the annotation should be added to. The annotation itself is
-    /// defined by the `ns` (namespace), `name` and `value` fields. The `value`
-    /// is currently a fixed value.
+    /// defined by the `ns` (namespace), `name` and `value` fields.
     ///
     /// ```toml
     /// [[rules]]
@@ -57,6 +56,42 @@ pub struct MapAnnos {
     /// name = "form"
     /// value = "comparison"
     /// ```
+    ///
+    /// Instead of a fixed value, you can also use an existing annotation value
+    /// from the matched nodes copy the value.
+    /// ```toml
+    /// [[rules]]    
+    /// query = "tok=\"complicated\""
+    /// target = 1
+    /// ns = ""
+    /// name = "newtok"
+    /// value = {copy = 1}
+    /// ```
+    /// It is also possible to replace all occurences in the original value that
+    /// match a `search` regular expression with a `replacement` value.
+    /// ```toml
+    /// [[rules]]    
+    /// query = "tok=\"complicated\""
+    /// target = 1
+    /// ns = ""
+    /// name = "newtok"
+    /// value = {target = 1, search = "cat", replacement = "dog"}
+    /// ```
+    /// This would add a new annotation value "complidoged" to any token with the value "complicated".
+    ///
+    /// The `replacement` value can contain back references to the regular
+    /// expression (e.g. "$0" for the whole match or "$1" for the first match
+    /// group).
+    /// ```toml
+    /// [[rules]]    
+    /// query = "tok=\"New York\""
+    /// target = 1
+    /// ns = ""
+    /// name = "abbr"
+    /// value = {target = 1, search = "([A-Z])[a-z]+ ([A-Z])[a-z]+", replacement = "$1$2"}
+    /// ```
+    ///
+    /// This would add an annotation with the value "NY".
     rule_file: PathBuf,
 }
 
@@ -131,7 +166,11 @@ enum TargetRef {
 #[serde(untagged)]
 enum Value {
     Fixed(String),
-    Update {
+    Copy {
+        /// The target node of the query the annotation is fetched from.
+        copy: usize,
+    },
+    Replace {
         /// The target node of the query the annotation is fetched from.
         target: usize,
         /// A regular expression that is used to find parts of the string to be
@@ -139,7 +178,7 @@ enum Value {
         search: String,
         /// A string that replaces matched substring of the original annotation
         /// value. Can contain back references.
-        replace: String,
+        replacement: String,
     },
 }
 
@@ -156,10 +195,30 @@ impl Rule {
     fn resolve_value(&self, graph: &AnnotationGraph, mg: &[Match]) -> anyhow::Result<String> {
         match &self.value {
             Value::Fixed(val) => Ok(val.clone()),
-            Value::Update {
+            Value::Copy { copy } => {
+                // Get the target value from the matched node
+                let m = mg.get(copy - 1).with_context(|| {
+                    format!(
+                        "target {copy} does not exist in result for query '{}'",
+                        self.query
+                    )
+                })?;
+                let anno_key = if m.anno_key.as_ref() == NODE_NAME_KEY.as_ref() {
+                    TOKEN_KEY.clone()
+                } else {
+                    m.anno_key.clone()
+                };
+                // Extract the annotation value for this match
+                let orig_val = graph
+                    .get_node_annos()
+                    .get_value_for_item(&m.node, &anno_key)?
+                    .unwrap_or_default();
+                Ok(orig_val.to_string())
+            }
+            Value::Replace {
                 target,
                 search,
-                replace,
+                replacement: replace,
             } => {
                 // Get the target value from the matched node
                 let m = mg.get(target - 1).with_context(|| {
@@ -178,16 +237,10 @@ impl Rule {
                     .get_node_annos()
                     .get_value_for_item(&m.node, &anno_key)?
                     .unwrap_or_default();
+                // replace all occurences of the value
+                let search = Regex::new(&search)?;
 
-                let result = if search.is_empty() {
-                    orig_val
-                } else {
-                    // replace all occurences of the value
-                    let search = Regex::new(&search)?;
-                    search.replace_all(&orig_val, replace)
-                };
-
-                Ok(result.to_string())
+                Ok(search.replace_all(&orig_val, replace).to_string())
             }
         }
     }
@@ -372,17 +425,16 @@ mod tests {
         let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
         g.apply_update(&mut updates, |_msg| {}).unwrap();
 
-        let fixed_value = Rule {
-            query: "tok".to_string(),
-            target: super::TargetRef::Node(1),
-            ns: "test_ns".to_string(),
-            name: "test".to_string(),
-            value: Value::Update {
-                target: 1,
-                search: "".to_string(),
-                replace: "".to_string(),
-            },
-        };
+        let config = r#"
+        [[rules]]                                                                                      
+        query = "tok"
+        target = 1
+        ns = "test_ns" 
+        name = "test"
+        value = {copy = 1}
+        "#;
+
+        let m: Mapping = toml::from_str(config).unwrap();
 
         let tok_match = g
             .get_node_annos()
@@ -391,12 +443,12 @@ mod tests {
             .unwrap()
             .unwrap();
 
-        let resolved = fixed_value.resolve_value(&g, &vec![tok_match]).unwrap();
+        let resolved = m.rules[0].resolve_value(&g, &vec![tok_match]).unwrap();
         assert_eq!("complicated", resolved);
     }
 
     #[test]
-    fn test_resolve_value_replace() {
+    fn test_resolve_value_replace_simple() {
         let mut updates = GraphUpdate::new();
         example_generator::create_corpus_structure_simple(&mut updates);
         example_generator::create_tokens(&mut updates, Some("root/doc1"));
@@ -408,10 +460,41 @@ mod tests {
             target: super::TargetRef::Node(1),
             ns: "test_ns".to_string(),
             name: "test".to_string(),
-            value: Value::Update {
+            value: Value::Replace {
+                target: 1,
+                search: "cat".to_string(),
+                replacement: "dog".to_string(),
+            },
+        };
+
+        let tok_match = g
+            .get_node_annos()
+            .exact_anno_search(Some("annis"), "tok", ValueSearch::Some("complicated"))
+            .next()
+            .unwrap()
+            .unwrap();
+
+        let resolved = fixed_value.resolve_value(&g, &vec![tok_match]).unwrap();
+        assert_eq!("complidoged", resolved);
+    }
+
+    #[test]
+    fn test_resolve_value_replace_with_backreference() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
+        let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let fixed_value = Rule {
+            query: "tok".to_string(),
+            target: super::TargetRef::Node(1),
+            ns: "test_ns".to_string(),
+            name: "test".to_string(),
+            value: Value::Replace {
                 target: 1,
                 search: "cat.*".to_string(),
-                replace: "$0$0".to_string(),
+                replacement: "$0$0".to_string(),
             },
         };
 
@@ -424,6 +507,32 @@ mod tests {
 
         let resolved = fixed_value.resolve_value(&g, &vec![tok_match]).unwrap();
         assert_eq!("complicatedcated", resolved);
+    }
+
+    #[test]
+    fn test_parse_complicated_replace() {
+        let config = r#"
+[[rules]]                                                                                      
+query = "tok=\"New York\""
+target = 1
+ns = "" 
+name = "abbr"
+value = {target = 1, search = "([A-Z])[a-z]+ ([A-Z])[a-z]+", replacement = "$1$2"}
+"#;
+
+        let m: Mapping = toml::from_str(config).unwrap();
+
+        let g = source_graph(false).unwrap();
+
+        let newyork_match = g
+            .get_node_annos()
+            .exact_anno_search(Some("annis"), "tok", ValueSearch::Some("New York"))
+            .next()
+            .unwrap()
+            .unwrap();
+
+        let result = m.rules[0].resolve_value(&g, &[newyork_match]).unwrap();
+        assert_eq!("NY", result);
     }
 
     #[test]

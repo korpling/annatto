@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `map` manipulator can now add annotated spans.
+- `map` manipulator can now add annotated spans and copy values from existing
+  annotations. The copied values can be manipulated used regular expressions and
+  replacement values.
 
 ## [0.14.0] - 2024-07-24
 
