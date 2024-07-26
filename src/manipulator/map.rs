@@ -21,7 +21,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Manipulator;
 
-/// Creates new annotations based on existing annotation values.
+/// Creates new or updates annotations based on existing annotation values.
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct MapAnnos {
@@ -123,12 +123,37 @@ enum TargetRef {
 }
 
 #[derive(Clone, Deserialize)]
+#[serde(untagged)]
+enum Value {
+    Fixed(String),
+    Update {
+        /// The target node of the query the annotation is fetched from.
+        _target: usize,
+        /// A regular expression that is used to find parts of the string to be
+        /// replaced
+        _search: String,
+        /// A string that replaces matched substring of the original annotation
+        /// value. Can contain back references.
+        _replace: String,
+    },
+}
+
+#[derive(Clone, Deserialize)]
 struct Rule {
     query: String,
     target: TargetRef,
     ns: String,
     name: String,
-    value: String,
+    value: Value,
+}
+
+impl Rule {
+    fn resolve_value(&self, _graph: &AnnotationGraph) -> anyhow::Result<String> {
+        match &self.value {
+            Value::Fixed(val) => Ok(val.clone()),
+            Value::Update { .. } => todo!(),
+        }
+    }
 }
 
 struct MapperImpl<'a> {
@@ -182,7 +207,7 @@ impl<'a> MapperImpl<'a> {
                 node_name: match_node_name.to_string(),
                 anno_ns: rule.ns.to_string(),
                 anno_name: rule.name.to_string(),
-                anno_value: rule.value.to_string(),
+                anno_value: rule.resolve_value(&self.graph)?,
             })?;
         }
         Ok(())
@@ -225,7 +250,7 @@ impl<'a> MapperImpl<'a> {
                 node_name: new_node_name.clone(),
                 anno_ns: rule.ns.to_string(),
                 anno_name: rule.name.to_string(),
-                anno_value: rule.value.to_string(),
+                anno_value: rule.resolve_value(&self.graph)?,
             })?;
 
             // Add the new node to the common parent
@@ -280,7 +305,27 @@ mod tests {
 
     use crate::{manipulator::Manipulator, test_util, util::example_generator, StepID};
 
-    use super::MapAnnos;
+    use super::*;
+
+    #[test]
+    fn test_resolve_value_fixed() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
+        let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let fixed_value = Rule {
+            query: "tok".to_string(),
+            target: super::TargetRef::Node(1),
+            ns: "test_ns".to_string(),
+            name: "test".to_string(),
+            value: Value::Fixed("myvalue".to_string()),
+        };
+
+        let resolved = fixed_value.resolve_value(&g).unwrap();
+        assert_eq!("myvalue", resolved);
+    }
 
     #[test]
     fn test_map_spans() {
