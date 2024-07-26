@@ -227,7 +227,7 @@ impl Rule {
                         self.query
                     )
                 })?;
-                let anno_key = if m.anno_key.as_ref() == NODE_NAME_KEY.as_ref() {
+                let anno_key = if m.anno_key.as_ref() == NODE_TYPE_KEY.as_ref() {
                     TOKEN_KEY.clone()
                 } else {
                     m.anno_key.clone()
