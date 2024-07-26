@@ -150,19 +150,19 @@ fn read_config(path: &Path) -> Result<Mapping, Box<dyn std::error::Error>> {
     Ok(m)
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct Mapping {
     rules: Vec<Rule>,
 }
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Debug)]
 #[serde(untagged)]
 enum TargetRef {
     Node(usize),
     Span(Vec<usize>),
 }
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Debug)]
 #[serde(untagged)]
 enum Value {
     Fixed(String),
@@ -182,7 +182,7 @@ enum Value {
     },
 }
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 struct Rule {
     query: String,
     target: TargetRef,
@@ -258,13 +258,13 @@ struct MapperImpl<'a> {
 impl<'a> MapperImpl<'a> {
     fn run(&mut self) -> anyhow::Result<GraphUpdate> {
         let mut update = GraphUpdate::default();
+
         for rule in self.config.rules.clone() {
             let query = graphannis::aql::parse(&rule.query, false)?;
             let result_it =
                 graphannis::aql::execute_query_on_graph(self.graph, &query, true, None)?;
             for match_group in result_it {
                 let match_group = match_group?;
-
                 match rule.target {
                     TargetRef::Node(target) => {
                         self.map_single_node(&rule, target, &match_group, &mut update)?;
@@ -310,7 +310,11 @@ impl<'a> MapperImpl<'a> {
         match_group: &[Match],
         update: &mut GraphUpdate,
     ) -> anyhow::Result<()> {
-        if let Some(first_match) = targets.first().copied().and_then(|t| match_group.get(t)) {
+        if let Some(first_match) = targets
+            .first()
+            .copied()
+            .and_then(|t| match_group.get(t - 1))
+        {
             // Calculate all token that should be covered by the newly create span
             let mut covered_token = BTreeSet::new();
             for t in targets {
@@ -322,6 +326,7 @@ impl<'a> MapperImpl<'a> {
                     }
                 }
             }
+
             // Determine the new node name by extending the node name of the first target
             let first_node_name = self
                 .graph
