@@ -18,7 +18,7 @@ use graphannis::{
     AnnotationGraph,
 };
 use graphannis_core::graph::{
-    storage::union::UnionEdgeContainer, ANNIS_NS, DEFAULT_NS, NODE_NAME_KEY,
+    storage::union::UnionEdgeContainer, ANNIS_NS, DEFAULT_NS, NODE_NAME_KEY, NODE_TYPE_KEY,
 };
 use regex::Regex;
 use serde_derive::Deserialize;
@@ -203,7 +203,7 @@ impl Rule {
                         self.query
                     )
                 })?;
-                let anno_key = if m.anno_key.as_ref() == NODE_NAME_KEY.as_ref() {
+                let anno_key = if m.anno_key.as_ref() == NODE_TYPE_KEY.as_ref() {
                     TOKEN_KEY.clone()
                 } else {
                     m.anno_key.clone()
