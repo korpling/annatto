@@ -1,9 +1,10 @@
 use std::{
+    collections::BTreeSet,
     fs,
     path::{Path, PathBuf},
 };
 
-use crate::{progress::ProgressReporter, workflow::StatusSender, StepID};
+use crate::{progress::ProgressReporter, util::token_helper::TokenHelper, StepID};
 use anyhow::Context;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
@@ -56,74 +57,24 @@ impl Manipulator for MapAnnos {
                 p
             }
         };
-        let mapping = read_config(read_from_path.as_path())?;
-        self.run(graph, mapping, &tx, &step_id)?;
-        Ok(())
-    }
-}
+        let config = read_config(read_from_path.as_path())?;
 
-fn map_single_node(
-    rule: &Rule,
-    graph: &AnnotationGraph,
-    target: usize,
-    match_group: &[Match],
-    update: &mut GraphUpdate,
-) -> anyhow::Result<()> {
-    if let Some(m) = match_group.get(target - 1) {
-        let match_node_name = graph
-            .get_node_annos()
-            .get_value_for_item(&m.node, &NODE_NAME_KEY)?
-            .context("Missing node name for matched node")?;
-        update.add_event(UpdateEvent::AddNodeLabel {
-            node_name: match_node_name.to_string(),
-            anno_ns: rule.ns.to_string(),
-            anno_name: rule.name.to_string(),
-            anno_value: rule.value.to_string(),
-        })?;
-    }
-    Ok(())
-}
+        graph.ensure_loaded_all()?;
 
-fn map_span(
-    rule: &Rule,
-    graph: &AnnotationGraph,
-    target: &[usize],
-    match_group: &[Match],
-    update: &mut GraphUpdate,
-) -> anyhow::Result<()> {
-    todo!()
-}
+        let progress = ProgressReporter::new(tx.clone(), step_id.clone(), config.rules.len())?;
+        let mut updates = {
+            let tok_helper = TokenHelper::new(graph)?;
+            let mut map_impl = MapperImpl {
+                config,
+                _added_spans: 0,
+                graph: &graph,
+                tok_helper,
+                progress,
+            };
+            map_impl.run()?
+        };
+        graph.apply_update(&mut updates, |_| {})?;
 
-impl MapAnnos {
-    fn run(
-        &self,
-        graph: &mut AnnotationGraph,
-        mapping: Mapping,
-        tx: &Option<StatusSender>,
-        step_id: &StepID,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let mut update = GraphUpdate::default();
-
-        let progress = ProgressReporter::new(tx.clone(), step_id.clone(), mapping.rules.len())?;
-        for rule in mapping.rules {
-            let query = graphannis::aql::parse(&rule.query, false)?;
-            let result_it = graphannis::aql::execute_query_on_graph(graph, &query, true, None)?;
-            for match_group in result_it {
-                let match_group = match_group?;
-
-                match rule.target {
-                    TargetRef::Node(target) => {
-                        map_single_node(&rule, graph, target, &match_group, &mut update)?;
-                    }
-                    TargetRef::Span(ref all_targets) => {
-                        map_span(&rule, graph, &all_targets, &match_group, &mut update)?;
-                    }
-                }
-            }
-
-            progress.worked(1)?;
-        }
-        graph.apply_update(&mut update, |_| {})?;
         Ok(())
     }
 }
@@ -153,6 +104,92 @@ struct Rule {
     ns: String,
     name: String,
     value: String,
+}
+
+struct MapperImpl<'a> {
+    config: Mapping,
+    _added_spans: usize,
+    graph: &'a AnnotationGraph,
+    tok_helper: TokenHelper<'a>,
+    progress: ProgressReporter,
+}
+
+impl<'a> MapperImpl<'a> {
+    fn run(&mut self) -> anyhow::Result<GraphUpdate> {
+        let mut update = GraphUpdate::default();
+        for rule in &self.config.rules {
+            let query = graphannis::aql::parse(&rule.query, false)?;
+            let result_it =
+                graphannis::aql::execute_query_on_graph(&self.graph, &query, true, None)?;
+            for match_group in result_it {
+                let match_group = match_group?;
+
+                match rule.target {
+                    TargetRef::Node(target) => {
+                        self.map_single_node(&rule, target, &match_group, &mut update)?;
+                    }
+                    TargetRef::Span(ref all_targets) => {
+                        self.map_span(&rule, &all_targets, &match_group, &mut update)?;
+                    }
+                }
+            }
+
+            self.progress.worked(1)?;
+        }
+        Ok(update)
+    }
+
+    fn map_single_node(
+        &self,
+        rule: &Rule,
+        target: usize,
+        match_group: &[Match],
+        update: &mut GraphUpdate,
+    ) -> anyhow::Result<()> {
+        if let Some(m) = match_group.get(target - 1) {
+            let match_node_name = self
+                .graph
+                .get_node_annos()
+                .get_value_for_item(&m.node, &NODE_NAME_KEY)?
+                .context("Missing node name for matched node")?;
+            update.add_event(UpdateEvent::AddNodeLabel {
+                node_name: match_node_name.to_string(),
+                anno_ns: rule.ns.to_string(),
+                anno_name: rule.name.to_string(),
+                anno_value: rule.value.to_string(),
+            })?;
+        }
+        Ok(())
+    }
+
+    fn map_span(
+        &self,
+        _rule: &Rule,
+        targets: &[usize],
+        match_group: &[Match],
+        _update: &mut GraphUpdate,
+    ) -> anyhow::Result<()> {
+        if let Some(first_match) = targets.get(0).copied().and_then(|t| match_group.get(t)) {
+            // Calculate all token that should be covered by the newly create span
+            let mut covered_token = BTreeSet::new();
+            for t in targets {
+                if let Some(n) = match_group.get(*t) {
+                    covered_token.extend(self.tok_helper.covered_token(n.node)?);
+                }
+            }
+            // Determine the new node name by extending the node name of the first target
+            let first_node_name = self
+                .graph
+                .get_node_annos()
+                .get_value_for_item(&first_match.node, &NODE_NAME_KEY)?
+                .context("Missing node name")?;
+            let _new_node_name = format!("{first_node_name}_map_");
+
+            todo!()
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
