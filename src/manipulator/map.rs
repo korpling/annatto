@@ -4,7 +4,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{progress::ProgressReporter, util::token_helper::TokenHelper, StepID};
+use crate::{
+    progress::ProgressReporter,
+    util::token_helper::{TokenHelper, TOKEN_KEY},
+    StepID,
+};
 use anyhow::Context;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
@@ -128,7 +132,7 @@ enum Value {
     Fixed(String),
     Update {
         /// The target node of the query the annotation is fetched from.
-        _target: usize,
+        target: usize,
         /// A regular expression that is used to find parts of the string to be
         /// replaced
         _search: String,
@@ -148,10 +152,29 @@ struct Rule {
 }
 
 impl Rule {
-    fn resolve_value(&self, _graph: &AnnotationGraph) -> anyhow::Result<String> {
+    fn resolve_value(&self, graph: &AnnotationGraph, mg: &[Match]) -> anyhow::Result<String> {
         match &self.value {
             Value::Fixed(val) => Ok(val.clone()),
-            Value::Update { .. } => todo!(),
+            Value::Update { target, .. } => {
+                // Get the target value from the matched node
+                let m = mg.get(target - 1).with_context(|| {
+                    format!(
+                        "target {target} does not exist in result for query '{}'",
+                        self.query
+                    )
+                })?;
+                let anno_key = if m.anno_key.as_ref() == NODE_NAME_KEY.as_ref() {
+                    TOKEN_KEY.clone()
+                } else {
+                    m.anno_key.clone()
+                };
+                // Extract the annotation value for this match
+                let orig_val = graph
+                    .get_node_annos()
+                    .get_value_for_item(&m.node, &anno_key)?;
+                // TODO replaced values if requested
+                Ok(orig_val.unwrap_or_default().to_string())
+            }
         }
     }
 }
@@ -207,7 +230,7 @@ impl<'a> MapperImpl<'a> {
                 node_name: match_node_name.to_string(),
                 anno_ns: rule.ns.to_string(),
                 anno_name: rule.name.to_string(),
-                anno_value: rule.resolve_value(&self.graph)?,
+                anno_value: rule.resolve_value(&self.graph, &match_group)?,
             })?;
         }
         Ok(())
@@ -250,7 +273,7 @@ impl<'a> MapperImpl<'a> {
                 node_name: new_node_name.clone(),
                 anno_ns: rule.ns.to_string(),
                 anno_name: rule.name.to_string(),
-                anno_value: rule.resolve_value(&self.graph)?,
+                anno_value: rule.resolve_value(&self.graph, &match_group)?,
             })?;
 
             // Add the new node to the common parent
@@ -300,7 +323,7 @@ mod tests {
         update::{GraphUpdate, UpdateEvent},
         AnnotationGraph,
     };
-    use graphannis_core::graph::ANNIS_NS;
+    use graphannis_core::{annostorage::ValueSearch, graph::ANNIS_NS};
     use tempfile::NamedTempFile;
 
     use crate::{manipulator::Manipulator, test_util, util::example_generator, StepID};
@@ -323,8 +346,39 @@ mod tests {
             value: Value::Fixed("myvalue".to_string()),
         };
 
-        let resolved = fixed_value.resolve_value(&g).unwrap();
+        let resolved = fixed_value.resolve_value(&g, &vec![]).unwrap();
         assert_eq!("myvalue", resolved);
+    }
+
+    #[test]
+    fn test_resolve_value_copy() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
+        let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let fixed_value = Rule {
+            query: "tok".to_string(),
+            target: super::TargetRef::Node(1),
+            ns: "test_ns".to_string(),
+            name: "test".to_string(),
+            value: Value::Update {
+                target: 1,
+                _search: "".to_string(),
+                _replace: "".to_string(),
+            },
+        };
+
+        let tok_match = g
+            .get_node_annos()
+            .exact_anno_search(Some("annis"), "tok", ValueSearch::Some("complicated"))
+            .next()
+            .unwrap()
+            .unwrap();
+
+        let resolved = fixed_value.resolve_value(&g, &vec![tok_match]).unwrap();
+        assert_eq!("complicated", resolved);
     }
 
     #[test]
