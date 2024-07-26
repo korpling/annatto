@@ -7,6 +7,7 @@ use crate::{progress::ProgressReporter, workflow::StatusSender, StepID};
 use anyhow::Context;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
+    graph::Match,
     update::{GraphUpdate, UpdateEvent},
     AnnotationGraph,
 };
@@ -61,6 +62,38 @@ impl Manipulator for MapAnnos {
     }
 }
 
+fn map_single_node(
+    rule: &Rule,
+    graph: &AnnotationGraph,
+    target: usize,
+    match_group: &[Match],
+    update: &mut GraphUpdate,
+) -> anyhow::Result<()> {
+    if let Some(m) = match_group.get(target - 1) {
+        let match_node_name = graph
+            .get_node_annos()
+            .get_value_for_item(&m.node, &NODE_NAME_KEY)?
+            .context("Missing node name for matched node")?;
+        update.add_event(UpdateEvent::AddNodeLabel {
+            node_name: match_node_name.to_string(),
+            anno_ns: rule.ns.to_string(),
+            anno_name: rule.name.to_string(),
+            anno_value: rule.value.to_string(),
+        })?;
+    }
+    Ok(())
+}
+
+fn map_span(
+    rule: &Rule,
+    graph: &AnnotationGraph,
+    target: &[usize],
+    match_group: &[Match],
+    update: &mut GraphUpdate,
+) -> anyhow::Result<()> {
+    todo!()
+}
+
 impl MapAnnos {
     fn run(
         &self,
@@ -77,17 +110,14 @@ impl MapAnnos {
             let result_it = graphannis::aql::execute_query_on_graph(graph, &query, true, None)?;
             for match_group in result_it {
                 let match_group = match_group?;
-                if let Some(m) = match_group.get(rule.target - 1) {
-                    let match_node_name = graph
-                        .get_node_annos()
-                        .get_value_for_item(&m.node, &NODE_NAME_KEY)?
-                        .context("Missing node name for matched node")?;
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: match_node_name.to_string(),
-                        anno_ns: rule.ns.to_string(),
-                        anno_name: rule.name.to_string(),
-                        anno_value: rule.value.to_string(),
-                    })?;
+
+                match rule.target {
+                    TargetRef::Node(target) => {
+                        map_single_node(&rule, graph, target, &match_group, &mut update)?;
+                    }
+                    TargetRef::Span(ref all_targets) => {
+                        map_span(&rule, graph, &all_targets, &match_group, &mut update)?;
+                    }
                 }
             }
 
@@ -110,9 +140,16 @@ struct Mapping {
 }
 
 #[derive(Deserialize)]
+#[serde(untagged)]
+enum TargetRef {
+    Node(usize),
+    Span(Vec<usize>),
+}
+
+#[derive(Deserialize)]
 struct Rule {
     query: String,
-    target: usize,
+    target: TargetRef,
     ns: String,
     name: String,
     value: String,
