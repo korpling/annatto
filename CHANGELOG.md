@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `map` manipulator can now add annotated spans.
+
 ## [0.14.0] - 2024-07-24
 
 ### Added

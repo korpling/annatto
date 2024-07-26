@@ -41,6 +41,17 @@ pub struct MapAnnos {
     /// name = "indef"
     /// value = ""
     /// ```
+    ///
+    /// A `target` can also be a list. In this case, a new span is created that
+    /// covers the same token as the referenced nodes of the match.
+    /// ```toml
+    /// [[rules]]    
+    /// query = "tok=/more/ . tok"
+    /// target = [1,2]
+    /// ns = "mapper"
+    /// name = "form"
+    /// value = "comparison"
+    /// ```
     rule_file: PathBuf,
 }
 
@@ -188,8 +199,12 @@ impl<'a> MapperImpl<'a> {
             // Calculate all token that should be covered by the newly create span
             let mut covered_token = BTreeSet::new();
             for t in targets {
-                if let Some(n) = match_group.get(*t) {
-                    covered_token.extend(self.tok_helper.covered_token(n.node)?);
+                if let Some(n) = match_group.get(t - 1) {
+                    if self.tok_helper.is_token(n.node)? {
+                        covered_token.insert(n.node);
+                    } else {
+                        covered_token.extend(self.tok_helper.covered_token(n.node)?);
+                    }
                 }
             }
             // Determine the new node name by extending the node name of the first target
@@ -255,6 +270,7 @@ mod tests {
     use std::sync::mpsc;
 
     use graphannis::{
+        aql,
         model::AnnotationComponentType,
         update::{GraphUpdate, UpdateEvent},
         AnnotationGraph,
@@ -262,9 +278,50 @@ mod tests {
     use graphannis_core::graph::ANNIS_NS;
     use tempfile::NamedTempFile;
 
-    use crate::{manipulator::Manipulator, test_util, StepID};
+    use crate::{manipulator::Manipulator, test_util, util::example_generator, StepID};
 
     use super::MapAnnos;
+
+    #[test]
+    fn test_map_spans() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
+        let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let config = r#"
+[[rules]]            
+query = "tok=/more/ . tok"
+target = [1,2]
+ns = "mapper"
+name = "form"
+value = "comparison"
+        "#;
+        let tmp = NamedTempFile::new().unwrap();
+        std::fs::write(tmp.path(), config).unwrap();
+        let mapper = MapAnnos {
+            rule_file: tmp.path().to_path_buf(),
+        };
+        let step_id = StepID {
+            module_name: "test_map".to_string(),
+            path: None,
+        };
+        mapper
+            .manipulate_corpus(&mut g, tmp.path().parent().unwrap(), step_id, None)
+            .unwrap();
+
+        let query = aql::parse(
+            "mapper:form=\"comparison\" & \"more\" . \"complicated\" & #1 _l_ #2 & #1 _r_ #3",
+            false,
+        )
+        .unwrap();
+        let result: Vec<_> = aql::execute_query_on_graph(&g, &query, true, None)
+            .unwrap()
+            .collect();
+        assert_eq!(1, result.len());
+        assert_eq!(true, result[0].is_ok());
+    }
 
     #[test]
     fn test_map_annos_in_mem() {
