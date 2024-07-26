@@ -4,16 +4,15 @@ use std::{
 };
 
 use crate::{progress::ProgressReporter, workflow::StatusSender, StepID};
+use anyhow::Context;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
-    corpusstorage::{QueryLanguage, SearchQuery},
     update::{GraphUpdate, UpdateEvent},
-    AnnotationGraph, CorpusStorage,
+    AnnotationGraph,
 };
-use itertools::Itertools;
+use graphannis_core::graph::NODE_NAME_KEY;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
-use tempfile::tempdir;
 
 use super::Manipulator;
 
@@ -71,39 +70,27 @@ impl MapAnnos {
         step_id: &StepID,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let corpus_name = "current";
-        let tmp_dir = tempdir()?;
-        graph.save_to(&tmp_dir.path().join(corpus_name))?;
-        let cs = CorpusStorage::with_auto_cache_size(tmp_dir.path(), true)?;
+
         let progress = ProgressReporter::new(tx.clone(), step_id.clone(), mapping.rules.len())?;
         for rule in mapping.rules {
-            let query = SearchQuery {
-                corpus_names: &["current"],
-                query: rule.query.as_str(),
-                query_language: QueryLanguage::AQL,
-                timeout: None,
-            };
-            let search_results = cs.find(
-                query,
-                0,
-                None,
-                graphannis::corpusstorage::ResultOrder::NotSorted,
-            )?;
-            for m in search_results {
-                let matching_nodes = m
-                    .split(' ')
-                    .filter_map(|s| s.split("::").last())
-                    .collect_vec();
-                let target = rule.target - 1;
-                if let Some(node_name) = matching_nodes.get(target) {
+            let query = graphannis::aql::parse(&rule.query, false)?;
+            let result_it = graphannis::aql::execute_query_on_graph(graph, &query, true, None)?;
+            for match_group in result_it {
+                let match_group = match_group?;
+                if let Some(m) = match_group.get(rule.target - 1) {
+                    let match_node_name = graph
+                        .get_node_annos()
+                        .get_value_for_item(&m.node, &NODE_NAME_KEY)?
+                        .context("Missing node name for matched node")?;
                     update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
+                        node_name: match_node_name.to_string(),
                         anno_ns: rule.ns.to_string(),
                         anno_name: rule.name.to_string(),
                         anno_value: rule.value.to_string(),
                     })?;
                 }
             }
+
             progress.worked(1)?;
         }
         graph.apply_update(&mut update, |_| {})?;
@@ -133,23 +120,19 @@ struct Rule {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeSet, sync::mpsc};
+    use std::sync::mpsc;
 
     use graphannis::{
-        corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
         model::AnnotationComponentType,
         update::{GraphUpdate, UpdateEvent},
-        AnnotationGraph, CorpusStorage,
+        AnnotationGraph,
     };
-    use graphannis_core::{
-        annostorage::ValueSearch,
-        graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY},
-        util::join_qname,
-    };
-    use itertools::Itertools;
-    use tempfile::tempdir;
+    use graphannis_core::graph::ANNIS_NS;
+    use tempfile::NamedTempFile;
 
-    use super::{MapAnnos, Mapping};
+    use crate::{manipulator::Manipulator, test_util, StepID};
+
+    use super::MapAnnos;
 
     #[test]
     fn test_map_annos_in_mem() {
@@ -165,134 +148,54 @@ mod tests {
 
     fn main_test(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
         let config = r#"
-            [mapping]
+[[rules]]            
+query = "tok=/I/"
+target = 1
+ns = ""
+name = "pos"
+value = "PRON"            
 
-            [[rules]]            
-            query = "tok=/I/"
-            target = 1
-            ns = ""
-            name = "pos"
-            value = "PRON"            
-            
-            [[rules]]
-            query = "tok=/am/"
-            target = 1
-            ns = ""
-            name = "pos"
-            value = "VERB"            
-            
-            [[rules]]
-            query = "tok=/in/"
-            target = 1
-            ns = ""
-            name = "pos"
-            value = "ADP"            
-            
-            [[rules]]
-            query = "tok=/New York/"
-            target = 1
-            ns = ""
-            name = "pos"query
-            value = "PROPN"
+[[rules]]
+query = "tok=/am/"
+target = 1
+ns = ""
+name = "pos"
+value = "VERB"            
+
+[[rules]]
+query = "tok=/in/"
+target = 1
+ns = ""
+name = "pos"
+value = "ADP"            
+
+[[rules]]
+query = "tok=/New York/"
+target = 1
+ns = ""
+name = "pos"
+value = "PROPN"
         "#;
-        let mapping: Mapping = toml::from_str(config)?;
-        let tmp = tempdir()?;
+        let tmp = NamedTempFile::new().unwrap();
+        std::fs::write(tmp.path(), config).unwrap();
         let mapper = MapAnnos {
-            rule_file: tmp.path().join("rule_file_test.toml"), // dummy path
+            rule_file: tmp.path().to_path_buf(),
         };
-        let (sender, _receiver) = mpsc::channel();
         let mut g = source_graph(on_disk)?;
+        let (sender, _receiver) = mpsc::channel();
         let tx = Some(sender);
-        mapper.run(
-            &mut g,
-            mapping,
-            &tx,
-            &crate::StepID {
-                module_name: "test_map".to_string(),
-                path: None,
-            },
-        )?;
-        let mut e_g = target_graph(on_disk)?;
-        // corpus nodes
-        let e_corpus_nodes: BTreeSet<String> = e_g
-            .get_node_annos()
-            .exact_anno_search(
-                Some(&NODE_TYPE_KEY.ns),
-                &NODE_TYPE_KEY.name,
-                ValueSearch::Some("corpus"),
-            )
-            .into_iter()
-            .map(|r| r.unwrap().node)
-            .map(|id_| {
-                e_g.get_node_annos()
-                    .get_value_for_item(&id_, &NODE_NAME_KEY)
-                    .unwrap()
-                    .unwrap()
-                    .to_string()
-            })
-            .collect();
-        let g_corpus_nodes: BTreeSet<String> = g
-            .get_node_annos()
-            .exact_anno_search(
-                Some(&NODE_TYPE_KEY.ns),
-                &NODE_TYPE_KEY.name,
-                ValueSearch::Some("corpus"),
-            )
-            .into_iter()
-            .map(|r| r.unwrap().node)
-            .map(|id_| {
-                g.get_node_annos()
-                    .get_value_for_item(&id_, &NODE_NAME_KEY)
-                    .unwrap()
-                    .unwrap()
-                    .to_string()
-            })
-            .collect();
-        assert_eq!(e_corpus_nodes, g_corpus_nodes);
-        // anno names
-        let e_anno_names = e_g.get_node_annos().annotation_keys()?;
-        let g_anno_names = g.get_node_annos().annotation_keys()?;
-        let e_name_iter = e_anno_names
-            .iter()
-            .sorted_by(|a, b| join_qname(&a.ns, &a.name).cmp(&join_qname(&b.ns, &b.name)));
-        let g_name_iter = g_anno_names
-            .iter()
-            .sorted_by(|a, b| join_qname(&a.ns, &a.name).cmp(&join_qname(&b.ns, &b.name)));
-        for (e_qname, g_qname) in e_name_iter.zip(g_name_iter) {
-            assert_eq!(
-                e_qname, g_qname,
-                "Differing annotation keys between expected and generated graph: `{:?}` vs. `{:?}`",
-                e_qname, g_qname
-            );
-        }
-        assert_eq!(
-            e_anno_names.len(),
-            g_anno_names.len(),
-            "Expected graph and generated graph do not contain the same number of annotation keys."
-        );
-        let e_c_list = e_g
-            .get_all_components(None, None)
-            .into_iter()
-            .filter(|c| e_g.get_graphstorage(c).unwrap().source_nodes().count() > 0)
-            .collect_vec();
-        let g_c_list = g
-            .get_all_components(None, None)
-            .into_iter()
-            .filter(|c| g.get_graphstorage(c).unwrap().source_nodes().count() > 0) // graph might contain empty components after merge
-            .collect_vec();
-        assert_eq!(
-            e_c_list.len(),
-            g_c_list.len(),
-            "components expected:\n{:?};\ncomponents are:\n{:?}",
-            &e_c_list,
-            &g_c_list
-        );
-        for c in e_c_list {
-            let candidates = g.get_all_components(Some(c.get_type()), Some(c.name.as_str()));
-            assert_eq!(candidates.len(), 1);
-            let c_o = candidates.get(0);
-            assert_eq!(&c, c_o.unwrap());
-        }
+        let step_id = StepID {
+            module_name: "test_map".to_string(),
+            path: None,
+        };
+        mapper
+            .manipulate_corpus(&mut g, tmp.path().parent().unwrap(), step_id, tx)
+            .unwrap();
+
+        let e_g = target_graph(on_disk)?;
+
+        test_util::compare_graphs(&g, &e_g);
+
         //test with queries
         let queries = [
             ("tok=/I/ _=_ pos=/PRON/", 1),
@@ -300,30 +203,27 @@ mod tests {
             ("tok=/in/ _=_ pos=/ADP/", 1),
             ("tok=/New York/ _=_ pos=/PROPN/", 1),
         ];
-        let corpus_name = "current";
-        let tmp_dir_e = tempdir()?;
-        let tmp_dir_g = tempdir()?;
-        e_g.save_to(&tmp_dir_e.path().join(corpus_name))?;
-        g.save_to(&tmp_dir_g.path().join(corpus_name))?;
-        let cs_e = CorpusStorage::with_auto_cache_size(&tmp_dir_e.path(), true)?;
-        let cs_g = CorpusStorage::with_auto_cache_size(&tmp_dir_g.path(), true)?;
+
         for (query_s, expected_n) in queries {
-            let query = SearchQuery {
-                corpus_names: &[corpus_name],
-                query: query_s,
-                query_language: QueryLanguage::AQL,
-                timeout: None,
-            };
-            let matches_e = cs_e.find(query.clone(), 0, None, ResultOrder::Normal)?;
-            let matches_g = cs_g.find(query, 0, None, ResultOrder::Normal)?;
+            let query = graphannis::aql::parse(&query_s, false).unwrap();
+            let matches_e: Result<Vec<_>, graphannis::errors::GraphAnnisError> =
+                graphannis::aql::execute_query_on_graph(&e_g, &query, false, None)?.collect();
+            let matches_g: Result<Vec<_>, graphannis::errors::GraphAnnisError> =
+                graphannis::aql::execute_query_on_graph(&g, &query, false, None)?.collect();
+
+            let mut matches_e = matches_e.unwrap();
+            let mut matches_g = matches_g.unwrap();
+
             assert_eq!(
-        matches_e.len(),
-        expected_n,
-        "Number of results for query `{}` does not match for expected graph. Expected:{} vs. Is:{}",
-        query_s,
-        expected_n,
-        matches_e.len()
-    );
+                matches_e.len(),
+                expected_n,
+                "Number of results for query `{}` does not match for expected graph. Expected:{} vs. Is:{}",
+                query_s,
+                expected_n,
+                matches_e.len()
+            );
+            matches_e.sort();
+            matches_g.sort();
             assert_eq!(
                 matches_e.len(),
                 matches_g.len(),
