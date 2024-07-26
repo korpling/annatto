@@ -20,6 +20,7 @@ use graphannis::{
 use graphannis_core::graph::{
     storage::union::UnionEdgeContainer, ANNIS_NS, DEFAULT_NS, NODE_NAME_KEY,
 };
+use regex::Regex;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
@@ -135,10 +136,10 @@ enum Value {
         target: usize,
         /// A regular expression that is used to find parts of the string to be
         /// replaced
-        _search: String,
+        search: String,
         /// A string that replaces matched substring of the original annotation
         /// value. Can contain back references.
-        _replace: String,
+        replace: String,
     },
 }
 
@@ -155,7 +156,11 @@ impl Rule {
     fn resolve_value(&self, graph: &AnnotationGraph, mg: &[Match]) -> anyhow::Result<String> {
         match &self.value {
             Value::Fixed(val) => Ok(val.clone()),
-            Value::Update { target, .. } => {
+            Value::Update {
+                target,
+                search,
+                replace,
+            } => {
                 // Get the target value from the matched node
                 let m = mg.get(target - 1).with_context(|| {
                     format!(
@@ -171,9 +176,18 @@ impl Rule {
                 // Extract the annotation value for this match
                 let orig_val = graph
                     .get_node_annos()
-                    .get_value_for_item(&m.node, &anno_key)?;
-                // TODO replaced values if requested
-                Ok(orig_val.unwrap_or_default().to_string())
+                    .get_value_for_item(&m.node, &anno_key)?
+                    .unwrap_or_default();
+
+                let result = if search.is_empty() {
+                    orig_val
+                } else {
+                    // replace all occurences of the value
+                    let search = Regex::new(&search)?;
+                    search.replace_all(&orig_val, replace)
+                };
+
+                Ok(result.to_string())
             }
         }
     }
@@ -365,8 +379,8 @@ mod tests {
             name: "test".to_string(),
             value: Value::Update {
                 target: 1,
-                _search: "".to_string(),
-                _replace: "".to_string(),
+                search: "".to_string(),
+                replace: "".to_string(),
             },
         };
 
@@ -379,6 +393,37 @@ mod tests {
 
         let resolved = fixed_value.resolve_value(&g, &vec![tok_match]).unwrap();
         assert_eq!("complicated", resolved);
+    }
+
+    #[test]
+    fn test_resolve_value_replace() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
+        let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let fixed_value = Rule {
+            query: "tok".to_string(),
+            target: super::TargetRef::Node(1),
+            ns: "test_ns".to_string(),
+            name: "test".to_string(),
+            value: Value::Update {
+                target: 1,
+                search: "cat.*".to_string(),
+                replace: "$0$0".to_string(),
+            },
+        };
+
+        let tok_match = g
+            .get_node_annos()
+            .exact_anno_search(Some("annis"), "tok", ValueSearch::Some("complicated"))
+            .next()
+            .unwrap()
+            .unwrap();
+
+        let resolved = fixed_value.resolve_value(&g, &vec![tok_match]).unwrap();
+        assert_eq!("complicatedcated", resolved);
     }
 
     #[test]
