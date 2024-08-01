@@ -398,11 +398,13 @@ mod tests {
         original_graph.apply_update(&mut updates, |_| {}).unwrap();
 
         // Export to Excel file, read it again and then compare the annotation graphs
-        let output_dir = TempDir::new().unwrap();
+        let tmp_outputdir = TempDir::new().unwrap();
+        let output_dir = tmp_outputdir.path().join("xlsx");
+        std::fs::create_dir(&output_dir).unwrap();
         let exporter = crate::WriteAs::Xlsx(exporter);
         let export_step = ExporterStep {
             module: exporter,
-            path: output_dir.path().to_path_buf(),
+            path: output_dir.clone(),
         };
         export_step.execute(&original_graph, None).unwrap();
 
@@ -414,7 +416,7 @@ mod tests {
         .unwrap();
         let second_import_step = ImporterStep {
             module: crate::ReadFrom::Xlsx(importer),
-            path: output_dir.path().to_path_buf(),
+            path: output_dir.clone(),
         };
         let mut updates = second_import_step.execute(None).unwrap();
         let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -446,11 +448,13 @@ mod tests {
         original_graph.apply_update(&mut updates, |_| {}).unwrap();
 
         // Export to Excel file and read it again
-        let output_dir = TempDir::new().unwrap();
+        let tmp_outputdir = TempDir::new().unwrap();
+        let output_dir = tmp_outputdir.path().join("sample_sentence");
+        std::fs::create_dir(&output_dir).unwrap();
         let exporter = crate::WriteAs::Xlsx(exporter);
         let export_step = ExporterStep {
             module: exporter,
-            path: output_dir.path().to_path_buf(),
+            path: output_dir.clone(),
         };
         export_step.execute(&original_graph, None).unwrap();
 
@@ -462,7 +466,7 @@ mod tests {
         .unwrap();
         let second_import_step = ImporterStep {
             module: crate::ReadFrom::Xlsx(importer),
-            path: output_dir.path().to_path_buf(),
+            path: output_dir.clone(),
         };
         let mut updates = second_import_step.execute(None).unwrap();
 
@@ -514,10 +518,12 @@ mod tests {
         original_graph.apply_update(&mut updates, |_| {}).unwrap();
 
         // Export to Excel file and read it again
-        let output_dir = TempDir::new().unwrap();
+        let tmp_outputdir = TempDir::new().unwrap();
+        let output_dir = tmp_outputdir.path().join("sample_sentence_with_namespace");
+        std::fs::create_dir(&output_dir).unwrap();
         let export_step = ExporterStep {
             module: exporter,
-            path: output_dir.path().to_path_buf(),
+            path: output_dir.clone(),
         };
         export_step.execute(&original_graph, None).unwrap();
 
@@ -529,7 +535,7 @@ mod tests {
         .unwrap();
         let second_import_step = ImporterStep {
             module: crate::ReadFrom::Xlsx(importer),
-            path: output_dir.path().to_path_buf(),
+            path: output_dir.clone(),
         };
         let mut updates = second_import_step.execute(None).unwrap();
 
