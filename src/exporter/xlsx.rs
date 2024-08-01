@@ -371,7 +371,8 @@ mod tests {
     use tempfile::TempDir;
 
     use crate::{
-        importer::xlsx::ImportSpreadsheet, test_util::compare_graphs, ReadFrom, StepID, WriteAs,
+        importer::xlsx::ImportSpreadsheet, test_util::compare_graphs, ExporterStep, ImporterStep,
+        ReadFrom, WriteAs,
     };
 
     use super::*;
@@ -388,31 +389,36 @@ mod tests {
 
         // Import an example document
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
-        let importer = crate::ReadFrom::Xlsx(importer);
-        let mut updates = importer
-            .reader()
-            .import_corpus(path, StepID::from_importer_module(&importer, None), None)
-            .unwrap();
+        let orig_import_step = ImporterStep {
+            module: crate::ReadFrom::Xlsx(importer),
+            path: path.to_path_buf(),
+        };
+        let mut updates = orig_import_step.execute(None).unwrap();
         let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
         original_graph.apply_update(&mut updates, |_| {}).unwrap();
 
         // Export to Excel file, read it again and then compare the annotation graphs
         let output_dir = TempDir::new().unwrap();
         let exporter = crate::WriteAs::Xlsx(exporter);
-        exporter
-            .writer()
-            .export_corpus(
-                &original_graph,
-                output_dir.path(),
-                StepID::from_exporter_module(&exporter, None),
-                None,
-            )
-            .unwrap();
+        let export_step = ExporterStep {
+            module: exporter,
+            path: output_dir.path().to_path_buf(),
+        };
+        export_step.execute(&original_graph, None).unwrap();
+
+        let importer: ImportSpreadsheet = toml::from_str(
+            r#"
+        column_map = {"dipl" = ["sentence"], "norm" = ["pos", "lemma", "seg"]}
+            "#,
+        )
+        .unwrap();
+        let second_import_step = ImporterStep {
+            module: crate::ReadFrom::Xlsx(importer),
+            path: output_dir.path().to_path_buf(),
+        };
+        let mut updates = second_import_step.execute(None).unwrap();
         let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
-        let mut updates = importer
-            .reader()
-            .import_corpus(path, StepID::from_importer_module(&importer, None), None)
-            .unwrap();
+
         written_graph.apply_update(&mut updates, |_| {}).unwrap();
 
         compare_graphs(&original_graph, &written_graph);
@@ -431,30 +437,36 @@ mod tests {
         // Import an example document
         let path = Path::new("./tests/data/import/xlsx/sample_sentence/");
         let importer = crate::ReadFrom::Xlsx(importer);
-        let mut updates = importer
-            .reader()
-            .import_corpus(path, StepID::from_importer_module(&importer, None), None)
-            .unwrap();
+        let orig_import_step = ImporterStep {
+            module: importer,
+            path: path.to_path_buf(),
+        };
+        let mut updates = orig_import_step.execute(None).unwrap();
         let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
         original_graph.apply_update(&mut updates, |_| {}).unwrap();
 
         // Export to Excel file and read it again
         let output_dir = TempDir::new().unwrap();
         let exporter = crate::WriteAs::Xlsx(exporter);
-        exporter
-            .writer()
-            .export_corpus(
-                &original_graph,
-                output_dir.path(),
-                StepID::from_exporter_module(&exporter, None),
-                None,
-            )
-            .unwrap();
+        let export_step = ExporterStep {
+            module: exporter,
+            path: output_dir.path().to_path_buf(),
+        };
+        export_step.execute(&original_graph, None).unwrap();
+
+        let importer: ImportSpreadsheet = toml::from_str(
+            r#"
+        column_map = {"tok" = ["lb"]}
+            "#,
+        )
+        .unwrap();
+        let second_import_step = ImporterStep {
+            module: crate::ReadFrom::Xlsx(importer),
+            path: output_dir.path().to_path_buf(),
+        };
+        let mut updates = second_import_step.execute(None).unwrap();
+
         let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
-        let mut updates = importer
-            .reader()
-            .import_corpus(path, StepID::from_importer_module(&importer, None), None)
-            .unwrap();
         written_graph.apply_update(&mut updates, |_| {}).unwrap();
 
         // Compare the graphs and make sure the token exist
@@ -492,30 +504,37 @@ mod tests {
 
         // Import an example document
         let path = Path::new("./tests/data/import/xlsx/sample_sentence_with_namespace/");
+        let first_import_step = ImporterStep {
+            module: importer,
+            path: path.to_path_buf(),
+        };
 
-        let mut updates = importer
-            .reader()
-            .import_corpus(path, StepID::from_importer_module(&importer, None), None)
-            .unwrap();
+        let mut updates = first_import_step.execute(None).unwrap();
         let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
         original_graph.apply_update(&mut updates, |_| {}).unwrap();
 
         // Export to Excel file and read it again
         let output_dir = TempDir::new().unwrap();
-        exporter
-            .writer()
-            .export_corpus(
-                &original_graph,
-                output_dir.path(),
-                StepID::from_exporter_module(&exporter, None),
-                None,
-            )
-            .unwrap();
+        let export_step = ExporterStep {
+            module: exporter,
+            path: output_dir.path().to_path_buf(),
+        };
+        export_step.execute(&original_graph, None).unwrap();
+
+        let importer: ImportSpreadsheet = toml::from_str(
+            r#"
+        column_map = {"tok" = ["mynamespace::lb"]}
+            "#,
+        )
+        .unwrap();
+        let second_import_step = ImporterStep {
+            module: crate::ReadFrom::Xlsx(importer),
+            path: output_dir.path().to_path_buf(),
+        };
+        let mut updates = second_import_step.execute(None).unwrap();
+
         let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
-        let mut updates = importer
-            .reader()
-            .import_corpus(path, StepID::from_importer_module(&importer, None), None)
-            .unwrap();
+
         written_graph.apply_update(&mut updates, |_| {}).unwrap();
 
         // Compare the graphs and make sure the token exist

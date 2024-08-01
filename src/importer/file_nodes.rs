@@ -89,7 +89,7 @@ mod tests {
     use graphannis_core::graph::ANNIS_NS;
     use itertools::Itertools;
 
-    use crate::{ImporterStep, Step};
+    use crate::ImporterStep;
 
     use super::CreateFileNodes;
 
@@ -147,10 +147,7 @@ mod tests {
             module: crate::ReadFrom::Path(import),
             path: PathBuf::from("tests/data/import/xlsx/clean/xlsx/"),
         };
-        let mut test_u =
-            step.module
-                .reader()
-                .import_corpus(&step.path, step.get_step_id(), None)?;
+        let mut test_u = step.execute(None)?;
         // add dummy node and dummy ordering edge to pass model checks when applying the update to the graph
         test_u.add_event(UpdateEvent::AddNode {
             node_name: "dummy_node".to_string(),
