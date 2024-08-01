@@ -27,71 +27,79 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 use super::Manipulator;
 
 /// Creates new or updates annotations based on existing annotation values.
+///
+/// The module is configured with TOML files that contains a list of mapping
+/// `rules`. Each rule contains `query` field which describes the nodes the
+/// annotation are added to. The `target` field defines which node of the query
+/// the annotation should be added to. The annotation itself is defined by the
+/// `ns` (namespace), `name` and `value` fields.
+///
+/// ```toml
+/// [[rules]]
+/// query = "clean _o_ pos_lang=/(APPR)?ART/ _=_ lemma!=/[Dd](ie|as|er|ies)?/"
+/// target = 1
+/// ns = ""
+/// name = "indef"
+/// value = ""
+/// ```
+///
+/// A `target` can also be a list. In this case, a new span is created that
+/// covers the same token as the referenced nodes of the match.
+/// ```toml
+/// [[rules]]    
+/// query = "tok=/more/ . tok"
+/// target = [1,2]
+/// ns = "mapper"
+/// name = "form"
+/// value = "comparison"
+/// ```
+///
+/// Instead of a fixed value, you can also use an existing annotation value
+/// from the matched nodes copy the value.
+/// ```toml
+/// [[rules]]    
+/// query = "tok=\"complicated\""
+/// target = 1
+/// ns = ""
+/// name = "newtok"
+/// value = {copy = 1}
+/// ```
+///
+/// It is also possible to replace all occurences in the original value that
+/// match a `search` regular expression with a `replacement` value.
+/// ```toml
+/// [[rules]]    
+/// query = "tok=\"complicated\""
+/// target = 1
+/// ns = ""
+/// name = "newtok"
+/// value = {target = 1, search = "cat", replacement = "dog"}
+/// ```
+/// This would add a new annotation value "complidoged" to any token with the value "complicated".
+///
+/// The `replacement` value can contain back references to the regular
+/// expression (e.g. "$0" for the whole match or "$1" for the first match
+/// group).
+/// ```toml
+/// [[rules]]    
+/// query = "tok=\"New York\""
+/// target = 1
+/// ns = ""
+/// name = "abbr"
+/// value = {target = 1, search = "([A-Z])[a-z]+ ([A-Z])[a-z]+", replacement = "$1$2"}
+/// ```
+/// This example would add an annotation with the value "NY".
+///
+/// The `copy` and `target` fields in the value description can also refer
+/// to more than one copy of the query by using arrays instead of a single
+/// number. In this case, the node values are concatenated using a space as
+/// seperator.
+///
+
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct MapAnnos {
     /// The path of the TOML file containing an array of mapping rules.
-    ///
-    /// Each rule can contain a `query` field which describes the nodes the
-    /// annotation are added to. The `target` field defines which node of the
-    /// query the annotation should be added to. The annotation itself is
-    /// defined by the `ns` (namespace), `name` and `value` fields.
-    ///
-    /// ```toml
-    /// [[rules]]
-    /// query = "clean _o_ pos_lang=/(APPR)?ART/ _=_ lemma!=/[Dd](ie|as|er|ies)?/"
-    /// target = 1
-    /// ns = ""
-    /// name = "indef"
-    /// value = ""
-    /// ```
-    ///
-    /// A `target` can also be a list. In this case, a new span is created that
-    /// covers the same token as the referenced nodes of the match.
-    /// ```toml
-    /// [[rules]]    
-    /// query = "tok=/more/ . tok"
-    /// target = [1,2]
-    /// ns = "mapper"
-    /// name = "form"
-    /// value = "comparison"
-    /// ```
-    ///
-    /// Instead of a fixed value, you can also use an existing annotation value
-    /// from the matched nodes copy the value.
-    /// ```toml
-    /// [[rules]]    
-    /// query = "tok=\"complicated\""
-    /// target = 1
-    /// ns = ""
-    /// name = "newtok"
-    /// value = {copy = 1}
-    /// ```
-    /// It is also possible to replace all occurences in the original value that
-    /// match a `search` regular expression with a `replacement` value.
-    /// ```toml
-    /// [[rules]]    
-    /// query = "tok=\"complicated\""
-    /// target = 1
-    /// ns = ""
-    /// name = "newtok"
-    /// value = {target = 1, search = "cat", replacement = "dog"}
-    /// ```
-    /// This would add a new annotation value "complidoged" to any token with the value "complicated".
-    ///
-    /// The `replacement` value can contain back references to the regular
-    /// expression (e.g. "$0" for the whole match or "$1" for the first match
-    /// group).
-    /// ```toml
-    /// [[rules]]    
-    /// query = "tok=\"New York\""
-    /// target = 1
-    /// ns = ""
-    /// name = "abbr"
-    /// value = {target = 1, search = "([A-Z])[a-z]+ ([A-Z])[a-z]+", replacement = "$1$2"}
-    /// ```
-    ///
-    /// This would add an annotation with the value "NY".
     rule_file: PathBuf,
 }
 
@@ -162,17 +170,56 @@ enum TargetRef {
     Span(Vec<usize>),
 }
 
+impl TargetRef {
+    fn resolve_value(
+        &self,
+        graph: &AnnotationGraph,
+        mg: &[Match],
+        sep: char,
+    ) -> anyhow::Result<String> {
+        let targets: Vec<usize> = match self {
+            TargetRef::Node(n) => vec![*n],
+            TargetRef::Span(t) => t.clone(),
+        };
+        let mut result = String::new();
+        for target_node in targets {
+            let m = mg
+                .get(target_node - 1)
+                .with_context(|| format!("target {target_node} does not exist in result"))?;
+            let anno_key = if m.anno_key.as_ref() == NODE_TYPE_KEY.as_ref() {
+                TOKEN_KEY.clone()
+            } else {
+                m.anno_key.clone()
+            };
+            // Extract the annotation value for this match
+            let orig_val = graph
+                .get_node_annos()
+                .get_value_for_item(&m.node, &anno_key)?
+                .unwrap_or_default();
+            if !result.is_empty() {
+                result.push(sep);
+            }
+            result.push_str(&orig_val);
+        }
+        Ok(result)
+    }
+}
+
 #[derive(Clone, Deserialize, Debug)]
 #[serde(untagged)]
 enum Value {
     Fixed(String),
     Copy {
-        /// The target node of the query the annotation is fetched from.
-        copy: usize,
+        /// The target node(s) of the query the annotation is fetched from. If
+        /// more than one target is given, the strings a separated with a space
+        /// character.
+        copy: TargetRef,
     },
     Replace {
-        /// The target node of the query the annotation is fetched from.
-        target: usize,
+        /// The target node(s) of the query the annotation is fetched from. If
+        /// more than one target is given, the strings a separated with a space
+        /// character.
+        target: TargetRef,
         /// Pairs of regular expression that is used to find parts of the string to be
         /// replaced and the fixed strings the matches are replaced with.
         replacements: Vec<(String, String)>,
@@ -192,48 +239,12 @@ impl Rule {
     fn resolve_value(&self, graph: &AnnotationGraph, mg: &[Match]) -> anyhow::Result<String> {
         match &self.value {
             Value::Fixed(val) => Ok(val.clone()),
-            Value::Copy { copy } => {
-                // Get the target value from the matched node
-                let m = mg.get(copy - 1).with_context(|| {
-                    format!(
-                        "target {copy} does not exist in result for query '{}'",
-                        self.query
-                    )
-                })?;
-                let anno_key = if m.anno_key.as_ref() == NODE_TYPE_KEY.as_ref() {
-                    TOKEN_KEY.clone()
-                } else {
-                    m.anno_key.clone()
-                };
-                // Extract the annotation value for this match
-                let orig_val = graph
-                    .get_node_annos()
-                    .get_value_for_item(&m.node, &anno_key)?
-                    .unwrap_or_default();
-                Ok(orig_val.to_string())
-            }
+            Value::Copy { copy } => copy.resolve_value(graph, mg, ' '),
             Value::Replace {
                 target,
                 replacements,
             } => {
-                // Get the target value from the matched node
-                let m = mg.get(target - 1).with_context(|| {
-                    format!(
-                        "target {target} does not exist in result for query '{}'",
-                        self.query
-                    )
-                })?;
-                let anno_key = if m.anno_key.as_ref() == NODE_TYPE_KEY.as_ref() {
-                    TOKEN_KEY.clone()
-                } else {
-                    m.anno_key.clone()
-                };
-                // Extract the annotation value for this match
-                let mut val = graph
-                    .get_node_annos()
-                    .get_value_for_item(&m.node, &anno_key)?
-                    .unwrap_or_default()
-                    .to_string();
+                let mut val = target.resolve_value(graph, mg, ' ')?;
                 for (search, replace) in replacements {
                     // replace all occurences of the value
                     let search = Regex::new(search)?;
@@ -465,7 +476,7 @@ mod tests {
             ns: "test_ns".to_string(),
             name: "test".to_string(),
             value: Value::Replace {
-                target: 1,
+                target: TargetRef::Node(1),
                 replacements: vec![("cat".to_string(), "dog".to_string())],
             },
         };
@@ -495,7 +506,7 @@ mod tests {
             ns: "test_ns".to_string(),
             name: "test".to_string(),
             value: Value::Replace {
-                target: 1,
+                target: TargetRef::Node(1),
                 replacements: vec![("cat.*".to_string(), "$0$0".to_string())],
             },
         };
