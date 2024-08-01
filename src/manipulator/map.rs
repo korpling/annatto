@@ -270,7 +270,8 @@ impl<'a> MapperImpl<'a> {
         let mut update = GraphUpdate::default();
 
         for rule in self.config.rules.clone() {
-            let query = graphannis::aql::parse(&rule.query, false)?;
+            let query = graphannis::aql::parse(&rule.query, false)
+                .with_context(|| format!("could not parse query '{}'", &rule.query))?;
             let result_it =
                 graphannis::aql::execute_query_on_graph(self.graph, &query, true, None)?;
             for match_group in result_it {
