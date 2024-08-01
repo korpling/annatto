@@ -210,7 +210,6 @@ impl ExportXlsx {
             "".into(),
         )) {
             // Output all token in the first column
-            let mut row_index = 1;
             let mut token_roots_for_document = Vec::default();
             for t in token_roots {
                 if gs_part_of.is_connected(*t, doc_node_id, 1, std::ops::Bound::Unbounded)? {
@@ -225,6 +224,8 @@ impl ExportXlsx {
             // Start with the first token
             let mut token = token_roots_for_document.into_iter().next();
 
+            // Reserve the first row for the header (rows start at index 1)
+            let mut row_index = 2;
             while let Some(current_token) = token {
                 if let Some(val) = g
                     .get_node_annos()
@@ -236,8 +237,7 @@ impl ExportXlsx {
                     worksheet.get_cell_mut((1, row_index)).set_value_string(val);
                 }
 
-                // Reserve the first row for the header
-                token_to_row.insert(current_token, row_index + 1);
+                token_to_row.insert(current_token, row_index);
 
                 token = if let Some(ordering_gs) = ordering_gs {
                     if let Some(next_token) = ordering_gs.get_outgoing_edges(current_token).next() {
