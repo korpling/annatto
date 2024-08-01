@@ -173,12 +173,9 @@ enum Value {
     Replace {
         /// The target node of the query the annotation is fetched from.
         target: usize,
-        /// A regular expression that is used to find parts of the string to be
-        /// replaced
-        search: String,
-        /// A string that replaces matched substring of the original annotation
-        /// value. Can contain back references.
-        replacement: String,
+        /// Pairs of regular expression that is used to find parts of the string to be
+        /// replaced and the fixed strings the matches are replaced with.
+        replacements: Vec<(String, String)>,
     },
 }
 
@@ -217,8 +214,7 @@ impl Rule {
             }
             Value::Replace {
                 target,
-                search,
-                replacement: replace,
+                replacements,
             } => {
                 // Get the target value from the matched node
                 let m = mg.get(target - 1).with_context(|| {
@@ -233,14 +229,17 @@ impl Rule {
                     m.anno_key.clone()
                 };
                 // Extract the annotation value for this match
-                let orig_val = graph
+                let mut val = graph
                     .get_node_annos()
                     .get_value_for_item(&m.node, &anno_key)?
-                    .unwrap_or_default();
-                // replace all occurences of the value
-                let search = Regex::new(search)?;
-
-                Ok(search.replace_all(&orig_val, replace).to_string())
+                    .unwrap_or_default()
+                    .to_string();
+                for (search, replace) in replacements {
+                    // replace all occurences of the value
+                    let search = Regex::new(search)?;
+                    val = search.replace_all(&val, replace).to_string();
+                }
+                Ok(val)
             }
         }
     }
@@ -467,8 +466,7 @@ mod tests {
             name: "test".to_string(),
             value: Value::Replace {
                 target: 1,
-                search: "cat".to_string(),
-                replacement: "dog".to_string(),
+                replacements: vec![("cat".to_string(), "dog".to_string())],
             },
         };
 
@@ -498,8 +496,7 @@ mod tests {
             name: "test".to_string(),
             value: Value::Replace {
                 target: 1,
-                search: "cat.*".to_string(),
-                replacement: "$0$0".to_string(),
+                replacements: vec![("cat.*".to_string(), "$0$0".to_string())],
             },
         };
 
@@ -522,7 +519,10 @@ query = "tok=\"New York\""
 target = 1
 ns = "" 
 name = "abbr"
-value = {target = 1, search = "([A-Z])[a-z]+ ([A-Z])[a-z]+", replacement = "$1$2"}
+
+[rules.value]
+target = 1
+replacements = [["([A-Z])[a-z]+ ([A-Z])[a-z]+", "$1$2"]]
 "#;
 
         let m: Mapping = toml::from_str(config).unwrap();
