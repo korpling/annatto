@@ -145,26 +145,18 @@ impl Workflow {
 
         if let Some(tx) = &tx {
             let mut steps: Vec<StepID> = Vec::default();
-            steps.extend(
-                self.import
-                    .iter()
-                    .map(|importer| StepID::from_importer_step(&importer)),
-            );
+            steps.extend(self.import.iter().map(StepID::from_importer_step));
             steps.push(apply_update_step_id.clone());
 
             let mut graph_op_position = 1;
             if let Some(ref manipulators) = self.graph_op {
                 for m in manipulators {
-                    steps.push(StepID::from_graphop_step(&m, graph_op_position));
+                    steps.push(StepID::from_graphop_step(m, graph_op_position));
                     graph_op_position += 1;
                 }
             }
             if let Some(ref exporters) = self.export {
-                steps.extend(
-                    exporters
-                        .iter()
-                        .map(|exporter| StepID::from_exporter_step(&exporter)),
-                );
+                steps.extend(exporters.iter().map(StepID::from_exporter_step));
             }
             tx.send(StatusMessage::StepsCreated(steps))?;
         }
@@ -218,7 +210,7 @@ impl Workflow {
         if let Some(ref manipulators) = self.graph_op {
             let mut graph_op_position = 1;
             for desc in manipulators.iter() {
-                let step_id = StepID::from_graphop_step(&desc, graph_op_position);
+                let step_id = StepID::from_graphop_step(desc, graph_op_position);
                 let workflow_directory = &desc.workflow_directory;
                 desc.execute(
                     &mut g,
@@ -271,7 +263,7 @@ impl Workflow {
         default_workflow_directory: &Path,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate> {
-        let step_id = StepID::from_importer_step(&step);
+        let step_id = StepID::from_importer_step(step);
 
         // Do not use the import path directly, but resolve it against the
         // workflow directory if the path is relative.
@@ -308,7 +300,7 @@ impl Workflow {
         default_workflow_directory: &Path,
         tx: Option<StatusSender>,
     ) -> Result<()> {
-        let step_id = StepID::from_exporter_step(&step);
+        let step_id = StepID::from_exporter_step(step);
 
         // Do not use the output path directly, but resolve it against the
         // workflow directory if the path is relative.

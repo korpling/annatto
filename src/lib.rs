@@ -474,7 +474,7 @@ impl ManipulatorStep {
         self.module.processor().manipulate_corpus(
             graph,
             workflow_directory,
-            StepID::from_graphop_step(&self, position_in_workflow),
+            StepID::from_graphop_step(self, position_in_workflow),
             tx,
         )
     }
