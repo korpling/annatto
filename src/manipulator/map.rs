@@ -4,7 +4,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{progress::ProgressReporter, util::token_helper::TokenHelper, StepID};
+use crate::{
+    progress::ProgressReporter,
+    util::token_helper::{TokenHelper, TOKEN_KEY},
+    StepID,
+};
 use anyhow::Context;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
@@ -14,44 +18,88 @@ use graphannis::{
     AnnotationGraph,
 };
 use graphannis_core::graph::{
-    storage::union::UnionEdgeContainer, ANNIS_NS, DEFAULT_NS, NODE_NAME_KEY,
+    storage::union::UnionEdgeContainer, ANNIS_NS, DEFAULT_NS, NODE_NAME_KEY, NODE_TYPE_KEY,
 };
+use regex::Regex;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Manipulator;
 
-/// Creates new annotations based on existing annotation values.
+/// Creates new or updates annotations based on existing annotation values.
+///
+/// The module is configured with TOML files that contains a list of mapping
+/// `rules`. Each rule contains `query` field which describes the nodes the
+/// annotation are added to. The `target` field defines which node of the query
+/// the annotation should be added to. The annotation itself is defined by the
+/// `ns` (namespace), `name` and `value` fields.
+///
+/// ```toml
+/// [[rules]]
+/// query = "clean _o_ pos_lang=/(APPR)?ART/ _=_ lemma!=/[Dd](ie|as|er|ies)?/"
+/// target = 1
+/// ns = ""
+/// name = "indef"
+/// value = ""
+/// ```
+///
+/// A `target` can also be a list. In this case, a new span is created that
+/// covers the same token as the referenced nodes of the match.
+/// ```toml
+/// [[rules]]    
+/// query = "tok=/more/ . tok"
+/// target = [1,2]
+/// ns = "mapper"
+/// name = "form"
+/// value = "comparison"
+/// ```
+///
+/// Instead of a fixed value, you can also use an existing annotation value
+/// from the matched nodes copy the value.
+/// ```toml
+/// [[rules]]    
+/// query = "tok=\"complicated\""
+/// target = 1
+/// ns = ""
+/// name = "newtok"
+/// value = {copy = 1}
+/// ```
+///
+/// It is also possible to replace all occurences in the original value that
+/// match a `search` regular expression with a `replacement` value.
+/// ```toml
+/// [[rules]]    
+/// query = "tok=\"complicated\""
+/// target = 1
+/// ns = ""
+/// name = "newtok"
+/// value = {target = 1, search = "cat", replacement = "dog"}
+/// ```
+/// This would add a new annotation value "complidoged" to any token with the value "complicated".
+///
+/// The `replacement` value can contain back references to the regular
+/// expression (e.g. "$0" for the whole match or "$1" for the first match
+/// group).
+/// ```toml
+/// [[rules]]    
+/// query = "tok=\"New York\""
+/// target = 1
+/// ns = ""
+/// name = "abbr"
+/// value = {target = 1, search = "([A-Z])[a-z]+ ([A-Z])[a-z]+", replacement = "$1$2"}
+/// ```
+/// This example would add an annotation with the value "NY".
+///
+/// The `copy` and `target` fields in the value description can also refer
+/// to more than one copy of the query by using arrays instead of a single
+/// number. In this case, the node values are concatenated using a space as
+/// seperator.
+///
+
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct MapAnnos {
     /// The path of the TOML file containing an array of mapping rules.
-    ///
-    /// Each rule can contain a `query` field which describes the nodes the
-    /// annotation are added to. The `target` field defines which node of the
-    /// query the annotation should be added to. The annotation itself is
-    /// defined by the `ns` (namespace), `name` and `value` fields. The `value`
-    /// is currently a fixed value.
-    ///
-    /// ```toml
-    /// [[rules]]
-    /// query = "clean _o_ pos_lang=/(APPR)?ART/ _=_ lemma!=/[Dd](ie|as|er|ies)?/"
-    /// target = 1
-    /// ns = ""
-    /// name = "indef"
-    /// value = ""
-    /// ```
-    ///
-    /// A `target` can also be a list. In this case, a new span is created that
-    /// covers the same token as the referenced nodes of the match.
-    /// ```toml
-    /// [[rules]]    
-    /// query = "tok=/more/ . tok"
-    /// target = [1,2]
-    /// ns = "mapper"
-    /// name = "form"
-    /// value = "comparison"
-    /// ```
     rule_file: PathBuf,
 }
 
@@ -110,25 +158,102 @@ fn read_config(path: &Path) -> Result<Mapping, Box<dyn std::error::Error>> {
     Ok(m)
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct Mapping {
     rules: Vec<Rule>,
 }
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Debug)]
 #[serde(untagged)]
 enum TargetRef {
     Node(usize),
     Span(Vec<usize>),
 }
 
-#[derive(Clone, Deserialize)]
+impl TargetRef {
+    fn resolve_value(
+        &self,
+        graph: &AnnotationGraph,
+        mg: &[Match],
+        sep: char,
+    ) -> anyhow::Result<String> {
+        let targets: Vec<usize> = match self {
+            TargetRef::Node(n) => vec![*n],
+            TargetRef::Span(t) => t.clone(),
+        };
+        let mut result = String::new();
+        for target_node in targets {
+            let m = mg
+                .get(target_node - 1)
+                .with_context(|| format!("target {target_node} does not exist in result"))?;
+            let anno_key = if m.anno_key.as_ref() == NODE_TYPE_KEY.as_ref() {
+                TOKEN_KEY.clone()
+            } else {
+                m.anno_key.clone()
+            };
+            // Extract the annotation value for this match
+            let orig_val = graph
+                .get_node_annos()
+                .get_value_for_item(&m.node, &anno_key)?
+                .unwrap_or_default();
+            if !result.is_empty() {
+                result.push(sep);
+            }
+            result.push_str(&orig_val);
+        }
+        Ok(result)
+    }
+}
+
+#[derive(Clone, Deserialize, Debug)]
+#[serde(untagged)]
+enum Value {
+    Fixed(String),
+    Copy {
+        /// The target node(s) of the query the annotation is fetched from. If
+        /// more than one target is given, the strings a separated with a space
+        /// character.
+        copy: TargetRef,
+    },
+    Replace {
+        /// The target node(s) of the query the annotation is fetched from. If
+        /// more than one target is given, the strings a separated with a space
+        /// character.
+        target: TargetRef,
+        /// Pairs of regular expression that is used to find parts of the string to be
+        /// replaced and the fixed strings the matches are replaced with.
+        replacements: Vec<(String, String)>,
+    },
+}
+
+#[derive(Clone, Debug, Deserialize)]
 struct Rule {
     query: String,
     target: TargetRef,
     ns: String,
     name: String,
-    value: String,
+    value: Value,
+}
+
+impl Rule {
+    fn resolve_value(&self, graph: &AnnotationGraph, mg: &[Match]) -> anyhow::Result<String> {
+        match &self.value {
+            Value::Fixed(val) => Ok(val.clone()),
+            Value::Copy { copy } => copy.resolve_value(graph, mg, ' '),
+            Value::Replace {
+                target,
+                replacements,
+            } => {
+                let mut val = target.resolve_value(graph, mg, ' ')?;
+                for (search, replace) in replacements {
+                    // replace all occurences of the value
+                    let search = Regex::new(search)?;
+                    val = search.replace_all(&val, replace).to_string();
+                }
+                Ok(val)
+            }
+        }
+    }
 }
 
 struct MapperImpl<'a> {
@@ -143,13 +268,14 @@ struct MapperImpl<'a> {
 impl<'a> MapperImpl<'a> {
     fn run(&mut self) -> anyhow::Result<GraphUpdate> {
         let mut update = GraphUpdate::default();
+
         for rule in self.config.rules.clone() {
-            let query = graphannis::aql::parse(&rule.query, false)?;
+            let query = graphannis::aql::parse(&rule.query, false)
+                .with_context(|| format!("could not parse query '{}'", &rule.query))?;
             let result_it =
                 graphannis::aql::execute_query_on_graph(self.graph, &query, true, None)?;
             for match_group in result_it {
                 let match_group = match_group?;
-
                 match rule.target {
                     TargetRef::Node(target) => {
                         self.map_single_node(&rule, target, &match_group, &mut update)?;
@@ -182,7 +308,7 @@ impl<'a> MapperImpl<'a> {
                 node_name: match_node_name.to_string(),
                 anno_ns: rule.ns.to_string(),
                 anno_name: rule.name.to_string(),
-                anno_value: rule.value.to_string(),
+                anno_value: rule.resolve_value(self.graph, match_group)?,
             })?;
         }
         Ok(())
@@ -195,7 +321,11 @@ impl<'a> MapperImpl<'a> {
         match_group: &[Match],
         update: &mut GraphUpdate,
     ) -> anyhow::Result<()> {
-        if let Some(first_match) = targets.first().copied().and_then(|t| match_group.get(t)) {
+        if let Some(first_match) = targets
+            .first()
+            .copied()
+            .and_then(|t| match_group.get(t - 1))
+        {
             // Calculate all token that should be covered by the newly create span
             let mut covered_token = BTreeSet::new();
             for t in targets {
@@ -207,6 +337,7 @@ impl<'a> MapperImpl<'a> {
                     }
                 }
             }
+
             // Determine the new node name by extending the node name of the first target
             let first_node_name = self
                 .graph
@@ -225,7 +356,7 @@ impl<'a> MapperImpl<'a> {
                 node_name: new_node_name.clone(),
                 anno_ns: rule.ns.to_string(),
                 anno_name: rule.name.to_string(),
-                anno_value: rule.value.to_string(),
+                anno_value: rule.resolve_value(self.graph, match_group)?,
             })?;
 
             // Add the new node to the common parent
@@ -275,12 +406,151 @@ mod tests {
         update::{GraphUpdate, UpdateEvent},
         AnnotationGraph,
     };
-    use graphannis_core::graph::ANNIS_NS;
+    use graphannis_core::{annostorage::ValueSearch, graph::ANNIS_NS};
     use tempfile::NamedTempFile;
 
     use crate::{manipulator::Manipulator, test_util, util::example_generator, StepID};
 
-    use super::MapAnnos;
+    use super::*;
+
+    #[test]
+    fn test_resolve_value_fixed() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
+        let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let fixed_value = Rule {
+            query: "tok".to_string(),
+            target: super::TargetRef::Node(1),
+            ns: "test_ns".to_string(),
+            name: "test".to_string(),
+            value: Value::Fixed("myvalue".to_string()),
+        };
+
+        let resolved = fixed_value.resolve_value(&g, &vec![]).unwrap();
+        assert_eq!("myvalue", resolved);
+    }
+
+    #[test]
+    fn test_resolve_value_copy() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
+        let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let config = r#"
+        [[rules]]                                                                                      
+        query = "tok"
+        target = 1
+        ns = "test_ns" 
+        name = "test"
+        value = {copy = 1}
+        "#;
+
+        let m: Mapping = toml::from_str(config).unwrap();
+
+        let tok_match = g
+            .get_node_annos()
+            .exact_anno_search(Some("annis"), "tok", ValueSearch::Some("complicated"))
+            .next()
+            .unwrap()
+            .unwrap();
+
+        let resolved = m.rules[0].resolve_value(&g, &vec![tok_match]).unwrap();
+        assert_eq!("complicated", resolved);
+    }
+
+    #[test]
+    fn test_resolve_value_replace_simple() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
+        let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let fixed_value = Rule {
+            query: "tok".to_string(),
+            target: super::TargetRef::Node(1),
+            ns: "test_ns".to_string(),
+            name: "test".to_string(),
+            value: Value::Replace {
+                target: TargetRef::Node(1),
+                replacements: vec![("cat".to_string(), "dog".to_string())],
+            },
+        };
+
+        let tok_match = g
+            .get_node_annos()
+            .exact_anno_search(Some("annis"), "tok", ValueSearch::Some("complicated"))
+            .next()
+            .unwrap()
+            .unwrap();
+
+        let resolved = fixed_value.resolve_value(&g, &vec![tok_match]).unwrap();
+        assert_eq!("complidoged", resolved);
+    }
+
+    #[test]
+    fn test_resolve_value_replace_with_backreference() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
+        let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let fixed_value = Rule {
+            query: "tok".to_string(),
+            target: super::TargetRef::Node(1),
+            ns: "test_ns".to_string(),
+            name: "test".to_string(),
+            value: Value::Replace {
+                target: TargetRef::Node(1),
+                replacements: vec![("cat.*".to_string(), "$0$0".to_string())],
+            },
+        };
+
+        let tok_match = g
+            .get_node_annos()
+            .exact_anno_search(Some("annis"), "tok", ValueSearch::Some("complicated"))
+            .next()
+            .unwrap()
+            .unwrap();
+
+        let resolved = fixed_value.resolve_value(&g, &vec![tok_match]).unwrap();
+        assert_eq!("complicatedcated", resolved);
+    }
+
+    #[test]
+    fn test_parse_complicated_replace() {
+        let config = r#"
+[[rules]]                                                                                      
+query = "tok=\"New York\""
+target = 1
+ns = "" 
+name = "abbr"
+
+[rules.value]
+target = 1
+replacements = [["([A-Z])[a-z]+ ([A-Z])[a-z]+", "$1$2"]]
+"#;
+
+        let m: Mapping = toml::from_str(config).unwrap();
+
+        let g = source_graph(false).unwrap();
+
+        let newyork_match = g
+            .get_node_annos()
+            .exact_anno_search(Some("annis"), "tok", ValueSearch::Some("New York"))
+            .next()
+            .unwrap()
+            .unwrap();
+
+        let result = m.rules[0].resolve_value(&g, &[newyork_match]).unwrap();
+        assert_eq!("NY", result);
+    }
 
     #[test]
     fn test_map_spans() {
