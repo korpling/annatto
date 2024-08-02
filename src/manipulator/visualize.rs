@@ -361,7 +361,7 @@ mod tests {
             &workflow_file,
         )
         .unwrap();
-        execute_from_file(&workflow_file, true, None).unwrap();
+        execute_from_file(&workflow_file, true, false, None).unwrap();
         let result_dot = std::fs::read_to_string(workflow_dir.path().join("test.dot")).unwrap();
         assert_snapshot!(result_dot);
     }
@@ -375,7 +375,7 @@ mod tests {
             &workflow_file,
         )
         .unwrap();
-        execute_from_file(&workflow_file, true, None).unwrap();
+        execute_from_file(&workflow_file, true, false, None).unwrap();
         let result_dot = std::fs::read_to_string(workflow_dir.path().join("test.dot")).unwrap();
         assert_snapshot!(result_dot);
     }

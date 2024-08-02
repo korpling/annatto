@@ -10,8 +10,8 @@ use regex::Regex;
 use serde_derive::Deserialize;
 
 use crate::{
-    error::AnnattoError, error::Result, progress::ProgressReporter, runtime, ExporterStep,
-    ImporterStep, ManipulatorStep, StepID,
+    error::AnnattoError, error::Result, progress::ProgressReporter, ExporterStep, ImporterStep,
+    ManipulatorStep, StepID,
 };
 use log::error;
 use normpath::PathExt;
@@ -113,10 +113,12 @@ impl TryFrom<(PathBuf, bool)> for Workflow {
 ///
 /// * `workflow_file` - The TOML workflow file.
 /// * `read_env` - Set whether to resolve environment variables in the workflow file.
+/// * `in_memory` - If true, use a main memory implementation to store the temporary graphs.
 /// * `tx` - If supported by the caller, this is a sender object that allows to send [status updates](enum.StatusMessage.html) (like information messages, warnings and module progress) to the calling entity.
 pub fn execute_from_file(
     workflow_file: &Path,
     read_env: bool,
+    in_memory: bool,
     tx: Option<Sender<StatusMessage>>,
 ) -> Result<()> {
     let wf = Workflow::try_from((workflow_file.to_path_buf(), read_env))?;
@@ -125,7 +127,7 @@ pub fn execute_from_file(
     } else {
         Path::new("")
     };
-    wf.execute(tx, parent_dir)?;
+    wf.execute(tx, parent_dir, in_memory)?;
     Ok(())
 }
 
@@ -136,6 +138,7 @@ impl Workflow {
         &self,
         tx: Option<StatusSender>,
         default_workflow_directory: &Path,
+        in_memory: bool,
     ) -> Result<()> {
         // Create a vector of all conversion steps and report these as current status
         let apply_update_step_id = StepID {
@@ -172,9 +175,17 @@ impl Workflow {
         // Create a new empty annotation graph and apply updates
         let apply_update_reporter =
             ProgressReporter::new_unknown_total_work(tx.clone(), apply_update_step_id.clone())?;
-        apply_update_reporter
-            .info("Creating annotation graph by applying the updates from the import steps")?;
-        let mut g = runtime::initialize_graph(&tx)?;
+        if in_memory {
+            apply_update_reporter.info(
+                "Creating in-memory annotation graph by applying the updates from the import steps",
+            )?;
+        } else {
+            apply_update_reporter.info(
+                "Creating on-disk annotation graph by applying the updates from the import steps",
+            )?;
+        }
+        let mut g = AnnotationGraph::with_default_graphstorages(!in_memory)
+            .map_err(|e| AnnattoError::CreateGraph(e.to_string()))?;
 
         // collect all updates in a single update to only have a single atomic
         // call to `apply_update`
@@ -344,6 +355,7 @@ mod tests {
         execute_from_file(
             Path::new("./tests/data/import/empty/empty.toml"),
             false,
+            false,
             None,
         )
         .unwrap();
@@ -380,6 +392,7 @@ mod tests {
         execute_from_file(
             Path::new("./tests/workflows/multiple_importer.toml"),
             false,
+            false,
             None,
         )
         .unwrap();
@@ -394,6 +407,7 @@ mod tests {
         execute_from_file(
             Path::new("./tests/workflows/nonexisting_dir.toml"),
             true,
+            false,
             None,
         )
         .unwrap();
