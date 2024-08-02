@@ -493,7 +493,7 @@ mod tests {
     fn with_namespace() {
         let importer: ImportSpreadsheet = toml::from_str(
             r#"
-        column_map = {"tok" = ["mynamespace::lb"]}
+        column_map = {"default_ns::text" = ["mynamespace::lb"]}
             "#,
         )
         .unwrap();
@@ -501,8 +501,8 @@ mod tests {
         let mut exporter = ExportXlsx::default();
         exporter.include_namespace = true;
         exporter.annotation_order = vec![AnnoKey {
-            ns: ANNIS_NS.into(),
-            name: "tok".into(),
+            ns: "default_ns".into(),
+            name: "text".into(),
         }];
         let exporter = WriteAs::Xlsx(exporter);
 
@@ -529,7 +529,7 @@ mod tests {
 
         let importer: ImportSpreadsheet = toml::from_str(
             r#"
-        column_map = {"tok" = ["mynamespace::lb"]}
+        column_map = {"default_ns::text" = ["mynamespace::lb"]}
             "#,
         )
         .unwrap();
