@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- New command line argument `--in-memory` that has the same meaning as setting
+  `ANNATTO_IN_MEMORY` to true but is easier to discover.
 - `map` manipulator can now add annotated spans and copy values from existing
   annotations. The copied values can be manipulated used regular expressions and
   replacement values.

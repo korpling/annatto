@@ -32,8 +32,14 @@ enum Cli {
         #[clap(value_parser)]
         workflow_file: std::path::PathBuf,
         /// Adding this argument resolves environmental variables in the provided workflow file.
-        #[structopt(long)]
+        #[clap(long)]
         env: bool,
+        /// If this argument is given, store temporary annotation graphs in main
+        /// memory instead of on disk. This is faster, but if the corpus is too
+        /// large to fit into main memory, the pipeline will fail. Can also set
+        /// by setting the environment variable `ANNATTO_IN_MEMORY` to `true`.
+        #[clap(long, env = "ANNATTO_IN_MEMORY", default_value = "false")]
+        in_memory: bool,
     },
     /// Only check if a workflow file can be loaded. Invalid workflow files will lead to a non-zero exit code.
     Validate {
@@ -93,7 +99,11 @@ pub fn main() -> anyhow::Result<()> {
 
     let args = Parser::parse();
     match args {
-        Cli::Run { workflow_file, env } => convert(workflow_file, env)?,
+        Cli::Run {
+            workflow_file,
+            env,
+            in_memory,
+        } => convert(workflow_file, env, in_memory)?,
         Cli::Validate { workflow_file } => {
             Workflow::try_from((workflow_file, false))?;
         }
@@ -107,10 +117,11 @@ pub fn main() -> anyhow::Result<()> {
 }
 
 /// Execute the conversion in the background and show the status to the user
-fn convert(workflow_file: PathBuf, read_env: bool) -> Result<(), AnnattoError> {
+fn convert(workflow_file: PathBuf, read_env: bool, in_memory: bool) -> Result<(), AnnattoError> {
     let (tx, rx) = mpsc::channel();
-    let result =
-        thread::spawn(move || execute_from_file(&workflow_file, read_env, Some(tx.clone())));
+    let result = thread::spawn(move || {
+        execute_from_file(&workflow_file, read_env, in_memory, Some(tx.clone()))
+    });
 
     let mut all_bars: HashMap<StepID, ProgressBar> = HashMap::new();
 
