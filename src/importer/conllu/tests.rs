@@ -4,7 +4,8 @@ use graphannis::{graph::AnnoKey, update::GraphUpdate};
 use insta::assert_snapshot;
 
 use crate::{
-    importer::conllu::default_comment_key, test_util::import_as_graphml_string, ReadFrom, StepID,
+    importer::conllu::default_comment_key, test_util::import_as_graphml_string, ImporterStep,
+    ReadFrom, StepID,
 };
 
 use super::ImportCoNLLU;
@@ -13,14 +14,16 @@ use super::ImportCoNLLU;
 fn test_conll_fail_invalid() {
     let import = ReadFrom::CoNLLU(ImportCoNLLU::default());
     let import_path = Path::new("tests/data/import/conll/invalid");
-    let step_id = StepID::from_importer_module(&import, Some(import_path.to_path_buf()));
-    let job = import
-        .reader()
-        .import_corpus(import_path, step_id.clone(), None);
+    let import_step = ImporterStep {
+        module: import,
+        path: import_path.to_path_buf(),
+    };
+    let job = import_step.execute(None);
     assert!(job.is_err());
     assert_snapshot!(job.err().unwrap().to_string());
     let mut u = GraphUpdate::default();
     let import = ImportCoNLLU::default();
+    let step_id = StepID::from_importer_step(&import_step);
     assert!(import
         .import_document(
             &step_id,
@@ -36,11 +39,12 @@ fn test_conll_fail_invalid() {
 fn test_conll_fail_invalid_heads() {
     let import = ReadFrom::CoNLLU(ImportCoNLLU::default());
     let import_path = Path::new("tests/data/import/conll/invalid-heads/");
-    let step_id = StepID::from_importer_module(&import, Some(import_path.to_path_buf()));
+    let import_step = ImporterStep {
+        module: import,
+        path: import_path.to_path_buf(),
+    };
     let (sender, _receiver) = mpsc::channel();
-    let job = import
-        .reader()
-        .import_corpus(import_path, step_id, Some(sender));
+    let job = import_step.execute(Some(sender));
     assert!(job.is_err());
     assert_snapshot!(job.err().unwrap().to_string());
 }
@@ -49,9 +53,12 @@ fn test_conll_fail_invalid_heads() {
 fn test_conll_fail_cyclic() -> Result<(), Box<dyn std::error::Error>> {
     let import = ReadFrom::CoNLLU(ImportCoNLLU::default());
     let import_path = Path::new("tests/data/import/conll/cyclic-deps/");
-    let step_id = StepID::from_importer_module(&import, Some(import_path.to_path_buf()));
+    let import_step = ImporterStep {
+        module: import,
+        path: import_path.to_path_buf(),
+    };
 
-    let job = import.reader().import_corpus(import_path, step_id, None);
+    let job = import_step.execute(None);
     assert!(job.is_ok());
     Ok(())
 }

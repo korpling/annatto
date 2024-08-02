@@ -530,7 +530,7 @@ mod tests {
 
         let (msg_sender, msg_receiver) = mpsc::channel();
         let application =
-            collapse.manipulate_corpus(&mut g, Path::new("./"), step_id, Some(msg_sender));
+            collapse.manipulate_corpus(&mut g, Path::new("./"), step_id.clone(), Some(msg_sender));
         assert!(application.is_ok(), "not Ok: {:?}", application.err());
         assert!(msg_receiver.into_iter().count() > 0);
         let eg = target_graph(on_disk, disjoint);
@@ -547,13 +547,11 @@ mod tests {
         assert!(check_r.is_ok());
         let check = check_r.unwrap();
         let dummy_path = Path::new("./");
+
         let (sender_e, _receiver_e) = mpsc::channel();
-        if let Err(e) = check.manipulate_corpus(
-            &mut expected_g,
-            dummy_path,
-            StepID::from_graph_op_module(&crate::GraphOp::Collapse(collapse)),
-            Some(sender_e),
-        ) {
+        if let Err(e) =
+            check.manipulate_corpus(&mut expected_g, dummy_path, step_id.clone(), Some(sender_e))
+        {
             return Err(e);
         }
 

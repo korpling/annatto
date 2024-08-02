@@ -11,7 +11,7 @@ use serde_derive::Deserialize;
 
 use crate::{
     error::AnnattoError, error::Result, progress::ProgressReporter, runtime, ExporterStep,
-    ImporterStep, ManipulatorStep, Step, StepID,
+    ImporterStep, ManipulatorStep, StepID,
 };
 use log::error;
 use normpath::PathExt;
@@ -142,19 +142,21 @@ impl Workflow {
             module_name: "create_annotation_graph".to_string(),
             path: None,
         };
+
         if let Some(tx) = &tx {
             let mut steps: Vec<StepID> = Vec::default();
-            steps.extend(self.import.iter().map(|importer| importer.get_step_id()));
+            steps.extend(self.import.iter().map(StepID::from_importer_step));
             steps.push(apply_update_step_id.clone());
+
+            let mut graph_op_position = 1;
             if let Some(ref manipulators) = self.graph_op {
-                steps.extend(
-                    manipulators
-                        .iter()
-                        .map(|manipulator| manipulator.get_step_id()),
-                );
+                for m in manipulators {
+                    steps.push(StepID::from_graphop_step(m, graph_op_position));
+                    graph_op_position += 1;
+                }
             }
             if let Some(ref exporters) = self.export {
-                steps.extend(exporters.iter().map(|exporter| exporter.get_step_id()));
+                steps.extend(exporters.iter().map(StepID::from_exporter_step));
             }
             tx.send(StatusMessage::StepsCreated(steps))?;
         }
@@ -206,26 +208,26 @@ impl Workflow {
 
         // Execute all manipulators in sequence
         if let Some(ref manipulators) = self.graph_op {
+            let mut graph_op_position = 1;
             for desc in manipulators.iter() {
+                let step_id = StepID::from_graphop_step(desc, graph_op_position);
                 let workflow_directory = &desc.workflow_directory;
-                desc.module
-                    .processor()
-                    .manipulate_corpus(
-                        &mut g,
-                        workflow_directory
-                            .as_ref()
-                            .map_or(default_workflow_directory, PathBuf::as_path),
-                        desc.get_step_id(),
-                        tx.clone(),
-                    )
-                    .map_err(|reason| AnnattoError::Manipulator {
-                        reason: reason.to_string(),
-                        manipulator: desc.get_step_id().module_name,
-                    })?;
+                desc.execute(
+                    &mut g,
+                    workflow_directory
+                        .as_ref()
+                        .map_or(default_workflow_directory, PathBuf::as_path),
+                    graph_op_position,
+                    tx.clone(),
+                )
+                .map_err(|reason| AnnattoError::Manipulator {
+                    reason: reason.to_string(),
+                    manipulator: step_id.to_string(),
+                })?;
+                graph_op_position += 1;
+
                 if let Some(ref tx) = tx {
-                    tx.send(crate::workflow::StatusMessage::StepDone {
-                        id: desc.get_step_id(),
-                    })?;
+                    tx.send(crate::workflow::StatusMessage::StepDone { id: step_id })?;
                 }
             }
         }
@@ -261,6 +263,10 @@ impl Workflow {
         default_workflow_directory: &Path,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate> {
+        let step_id = StepID::from_importer_step(step);
+
+        // Do not use the import path directly, but resolve it against the
+        // workflow directory if the path is relative.
         let import_path = if step.path.is_relative() {
             default_workflow_directory.join(&step.path)
         } else {
@@ -275,20 +281,14 @@ impl Workflow {
         let updates = step
             .module
             .reader()
-            .import_corpus(
-                resolved_import_path.as_path(),
-                step.get_step_id(),
-                tx.clone(),
-            )
+            .import_corpus(resolved_import_path.as_path(), step_id.clone(), tx.clone())
             .map_err(|reason| AnnattoError::Import {
                 reason: reason.to_string(),
-                importer: step.get_step_id().module_name.to_string(),
+                importer: step_id.module_name.to_string(),
                 path: step.path.to_path_buf(),
             })?;
         if let Some(ref tx) = tx {
-            tx.send(crate::workflow::StatusMessage::StepDone {
-                id: step.get_step_id(),
-            })?;
+            tx.send(crate::workflow::StatusMessage::StepDone { id: step_id })?;
         }
         Ok(updates)
     }
@@ -300,6 +300,10 @@ impl Workflow {
         default_workflow_directory: &Path,
         tx: Option<StatusSender>,
     ) -> Result<()> {
+        let step_id = StepID::from_exporter_step(step);
+
+        // Do not use the output path directly, but resolve it against the
+        // workflow directory if the path is relative.
         let mut resolved_output_path = if step.path.is_relative() {
             default_workflow_directory.join(&step.path)
         } else {
@@ -314,18 +318,16 @@ impl Workflow {
             .export_corpus(
                 g,
                 resolved_output_path.as_path(),
-                step.get_step_id(),
+                step_id.clone(),
                 tx.clone(),
             )
             .map_err(|reason| AnnattoError::Export {
                 reason: reason.to_string(),
-                exporter: step.get_step_id().module_name.to_string(),
+                exporter: step_id.module_name.to_string(),
                 path: step.path.clone(),
             })?;
         if let Some(ref tx) = tx {
-            tx.send(crate::workflow::StatusMessage::StepDone {
-                id: step.get_step_id(),
-            })?;
+            tx.send(crate::workflow::StatusMessage::StepDone { id: step_id })?;
         }
         Ok(())
     }

@@ -699,7 +699,7 @@ mod tests {
         exporter::exmaralda::ExportExmaralda,
         importer::exmaralda::ImportEXMARaLDA,
         test_util::{export_to_string, export_to_string_in_directory},
-        ImporterStep, ReadFrom, Step, StepID,
+        ImporterStep, ReadFrom,
     };
 
     #[test]
@@ -709,11 +709,7 @@ mod tests {
             module: crate::ReadFrom::EXMARaLDA(import),
             path: PathBuf::from("./tests/data/import/exmaralda/clean/import/"),
         };
-        let u = step.module.reader().import_corpus(
-            Path::new("./tests/data/import/exmaralda/clean/import/"),
-            step.get_step_id(),
-            None,
-        );
+        let u = step.execute(None);
         assert!(u.is_ok());
         let mut update = u.unwrap();
         let g = AnnotationGraph::with_default_graphstorages(false);
@@ -747,11 +743,12 @@ mod tests {
             .unwrap()
             .join(Path::new("./tests/data/import/exmaralda/clean/import/"));
 
-        let u = import.reader().import_corpus(
-            &source_path,
-            StepID::from_importer_module(&import, Some(source_path.clone())),
-            None,
-        );
+        let step = ImporterStep {
+            module: import,
+            path: source_path,
+        };
+        let u = step.execute(None);
+
         assert!(u.is_ok());
         let mut update = u.unwrap();
         let g = AnnotationGraph::with_default_graphstorages(false);

@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   annotations. The copied values can be manipulated used regular expressions and
   replacement values.
 
+### Fixed
+
+- Using the same type of manipulator in a workflow now shows the correct
+  progress.
+
 ## [0.14.0] - 2024-07-24
 
 ### Added

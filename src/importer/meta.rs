@@ -110,7 +110,7 @@ mod tests {
     use graphannis_core::graph::ANNIS_NS;
     use tempfile::tempdir;
 
-    use crate::{ReadFrom, StepID};
+    use crate::{ImporterStep, ReadFrom};
 
     use super::AnnotateCorpus;
 
@@ -157,12 +157,11 @@ mod tests {
             .write(corpus_metadata.join("\n").as_bytes())
             .map_err(|_| assert!(false))
             .unwrap();
-        let step_id = StepID::from_importer_module(&add_metadata, None);
-        let r = add_metadata.reader().import_corpus(
-            tmp_dir.path().join("metadata").as_path(),
-            step_id,
-            None,
-        );
+        let import_step = ImporterStep {
+            module: add_metadata,
+            path: tmp_dir.path().join("metadata").to_path_buf(),
+        };
+        let r = import_step.execute(None);
         assert_eq!(
             true,
             r.is_ok(),
