@@ -1,25 +1,28 @@
 [package]
-authors = ["Thomas Krause <thomas.krause@hu-berlin.de>", "Martin Klotz <martin.klotz@hu-berlin.de>"]
+authors = [
+    "Thomas Krause <thomas.krause@hu-berlin.de>",
+    "Martin Klotz <martin.klotz@hu-berlin.de>",
+]
 description = "Converts linguistic data formats based on the graphANNIS data model as intermediate representation and can apply consistency tests."
 edition = "2018"
 homepage = "https://github.com/korpling/annatto/"
 license = "Apache-2.0"
 name = "annatto"
 repository = "https://github.com/korpling/annatto/"
-version = "0.13.1"
+version = "0.14.0"
 
 [dependencies]
 ansi_term = "0.12"
 anyhow = "1.0"
-clap = {version = "4.0", features = ["derive", "env"]}
+clap = { version = "4.0", features = ["derive", "env"] }
 console = "0.15"
 csv = "1.1"
 documented = "0.3.0"
 encoding_rs = "0.8"
 encoding_rs_io = "0.1.7"
 glob = "0.3"
-graphannis = "3.2.2"
-graphannis-core = "3.2.2"
+graphannis = "3.3.3"
+graphannis-core = "3.3.3"
 graphviz-rust = "0.9.0"
 indicatif = "0.17"
 itertools = "0.12"
@@ -27,26 +30,26 @@ lazy_static = "1.4.0"
 linked-hash-map = "0.5.6"
 log = "0.4"
 normpath = "1.1"
-ordered-float = {version = "4.1", default-features = false}
+ordered-float = { version = "4.1", default-features = false }
 pathdiff = "0.2"
 percent-encoding = "2.3.1"
 pest = "2.7"
 pest_derive = "2.0"
 quick-xml = "0.34"
 rayon = "1.1"
-regex = "1.4"
+regex = "1.10"
 roxmltree = "0.20.0"
 serde = "1.0"
 serde_derive = "1.0"
 struct-field-names-as-array = "0.3.0"
-strum = {version = "0.26.2", features = ["derive"]}
-tabled = {version = "0.15", features = ["ansi"]}
+strum = { version = "0.26.2", features = ["derive"] }
+tabled = { version = "0.15", features = ["ansi"] }
 tempfile = "3"
 termimad = "0.29.1"
 text-splitter = "0.6.3"
 thiserror = "1.0"
 toml = "0.8.0"
-tracing-subscriber = {version = "0.3", features = ["env-filter"]}
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 umya-spreadsheet = "~1.1.1"
 url = "2.5.2"
 xml-rs = "0.8"
@@ -54,7 +57,7 @@ zip = "0.6.6"
 
 [dev-dependencies]
 assert_cmd = "2.0.11"
-insta = {version = "1.26.0", features = ["toml", "filters"]}
+insta = { version = "1.26.0", features = ["toml", "filters"] }
 pretty_assertions = "1.3"
 
 # Compile some of the dependencies in release mode if when we are ourself in
@@ -84,7 +87,12 @@ ci = "github"
 # The installers to generate for each app
 installers = []
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]
+targets = [
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+    "x86_64-unknown-linux-gnu",
+    "x86_64-pc-windows-msvc",
+]
 # The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
 cargo-dist-version = "0.16.0"
 # Publish jobs to run in CI

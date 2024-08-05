@@ -11,7 +11,7 @@ If `true`, include the annotation namespace in the column header.
 
 ###  annotation_order
 
-Specify the order of the exported columns as array of annotation names.
+Specify the order of the exported columns as array of annotation keys.
 
 Example:
 

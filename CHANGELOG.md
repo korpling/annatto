@@ -5,9 +5,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New command line argument `--in-memory` that has the same meaning as setting
+  `ANNATTO_IN_MEMORY` to true but is easier to discover.
+- `map` manipulator can now add annotated spans and copy values from existing
+  annotations. The copied values can be manipulated using regular expressions and
+  replacement values.
+
+### Fixed
+
+- Using the same type of manipulator in a workflow now shows the correct
+  progress.
+- Make the progress report in `revise` mode indeterminate because it is unclear
+  how many operations are actually performed and finishing some steps instantly
+  and others in minutes will cause extremely unrealistic time estimations.
+
+
+
+## [0.14.0] - 2024-07-24
+
+### Added
+
+- `revise` now offers to delete nodes that match a query using list entry `[[remove_match]]` with keys `query` and `remove`.
+
 ### Changed
 
 - internal changes in deserialization of annotation components and annotation keys (keys can be provided as string or in map notation), which changes the api and the way some workflow configurations are organised. Use `annatto info [module]` for more details. It does not affect behaviour once older workflows are adapted to the new interface.
+- when an exmaralda file contains an empty url attributed for a referenced file, this does not raise a warning anymore, as this is the way exmaralda encodes it, when no media file is used.
+
+### Fixed
+
+- `textgrid` export creates intervals from global xmin to global xmax for all tiers
 
 ## [0.13.1] - 2024-07-11
 

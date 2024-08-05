@@ -14,6 +14,7 @@ use graphannis_core::{
     types::{Edge, NodeID},
 };
 use itertools::Itertools;
+use pretty_assertions::assert_eq;
 use std::{cmp::Ordering, fs, io::BufWriter, path::Path};
 use tempfile::TempDir;
 

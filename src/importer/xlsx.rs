@@ -474,7 +474,7 @@ mod tests {
     use graphannis_core::{annostorage::ValueSearch, types::AnnoKey};
     use tempfile::tempdir;
 
-    use crate::{workflow::Workflow, ReadFrom};
+    use crate::{workflow::Workflow, ImporterStep, ReadFrom};
 
     use super::*;
 
@@ -508,8 +508,12 @@ mod tests {
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
-        let step_id = StepID::from_importer_module(&importer, Some(path.to_path_buf()));
-        let import = importer.reader().import_corpus(path, step_id, None);
+        let import_step = ImporterStep {
+            module: importer,
+            path: path.to_path_buf(),
+        };
+
+        let import = import_step.execute(None);
         let mut u = import?;
         let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         g.apply_update(&mut u, |_| {})?;
@@ -612,9 +616,12 @@ mod tests {
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/dirty/xlsx/");
-        let step_id = StepID::from_importer_module(&importer, Some(path.to_path_buf()));
+        let import_step = ImporterStep {
+            module: importer,
+            path: path.to_path_buf(),
+        };
         let (sender, receiver) = mpsc::channel();
-        let import = importer.reader().import_corpus(path, step_id, Some(sender));
+        let import = import_step.execute(Some(sender));
         assert!(import.is_err());
         assert_ne!(receiver.into_iter().count(), 0);
     }
@@ -642,9 +649,12 @@ mod tests {
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/warnings/xlsx/");
-        let step_id = StepID::from_importer_module(&importer, Some(path.to_path_buf()));
+        let import_step = ImporterStep {
+            module: importer,
+            path: path.to_path_buf(),
+        };
         let (sender, receiver) = mpsc::channel();
-        let import = importer.reader().import_corpus(path, step_id, Some(sender));
+        let import = import_step.execute(Some(sender));
         assert!(import.is_ok());
         assert_ne!(receiver.into_iter().count(), 0);
     }
@@ -716,9 +726,12 @@ mod tests {
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
-        let step_id = StepID::from_importer_module(&importer, Some(path.to_path_buf()));
+        let import_step = ImporterStep {
+            module: importer,
+            path: path.to_path_buf(),
+        };
         let (sender, receiver) = mpsc::channel();
-        let import = importer.reader().import_corpus(path, step_id, Some(sender));
+        let import = import_step.execute(Some(sender));
         assert!(import.is_ok());
         assert_ne!(receiver.into_iter().count(), 0);
     }
@@ -803,8 +816,12 @@ mod tests {
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
-        let step_id = StepID::from_importer_module(&importer, Some(path.to_path_buf()));
-        let import = importer.reader().import_corpus(path, step_id, None);
+        let import_step = ImporterStep {
+            module: importer,
+            path: path.to_path_buf(),
+        };
+
+        let import = import_step.execute(None);
         let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         g.apply_update(&mut import?, |_| {})?;
         let node_annos = g.get_node_annos();

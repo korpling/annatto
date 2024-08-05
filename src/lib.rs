@@ -7,13 +7,15 @@ pub mod importer;
 pub mod manipulator;
 pub mod models;
 pub mod progress;
-pub mod runtime;
 #[cfg(test)]
 pub(crate) mod test_util;
 pub(crate) mod util;
 pub mod workflow;
 
-use std::{fmt::Display, path::PathBuf};
+use std::{
+    fmt::Display,
+    path::{Path, PathBuf},
+};
 
 use documented::{Documented, DocumentedFields};
 use error::Result;
@@ -21,6 +23,7 @@ use exporter::{
     exmaralda::ExportExmaralda, graphml::GraphMLExporter, sequence::ExportSequence,
     textgrid::ExportTextGrid, xlsx::ExportXlsx, Exporter,
 };
+use graphannis::AnnotationGraph;
 use importer::{
     conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
     graphml::GraphMLImporter, meta::AnnotateCorpus, none::CreateEmptyCorpus, opus::ImportOpusLinks,
@@ -36,6 +39,7 @@ use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 use strum::{AsRefStr, EnumDiscriminants, EnumIter};
 use tabled::Tabled;
+use workflow::StatusSender;
 
 #[derive(Tabled)]
 pub struct ModuleConfiguration {
@@ -378,24 +382,27 @@ pub struct StepID {
 }
 
 impl StepID {
-    pub fn from_importer_module(m: &ReadFrom, path: Option<PathBuf>) -> StepID {
+    pub fn from_importer_step(step: &ImporterStep) -> StepID {
         StepID {
-            module_name: format!("import_{}", m.as_ref().to_lowercase()),
-            path,
+            module_name: format!("import_{}", step.module.as_ref().to_lowercase()),
+            path: Some(step.path.clone()),
         }
     }
 
-    pub fn from_graph_op_module(m: &GraphOp) -> StepID {
+    pub fn from_graphop_step(step: &ManipulatorStep, position_in_workflow: usize) -> StepID {
         StepID {
-            module_name: m.as_ref().to_lowercase(),
+            module_name: format!(
+                "{position_in_workflow}_{}",
+                step.module.as_ref().to_lowercase()
+            ),
             path: None,
         }
     }
 
-    pub fn from_exporter_module(m: &WriteAs, path: Option<PathBuf>) -> StepID {
+    pub fn from_exporter_step(step: &ExporterStep) -> StepID {
         StepID {
-            module_name: format!("export_{}", m.as_ref().to_lowercase()),
-            path,
+            module_name: format!("export_{}", step.module.as_ref().to_lowercase()),
+            path: Some(step.path.clone()),
         }
     }
 }
@@ -411,9 +418,7 @@ impl Display for StepID {
 }
 
 /// Represents a single step in a conversion pipeline.
-pub trait Step {
-    fn get_step_id(&self) -> StepID;
-}
+pub trait Step {}
 
 #[derive(Deserialize)]
 pub struct ImporterStep {
@@ -422,11 +427,19 @@ pub struct ImporterStep {
     path: PathBuf,
 }
 
-impl Step for ImporterStep {
-    fn get_step_id(&self) -> StepID {
-        StepID::from_importer_module(&self.module, Some(self.path.clone()))
+impl ImporterStep {
+    #[cfg(test)]
+    fn execute(
+        &self,
+        tx: Option<StatusSender>,
+    ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
+        self.module
+            .reader()
+            .import_corpus(&self.path, StepID::from_importer_step(&self), tx)
     }
 }
+
+impl Step for ImporterStep {}
 
 #[derive(Deserialize)]
 pub struct ExporterStep {
@@ -435,11 +448,20 @@ pub struct ExporterStep {
     path: PathBuf,
 }
 
-impl Step for ExporterStep {
-    fn get_step_id(&self) -> StepID {
-        StepID::from_exporter_module(&self.module, Some(self.path.clone()))
+impl ExporterStep {
+    #[cfg(test)]
+    fn execute(
+        &self,
+        graph: &AnnotationGraph,
+        tx: Option<StatusSender>,
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+        self.module
+            .writer()
+            .export_corpus(graph, &self.path, StepID::from_exporter_step(&self), tx)
     }
 }
+
+impl Step for ExporterStep {}
 
 #[derive(Deserialize)]
 pub struct ManipulatorStep {
@@ -448,11 +470,24 @@ pub struct ManipulatorStep {
     workflow_directory: Option<PathBuf>,
 }
 
-impl Step for ManipulatorStep {
-    fn get_step_id(&self) -> StepID {
-        StepID::from_graph_op_module(&self.module)
+impl ManipulatorStep {
+    fn execute(
+        &self,
+        graph: &mut AnnotationGraph,
+        workflow_directory: &Path,
+        position_in_workflow: usize,
+        tx: Option<StatusSender>,
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+        self.module.processor().manipulate_corpus(
+            graph,
+            workflow_directory,
+            StepID::from_graphop_step(self, position_in_workflow),
+            tx,
+        )
     }
 }
+
+impl Step for ManipulatorStep {}
 
 #[cfg(test)]
 mod tests {

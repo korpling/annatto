@@ -13,13 +13,20 @@ A list of queries to find the nodes that are to be enumerated.
 
 The target node in the query that is assigned the numeric annotation. Holds for all queries. This is a 1-based index and counts by mention in the query.
 
-###  label_ns
+###  label
 
-The namespace of the numeric annotation.
+The anno key of the numeric annotation that should be created.
+Example:
+```toml
+[export.config]
+label = { ns = "order", name = "i" }
+```
 
-###  label_name
-
-The name of the numeric annotation.
+You can also provide this as a string:
+```toml
+[export.config]
+label = "order::i"
+```
 
 ###  value
 

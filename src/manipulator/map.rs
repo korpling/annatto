@@ -1,27 +1,105 @@
 use std::{
+    collections::BTreeSet,
     fs,
     path::{Path, PathBuf},
 };
 
-use crate::{progress::ProgressReporter, workflow::StatusSender, StepID};
+use crate::{
+    progress::ProgressReporter,
+    util::token_helper::{TokenHelper, TOKEN_KEY},
+    StepID,
+};
+use anyhow::Context;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
-    corpusstorage::{QueryLanguage, SearchQuery},
+    graph::{EdgeContainer, Match},
+    model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
-    AnnotationGraph, CorpusStorage,
+    AnnotationGraph,
 };
-use itertools::Itertools;
+use graphannis_core::graph::{
+    storage::union::UnionEdgeContainer, ANNIS_NS, DEFAULT_NS, NODE_NAME_KEY, NODE_TYPE_KEY,
+};
+use regex::Regex;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
-use tempfile::tempdir;
 
 use super::Manipulator;
 
-/// Creates new annotations based on existing annotation values.
+/// Creates new or updates annotations based on existing annotation values.
+///
+/// The module is configured with TOML files that contains a list of mapping
+/// `rules`. Each rule contains `query` field which describes the nodes the
+/// annotation are added to. The `target` field defines which node of the query
+/// the annotation should be added to. The annotation itself is defined by the
+/// `ns` (namespace), `name` and `value` fields.
+///
+/// ```toml
+/// [[rules]]
+/// query = "clean _o_ pos_lang=/(APPR)?ART/ _=_ lemma!=/[Dd](ie|as|er|ies)?/"
+/// target = 1
+/// ns = ""
+/// name = "indef"
+/// value = ""
+/// ```
+///
+/// A `target` can also be a list. In this case, a new span is created that
+/// covers the same token as the referenced nodes of the match.
+/// ```toml
+/// [[rules]]    
+/// query = "tok=/more/ . tok"
+/// target = [1,2]
+/// ns = "mapper"
+/// name = "form"
+/// value = "comparison"
+/// ```
+///
+/// Instead of a fixed value, you can also use an existing annotation value
+/// from the matched nodes copy the value.
+/// ```toml
+/// [[rules]]    
+/// query = "tok=\"complicated\""
+/// target = 1
+/// ns = ""
+/// name = "newtok"
+/// value = {copy = 1}
+/// ```
+///
+/// It is also possible to replace all occurences in the original value that
+/// match a `search` regular expression with a `replacement` value.
+/// ```toml
+/// [[rules]]    
+/// query = "tok=\"complicated\""
+/// target = 1
+/// ns = ""
+/// name = "newtok"
+/// value = {target = 1, search = "cat", replacement = "dog"}
+/// ```
+/// This would add a new annotation value "complidoged" to any token with the value "complicated".
+///
+/// The `replacement` value can contain back references to the regular
+/// expression (e.g. "$0" for the whole match or "$1" for the first match
+/// group).
+/// ```toml
+/// [[rules]]    
+/// query = "tok=\"New York\""
+/// target = 1
+/// ns = ""
+/// name = "abbr"
+/// value = {target = 1, search = "([A-Z])[a-z]+ ([A-Z])[a-z]+", replacement = "$1$2"}
+/// ```
+/// This example would add an annotation with the value "NY".
+///
+/// The `copy` and `target` fields in the value description can also refer
+/// to more than one copy of the query by using arrays instead of a single
+/// number. In this case, the node values are concatenated using a space as
+/// seperator.
+///
+
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct MapAnnos {
-    /// The path of the TOML file containing the mapping rules.
+    /// The path of the TOML file containing an array of mapping rules.
     rule_file: PathBuf,
 }
 
@@ -41,57 +119,35 @@ impl Manipulator for MapAnnos {
                 p
             }
         };
-        let mapping = read_config(read_from_path.as_path())?;
-        self.run(graph, mapping, &tx, &step_id)?;
-        Ok(())
-    }
-}
+        let config = read_config(read_from_path.as_path())?;
 
-impl MapAnnos {
-    fn run(
-        &self,
-        graph: &mut AnnotationGraph,
-        mapping: Mapping,
-        tx: &Option<StatusSender>,
-        step_id: &StepID,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let mut update = GraphUpdate::default();
-        let corpus_name = "current";
-        let tmp_dir = tempdir()?;
-        graph.save_to(&tmp_dir.path().join(corpus_name))?;
-        let cs = CorpusStorage::with_auto_cache_size(tmp_dir.path(), true)?;
-        let progress = ProgressReporter::new(tx.clone(), step_id.clone(), mapping.rules.len())?;
-        for rule in mapping.rules {
-            let query = SearchQuery {
-                corpus_names: &["current"],
-                query: rule.query.as_str(),
-                query_language: QueryLanguage::AQL,
-                timeout: None,
+        graph.ensure_loaded_all()?;
+
+        let progress = ProgressReporter::new(tx.clone(), step_id.clone(), config.rules.len())?;
+        let mut updates = {
+            let tok_helper = TokenHelper::new(graph)?;
+            let all_part_of_gs: Vec<_> = graph
+                .get_all_components(Some(AnnotationComponentType::PartOf), None)
+                .into_iter()
+                .filter_map(|c| graph.get_graphstorage(&c))
+                .collect();
+            let all_part_of_edge_container: Vec<_> = all_part_of_gs
+                .iter()
+                .map(|gs| gs.as_edgecontainer())
+                .collect();
+            let part_of_gs = UnionEdgeContainer::new(all_part_of_edge_container);
+            let mut map_impl = MapperImpl {
+                config,
+                added_spans: 0,
+                graph,
+                part_of_gs,
+                tok_helper,
+                progress,
             };
-            let search_results = cs.find(
-                query,
-                0,
-                None,
-                graphannis::corpusstorage::ResultOrder::NotSorted,
-            )?;
-            for m in search_results {
-                let matching_nodes = m
-                    .split(' ')
-                    .filter_map(|s| s.split("::").last())
-                    .collect_vec();
-                let target = rule.target - 1;
-                if let Some(node_name) = matching_nodes.get(target) {
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: rule.ns.to_string(),
-                        anno_name: rule.name.to_string(),
-                        anno_value: rule.value.to_string(),
-                    })?;
-                }
-            }
-            progress.worked(1)?;
-        }
-        graph.apply_update(&mut update, |_| {})?;
+            map_impl.run()?
+        };
+        graph.apply_update(&mut updates, |_| {})?;
+
         Ok(())
     }
 }
@@ -102,39 +158,440 @@ fn read_config(path: &Path) -> Result<Mapping, Box<dyn std::error::Error>> {
     Ok(m)
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct Mapping {
     rules: Vec<Rule>,
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize, Debug)]
+#[serde(untagged)]
+enum TargetRef {
+    Node(usize),
+    Span(Vec<usize>),
+}
+
+impl TargetRef {
+    fn resolve_value(
+        &self,
+        graph: &AnnotationGraph,
+        mg: &[Match],
+        sep: char,
+    ) -> anyhow::Result<String> {
+        let targets: Vec<usize> = match self {
+            TargetRef::Node(n) => vec![*n],
+            TargetRef::Span(t) => t.clone(),
+        };
+        let mut result = String::new();
+        for target_node in targets {
+            let m = mg
+                .get(target_node - 1)
+                .with_context(|| format!("target {target_node} does not exist in result"))?;
+            let anno_key = if m.anno_key.as_ref() == NODE_TYPE_KEY.as_ref() {
+                TOKEN_KEY.clone()
+            } else {
+                m.anno_key.clone()
+            };
+            // Extract the annotation value for this match
+            let orig_val = graph
+                .get_node_annos()
+                .get_value_for_item(&m.node, &anno_key)?
+                .unwrap_or_default();
+            if !result.is_empty() {
+                result.push(sep);
+            }
+            result.push_str(&orig_val);
+        }
+        Ok(result)
+    }
+}
+
+#[derive(Clone, Deserialize, Debug)]
+#[serde(untagged)]
+enum Value {
+    Fixed(String),
+    Copy {
+        /// The target node(s) of the query the annotation is fetched from. If
+        /// more than one target is given, the strings a separated with a space
+        /// character.
+        copy: TargetRef,
+    },
+    Replace {
+        /// The target node(s) of the query the annotation is fetched from. If
+        /// more than one target is given, the strings a separated with a space
+        /// character.
+        target: TargetRef,
+        /// Pairs of regular expression that is used to find parts of the string to be
+        /// replaced and the fixed strings the matches are replaced with.
+        replacements: Vec<(String, String)>,
+    },
+}
+
+#[derive(Clone, Debug, Deserialize)]
 struct Rule {
     query: String,
-    target: usize,
+    target: TargetRef,
     ns: String,
     name: String,
-    value: String,
+    value: Value,
+}
+
+impl Rule {
+    fn resolve_value(&self, graph: &AnnotationGraph, mg: &[Match]) -> anyhow::Result<String> {
+        match &self.value {
+            Value::Fixed(val) => Ok(val.clone()),
+            Value::Copy { copy } => copy.resolve_value(graph, mg, ' '),
+            Value::Replace {
+                target,
+                replacements,
+            } => {
+                let mut val = target.resolve_value(graph, mg, ' ')?;
+                for (search, replace) in replacements {
+                    // replace all occurences of the value
+                    let search = Regex::new(search)?;
+                    val = search.replace_all(&val, replace).to_string();
+                }
+                Ok(val)
+            }
+        }
+    }
+}
+
+struct MapperImpl<'a> {
+    config: Mapping,
+    added_spans: usize,
+    graph: &'a AnnotationGraph,
+    part_of_gs: UnionEdgeContainer<'a>,
+    tok_helper: TokenHelper<'a>,
+    progress: ProgressReporter,
+}
+
+impl<'a> MapperImpl<'a> {
+    fn run(&mut self) -> anyhow::Result<GraphUpdate> {
+        let mut update = GraphUpdate::default();
+
+        for rule in self.config.rules.clone() {
+            let query = graphannis::aql::parse(&rule.query, false)
+                .with_context(|| format!("could not parse query '{}'", &rule.query))?;
+            let result_it =
+                graphannis::aql::execute_query_on_graph(self.graph, &query, true, None)?;
+            for match_group in result_it {
+                let match_group = match_group?;
+                match rule.target {
+                    TargetRef::Node(target) => {
+                        self.map_single_node(&rule, target, &match_group, &mut update)?;
+                    }
+                    TargetRef::Span(ref all_targets) => {
+                        self.map_span(&rule, all_targets, &match_group, &mut update)?;
+                    }
+                }
+            }
+
+            self.progress.worked(1)?;
+        }
+        Ok(update)
+    }
+
+    fn map_single_node(
+        &self,
+        rule: &Rule,
+        target: usize,
+        match_group: &[Match],
+        update: &mut GraphUpdate,
+    ) -> anyhow::Result<()> {
+        if let Some(m) = match_group.get(target - 1) {
+            let match_node_name = self
+                .graph
+                .get_node_annos()
+                .get_value_for_item(&m.node, &NODE_NAME_KEY)?
+                .context("Missing node name for matched node")?;
+            update.add_event(UpdateEvent::AddNodeLabel {
+                node_name: match_node_name.to_string(),
+                anno_ns: rule.ns.to_string(),
+                anno_name: rule.name.to_string(),
+                anno_value: rule.resolve_value(self.graph, match_group)?,
+            })?;
+        }
+        Ok(())
+    }
+
+    fn map_span(
+        &mut self,
+        rule: &Rule,
+        targets: &[usize],
+        match_group: &[Match],
+        update: &mut GraphUpdate,
+    ) -> anyhow::Result<()> {
+        if let Some(first_match) = targets
+            .first()
+            .copied()
+            .and_then(|t| match_group.get(t - 1))
+        {
+            // Calculate all token that should be covered by the newly create span
+            let mut covered_token = BTreeSet::new();
+            for t in targets {
+                if let Some(n) = match_group.get(t - 1) {
+                    if self.tok_helper.is_token(n.node)? {
+                        covered_token.insert(n.node);
+                    } else {
+                        covered_token.extend(self.tok_helper.covered_token(n.node)?);
+                    }
+                }
+            }
+
+            // Determine the new node name by extending the node name of the first target
+            let first_node_name = self
+                .graph
+                .get_node_annos()
+                .get_value_for_item(&first_match.node, &NODE_NAME_KEY)?
+                .context("Missing node name")?;
+            let new_node_name = format!("{first_node_name}_map_{}", self.added_spans);
+            self.added_spans += 1;
+
+            // Add the node and the annotation value according to the rule
+            update.add_event(UpdateEvent::AddNode {
+                node_name: new_node_name.clone(),
+                node_type: "node".to_string(),
+            })?;
+            update.add_event(UpdateEvent::AddNodeLabel {
+                node_name: new_node_name.clone(),
+                anno_ns: rule.ns.to_string(),
+                anno_name: rule.name.to_string(),
+                anno_value: rule.resolve_value(self.graph, match_group)?,
+            })?;
+
+            // Add the new node to the common parent
+            if let Some(parent_node) = self.part_of_gs.get_outgoing_edges(first_match.node).next() {
+                let parent_node = parent_node?;
+                let parent_node_name = self
+                    .graph
+                    .get_node_annos()
+                    .get_value_for_item(&parent_node, &NODE_NAME_KEY)?
+                    .context("Missing node name for parent node")?;
+                update.add_event(UpdateEvent::AddEdge {
+                    source_node: new_node_name.clone(),
+                    target_node: parent_node_name.to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::PartOf.to_string(),
+                    component_name: "".to_string(),
+                })?;
+            }
+            // Add the coverage edges to the covered tokens
+            for t in covered_token {
+                let token_node_name = self
+                    .graph
+                    .get_node_annos()
+                    .get_value_for_item(&t, &NODE_NAME_KEY)?
+                    .context("Missing node name for covered token")?;
+                update.add_event(UpdateEvent::AddEdge {
+                    source_node: new_node_name.clone(),
+                    target_node: token_node_name.to_string(),
+                    layer: DEFAULT_NS.to_string(),
+                    component_type: AnnotationComponentType::Coverage.to_string(),
+                    component_name: "".to_string(),
+                })?;
+            }
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeSet, sync::mpsc};
+    use std::sync::mpsc;
 
     use graphannis::{
-        corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
+        aql,
         model::AnnotationComponentType,
         update::{GraphUpdate, UpdateEvent},
-        AnnotationGraph, CorpusStorage,
+        AnnotationGraph,
     };
-    use graphannis_core::{
-        annostorage::ValueSearch,
-        graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY},
-        util::join_qname,
-    };
-    use itertools::Itertools;
-    use tempfile::tempdir;
+    use graphannis_core::{annostorage::ValueSearch, graph::ANNIS_NS};
+    use tempfile::NamedTempFile;
 
-    use super::{MapAnnos, Mapping};
+    use crate::{manipulator::Manipulator, test_util, util::example_generator, StepID};
+
+    use super::*;
+
+    #[test]
+    fn test_resolve_value_fixed() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
+        let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let fixed_value = Rule {
+            query: "tok".to_string(),
+            target: super::TargetRef::Node(1),
+            ns: "test_ns".to_string(),
+            name: "test".to_string(),
+            value: Value::Fixed("myvalue".to_string()),
+        };
+
+        let resolved = fixed_value.resolve_value(&g, &vec![]).unwrap();
+        assert_eq!("myvalue", resolved);
+    }
+
+    #[test]
+    fn test_resolve_value_copy() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
+        let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let config = r#"
+        [[rules]]                                                                                      
+        query = "tok"
+        target = 1
+        ns = "test_ns" 
+        name = "test"
+        value = {copy = 1}
+        "#;
+
+        let m: Mapping = toml::from_str(config).unwrap();
+
+        let tok_match = g
+            .get_node_annos()
+            .exact_anno_search(Some("annis"), "tok", ValueSearch::Some("complicated"))
+            .next()
+            .unwrap()
+            .unwrap();
+
+        let resolved = m.rules[0].resolve_value(&g, &vec![tok_match]).unwrap();
+        assert_eq!("complicated", resolved);
+    }
+
+    #[test]
+    fn test_resolve_value_replace_simple() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
+        let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let fixed_value = Rule {
+            query: "tok".to_string(),
+            target: super::TargetRef::Node(1),
+            ns: "test_ns".to_string(),
+            name: "test".to_string(),
+            value: Value::Replace {
+                target: TargetRef::Node(1),
+                replacements: vec![("cat".to_string(), "dog".to_string())],
+            },
+        };
+
+        let tok_match = g
+            .get_node_annos()
+            .exact_anno_search(Some("annis"), "tok", ValueSearch::Some("complicated"))
+            .next()
+            .unwrap()
+            .unwrap();
+
+        let resolved = fixed_value.resolve_value(&g, &vec![tok_match]).unwrap();
+        assert_eq!("complidoged", resolved);
+    }
+
+    #[test]
+    fn test_resolve_value_replace_with_backreference() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
+        let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let fixed_value = Rule {
+            query: "tok".to_string(),
+            target: super::TargetRef::Node(1),
+            ns: "test_ns".to_string(),
+            name: "test".to_string(),
+            value: Value::Replace {
+                target: TargetRef::Node(1),
+                replacements: vec![("cat.*".to_string(), "$0$0".to_string())],
+            },
+        };
+
+        let tok_match = g
+            .get_node_annos()
+            .exact_anno_search(Some("annis"), "tok", ValueSearch::Some("complicated"))
+            .next()
+            .unwrap()
+            .unwrap();
+
+        let resolved = fixed_value.resolve_value(&g, &vec![tok_match]).unwrap();
+        assert_eq!("complicatedcated", resolved);
+    }
+
+    #[test]
+    fn test_parse_complicated_replace() {
+        let config = r#"
+[[rules]]                                                                                      
+query = "tok=\"New York\""
+target = 1
+ns = "" 
+name = "abbr"
+
+[rules.value]
+target = 1
+replacements = [["([A-Z])[a-z]+ ([A-Z])[a-z]+", "$1$2"]]
+"#;
+
+        let m: Mapping = toml::from_str(config).unwrap();
+
+        let g = source_graph(false).unwrap();
+
+        let newyork_match = g
+            .get_node_annos()
+            .exact_anno_search(Some("annis"), "tok", ValueSearch::Some("New York"))
+            .next()
+            .unwrap()
+            .unwrap();
+
+        let result = m.rules[0].resolve_value(&g, &[newyork_match]).unwrap();
+        assert_eq!("NY", result);
+    }
+
+    #[test]
+    fn test_map_spans() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
+        let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let config = r#"
+[[rules]]            
+query = "tok=/more/ . tok"
+target = [1,2]
+ns = "mapper"
+name = "form"
+value = "comparison"
+        "#;
+        let tmp = NamedTempFile::new().unwrap();
+        std::fs::write(tmp.path(), config).unwrap();
+        let mapper = MapAnnos {
+            rule_file: tmp.path().to_path_buf(),
+        };
+        let step_id = StepID {
+            module_name: "test_map".to_string(),
+            path: None,
+        };
+        mapper
+            .manipulate_corpus(&mut g, tmp.path().parent().unwrap(), step_id, None)
+            .unwrap();
+
+        let query = aql::parse(
+            "mapper:form=\"comparison\" & \"more\" . \"complicated\" & #1 _l_ #2 & #1 _r_ #3",
+            false,
+        )
+        .unwrap();
+        let result: Vec<_> = aql::execute_query_on_graph(&g, &query, true, None)
+            .unwrap()
+            .collect();
+        assert_eq!(1, result.len());
+        assert_eq!(true, result[0].is_ok());
+    }
 
     #[test]
     fn test_map_annos_in_mem() {
@@ -150,134 +607,54 @@ mod tests {
 
     fn main_test(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
         let config = r#"
-            [mapping]
+[[rules]]            
+query = "tok=/I/"
+target = 1
+ns = ""
+name = "pos"
+value = "PRON"            
 
-            [[rules]]            
-            query = "tok=/I/"
-            target = 1
-            ns = ""
-            name = "pos"
-            value = "PRON"            
-            
-            [[rules]]
-            query = "tok=/am/"
-            target = 1
-            ns = ""
-            name = "pos"
-            value = "VERB"            
-            
-            [[rules]]
-            query = "tok=/in/"
-            target = 1
-            ns = ""
-            name = "pos"
-            value = "ADP"            
-            
-            [[rules]]
-            query = "tok=/New York/"
-            target = 1
-            ns = ""
-            name = "pos"
-            value = "PROPN"
+[[rules]]
+query = "tok=/am/"
+target = 1
+ns = ""
+name = "pos"
+value = "VERB"            
+
+[[rules]]
+query = "tok=/in/"
+target = 1
+ns = ""
+name = "pos"
+value = "ADP"            
+
+[[rules]]
+query = "tok=/New York/"
+target = 1
+ns = ""
+name = "pos"
+value = "PROPN"
         "#;
-        let mapping: Mapping = toml::from_str(config)?;
-        let tmp = tempdir()?;
+        let tmp = NamedTempFile::new().unwrap();
+        std::fs::write(tmp.path(), config).unwrap();
         let mapper = MapAnnos {
-            rule_file: tmp.path().join("rule_file_test.toml"), // dummy path
+            rule_file: tmp.path().to_path_buf(),
         };
-        let (sender, _receiver) = mpsc::channel();
         let mut g = source_graph(on_disk)?;
+        let (sender, _receiver) = mpsc::channel();
         let tx = Some(sender);
-        mapper.run(
-            &mut g,
-            mapping,
-            &tx,
-            &crate::StepID {
-                module_name: "test_map".to_string(),
-                path: None,
-            },
-        )?;
-        let mut e_g = target_graph(on_disk)?;
-        // corpus nodes
-        let e_corpus_nodes: BTreeSet<String> = e_g
-            .get_node_annos()
-            .exact_anno_search(
-                Some(&NODE_TYPE_KEY.ns),
-                &NODE_TYPE_KEY.name,
-                ValueSearch::Some("corpus"),
-            )
-            .into_iter()
-            .map(|r| r.unwrap().node)
-            .map(|id_| {
-                e_g.get_node_annos()
-                    .get_value_for_item(&id_, &NODE_NAME_KEY)
-                    .unwrap()
-                    .unwrap()
-                    .to_string()
-            })
-            .collect();
-        let g_corpus_nodes: BTreeSet<String> = g
-            .get_node_annos()
-            .exact_anno_search(
-                Some(&NODE_TYPE_KEY.ns),
-                &NODE_TYPE_KEY.name,
-                ValueSearch::Some("corpus"),
-            )
-            .into_iter()
-            .map(|r| r.unwrap().node)
-            .map(|id_| {
-                g.get_node_annos()
-                    .get_value_for_item(&id_, &NODE_NAME_KEY)
-                    .unwrap()
-                    .unwrap()
-                    .to_string()
-            })
-            .collect();
-        assert_eq!(e_corpus_nodes, g_corpus_nodes);
-        // anno names
-        let e_anno_names = e_g.get_node_annos().annotation_keys()?;
-        let g_anno_names = g.get_node_annos().annotation_keys()?;
-        let e_name_iter = e_anno_names
-            .iter()
-            .sorted_by(|a, b| join_qname(&a.ns, &a.name).cmp(&join_qname(&b.ns, &b.name)));
-        let g_name_iter = g_anno_names
-            .iter()
-            .sorted_by(|a, b| join_qname(&a.ns, &a.name).cmp(&join_qname(&b.ns, &b.name)));
-        for (e_qname, g_qname) in e_name_iter.zip(g_name_iter) {
-            assert_eq!(
-                e_qname, g_qname,
-                "Differing annotation keys between expected and generated graph: `{:?}` vs. `{:?}`",
-                e_qname, g_qname
-            );
-        }
-        assert_eq!(
-            e_anno_names.len(),
-            g_anno_names.len(),
-            "Expected graph and generated graph do not contain the same number of annotation keys."
-        );
-        let e_c_list = e_g
-            .get_all_components(None, None)
-            .into_iter()
-            .filter(|c| e_g.get_graphstorage(c).unwrap().source_nodes().count() > 0)
-            .collect_vec();
-        let g_c_list = g
-            .get_all_components(None, None)
-            .into_iter()
-            .filter(|c| g.get_graphstorage(c).unwrap().source_nodes().count() > 0) // graph might contain empty components after merge
-            .collect_vec();
-        assert_eq!(
-            e_c_list.len(),
-            g_c_list.len(),
-            "components expected:\n{:?};\ncomponents are:\n{:?}",
-            &e_c_list,
-            &g_c_list
-        );
-        for c in e_c_list {
-            let candidates = g.get_all_components(Some(c.get_type()), Some(c.name.as_str()));
-            assert_eq!(candidates.len(), 1);
-            let c_o = candidates.get(0);
-            assert_eq!(&c, c_o.unwrap());
-        }
+        let step_id = StepID {
+            module_name: "test_map".to_string(),
+            path: None,
+        };
+        mapper
+            .manipulate_corpus(&mut g, tmp.path().parent().unwrap(), step_id, tx)
+            .unwrap();
+
+        let e_g = target_graph(on_disk)?;
+
+        test_util::compare_graphs(&g, &e_g);
+
         //test with queries
         let queries = [
             ("tok=/I/ _=_ pos=/PRON/", 1),
@@ -285,35 +662,30 @@ mod tests {
             ("tok=/in/ _=_ pos=/ADP/", 1),
             ("tok=/New York/ _=_ pos=/PROPN/", 1),
         ];
-        let corpus_name = "current";
-        let tmp_dir_e = tempdir()?;
-        let tmp_dir_g = tempdir()?;
-        e_g.save_to(&tmp_dir_e.path().join(corpus_name))?;
-        g.save_to(&tmp_dir_g.path().join(corpus_name))?;
-        let cs_e = CorpusStorage::with_auto_cache_size(&tmp_dir_e.path(), true)?;
-        let cs_g = CorpusStorage::with_auto_cache_size(&tmp_dir_g.path(), true)?;
+
         for (query_s, expected_n) in queries {
-            let query = SearchQuery {
-                corpus_names: &[corpus_name],
-                query: query_s,
-                query_language: QueryLanguage::AQL,
-                timeout: None,
-            };
-            let matches_e = cs_e.find(query.clone(), 0, None, ResultOrder::Normal)?;
-            let matches_g = cs_g.find(query, 0, None, ResultOrder::Normal)?;
-            assert_eq!(
-        matches_e.len(),
-        expected_n,
-        "Number of results for query `{}` does not match for expected graph. Expected:{} vs. Is:{}",
-        query_s,
-        expected_n,
-        matches_e.len()
-    );
+            let query = graphannis::aql::parse(&query_s, false).unwrap();
+            let matches_e: Result<Vec<_>, graphannis::errors::GraphAnnisError> =
+                graphannis::aql::execute_query_on_graph(&e_g, &query, false, None)?.collect();
+            let matches_g: Result<Vec<_>, graphannis::errors::GraphAnnisError> =
+                graphannis::aql::execute_query_on_graph(&g, &query, false, None)?.collect();
+
+            let mut matches_e = matches_e.unwrap();
+            let mut matches_g = matches_g.unwrap();
+
             assert_eq!(
                 matches_e.len(),
-                matches_g.len(),
-                "Failed with query: {}",
-                query_s
+                expected_n,
+                "Number of results for query `{}` does not match for expected graph. Expected:{} vs. Is:{}",
+                query_s,
+                expected_n,
+                matches_e.len()
+            );
+            matches_e.sort();
+            matches_g.sort();
+            assert_eq!(
+                matches_e, matches_g,
+                "Matches for query '{query_s}' are not equal. {matches_e:?} != {matches_g:?}"
             );
         }
         Ok(())

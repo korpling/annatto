@@ -10,17 +10,13 @@ This is the delimiter between the parts of the conflated annotation in the input
 
 ###  anno
 
-The annotation that holds the conflated values. Can be qualified with a namespace using `::` as delimiter.
+The annotation that holds the conflated values.
 
-###  layer_map
+###  layers
 
 This maps a target annotation name to a list of potential values to be found in the split parts.
 
-###  index_map
-
-This maps annotation names that occur in a fixed position in the conflation sequence. This is easier especially for large numbers of annotation values.
-
 ###  delete
 
-Whether or not to delete the original annotation.
+*No description*
 

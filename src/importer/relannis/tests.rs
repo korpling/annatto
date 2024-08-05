@@ -329,7 +329,12 @@ fn node_by_text_entry_serializer() {
 
 #[test]
 fn parse_relannis_workflow() {
-    let r = workflow::execute_from_file(Path::new("./tests/workflows/relannis.toml"), true, None);
+    let r = workflow::execute_from_file(
+        Path::new("./tests/workflows/relannis.toml"),
+        true,
+        false,
+        None,
+    );
     // This should fail, because the input directory does not exist
     assert_eq!(true, r.is_err());
     assert_eq!(
