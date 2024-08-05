@@ -733,29 +733,24 @@ impl Manipulator for Revise {
         step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let progress_reporter = ProgressReporter::new(tx, step_id.clone(), 8)?;
+        let progress_reporter = ProgressReporter::new_unknown_total_work(tx, step_id.clone())?;
         let mut update = GraphUpdate::default();
         for (old_name, new_name) in &self.node_names {
             rename_nodes(graph, &mut update, old_name, new_name, &step_id)?;
         }
-        progress_reporter.worked(1)?;
         let move_by_ns = self.move_node_annos;
         if !self.remove_nodes.is_empty() {
             remove_nodes(&mut update, &self.remove_nodes)?;
         }
-        progress_reporter.worked(1)?;
         if !self.remove_match.is_empty() {
             remove_by_query(graph, &self.remove_match, &mut update)?;
         }
-        progress_reporter.worked(1)?;
         if !self.node_annos.is_empty() {
             replace_node_annos(graph, &mut update, &self.node_annos, move_by_ns)?;
         }
-        progress_reporter.worked(1)?;
         if !self.edge_annos.is_empty() {
             replace_edge_annos(graph, &mut update, &self.edge_annos)?;
         }
-        progress_reporter.worked(1)?;
         if !self.namespaces.is_empty() {
             let namespaces = read_replace_property_value(&self.namespaces)?;
             let replacements = namespaces
@@ -771,18 +766,15 @@ impl Manipulator for Revise {
                 .collect_vec();
             replace_namespaces(graph, &mut update, replacements)?;
         }
-        progress_reporter.worked(1)?;
         if !self.components.is_empty() {
             revise_components(graph, &self.components, &mut update, &progress_reporter)?;
         }
-        progress_reporter.worked(1)?;
         if !self.remove_subgraph.is_empty() {
             for node_name in &self.remove_subgraph {
                 remove_subgraph(graph, &mut update, node_name)?;
             }
         }
         graph.apply_update(&mut update, |_| {})?;
-        progress_reporter.worked(1)?;
         Ok(())
     }
 }

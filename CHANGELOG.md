@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Using the same type of manipulator in a workflow now shows the correct
   progress.
+- Make the progress report in `revise` mode indeterminate because it is unclear
+  how many operations are actually performed and finishing some steps instantly
+  and others in minutes will cause extremely unrealistic time estimations.
+
+
 
 ## [0.14.0] - 2024-07-24
 
