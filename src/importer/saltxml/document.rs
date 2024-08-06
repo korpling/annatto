@@ -223,23 +223,21 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             .iter()
             .filter(|n| SaltType::from_node(n) == SaltType::MediaDs)
         {
-            let element_id = get_element_id(media_node)
+            let orig_element_id = get_element_id(media_node)
                 .context("Missing element ID for media/audio data source")?;
 
             if let Some(SaltObject::Url(anno_value)) =
                 get_feature_by_qname(media_node, "salt", "SAUDIO_REFERENCE")
             {
-                updates.add_event(UpdateEvent::AddNode {
-                    node_name: element_id.clone(),
-                    node_type: "file".to_string(),
-                })?;
                 // Parse the file URL with the input file location as base path
                 let base_dir = Url::from_directory_path(self.input_directory.canonicalize()?).ok();
                 let referenced_url = Url::options()
                     .base_url(base_dir.as_ref())
                     .parse(&anno_value)?;
 
-                let file_path = if referenced_url.scheme() == "file" {
+                let mut element_id = orig_element_id;
+                let mut file_path = referenced_url.to_string();
+                if referenced_url.scheme() == "file" {
                     // Resolve this file URL against the input direcotry and
                     // store it relative to the current working directory.
                     let referenced_path = Path::new(referenced_url.path());
@@ -248,10 +246,22 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                         &std::env::current_dir()?,
                     )
                     .unwrap_or_else(|| referenced_path.to_path_buf());
-                    referenced_path.to_string_lossy().to_string()
-                } else {
-                    referenced_url.to_string()
+
+                    file_path = referenced_path.to_string_lossy().to_string();
+                    // Use the file name as element ID
+                    if let Some(file_name) = referenced_path.file_name() {
+                        element_id = format!(
+                            "{}/{}",
+                            self.document_node_name,
+                            file_name.to_string_lossy()
+                        );
+                    }
                 };
+                updates.add_event(UpdateEvent::AddNode {
+                    node_name: element_id.clone(),
+                    node_type: "file".to_string(),
+                })?;
+
                 self.media_files
                     .insert(element_id.clone(), file_path.clone());
 

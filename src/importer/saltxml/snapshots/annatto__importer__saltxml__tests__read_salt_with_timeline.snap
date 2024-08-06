@@ -29,7 +29,7 @@ expression: actual
         <node id="dialog.demo/dialog.demo#phon0">
             <data key="k2">datasource</data>
         </node>
-        <node id="dialog.demo/dialog.demo#audio1">
+        <node id="dialog.demo/dialog.demo/dialog.demo.webm">
             <data key="k1">tests/data/import/salt/dialog.demo/dialog.demo/dialog.demo.webm</data>
             <data key="k2">file</data>
         </node>
@@ -2367,7 +2367,7 @@ expression: actual
         </edge>
         <edge id="e482" source="dialog.demo/dialog.demo#phon0" target="dialog.demo/dialog.demo" label="PartOf/annis/">
         </edge>
-        <edge id="e483" source="dialog.demo/dialog.demo#audio1" target="dialog.demo/dialog.demo" label="PartOf/annis/">
+        <edge id="e483" source="dialog.demo/dialog.demo/dialog.demo.webm" target="dialog.demo/dialog.demo" label="PartOf/annis/">
         </edge>
         <edge id="e484" source="dialog.demo/dialog.demo#sTok1" target="dialog.demo/dialog.demo" label="PartOf/annis/">
         </edge>
