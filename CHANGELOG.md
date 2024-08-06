@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `map` manipulator can now add annotated spans and copy values from existing
   annotations. The copied values can be manipulated using regular expressions and
   replacement values.
+- Addes `saltxml` import format
 
 ### Fixed
 
