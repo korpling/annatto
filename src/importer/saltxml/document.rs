@@ -211,6 +211,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
     }
 
     fn map_media_datasources(&mut self, updates: &mut GraphUpdate) -> Result<()> {
+        // TODO: Map time codes from the SAudioRelation as annis::time
         for media_node in self
             .nodes
             .iter()

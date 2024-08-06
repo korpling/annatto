@@ -8,7 +8,7 @@ use graphannis::{
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 
-use super::{get_element_id, get_features, resolve_element, SaltObject, SaltType};
+use super::{get_annotations, get_element_id, get_features, resolve_element, SaltObject, SaltType};
 
 pub(super) struct SaltCorpusStructureMapper {}
 
@@ -38,8 +38,6 @@ impl SaltCorpusStructureMapper {
             .children()
             .filter(|t| t.tag_name().name() == "sCorpusGraphs")
         {
-            // TODO: map corpus graph labels
-
             // Get all nodes
             let nodes = cg
                 .children()
@@ -74,15 +72,17 @@ impl SaltCorpusStructureMapper {
                                 feature_node.attribute("value").unwrap_or_default(),
                             );
 
-                            if annos_ns == Some("salt") && anno_name == "SNAME" {
-                                // Only map this specific feature as document name
-                                if salt_type == SaltType::Document {
-                                    updates.add_event(UpdateEvent::AddNodeLabel {
-                                        node_name: node_name.to_string(),
-                                        anno_ns: ANNIS_NS.to_string(),
-                                        anno_name: "doc".to_string(),
-                                        anno_value: anno_value.to_string(),
-                                    })?;
+                            if annos_ns == Some("salt") {
+                                if anno_name == "SNAME" {
+                                    // Only map this specific feature as document name
+                                    if salt_type == SaltType::Document {
+                                        updates.add_event(UpdateEvent::AddNodeLabel {
+                                            node_name: node_name.to_string(),
+                                            anno_ns: ANNIS_NS.to_string(),
+                                            anno_name: "doc".to_string(),
+                                            anno_value: anno_value.to_string(),
+                                        })?;
+                                    }
                                 }
                             } else {
                                 updates.add_event(UpdateEvent::AddNodeLabel {
@@ -93,8 +93,25 @@ impl SaltCorpusStructureMapper {
                                 })?;
                             }
                         }
+                        // Add annotations
+                        for anno_node in get_annotations(node) {
+                            let annos_ns = anno_node.attribute("namespace");
+                            if annos_ns != Some("salt") {
+                                let anno_name = anno_node.attribute("name").ok_or_else(|| {
+                                    anyhow!("Missing \"name\" attribute for node \"{node_name}\"")
+                                })?;
+                                let anno_value = SaltObject::from(
+                                    anno_node.attribute("value").unwrap_or_default(),
+                                );
 
-                        // TODO: map annotations (that are not features)
+                                updates.add_event(UpdateEvent::AddNodeLabel {
+                                    node_name: node_name.to_string(),
+                                    anno_ns: annos_ns.unwrap_or_default().to_string(),
+                                    anno_name: anno_name.to_string(),
+                                    anno_value: anno_value.to_string(),
+                                })?;
+                            }
+                        }
                     }
                     _ => {}
                 }
