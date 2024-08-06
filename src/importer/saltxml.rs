@@ -4,7 +4,6 @@ use graphannis::update::GraphUpdate;
 use roxmltree::Node;
 use serde::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
-use url::Url;
 
 use crate::progress::ProgressReporter;
 
@@ -56,9 +55,10 @@ impl Importer for ImportSaltXml {
             relative_document_path.push_str(".salt");
             // Get the path from the node name
             let document_path = input_path.join(relative_document_path);
-            let document_file = std::fs::read_to_string(document_path)?;
+            let document_file = std::fs::read_to_string(&document_path)?;
             DocumentMapper::read_document(
                 &document_file,
+                &document_path,
                 self.missing_anno_ns_from_layer,
                 &mut updates,
             )?;
@@ -138,7 +138,7 @@ enum SaltObject {
     Text(String),
     Boolean(bool),
     Integer(i64),
-    Url(Url),
+    Url(String),
     Null,
 }
 
@@ -147,11 +147,7 @@ impl From<&str> for SaltObject {
         if let Some(value) = value.strip_prefix("T::") {
             SaltObject::Text(value.to_string())
         } else if let Some(value) = value.strip_prefix("U::") {
-            if let Ok(o) = Url::parse(value) {
-                SaltObject::Url(o)
-            } else {
-                SaltObject::Null
-            }
+            SaltObject::Url(value.to_string())
         } else if let Some(value) = value.strip_prefix("B::") {
             let value = value.to_ascii_lowercase() == "true";
             SaltObject::Boolean(value)

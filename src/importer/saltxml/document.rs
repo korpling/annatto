@@ -1,6 +1,7 @@
 use std::{
     collections::BTreeMap,
     convert::{TryFrom, TryInto},
+    path::Path,
 };
 
 use anyhow::{bail, Context, Result};
@@ -10,7 +11,9 @@ use graphannis::{
 };
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
+use normpath::{BasePathBuf, PathExt};
 use roxmltree::Node;
+use url::Url;
 
 use super::{
     get_annotations, get_element_id, get_feature_by_qname, resolve_element, SaltObject, SaltType,
@@ -31,11 +34,13 @@ pub(super) struct DocumentMapper<'a, 'input> {
     document_node_name: String,
     token_to_tli: BTreeMap<String, Vec<i64>>,
     missing_anno_ns_from_layer: bool,
+    input_directory: BasePathBuf,
 }
 
 impl<'a, 'input> DocumentMapper<'a, 'input> {
     pub(super) fn read_document(
         input: &'input str,
+        input_path: &Path,
         missing_anno_ns_from_layer: bool,
         updates: &mut GraphUpdate,
     ) -> Result<()> {
@@ -65,6 +70,8 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         let document_node_name =
             get_element_id(&doc.root_element()).context("Missing document ID")?;
 
+        let input_directory = input_path.parent().unwrap_or(input_path).normalize()?;
+
         let mut mapper = DocumentMapper {
             base_texts: BTreeMap::new(),
             media_files: BTreeMap::new(),
@@ -74,6 +81,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             layers,
             document_node_name,
             token_to_tli: BTreeMap::new(),
+            input_directory,
         };
 
         let timeline = mapper
@@ -140,10 +148,10 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         for timeline_rel in self
             .edges
             .iter()
-            .filter(|rel| SaltType::from_node(*rel) == SaltType::TimelineRelation)
+            .filter(|rel| SaltType::from_node(rel) == SaltType::TimelineRelation)
         {
             let source_att = timeline_rel.attribute("source").unwrap_or_default();
-            let token_node = resolve_element(&source_att, "nodes", &self.nodes)
+            let token_node = resolve_element(source_att, "nodes", &self.nodes)
                 .context("Token referenced in STimelineRelation cannot be resolved")?;
             let token_id = get_element_id(&token_node).context("Token has no ID")?;
 
@@ -214,19 +222,37 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             if let Some(SaltObject::Url(anno_value)) =
                 get_feature_by_qname(media_node, "salt", "SAUDIO_REFERENCE")
             {
-                let file_path = anno_value.to_file_path().unwrap();
-                self.media_files
-                    .insert(element_id.clone(), file_path.to_string_lossy().to_string());
-
                 updates.add_event(UpdateEvent::AddNode {
                     node_name: element_id.clone(),
                     node_type: "file".to_string(),
                 })?;
+                // Parse the file URL with the input file location as base path
+                let base_dir = Url::from_directory_path(self.input_directory.canonicalize()?).ok();
+                let referenced_url = Url::options()
+                    .base_url(base_dir.as_ref())
+                    .parse(&anno_value)?;
+
+                let file_path = if referenced_url.scheme() == "file" {
+                    // Resolve this file URL against the input direcotry and
+                    // store it relative to the current working directory.
+                    let referenced_path = Path::new(referenced_url.path());
+                    let referenced_path = pathdiff::diff_paths(
+                        referenced_path.normalize()?,
+                        &std::env::current_dir()?,
+                    )
+                    .unwrap_or_else(|| referenced_path.to_path_buf());
+                    referenced_path.to_string_lossy().to_string()
+                } else {
+                    referenced_url.to_string()
+                };
+                self.media_files
+                    .insert(element_id.clone(), file_path.clone());
+
                 updates.add_event(UpdateEvent::AddNodeLabel {
                     node_name: element_id.clone(),
                     anno_ns: ANNIS_NS.to_string(),
                     anno_name: "file".to_string(),
-                    anno_value: file_path.to_string_lossy().to_string(),
+                    anno_value: file_path,
                 })?;
 
                 updates.add_event(UpdateEvent::AddEdge {
@@ -327,8 +353,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             let target_att_val = rel.attribute("target").unwrap_or_default();
             let target_element = resolve_element(target_att_val, "nodes", &self.nodes)
                 .context("Missing target node")?;
-            let target_id = get_element_id(&target_element).context("Missing target node ID")?;
-            target_id
+            get_element_id(&target_element).context("Missing target node ID")?
         };
 
         let component_name = get_feature_by_qname(rel, "salt", "STYPE")
@@ -556,7 +581,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             let target_att = spanning_rel
                 .attribute("target")
                 .context("Missing target attribute for SSpanningRelation")?;
-            let target_node = resolve_element(&target_att, "nodes", &self.nodes)
+            let target_node = resolve_element(target_att, "nodes", &self.nodes)
                 .context("Could not resolve target for SSpanningRelation")?;
             let target_node_id = get_element_id(&target_node).context("Target token has no ID")?;
 
