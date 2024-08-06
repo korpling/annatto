@@ -242,7 +242,7 @@ fn media_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::er
                             mappings: None,
                         });
                     }
-                    "mp4" | "avi" | "mov" => {
+                    "mp4" | "avi" | "mov" | "webm" => {
                         vis.push(Visualizer {
                             element: "node".to_string(),
                             layer: None,

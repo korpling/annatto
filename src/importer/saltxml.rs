@@ -138,6 +138,7 @@ enum SaltObject {
     Text(String),
     Boolean(bool),
     Integer(i64),
+    Float(f64),
     Url(String),
     Null,
 }
@@ -154,6 +155,9 @@ impl From<&str> for SaltObject {
         } else if let Some(value) = value.strip_prefix("N::") {
             let value = value.parse::<i64>().unwrap_or_default();
             SaltObject::Integer(value)
+        } else if let Some(value) = value.strip_prefix("F::") {
+            let value = value.parse::<f64>().unwrap_or_default();
+            SaltObject::Float(value)
         } else {
             SaltObject::Null
         }
@@ -167,6 +171,7 @@ impl std::fmt::Display for SaltObject {
             SaltObject::Url(val) => write!(f, "{val}"),
             SaltObject::Boolean(val) => write!(f, "{val}"),
             SaltObject::Integer(val) => write!(f, "{val}"),
+            SaltObject::Float(val) => write!(f, "{val}"),
             SaltObject::Null => write!(f, ""),
         }
     }

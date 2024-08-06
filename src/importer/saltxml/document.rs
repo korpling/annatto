@@ -97,10 +97,17 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         if let Some(timeline) = timeline {
             mapper.map_timeline(&timeline, updates)?;
         }
+        if !mapper.media_files.is_empty() {
+            mapper.map_media_relations(updates)?;
+        }
 
         mapper.map_non_token_nodes(updates)?;
 
         Ok(())
+    }
+
+    fn get_tli_node_name(&self, tli: i64) -> String {
+        format!("{}#tli{tli}", self.document_node_name)
     }
 
     fn map_timeline(&mut self, timeline: &Node, updates: &mut GraphUpdate) -> Result<()> {
@@ -109,7 +116,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         if let SaltObject::Integer(number_of_tlis) = number_of_tlis {
             let mut previous_tli = None;
             for i in 0..number_of_tlis {
-                let tli_node_name = format!("{}#tli{i}", self.document_node_name);
+                let tli_node_name = self.get_tli_node_name(i);
                 updates.add_event(UpdateEvent::AddNode {
                     node_name: tli_node_name.clone(),
                     node_type: "node".to_string(),
@@ -164,7 +171,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                 for tli in start..end {
                     updates.add_event(UpdateEvent::AddEdge {
                         source_node: token_id.clone(),
-                        target_node: format!("{}#tli{tli}", self.document_node_name),
+                        target_node: self.get_tli_node_name(tli),
                         layer: ANNIS_NS.to_string(),
                         component_type: AnnotationComponentType::Coverage.to_string(),
                         component_name: "".to_string(),
@@ -211,7 +218,6 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
     }
 
     fn map_media_datasources(&mut self, updates: &mut GraphUpdate) -> Result<()> {
-        // TODO: Map time codes from the SAudioRelation as annis::time
         for media_node in self
             .nodes
             .iter()
@@ -265,6 +271,61 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                 })?;
             }
         }
+        Ok(())
+    }
+
+    fn map_media_relations(&mut self, updates: &mut GraphUpdate) -> Result<()> {
+        for media_rel in self
+            .edges
+            .iter()
+            .filter(|n| SaltType::from_node(n) == SaltType::MediaRelation)
+        {
+            let source_att = media_rel.attribute("source").unwrap_or_default();
+            let token_node = resolve_element(source_att, "nodes", &self.nodes)
+                .context("Token referenced in SAudioRelation cannot be resolved")?;
+            let token_id = get_element_id(&token_node).context("Token has no ID")?;
+
+            let start = get_feature_by_qname(media_rel, "salt", "SSTART")
+                .context("Missing SSTART attribute for SAudioRlation")?;
+            let end = get_feature_by_qname(media_rel, "salt", "SEND")
+                .context("Missing SEND attribute for SAudioRelation")?;
+
+            if let (SaltObject::Float(start), SaltObject::Float(end)) = (start, end) {
+                if let Some(covered_tli) = self.token_to_tli.get(&token_id) {
+                    if let (Some(first_tli), Some(last_tli)) =
+                        (covered_tli.first(), covered_tli.last())
+                    {
+                        if first_tli == last_tli {
+                            // Attach start and end time to the same token
+                            updates.add_event(UpdateEvent::AddNodeLabel {
+                                node_name: self.get_tli_node_name(*first_tli),
+                                anno_ns: "annis".to_string(),
+                                anno_name: "time".to_string(),
+                                anno_value: format!("{start}-{end}"),
+                            })?;
+                        } else {
+                            // Attach start time to first token and end time to
+                            // last token
+                            updates.add_event(UpdateEvent::AddNodeLabel {
+                                node_name: self.get_tli_node_name(*first_tli),
+                                anno_ns: "annis".to_string(),
+                                anno_name: "time".to_string(),
+                                anno_value: format!("{start}-"),
+                            })?;
+                            updates.add_event(UpdateEvent::AddNodeLabel {
+                                node_name: self.get_tli_node_name(*last_tli),
+                                anno_ns: "annis".to_string(),
+                                anno_name: "time".to_string(),
+                                anno_value: format!("-{end}"),
+                            })?;
+                        }
+                    }
+                }
+            } else {
+                bail!("SSTART/SEND not a float")
+            }
+        }
+
         Ok(())
     }
 
@@ -589,7 +650,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             if let Some(tli_token) = self.token_to_tli.get(&target_node_id) {
                 // Add a coverage edge to the indirectly covered timeline item token
                 for tli in tli_token {
-                    let tli_id = format!("{}#tli{tli}", &self.document_node_name);
+                    let tli_id = self.get_tli_node_name(*tli);
                     self.map_edge(
                         spanning_rel,
                         Some(tli_id),
