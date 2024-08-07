@@ -353,11 +353,6 @@
 		<labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/rootCorpus/subCorpus2/doc4#sSpanRel13"/>
 		<labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::sSpanRel13"/>
 	</edges>
-	<edges xsi:type="sDocumentStructure:SPointingRelation" source="//@nodes.7" target="//@nodes.26">
-		<labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/rootCorpus/subCorpus2/doc4#sPointingRel1"/>
-		<labels xsi:type="saltCore:SFeature" namespace="salt" name="STYPE" value="T::anaphoric"/>
-		<labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::sPointingRel1"/>
-	</edges>
 	<layers xsi:type="saltCore:SLayer" nodes="//@nodes.4 //@nodes.5 //@nodes.10 //@nodes.3 //@nodes.7 //@nodes.8 //@nodes.2 //@nodes.6 //@nodes.1 //@nodes.9 //@nodes.11">
 		<labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::l0"/>
 		<labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::morphology"/>
