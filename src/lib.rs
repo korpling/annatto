@@ -27,8 +27,9 @@ use graphannis::AnnotationGraph;
 use importer::{
     conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
     graphml::GraphMLImporter, meta::AnnotateCorpus, none::CreateEmptyCorpus, opus::ImportOpusLinks,
-    ptb::ImportPTB, relannis::ImportRelAnnis, textgrid::ImportTextgrid, toolbox::ImportToolBox,
-    treetagger::ImportTreeTagger, xlsx::ImportSpreadsheet, xml::ImportXML, Importer,
+    ptb::ImportPTB, relannis::ImportRelAnnis, saltxml::ImportSaltXml, textgrid::ImportTextgrid,
+    toolbox::ImportToolBox, treetagger::ImportTreeTagger, xlsx::ImportSpreadsheet, xml::ImportXML,
+    Importer,
 };
 use manipulator::{
     check::Check, chunker::Chunk, collapse::Collapse, enumerate::EnumerateMatches, link::LinkNodes,
@@ -142,6 +143,7 @@ pub enum ReadFrom {
     Path(#[serde(default)] CreateFileNodes),
     PTB(#[serde(default)] ImportPTB),
     RelAnnis(#[serde(default)] ImportRelAnnis),
+    SaltXml(#[serde(default)] ImportSaltXml),
     TextGrid(#[serde(default)] ImportTextgrid),
     Toolbox(#[serde(default)] ImportToolBox),
     TreeTagger(#[serde(default)] ImportTreeTagger),
@@ -168,6 +170,7 @@ impl ReadFrom {
             ReadFrom::Path(m) => m,
             ReadFrom::PTB(m) => m,
             ReadFrom::RelAnnis(m) => m,
+            ReadFrom::SaltXml(m) => m,
             ReadFrom::TextGrid(m) => m,
             ReadFrom::Toolbox(m) => m,
             ReadFrom::TreeTagger(m) => m,
@@ -189,6 +192,7 @@ impl ReadFromDiscriminants {
             ReadFromDiscriminants::Path => CreateFileNodes::DOCS,
             ReadFromDiscriminants::PTB => ImportPTB::DOCS,
             ReadFromDiscriminants::RelAnnis => ImportRelAnnis::DOCS,
+            ReadFromDiscriminants::SaltXml => ImportSaltXml::DOCS,
             ReadFromDiscriminants::TextGrid => ImportTextgrid::DOCS,
             ReadFromDiscriminants::Toolbox => ImportToolBox::DOCS,
             ReadFromDiscriminants::TreeTagger => ImportTreeTagger::DOCS,
@@ -248,6 +252,10 @@ impl ReadFromDiscriminants {
             ReadFromDiscriminants::RelAnnis => (
                 ImportRelAnnis::FIELD_NAMES_AS_SLICE,
                 ImportRelAnnis::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::SaltXml => (
+                ImportSaltXml::FIELD_NAMES_AS_SLICE,
+                ImportSaltXml::FIELD_DOCS,
             ),
         };
         for (idx, n) in field_names.iter().enumerate() {

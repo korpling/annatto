@@ -2,6 +2,7 @@ use super::*;
 use std::path::Path;
 
 use graphannis::AnnotationGraph;
+use insta::assert_snapshot;
 use tempfile::TempDir;
 
 use crate::importer::{exmaralda::ImportEXMARaLDA, Importer};
@@ -46,4 +47,38 @@ fn export_as_zip_with_files() {
         ],
         files
     );
+}
+
+#[test]
+fn export_graphml_with_vis() {
+    let step_id = StepID {
+        module_name: "export_graphml".to_string(),
+        path: None,
+    };
+    let importer = ImportEXMARaLDA::default();
+    let mut updates = importer
+        .import_corpus(
+            Path::new("tests/data/import/exmaralda/clean/import/exmaralda"),
+            step_id.clone(),
+            None,
+        )
+        .unwrap();
+    let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+    g.apply_update(&mut updates, |_| {}).unwrap();
+
+    // Export the annotation graph, but zip the content
+    let mut exporter = GraphMLExporter::default();
+    exporter.guess_vis = true;
+    exporter.stable_order = true;
+
+    let output_path = TempDir::new().unwrap();
+
+    exporter
+        .export_corpus(&g, output_path.path(), step_id, None)
+        .unwrap();
+
+    // Read the generated GraphML file
+    let result_file_path = output_path.path().join("exmaralda.graphml");
+    let graphml = std::fs::read_to_string(result_file_path).unwrap();
+    assert_snapshot!(graphml);
 }
