@@ -69,6 +69,7 @@ fn export_graphml_with_vis() {
     // Export the annotation graph, but zip the content
     let mut exporter = GraphMLExporter::default();
     exporter.guess_vis = true;
+    exporter.stable_order = true;
 
     let output_path = TempDir::new().unwrap();
 
