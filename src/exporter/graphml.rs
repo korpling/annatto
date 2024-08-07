@@ -238,7 +238,7 @@ fn media_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::er
                             layer: None,
                             vis_type: "audio".to_string(),
                             display_name: "audio".to_string(),
-                            visibility: "hidden".to_string(),
+                            visibility: "preloaded".to_string(),
                             mappings: None,
                         });
                     }
@@ -248,7 +248,7 @@ fn media_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::er
                             layer: None,
                             vis_type: "video".to_string(),
                             display_name: "video".to_string(),
-                            visibility: "hidden".to_string(),
+                            visibility: "preloaded".to_string(),
                             mappings: None,
                         });
                     }
