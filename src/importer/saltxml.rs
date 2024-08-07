@@ -88,6 +88,7 @@ enum SaltType {
     Layer,
     MediaDs,
     MediaRelation,
+    MetaAnnotation,
     PointingRelation,
     Span,
     SpanningRelation,
@@ -109,6 +110,7 @@ impl SaltType {
                 "saltCore:SElementId" => SaltType::ElementId,
                 "saltCore:SFeature" => SaltType::Feature,
                 "saltCore:SLayer" => SaltType::Layer,
+                "saltCore:SMetaAnnotation" => SaltType::MetaAnnotation,
                 "sCorpusStructure:SCorpus" => SaltType::Corpus,
                 "sCorpusStructure:SCorpusDocumentRelation" => SaltType::DocumentRelation,
                 "sCorpusStructure:SCorpusRelation" => SaltType::CorpusRelation,
@@ -197,6 +199,14 @@ fn get_features<'a, 'input>(n: &'a Node<'a, 'input>) -> impl Iterator<Item = Nod
 fn get_annotations<'a, 'input>(n: &'a Node<'a, 'input>) -> impl Iterator<Item = Node<'a, 'input>> {
     n.children().filter(|n| {
         n.tag_name().name() == "labels" && SaltType::from_node(n) == SaltType::Annotation
+    })
+}
+
+fn get_meta_annotations<'a, 'input>(
+    n: &'a Node<'a, 'input>,
+) -> impl Iterator<Item = Node<'a, 'input>> {
+    n.children().filter(|n| {
+        n.tag_name().name() == "labels" && SaltType::from_node(n) == SaltType::MetaAnnotation
     })
 }
 

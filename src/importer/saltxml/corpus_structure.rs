@@ -8,7 +8,9 @@ use graphannis::{
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 
-use super::{get_annotations, get_element_id, get_features, resolve_element, SaltObject, SaltType};
+use super::{
+    get_element_id, get_features, get_meta_annotations, resolve_element, SaltObject, SaltType,
+};
 
 pub(super) struct SaltCorpusStructureMapper {}
 
@@ -93,8 +95,8 @@ impl SaltCorpusStructureMapper {
                                 })?;
                             }
                         }
-                        // Add annotations
-                        for anno_node in get_annotations(node) {
+                        // Add meta annotations
+                        for anno_node in get_meta_annotations(node) {
                             let annos_ns = anno_node.attribute("namespace");
                             if annos_ns != Some("salt") {
                                 let anno_name = anno_node.attribute("name").ok_or_else(|| {
