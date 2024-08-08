@@ -1,3 +1,9 @@
+mod corpus_structure;
+mod document;
+#[cfg(test)]
+mod tests;
+
+use corpus_structure::SaltCorpusStructureMapper;
 use documented::{Documented, DocumentedFields};
 use serde::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
@@ -14,15 +20,19 @@ pub struct ExportSaltXml {}
 impl Exporter for ExportSaltXml {
     fn export_corpus(
         &self,
-        _graph: &graphannis::AnnotationGraph,
-        _output_path: &std::path::Path,
+        graph: &graphannis::AnnotationGraph,
+        output_path: &std::path::Path,
         _step_id: crate::StepID,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        todo!()
+        let project_file = output_path.join("saltProject.salt");
+        let mapper = SaltCorpusStructureMapper::new();
+        mapper.map_corpus_structure(graph, &project_file)?;
+
+        Ok(())
     }
 
     fn file_extension(&self) -> &str {
-        todo!()
+        ".salt"
     }
 }
