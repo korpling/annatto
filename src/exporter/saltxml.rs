@@ -36,7 +36,7 @@ impl Exporter for ExportSaltXml {
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mapper = SaltCorpusStructureMapper::new();
-        mapper.map_corpus_structure(graph, &output_path)?;
+        mapper.map_corpus_structure(graph, output_path)?;
 
         Ok(())
     }
@@ -89,8 +89,8 @@ where
         // Node layers
 
         let node_layers = graph.get_node_annos().get_all_values(&LAYER_KEY, false)?;
-        for i in 0..node_layers.len() {
-            layer_positions.insert(node_layers[i].to_string(), i);
+        for (i, l) in node_layers.iter().enumerate() {
+            layer_positions.insert(l.to_string(), i);
         }
 
         // Find all layers and remember their position

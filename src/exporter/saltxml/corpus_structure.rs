@@ -70,6 +70,7 @@ impl SaltCorpusStructureMapper {
         for n in corpus_nodes {
             let n = n?;
             salt_writer.write_node(n.node, "sCorpusStructure:SCorpus")?;
+            // TODO: Map PartOf edges of this corpus/document
         }
 
         writer.write(XmlEvent::end_element())?;
