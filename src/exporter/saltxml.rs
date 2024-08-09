@@ -5,7 +5,7 @@ mod tests;
 
 use std::{
     borrow::Cow,
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
 };
 
 use super::Exporter;
@@ -56,6 +56,9 @@ struct SaltWriter<'a, W> {
     xml: &'a mut EventWriter<W>,
     layer_positions: BiBTreeMap<String, usize>,
     node_positions: BTreeMap<NodeID, usize>,
+    number_of_edges: usize,
+    nodes_in_layer: HashMap<String, Vec<usize>>,
+    edges_in_layer: HashMap<String, Vec<usize>>,
 }
 
 lazy_static! {
@@ -115,7 +118,10 @@ where
             graph,
             xml: writer,
             layer_positions,
+            number_of_edges: 0,
             node_positions: BTreeMap::new(),
+            nodes_in_layer: HashMap::new(),
+            edges_in_layer: HashMap::new(),
         })
     }
 
@@ -142,8 +148,12 @@ where
     }
 
     fn write_node(&mut self, n: NodeID, salt_type: &str) -> Result<()> {
-        let mut node_attributes = Vec::new();
-        node_attributes.push(OwnedAttribute::new(parse_attr_name("xsi:type")?, salt_type));
+        // Remember the position of this node in the XML file
+        let node_position = self.node_positions.len() + 1;
+        self.node_positions.insert(n, node_position);
+
+        let mut attributes = Vec::new();
+        attributes.push(OwnedAttribute::new(parse_attr_name("xsi:type")?, salt_type));
 
         // Add the layer reference to the attributes
         if let Some(layer) = self
@@ -156,14 +166,18 @@ where
                 .get_by_left(layer.as_ref())
                 .context("Unknown position for layer")?;
             let layer_att_value = format!("//@layers.{pos}");
-            node_attributes.push(OwnedAttribute::new(
+            attributes.push(OwnedAttribute::new(
                 parse_attr_name("layer")?,
                 layer_att_value,
             ));
+            self.nodes_in_layer
+                .entry(layer.to_string())
+                .or_default()
+                .push(node_position);
         }
         self.xml.write(XmlEvent::StartElement {
             name: "nodes".into(),
-            attributes: Cow::Borrowed(&node_attributes.iter().map(|a| a.borrow()).collect_vec()),
+            attributes: Cow::Borrowed(&attributes.iter().map(|a| a.borrow()).collect_vec()),
             namespace: Cow::Owned(xml::namespace::Namespace::empty()),
         })?;
 
@@ -216,13 +230,12 @@ where
 
         self.xml.write(XmlEvent::end_element())?;
 
-        // Remember the position of this node in the XML file
-        self.node_positions.insert(n, self.node_positions.len() + 1);
-
         Ok(())
     }
 
     fn write_edge(&mut self, edge: Edge, component: &AnnotationComponent) -> Result<()> {
+        self.number_of_edges += 1;
+
         let gs = self
             .graph
             .get_graphstorage_as_ref(component)
@@ -254,8 +267,8 @@ where
             edge.clone()
         };
 
-        let mut edge_attributes = Vec::new();
-        edge_attributes.push(OwnedAttribute::new(parse_attr_name("xsi:type")?, salt_type));
+        let mut attributes = Vec::new();
+        attributes.push(OwnedAttribute::new(parse_attr_name("xsi:type")?, salt_type));
 
         let source_position = self
             .node_positions
@@ -267,11 +280,11 @@ where
             .get(&output_edge.target)
             .context("Missing position for target node")?;
 
-        edge_attributes.push(OwnedAttribute::new(
+        attributes.push(OwnedAttribute::new(
             parse_attr_name("source")?,
             format!("//@nodes.{source_position}"),
         ));
-        edge_attributes.push(OwnedAttribute::new(
+        attributes.push(OwnedAttribute::new(
             parse_attr_name("source")?,
             format!("//@nodes.{target_position}"),
         ));
@@ -283,14 +296,18 @@ where
                 .get_by_left(component.layer.as_str())
                 .context("Unknown position for layer")?;
             let layer_att_value = format!("//@layers.{pos}");
-            edge_attributes.push(OwnedAttribute::new(
+            attributes.push(OwnedAttribute::new(
                 parse_attr_name("layer")?,
                 layer_att_value,
             ));
+            self.edges_in_layer
+                .entry(component.layer.to_string())
+                .or_default()
+                .push(self.number_of_edges);
         }
         self.xml.write(XmlEvent::StartElement {
             name: "edges".into(),
-            attributes: Cow::Borrowed(&edge_attributes.iter().map(|a| a.borrow()).collect_vec()),
+            attributes: Cow::Borrowed(&attributes.iter().map(|a| a.borrow()).collect_vec()),
             namespace: Cow::Owned(xml::namespace::Namespace::empty()),
         })?;
         // add all edge labels
@@ -303,4 +320,68 @@ where
 
         Ok(())
     }
+
+    fn write_all_layers(&mut self) -> Result<()> {
+        // Iterate over the layers in order of their position
+        for (layer, pos) in self.layer_positions.right_range(..) {
+            let mut attributes = Vec::new();
+            attributes.push(OwnedAttribute::new(
+                parse_attr_name("xsi:type")?,
+                "saltCore:SLayer",
+            ));
+
+            // Write nodes as attribute
+            if let Some(included_positions) = self.nodes_in_layer.get(layer) {
+                let att_value = position_references_to_string(included_positions, "nodes");
+                attributes.push(OwnedAttribute::new(parse_attr_name("nodes")?, att_value));
+            }
+
+            // Write edges as attributes
+            if let Some(included_positions) = self.edges_in_layer.get(layer) {
+                let att_value = position_references_to_string(included_positions, "edges");
+                attributes.push(OwnedAttribute::new(parse_attr_name("edges")?, att_value));
+            }
+
+            self.xml.write(XmlEvent::StartElement {
+                name: "layers".into(),
+                attributes: Cow::Borrowed(&attributes.iter().map(|a| a.borrow()).collect_vec()),
+                namespace: Cow::Owned(xml::namespace::Namespace::empty()),
+            })?;
+
+            let marshalled_id = format!("T::l{pos}");
+            let id_label = XmlEvent::start_element("labels")
+                .attr("xsi:type", "saltCore:SElementId")
+                .attr("namespace", "salt")
+                .attr("name", "id")
+                .attr("value", &marshalled_id);
+            self.xml.write(id_label)?;
+            self.xml.write(XmlEvent::end_element())?;
+
+            let marshalled_name = format!("T::{layer}");
+            let id_label = XmlEvent::start_element("labels")
+                .attr("xsi:type", "saltCore:SFeature")
+                .attr("namespace", "salt")
+                .attr("name", "SNAME")
+                .attr("value", &marshalled_name);
+            self.xml.write(id_label)?;
+            self.xml.write(XmlEvent::end_element())?;
+
+            self.xml.write(XmlEvent::end_element())?;
+        }
+        Ok(())
+    }
+}
+
+fn position_references_to_string(included_positions: &[usize], att_name: &str) -> String {
+    let mut att_value = String::new();
+    for (i, pos) in included_positions.iter().enumerate() {
+        if i > 0 {
+            att_value.push(' ');
+        }
+        att_value.push_str("//@");
+        att_value.push_str(att_name);
+        att_value.push('.');
+        att_value.push_str(&pos.to_string());
+    }
+    att_value
 }

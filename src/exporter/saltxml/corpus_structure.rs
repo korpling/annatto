@@ -91,7 +91,12 @@ impl SaltCorpusStructureMapper {
             }
         }
 
+        // Write out the layer XML nodes
+        salt_writer.write_all_layers()?;
+
+        // Close <sCorpusGraphs>
         writer.write(XmlEvent::end_element())?;
+        // Close <SaltProject>
         writer.write(XmlEvent::end_element())?;
 
         Ok(())
