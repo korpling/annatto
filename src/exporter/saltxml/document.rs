@@ -53,7 +53,7 @@ impl SaltDocumentGraphMapper {
             .get_value_for_item(&document_node_id, &NODE_NAME_KEY)?
             .context("Missing node name for document")?;
         let document_file_name = document_node_name
-            .split("/")
+            .split('/')
             .last()
             .context("Empty document name")?;
         salt_file_path.push(format!("{document_file_name}.salt"));
