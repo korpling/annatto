@@ -1,6 +1,7 @@
 use std::ffi::OsStr;
 
-use graphannis::AnnotationGraph;
+use anyhow::Context;
+use graphannis::{graph::Edge, model::AnnotationComponentType, AnnotationGraph};
 use graphannis_core::{
     annostorage::ValueSearch,
     graph::{ANNIS_NS, NODE_TYPE},
@@ -62,15 +63,32 @@ impl SaltCorpusStructureMapper {
         let mut salt_writer = SaltWriter::new(graph, &mut writer)?;
 
         // Map all corpus nodes in the graph
-        let corpus_nodes = graph.get_node_annos().exact_anno_search(
-            Some(ANNIS_NS),
-            NODE_TYPE,
-            ValueSearch::Some("corpus"),
-        );
-        for n in corpus_nodes {
-            let n = n?;
+        let corpus_nodes: graphannis_core::errors::Result<Vec<_>> = graph
+            .get_node_annos()
+            .exact_anno_search(Some(ANNIS_NS), NODE_TYPE, ValueSearch::Some("corpus"))
+            .collect();
+        let corpus_nodes = corpus_nodes?;
+        for n in corpus_nodes.iter() {
             salt_writer.write_node(n.node, "sCorpusStructure:SCorpus")?;
-            // TODO: Map PartOf edges of this corpus/document
+        }
+
+        // Map PartOf edges of this corpus/document
+        for partof_component in
+            graph.get_all_components(Some(AnnotationComponentType::PartOf), None)
+        {
+            let partof_gs = graph
+                .get_graphstorage_as_ref(&partof_component)
+                .with_context(|| {
+                    format!("Missing graph storage for component {}", partof_component)
+                })?;
+            for source in corpus_nodes.iter() {
+                let source = source.node;
+                for target in partof_gs.get_outgoing_edges(source) {
+                    let target = target?;
+                    let edge = Edge { source, target };
+                    salt_writer.write_edge(edge, &partof_component)?;
+                }
+            }
         }
 
         writer.write(XmlEvent::end_element())?;
