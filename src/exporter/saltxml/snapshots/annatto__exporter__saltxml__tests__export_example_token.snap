@@ -1,0 +1,6 @@
+---
+source: src/exporter/saltxml/tests.rs
+expression: result
+---
+<?xml version="1.1" encoding="UTF-8"?>
+<sDocumentStructure:SDocumentGraph xmlns:sDocumentStructure="sDocumentStructure" xmlns:saltCore="saltCore" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:version="2.0" />
