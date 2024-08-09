@@ -10,13 +10,13 @@ expression: result
       <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root" />
       <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="root" />
     </nodes>
-    <nodes xsi:type="sCorpusStructure:SCorpus" layer="//@layers.2">
+    <nodes xsi:type="sCorpusStructure:SDocument" layer="//@layers.2">
       <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1" />
       <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="doc1" />
       <labels xsi:type="saltCore:SMetaAnnotation" namespace="test" name="description" value="T::A demo corpus" />
       <labels xsi:type="saltCore:SMetaAnnotation" namespace="test" name="author" value="T::unknown" />
     </nodes>
-    <nodes xsi:type="sCorpusStructure:SCorpus" layer="//@layers.2">
+    <nodes xsi:type="sCorpusStructure:SDocument" layer="//@layers.2">
       <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc2" />
       <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="doc2" />
       <labels xsi:type="saltCore:SMetaAnnotation" namespace="test" name="description" value="T::Another demo corpus" />

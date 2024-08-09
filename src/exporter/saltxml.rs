@@ -8,10 +8,13 @@ use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
 };
 
+use crate::progress::ProgressReporter;
+
 use super::Exporter;
 use anyhow::{anyhow, bail, Context, Result};
 use bimap::BiBTreeMap;
 use corpus_structure::SaltCorpusStructureMapper;
+use document::SaltDocumentGraphMapper;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::{AnnoKey, Annotation, Edge, NodeID},
@@ -37,11 +40,19 @@ impl Exporter for ExportSaltXml {
         &self,
         graph: &graphannis::AnnotationGraph,
         output_path: &std::path::Path,
-        _step_id: crate::StepID,
-        _tx: Option<crate::workflow::StatusSender>,
+        step_id: crate::StepID,
+        tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let mapper = SaltCorpusStructureMapper::new();
-        mapper.map_corpus_structure(graph, output_path)?;
+        let progress = ProgressReporter::new_unknown_total_work(tx.clone(), step_id.clone())?;
+        let corpus_mapper = SaltCorpusStructureMapper::new();
+        progress.info("Mapping SaltXML corpus structure")?;
+        let document_node_ids = corpus_mapper.map_corpus_structure(graph, output_path)?;
+        let progress = ProgressReporter::new(tx, step_id, document_node_ids.len())?;
+        for id in document_node_ids {
+            let doc_mapper = SaltDocumentGraphMapper::new();
+            doc_mapper.map_document_graph(graph, id, output_path)?;
+            progress.worked(1)?;
+        }
 
         Ok(())
     }
