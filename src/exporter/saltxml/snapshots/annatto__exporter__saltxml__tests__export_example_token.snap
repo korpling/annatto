@@ -54,7 +54,17 @@ expression: result
     <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="doc1#span1" />
     <labels xsi:type="saltCore:SAnnotation" namespace="default_ns" name="phrase" value="T::this example" />
   </nodes>
-  <layers xsi:type="saltCore:SLayer">
+  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.1" source="//@nodes.2" layer="//@layers.1" />
+  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.2" source="//@nodes.3" layer="//@layers.1" />
+  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.3" source="//@nodes.4" layer="//@layers.1" />
+  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.4" source="//@nodes.5" layer="//@layers.1" />
+  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.5" source="//@nodes.6" layer="//@layers.1" />
+  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.6" source="//@nodes.7" layer="//@layers.1" />
+  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.7" source="//@nodes.8" layer="//@layers.1" />
+  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.8" source="//@nodes.9" layer="//@layers.1" />
+  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.9" source="//@nodes.10" layer="//@layers.1" />
+  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.10" source="//@nodes.11" layer="//@layers.1" />
+  <layers xsi:type="saltCore:SLayer" edges="//@edges.1 //@edges.2 //@edges.3 //@edges.4 //@edges.5 //@edges.6 //@edges.7 //@edges.8 //@edges.9 //@edges.10">
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::l1" />
     <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::annis" />
   </layers>

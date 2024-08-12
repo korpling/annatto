@@ -2,7 +2,7 @@ use std::{fs::File, sync::Arc};
 
 use anyhow::Context;
 use graphannis::{
-    graph::{GraphStorage, NodeID},
+    graph::{Edge, GraphStorage, NodeID},
     model::AnnotationComponentType,
     AnnotationGraph,
 };
@@ -88,7 +88,7 @@ impl SaltDocumentGraphMapper {
 
         let mut salt_writer = SaltWriter::new(graph, &mut writer)?;
 
-        // Map all annotation nodes in the graph
+        // Map all nodes in the annotation graph
         let nodes: graphannis_core::errors::Result<Vec<_>> = graph
             .get_node_annos()
             .exact_anno_search(Some(ANNIS_NS), NODE_TYPE, ValueSearch::Some("node"))
@@ -105,6 +105,33 @@ impl SaltDocumentGraphMapper {
             let salt_type = get_node_type(n.node, &tok_helper, &all_dominance_gs)?;
             salt_writer.write_node(n.node, salt_type)?;
         }
+
+        // Map the edges
+        for ctype in [
+            AnnotationComponentType::Dominance,
+            AnnotationComponentType::Pointing,
+            AnnotationComponentType::Ordering,
+        ] {
+            for c in graph.get_all_components(Some(ctype), None) {
+                let gs = graph
+                    .get_graphstorage_as_ref(&c)
+                    .context("Missing graph storage for component")?;
+                for source in gs.source_nodes() {
+                    let source = source?;
+                    for target in gs.get_outgoing_edges(source) {
+                        let target = target?;
+                        let edge = Edge { source, target };
+                        salt_writer.write_edge(edge, &c)?;
+                    }
+                }
+            }
+        }
+
+        // TODO: map coverage edges for spans
+
+        // TODO: export textual data sources, STextualRelations
+        // TODO: export media file references and annis:time annotations
+        // TODO: export timeline
 
         // Write out the layer XML nodes
         salt_writer.write_all_layers()?;
