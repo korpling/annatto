@@ -1,7 +1,11 @@
-use std::fs::File;
+use std::{fs::File, sync::Arc};
 
 use anyhow::Context;
-use graphannis::{graph::NodeID, AnnotationGraph};
+use graphannis::{
+    graph::{GraphStorage, NodeID},
+    model::AnnotationComponentType,
+    AnnotationGraph,
+};
 use graphannis_core::{
     annostorage::ValueSearch,
     dfs,
@@ -12,6 +16,29 @@ use xml::{writer::XmlEvent, EmitterConfig};
 use crate::util::{token_helper::TokenHelper, CorpusGraphHelper};
 
 use super::SaltWriter;
+
+fn get_node_type(
+    n: NodeID,
+    tok_helper: &TokenHelper,
+    dominance_gs: &[Arc<dyn GraphStorage>],
+) -> anyhow::Result<&'static str> {
+    if tok_helper.is_token(n)? {
+        Ok("sDocumentStructure:SToken")
+    } else {
+        let mut has_dominance_edge = false;
+        for gs in dominance_gs.iter() {
+            if gs.has_outgoing_edges(n)? {
+                has_dominance_edge = true;
+                break;
+            }
+        }
+        if !has_dominance_edge && tok_helper.has_outgoing_coverage_edges(n)? {
+            Ok("sDocumentStructure:SSpan")
+        } else {
+            Ok("sDocumentStructure:SStructure")
+        }
+    }
+}
 
 pub(super) struct SaltDocumentGraphMapper {}
 
@@ -69,14 +96,14 @@ impl SaltDocumentGraphMapper {
         let nodes = nodes?;
 
         let tok_helper = TokenHelper::new(graph)?;
-
+        let all_dominance_gs: Vec<_> = graph
+            .get_all_components(Some(AnnotationComponentType::Dominance), None)
+            .into_iter()
+            .filter_map(|c| graph.get_graphstorage(&c))
+            .collect();
         for n in nodes.iter() {
-            if tok_helper.is_token(n.node)? {
-                salt_writer.write_node(n.node, "sDocumentStructure:SToken")?;
-            } else {
-                salt_writer.write_node(n.node, "sDocumentStructure:SStructure")?;
-            }
-            // TODO: check if this is a sDocumentStructure:SSpan
+            let salt_type = get_node_type(n.node, &tok_helper, &all_dominance_gs)?;
+            salt_writer.write_node(n.node, salt_type)?;
         }
 
         // Close <SDocumentGraph>

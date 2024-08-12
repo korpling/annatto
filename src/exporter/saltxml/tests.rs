@@ -81,6 +81,20 @@ fn export_example_token() {
     let mut updates = GraphUpdate::new();
     example_generator::create_corpus_structure_simple(&mut updates);
     example_generator::create_tokens(&mut updates, Some("root/doc1"));
+    example_generator::make_span(
+        &mut updates,
+        "root/doc1#span1",
+        &["root/doc1#tok1", "root/doc1#tok2"],
+        true,
+    );
+    updates
+        .add_event(graphannis::update::UpdateEvent::AddNodeLabel {
+            node_name: "root/doc1#span1".into(),
+            anno_ns: "default_ns".into(),
+            anno_name: "phrase".into(),
+            anno_value: "this example".into(),
+        })
+        .unwrap();
 
     let mut g = AnnotationGraph::with_default_graphstorages(true).unwrap();
     g.apply_update(&mut updates, |_msg| {}).unwrap();
