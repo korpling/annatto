@@ -1,3 +1,5 @@
+use std::fs::File;
+
 use anyhow::Context;
 use graphannis::{graph::NodeID, AnnotationGraph};
 use graphannis_core::{dfs, graph::NODE_NAME_KEY};
@@ -18,6 +20,38 @@ impl SaltDocumentGraphMapper {
         document_node_id: NodeID,
         output_path: &std::path::Path,
     ) -> anyhow::Result<()> {
+        let output_file = self.create_saltfile(graph, document_node_id, output_path)?;
+        let mut writer = EmitterConfig::new()
+            .perform_indent(true)
+            .create_writer(output_file);
+
+        writer.write(XmlEvent::StartDocument {
+            version: xml::common::XmlVersion::Version11,
+            encoding: Some("UTF-8"),
+            standalone: None,
+        })?;
+
+        writer.write(
+            XmlEvent::start_element("sDocumentStructure:SDocumentGraph")
+                .ns("xmi", "http://www.omg.org/XMI")
+                .ns("xsi", "http://www.w3.org/2001/XMLSchema-instance")
+                .ns("sDocumentStructure", "sDocumentStructure")
+                .ns("saltCore", "saltCore")
+                .attr("xsi:version", "2.0"),
+        )?;
+
+        // Close <SDocumentGraph>
+        writer.write(XmlEvent::end_element())?;
+
+        Ok(())
+    }
+
+    fn create_saltfile(
+        &self,
+        graph: &AnnotationGraph,
+        document_node_id: NodeID,
+        output_path: &std::path::Path,
+    ) -> anyhow::Result<File> {
         let node_annos = graph.get_node_annos();
         let corpusgraph_helper = CorpusGraphHelper::new(graph);
         let partof_gs = corpusgraph_helper.as_edgecontainer();
@@ -59,28 +93,7 @@ impl SaltDocumentGraphMapper {
         salt_file_path.push(format!("{document_file_name}.salt"));
 
         let output_file = std::fs::File::create(salt_file_path)?;
-        let mut writer = EmitterConfig::new()
-            .perform_indent(true)
-            .create_writer(output_file);
 
-        writer.write(XmlEvent::StartDocument {
-            version: xml::common::XmlVersion::Version11,
-            encoding: Some("UTF-8"),
-            standalone: None,
-        })?;
-
-        writer.write(
-            XmlEvent::start_element("sDocumentStructure:SDocumentGraph")
-                .ns("xmi", "http://www.omg.org/XMI")
-                .ns("xsi", "http://www.w3.org/2001/XMLSchema-instance")
-                .ns("sDocumentStructure", "sDocumentStructure")
-                .ns("saltCore", "saltCore")
-                .attr("xsi:version", "2.0"),
-        )?;
-
-        // Close <SDocumentGraph>
-        writer.write(XmlEvent::end_element())?;
-
-        Ok(())
+        Ok(output_file)
     }
 }
