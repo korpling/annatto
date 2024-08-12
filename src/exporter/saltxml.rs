@@ -110,12 +110,14 @@ where
                 .get_node_annos()
                 .get_all_values(&LAYER_KEY, false)?
                 .into_iter()
+                .filter(|l| !l.is_empty())
                 .map(|l| l.to_string()),
         );
         layer_names.extend(
             graph
                 .get_all_components(None, None)
                 .into_iter()
+                .filter(|c| !c.layer.is_empty())
                 .map(|c| c.layer.to_string()),
         );
         // Create a map of all layer names to their position in the XML file.

@@ -95,6 +95,14 @@ fn export_example_token() {
             anno_value: "this example".into(),
         })
         .unwrap();
+    updates
+        .add_event(graphannis::update::UpdateEvent::AddNodeLabel {
+            node_name: "root/doc1#span1".into(),
+            anno_ns: "annis".into(),
+            anno_name: "layer".into(),
+            anno_value: "test-layer".into(),
+        })
+        .unwrap();
 
     let mut g = AnnotationGraph::with_default_graphstorages(true).unwrap();
     g.apply_update(&mut updates, |_msg| {}).unwrap();

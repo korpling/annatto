@@ -49,9 +49,17 @@ expression: result
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1#tok10" />
     <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="doc1#tok10" />
   </nodes>
-  <nodes xsi:type="sDocumentStructure:SSpan">
+  <nodes xsi:type="sDocumentStructure:SSpan" layer="//@layers.2">
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1#span1" />
     <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="doc1#span1" />
     <labels xsi:type="saltCore:SAnnotation" namespace="default_ns" name="phrase" value="T::this example" />
   </nodes>
+  <layers xsi:type="saltCore:SLayer">
+    <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::l1" />
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::annis" />
+  </layers>
+  <layers xsi:type="saltCore:SLayer" nodes="//@nodes.12">
+    <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::l2" />
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::test-layer" />
+  </layers>
 </sDocumentStructure:SDocumentGraph>

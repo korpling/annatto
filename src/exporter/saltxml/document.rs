@@ -106,6 +106,9 @@ impl SaltDocumentGraphMapper {
             salt_writer.write_node(n.node, salt_type)?;
         }
 
+        // Write out the layer XML nodes
+        salt_writer.write_all_layers()?;
+
         // Close <SDocumentGraph>
         writer.write(XmlEvent::end_element())?;
 
