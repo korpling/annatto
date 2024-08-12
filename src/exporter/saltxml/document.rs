@@ -2,10 +2,16 @@ use std::fs::File;
 
 use anyhow::Context;
 use graphannis::{graph::NodeID, AnnotationGraph};
-use graphannis_core::{dfs, graph::NODE_NAME_KEY};
+use graphannis_core::{
+    annostorage::ValueSearch,
+    dfs,
+    graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE},
+};
 use xml::{writer::XmlEvent, EmitterConfig};
 
-use crate::util::CorpusGraphHelper;
+use crate::util::{token_helper::TokenHelper, CorpusGraphHelper};
+
+use super::SaltWriter;
 
 pub(super) struct SaltDocumentGraphMapper {}
 
@@ -39,6 +45,39 @@ impl SaltDocumentGraphMapper {
                 .ns("saltCore", "saltCore")
                 .attr("xsi:version", "2.0"),
         )?;
+        let node_annos = graph.get_node_annos();
+        let node_name = node_annos
+            .get_value_for_item(&document_node_id, &NODE_NAME_KEY)?
+            .context("Missing node name for document graph")?;
+        let salt_id = format!("T::salt:/{node_name}");
+        writer.write(
+            XmlEvent::start_element("labels")
+                .attr("xsi:type", "saltCore:SElementId")
+                .attr("namespace", "salt")
+                .attr("name", "id")
+                .attr("value", &salt_id),
+        )?;
+        writer.write(XmlEvent::end_element())?;
+
+        let mut salt_writer = SaltWriter::new(graph, &mut writer)?;
+
+        // Map all annotation nodes in the graph
+        let nodes: graphannis_core::errors::Result<Vec<_>> = graph
+            .get_node_annos()
+            .exact_anno_search(Some(ANNIS_NS), NODE_TYPE, ValueSearch::Some("node"))
+            .collect();
+        let nodes = nodes?;
+
+        let tok_helper = TokenHelper::new(graph)?;
+
+        for n in nodes.iter() {
+            if tok_helper.is_token(n.node)? {
+                salt_writer.write_node(n.node, "sDocumentStructure:SToken")?;
+            } else {
+                salt_writer.write_node(n.node, "sDocumentStructure:SStructure")?;
+            }
+            // TODO: check if this is a sDocumentStructure:SSpan
+        }
 
         // Close <SDocumentGraph>
         writer.write(XmlEvent::end_element())?;
