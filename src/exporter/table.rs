@@ -117,13 +117,13 @@ impl Exporter for ExportTable {
             .flatten()
             .filter(|n| !storage.has_ingoing_edges(*n).unwrap_or_default())
         {
-            let mut dfs = CycleSafeDFS::new(
+            let dfs = CycleSafeDFS::new(
                 part_of_storage.as_edgecontainer(),
                 node,
                 0,
                 NodeID::MAX as usize,
             );
-            while let Some(nxt) = dfs.next() {
+            for nxt in dfs {
                 let n = nxt?.node;
                 if graph
                     .get_node_annos()
@@ -187,15 +187,15 @@ impl ExportTable {
             graph.get_all_components(Some(AnnotationComponentType::Coverage), None);
         let coverage_storages = coverage_components
             .iter()
-            .map(|c| graph.get_graphstorage(c))
-            .flatten()
+            .filter_map(|c| graph.get_graphstorage(c))
             .collect_vec();
         let mut index_map = BTreeMap::default();
         for node in ordered_nodes {
             let reachable_nodes = coverage_storages
                 .iter()
-                .map(|s| s.find_connected_inverse(node, 0, std::ops::Bound::Excluded(usize::MAX)))
-                .flatten()
+                .flat_map(|s| {
+                    s.find_connected_inverse(node, 0, std::ops::Bound::Excluded(usize::MAX))
+                })
                 .flatten();
             let mut data = Data::default();
             for rn in reachable_nodes {
