@@ -75,7 +75,7 @@ expression: actual.unwrap()
       <event start="T0" end="T1">PRON</event>
       <event start="T1" end="T2">VERB</event>
       <event start="T2" end="T3">ADP</event>
-      <event start="T3" end="T5">ADP</event>
+      <event start="T3" end="T5">PRON</event>
     </tier>
     <tier speaker="dipl" category="sentence" type="a" id="TIER18" display-name="dipl[sentence]">
       <event start="T0" end="T5">1</event>
