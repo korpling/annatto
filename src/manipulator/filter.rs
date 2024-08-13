@@ -135,7 +135,7 @@ impl Manipulator for FilterNodes {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::{fs, path::Path};
 
     use graphannis::AnnotationGraph;
     use insta::assert_snapshot;
@@ -220,5 +220,14 @@ mod tests {
         let export = export_to_string(&graph, GraphMLExporter::default());
         assert!(export.is_ok(), "error: {:?}", export.err());
         assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
+    fn deserialize() {
+        let toml_str =
+            fs::read_to_string(Path::new("./tests/data/graph_op/filter/deserialize.toml"))
+                .unwrap_or_default();
+        let filter_nodes: Result<FilterNodes, _> = toml::from_str(toml_str.as_str());
+        assert!(filter_nodes.is_ok(), "error: {:?}", filter_nodes.err());
     }
 }
