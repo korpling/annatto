@@ -1,4 +1,9 @@
-use std::{fs::File, sync::Arc};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fs::File,
+    sync::Arc,
+    usize,
+};
 
 use anyhow::Context;
 use graphannis::{
@@ -8,14 +13,25 @@ use graphannis::{
 };
 use graphannis_core::{
     annostorage::ValueSearch,
-    dfs,
+    dfs::CycleSafeDFS,
     graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE},
 };
+use itertools::Itertools;
 use xml::{writer::XmlEvent, EmitterConfig};
 
-use crate::util::{token_helper::TokenHelper, CorpusGraphHelper};
+use crate::util::{
+    token_helper::{TokenHelper, TOKEN_KEY},
+    CorpusGraphHelper,
+};
 
-use super::SaltWriter;
+use super::{SaltWriter, TOK_WHITESPACE_AFTER_KEY, TOK_WHITESPACE_BEFORE_KEY};
+
+#[derive(Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Debug)]
+pub struct TextProperty {
+    text_name: String,
+    start: usize,
+    end: usize,
+}
 
 fn node_is_span(
     n: NodeID,
@@ -148,7 +164,9 @@ impl SaltDocumentGraphMapper {
             }
         }
 
-        // TODO: export textual data sources, STextualRelations
+        // export textual data sources and STextualRelations to the token
+        self.map_textual_ds(graph, document_node_id, &mut salt_writer)?;
+
         // TODO: export media file references and annis:time annotations
         // TODO: export timeline
 
@@ -172,7 +190,7 @@ impl SaltDocumentGraphMapper {
         let partof_gs = corpusgraph_helper.as_edgecontainer();
         let mut last_distance = 0;
         let mut parent_folder_names = Vec::new();
-        for step in dfs::CycleSafeDFS::new(&partof_gs, document_node_id, 1, usize::MAX) {
+        for step in CycleSafeDFS::new(&partof_gs, document_node_id, 1, usize::MAX) {
             let step = step?;
             if step.distance > last_distance {
                 let full_corpus_name = node_annos
@@ -210,5 +228,72 @@ impl SaltDocumentGraphMapper {
         let output_file = std::fs::File::create(salt_file_path)?;
 
         Ok(output_file)
+    }
+
+    fn map_textual_ds(
+        &self,
+        graph: &AnnotationGraph,
+        document_node_id: NodeID,
+        salt_writer: &mut SaltWriter<File>,
+    ) -> anyhow::Result<()> {
+        let ordering_components =
+            graph.get_all_components(Some(AnnotationComponentType::Ordering), None);
+
+        let mut edges_by_text: BTreeMap<String, Vec<TextProperty>> = BTreeMap::new();
+
+        for c in ordering_components {
+            let text_name = c.name.as_str();
+            let gs = graph
+                .get_graphstorage_as_ref(&c)
+                .context("Missing graph storage for component")?;
+
+            // Collect the necessary edge information and the actual text for
+            // this data source by iterating over the ordering edges.
+            let mut content = String::new();
+
+            for root in gs.source_nodes() {
+                let root = root?;
+
+                for step in CycleSafeDFS::new(gs.as_edgecontainer(), root, 0, usize::MAX) {
+                    let step = step?;
+
+                    if let Some(tok_whitespace_before) = graph
+                        .get_node_annos()
+                        .get_value_for_item(&step.node, &TOK_WHITESPACE_BEFORE_KEY)?
+                    {
+                        content.push_str(&tok_whitespace_before)
+                    }
+                    let start = content.len();
+                    if let Some(tok_value) = graph
+                        .get_node_annos()
+                        .get_value_for_item(&step.node, &TOKEN_KEY)?
+                    {
+                        content.push_str(&tok_value)
+                    }
+                    let end = content.len();
+                    if let Some(tok_whitespace_after) = graph
+                        .get_node_annos()
+                        .get_value_for_item(&step.node, &TOK_WHITESPACE_AFTER_KEY)?
+                    {
+                        content.push_str(&tok_whitespace_after)
+                    }
+
+                    let prop = TextProperty {
+                        text_name: text_name.to_string(),
+                        start,
+                        end,
+                    };
+                    edges_by_text
+                        .entry(text_name.to_string())
+                        .or_default()
+                        .push(prop);
+                }
+            }
+            // TODO: check if this actually a timeline
+
+            // TODO find matching "datasource" for this text
+        }
+
+        Ok(())
     }
 }

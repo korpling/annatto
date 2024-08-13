@@ -62,11 +62,17 @@ impl Exporter for ExportSaltXml {
     }
 }
 
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
+enum NodeType {
+    Id(NodeID),
+    Custom(String),
+}
+
 struct SaltWriter<'a, W> {
     graph: &'a AnnotationGraph,
     xml: &'a mut EventWriter<W>,
     layer_positions: BiBTreeMap<String, usize>,
-    node_positions: BTreeMap<NodeID, usize>,
+    node_positions: BTreeMap<NodeType, usize>,
     number_of_edges: usize,
     nodes_in_layer: HashMap<String, Vec<usize>>,
     edges_in_layer: HashMap<String, Vec<usize>>,
@@ -83,6 +89,18 @@ lazy_static! {
         AnnoKey {
             ns: ANNIS_NS.into(),
             name: "doc".into(),
+        }
+    };
+    static ref TOK_WHITESPACE_BEFORE_KEY: AnnoKey = {
+        AnnoKey {
+            ns: ANNIS_NS.into(),
+            name: "tok-whitespace-before".into(),
+        }
+    };
+    static ref TOK_WHITESPACE_AFTER_KEY: AnnoKey = {
+        AnnoKey {
+            ns: ANNIS_NS.into(),
+            name: "tok-whitespace-after".into(),
         }
     };
 }
@@ -163,7 +181,7 @@ where
     fn write_node(&mut self, n: NodeID, salt_type: &str) -> Result<()> {
         // Remember the position of this node in the XML file
         let node_position = self.node_positions.len() + 1;
-        self.node_positions.insert(n, node_position);
+        self.node_positions.insert(NodeType::Id(n), node_position);
 
         let mut attributes = Vec::new();
         attributes.push(OwnedAttribute::new(parse_attr_name("xsi:type")?, salt_type));
@@ -285,12 +303,12 @@ where
 
         let source_position = self
             .node_positions
-            .get(&output_edge.source)
+            .get(&NodeType::Id(output_edge.source))
             .context("Missing position for source node")?;
 
         let target_position = self
             .node_positions
-            .get(&output_edge.target)
+            .get(&NodeType::Id(output_edge.target))
             .context("Missing position for target node")?;
 
         attributes.push(OwnedAttribute::new(
