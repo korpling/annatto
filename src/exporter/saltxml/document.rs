@@ -17,26 +17,22 @@ use crate::util::{token_helper::TokenHelper, CorpusGraphHelper};
 
 use super::SaltWriter;
 
-fn get_node_type(
+fn node_is_span(
     n: NodeID,
     tok_helper: &TokenHelper,
     dominance_gs: &[Arc<dyn GraphStorage>],
-) -> anyhow::Result<&'static str> {
-    if tok_helper.is_token(n)? {
-        Ok("sDocumentStructure:SToken")
+) -> anyhow::Result<bool> {
+    let mut has_dominance_edge = false;
+    for gs in dominance_gs.iter() {
+        if gs.has_outgoing_edges(n)? {
+            has_dominance_edge = true;
+            break;
+        }
+    }
+    if !has_dominance_edge && tok_helper.has_outgoing_coverage_edges(n)? {
+        Ok(true)
     } else {
-        let mut has_dominance_edge = false;
-        for gs in dominance_gs.iter() {
-            if gs.has_outgoing_edges(n)? {
-                has_dominance_edge = true;
-                break;
-            }
-        }
-        if !has_dominance_edge && tok_helper.has_outgoing_coverage_edges(n)? {
-            Ok("sDocumentStructure:SSpan")
-        } else {
-            Ok("sDocumentStructure:SStructure")
-        }
+        Ok(false)
     }
 }
 
@@ -101,8 +97,16 @@ impl SaltDocumentGraphMapper {
             .into_iter()
             .filter_map(|c| graph.get_graphstorage(&c))
             .collect();
+        let mut span_nodes = Vec::new();
         for n in nodes.iter() {
-            let salt_type = get_node_type(n.node, &tok_helper, &all_dominance_gs)?;
+            let salt_type = if tok_helper.is_token(n.node)? {
+                "sDocumentStructure:SToken"
+            } else if node_is_span(n.node, &tok_helper, &all_dominance_gs)? {
+                span_nodes.push(n.node);
+                "sDocumentStructure:SSpan"
+            } else {
+                "sDocumentStructure:SStructure"
+            };
             salt_writer.write_node(n.node, salt_type)?;
         }
 
@@ -127,7 +131,22 @@ impl SaltDocumentGraphMapper {
             }
         }
 
-        // TODO: map coverage edges for spans
+        // Map coverage edges for spans
+        for c in graph.get_all_components(Some(AnnotationComponentType::Coverage), None) {
+            let gs = graph
+                .get_graphstorage_as_ref(&c)
+                .context("Missing graph storage for component")?;
+            for source in span_nodes.iter() {
+                for target in gs.get_outgoing_edges(*source) {
+                    let target = target?;
+                    let edge = Edge {
+                        source: *source,
+                        target,
+                    };
+                    salt_writer.write_edge(edge, &c)?;
+                }
+            }
+        }
 
         // TODO: export textual data sources, STextualRelations
         // TODO: export media file references and annis:time annotations
