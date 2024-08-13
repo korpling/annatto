@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::anyhow;
+use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::{AnnoKey, NodeID},
     model::{AnnotationComponent, AnnotationComponentType},
@@ -17,20 +18,49 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use serde::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Exporter;
 
 use crate::deserialize::deserialize_anno_key;
 
-#[derive(Deserialize)]
-pub(crate) struct ExportTable {
+/// This module exports all ordered nodes and nodes connected by coverage edges of any name into a table.
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[serde(deny_unknown_fields)]
+pub struct ExportTable {
+    /// The provided annotation key defines which nodes within the part-of component define a document. All nodes holding said annotation
+    /// will be exported to a file with the name according to the annotation value. Therefore annotation values must not contain path
+    /// delimiters.
+    ///
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// doc_anno = "my_namespace::document"
+    /// ```
+    ///
+    /// The default is `annis::doc`.
     #[serde(
         deserialize_with = "deserialize_anno_key",
         default = "default_doc_anno"
     )]
     doc_anno: AnnoKey,
+    /// The provided character defines the column delimiter. The default value is tab.
+    ///
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// delimiter = ";"
+    /// ```
     #[serde(default = "default_delimiter")]
     delimiter: char,
+    /// The provided character will be used for quoting values. If nothing is provided, all columns will contain bare values. If a character is provided,
+    /// all values will be quoted.
+    ///
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// quote_char = "\""
+    /// ```
     #[serde(default)]
     quote_char: Option<char>,
 }
