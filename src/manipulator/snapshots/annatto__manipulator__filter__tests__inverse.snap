@@ -1,6 +1,6 @@
 ---
-source: src/exporter/graphml/tests.rs
-expression: graphml
+source: src/manipulator/filter.rs
+expression: export.unwrap()
 ---
 <?xml version="1.0" encoding="UTF-8"?>
 <graphml>
@@ -28,35 +28,6 @@ expression: graphml
     <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
         <data key="k0"><![CDATA[
 # configure visualizations here
-
-[[visualizers]]
-element = "node"
-vis_type = "grid"
-display_name = "Key Word in Context"
-visibility = "permanent"
-
-[visualizers.mappings]
-annos = "/dipl::dipl/,/norm::norm/"
-hide_tok = "true"
-
-[[visualizers]]
-element = "node"
-vis_type = "grid"
-display_name = "annotations"
-visibility = "hidden"
-
-[visualizers.mappings]
-annos = "/dipl::dipl/,/dipl::sentence/,/norm::lemma/,/norm::norm/,/norm::pos/"
-escape_html = "false"
-hide_tok = "true"
-show_ns = "false"
-
-[[visualizers]]
-element = "node"
-vis_type = "audio"
-display_name = "audio"
-visibility = "preloaded"
-
 ]]></data>
         <node id="exmaralda">
             <data key="k13">corpus</data>
@@ -164,13 +135,6 @@ visibility = "preloaded"
             <data key="k18">1</data>
             <data key="k19">0-5.55555</data>
         </node>
-        <node id="exmaralda/test_doc#a_norm_T286-T0">
-            <data key="k11">norm</data>
-            <data key="k12">I</data>
-            <data key="k13">node</data>
-            <data key="k17">PRON</data>
-            <data key="k19">0-1.11111</data>
-        </node>
         <node id="exmaralda/test_doc#a_norm_T0-T1">
             <data key="k11">norm</data>
             <data key="k12">be</data>
@@ -184,13 +148,6 @@ visibility = "preloaded"
             <data key="k13">node</data>
             <data key="k17">ADP</data>
             <data key="k19">2.22222-3.33333</data>
-        </node>
-        <node id="exmaralda/test_doc#a_norm_T2-T4">
-            <data key="k11">norm</data>
-            <data key="k12">New York</data>
-            <data key="k13">node</data>
-            <data key="k17">PRON</data>
-            <data key="k19">3.33333-5.55555</data>
         </node>
         <edge id="e0" source="exmaralda/test_doc#t_dipl_T286-T1" target="exmaralda/test_doc#T286" label="Coverage/annis/">
         </edge>
@@ -222,79 +179,69 @@ visibility = "preloaded"
         </edge>
         <edge id="e14" source="exmaralda/test_doc#a_dipl_T286-T4" target="exmaralda/test_doc#T3" label="Coverage/annis/">
         </edge>
-        <edge id="e15" source="exmaralda/test_doc#a_norm_T286-T0" target="exmaralda/test_doc#T286" label="Coverage/annis/">
+        <edge id="e15" source="exmaralda/test_doc#a_norm_T0-T1" target="exmaralda/test_doc#T0" label="Coverage/annis/">
         </edge>
-        <edge id="e16" source="exmaralda/test_doc#a_norm_T0-T1" target="exmaralda/test_doc#T0" label="Coverage/annis/">
+        <edge id="e16" source="exmaralda/test_doc#a_norm_T1-T2" target="exmaralda/test_doc#T1" label="Coverage/annis/">
         </edge>
-        <edge id="e17" source="exmaralda/test_doc#a_norm_T1-T2" target="exmaralda/test_doc#T1" label="Coverage/annis/">
+        <edge id="e17" source="exmaralda/test_doc#T286" target="exmaralda/test_doc#T0" label="Ordering/annis/">
         </edge>
-        <edge id="e18" source="exmaralda/test_doc#a_norm_T2-T4" target="exmaralda/test_doc#T2" label="Coverage/annis/">
+        <edge id="e18" source="exmaralda/test_doc#T0" target="exmaralda/test_doc#T1" label="Ordering/annis/">
         </edge>
-        <edge id="e19" source="exmaralda/test_doc#a_norm_T2-T4" target="exmaralda/test_doc#T3" label="Coverage/annis/">
+        <edge id="e19" source="exmaralda/test_doc#T1" target="exmaralda/test_doc#T2" label="Ordering/annis/">
         </edge>
-        <edge id="e20" source="exmaralda/test_doc#T286" target="exmaralda/test_doc#T0" label="Ordering/annis/">
+        <edge id="e20" source="exmaralda/test_doc#T2" target="exmaralda/test_doc#T3" label="Ordering/annis/">
         </edge>
-        <edge id="e21" source="exmaralda/test_doc#T0" target="exmaralda/test_doc#T1" label="Ordering/annis/">
+        <edge id="e21" source="exmaralda/test_doc#T3" target="exmaralda/test_doc#T4" label="Ordering/annis/">
         </edge>
-        <edge id="e22" source="exmaralda/test_doc#T1" target="exmaralda/test_doc#T2" label="Ordering/annis/">
+        <edge id="e22" source="exmaralda/test_doc#t_dipl_T286-T1" target="exmaralda/test_doc#t_dipl_T1-T2" label="Ordering/annis/dipl">
         </edge>
-        <edge id="e23" source="exmaralda/test_doc#T2" target="exmaralda/test_doc#T3" label="Ordering/annis/">
+        <edge id="e23" source="exmaralda/test_doc#t_dipl_T1-T2" target="exmaralda/test_doc#t_dipl_T2-T3" label="Ordering/annis/dipl">
         </edge>
-        <edge id="e24" source="exmaralda/test_doc#T3" target="exmaralda/test_doc#T4" label="Ordering/annis/">
+        <edge id="e24" source="exmaralda/test_doc#t_dipl_T2-T3" target="exmaralda/test_doc#t_dipl_T3-T4" label="Ordering/annis/dipl">
         </edge>
-        <edge id="e25" source="exmaralda/test_doc#t_dipl_T286-T1" target="exmaralda/test_doc#t_dipl_T1-T2" label="Ordering/annis/dipl">
+        <edge id="e25" source="exmaralda/test_doc#t_norm_T286-T0" target="exmaralda/test_doc#t_norm_T0-T1" label="Ordering/annis/norm">
         </edge>
-        <edge id="e26" source="exmaralda/test_doc#t_dipl_T1-T2" target="exmaralda/test_doc#t_dipl_T2-T3" label="Ordering/annis/dipl">
+        <edge id="e26" source="exmaralda/test_doc#t_norm_T0-T1" target="exmaralda/test_doc#t_norm_T1-T2" label="Ordering/annis/norm">
         </edge>
-        <edge id="e27" source="exmaralda/test_doc#t_dipl_T2-T3" target="exmaralda/test_doc#t_dipl_T3-T4" label="Ordering/annis/dipl">
+        <edge id="e27" source="exmaralda/test_doc#t_norm_T1-T2" target="exmaralda/test_doc#t_norm_T2-T4" label="Ordering/annis/norm">
         </edge>
-        <edge id="e28" source="exmaralda/test_doc#t_norm_T286-T0" target="exmaralda/test_doc#t_norm_T0-T1" label="Ordering/annis/norm">
+        <edge id="e28" source="exmaralda/test_doc" target="exmaralda" label="PartOf/annis/">
         </edge>
-        <edge id="e29" source="exmaralda/test_doc#t_norm_T0-T1" target="exmaralda/test_doc#t_norm_T1-T2" label="Ordering/annis/norm">
+        <edge id="e29" source="exmaralda/test_file.wav" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
-        <edge id="e30" source="exmaralda/test_doc#t_norm_T1-T2" target="exmaralda/test_doc#t_norm_T2-T4" label="Ordering/annis/norm">
+        <edge id="e30" source="exmaralda/test_doc#T286" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
-        <edge id="e31" source="exmaralda/test_doc" target="exmaralda" label="PartOf/annis/">
+        <edge id="e31" source="exmaralda/test_doc#T0" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
-        <edge id="e32" source="exmaralda/test_file.wav" target="exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e32" source="exmaralda/test_doc#T1" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
-        <edge id="e33" source="exmaralda/test_doc#T286" target="exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e33" source="exmaralda/test_doc#T2" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
-        <edge id="e34" source="exmaralda/test_doc#T0" target="exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e34" source="exmaralda/test_doc#T3" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
-        <edge id="e35" source="exmaralda/test_doc#T1" target="exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e35" source="exmaralda/test_doc#T4" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
-        <edge id="e36" source="exmaralda/test_doc#T2" target="exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e36" source="exmaralda/test_doc#t_dipl_T286-T1" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
-        <edge id="e37" source="exmaralda/test_doc#T3" target="exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e37" source="exmaralda/test_doc#t_dipl_T1-T2" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
-        <edge id="e38" source="exmaralda/test_doc#T4" target="exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e38" source="exmaralda/test_doc#t_dipl_T2-T3" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
-        <edge id="e39" source="exmaralda/test_doc#t_dipl_T286-T1" target="exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e39" source="exmaralda/test_doc#t_dipl_T3-T4" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
-        <edge id="e40" source="exmaralda/test_doc#t_dipl_T1-T2" target="exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e40" source="exmaralda/test_doc#t_norm_T286-T0" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
-        <edge id="e41" source="exmaralda/test_doc#t_dipl_T2-T3" target="exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e41" source="exmaralda/test_doc#t_norm_T0-T1" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
-        <edge id="e42" source="exmaralda/test_doc#t_dipl_T3-T4" target="exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e42" source="exmaralda/test_doc#t_norm_T1-T2" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
-        <edge id="e43" source="exmaralda/test_doc#t_norm_T286-T0" target="exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e43" source="exmaralda/test_doc#t_norm_T2-T4" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
-        <edge id="e44" source="exmaralda/test_doc#t_norm_T0-T1" target="exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e44" source="exmaralda/test_doc#a_dipl_T286-T4" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
-        <edge id="e45" source="exmaralda/test_doc#t_norm_T1-T2" target="exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e45" source="exmaralda/test_doc#a_norm_T0-T1" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
-        <edge id="e46" source="exmaralda/test_doc#t_norm_T2-T4" target="exmaralda/test_doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e47" source="exmaralda/test_doc#a_dipl_T286-T4" target="exmaralda/test_doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e48" source="exmaralda/test_doc#a_norm_T286-T0" target="exmaralda/test_doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e49" source="exmaralda/test_doc#a_norm_T0-T1" target="exmaralda/test_doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e50" source="exmaralda/test_doc#a_norm_T1-T2" target="exmaralda/test_doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e51" source="exmaralda/test_doc#a_norm_T2-T4" target="exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e46" source="exmaralda/test_doc#a_norm_T1-T2" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
     </graph>
 </graphml>
