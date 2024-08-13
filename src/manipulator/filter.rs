@@ -1,4 +1,4 @@
-use std::{collections::BTreeSet, u64, usize};
+use std::collections::BTreeSet;
 
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
@@ -98,7 +98,7 @@ impl Manipulator for FilterNodes {
         if self.inverse {
             // delete matching nodes (without terminals aka real tokens)
             for n in matching_nodes.difference(&terminals) {
-                if let Some(node_name) = node_annos.get_value_for_item(&n, &NODE_NAME_KEY)? {
+                if let Some(node_name) = node_annos.get_value_for_item(n, &NODE_NAME_KEY)? {
                     update.add_event(UpdateEvent::DeleteNode {
                         node_name: node_name.to_string(),
                     })?;
