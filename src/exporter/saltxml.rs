@@ -405,12 +405,12 @@ where
         // add all edge labels
         for anno in output_annotations {
             if anno.key.ns != "annis" {
-                self.write_label(&anno, "saltCore:SAnnotation")?;
+                self.write_label(anno, "saltCore:SAnnotation")?;
             }
         }
         for anno in output_features {
             if anno.key.ns != "annis" {
-                self.write_label(&anno, "saltCore:SFeature")?;
+                self.write_label(anno, "saltCore:SFeature")?;
             }
         }
         self.xml.write(XmlEvent::end_element())?;
