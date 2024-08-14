@@ -25,7 +25,10 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Exporter;
 
-use crate::deserialize::{deserialize_anno_key, deserialize_annotation_component_seq};
+use crate::{
+    deserialize::{deserialize_anno_key, deserialize_annotation_component_seq},
+    workflow::StatusMessage,
+};
 
 /// This module exports all ordered nodes and nodes connected by coverage edges of any name into a table.
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
@@ -121,7 +124,7 @@ impl Exporter for ExportTable {
         graph: &graphannis::AnnotationGraph,
         output_path: &std::path::Path,
         _step_id: crate::StepID,
-        _tx: Option<crate::workflow::StatusSender>,
+        tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let base_ordering = AnnotationComponent::new(
             AnnotationComponentType::Ordering,
@@ -138,12 +141,25 @@ impl Exporter for ExportTable {
                 "".into(),
             ))
             .ok_or(anyhow!("Part-of storage unavailbale."))?;
+        let coverage_storages = graph
+            .get_all_components(Some(AnnotationComponentType::Coverage), None)
+            .iter()
+            .filter_map(|c| graph.get_graphstorage(c))
+            .collect_vec();
+        if coverage_storages.is_empty() {
+            if let Some(sender) = &tx {
+                sender.send(StatusMessage::Warning(
+                    "No coverage storages available".to_string(),
+                ))?;
+            }
+        }
         let mut doc_node_to_start = BTreeMap::new();
-        for node in storage
-            .source_nodes()
-            .flatten()
-            .filter(|n| !storage.has_ingoing_edges(*n).unwrap_or_default())
-        {
+        for node in storage.source_nodes().flatten().filter(|n| {
+            !storage.has_ingoing_edges(*n).unwrap_or_default()
+                && !coverage_storages
+                    .iter()
+                    .any(|s| s.has_outgoing_edges(*n).unwrap_or_default())
+        }) {
             let dfs = CycleSafeDFS::new(
                 part_of_storage.as_edgecontainer(),
                 node,

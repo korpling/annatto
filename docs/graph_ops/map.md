@@ -1,10 +1,78 @@
 # map (graph_operation)
 
-Creates new annotations based on existing annotation values.
+Creates new or updates annotations based on existing annotation values.
+
+The module is configured with TOML files that contains a list of mapping
+`rules`. Each rule contains `query` field which describes the nodes the
+annotation are added to. The `target` field defines which node of the query
+the annotation should be added to. The annotation itself is defined by the
+`ns` (namespace), `name` and `value` fields.
+
+```toml
+[[rules]]
+query = "clean _o_ pos_lang=/(APPR)?ART/ _=_ lemma!=/[Dd](ie|as|er|ies)?/"
+target = 1
+ns = ""
+name = "indef"
+value = ""
+```
+
+A `target` can also be a list. In this case, a new span is created that
+covers the same token as the referenced nodes of the match.
+```toml
+[[rules]]
+query = "tok=/more/ . tok"
+target = [1,2]
+ns = "mapper"
+name = "form"
+value = "comparison"
+```
+
+Instead of a fixed value, you can also use an existing annotation value
+from the matched nodes copy the value.
+```toml
+[[rules]]
+query = "tok=\"complicated\""
+target = 1
+ns = ""
+name = "newtok"
+value = {copy = 1}
+```
+
+It is also possible to replace all occurences in the original value that
+match a `search` regular expression with a `replacement` value.
+```toml
+[[rules]]
+query = "tok=\"complicated\""
+target = 1
+ns = ""
+name = "newtok"
+value = {target = 1, search = "cat", replacement = "dog"}
+```
+This would add a new annotation value "complidoged" to any token with the value "complicated".
+
+The `replacement` value can contain back references to the regular
+expression (e.g. "$0" for the whole match or "$1" for the first match
+group).
+```toml
+[[rules]]
+query = "tok=\"New York\""
+target = 1
+ns = ""
+name = "abbr"
+value = {target = 1, search = "([A-Z])[a-z]+ ([A-Z])[a-z]+", replacement = "$1$2"}
+```
+This example would add an annotation with the value "NY".
+
+The `copy` and `target` fields in the value description can also refer
+to more than one copy of the query by using arrays instead of a single
+number. In this case, the node values are concatenated using a space as
+seperator.
+
 
 ## Configuration
 
 ###  rule_file
 
-The path of the TOML file containing the mapping rules.
+The path of the TOML file containing an array of mapping rules.
 

@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2024-08-14
+
 ### Added
 
 - New command line argument `--in-memory` that has the same meaning as setting
@@ -24,8 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Make the progress report in `revise` mode indeterminate because it is unclear
   how many operations are actually performed and finishing some steps instantly
   and others in minutes will cause extremely unrealistic time estimations.
-
-
+- `table` export uses one additional criterion to identify timeline tokens: no outgoing coverage tokens (apart from being a member of Ordering/annis/)
 
 ## [0.14.0] - 2024-07-24
 
