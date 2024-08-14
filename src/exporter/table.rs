@@ -1,6 +1,6 @@
 use std::{
     borrow::Cow,
-    collections::{btree_map::Entry, BTreeMap, BTreeSet},
+    collections::{btree_map::Entry, BTreeMap},
     ops::Bound,
     path::Path,
 };
