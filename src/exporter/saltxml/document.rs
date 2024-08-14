@@ -1,9 +1,4 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    fs::File,
-    sync::Arc,
-    usize,
-};
+use std::{collections::BTreeMap, fs::File, sync::Arc};
 
 use anyhow::Context;
 use graphannis::{
@@ -16,7 +11,6 @@ use graphannis_core::{
     dfs::CycleSafeDFS,
     graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE},
 };
-use itertools::Itertools;
 use xml::{writer::XmlEvent, EmitterConfig};
 
 use crate::util::{
@@ -24,7 +18,7 @@ use crate::util::{
     CorpusGraphHelper,
 };
 
-use super::{SaltWriter, TOK_WHITESPACE_AFTER_KEY, TOK_WHITESPACE_BEFORE_KEY};
+use super::{NodeType, SaltWriter, TOK_WHITESPACE_AFTER_KEY, TOK_WHITESPACE_BEFORE_KEY};
 
 #[derive(Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Debug)]
 pub struct TextProperty {
@@ -123,7 +117,7 @@ impl SaltDocumentGraphMapper {
             } else {
                 "sDocumentStructure:SStructure"
             };
-            salt_writer.write_node(n.node, salt_type)?;
+            salt_writer.write_graphannis_node(n.node, salt_type)?;
         }
 
         // Map the edges
@@ -289,9 +283,25 @@ impl SaltDocumentGraphMapper {
                         .push(prop);
                 }
             }
-            // TODO: check if this actually a timeline
 
-            // TODO find matching "datasource" for this text
+            let document_node_name = graph
+                .get_node_annos()
+                .get_value_for_item(&document_node_id, &NODE_NAME_KEY)?
+                .context("Missing node name for document")?;
+            // TODO find matching "datasource" for this text and use its name
+            let sname = if text_name.is_empty() {
+                "sText1"
+            } else {
+                text_name
+            };
+            salt_writer.write_node(
+                NodeType::Custom(format!("{document_node_name}#{sname}")),
+                sname,
+                "sDocumentStructure:STextualDS",
+                &[],
+                None,
+            )?;
+            // TODO: check if this actually a timeline
         }
 
         Ok(())

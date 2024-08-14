@@ -83,9 +83,9 @@ impl SaltCorpusStructureMapper {
             // Check if this is a document or a (sub)-corpus by testing if there are any incoming PartOfEdges
             if corpusgraph_helper.is_document(n.node)? {
                 documents.push(n.node);
-                salt_writer.write_node(n.node, "sCorpusStructure:SDocument")?;
+                salt_writer.write_graphannis_node(n.node, "sCorpusStructure:SDocument")?;
             } else {
-                salt_writer.write_node(n.node, "sCorpusStructure:SCorpus")?;
+                salt_writer.write_graphannis_node(n.node, "sCorpusStructure:SCorpus")?;
             }
         }
 

@@ -62,7 +62,7 @@ impl Exporter for ExportSaltXml {
     }
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug)]
 enum NodeType {
     Id(NodeID),
     Custom(String),
@@ -178,23 +178,57 @@ where
         Ok(())
     }
 
-    fn write_node(&mut self, n: NodeID, salt_type: &str) -> Result<()> {
+    fn write_graphannis_node(&mut self, n: NodeID, salt_type: &str) -> Result<()> {
+        // Get the layer from the attribute
+        let layer = self
+            .graph
+            .get_node_annos()
+            .get_value_for_item(&n, &LAYER_KEY)?
+            .map(|l| l.to_string());
+
+        // Collect all annotations for this nodes labels
+        let annotations = self.graph.get_node_annos().get_annotations_for_item(&n)?;
+
+        // Use the "annis:doc" label as SNAME or the fragment of the URI as fallback
+        let sname = if salt_type == "sCorpusStructure:SDocument" {
+            self.graph
+                .get_node_annos()
+                .get_value_for_item(&n, &DOC_KEY)?
+                .context("Missing annis:doc annotation for document node")?
+        } else {
+            let node_name = self
+                .graph
+                .get_node_annos()
+                .get_value_for_item(&n, &NODE_NAME_KEY)?
+                .context("Missing node name")?;
+            Cow::Owned(node_name.split('#').last().unwrap_or_default().to_string())
+        };
+
+        // Use the more general method to actual write the XML
+        self.write_node(NodeType::Id(n), &sname, salt_type, &annotations, layer)?;
+        Ok(())
+    }
+
+    fn write_node(
+        &mut self,
+        n: NodeType,
+        sname: &str,
+        salt_type: &str,
+        output_annotations: &[Annotation],
+        layer: Option<String>,
+    ) -> Result<()> {
         // Remember the position of this node in the XML file
         let node_position = self.node_positions.len() + 1;
-        self.node_positions.insert(NodeType::Id(n), node_position);
+        self.node_positions.insert(n.clone(), node_position);
 
         let mut attributes = Vec::new();
         attributes.push(OwnedAttribute::new(parse_attr_name("xsi:type")?, salt_type));
 
         // Add the layer reference to the attributes
-        if let Some(layer) = self
-            .graph
-            .get_node_annos()
-            .get_value_for_item(&n, &LAYER_KEY)?
-        {
+        if let Some(layer) = layer {
             let pos = self
                 .layer_positions
-                .get_by_left(layer.as_ref())
+                .get_by_left(&layer)
                 .context("Unknown position for layer")?;
             let layer_att_value = format!("//@layers.{pos}");
             attributes.push(OwnedAttribute::new(
@@ -213,11 +247,15 @@ where
         })?;
 
         // Write Salt ID and SNAME
-        let node_name = self
-            .graph
-            .get_node_annos()
-            .get_value_for_item(&n, &NODE_NAME_KEY)?
-            .context("Missing node name")?;
+        let node_name = match &n {
+            NodeType::Id(n) => self
+                .graph
+                .get_node_annos()
+                .get_value_for_item(&n, &NODE_NAME_KEY)?
+                .context("Missing node name")?
+                .to_string(),
+            NodeType::Custom(node_name) => node_name.clone(),
+        };
         let salt_id = format!("T::salt:/{node_name}");
         self.xml.write(
             XmlEvent::start_element("labels")
@@ -227,26 +265,20 @@ where
                 .attr("value", &salt_id),
         )?;
         self.xml.write(XmlEvent::end_element())?;
-        let short_node_name = if salt_type == "sCorpusStructure:SDocument" {
-            self.graph
-                .get_node_annos()
-                .get_value_for_item(&n, &DOC_KEY)?
-                .context("Missing annis:doc annotation for document node")?
-        } else {
-            // Get the last part of the URI path
-            Cow::Borrowed(node_name.split('/').last().unwrap_or_default())
-        };
+
+        // Get the last part of the URI path
+
         self.xml.write(
             XmlEvent::start_element("labels")
                 .attr("xsi:type", "saltCore:SFeature")
                 .attr("namespace", "salt")
                 .attr("name", "SNAME")
-                .attr("value", &short_node_name),
+                .attr("value", sname),
         )?;
         self.xml.write(XmlEvent::end_element())?;
 
         // Write all other annotations as labels
-        for anno in self.graph.get_node_annos().get_annotations_for_item(&n)? {
+        for anno in output_annotations {
             if anno.key.ns != "annis" {
                 let label_type = if salt_type == "sCorpusStructure:SCorpus"
                     || salt_type == "sCorpusStructure:SDocument"
