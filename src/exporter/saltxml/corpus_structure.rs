@@ -103,7 +103,7 @@ impl SaltCorpusStructureMapper {
                 for target in partof_gs.get_outgoing_edges(source) {
                     let target = target?;
                     let edge = Edge { source, target };
-                    salt_writer.write_edge(edge, &partof_component)?;
+                    salt_writer.write_graphannis_edge(edge, &partof_component)?;
                 }
             }
         }

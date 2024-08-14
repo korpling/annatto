@@ -299,8 +299,16 @@ where
         Ok(())
     }
 
-    fn write_edge(&mut self, edge: Edge, component: &AnnotationComponent) -> Result<()> {
-        self.number_of_edges += 1;
+    fn write_graphannis_edge(&mut self, edge: Edge, component: &AnnotationComponent) -> Result<()> {
+        // Invert edge for PartOf components
+        let output_edge = if component.get_type() == AnnotationComponentType::PartOf {
+            edge.inverse()
+        } else {
+            edge.clone()
+        };
+
+        let source = NodeType::Id(output_edge.source);
+        let target = NodeType::Id(output_edge.target);
 
         let gs = self
             .graph
@@ -326,24 +334,42 @@ where
                 )
             }
         };
-        // Invert edge for PartOf components
-        let output_edge = if component.get_type() == AnnotationComponentType::PartOf {
-            edge.inverse()
+
+        let output_annotations = gs.get_anno_storage().get_annotations_for_item(&edge)?;
+
+        let layer = if component.layer.is_empty() {
+            None
         } else {
-            edge.clone()
+            Some(component.layer.to_string())
         };
+
+        self.write_edge(source, target, salt_type, &output_annotations, &[], layer)?;
+
+        Ok(())
+    }
+
+    fn write_edge(
+        &mut self,
+        source: NodeType,
+        target: NodeType,
+        salt_type: &str,
+        output_annotations: &[Annotation],
+        output_features: &[Annotation],
+        layer: Option<String>,
+    ) -> Result<()> {
+        self.number_of_edges += 1;
 
         let mut attributes = Vec::new();
         attributes.push(OwnedAttribute::new(parse_attr_name("xsi:type")?, salt_type));
 
         let source_position = self
             .node_positions
-            .get(&NodeType::Id(output_edge.source))
+            .get(&source)
             .context("Missing position for source node")?;
 
         let target_position = self
             .node_positions
-            .get(&NodeType::Id(output_edge.target))
+            .get(&target)
             .context("Missing position for target node")?;
 
         attributes.push(OwnedAttribute::new(
@@ -356,10 +382,10 @@ where
         ));
 
         // Add the layer reference to the attributes
-        if !component.layer.is_empty() {
+        if let Some(layer) = layer {
             let pos = self
                 .layer_positions
-                .get_by_left(component.layer.as_str())
+                .get_by_left(&layer)
                 .context("Unknown position for layer")?;
             let layer_att_value = format!("//@layers.{pos}");
             attributes.push(OwnedAttribute::new(
@@ -367,7 +393,7 @@ where
                 layer_att_value,
             ));
             self.edges_in_layer
-                .entry(component.layer.to_string())
+                .entry(layer)
                 .or_default()
                 .push(self.number_of_edges);
         }
@@ -377,9 +403,14 @@ where
             namespace: Cow::Owned(xml::namespace::Namespace::empty()),
         })?;
         // add all edge labels
-        for anno in gs.get_anno_storage().get_annotations_for_item(&edge)? {
+        for anno in output_annotations {
             if anno.key.ns != "annis" {
                 self.write_label(&anno, "saltCore:SAnnotation")?;
+            }
+        }
+        for anno in output_features {
+            if anno.key.ns != "annis" {
+                self.write_label(&anno, "saltCore:SFeature")?;
             }
         }
         self.xml.write(XmlEvent::end_element())?;

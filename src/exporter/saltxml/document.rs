@@ -25,6 +25,7 @@ pub struct TextProperty {
     text_name: String,
     start: usize,
     end: usize,
+    source_token: NodeID,
 }
 
 fn node_is_span(
@@ -135,7 +136,7 @@ impl SaltDocumentGraphMapper {
                     for target in gs.get_outgoing_edges(source) {
                         let target = target?;
                         let edge = Edge { source, target };
-                        salt_writer.write_edge(edge, &c)?;
+                        salt_writer.write_graphannis_edge(edge, &c)?;
                     }
                 }
             }
@@ -153,7 +154,7 @@ impl SaltDocumentGraphMapper {
                         source: *source,
                         target,
                     };
-                    salt_writer.write_edge(edge, &c)?;
+                    salt_writer.write_graphannis_edge(edge, &c)?;
                 }
             }
         }
@@ -235,7 +236,8 @@ impl SaltDocumentGraphMapper {
 
         let corpus_graph_helper = CorpusGraphHelper::new(graph);
 
-        let mut edges_by_text: BTreeMap<String, Vec<TextProperty>> = BTreeMap::new();
+        let mut collected_edges: Vec<TextProperty> = Vec::new();
+        let mut textual_ds_node_names: BTreeMap<String, String> = BTreeMap::new();
 
         for c in ordering_components {
             let text_name = c.name.as_str();
@@ -278,11 +280,9 @@ impl SaltDocumentGraphMapper {
                             text_name: text_name.to_string(),
                             start,
                             end,
+                            source_token: step.node,
                         };
-                        edges_by_text
-                            .entry(text_name.to_string())
-                            .or_default()
-                            .push(prop);
+                        collected_edges.push(prop);
                     }
                 }
             }
@@ -304,15 +304,53 @@ impl SaltDocumentGraphMapper {
                 },
                 val: content.into(),
             }];
+            let ds_node_name = format!("{document_node_name}#{sname}");
             salt_writer.write_node(
-                NodeType::Custom(format!("{document_node_name}#{sname}")),
+                NodeType::Custom(ds_node_name.clone()),
                 sname,
                 "sDocumentStructure:STextualDS",
                 &[],
                 &features,
                 None,
             )?;
+            textual_ds_node_names.insert(text_name.to_string(), ds_node_name);
+
             // TODO: check if this actually a timeline
+        }
+
+        // Write out all collected edges
+        for text_property in collected_edges {
+            let source = NodeType::Id(text_property.source_token);
+            let target_ds = textual_ds_node_names
+                .get(&text_property.text_name)
+                .context("Missing STextualDS Salt ID")?;
+            let target = NodeType::Custom(target_ds.clone());
+
+            let features = vec![
+                Annotation {
+                    key: AnnoKey {
+                        name: "SSTART".into(),
+                        ns: "salt".into(),
+                    },
+                    val: text_property.start.to_string().into(),
+                },
+                Annotation {
+                    key: AnnoKey {
+                        name: "SEND".into(),
+                        ns: "salt".into(),
+                    },
+                    val: text_property.end.to_string().into(),
+                },
+            ];
+
+            salt_writer.write_edge(
+                source,
+                target,
+                "sDocumentStructure:STextualRelation",
+                &[],
+                &features,
+                None,
+            )?;
         }
 
         Ok(())
