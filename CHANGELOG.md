@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adds `saltxml` import format
 - Adds `table` export format
 - Adds `filter` graph op
+- `table` export can include in- and outgoing edges
 
 ### Fixed
 

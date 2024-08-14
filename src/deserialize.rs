@@ -46,6 +46,20 @@ pub fn deserialize_annotation_component_opt<'de, D: Deserializer<'de>>(
     Ok(dc_opt.map(|d| d.into_inner()))
 }
 
+pub fn deserialize_annotation_component_seq<
+    'de,
+    D: Deserializer<'de>,
+    T: FromIterator<AnnotationComponent>,
+>(
+    deserializer: D,
+) -> Result<T, D::Error> {
+    let component_seq = Vec::<DeserializableComponent>::deserialize(deserializer)?;
+    Ok(component_seq
+        .into_iter()
+        .map(|dc| dc.into_inner())
+        .collect::<T>())
+}
+
 // offer a function that can deserialize an AnnoKey from String and from a map
 pub fn deserialize_anno_key<'de, D: Deserializer<'de>>(
     deserializer: D,
