@@ -21,7 +21,8 @@ use documented::{Documented, DocumentedFields};
 use error::Result;
 use exporter::{
     exmaralda::ExportExmaralda, graphml::GraphMLExporter, saltxml::ExportSaltXml,
-    sequence::ExportSequence, textgrid::ExportTextGrid, xlsx::ExportXlsx, Exporter,
+    sequence::ExportSequence, table::ExportTable, textgrid::ExportTextGrid, xlsx::ExportXlsx,
+    Exporter,
 };
 use graphannis::AnnotationGraph;
 use importer::{
@@ -32,8 +33,9 @@ use importer::{
     Importer,
 };
 use manipulator::{
-    check::Check, chunker::Chunk, collapse::Collapse, enumerate::EnumerateMatches, link::LinkNodes,
-    map::MapAnnos, no_op::NoOp, re::Revise, split::SplitValues, visualize::Visualize, Manipulator,
+    check::Check, chunker::Chunk, collapse::Collapse, enumerate::EnumerateMatches,
+    filter::FilterNodes, link::LinkNodes, map::MapAnnos, no_op::NoOp, re::Revise,
+    split::SplitValues, visualize::Visualize, Manipulator,
 };
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
@@ -56,6 +58,7 @@ pub enum WriteAs {
     GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
     SaltXml(#[serde(default)] ExportSaltXml),
     Sequence(#[serde(default)] ExportSequence),
+    Table(#[serde(default)] ExportTable),
     TextGrid(ExportTextGrid), // do not use default, as all attributes have their individual defaults
     Xlsx(#[serde(default)] ExportXlsx),
 }
@@ -74,6 +77,7 @@ impl WriteAs {
             WriteAs::GraphML(m) => m,
             WriteAs::SaltXml(m) => m,
             WriteAs::Sequence(m) => m,
+            WriteAs::Table(m) => m,
             WriteAs::TextGrid(m) => m,
             WriteAs::Xlsx(m) => m,
         }
@@ -87,6 +91,7 @@ impl WriteAsDiscriminants {
             WriteAsDiscriminants::GraphML => GraphMLExporter::DOCS,
             WriteAsDiscriminants::SaltXml => ExportSaltXml::DOCS,
             WriteAsDiscriminants::Sequence => ExportSequence::DOCS,
+            WriteAsDiscriminants::Table => ExportTable::DOCS,
             WriteAsDiscriminants::TextGrid => ExportTextGrid::DOCS,
             WriteAsDiscriminants::Xlsx => ExportXlsx::DOCS,
         }
@@ -111,6 +116,9 @@ impl WriteAsDiscriminants {
                 ExportSequence::FIELD_NAMES_AS_SLICE,
                 ExportSequence::FIELD_DOCS,
             ),
+            WriteAsDiscriminants::Table => {
+                (ExportTable::FIELD_NAMES_AS_SLICE, ExportTable::FIELD_DOCS)
+            }
             WriteAsDiscriminants::TextGrid => (
                 ExportTextGrid::FIELD_NAMES_AS_SLICE,
                 ExportTextGrid::FIELD_DOCS,
@@ -289,6 +297,7 @@ impl ReadFromDiscriminants {
 pub enum GraphOp {
     Check(Check),       // no default, has a (required) path attribute
     Collapse(Collapse), // no default, there is no such thing as a default component
+    Filter(FilterNodes),
     Visualize(#[serde(default)] Visualize),
     Enumerate(#[serde(default)] EnumerateMatches),
     Link(LinkNodes),                  // no default, has required attributes
@@ -319,6 +328,7 @@ impl GraphOp {
             GraphOp::Enumerate(m) => m,
             GraphOp::Chunk(m) => m,
             GraphOp::Split(m) => m,
+            GraphOp::Filter(m) => m,
         }
     }
 }
@@ -336,6 +346,7 @@ impl GraphOpDiscriminants {
             GraphOpDiscriminants::Chunk => Chunk::DOCS,
             GraphOpDiscriminants::None => NoOp::DOCS,
             GraphOpDiscriminants::Split => SplitValues::DOCS,
+            GraphOpDiscriminants::Filter => FilterNodes::DOCS,
         }
     }
 
@@ -360,6 +371,9 @@ impl GraphOpDiscriminants {
             GraphOpDiscriminants::None => (NoOp::FIELD_NAMES_AS_SLICE, NoOp::FIELD_DOCS),
             GraphOpDiscriminants::Split => {
                 (SplitValues::FIELD_NAMES_AS_SLICE, SplitValues::FIELD_DOCS)
+            }
+            GraphOpDiscriminants::Filter => {
+                (FilterNodes::FIELD_NAMES_AS_SLICE, FilterNodes::FIELD_DOCS)
             }
         };
         for (idx, n) in field_names.iter().enumerate() {

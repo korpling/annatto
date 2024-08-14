@@ -4,6 +4,7 @@ pub mod exmaralda;
 pub mod graphml;
 pub mod saltxml;
 pub mod sequence;
+pub(crate) mod table;
 pub mod textgrid;
 pub mod xlsx;
 

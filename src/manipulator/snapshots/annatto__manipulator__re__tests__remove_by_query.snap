@@ -102,7 +102,7 @@ expression: export.unwrap()
             <data key="k10">norm</data>
             <data key="k11">New York</data>
             <data key="k12">node</data>
-            <data key="k15">ADP</data>
+            <data key="k15">PRON</data>
             <data key="k17">3.33333-5.55555</data>
         </node>
         <edge id="e0" source="exmaralda/test_doc#a_dipl_T286-T4" target="exmaralda/test_doc#T286" label="Coverage/annis/">

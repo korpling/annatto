@@ -3,6 +3,7 @@ pub mod check;
 pub mod chunker;
 pub mod collapse;
 pub mod enumerate;
+pub mod filter;
 pub mod link;
 pub mod map;
 pub mod no_op;

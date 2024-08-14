@@ -103,6 +103,6 @@ item []:
         intervals [4]:
             xmin = 3.33333
             xmax = 5.55555
-            text = "ADP"
+            text = "PRON"
 
 
