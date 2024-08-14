@@ -11,6 +11,7 @@ use graphannis::{
 use anyhow::Context;
 use graphannis_core::{
     annostorage::ValueSearch,
+    dfs::CycleSafeDFS,
     graph::{
         storage::union::UnionEdgeContainer, ANNIS_NS, NODE_NAME_KEY, NODE_TYPE, NODE_TYPE_KEY,
     },
@@ -165,6 +166,28 @@ impl<'a> CorpusGraphHelper<'a> {
             }
         }
         Ok(true)
+    }
+
+    pub(crate) fn is_part_of(&self, child: NodeID, ancestor: NodeID) -> anyhow::Result<bool> {
+        if self.all_partof_gs.len() == 1 {
+            let connected = self.all_partof_gs[0].is_connected(
+                child,
+                ancestor,
+                1,
+                std::ops::Bound::Unbounded,
+            )?;
+            return Ok(connected);
+        } else {
+            let partof_gs = self.as_edgecontainer();
+            for step in CycleSafeDFS::new(&partof_gs, child, 1, usize::MAX) {
+                let step = step?;
+                if step.node == ancestor {
+                    return Ok(true);
+                }
+            }
+        }
+
+        Ok(false)
     }
 
     pub(crate) fn as_edgecontainer(&'a self) -> UnionEdgeContainer<'a> {

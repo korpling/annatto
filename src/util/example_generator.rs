@@ -189,20 +189,28 @@ pub fn create_tokens(update: &mut GraphUpdate, document_node: Option<&str>) {
     };
 
     let token_strings = [
-        "Is",
-        "this",
-        "example",
-        "more",
-        "complicated",
-        "than",
-        "it",
-        "appears",
-        "to",
-        "be",
-        "?",
+        ("Is", " "),
+        ("this", " "),
+        ("example", " "),
+        ("more", " "),
+        ("complicated", " "),
+        ("than", " "),
+        ("it", " "),
+        ("appears", " "),
+        ("to", " "),
+        ("be", ""),
+        ("?", ""),
     ];
-    for (i, t) in token_strings.iter().enumerate() {
-        create_token_node(update, &format!("{}tok{}", prefix, i), t, document_node);
+    for (i, (t, ws)) in token_strings.iter().enumerate() {
+        let ws = if ws.is_empty() { None } else { Some(*ws) };
+        create_token_node(
+            update,
+            &format!("{}tok{}", prefix, i),
+            t,
+            None,
+            ws,
+            document_node,
+        );
     }
 
     // add the order relations
@@ -223,6 +231,8 @@ pub fn create_token_node(
     update: &mut GraphUpdate,
     node_name: &str,
     token_value: &str,
+    whitespace_before: Option<&str>,
+    whitespace_after: Option<&str>,
     document_node: Option<&str>,
 ) {
     update
@@ -239,6 +249,27 @@ pub fn create_token_node(
             anno_value: token_value.to_string(),
         })
         .unwrap();
+
+    if let Some(ws) = whitespace_before {
+        update
+            .add_event(UpdateEvent::AddNodeLabel {
+                node_name: node_name.to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "tok-whitespace-before".to_string(),
+                anno_value: ws.to_string(),
+            })
+            .unwrap();
+    }
+    if let Some(ws) = whitespace_after {
+        update
+            .add_event(UpdateEvent::AddNodeLabel {
+                node_name: node_name.to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "tok-whitespace-after".to_string(),
+                anno_value: ws.to_string(),
+            })
+            .unwrap();
+    }
 
     if let Some(parent_node) = document_node {
         // add the token node to the document

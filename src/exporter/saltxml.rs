@@ -205,7 +205,7 @@ where
         };
 
         // Use the more general method to actual write the XML
-        self.write_node(NodeType::Id(n), &sname, salt_type, &annotations, layer)?;
+        self.write_node(NodeType::Id(n), &sname, salt_type, &annotations, &[], layer)?;
         Ok(())
     }
 
@@ -215,6 +215,7 @@ where
         sname: &str,
         salt_type: &str,
         output_annotations: &[Annotation],
+        output_features: &[Annotation],
         layer: Option<String>,
     ) -> Result<()> {
         // Remember the position of this node in the XML file
@@ -251,7 +252,7 @@ where
             NodeType::Id(n) => self
                 .graph
                 .get_node_annos()
-                .get_value_for_item(&n, &NODE_NAME_KEY)?
+                .get_value_for_item(n, &NODE_NAME_KEY)?
                 .context("Missing node name")?
                 .to_string(),
             NodeType::Custom(node_name) => node_name.clone(),
@@ -267,7 +268,6 @@ where
         self.xml.write(XmlEvent::end_element())?;
 
         // Get the last part of the URI path
-
         self.xml.write(
             XmlEvent::start_element("labels")
                 .attr("xsi:type", "saltCore:SFeature")
@@ -287,8 +287,11 @@ where
                 } else {
                     "saltCore:SAnnotation"
                 };
-                self.write_label(&anno, label_type)?;
+                self.write_label(anno, label_type)?;
             }
+        }
+        for anno in output_features {
+            self.write_label(anno, "saltCore:SFeature")?;
         }
 
         self.xml.write(XmlEvent::end_element())?;

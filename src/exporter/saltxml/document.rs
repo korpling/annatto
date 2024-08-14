@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, fs::File, sync::Arc};
 
 use anyhow::Context;
 use graphannis::{
-    graph::{Edge, GraphStorage, NodeID},
+    graph::{AnnoKey, Annotation, Edge, GraphStorage, NodeID},
     model::AnnotationComponentType,
     AnnotationGraph,
 };
@@ -233,6 +233,8 @@ impl SaltDocumentGraphMapper {
         let ordering_components =
             graph.get_all_components(Some(AnnotationComponentType::Ordering), None);
 
+        let corpus_graph_helper = CorpusGraphHelper::new(graph);
+
         let mut edges_by_text: BTreeMap<String, Vec<TextProperty>> = BTreeMap::new();
 
         for c in ordering_components {
@@ -245,42 +247,43 @@ impl SaltDocumentGraphMapper {
             // this data source by iterating over the ordering edges.
             let mut content = String::new();
 
-            for root in gs.source_nodes() {
+            for root in gs.root_nodes() {
                 let root = root?;
+                if corpus_graph_helper.is_part_of(root, document_node_id)? {
+                    for step in CycleSafeDFS::new(gs.as_edgecontainer(), root, 0, usize::MAX) {
+                        let step = step?;
 
-                for step in CycleSafeDFS::new(gs.as_edgecontainer(), root, 0, usize::MAX) {
-                    let step = step?;
+                        if let Some(tok_whitespace_before) = graph
+                            .get_node_annos()
+                            .get_value_for_item(&step.node, &TOK_WHITESPACE_BEFORE_KEY)?
+                        {
+                            content.push_str(&tok_whitespace_before)
+                        }
+                        let start = content.len();
+                        if let Some(tok_value) = graph
+                            .get_node_annos()
+                            .get_value_for_item(&step.node, &TOKEN_KEY)?
+                        {
+                            content.push_str(&tok_value)
+                        }
+                        let end = content.len();
+                        if let Some(tok_whitespace_after) = graph
+                            .get_node_annos()
+                            .get_value_for_item(&step.node, &TOK_WHITESPACE_AFTER_KEY)?
+                        {
+                            content.push_str(&tok_whitespace_after)
+                        }
 
-                    if let Some(tok_whitespace_before) = graph
-                        .get_node_annos()
-                        .get_value_for_item(&step.node, &TOK_WHITESPACE_BEFORE_KEY)?
-                    {
-                        content.push_str(&tok_whitespace_before)
+                        let prop = TextProperty {
+                            text_name: text_name.to_string(),
+                            start,
+                            end,
+                        };
+                        edges_by_text
+                            .entry(text_name.to_string())
+                            .or_default()
+                            .push(prop);
                     }
-                    let start = content.len();
-                    if let Some(tok_value) = graph
-                        .get_node_annos()
-                        .get_value_for_item(&step.node, &TOKEN_KEY)?
-                    {
-                        content.push_str(&tok_value)
-                    }
-                    let end = content.len();
-                    if let Some(tok_whitespace_after) = graph
-                        .get_node_annos()
-                        .get_value_for_item(&step.node, &TOK_WHITESPACE_AFTER_KEY)?
-                    {
-                        content.push_str(&tok_whitespace_after)
-                    }
-
-                    let prop = TextProperty {
-                        text_name: text_name.to_string(),
-                        start,
-                        end,
-                    };
-                    edges_by_text
-                        .entry(text_name.to_string())
-                        .or_default()
-                        .push(prop);
                 }
             }
 
@@ -294,11 +297,19 @@ impl SaltDocumentGraphMapper {
             } else {
                 text_name
             };
+            let features = vec![Annotation {
+                key: AnnoKey {
+                    ns: "saltCommon".into(),
+                    name: "SDATA".into(),
+                },
+                val: content.into(),
+            }];
             salt_writer.write_node(
                 NodeType::Custom(format!("{document_node_name}#{sname}")),
                 sname,
                 "sDocumentStructure:STextualDS",
                 &[],
+                &features,
                 None,
             )?;
             // TODO: check if this actually a timeline

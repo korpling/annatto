@@ -69,6 +69,7 @@ expression: result
   <nodes xsi:type="sDocumentStructure:STextualDS">
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1#sText1" />
     <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="sText1" />
+    <labels xsi:type="saltCore:SFeature" namespace="saltCommon" name="SDATA" value="T::Is this example more complicated than it appears to be?" />
   </nodes>
   <layers xsi:type="saltCore:SLayer" edges="//@edges.1 //@edges.2 //@edges.3 //@edges.4 //@edges.5 //@edges.6 //@edges.7 //@edges.8 //@edges.9 //@edges.10">
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::l1" />
