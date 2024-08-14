@@ -1,4 +1,4 @@
-use std::ffi::OsStr;
+use std::{ffi::OsStr, io::BufWriter};
 
 use anyhow::Context;
 use graphannis::{
@@ -36,9 +36,10 @@ impl SaltCorpusStructureMapper {
 
         let project_file_path = output_path.join("saltProject.salt");
         let output_file = std::fs::File::create(project_file_path)?;
+        let buffered_output_file = BufWriter::new(output_file);
         let mut writer = EmitterConfig::new()
             .perform_indent(true)
-            .create_writer(output_file);
+            .create_writer(buffered_output_file);
 
         writer.write(XmlEvent::StartDocument {
             version: xml::common::XmlVersion::Version11,

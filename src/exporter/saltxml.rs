@@ -45,6 +45,9 @@ impl Exporter for ExportSaltXml {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let progress = ProgressReporter::new_unknown_total_work(tx.clone(), step_id.clone())?;
         let corpus_mapper = SaltCorpusStructureMapper::new();
+
+        std::fs::create_dir_all(output_path)?;
+
         progress.info("Mapping SaltXML corpus structure")?;
         let document_node_ids = corpus_mapper.map_corpus_structure(graph, output_path)?;
         let progress = ProgressReporter::new(tx, step_id, document_node_ids.len())?;

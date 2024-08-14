@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, fs::File, sync::Arc};
+use std::{collections::BTreeMap, fs::File, io::BufWriter, sync::Arc};
 
 use anyhow::Context;
 use graphannis::{
@@ -61,9 +61,10 @@ impl SaltDocumentGraphMapper {
         output_path: &std::path::Path,
     ) -> anyhow::Result<()> {
         let output_file = self.create_saltfile(graph, document_node_id, output_path)?;
+        let buffered_output_file = BufWriter::new(output_file);
         let mut writer = EmitterConfig::new()
             .perform_indent(true)
-            .create_writer(output_file);
+            .create_writer(buffered_output_file);
 
         writer.write(XmlEvent::StartDocument {
             version: xml::common::XmlVersion::Version11,
@@ -225,12 +226,15 @@ impl SaltDocumentGraphMapper {
         Ok(output_file)
     }
 
-    fn map_textual_ds(
+    fn map_textual_ds<W>(
         &self,
         graph: &AnnotationGraph,
         document_node_id: NodeID,
-        salt_writer: &mut SaltWriter<File>,
-    ) -> anyhow::Result<()> {
+        salt_writer: &mut SaltWriter<W>,
+    ) -> anyhow::Result<()>
+    where
+        W: std::io::Write,
+    {
         let ordering_components =
             graph.get_all_components(Some(AnnotationComponentType::Ordering), None);
 

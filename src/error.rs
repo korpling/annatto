@@ -15,13 +15,13 @@ pub type StandardErrorResult<T> = std::result::Result<T, Box<dyn std::error::Err
 pub enum AnnattoError {
     #[error("Conversion failed with errors: {}", errors.iter().map(|e| e.to_string()).join("\n"))]
     ConversionFailed { errors: Vec<AnnattoError> },
-    #[error("Error during exporting corpus from {path} with {exporter:?}: {reason:?}")]
+    #[error("Error during exporting corpus to {path} with {exporter:?}: {reason:?}")]
     Export {
         reason: String,
         exporter: String,
         path: PathBuf,
     },
-    #[error("Error during importing corpus to {path} with {importer:?}: {reason:?}")]
+    #[error("Error during importing corpus from {path} with {importer:?}: {reason:?}")]
     Import {
         reason: String,
         importer: String,
