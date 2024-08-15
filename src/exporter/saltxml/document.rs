@@ -85,7 +85,7 @@ impl SaltDocumentGraphMapper {
                 .with_attribute(("name", "id"))
                 .with_attribute(("value", salt_id.as_str()))
                 .write_empty()?;
-            let mut salt_writer = SaltWriter::new(graph, &mut writer)?;
+            let mut salt_writer = SaltWriter::new(graph, writer)?;
 
             // Map all nodes in the annotation graph
             let nodes: graphannis_core::errors::Result<Vec<_>> = graph

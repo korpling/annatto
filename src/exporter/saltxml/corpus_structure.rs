@@ -68,7 +68,7 @@ impl SaltCorpusStructureMapper {
                         ))
                         .write_empty()?;
 
-                    let mut salt_writer = SaltWriter::new(graph, &mut writer)?;
+                    let mut salt_writer = SaltWriter::new(graph, writer)?;
 
                     let corpusgraph_helper = CorpusGraphHelper::new(graph);
 
