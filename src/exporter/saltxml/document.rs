@@ -7,9 +7,8 @@ use graphannis::{
     AnnotationGraph,
 };
 use graphannis_core::{
-    annostorage::ValueSearch,
     dfs::CycleSafeDFS,
-    graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE},
+    graph::{ANNIS_NS, NODE_NAME_KEY},
 };
 use quick_xml::events::{BytesDecl, Event};
 
@@ -63,7 +62,10 @@ impl SaltDocumentGraphMapper {
         document_node_id: NodeID,
         output_path: &std::path::Path,
     ) -> anyhow::Result<()> {
-        let output_file = self.create_saltfile(graph, document_node_id, output_path)?;
+        let corpusgraph_helper = CorpusGraphHelper::new(graph);
+
+        let output_file =
+            self.create_saltfile(graph, document_node_id, &corpusgraph_helper, output_path)?;
         let buffered_output_file = BufWriter::new(output_file);
         let mut writer = quick_xml::Writer::new_with_indent(buffered_output_file, b' ', 2);
         writer.write_event(Event::Decl(BytesDecl::new("1.1", Some("UTF-8"), None)))?;
@@ -91,11 +93,6 @@ impl SaltDocumentGraphMapper {
             let mut salt_writer = SaltWriter::new(graph, writer)?;
 
             // Map all nodes in the annotation graph
-            let nodes: graphannis_core::errors::Result<Vec<_>> = graph
-                .get_node_annos()
-                .exact_anno_search(Some(ANNIS_NS), NODE_TYPE, ValueSearch::Some("node"))
-                .collect();
-            let nodes = nodes?;
 
             let tok_helper = TokenHelper::new(graph)?;
             let all_dominance_gs: Vec<_> = graph
@@ -104,19 +101,24 @@ impl SaltDocumentGraphMapper {
                 .filter_map(|c| graph.get_graphstorage(&c))
                 .collect();
             let mut span_nodes = Vec::new();
-            for n in nodes.iter() {
-                let salt_type = if tok_helper.is_token(n.node)? {
-                    "sDocumentStructure:SToken"
-                } else if node_is_span(n.node, &tok_helper, &all_dominance_gs)? {
-                    span_nodes.push(n.node);
-                    "sDocumentStructure:SSpan"
-                } else {
-                    "sDocumentStructure:SStructure"
-                };
-                salt_writer.write_graphannis_node(n.node, salt_type)?;
+            for n in corpusgraph_helper.all_nodes_part_of(document_node_id) {
+                let n = n?;
+                if corpusgraph_helper.is_annotation_node(n)? {
+                    let salt_type = if tok_helper.is_token(n)? {
+                        "sDocumentStructure:SToken"
+                    } else if node_is_span(n, &tok_helper, &all_dominance_gs)? {
+                        span_nodes.push(n);
+                        "sDocumentStructure:SSpan"
+                    } else {
+                        "sDocumentStructure:SStructure"
+                    };
+                    salt_writer.write_graphannis_node(n, salt_type)?;
+                }
             }
 
-            // Map the edges
+            // Get the graph storages for all components that are relevant for
+            // the annotation graph (not the corpus graph).
+            let mut anno_graph_storages = Vec::new();
             for ctype in [
                 AnnotationComponentType::Dominance,
                 AnnotationComponentType::Pointing,
@@ -124,15 +126,20 @@ impl SaltDocumentGraphMapper {
             ] {
                 for c in graph.get_all_components(Some(ctype), None) {
                     let gs = graph
-                        .get_graphstorage_as_ref(&c)
+                        .get_graphstorage(&c)
                         .context("Missing graph storage for component")?;
-                    for source in gs.source_nodes() {
-                        let source = source?;
-                        for target in gs.get_outgoing_edges(source) {
-                            let target = target?;
-                            let edge = Edge { source, target };
-                            salt_writer.write_graphannis_edge(edge, &c)?;
-                        }
+                    anno_graph_storages.push((c, gs));
+                }
+            }
+
+            // Use all nodes of the document as potential source nodes for this graph storage
+            for source in corpusgraph_helper.all_nodes_part_of(document_node_id) {
+                let source = source?;
+                for (c, gs) in anno_graph_storages.iter() {
+                    for target in gs.get_outgoing_edges(source) {
+                        let target = target?;
+                        let edge = Edge { source, target };
+                        salt_writer.write_graphannis_edge(edge, &c)?;
                     }
                 }
             }
@@ -173,14 +180,14 @@ impl SaltDocumentGraphMapper {
         &self,
         graph: &AnnotationGraph,
         document_node_id: NodeID,
+        corpusgraph_helper: &CorpusGraphHelper,
         output_path: &std::path::Path,
     ) -> anyhow::Result<File> {
         let node_annos = graph.get_node_annos();
-        let corpusgraph_helper = CorpusGraphHelper::new(graph);
-        let partof_gs = corpusgraph_helper.as_edgecontainer();
+
         let mut last_distance = 0;
         let mut parent_folder_names = Vec::new();
-        for step in CycleSafeDFS::new(&partof_gs, document_node_id, 1, usize::MAX) {
+        for step in CycleSafeDFS::new(corpusgraph_helper, document_node_id, 1, usize::MAX) {
             let step = step?;
             if step.distance > last_distance {
                 let full_corpus_name = node_annos

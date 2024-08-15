@@ -12,9 +12,8 @@ use anyhow::Context;
 use graphannis_core::{
     annostorage::ValueSearch,
     dfs::CycleSafeDFS,
-    graph::{
-        storage::union::UnionEdgeContainer, ANNIS_NS, NODE_NAME_KEY, NODE_TYPE, NODE_TYPE_KEY,
-    },
+    errors::GraphAnnisCoreError,
+    graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE, NODE_TYPE_KEY},
     types::{Edge, NodeID},
 };
 use itertools::Itertools;
@@ -98,7 +97,6 @@ impl<'a> CorpusGraphHelper<'a> {
     /// Returns a sorted list of node names of all the corpus graph nodes without any outgoing `PartOf` edge.
     pub(crate) fn get_root_corpus_node_names(&self) -> anyhow::Result<Vec<String>> {
         let mut roots: BTreeSet<String> = BTreeSet::new();
-        let partof_gs = self.as_edgecontainer();
 
         let node_annos = self.graph.get_node_annos();
 
@@ -107,7 +105,7 @@ impl<'a> CorpusGraphHelper<'a> {
         {
             let candidate = candidate?;
             // Check if this target node is a root corpus node
-            if !partof_gs.has_outgoing_edges(candidate.node)? {
+            if !self.has_outgoing_edges(candidate.node)? {
                 let root_node_name = node_annos
                     .get_value_for_item(&candidate.node, &NODE_NAME_KEY)?
                     .context("Missing node name")?
@@ -145,8 +143,6 @@ impl<'a> CorpusGraphHelper<'a> {
     }
 
     pub(crate) fn is_document(&self, node: NodeID) -> anyhow::Result<bool> {
-        let partof_gs = self.as_edgecontainer();
-
         let node_annos = self.graph.get_node_annos();
 
         let node_type = node_annos
@@ -155,7 +151,7 @@ impl<'a> CorpusGraphHelper<'a> {
         if node_type != "corpus" {
             return Ok(false);
         }
-        for ingoing in partof_gs.get_ingoing_edges(node) {
+        for ingoing in self.get_ingoing_edges(node) {
             let ingoing = ingoing?;
             if let Some(ingoing_node_type) =
                 node_annos.get_value_for_item(&ingoing, &NODE_TYPE_KEY)?
@@ -168,6 +164,16 @@ impl<'a> CorpusGraphHelper<'a> {
         Ok(true)
     }
 
+    pub(crate) fn is_annotation_node(&self, node: NodeID) -> anyhow::Result<bool> {
+        let node_annos = self.graph.get_node_annos();
+
+        let node_type = node_annos
+            .get_value_for_item(&node, &NODE_TYPE_KEY)?
+            .context("Missing node type")?;
+
+        Ok(node_type == "node")
+    }
+
     pub(crate) fn is_part_of(&self, child: NodeID, ancestor: NodeID) -> anyhow::Result<bool> {
         if self.all_partof_gs.len() == 1 {
             let connected = self.all_partof_gs[0].is_connected(
@@ -178,8 +184,7 @@ impl<'a> CorpusGraphHelper<'a> {
             )?;
             return Ok(connected);
         } else {
-            let partof_gs = self.as_edgecontainer();
-            for step in CycleSafeDFS::new(&partof_gs, child, 1, usize::MAX) {
+            for step in CycleSafeDFS::new(self, child, 1, usize::MAX) {
                 let step = step?;
                 if step.node == ancestor {
                     return Ok(true);
@@ -190,12 +195,56 @@ impl<'a> CorpusGraphHelper<'a> {
         Ok(false)
     }
 
-    pub(crate) fn as_edgecontainer(&'a self) -> UnionEdgeContainer<'a> {
-        let all_edgecontainer_for_type: Vec<_> = self
+    /// Find all nodes that are part of the given ancestor node.
+    pub(crate) fn all_nodes_part_of(
+        &'a self,
+        ancestor: NodeID,
+    ) -> Box<dyn Iterator<Item = std::result::Result<u64, GraphAnnisCoreError>> + 'a> {
+        if self.all_partof_gs.len() == 1 {
+            let it = self.all_partof_gs[0].find_connected_inverse(
+                ancestor,
+                1,
+                std::ops::Bound::Unbounded,
+            );
+            it
+        } else {
+            let it =
+                CycleSafeDFS::new_inverse(self, ancestor, 1, usize::MAX).map_ok(|step| step.node);
+            Box::new(it)
+        }
+    }
+}
+
+impl<'c> EdgeContainer for CorpusGraphHelper<'c> {
+    fn get_outgoing_edges<'a>(
+        &'a self,
+        node: NodeID,
+    ) -> Box<dyn Iterator<Item = graphannis_core::errors::Result<NodeID>> + 'a> {
+        let it = self
             .all_partof_gs
             .iter()
-            .map(|gs| gs.as_edgecontainer())
-            .collect();
-        UnionEdgeContainer::new(all_edgecontainer_for_type)
+            .flat_map(move |gs| gs.get_outgoing_edges(node));
+        Box::new(it)
+    }
+
+    fn get_ingoing_edges<'a>(
+        &'a self,
+        node: NodeID,
+    ) -> Box<dyn Iterator<Item = graphannis_core::errors::Result<NodeID>> + 'a> {
+        let it = self
+            .all_partof_gs
+            .iter()
+            .flat_map(move |gs| gs.get_ingoing_edges(node));
+        Box::new(it)
+    }
+
+    fn source_nodes<'a>(
+        &'a self,
+    ) -> Box<dyn Iterator<Item = graphannis_core::errors::Result<NodeID>> + 'a> {
+        let it = self
+            .all_partof_gs
+            .iter()
+            .flat_map(move |gs| gs.source_nodes());
+        Box::new(it)
     }
 }
