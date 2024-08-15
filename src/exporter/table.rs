@@ -1,28 +1,33 @@
 use std::{
-    borrow::Cow,
     collections::{btree_map::Entry, BTreeMap},
+    ops::Bound,
     path::Path,
 };
 
-use anyhow::anyhow;
+use anyhow::{anyhow, bail};
 use documented::{Documented, DocumentedFields};
 use graphannis::{
-    graph::{AnnoKey, NodeID},
+    graph::{AnnoKey, Edge, NodeID},
     model::{AnnotationComponent, AnnotationComponentType},
     AnnotationGraph,
 };
 use graphannis_core::{
+    annostorage::EdgeAnnotationStorage,
     dfs::CycleSafeDFS,
     graph::{ANNIS_NS, NODE_NAME_KEY},
     util::join_qname,
 };
 use itertools::Itertools;
+use linked_hash_set::LinkedHashSet;
 use serde::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Exporter;
 
-use crate::deserialize::deserialize_anno_key;
+use crate::{
+    deserialize::{deserialize_anno_key, deserialize_annotation_component_seq},
+    workflow::StatusMessage,
+};
 
 /// This module exports all ordered nodes and nodes connected by coverage edges of any name into a table.
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
@@ -63,6 +68,37 @@ pub struct ExportTable {
     /// ```
     #[serde(default)]
     quote_char: Option<char>,
+    /// Provides the string sequence used for n/a. Default is the empty string.
+    ///
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// no_value = "n/a"
+    /// ```
+    #[serde(default)]
+    no_value: String,
+    /// By listing annotation components, the ingoing edges of that component and their annotations
+    /// will be exported as well. Multiple ingoing edges will be separated by a ";". Each exported
+    /// node will be checked for ingoing edges in the respective components.
+    ///
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// ingoing = [{ ctype = "Pointing", layer = "", ns = "dep"}]
+    /// ```
+    #[serde(default, deserialize_with = "deserialize_annotation_component_seq")]
+    ingoing: Vec<AnnotationComponent>,
+    /// By listing annotation components, the ingoing edges of that component and their annotations
+    /// will be exported as well. Multiple outgoing edges will be separated by a ";". Each exported
+    /// node will be checked for outgoing edges in the respective components.
+    ///
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// outgoing = [{ ctype = "Pointing", layer = "", ns = "reference"}]
+    /// ```
+    #[serde(default, deserialize_with = "deserialize_annotation_component_seq")]
+    outgoing: Vec<AnnotationComponent>,
 }
 
 impl Default for ExportTable {
@@ -71,6 +107,9 @@ impl Default for ExportTable {
             doc_anno: default_doc_anno(),
             delimiter: default_delimiter(),
             quote_char: None,
+            no_value: String::default(),
+            ingoing: vec![],
+            outgoing: vec![],
         }
     }
 }
@@ -94,7 +133,7 @@ impl Exporter for ExportTable {
         graph: &graphannis::AnnotationGraph,
         output_path: &std::path::Path,
         _step_id: crate::StepID,
-        _tx: Option<crate::workflow::StatusSender>,
+        tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let base_ordering = AnnotationComponent::new(
             AnnotationComponentType::Ordering,
@@ -111,12 +150,25 @@ impl Exporter for ExportTable {
                 "".into(),
             ))
             .ok_or(anyhow!("Part-of storage unavailbale."))?;
+        let coverage_storages = graph
+            .get_all_components(Some(AnnotationComponentType::Coverage), None)
+            .iter()
+            .filter_map(|c| graph.get_graphstorage(c))
+            .collect_vec();
+        if coverage_storages.is_empty() {
+            if let Some(sender) = &tx {
+                sender.send(StatusMessage::Warning(
+                    "No coverage storages available".to_string(),
+                ))?;
+            }
+        }
         let mut doc_node_to_start = BTreeMap::new();
-        for node in storage
-            .source_nodes()
-            .flatten()
-            .filter(|n| !storage.has_ingoing_edges(*n).unwrap_or_default())
-        {
+        for node in storage.source_nodes().flatten().filter(|n| {
+            !storage.has_ingoing_edges(*n).unwrap_or_default()
+                && !coverage_storages
+                    .iter()
+                    .any(|s| s.has_outgoing_edges(*n).unwrap_or_default())
+        }) {
             let dfs = CycleSafeDFS::new(
                 part_of_storage.as_edgecontainer(),
                 node,
@@ -157,7 +209,9 @@ impl Exporter for ExportTable {
     }
 }
 
-type Data<'a> = BTreeMap<usize, Cow<'a, str>>;
+type Data = BTreeMap<usize, String>;
+type EdgeData = BTreeMap<usize, LinkedHashSet<String>>; // insertion order is critical
+type SingleEdgeData<'a> = (String, &'a AnnotationComponent, Vec<(String, String)>);
 
 impl ExportTable {
     fn export_document(
@@ -190,6 +244,7 @@ impl ExportTable {
             .filter_map(|c| graph.get_graphstorage(c))
             .collect_vec();
         let mut index_map = BTreeMap::default();
+        let follow_edges = !self.outgoing.is_empty() || !self.ingoing.is_empty();
         for node in ordered_nodes {
             let reachable_nodes = coverage_storages
                 .iter()
@@ -198,7 +253,9 @@ impl ExportTable {
                 })
                 .flatten();
             let mut data = Data::default();
+            let mut edge_column_data = EdgeData::default();
             for rn in reachable_nodes {
+                // reachable nodes contains the start node
                 let node_name = node_annos
                     .get_value_for_item(&rn, &NODE_NAME_KEY)?
                     .ok_or(anyhow!("Node has no name"))?;
@@ -216,11 +273,56 @@ impl ExportTable {
                         let value = node_annos
                             .get_value_for_item(&rn, &anno_key)?
                             .ok_or(anyhow!("Annotation has no value"))?;
-                        data.insert(index, value);
-                        data.insert(index + 1, node_name.clone());
+                        data.insert(index, value.to_string());
+                        data.insert(index + 1, node_name.to_string());
+                    }
+                }
+                if follow_edges {
+                    let (sources, targets) = self.connected_nodes(graph, rn)?;
+                    let mut prefixes = sources.iter().map(|_| "in").collect_vec();
+                    prefixes.extend(targets.iter().map(|_| "out"));
+                    for ((connected_node_name, component, mut edge_annotations), prefix) in
+                        sources.into_iter().chain(targets.into_iter()).zip(prefixes)
+                    {
+                        let qualified_name = [
+                            prefix,
+                            component.get_type().to_string().as_str(),
+                            component.layer.as_str(),
+                            component.name.as_str(),
+                        ]
+                        .join("_");
+                        edge_annotations.extend([("".to_string(), connected_node_name)]);
+                        for (name, value) in edge_annotations {
+                            let qname = if name.is_empty() {
+                                qualified_name.to_string()
+                            } else {
+                                [qualified_name.as_str(), name.as_str()].join("_")
+                            };
+                            let index = if let Some(index) = index_map.get(&qname) {
+                                *index
+                            } else {
+                                index_map.insert(qname, index_map.len());
+                                index_map.len() - 1
+                            };
+                            match edge_column_data.entry(index) {
+                                Entry::Vacant(e) => {
+                                    let mut new_value = LinkedHashSet::default();
+                                    new_value.insert(value);
+                                    e.insert(new_value);
+                                }
+                                Entry::Occupied(mut e) => {
+                                    e.get_mut().insert(value);
+                                }
+                            };
+                        }
                     }
                 }
             }
+            data.extend(
+                edge_column_data
+                    .into_iter()
+                    .map(|(ix, value_set)| (ix, value_set.iter().join(";").to_string())),
+            );
             table_data.push(data);
         }
         let file_path =
@@ -242,7 +344,12 @@ impl ExportTable {
         for mut entry in table_data {
             let mut row = Vec::with_capacity(index_bound);
             for col_index in 0..index_bound {
-                row.push(entry.remove(&col_index).unwrap_or_default().to_string());
+                row.push(
+                    entry
+                        .remove(&col_index)
+                        .unwrap_or(self.no_value.to_string())
+                        .to_string(),
+                );
             }
             if !row.iter().all(String::is_empty) {
                 writer.write_record(&row)?;
@@ -250,18 +357,111 @@ impl ExportTable {
         }
         Ok(())
     }
+
+    fn connected_nodes(
+        &self,
+        graph: &AnnotationGraph,
+        node: NodeID,
+    ) -> Result<(Vec<SingleEdgeData>, Vec<SingleEdgeData>), anyhow::Error> {
+        let mut sources: Vec<SingleEdgeData> = Vec::new();
+        let mut targets: Vec<SingleEdgeData> = Vec::new();
+        for component in &self.ingoing {
+            if let Some(storage) = graph.get_graphstorage(component) {
+                let sources_ingoing = storage
+                    .find_connected_inverse(node, 1, Bound::Excluded(2))
+                    .flatten()
+                    .collect_vec();
+                for src in sources_ingoing {
+                    if let Some(node_name) = graph
+                        .get_node_annos()
+                        .get_value_for_item(&src, &NODE_NAME_KEY)?
+                    {
+                        let edge = Edge {
+                            source: src,
+                            target: node,
+                        };
+                        let anno_storage = storage.get_anno_storage();
+                        sources.push((
+                            node_name.to_string(),
+                            component,
+                            edge_annos(anno_storage, &edge)?,
+                        ));
+                    }
+                }
+            } else {
+                bail!(
+                    "Component {}::{}::{} has no storage.",
+                    component.get_type(),
+                    component.layer,
+                    component.name
+                );
+            }
+        }
+        for component in &self.outgoing {
+            if let Some(storage) = graph.get_graphstorage(component) {
+                let targets_outgoing = storage
+                    .find_connected(node, 1, Bound::Excluded(2))
+                    .flatten()
+                    .collect_vec();
+                for tgt in targets_outgoing {
+                    if let Some(node_name) = graph
+                        .get_node_annos()
+                        .get_value_for_item(&tgt, &NODE_NAME_KEY)?
+                    {
+                        let edge = Edge {
+                            source: node,
+                            target: tgt,
+                        };
+                        let anno_storage = storage.get_anno_storage();
+                        targets.push((
+                            node_name.to_string(),
+                            component,
+                            edge_annos(anno_storage, &edge)?,
+                        ));
+                    }
+                }
+            } else {
+                bail!(
+                    "Component {}::{}::{} has no storage.",
+                    component.get_type(),
+                    component.layer,
+                    component.name
+                );
+            }
+        }
+        Ok((sources, targets))
+    }
+}
+
+fn edge_annos(
+    anno_storage: &dyn EdgeAnnotationStorage,
+    edge: &Edge,
+) -> Result<Vec<(String, String)>, anyhow::Error> {
+    let mut annotations = Vec::new();
+    for anno_key in anno_storage.get_all_keys_for_item(edge, None, None)? {
+        if anno_key.ns != ANNIS_NS {
+            let qname = join_qname(&anno_key.ns, &anno_key.name);
+            if let Some(value) = anno_storage.get_value_for_item(edge, &anno_key)? {
+                annotations.push((qname, value.to_string()));
+            }
+        }
+    }
+    Ok(annotations)
 }
 
 #[cfg(test)]
 mod tests {
     use std::path::Path;
 
-    use graphannis::AnnotationGraph;
+    use graphannis::{
+        model::{AnnotationComponent, AnnotationComponentType},
+        AnnotationGraph,
+    };
     use insta::assert_snapshot;
 
     use crate::{
         exporter::table::ExportTable,
-        importer::{exmaralda::ImportEXMARaLDA, Importer},
+        importer::{conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, Importer},
         test_util::export_to_string,
         StepID,
     };
@@ -309,6 +509,78 @@ mod tests {
             &graph,
             ExportTable {
                 quote_char: Some('"'),
+                ..Default::default()
+            },
+        );
+        assert!(export.is_ok(), "error: {:?}", export.err());
+        assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
+    fn edge_features() {
+        let to_conll = ImportCoNLLU::default();
+        let mprt = to_conll.import_corpus(
+            Path::new("tests/data/import/conll/valid/"),
+            StepID {
+                module_name: "test_import_conll".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(mprt.is_ok());
+        let mut update_import = mprt.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update_import, |_| {}).is_ok());
+        let export = export_to_string(
+            &graph,
+            ExportTable {
+                ingoing: vec![AnnotationComponent::new(
+                    AnnotationComponentType::Pointing,
+                    "".into(),
+                    "dep".into(),
+                )],
+                ..Default::default()
+            },
+        );
+        assert!(export.is_ok(), "error: {:?}", export.err());
+        assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
+    fn custom() {
+        let to_conll = ImportCoNLLU::default();
+        let mprt = to_conll.import_corpus(
+            Path::new("tests/data/import/conll/valid/"),
+            StepID {
+                module_name: "test_import_conll".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(mprt.is_ok());
+        let mut update_import = mprt.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update_import, |_| {}).is_ok());
+        let export = export_to_string(
+            &graph,
+            ExportTable {
+                delimiter: ';',
+                no_value: "n/a".to_string(),
+                quote_char: Some('\''),
+                ingoing: vec![AnnotationComponent::new(
+                    AnnotationComponentType::Pointing,
+                    "".into(),
+                    "dep".into(),
+                )],
+                outgoing: vec![AnnotationComponent::new(
+                    AnnotationComponentType::Pointing,
+                    "".into(),
+                    "dep".into(),
+                )],
                 ..Default::default()
             },
         );

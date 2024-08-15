@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `table` export has feature to customize n/a-value, which by default is the empty string
+
+## [0.15.0] - 2024-08-14
+
+## [0.15.0] - 2024-08-14
+
+### Added
+
 - New command line argument `--in-memory` that has the same meaning as setting
   `ANNATTO_IN_MEMORY` to true but is easier to discover.
 - `map` manipulator can now add annotated spans and copy values from existing
@@ -15,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adds `saltxml` import format
 - Adds `table` export format
 - Adds `filter` graph op
+- `table` export can include in- and outgoing edges
 
 ### Fixed
 
@@ -23,8 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Make the progress report in `revise` mode indeterminate because it is unclear
   how many operations are actually performed and finishing some steps instantly
   and others in minutes will cause extremely unrealistic time estimations.
-
-
+- `table` export uses one additional criterion to identify timeline tokens: no outgoing coverage tokens (apart from being a member of Ordering/annis/)
 
 ## [0.14.0] - 2024-07-24
 
