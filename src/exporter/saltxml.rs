@@ -379,7 +379,7 @@ where
             format!("//@nodes.{source_position}"),
         ));
         attributes.push((
-            parse_attr_name("source")?,
+            parse_attr_name("target")?,
             format!("//@nodes.{target_position}"),
         ));
 

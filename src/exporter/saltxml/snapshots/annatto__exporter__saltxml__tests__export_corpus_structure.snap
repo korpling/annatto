@@ -21,8 +21,8 @@ expression: result
       <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="doc2"/>
       <labels xsi:type="saltCore:SMetaAnnotation" namespace="test" name="description" value="T::Another demo corpus"/>
     </nodes>
-    <edges xsi:type="sCorpusStructure:SCorpusDocumentRelation" source="//@nodes.1" source="//@nodes.2" layer="//@layers.1"/>
-    <edges xsi:type="sCorpusStructure:SCorpusDocumentRelation" source="//@nodes.1" source="//@nodes.3" layer="//@layers.1"/>
+    <edges xsi:type="sCorpusStructure:SCorpusDocumentRelation" source="//@nodes.1" target="//@nodes.2" layer="//@layers.1"/>
+    <edges xsi:type="sCorpusStructure:SCorpusDocumentRelation" source="//@nodes.1" target="//@nodes.3" layer="//@layers.1"/>
     <layers xsi:type="saltCore:SLayer" edges="//@edges.1 //@edges.2">
       <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::l1"/>
       <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::annis"/>
