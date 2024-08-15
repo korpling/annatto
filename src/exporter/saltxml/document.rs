@@ -229,13 +229,53 @@ impl SaltDocumentGraphMapper {
     where
         W: std::io::Write,
     {
-        let ordering_components =
+        let mut ordering_components =
             graph.get_all_components(Some(AnnotationComponentType::Ordering), None);
 
         let corpus_graph_helper = CorpusGraphHelper::new(graph);
 
         let mut collected_edges: Vec<TextProperty> = Vec::new();
         let mut textual_ds_node_names: BTreeMap<String, String> = BTreeMap::new();
+
+        let mut timeline_ordering = None;
+        if ordering_components.len() > 1 {
+            if let Some(idx) = ordering_components
+                .iter()
+                .position(|c| c.name.is_empty() && c.layer == ANNIS_NS)
+            {
+                timeline_ordering = Some(ordering_components.remove(idx));
+            }
+        };
+
+        let document_node_name = graph
+            .get_node_annos()
+            .get_value_for_item(&document_node_id, &NODE_NAME_KEY)?
+            .context("Missing node name for document")?;
+
+        if let Some(c) = timeline_ordering {
+            // Add a timeline with the correct number of timeline items
+            let gs = graph
+                .get_graphstorage(&c)
+                .context("Missing graph storage for timline ordering component")?;
+            let tli_count = gs.source_nodes().count() + 1;
+            let timeline_id = format!("{document_node_name}#sTimeline1");
+
+            let features = vec![(
+                AnnoKey {
+                    ns: "saltCommon".into(),
+                    name: "SDATA".into(),
+                },
+                SaltObject::Integer(tli_count.try_into()?),
+            )];
+            salt_writer.write_node(
+                NodeType::Custom(timeline_id),
+                "sTimeline1",
+                "sDocumentStructure:STimeline",
+                &[],
+                &features,
+                None,
+            )?;
+        }
 
         for c in ordering_components {
             let text_name = c.name.as_str();
@@ -285,10 +325,6 @@ impl SaltDocumentGraphMapper {
                 }
             }
 
-            let document_node_name = graph
-                .get_node_annos()
-                .get_value_for_item(&document_node_id, &NODE_NAME_KEY)?
-                .context("Missing node name for document")?;
             // TODO find matching "datasource" for this text and use its name
             let sname = if text_name.is_empty() {
                 "sText1"
@@ -312,12 +348,11 @@ impl SaltDocumentGraphMapper {
                 None,
             )?;
             textual_ds_node_names.insert(text_name.to_string(), ds_node_name);
-
-            // TODO: check if this actually a timeline
         }
 
         // Write out all collected edges
         for text_property in collected_edges {
+            // TODO: map  the timeline relations from this segmentation node
             let source = NodeType::Id(text_property.source_token);
             let target_ds = textual_ds_node_names
                 .get(&text_property.text_name)
