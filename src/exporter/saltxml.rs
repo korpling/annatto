@@ -22,11 +22,14 @@ use graphannis::{
     AnnotationGraph,
 };
 use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY};
-use itertools::Itertools;
+
 use lazy_static::lazy_static;
+use quick_xml::{
+    events::{BytesStart, Event},
+    Writer,
+};
 use serde::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
-use xml::{attribute::OwnedAttribute, name::OwnedName, writer::XmlEvent, EventWriter};
 
 /// Exports to the SaltXML format used by Pepper (<https://corpus-tools.org/pepper/>).
 /// SaltXML is an XMI serialization of the [Salt model](https://raw.githubusercontent.com/korpling/salt/master/gh-site/doc/salt_modelGuide.pdf).
@@ -73,7 +76,7 @@ enum NodeType {
 
 struct SaltWriter<'a, W> {
     graph: &'a AnnotationGraph,
-    xml: &'a mut EventWriter<W>,
+    xml: &'a mut Writer<W>,
     layer_positions: BiBTreeMap<String, usize>,
     node_positions: BTreeMap<NodeType, usize>,
     number_of_edges: usize,
@@ -108,7 +111,7 @@ lazy_static! {
     };
 }
 
-fn parse_attr_name<S>(name: S) -> Result<OwnedName>
+fn parse_attr_name<S>(name: S) -> Result<String>
 where
     S: AsRef<str>,
 {
@@ -123,7 +126,7 @@ impl<'a, W> SaltWriter<'a, W>
 where
     W: std::io::Write,
 {
-    fn new(graph: &'a AnnotationGraph, writer: &'a mut EventWriter<W>) -> Result<Self> {
+    fn new(graph: &'a AnnotationGraph, writer: &'a mut Writer<W>) -> Result<Self> {
         // Collect node and edge layer names
         let mut layer_names = BTreeSet::new();
         layer_names.extend(
@@ -163,21 +166,25 @@ where
         let anno_ns: &str = &anno.key.ns;
         let anno_name: &str = &anno.key.name;
 
-        let mut label = XmlEvent::start_element("labels").attr("xsi:type", salt_type);
+        let mut label = self
+            .xml
+            .create_element("labels")
+            .with_attribute(("xsi:type", salt_type));
+
         if !anno_ns.is_empty() {
             if anno_name == "SDATA" {
-                label = label.attr("namespace", "saltCommon");
+                label = label.with_attribute(("namespace", "saltCommon"));
             } else {
-                label = label.attr("namespace", anno_ns);
+                label = label.with_attribute(("namespace", anno_ns));
             }
         }
         if !anno_name.is_empty() {
-            label = label.attr("name", anno_name);
+            label = label.with_attribute(("name", anno_name));
         }
         let value = format!("T::{}", anno.val);
-        label = label.attr("value", &value);
-        self.xml.write(label)?;
-        self.xml.write(XmlEvent::end_element())?;
+        label = label.with_attribute(("value", value.as_str()));
+        label.write_empty()?;
+
         Ok(())
     }
 
@@ -225,8 +232,8 @@ where
         let node_position = self.node_positions.len() + 1;
         self.node_positions.insert(n.clone(), node_position);
 
-        let mut attributes = Vec::new();
-        attributes.push(OwnedAttribute::new(parse_attr_name("xsi:type")?, salt_type));
+        let mut attributes: Vec<(String, String)> = Vec::new();
+        attributes.push((parse_attr_name("xsi:type")?, salt_type.to_string()));
 
         // Add the layer reference to the attributes
         if let Some(layer) = layer {
@@ -235,22 +242,12 @@ where
                 .get_by_left(&layer)
                 .context("Unknown position for layer")?;
             let layer_att_value = format!("//@layers.{pos}");
-            attributes.push(OwnedAttribute::new(
-                parse_attr_name("layer")?,
-                layer_att_value,
-            ));
+            attributes.push((parse_attr_name("layer")?, layer_att_value));
             self.nodes_in_layer
                 .entry(layer.to_string())
                 .or_default()
                 .push(node_position);
         }
-        self.xml.write(XmlEvent::StartElement {
-            name: "nodes".into(),
-            attributes: Cow::Borrowed(&attributes.iter().map(|a| a.borrow()).collect_vec()),
-            namespace: Cow::Owned(xml::namespace::Namespace::empty()),
-        })?;
-
-        // Write Salt ID and SNAME
         let node_name = match &n {
             NodeType::Id(n) => self
                 .graph
@@ -261,24 +258,27 @@ where
             NodeType::Custom(node_name) => node_name.clone(),
         };
         let salt_id = format!("T::salt:/{node_name}");
-        self.xml.write(
-            XmlEvent::start_element("labels")
-                .attr("xsi:type", "saltCore:SElementId")
-                .attr("namespace", "salt")
-                .attr("name", "id")
-                .attr("value", &salt_id),
-        )?;
-        self.xml.write(XmlEvent::end_element())?;
+        let nodes_tag = BytesStart::new("nodes")
+            .with_attributes(attributes.iter().map(|(n, v)| (n.as_str(), v.as_str())));
+        self.xml.write_event(Event::Start(nodes_tag.borrow()))?;
+
+        // Write Salt ID and SNAME
+        self.xml
+            .create_element("labels")
+            .with_attribute(("xsi:type", "saltCore:SElementId"))
+            .with_attribute(("namespace", "salt"))
+            .with_attribute(("name", "id"))
+            .with_attribute(("value", salt_id.as_str()))
+            .write_empty()?;
 
         // Get the last part of the URI path
-        self.xml.write(
-            XmlEvent::start_element("labels")
-                .attr("xsi:type", "saltCore:SFeature")
-                .attr("namespace", "salt")
-                .attr("name", "SNAME")
-                .attr("value", sname),
-        )?;
-        self.xml.write(XmlEvent::end_element())?;
+        self.xml
+            .create_element("labels")
+            .with_attribute(("xsi:type", "saltCore:SFeature"))
+            .with_attribute(("namespace", "salt"))
+            .with_attribute(("name", "SNAME"))
+            .with_attribute(("value", sname))
+            .write_empty()?;
 
         // Write all other annotations as labels
         for anno in output_annotations {
@@ -296,8 +296,7 @@ where
         for anno in output_features {
             self.write_label(anno, "saltCore:SFeature")?;
         }
-
-        self.xml.write(XmlEvent::end_element())?;
+        self.xml.write_event(Event::End(nodes_tag.to_end()))?;
 
         Ok(())
     }
@@ -363,7 +362,7 @@ where
         self.number_of_edges += 1;
 
         let mut attributes = Vec::new();
-        attributes.push(OwnedAttribute::new(parse_attr_name("xsi:type")?, salt_type));
+        attributes.push((parse_attr_name("xsi:type")?, salt_type.to_string()));
 
         let source_position = self
             .node_positions
@@ -375,11 +374,11 @@ where
             .get(&target)
             .context("Missing position for target node")?;
 
-        attributes.push(OwnedAttribute::new(
+        attributes.push((
             parse_attr_name("source")?,
             format!("//@nodes.{source_position}"),
         ));
-        attributes.push(OwnedAttribute::new(
+        attributes.push((
             parse_attr_name("source")?,
             format!("//@nodes.{target_position}"),
         ));
@@ -391,32 +390,34 @@ where
                 .get_by_left(&layer)
                 .context("Unknown position for layer")?;
             let layer_att_value = format!("//@layers.{pos}");
-            attributes.push(OwnedAttribute::new(
-                parse_attr_name("layer")?,
-                layer_att_value,
-            ));
+            attributes.push((parse_attr_name("layer")?, layer_att_value));
             self.edges_in_layer
                 .entry(layer)
                 .or_default()
                 .push(self.number_of_edges);
         }
-        self.xml.write(XmlEvent::StartElement {
-            name: "edges".into(),
-            attributes: Cow::Borrowed(&attributes.iter().map(|a| a.borrow()).collect_vec()),
-            namespace: Cow::Owned(xml::namespace::Namespace::empty()),
-        })?;
-        // add all edge labels
-        for anno in output_annotations {
-            if anno.key.ns != "annis" {
-                self.write_label(anno, "saltCore:SAnnotation")?;
+
+        let edges_tag = BytesStart::new("edges")
+            .with_attributes(attributes.iter().map(|(n, v)| (n.as_str(), v.as_str())));
+
+        if output_annotations.is_empty() && output_features.is_empty() {
+            self.xml.write_event(Event::Empty(edges_tag))?;
+        } else {
+            self.xml.write_event(Event::Start(edges_tag.borrow()))?;
+
+            // add all edge labels
+            for anno in output_annotations {
+                if anno.key.ns != "annis" {
+                    self.write_label(anno, "saltCore:SAnnotation")?;
+                }
             }
-        }
-        for anno in output_features {
-            if anno.key.ns != "annis" {
-                self.write_label(anno, "saltCore:SFeature")?;
+            for anno in output_features {
+                if anno.key.ns != "annis" {
+                    self.write_label(anno, "saltCore:SFeature")?;
+                }
             }
+            self.xml.write_event(Event::End(edges_tag.to_end()))?;
         }
-        self.xml.write(XmlEvent::end_element())?;
 
         Ok(())
     }
@@ -425,48 +426,42 @@ where
         // Iterate over the layers in order of their position
         for (layer, pos) in self.layer_positions.right_range(..) {
             let mut attributes = Vec::new();
-            attributes.push(OwnedAttribute::new(
-                parse_attr_name("xsi:type")?,
-                "saltCore:SLayer",
-            ));
+            attributes.push((parse_attr_name("xsi:type")?, "saltCore:SLayer".to_string()));
 
             // Write nodes as attribute
             if let Some(included_positions) = self.nodes_in_layer.get(layer) {
                 let att_value = position_references_to_string(included_positions, "nodes");
-                attributes.push(OwnedAttribute::new(parse_attr_name("nodes")?, att_value));
+                attributes.push((parse_attr_name("nodes")?, att_value));
             }
 
             // Write edges as attributes
             if let Some(included_positions) = self.edges_in_layer.get(layer) {
                 let att_value = position_references_to_string(included_positions, "edges");
-                attributes.push(OwnedAttribute::new(parse_attr_name("edges")?, att_value));
+                attributes.push((parse_attr_name("edges")?, att_value));
             }
 
-            self.xml.write(XmlEvent::StartElement {
-                name: "layers".into(),
-                attributes: Cow::Borrowed(&attributes.iter().map(|a| a.borrow()).collect_vec()),
-                namespace: Cow::Owned(xml::namespace::Namespace::empty()),
-            })?;
+            let layers_tag = BytesStart::new("layers")
+                .with_attributes(attributes.iter().map(|(n, v)| (n.as_str(), v.as_str())));
+            self.xml.write_event(Event::Start(layers_tag.borrow()))?;
 
             let marshalled_id = format!("T::l{pos}");
-            let id_label = XmlEvent::start_element("labels")
-                .attr("xsi:type", "saltCore:SElementId")
-                .attr("namespace", "salt")
-                .attr("name", "id")
-                .attr("value", &marshalled_id);
-            self.xml.write(id_label)?;
-            self.xml.write(XmlEvent::end_element())?;
+            self.xml
+                .create_element("labels")
+                .with_attribute(("xsi:type", "saltCore:SElementId"))
+                .with_attribute(("namespace", "salt"))
+                .with_attribute(("name", "id"))
+                .with_attribute(("value", marshalled_id.as_str()))
+                .write_empty()?;
 
             let marshalled_name = format!("T::{layer}");
-            let id_label = XmlEvent::start_element("labels")
-                .attr("xsi:type", "saltCore:SFeature")
-                .attr("namespace", "salt")
-                .attr("name", "SNAME")
-                .attr("value", &marshalled_name);
-            self.xml.write(id_label)?;
-            self.xml.write(XmlEvent::end_element())?;
-
-            self.xml.write(XmlEvent::end_element())?;
+            self.xml
+                .create_element("labels")
+                .with_attribute(("xsi:type", "saltCore:SFeature"))
+                .with_attribute(("namespace", "salt"))
+                .with_attribute(("name", "SNAME"))
+                .with_attribute(("value", marshalled_name.as_str()))
+                .write_empty()?;
+            self.xml.write_event(Event::End(layers_tag.to_end()))?;
         }
         Ok(())
     }

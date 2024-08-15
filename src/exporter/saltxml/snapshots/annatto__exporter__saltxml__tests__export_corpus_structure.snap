@@ -5,31 +5,31 @@ expression: result
 <?xml version="1.1" encoding="UTF-8"?>
 <saltCommon:SaltProject xmlns:sCorpusStructure="sCorpusStructure" xmlns:saltCommon="saltCommon" xmlns:saltCore="saltCore" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:version="2.0">
   <sCorpusGraphs>
-    <labels xsi:type="saltCore:SFeature" namespace="salt" name="id" value="T::root" />
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="id" value="T::root"/>
     <nodes xsi:type="sCorpusStructure:SCorpus">
-      <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root" />
-      <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="root" />
+      <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root"/>
+      <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="root"/>
     </nodes>
     <nodes xsi:type="sCorpusStructure:SDocument" layer="//@layers.2">
-      <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1" />
-      <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="doc1" />
-      <labels xsi:type="saltCore:SMetaAnnotation" namespace="test" name="description" value="T::A demo corpus" />
-      <labels xsi:type="saltCore:SMetaAnnotation" namespace="test" name="author" value="T::unknown" />
+      <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1"/>
+      <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="doc1"/>
+      <labels xsi:type="saltCore:SMetaAnnotation" namespace="test" name="description" value="T::A demo corpus"/>
+      <labels xsi:type="saltCore:SMetaAnnotation" namespace="test" name="author" value="T::unknown"/>
     </nodes>
     <nodes xsi:type="sCorpusStructure:SDocument" layer="//@layers.2">
-      <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc2" />
-      <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="doc2" />
-      <labels xsi:type="saltCore:SMetaAnnotation" namespace="test" name="description" value="T::Another demo corpus" />
+      <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc2"/>
+      <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="doc2"/>
+      <labels xsi:type="saltCore:SMetaAnnotation" namespace="test" name="description" value="T::Another demo corpus"/>
     </nodes>
-    <edges xsi:type="sCorpusStructure:SCorpusDocumentRelation" source="//@nodes.1" source="//@nodes.2" layer="//@layers.1" />
-    <edges xsi:type="sCorpusStructure:SCorpusDocumentRelation" source="//@nodes.1" source="//@nodes.3" layer="//@layers.1" />
+    <edges xsi:type="sCorpusStructure:SCorpusDocumentRelation" source="//@nodes.1" source="//@nodes.2" layer="//@layers.1"/>
+    <edges xsi:type="sCorpusStructure:SCorpusDocumentRelation" source="//@nodes.1" source="//@nodes.3" layer="//@layers.1"/>
     <layers xsi:type="saltCore:SLayer" edges="//@edges.1 //@edges.2">
-      <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::l1" />
-      <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::annis" />
+      <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::l1"/>
+      <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::annis"/>
     </layers>
     <layers xsi:type="saltCore:SLayer" nodes="//@nodes.2 //@nodes.3">
-      <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::l2" />
-      <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::test-layer" />
+      <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::l2"/>
+      <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::test-layer"/>
     </layers>
   </sCorpusGraphs>
 </saltCommon:SaltProject>

@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, fs::File, io::BufWriter, sync::Arc};
 
-use anyhow::Context;
+use anyhow::{Context, Error};
 use graphannis::{
     graph::{AnnoKey, Annotation, Edge, GraphStorage, NodeID},
     model::AnnotationComponentType,
@@ -11,7 +11,7 @@ use graphannis_core::{
     dfs::CycleSafeDFS,
     graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE},
 };
-use xml::{writer::XmlEvent, EmitterConfig};
+use quick_xml::events::{BytesDecl, Event};
 
 use crate::util::{
     token_helper::{TokenHelper, TOKEN_KEY},
@@ -62,115 +62,106 @@ impl SaltDocumentGraphMapper {
     ) -> anyhow::Result<()> {
         let output_file = self.create_saltfile(graph, document_node_id, output_path)?;
         let buffered_output_file = BufWriter::new(output_file);
-        let mut writer = EmitterConfig::new()
-            .perform_indent(true)
-            .create_writer(buffered_output_file);
+        let mut writer = quick_xml::Writer::new_with_indent(buffered_output_file, b' ', 2);
+        writer.write_event(Event::Decl(BytesDecl::new("1.1", Some("UTF-8"), None)))?;
 
-        writer.write(XmlEvent::StartDocument {
-            version: xml::common::XmlVersion::Version11,
-            encoding: Some("UTF-8"),
-            standalone: None,
-        })?;
-
-        writer.write(
-            XmlEvent::start_element("sDocumentStructure:SDocumentGraph")
-                .ns("xmi", "http://www.omg.org/XMI")
-                .ns("xsi", "http://www.w3.org/2001/XMLSchema-instance")
-                .ns("sDocumentStructure", "sDocumentStructure")
-                .ns("saltCore", "saltCore")
-                .attr("xsi:version", "2.0"),
-        )?;
+        let graph_tag = writer
+            .create_element("sDocumentStructure:SDocumentGraph")
+            .with_attribute(("xmlns:sDocumentStructure", "sDocumentStructure"))
+            .with_attribute(("xmlns:saltCore", "saltCore"))
+            .with_attribute(("xmlns:xmi", "http://www.omg.org/XMI"))
+            .with_attribute(("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"))
+            .with_attribute(("xsi:version", "2.0"));
         let node_annos = graph.get_node_annos();
         let node_name = node_annos
             .get_value_for_item(&document_node_id, &NODE_NAME_KEY)?
             .context("Missing node name for document graph")?;
         let salt_id = format!("T::salt:/{node_name}");
-        writer.write(
-            XmlEvent::start_element("labels")
-                .attr("xsi:type", "saltCore:SElementId")
-                .attr("namespace", "salt")
-                .attr("name", "id")
-                .attr("value", &salt_id),
-        )?;
-        writer.write(XmlEvent::end_element())?;
+        graph_tag.write_inner_content::<_, Error>(|mut writer| {
+            writer
+                .create_element("labels")
+                .with_attribute(("xsi:type", "saltCore:SElementId"))
+                .with_attribute(("namespace", "salt"))
+                .with_attribute(("name", "id"))
+                .with_attribute(("value", salt_id.as_str()))
+                .write_empty()?;
+            let mut salt_writer = SaltWriter::new(graph, &mut writer)?;
 
-        let mut salt_writer = SaltWriter::new(graph, &mut writer)?;
+            // Map all nodes in the annotation graph
+            let nodes: graphannis_core::errors::Result<Vec<_>> = graph
+                .get_node_annos()
+                .exact_anno_search(Some(ANNIS_NS), NODE_TYPE, ValueSearch::Some("node"))
+                .collect();
+            let nodes = nodes?;
 
-        // Map all nodes in the annotation graph
-        let nodes: graphannis_core::errors::Result<Vec<_>> = graph
-            .get_node_annos()
-            .exact_anno_search(Some(ANNIS_NS), NODE_TYPE, ValueSearch::Some("node"))
-            .collect();
-        let nodes = nodes?;
+            let tok_helper = TokenHelper::new(graph)?;
+            let all_dominance_gs: Vec<_> = graph
+                .get_all_components(Some(AnnotationComponentType::Dominance), None)
+                .into_iter()
+                .filter_map(|c| graph.get_graphstorage(&c))
+                .collect();
+            let mut span_nodes = Vec::new();
+            for n in nodes.iter() {
+                let salt_type = if tok_helper.is_token(n.node)? {
+                    "sDocumentStructure:SToken"
+                } else if node_is_span(n.node, &tok_helper, &all_dominance_gs)? {
+                    span_nodes.push(n.node);
+                    "sDocumentStructure:SSpan"
+                } else {
+                    "sDocumentStructure:SStructure"
+                };
+                salt_writer.write_graphannis_node(n.node, salt_type)?;
+            }
 
-        let tok_helper = TokenHelper::new(graph)?;
-        let all_dominance_gs: Vec<_> = graph
-            .get_all_components(Some(AnnotationComponentType::Dominance), None)
-            .into_iter()
-            .filter_map(|c| graph.get_graphstorage(&c))
-            .collect();
-        let mut span_nodes = Vec::new();
-        for n in nodes.iter() {
-            let salt_type = if tok_helper.is_token(n.node)? {
-                "sDocumentStructure:SToken"
-            } else if node_is_span(n.node, &tok_helper, &all_dominance_gs)? {
-                span_nodes.push(n.node);
-                "sDocumentStructure:SSpan"
-            } else {
-                "sDocumentStructure:SStructure"
-            };
-            salt_writer.write_graphannis_node(n.node, salt_type)?;
-        }
+            // Map the edges
+            for ctype in [
+                AnnotationComponentType::Dominance,
+                AnnotationComponentType::Pointing,
+                AnnotationComponentType::Ordering,
+            ] {
+                for c in graph.get_all_components(Some(ctype), None) {
+                    let gs = graph
+                        .get_graphstorage_as_ref(&c)
+                        .context("Missing graph storage for component")?;
+                    for source in gs.source_nodes() {
+                        let source = source?;
+                        for target in gs.get_outgoing_edges(source) {
+                            let target = target?;
+                            let edge = Edge { source, target };
+                            salt_writer.write_graphannis_edge(edge, &c)?;
+                        }
+                    }
+                }
+            }
 
-        // Map the edges
-        for ctype in [
-            AnnotationComponentType::Dominance,
-            AnnotationComponentType::Pointing,
-            AnnotationComponentType::Ordering,
-        ] {
-            for c in graph.get_all_components(Some(ctype), None) {
+            // Map coverage edges for spans
+            for c in graph.get_all_components(Some(AnnotationComponentType::Coverage), None) {
                 let gs = graph
                     .get_graphstorage_as_ref(&c)
                     .context("Missing graph storage for component")?;
-                for source in gs.source_nodes() {
-                    let source = source?;
-                    for target in gs.get_outgoing_edges(source) {
+                for source in span_nodes.iter() {
+                    for target in gs.get_outgoing_edges(*source) {
                         let target = target?;
-                        let edge = Edge { source, target };
+                        let edge = Edge {
+                            source: *source,
+                            target,
+                        };
                         salt_writer.write_graphannis_edge(edge, &c)?;
                     }
                 }
             }
-        }
 
-        // Map coverage edges for spans
-        for c in graph.get_all_components(Some(AnnotationComponentType::Coverage), None) {
-            let gs = graph
-                .get_graphstorage_as_ref(&c)
-                .context("Missing graph storage for component")?;
-            for source in span_nodes.iter() {
-                for target in gs.get_outgoing_edges(*source) {
-                    let target = target?;
-                    let edge = Edge {
-                        source: *source,
-                        target,
-                    };
-                    salt_writer.write_graphannis_edge(edge, &c)?;
-                }
-            }
-        }
+            // export textual data sources and STextualRelations to the token
+            self.map_textual_ds(graph, document_node_id, &mut salt_writer)?;
 
-        // export textual data sources and STextualRelations to the token
-        self.map_textual_ds(graph, document_node_id, &mut salt_writer)?;
+            // TODO: export media file references and annis:time annotations
+            // TODO: export timeline
 
-        // TODO: export media file references and annis:time annotations
-        // TODO: export timeline
+            // Write out the layer XML nodes
+            salt_writer.write_all_layers()?;
 
-        // Write out the layer XML nodes
-        salt_writer.write_all_layers()?;
-
-        // Close <SDocumentGraph>
-        writer.write(XmlEvent::end_element())?;
+            Ok(())
+        })?;
 
         Ok(())
     }
