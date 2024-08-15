@@ -229,7 +229,7 @@ where
         layer: Option<String>,
     ) -> Result<()> {
         // Remember the position of this node in the XML file
-        let node_position = self.node_positions.len() + 1;
+        let node_position = self.node_positions.len();
         self.node_positions.insert(n.clone(), node_position);
 
         let mut attributes: Vec<(String, String)> = Vec::new();
@@ -359,8 +359,6 @@ where
         output_features: &[Annotation],
         layer: Option<String>,
     ) -> Result<()> {
-        self.number_of_edges += 1;
-
         let mut attributes = Vec::new();
         attributes.push((parse_attr_name("xsi:type")?, salt_type.to_string()));
 
@@ -418,6 +416,8 @@ where
             }
             self.xml.write_event(Event::End(edges_tag.to_end()))?;
         }
+
+        self.number_of_edges += 1;
 
         Ok(())
     }
