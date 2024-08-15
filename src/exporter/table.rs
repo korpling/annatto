@@ -1,5 +1,4 @@
 use std::{
-    borrow::Cow,
     collections::{btree_map::Entry, BTreeMap},
     ops::Bound,
     path::Path,
@@ -69,6 +68,15 @@ pub struct ExportTable {
     /// ```
     #[serde(default)]
     quote_char: Option<char>,
+    /// Provides the string sequence used for n/a. Default is the empty string.
+    ///
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// no_value = "n/a"
+    /// ```
+    #[serde(default)]
+    no_value: String,
     /// By listing annotation components, the ingoing edges of that component and their annotations
     /// will be exported as well. Multiple ingoing edges will be separated by a ";". Each exported
     /// node will be checked for ingoing edges in the respective components.
@@ -99,6 +107,7 @@ impl Default for ExportTable {
             doc_anno: default_doc_anno(),
             delimiter: default_delimiter(),
             quote_char: None,
+            no_value: String::default(),
             ingoing: vec![],
             outgoing: vec![],
         }
@@ -200,8 +209,8 @@ impl Exporter for ExportTable {
     }
 }
 
-type Data<'a> = BTreeMap<usize, Cow<'a, str>>;
-type EdgeData<'a> = BTreeMap<usize, LinkedHashSet<Cow<'a, str>>>; // insertion order is critical
+type Data = BTreeMap<usize, String>;
+type EdgeData = BTreeMap<usize, LinkedHashSet<String>>; // insertion order is critical
 type SingleEdgeData<'a> = (String, &'a AnnotationComponent, Vec<(String, String)>);
 
 impl ExportTable {
@@ -264,8 +273,8 @@ impl ExportTable {
                         let value = node_annos
                             .get_value_for_item(&rn, &anno_key)?
                             .ok_or(anyhow!("Annotation has no value"))?;
-                        data.insert(index, value);
-                        data.insert(index + 1, node_name.clone());
+                        data.insert(index, value.to_string());
+                        data.insert(index + 1, node_name.to_string());
                     }
                 }
                 if follow_edges {
@@ -298,11 +307,11 @@ impl ExportTable {
                             match edge_column_data.entry(index) {
                                 Entry::Vacant(e) => {
                                     let mut new_value = LinkedHashSet::default();
-                                    new_value.insert(Cow::Owned(value));
+                                    new_value.insert(value);
                                     e.insert(new_value);
                                 }
                                 Entry::Occupied(mut e) => {
-                                    e.get_mut().insert(Cow::Owned(value));
+                                    e.get_mut().insert(value);
                                 }
                             };
                         }
@@ -310,9 +319,9 @@ impl ExportTable {
                 }
             }
             data.extend(
-                edge_column_data.into_iter().map(|(ix, value_set)| {
-                    (ix, Cow::Owned(value_set.iter().join(";").to_string()))
-                }),
+                edge_column_data
+                    .into_iter()
+                    .map(|(ix, value_set)| (ix, value_set.iter().join(";").to_string())),
             );
             table_data.push(data);
         }
@@ -335,7 +344,12 @@ impl ExportTable {
         for mut entry in table_data {
             let mut row = Vec::with_capacity(index_bound);
             for col_index in 0..index_bound {
-                row.push(entry.remove(&col_index).unwrap_or_default().to_string());
+                row.push(
+                    entry
+                        .remove(&col_index)
+                        .unwrap_or(self.no_value.to_string())
+                        .to_string(),
+                );
             }
             if !row.iter().all(String::is_empty) {
                 writer.write_record(&row)?;
@@ -523,6 +537,46 @@ mod tests {
             &graph,
             ExportTable {
                 ingoing: vec![AnnotationComponent::new(
+                    AnnotationComponentType::Pointing,
+                    "".into(),
+                    "dep".into(),
+                )],
+                ..Default::default()
+            },
+        );
+        assert!(export.is_ok(), "error: {:?}", export.err());
+        assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
+    fn custom() {
+        let to_conll = ImportCoNLLU::default();
+        let mprt = to_conll.import_corpus(
+            Path::new("tests/data/import/conll/valid/"),
+            StepID {
+                module_name: "test_import_conll".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(mprt.is_ok());
+        let mut update_import = mprt.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update_import, |_| {}).is_ok());
+        let export = export_to_string(
+            &graph,
+            ExportTable {
+                delimiter: ';',
+                no_value: "n/a".to_string(),
+                quote_char: Some('\''),
+                ingoing: vec![AnnotationComponent::new(
+                    AnnotationComponentType::Pointing,
+                    "".into(),
+                    "dep".into(),
+                )],
+                outgoing: vec![AnnotationComponent::new(
                     AnnotationComponentType::Pointing,
                     "".into(),
                     "dep".into(),
