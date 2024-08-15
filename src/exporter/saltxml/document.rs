@@ -3,6 +3,7 @@ use std::{
     convert::TryInto,
     fs::File,
     io::BufWriter,
+    path::PathBuf,
     sync::Arc,
 };
 
@@ -81,8 +82,12 @@ impl SaltDocumentGraphMapper {
     ) -> anyhow::Result<()> {
         let corpusgraph_helper = CorpusGraphHelper::new(graph);
 
-        let output_file =
+        let (output_path, output_file) =
             self.create_saltfile(graph, document_node_id, &corpusgraph_helper, output_path)?;
+        progress.info(&format!(
+            "Writing SaltXML file {}",
+            output_path.to_string_lossy()
+        ))?;
         let buffered_output_file = BufWriter::new(output_file);
         let mut writer = quick_xml::Writer::new_with_indent(buffered_output_file, b' ', 2);
         writer.write_event(Event::Decl(BytesDecl::new("1.0", Some("UTF-8"), None)))?;
@@ -107,7 +112,7 @@ impl SaltDocumentGraphMapper {
                 .with_attribute(("name", "id"))
                 .with_attribute(("value", salt_id.as_str()))
                 .write_empty()?;
-            let mut salt_writer = SaltWriter::new(graph, writer)?;
+            let mut salt_writer = SaltWriter::new(graph, writer, &output_path, progress)?;
 
             // Map all nodes in the annotation graph
 
@@ -204,7 +209,7 @@ impl SaltDocumentGraphMapper {
         document_node_id: NodeID,
         corpusgraph_helper: &CorpusGraphHelper,
         output_path: &std::path::Path,
-    ) -> anyhow::Result<File> {
+    ) -> anyhow::Result<(PathBuf, File)> {
         let node_annos = graph.get_node_annos();
 
         let mut last_distance = 0;
@@ -244,9 +249,9 @@ impl SaltDocumentGraphMapper {
             .context("Empty document name")?;
         salt_file_path.push(format!("{document_file_name}.salt"));
 
-        let output_file = std::fs::File::create(salt_file_path)?;
+        let output_file = std::fs::File::create(&salt_file_path)?;
 
-        Ok(output_file)
+        Ok((salt_file_path, output_file))
     }
 
     fn map_textual_ds_and_timeline<W>(

@@ -12,7 +12,7 @@ use graphannis_core::{
 };
 use quick_xml::events::{BytesDecl, Event};
 
-use crate::util::CorpusGraphHelper;
+use crate::{progress::ProgressReporter, util::CorpusGraphHelper};
 
 use super::SaltWriter;
 
@@ -27,6 +27,7 @@ impl SaltCorpusStructureMapper {
         &self,
         graph: &AnnotationGraph,
         output_path: &std::path::Path,
+        progress: &ProgressReporter,
     ) -> anyhow::Result<Vec<NodeID>> {
         let corpus_name = output_path
             .file_name()
@@ -35,7 +36,7 @@ impl SaltCorpusStructureMapper {
         let mut documents = Vec::new();
 
         let project_file_path = output_path.join("saltProject.salt");
-        let output_file = std::fs::File::create(project_file_path)?;
+        let output_file = std::fs::File::create(&project_file_path)?;
         let buffered_output_file = BufWriter::new(output_file);
         let mut writer = quick_xml::Writer::new_with_indent(buffered_output_file, b' ', 2);
 
@@ -68,7 +69,8 @@ impl SaltCorpusStructureMapper {
                         ))
                         .write_empty()?;
 
-                    let mut salt_writer = SaltWriter::new(graph, writer)?;
+                    let mut salt_writer =
+                        SaltWriter::new(graph, writer, &project_file_path, progress)?;
 
                     let corpusgraph_helper = CorpusGraphHelper::new(graph);
 

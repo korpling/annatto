@@ -6,6 +6,7 @@ mod tests;
 use std::{
     borrow::Cow,
     collections::{BTreeMap, BTreeSet, HashMap},
+    path::PathBuf,
 };
 
 use crate::{importer::saltxml::SaltObject, progress::ProgressReporter};
@@ -52,8 +53,9 @@ impl Exporter for ExportSaltXml {
 
         std::fs::create_dir_all(output_path)?;
 
-        progress.info("Mapping SaltXML corpus structure")?;
-        let document_node_ids = corpus_mapper.map_corpus_structure(graph, output_path)?;
+        progress.info("Writing SaltXML corpus structure")?;
+        let document_node_ids =
+            corpus_mapper.map_corpus_structure(graph, output_path, &progress)?;
         let progress = ProgressReporter::new(tx, step_id, document_node_ids.len())?;
         for id in document_node_ids {
             let mut doc_mapper = SaltDocumentGraphMapper::new();
@@ -78,6 +80,8 @@ enum NodeType {
 struct SaltWriter<'a, W> {
     graph: &'a AnnotationGraph,
     xml: &'a mut Writer<W>,
+    output_path: PathBuf,
+    progress: &'a ProgressReporter,
     layer_positions: BiBTreeMap<String, usize>,
     node_positions: BTreeMap<NodeType, usize>,
     number_of_edges: usize,
@@ -127,7 +131,12 @@ impl<'a, W> SaltWriter<'a, W>
 where
     W: std::io::Write,
 {
-    fn new(graph: &'a AnnotationGraph, writer: &'a mut Writer<W>) -> Result<Self> {
+    fn new(
+        graph: &'a AnnotationGraph,
+        writer: &'a mut Writer<W>,
+        output_path: &std::path::Path,
+        progress: &'a ProgressReporter,
+    ) -> Result<Self> {
         // Collect node and edge layer names
         let mut layer_names = BTreeSet::new();
         layer_names.extend(
@@ -155,6 +164,8 @@ where
         Ok(SaltWriter {
             graph,
             xml: writer,
+            output_path: output_path.to_path_buf(),
+            progress,
             layer_positions,
             number_of_edges: 0,
             node_positions: BTreeMap::new(),
@@ -179,11 +190,19 @@ where
                 label = label.with_attribute(("namespace", anno_ns));
             }
         }
-        if !anno_name.is_empty() {
+        if anno_name.is_empty() {
+            // Ignore labels that have no name
+            self.progress.warn(&format!(
+                "Label ({:?}={}) with empty name is ignored for file {}",
+                key,
+                value,
+                self.output_path.to_string_lossy()
+            ))?;
+        } else {
             label = label.with_attribute(("name", anno_name));
+            label = label.with_attribute(("value", value.marshall().as_str()));
+            label.write_empty()?;
         }
-        label = label.with_attribute(("value", value.marshall().as_str()));
-        label.write_empty()?;
 
         Ok(())
     }
