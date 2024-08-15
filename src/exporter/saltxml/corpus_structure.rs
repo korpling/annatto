@@ -56,7 +56,7 @@ impl SaltCorpusStructureMapper {
         project_elem.write_inner_content::<_, Error>(|writer| {
             writer
                 .create_element("sCorpusGraphs")
-                .write_inner_content::<_, Error>(|mut writer| {
+                .write_inner_content::<_, Error>(|writer| {
                     writer
                         .create_element("labels")
                         .with_attribute(("xsi:type", "saltCore:SFeature"))

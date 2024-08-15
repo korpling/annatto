@@ -77,7 +77,7 @@ impl SaltDocumentGraphMapper {
             .get_value_for_item(&document_node_id, &NODE_NAME_KEY)?
             .context("Missing node name for document graph")?;
         let salt_id = format!("T::salt:/{node_name}");
-        graph_tag.write_inner_content::<_, Error>(|mut writer| {
+        graph_tag.write_inner_content::<_, Error>(|writer| {
             writer
                 .create_element("labels")
                 .with_attribute(("xsi:type", "saltCore:SElementId"))

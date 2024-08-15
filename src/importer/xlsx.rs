@@ -382,15 +382,17 @@ impl ImportSpreadsheet {
                 if let Some(value_cell) = entry_map.get(&2) {
                     let kv = key_cell.get_value();
                     let key = kv.trim();
-                    let (ns, name) = split_qname(key);
-                    let vv = value_cell.get_value();
-                    let value = vv.trim();
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: doc_path.to_string(),
-                        anno_ns: ns.map_or("".to_string(), str::to_string),
-                        anno_name: name.to_string(),
-                        anno_value: value.to_string(),
-                    })?;
+                    if !key.is_empty() {
+                        let (ns, name) = split_qname(key);
+                        let vv = value_cell.get_value();
+                        let value = vv.trim();
+                        update.add_event(UpdateEvent::AddNodeLabel {
+                            node_name: doc_path.to_string(),
+                            anno_ns: ns.map_or("".to_string(), str::to_string),
+                            anno_name: name.to_string(),
+                            anno_value: value.to_string(),
+                        })?;
+                    }
                 }
             }
         }
