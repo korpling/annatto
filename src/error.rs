@@ -75,7 +75,7 @@ pub enum AnnattoError {
     #[error("Could not parse TOML workflow file: {error}")]
     TOMLError { error: String },
     #[error("Could not read XSLS file: {0}")]
-    XlsxRead(#[from] umya_spreadsheet::reader::xlsx::XlsxError),
+    XlsxRead(#[from] umya_spreadsheet::XlsxError),
     #[error("Error waiting for finished conversion thread")]
     JoinHandle,
     #[error("Glob pattern caused an error: {0}")]

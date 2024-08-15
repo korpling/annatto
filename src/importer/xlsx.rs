@@ -86,17 +86,17 @@ fn sheet_from_address<'a>(
     book: &'a umya_spreadsheet::Spreadsheet,
     address: &Option<SheetAddress>,
     default: Option<usize>,
-) -> Result<Option<&'a umya_spreadsheet::Worksheet>, Box<dyn std::error::Error>> {
-    Ok(if let Some(addr) = &address {
-        Some(match addr {
-            SheetAddress::Numeric(n) => book.get_sheet(n)?,
-            SheetAddress::Name(s) => book.get_sheet_by_name(s)?,
-        })
+) -> Option<&'a umya_spreadsheet::Worksheet> {
+    if let Some(addr) = &address {
+        match addr {
+            SheetAddress::Numeric(n) => book.get_sheet(n),
+            SheetAddress::Name(s) => book.get_sheet_by_name(s),
+        }
     } else if let Some(default_addr) = &default {
-        Some(book.get_sheet(default_addr)?)
+        book.get_sheet(default_addr)
     } else {
         None
-    })
+    }
 }
 
 impl ImportSpreadsheet {
@@ -152,7 +152,7 @@ impl ImportSpreadsheet {
             }
             // remove obselete indices of merged cells
             for cell_range in merged_cells {
-                let start_col = match cell_range.get_coordinate_start_col().as_ref() {
+                let start_col = match cell_range.get_coordinate_start_col() {
                     Some(c) => c,
                     None => {
                         progress_reporter.warn(&format!(
@@ -163,7 +163,7 @@ impl ImportSpreadsheet {
                     }
                 };
                 let col_1i = start_col.get_num();
-                let end_col = match cell_range.get_coordinate_end_col().as_ref() {
+                let end_col = match cell_range.get_coordinate_end_col() {
                     Some(c) => c,
                     None => {
                         progress_reporter.info(&format!(
@@ -183,7 +183,7 @@ impl ImportSpreadsheet {
                     };
                     return Err(err);
                 }
-                let start_row = match cell_range.get_coordinate_start_row().as_ref() {
+                let start_row = match cell_range.get_coordinate_start_row() {
                     Some(r) => r,
                     None => {
                         progress_reporter.warn(&format!(
@@ -194,7 +194,7 @@ impl ImportSpreadsheet {
                     }
                 };
                 let start_1i = start_row.get_num();
-                let end_row = match cell_range.get_coordinate_end_row().as_ref() {
+                let end_row = match cell_range.get_coordinate_end_row() {
                     Some(r) => r,
                     None => {
                         progress_reporter.info(&format!(
@@ -222,7 +222,7 @@ impl ImportSpreadsheet {
             m
         };
         let mut base_tokens = Vec::new();
-        for i in 2..sheet.get_highest_row() + 1 {
+        for i in 2..=sheet.get_highest_row() {
             let tok_id = format!("{}#t{}", &doc_path, i - 1);
             update.add_event(UpdateEvent::AddNode {
                 node_name: tok_id.to_string(),
@@ -408,22 +408,10 @@ impl ImportSpreadsheet {
         progress_reporter: &ProgressReporter,
     ) -> Result<(), AnnattoError> {
         let book = umya_spreadsheet::reader::xlsx::read(path)?;
-        if let Some(sheet) = sheet_from_address(&book, &self.datasheet, Some(0)).map_err(|e| {
-            AnnattoError::Import {
-                reason: e.to_string(),
-                importer: step_id.module_name.clone(),
-                path: path.to_path_buf(),
-            }
-        })? {
+        if let Some(sheet) = sheet_from_address(&book, &self.datasheet, Some(0)) {
             self.import_datasheet(step_id, doc_node_name, sheet, update, progress_reporter)?;
         }
-        if let Some(sheet) =
-            sheet_from_address(&book, &self.metasheet, None).map_err(|_| AnnattoError::Import {
-                reason: format!("Could not find sheet {:?}", &self.metasheet),
-                importer: step_id.module_name.clone(),
-                path: path.into(),
-            })?
-        {
+        if let Some(sheet) = sheet_from_address(&book, &self.metasheet, None) {
             self.import_metasheet(doc_node_name, sheet, update)?;
         }
         Ok(())
@@ -745,7 +733,7 @@ mod tests {
         delivers: bool,
     ) {
         let sh = sheet_from_address(&book, &addr, default);
-        assert_eq!(sh.is_ok() && sh.unwrap().is_some(), delivers);
+        assert_eq!(sh.is_some(), delivers);
     }
 
     #[test]
