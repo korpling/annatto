@@ -1,8 +1,8 @@
-use std::{collections::BTreeMap, fs::File, io::BufWriter, sync::Arc};
+use std::{collections::BTreeMap, convert::TryInto, fs::File, io::BufWriter, sync::Arc};
 
 use anyhow::{Context, Error};
 use graphannis::{
-    graph::{AnnoKey, Annotation, Edge, GraphStorage, NodeID},
+    graph::{AnnoKey, Edge, GraphStorage, NodeID},
     model::AnnotationComponentType,
     AnnotationGraph,
 };
@@ -13,9 +13,12 @@ use graphannis_core::{
 };
 use quick_xml::events::{BytesDecl, Event};
 
-use crate::util::{
-    token_helper::{TokenHelper, TOKEN_KEY},
-    CorpusGraphHelper,
+use crate::{
+    importer::saltxml::SaltObject,
+    util::{
+        token_helper::{TokenHelper, TOKEN_KEY},
+        CorpusGraphHelper,
+    },
 };
 
 use super::{NodeType, SaltWriter, TOK_WHITESPACE_AFTER_KEY, TOK_WHITESPACE_BEFORE_KEY};
@@ -292,13 +295,13 @@ impl SaltDocumentGraphMapper {
             } else {
                 text_name
             };
-            let features = vec![Annotation {
-                key: AnnoKey {
+            let features = vec![(
+                AnnoKey {
                     ns: "saltCommon".into(),
                     name: "SDATA".into(),
                 },
-                val: content.into(),
-            }];
+                SaltObject::Text(content),
+            )];
             let ds_node_name = format!("{document_node_name}#{sname}");
             salt_writer.write_node(
                 NodeType::Custom(ds_node_name.clone()),
@@ -322,20 +325,20 @@ impl SaltDocumentGraphMapper {
             let target = NodeType::Custom(target_ds.clone());
 
             let features = vec![
-                Annotation {
-                    key: AnnoKey {
+                (
+                    AnnoKey {
                         name: "SSTART".into(),
                         ns: "salt".into(),
                     },
-                    val: text_property.start.to_string().into(),
-                },
-                Annotation {
-                    key: AnnoKey {
+                    SaltObject::Integer(text_property.start.try_into()?),
+                ),
+                (
+                    AnnoKey {
                         name: "SEND".into(),
                         ns: "salt".into(),
                     },
-                    val: text_property.end.to_string().into(),
-                },
+                    SaltObject::Integer(text_property.end.try_into()?),
+                ),
             ];
 
             salt_writer.write_edge(

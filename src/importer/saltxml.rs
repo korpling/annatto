@@ -136,13 +136,27 @@ impl SaltType {
     }
 }
 
-enum SaltObject {
+pub(crate) enum SaltObject {
     Text(String),
     Boolean(bool),
     Integer(i64),
     Float(f64),
     Url(String),
     Null,
+}
+
+impl SaltObject {
+    /// Create a string representation that can be used as attribute value in SaltXML.
+    pub(crate) fn marshall(&self) -> String {
+        match self {
+            SaltObject::Text(v) => format!("T::{v}"),
+            SaltObject::Boolean(v) => format!("B::{v}"),
+            SaltObject::Integer(v) => format!("N::{v}"),
+            SaltObject::Float(v) => format!("F::{v}"),
+            SaltObject::Url(v) => format!("u::{v}"),
+            SaltObject::Null => String::default(),
+        }
+    }
 }
 
 impl From<&str> for SaltObject {

@@ -8,7 +8,7 @@ use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
 };
 
-use crate::progress::ProgressReporter;
+use crate::{importer::saltxml::SaltObject, progress::ProgressReporter};
 
 use super::Exporter;
 use anyhow::{anyhow, bail, Context, Result};
@@ -17,7 +17,7 @@ use corpus_structure::SaltCorpusStructureMapper;
 use document::SaltDocumentGraphMapper;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
-    graph::{AnnoKey, Annotation, Edge, NodeID},
+    graph::{AnnoKey, Edge, NodeID},
     model::{AnnotationComponent, AnnotationComponentType},
     AnnotationGraph,
 };
@@ -162,9 +162,9 @@ where
         })
     }
 
-    fn write_label(&mut self, anno: &Annotation, salt_type: &str) -> Result<()> {
-        let anno_ns: &str = &anno.key.ns;
-        let anno_name: &str = &anno.key.name;
+    fn write_label(&mut self, key: &AnnoKey, value: &SaltObject, salt_type: &str) -> Result<()> {
+        let anno_ns: &str = &key.ns;
+        let anno_name: &str = &key.name;
 
         let mut label = self
             .xml
@@ -181,8 +181,7 @@ where
         if !anno_name.is_empty() {
             label = label.with_attribute(("name", anno_name));
         }
-        let value = format!("T::{}", anno.val);
-        label = label.with_attribute(("value", value.as_str()));
+        label = label.with_attribute(("value", value.marshall().as_str()));
         label.write_empty()?;
 
         Ok(())
@@ -215,6 +214,10 @@ where
         };
 
         // Use the more general method to actual write the XML
+        let annotations: Vec<_> = annotations
+            .into_iter()
+            .map(|a| (a.key, SaltObject::Text(a.val.to_string())))
+            .collect();
         self.write_node(NodeType::Id(n), &sname, salt_type, &annotations, &[], layer)?;
         Ok(())
     }
@@ -224,8 +227,8 @@ where
         n: NodeType,
         sname: &str,
         salt_type: &str,
-        output_annotations: &[Annotation],
-        output_features: &[Annotation],
+        output_annotations: &[(AnnoKey, SaltObject)],
+        output_features: &[(AnnoKey, SaltObject)],
         layer: Option<String>,
     ) -> Result<()> {
         // Remember the position of this node in the XML file
@@ -281,8 +284,8 @@ where
             .write_empty()?;
 
         // Write all other annotations as labels
-        for anno in output_annotations {
-            if anno.key.ns != "annis" {
+        for (key, value) in output_annotations {
+            if key.ns != "annis" {
                 let label_type = if salt_type == "sCorpusStructure:SCorpus"
                     || salt_type == "sCorpusStructure:SDocument"
                 {
@@ -290,11 +293,11 @@ where
                 } else {
                     "saltCore:SAnnotation"
                 };
-                self.write_label(anno, label_type)?;
+                self.write_label(key, value, label_type)?;
             }
         }
-        for anno in output_features {
-            self.write_label(anno, "saltCore:SFeature")?;
+        for (key, value) in output_features {
+            self.write_label(key, value, "saltCore:SFeature")?;
         }
         self.xml.write_event(Event::End(nodes_tag.to_end()))?;
 
@@ -338,6 +341,10 @@ where
         };
 
         let output_annotations = gs.get_anno_storage().get_annotations_for_item(&edge)?;
+        let output_annotations: Vec<_> = output_annotations
+            .into_iter()
+            .map(|a| (a.key, SaltObject::Text(a.val.to_string())))
+            .collect();
 
         let layer = if component.layer.is_empty() {
             None
@@ -355,8 +362,8 @@ where
         source: NodeType,
         target: NodeType,
         salt_type: &str,
-        output_annotations: &[Annotation],
-        output_features: &[Annotation],
+        output_annotations: &[(AnnoKey, SaltObject)],
+        output_features: &[(AnnoKey, SaltObject)],
         layer: Option<String>,
     ) -> Result<()> {
         let mut attributes = Vec::new();
@@ -404,14 +411,14 @@ where
             self.xml.write_event(Event::Start(edges_tag.borrow()))?;
 
             // add all edge labels
-            for anno in output_annotations {
-                if anno.key.ns != "annis" {
-                    self.write_label(anno, "saltCore:SAnnotation")?;
+            for (key, value) in output_annotations {
+                if key.ns != "annis" {
+                    self.write_label(key, value, "saltCore:SAnnotation")?;
                 }
             }
-            for anno in output_features {
-                if anno.key.ns != "annis" {
-                    self.write_label(anno, "saltCore:SFeature")?;
+            for (key, value) in output_features {
+                if key.ns != "annis" {
+                    self.write_label(key, value, "saltCore:SFeature")?;
                 }
             }
             self.xml.write_event(Event::End(edges_tag.to_end()))?;
