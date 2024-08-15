@@ -257,12 +257,12 @@ where
                 .to_string(),
             NodeType::Custom(node_name) => node_name.clone(),
         };
-        let salt_id = format!("T::salt:/{node_name}");
         let nodes_tag = BytesStart::new("nodes")
             .with_attributes(attributes.iter().map(|(n, v)| (n.as_str(), v.as_str())));
         self.xml.write_event(Event::Start(nodes_tag.borrow()))?;
 
         // Write Salt ID and SNAME
+        let salt_id = format!("T::salt:/{node_name}");
         self.xml
             .create_element("labels")
             .with_attribute(("xsi:type", "saltCore:SElementId"))
@@ -277,7 +277,7 @@ where
             .with_attribute(("xsi:type", "saltCore:SFeature"))
             .with_attribute(("namespace", "salt"))
             .with_attribute(("name", "SNAME"))
-            .with_attribute(("value", sname))
+            .with_attribute(("value", format!("T::{sname}").as_str()))
             .write_empty()?;
 
         // Write all other annotations as labels

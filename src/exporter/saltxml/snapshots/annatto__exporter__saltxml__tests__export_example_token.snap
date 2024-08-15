@@ -7,51 +7,51 @@ expression: result
   <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1"/>
   <nodes xsi:type="sDocumentStructure:SToken">
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1#tok0"/>
-    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="tok0"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::tok0"/>
   </nodes>
   <nodes xsi:type="sDocumentStructure:SToken">
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1#tok1"/>
-    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="tok1"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::tok1"/>
   </nodes>
   <nodes xsi:type="sDocumentStructure:SToken">
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1#tok2"/>
-    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="tok2"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::tok2"/>
   </nodes>
   <nodes xsi:type="sDocumentStructure:SToken">
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1#tok3"/>
-    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="tok3"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::tok3"/>
   </nodes>
   <nodes xsi:type="sDocumentStructure:SToken">
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1#tok4"/>
-    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="tok4"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::tok4"/>
   </nodes>
   <nodes xsi:type="sDocumentStructure:SToken">
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1#tok5"/>
-    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="tok5"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::tok5"/>
   </nodes>
   <nodes xsi:type="sDocumentStructure:SToken">
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1#tok6"/>
-    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="tok6"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::tok6"/>
   </nodes>
   <nodes xsi:type="sDocumentStructure:SToken">
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1#tok7"/>
-    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="tok7"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::tok7"/>
   </nodes>
   <nodes xsi:type="sDocumentStructure:SToken">
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1#tok8"/>
-    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="tok8"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::tok8"/>
   </nodes>
   <nodes xsi:type="sDocumentStructure:SToken">
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1#tok9"/>
-    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="tok9"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::tok9"/>
   </nodes>
   <nodes xsi:type="sDocumentStructure:SToken">
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1#tok10"/>
-    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="tok10"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::tok10"/>
   </nodes>
   <nodes xsi:type="sDocumentStructure:SSpan" layer="//@layers.2">
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1#span1"/>
-    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="span1"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::span1"/>
     <labels xsi:type="saltCore:SAnnotation" namespace="default_ns" name="phrase" value="T::this example"/>
   </nodes>
   <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.0" target="//@nodes.1" layer="//@layers.1"/>
@@ -68,7 +68,7 @@ expression: result
   <edges xsi:type="sDocumentStructure:SSpanningRelation" source="//@nodes.11" target="//@nodes.2"/>
   <nodes xsi:type="sDocumentStructure:STextualDS">
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1#sText1"/>
-    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="sText1"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::sText1"/>
     <labels xsi:type="saltCore:SFeature" namespace="saltCommon" name="SDATA" value="T::Is this example more complicated than it appears to be?"/>
   </nodes>
   <edges xsi:type="sDocumentStructure:STextualRelation" source="//@nodes.0" target="//@nodes.12">
