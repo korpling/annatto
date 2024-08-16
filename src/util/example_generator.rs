@@ -326,18 +326,13 @@ pub fn make_segmentation_span(
             node_type: "node".to_string(),
         })
         .unwrap();
-    make_span(
-        update,
-        node_name,
-        &["root/doc1#tok1", "root/doc1#tok2", "root/doc1#tok3"],
-        true,
-    );
+
     update
         .add_event(UpdateEvent::AddNodeLabel {
             node_name: node_name.into(),
             anno_ns: ANNIS_NS.into(),
             anno_name: "tok".into(),
-            anno_value: "This".into(),
+            anno_value: segmentation_value.into(),
         })
         .unwrap();
     update

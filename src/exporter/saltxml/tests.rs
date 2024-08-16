@@ -148,3 +148,43 @@ fn export_example_token() {
     let doc2 = std::fs::read_to_string(p2).unwrap();
     assert_snapshot!("doc2", doc2);
 }
+
+// fn export_example_segmentation() {
+//     let mut u = GraphUpdate::new();
+//     example_generator::create_corpus_structure_simple(&mut u);
+//     example_generator::create_tokens(&mut u, Some("root/doc1"));
+//     example_generator::make_segmentation_span(&mut u, node_name, parent_node_name, segmentation_name, segmentation_value, covered_token_names)
+
+//     let mut g = AnnotationGraph::with_default_graphstorages(true).unwrap();
+//     g.apply_update(&mut u, |_msg| {}).unwrap();
+
+//     let exporter = ExportSaltXml {};
+//     let output_path = TempDir::new().unwrap();
+//     let corpus_dir = output_path.path().join("root");
+//     std::fs::create_dir(&corpus_dir).unwrap();
+
+//     let step_id = StepID {
+//         module_name: "export_saltxml".to_string(),
+//         path: Some(corpus_dir.clone()),
+//     };
+
+//     exporter
+//         .export_corpus(&g, &corpus_dir, step_id.clone(), None)
+//         .unwrap();
+
+//     // There should be a saltProject.salt file
+//     let project_path = corpus_dir.join("saltProject.salt");
+//     assert_eq!(true, project_path.is_file());
+
+//     // Also check the existince and content of the created document graph files
+//     let p1 = corpus_dir.join("root/doc1.salt");
+//     assert_eq!(true, p1.is_file());
+//     let p2 = corpus_dir.join("root/doc2.salt");
+//     assert_eq!(true, p2.is_file());
+
+//     let doc1 = std::fs::read_to_string(p1).unwrap();
+//     assert_snapshot!("doc1", doc1);
+
+//     let doc2 = std::fs::read_to_string(p2).unwrap();
+//     assert_snapshot!("doc2", doc2);
+// }

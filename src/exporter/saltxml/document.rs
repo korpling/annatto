@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, convert::TryInto, fs::File, io::BufWriter, sync
 use anyhow::{Context, Error};
 use graphannis::{
     graph::{AnnoKey, Edge, GraphStorage, NodeID},
-    model::AnnotationComponentType,
+    model::{AnnotationComponent, AnnotationComponentType},
     AnnotationGraph,
 };
 use graphannis_core::{
@@ -261,10 +261,16 @@ impl SaltDocumentGraphMapper {
 
         if let Some(c) = timeline_ordering {
             // Add a timeline with the correct number of timeline items
-            let gs = graph
-                .get_graphstorage(&c)
-                .context("Missing graph storage for timline ordering component")?;
-            let tli_count = gs.source_nodes().count() + 1;
+            let mut timeline_edges = Vec::new();
+            self.collect_edges_for_component(
+                &c,
+                graph,
+                &corpus_graph_helper,
+                document_node_id,
+                &mut timeline_edges,
+            )?;
+
+            let tli_count = timeline_edges.len() + 1;
             let timeline_id = format!("{document_node_name}#sTimeline1");
 
             let features = vec![(
@@ -285,52 +291,16 @@ impl SaltDocumentGraphMapper {
         }
 
         for c in ordering_components {
-            let text_name = c.name.as_str();
-            let gs = graph
-                .get_graphstorage_as_ref(&c)
-                .context("Missing graph storage for component")?;
-
             // Collect the necessary edge information and the actual text for
             // this data source by iterating over the ordering edges.
-            let mut content = String::new();
-
-            for root in gs.root_nodes() {
-                let root = root?;
-                if corpus_graph_helper.is_part_of(root, document_node_id)? {
-                    for step in CycleSafeDFS::new(gs.as_edgecontainer(), root, 0, usize::MAX) {
-                        let step = step?;
-
-                        if let Some(tok_whitespace_before) = graph
-                            .get_node_annos()
-                            .get_value_for_item(&step.node, &TOK_WHITESPACE_BEFORE_KEY)?
-                        {
-                            content.push_str(&tok_whitespace_before)
-                        }
-                        let start = content.len();
-                        if let Some(tok_value) = graph
-                            .get_node_annos()
-                            .get_value_for_item(&step.node, &TOKEN_KEY)?
-                        {
-                            content.push_str(&tok_value)
-                        }
-                        let end = content.len();
-                        if let Some(tok_whitespace_after) = graph
-                            .get_node_annos()
-                            .get_value_for_item(&step.node, &TOK_WHITESPACE_AFTER_KEY)?
-                        {
-                            content.push_str(&tok_whitespace_after)
-                        }
-
-                        let prop = TextProperty {
-                            text_name: text_name.to_string(),
-                            start,
-                            end,
-                            source_token: step.node,
-                        };
-                        collected_edges.push(prop);
-                    }
-                }
-            }
+            let content = self.collect_edges_for_component(
+                &c,
+                graph,
+                &corpus_graph_helper,
+                document_node_id,
+                &mut collected_edges,
+            )?;
+            let text_name = c.name.as_str();
 
             // TODO find matching "datasource" for this text and use its name
             let sname = if text_name.is_empty() {
@@ -394,5 +364,60 @@ impl SaltDocumentGraphMapper {
         }
 
         Ok(())
+    }
+
+    fn collect_edges_for_component(
+        &self,
+        c: &AnnotationComponent,
+        graph: &AnnotationGraph,
+        corpus_graph_helper: &CorpusGraphHelper,
+        document_node_id: NodeID,
+        collected_edges: &mut Vec<TextProperty>,
+    ) -> anyhow::Result<String> {
+        let mut content = String::new();
+        let text_name = c.name.as_str();
+        let gs = graph
+            .get_graphstorage_as_ref(c)
+            .context("Missing graph storage for component")?;
+
+        for root in gs.root_nodes() {
+            let root = root?;
+            if corpus_graph_helper.is_part_of(root, document_node_id)? {
+                for step in CycleSafeDFS::new(gs.as_edgecontainer(), root, 0, usize::MAX) {
+                    let step = step?;
+
+                    if let Some(tok_whitespace_before) = graph
+                        .get_node_annos()
+                        .get_value_for_item(&step.node, &TOK_WHITESPACE_BEFORE_KEY)?
+                    {
+                        content.push_str(&tok_whitespace_before)
+                    }
+                    let start = content.len();
+                    if let Some(tok_value) = graph
+                        .get_node_annos()
+                        .get_value_for_item(&step.node, &TOKEN_KEY)?
+                    {
+                        content.push_str(&tok_value)
+                    }
+                    let end = content.len();
+                    if let Some(tok_whitespace_after) = graph
+                        .get_node_annos()
+                        .get_value_for_item(&step.node, &TOK_WHITESPACE_AFTER_KEY)?
+                    {
+                        content.push_str(&tok_whitespace_after)
+                    }
+
+                    let prop = TextProperty {
+                        text_name: text_name.to_string(),
+                        start,
+                        end,
+                        source_token: step.node,
+                    };
+                    collected_edges.push(prop);
+                }
+            }
+        }
+
+        Ok(content)
     }
 }
