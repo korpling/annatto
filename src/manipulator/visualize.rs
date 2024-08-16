@@ -102,7 +102,7 @@ pub struct Visualize {
     /// ```
     ///
     /// Alternativly it can be configured to include all documents (`root = "all"`) or you can give the ID of the document as argument.
-    /// ``toml
+    /// ```toml
     /// [graph_op.config]
     /// root = "mycorpus/subcorpus1/mydocument"
     /// ```

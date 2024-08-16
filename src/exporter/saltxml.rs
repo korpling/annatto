@@ -31,9 +31,10 @@ use quick_xml::{
 use serde::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
-/// Exports to the SaltXML format used by Pepper (<https://corpus-tools.org/pepper/>).
-/// SaltXML is an XMI serialization of the [Salt model](https://raw.githubusercontent.com/korpling/salt/master/gh-site/doc/salt_modelGuide.pdf).
-/// ```
+/// Exports to the SaltXML format used by Pepper
+/// (<https://corpus-tools.org/pepper/>). SaltXML is an XMI serialization of the
+/// [Salt
+/// model](https://raw.githubusercontent.com/korpling/salt/master/gh-site/doc/salt_modelGuide.pdf).
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct ExportSaltXml {}

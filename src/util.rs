@@ -75,7 +75,11 @@ pub trait Traverse<N, E> {
     ) -> Result<()>;
 }
 
-/// Provides utility functions for corpus and document nodes.
+/// Provides utility functions for corpus and document nodes which form the
+/// corpus graph.
+///
+/// This struct also implements [`EdgeContainer`] by providing an union of all
+/// [`AnnotationComponentType::PartOf`] graph components.
 pub(crate) struct CorpusGraphHelper<'a> {
     graph: &'a AnnotationGraph,
     all_partof_gs: Vec<Arc<dyn GraphStorage>>,
@@ -94,7 +98,8 @@ impl<'a> CorpusGraphHelper<'a> {
         }
     }
 
-    /// Returns a sorted list of node names of all the corpus graph nodes without any outgoing `PartOf` edge.
+    /// Returns a list of node names of all the corpus graph nodes without any
+    /// outgoing `PartOf` edge.
     pub(crate) fn get_root_corpus_node_names(&self) -> anyhow::Result<Vec<String>> {
         let mut roots: BTreeSet<String> = BTreeSet::new();
 
@@ -117,7 +122,7 @@ impl<'a> CorpusGraphHelper<'a> {
         Ok(roots.into_iter().collect_vec())
     }
 
-    /// Returns a sorted list of node names nodes of the corpus graph that are documents.
+    /// Returns a list of node names nodes of the corpus graph that are documents.
     ///
     /// Documents have no ingoing edges from other nodes of the type "corpus".
     pub(crate) fn get_document_node_names(&self) -> anyhow::Result<Vec<String>> {
@@ -142,6 +147,11 @@ impl<'a> CorpusGraphHelper<'a> {
         Ok(documents.into_iter().collect_vec())
     }
 
+    /// Checks if the given node is a document in the strcutural sense.
+    ///
+    /// Having a `annis:doc` label is not necessary, but the node type must be
+    /// `corpus` and there must be no incoming [`AnnotationComponentType::PartOf`] edges
+    /// from other corpus nodes.
     pub(crate) fn is_document(&self, node: NodeID) -> anyhow::Result<bool> {
         let node_annos = self.graph.get_node_annos();
 
@@ -164,6 +174,8 @@ impl<'a> CorpusGraphHelper<'a> {
         Ok(true)
     }
 
+    /// Tests if that node has the node type `node` and thus belongs to the
+    /// annotation graph part.
     pub(crate) fn is_annotation_node(&self, node: NodeID) -> anyhow::Result<bool> {
         let node_annos = self.graph.get_node_annos();
 
@@ -174,6 +186,7 @@ impl<'a> CorpusGraphHelper<'a> {
         Ok(node_type == "node")
     }
 
+    /// Returns true if there is a path from the `child` node to the `ancestor` node in any of the [`AnnotationComponentType::PartOf`] components.
     pub(crate) fn is_part_of(&self, child: NodeID, ancestor: NodeID) -> anyhow::Result<bool> {
         if self.all_partof_gs.len() == 1 {
             let connected = self.all_partof_gs[0].is_connected(
