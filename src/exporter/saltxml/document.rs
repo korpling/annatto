@@ -156,7 +156,7 @@ impl SaltDocumentGraphMapper {
                     for target in gs.get_outgoing_edges(source) {
                         let target = target?;
                         let edge = Edge { source, target };
-                        salt_writer.write_graphannis_edge(edge, &c)?;
+                        salt_writer.write_graphannis_edge(edge, c)?;
                     }
                 }
             }
@@ -283,16 +283,12 @@ impl SaltDocumentGraphMapper {
         let timeline_id = format!("{document_node_name}#sTimeline1");
         if let Some(c) = &timeline_ordering {
             // Add a timeline with the correct number of timeline items
-            let (content, timeline_items) = self.collect_token_for_component(
-                &c,
-                graph,
-                &corpus_graph_helper,
-                document_node_id,
-            )?;
+            let (content, timeline_items) =
+                self.collect_token_for_component(c, graph, &corpus_graph_helper, document_node_id)?;
             self.timeline_items.extend(timeline_items);
             let empty_content_matcher = Regex::new("\\A\\s*\\z")?;
-            if !!empty_content_matcher.is_match(&content) {
-                progress.warn(&format!("Text for timeline is not empty ({document_node_name}) and will be omitted from the SaltXML file, because this is unsupported by Salt."))?;
+            if !empty_content_matcher.is_match(&content) {
+                progress.warn(&format!("Text for timeline is not empty and will be omitted from the SaltXML file, because this is unsupported by Salt ({document_node_name})."))?;
             }
 
             let tli_count = self.timeline_items.len();
