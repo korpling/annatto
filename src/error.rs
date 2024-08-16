@@ -80,6 +80,8 @@ pub enum AnnattoError {
     JoinHandle,
     #[error("Glob pattern caused an error: {0}")]
     GlobError(String),
+    #[error(transparent)]
+    Anyhow(#[from] anyhow::Error),
 }
 
 impl<T> From<std::sync::PoisonError<T>> for AnnattoError {
