@@ -4,12 +4,11 @@ use std::{
     io::{LineWriter, Write},
     ops::Bound,
     path::Path,
-    usize,
 };
 
 use anyhow::{anyhow, bail};
 use graphannis::{
-    graph::{AnnoKey, Edge, GraphStorage, NodeID},
+    graph::{AnnoKey, Edge, NodeID},
     model::{AnnotationComponent, AnnotationComponentType},
     AnnotationGraph,
 };
@@ -261,7 +260,7 @@ impl ExportCoNLLU {
 
             // dependencies
             let (head_id, label) = if self.dependency_component.is_some() {
-                map_dependency_data(dependency_data.get(0), node_id, node, &node_to_index)?
+                map_dependency_data(dependency_data.first(), node_id, node, &node_to_index)?
             } else {
                 (NO_VALUE.to_string(), NO_VALUE.to_string())
             };
@@ -313,8 +312,7 @@ impl ExportCoNLLU {
         let coverage_storages = graph
             .get_all_components(Some(AnnotationComponentType::Coverage), None)
             .into_iter()
-            .map(|c| graph.get_graphstorage(&c))
-            .flatten()
+            .filter_map(|c| graph.get_graphstorage(&c))
             .collect_vec();
         let mut connected_nodes = BTreeSet::default();
         for storage in coverage_storages {
@@ -394,7 +392,7 @@ impl ExportCoNLLU {
                                 source: id,
                                 target: node,
                             },
-                            &label_key,
+                            label_key,
                         )?
                         .map(|v| v.to_string());
                     dependency_data.push((id, label));
@@ -413,7 +411,7 @@ fn map_dependency_data(
 ) -> Result<(String, String), anyhow::Error> {
     if let Some((internal_head_id, label)) = dependency_data {
         let order_index_head = *node_index
-            .get(&internal_head_id)
+            .get(internal_head_id)
             .ok_or(anyhow!("Unknown node id of dependency head."))?
             as i32;
         let order_index_dependent = *node_index
