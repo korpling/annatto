@@ -18,12 +18,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 use umya_spreadsheet::Cell;
 
 use super::Importer;
-use crate::{
-    error::AnnattoError,
-    progress::ProgressReporter,
-    util::{self},
-    StepID,
-};
+use crate::{error::AnnattoError, progress::ProgressReporter, util, StepID};
 use documented::{Documented, DocumentedFields};
 
 /// Imports Excel Spreadsheets where each line is a token, the other columns are
@@ -328,6 +323,14 @@ impl ImportSpreadsheet {
                             anno_name: anno_name.to_string(),
                             anno_value: value.to_string(),
                         })?;
+                        if anno_name == tok_name {
+                            update.add_event(UpdateEvent::AddNodeLabel {
+                                node_name: node_name.to_string(),
+                                anno_ns: ANNIS_NS.to_string(),
+                                anno_name: "tok".to_string(),
+                                anno_value: value.to_string(),
+                            })?;
+                        }
                         for target_id in overlapped_tokens {
                             update.add_event(UpdateEvent::AddEdge {
                                 source_node: node_name.to_string(),
