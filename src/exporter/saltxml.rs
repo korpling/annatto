@@ -56,8 +56,8 @@ impl Exporter for ExportSaltXml {
         let document_node_ids = corpus_mapper.map_corpus_structure(graph, output_path)?;
         let progress = ProgressReporter::new(tx, step_id, document_node_ids.len())?;
         for id in document_node_ids {
-            let doc_mapper = SaltDocumentGraphMapper::new();
-            doc_mapper.map_document_graph(graph, id, output_path)?;
+            let mut doc_mapper = SaltDocumentGraphMapper::new();
+            doc_mapper.map_document_graph(graph, id, output_path, &progress)?;
             progress.worked(1)?;
         }
 

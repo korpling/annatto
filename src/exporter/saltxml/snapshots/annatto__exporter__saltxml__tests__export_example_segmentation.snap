@@ -100,6 +100,38 @@ expression: doc
     <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::b"/>
     <labels xsi:type="saltCore:SFeature" namespace="saltCommon" name="SDATA" value="T::Anotherexampletext"/>
   </nodes>
+  <edges xsi:type="sDocumentStructure:STimelineRelation" source="//@nodes.7" target="//@nodes.13">
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SSTART" value="N::0"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SEND" value="N::2"/>
+  </edges>
+  <edges xsi:type="sDocumentStructure:STimelineRelation" source="//@nodes.6" target="//@nodes.13">
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SSTART" value="N::2"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SEND" value="N::3"/>
+  </edges>
+  <edges xsi:type="sDocumentStructure:STimelineRelation" source="//@nodes.5" target="//@nodes.13">
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SSTART" value="N::3"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SEND" value="N::4"/>
+  </edges>
+  <edges xsi:type="sDocumentStructure:STimelineRelation" source="//@nodes.4" target="//@nodes.13">
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SSTART" value="N::4"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SEND" value="N::5"/>
+  </edges>
+  <edges xsi:type="sDocumentStructure:STimelineRelation" source="//@nodes.3" target="//@nodes.13">
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SSTART" value="N::0"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SEND" value="N::1"/>
+  </edges>
+  <edges xsi:type="sDocumentStructure:STimelineRelation" source="//@nodes.2" target="//@nodes.13">
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SSTART" value="N::1"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SEND" value="N::2"/>
+  </edges>
+  <edges xsi:type="sDocumentStructure:STimelineRelation" source="//@nodes.1" target="//@nodes.13">
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SSTART" value="N::2"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SEND" value="N::4"/>
+  </edges>
+  <edges xsi:type="sDocumentStructure:STimelineRelation" source="//@nodes.0" target="//@nodes.13">
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SSTART" value="N::4"/>
+    <labels xsi:type="saltCore:SFeature" namespace="salt" name="SEND" value="N::5"/>
+  </edges>
   <edges xsi:type="sDocumentStructure:STextualRelation" source="//@nodes.7" target="//@nodes.14">
     <labels xsi:type="saltCore:SFeature" namespace="salt" name="SSTART" value="N::0"/>
     <labels xsi:type="saltCore:SFeature" namespace="salt" name="SEND" value="N::7"/>

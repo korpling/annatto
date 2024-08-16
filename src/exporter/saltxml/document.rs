@@ -1,4 +1,10 @@
-use std::{collections::BTreeMap, convert::TryInto, fs::File, io::BufWriter, sync::Arc};
+use std::{
+    collections::{BTreeMap, BTreeSet, HashMap},
+    convert::TryInto,
+    fs::File,
+    io::BufWriter,
+    sync::Arc,
+};
 
 use anyhow::{Context, Error};
 use graphannis::{
@@ -11,9 +17,11 @@ use graphannis_core::{
     graph::{ANNIS_NS, NODE_NAME_KEY},
 };
 use quick_xml::events::{BytesDecl, Event};
+use regex::Regex;
 
 use crate::{
     importer::saltxml::SaltObject,
+    progress::ProgressReporter,
     util::{
         token_helper::{TokenHelper, TOKEN_KEY},
         CorpusGraphHelper,
@@ -49,18 +57,27 @@ fn node_is_span(
     }
 }
 
-pub(super) struct SaltDocumentGraphMapper {}
+pub(super) struct SaltDocumentGraphMapper {
+    textual_ds_node_names: BTreeMap<String, String>,
+    collected_token: Vec<TextProperty>,
+    timeline_items: Vec<TextProperty>,
+}
 
 impl SaltDocumentGraphMapper {
     pub(super) fn new() -> SaltDocumentGraphMapper {
-        SaltDocumentGraphMapper {}
+        SaltDocumentGraphMapper {
+            textual_ds_node_names: BTreeMap::new(),
+            collected_token: Vec::new(),
+            timeline_items: Vec::new(),
+        }
     }
 
     pub(super) fn map_document_graph(
-        &self,
+        &mut self,
         graph: &AnnotationGraph,
         document_node_id: NodeID,
         output_path: &std::path::Path,
+        progress: &ProgressReporter,
     ) -> anyhow::Result<()> {
         let corpusgraph_helper = CorpusGraphHelper::new(graph);
 
@@ -162,10 +179,15 @@ impl SaltDocumentGraphMapper {
             }
 
             // export textual data sources and STextualRelations to the token
-            self.map_textual_ds(graph, document_node_id, &mut salt_writer)?;
+            self.map_textual_ds_and_timeline(
+                graph,
+                document_node_id,
+                &tok_helper,
+                progress,
+                &mut salt_writer,
+            )?;
 
             // TODO: export media file references and annis:time annotations
-            // TODO: export timeline
 
             // Write out the layer XML nodes
             salt_writer.write_all_layers()?;
@@ -227,10 +249,12 @@ impl SaltDocumentGraphMapper {
         Ok(output_file)
     }
 
-    fn map_textual_ds<W>(
-        &self,
+    fn map_textual_ds_and_timeline<W>(
+        &mut self,
         graph: &AnnotationGraph,
         document_node_id: NodeID,
+        tok_helper: &TokenHelper,
+        progress: &ProgressReporter,
         salt_writer: &mut SaltWriter<W>,
     ) -> anyhow::Result<()>
     where
@@ -240,9 +264,6 @@ impl SaltDocumentGraphMapper {
             graph.get_all_components(Some(AnnotationComponentType::Ordering), None);
 
         let corpus_graph_helper = CorpusGraphHelper::new(graph);
-
-        let mut collected_token: Vec<TextProperty> = Vec::new();
-        let mut textual_ds_node_names: BTreeMap<String, String> = BTreeMap::new();
 
         let mut timeline_ordering = None;
         if ordering_components.len() > 1 {
@@ -259,19 +280,22 @@ impl SaltDocumentGraphMapper {
             .get_value_for_item(&document_node_id, &NODE_NAME_KEY)?
             .context("Missing node name for document")?;
 
-        if let Some(c) = timeline_ordering {
+        let timeline_id = format!("{document_node_name}#sTimeline1");
+        if let Some(c) = &timeline_ordering {
             // Add a timeline with the correct number of timeline items
-            let mut timeline_items = Vec::new();
-            self.collect_token_for_component(
+            let (content, timeline_items) = self.collect_token_for_component(
                 &c,
                 graph,
                 &corpus_graph_helper,
                 document_node_id,
-                &mut timeline_items,
             )?;
+            self.timeline_items.extend(timeline_items);
+            let empty_content_matcher = Regex::new("\\A\\s*\\z")?;
+            if !!empty_content_matcher.is_match(&content) {
+                progress.warn(&format!("Text for timeline is not empty ({document_node_name}) and will be omitted from the SaltXML file, because this is unsupported by Salt."))?;
+            }
 
-            let tli_count = timeline_items.len();
-            let timeline_id = format!("{document_node_name}#sTimeline1");
+            let tli_count = self.timeline_items.len();
 
             let features = vec![(
                 AnnoKey {
@@ -281,7 +305,7 @@ impl SaltDocumentGraphMapper {
                 SaltObject::Integer(tli_count.try_into()?),
             )];
             salt_writer.write_node(
-                NodeType::Custom(timeline_id),
+                NodeType::Custom(timeline_id.clone()),
                 "sTimeline1",
                 "sDocumentStructure:STimeline",
                 &[],
@@ -290,48 +314,78 @@ impl SaltDocumentGraphMapper {
             )?;
         }
 
+        // Collect the necessary edge information and the actual text for
+        // all data sources by iterating over the ordering edges.
         for c in ordering_components {
-            // Collect the necessary edge information and the actual text for
-            // this data source by iterating over the ordering edges.
-            let content = self.collect_token_for_component(
+            let (content, token_for_component) = self.collect_token_for_component(
                 &c,
                 graph,
                 &corpus_graph_helper,
                 document_node_id,
-                &mut collected_token,
             )?;
-            let text_name = c.name.as_str();
-
-            // TODO find matching "datasource" for this text and use its name
-            let sname = if text_name.is_empty() {
-                "sText1"
-            } else {
-                text_name
-            };
-            let features = vec![(
-                AnnoKey {
-                    ns: "saltCommon".into(),
-                    name: "SDATA".into(),
-                },
-                SaltObject::Text(content),
-            )];
-            let ds_node_name = format!("{document_node_name}#{sname}");
-            salt_writer.write_node(
-                NodeType::Custom(ds_node_name.clone()),
-                sname,
-                "sDocumentStructure:STextualDS",
-                &[],
-                &features,
-                None,
-            )?;
-            textual_ds_node_names.insert(text_name.to_string(), ds_node_name);
+            self.collected_token.extend(token_for_component);
+            self.map_single_datasource(&c, &document_node_name, content, salt_writer)?;
         }
 
-        // Write out all collected edges
-        for text_property in collected_token {
+        // Map the coverage edges from the token as STimelineRelation
+        if timeline_ordering.is_some() {
+            self.map_timeline_relations(&timeline_id, tok_helper, salt_writer)?;
+        }
+
+        // Write out all STextualRelation edges from the token to the textual data sources
+        self.map_textual_relations(salt_writer)?;
+
+        Ok(())
+    }
+
+    fn map_single_datasource<W>(
+        &mut self,
+        c: &AnnotationComponent,
+        document_node_name: &str,
+        text_content: String,
+        salt_writer: &mut SaltWriter<W>,
+    ) -> anyhow::Result<()>
+    where
+        W: std::io::Write,
+    {
+        let text_name = c.name.as_str();
+
+        // TODO find matching "datasource" for this text and use its name
+        let sname = if text_name.is_empty() {
+            "sText1"
+        } else {
+            text_name
+        };
+        let features = vec![(
+            AnnoKey {
+                ns: "saltCommon".into(),
+                name: "SDATA".into(),
+            },
+            SaltObject::Text(text_content),
+        )];
+        let ds_node_name = format!("{document_node_name}#{sname}");
+        salt_writer.write_node(
+            NodeType::Custom(ds_node_name.clone()),
+            sname,
+            "sDocumentStructure:STextualDS",
+            &[],
+            &features,
+            None,
+        )?;
+        self.textual_ds_node_names
+            .insert(text_name.to_string(), ds_node_name);
+        Ok(())
+    }
+
+    fn map_textual_relations<W>(&self, salt_writer: &mut SaltWriter<W>) -> anyhow::Result<()>
+    where
+        W: std::io::Write,
+    {
+        for text_property in &self.collected_token {
             // TODO: map  the timeline relations from this segmentation node
             let source = NodeType::Id(text_property.source_token);
-            let target_ds = textual_ds_node_names
+            let target_ds = self
+                .textual_ds_node_names
                 .get(&text_property.text_name)
                 .context("Missing STextualDS Salt ID")?;
             let target = NodeType::Custom(target_ds.clone());
@@ -362,6 +416,68 @@ impl SaltDocumentGraphMapper {
                 None,
             )?;
         }
+        Ok(())
+    }
+
+    fn map_timeline_relations<W>(
+        &self,
+        timeline_id: &str,
+        tok_helper: &TokenHelper,
+        salt_writer: &mut SaltWriter<W>,
+    ) -> anyhow::Result<()>
+    where
+        W: std::io::Write,
+    {
+        // Create a reverse index to get the position of each TLI in the
+        // timeline.
+        let tli_to_pos: HashMap<_, _> = self
+            .timeline_items
+            .iter()
+            .enumerate()
+            .map(|(idx, prop)| (prop.source_token, idx))
+            .collect();
+
+        // Finde all coverage edges for this document that have a segmentation
+        // token as source and a timeline token as target.
+        for segmentation_node in self.collected_token.iter() {
+            let source_token = segmentation_node.source_token;
+            // Get the smallest and largest TLI index covered by this token.
+            let mut covered_tli_idx = BTreeSet::new();
+            for tli in tok_helper.covered_token(source_token)? {
+                let position = tli_to_pos
+                    .get(&tli)
+                    .context("Referenced timeline item has no position.")?;
+                let position: i64 = (*position).try_into()?;
+                covered_tli_idx.insert(position);
+            }
+            if let (Some(start), Some(end)) = (covered_tli_idx.first(), covered_tli_idx.last()) {
+                let features = vec![
+                    (
+                        AnnoKey {
+                            name: "SSTART".into(),
+                            ns: "salt".into(),
+                        },
+                        SaltObject::Integer(*start),
+                    ),
+                    (
+                        AnnoKey {
+                            name: "SEND".into(),
+                            ns: "salt".into(),
+                        },
+                        SaltObject::Integer(*end + 1),
+                    ),
+                ];
+
+                salt_writer.write_edge(
+                    NodeType::Id(source_token),
+                    NodeType::Custom(timeline_id.to_string()),
+                    "sDocumentStructure:STimelineRelation",
+                    &[],
+                    &features,
+                    None,
+                )?;
+            }
+        }
 
         Ok(())
     }
@@ -372,13 +488,14 @@ impl SaltDocumentGraphMapper {
         graph: &AnnotationGraph,
         corpus_graph_helper: &CorpusGraphHelper,
         document_node_id: NodeID,
-        token: &mut Vec<TextProperty>,
-    ) -> anyhow::Result<String> {
+    ) -> anyhow::Result<(String, Vec<TextProperty>)> {
         let mut content = String::new();
         let text_name = c.name.as_str();
         let gs = graph
             .get_graphstorage_as_ref(c)
             .context("Missing graph storage for component")?;
+
+        let mut token = Vec::new();
 
         for root in gs.root_nodes() {
             let root = root?;
@@ -418,6 +535,6 @@ impl SaltDocumentGraphMapper {
             }
         }
 
-        Ok(content)
+        Ok((content, token))
     }
 }
