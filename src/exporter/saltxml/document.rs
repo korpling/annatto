@@ -241,7 +241,7 @@ impl SaltDocumentGraphMapper {
 
         let corpus_graph_helper = CorpusGraphHelper::new(graph);
 
-        let mut collected_edges: Vec<TextProperty> = Vec::new();
+        let mut collected_token: Vec<TextProperty> = Vec::new();
         let mut textual_ds_node_names: BTreeMap<String, String> = BTreeMap::new();
 
         let mut timeline_ordering = None;
@@ -261,16 +261,16 @@ impl SaltDocumentGraphMapper {
 
         if let Some(c) = timeline_ordering {
             // Add a timeline with the correct number of timeline items
-            let mut timeline_edges = Vec::new();
-            self.collect_edges_for_component(
+            let mut timeline_items = Vec::new();
+            self.collect_token_for_component(
                 &c,
                 graph,
                 &corpus_graph_helper,
                 document_node_id,
-                &mut timeline_edges,
+                &mut timeline_items,
             )?;
 
-            let tli_count = timeline_edges.len() + 1;
+            let tli_count = timeline_items.len();
             let timeline_id = format!("{document_node_name}#sTimeline1");
 
             let features = vec![(
@@ -293,12 +293,12 @@ impl SaltDocumentGraphMapper {
         for c in ordering_components {
             // Collect the necessary edge information and the actual text for
             // this data source by iterating over the ordering edges.
-            let content = self.collect_edges_for_component(
+            let content = self.collect_token_for_component(
                 &c,
                 graph,
                 &corpus_graph_helper,
                 document_node_id,
-                &mut collected_edges,
+                &mut collected_token,
             )?;
             let text_name = c.name.as_str();
 
@@ -328,7 +328,7 @@ impl SaltDocumentGraphMapper {
         }
 
         // Write out all collected edges
-        for text_property in collected_edges {
+        for text_property in collected_token {
             // TODO: map  the timeline relations from this segmentation node
             let source = NodeType::Id(text_property.source_token);
             let target_ds = textual_ds_node_names
@@ -366,13 +366,13 @@ impl SaltDocumentGraphMapper {
         Ok(())
     }
 
-    fn collect_edges_for_component(
+    fn collect_token_for_component(
         &self,
         c: &AnnotationComponent,
         graph: &AnnotationGraph,
         corpus_graph_helper: &CorpusGraphHelper,
         document_node_id: NodeID,
-        collected_edges: &mut Vec<TextProperty>,
+        token: &mut Vec<TextProperty>,
     ) -> anyhow::Result<String> {
         let mut content = String::new();
         let text_name = c.name.as_str();
@@ -413,7 +413,7 @@ impl SaltDocumentGraphMapper {
                         end,
                         source_token: step.node,
                     };
-                    collected_edges.push(prop);
+                    token.push(prop);
                 }
             }
         }
