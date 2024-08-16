@@ -1,5 +1,6 @@
 //! Exporter modules export the data into different formats.
 
+pub mod conllu;
 pub mod exmaralda;
 pub mod graphml;
 pub mod sequence;
