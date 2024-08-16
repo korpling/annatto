@@ -270,7 +270,7 @@ impl ImportSpreadsheet {
                                                     &doc_path,
                                                     tok_name,
                                                     segmentation_start_row,
-                                                    segmentation_end_row
+                                                    segmentation_end_row + 1
                                                 );
 
                                                 update.add_event(UpdateEvent::AddEdge {
