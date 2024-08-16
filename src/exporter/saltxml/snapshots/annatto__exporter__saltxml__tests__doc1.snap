@@ -2,7 +2,7 @@
 source: src/exporter/saltxml/tests.rs
 expression: doc1
 ---
-<?xml version="1.1" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <sDocumentStructure:SDocumentGraph xmlns:sDocumentStructure="sDocumentStructure" xmlns:saltCore="saltCore" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:version="2.0">
   <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1"/>
   <nodes xsi:type="sDocumentStructure:SSpan" layer="//@layers.2">

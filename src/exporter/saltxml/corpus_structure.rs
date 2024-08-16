@@ -39,7 +39,7 @@ impl SaltCorpusStructureMapper {
         let buffered_output_file = BufWriter::new(output_file);
         let mut writer = quick_xml::Writer::new_with_indent(buffered_output_file, b' ', 2);
 
-        writer.write_event(Event::Decl(BytesDecl::new("1.1", Some("UTF-8"), None)))?;
+        writer.write_event(Event::Decl(BytesDecl::new("1.0", Some("UTF-8"), None)))?;
 
         let project_elem = writer
             .create_element("saltCommon:SaltProject")
