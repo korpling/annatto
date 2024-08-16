@@ -54,7 +54,7 @@ pub struct ModuleConfiguration {
 #[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum WriteAs {
-    CoNLLU(#[serde(default)] ExportCoNLLU),
+    CoNLLU(#[serde(default)] Box<ExportCoNLLU>),
     GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
     EXMARaLDA(#[serde(default)] ExportExmaralda),
     Sequence(#[serde(default)] ExportSequence),
@@ -79,7 +79,7 @@ impl WriteAs {
             WriteAs::Table(m) => m,
             WriteAs::TextGrid(m) => m,
             WriteAs::Xlsx(m) => m,
-            WriteAs::CoNLLU(m) => m,
+            WriteAs::CoNLLU(m) => &**m,
         }
     }
 }
