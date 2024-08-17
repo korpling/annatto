@@ -7,6 +7,7 @@ use std::{
 };
 
 use anyhow::{anyhow, bail};
+use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::{AnnoKey, Edge, NodeID},
     model::{AnnotationComponent, AnnotationComponentType},
@@ -18,6 +19,7 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use serde::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Exporter;
 
@@ -27,51 +29,158 @@ use crate::deserialize::{
     deserialize_annotation_component_seq,
 };
 
-#[derive(Deserialize)]
+/// This module exports a graph in CoNLL-U format.
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct ExportCoNLLU {
+    /// This key is used to determine nodes that whose part-of subgraph constitutes a document, i. e. the entire input for a file.
+    /// Default is `annis::doc`, or `{ ns = "annis", name = "doc" }`.
+    ///
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// doc = "annis::doc"
+    /// ```
     #[serde(
         deserialize_with = "deserialize_anno_key",
         default = "default_doc_anno"
     )]
     doc: AnnoKey,
+    /// This optional annotation key is used to identify annotation spans, that constitute a sentence. Default is no export of sentence blocks.
+    /// Default is `annis::doc`, or `{ ns = "annis", name = "doc" }`.
+    ///
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// groupby = "norm::sentence"
+    /// ```
     #[serde(deserialize_with = "deserialize_anno_key_opt", default)]
     groupby: Option<AnnoKey>,
+    /// The nodes connected by this annotation component are used as nodes defining a line in a CoNLL-U file. Usually you want to use an ordering.
+    /// Default is `{ ctype = "Ordering", layer = "annis", name = "" }`.
+    ///
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// ordering = { ctype = "Ordering", layer = "annis", name = "norm" }
+    /// ```
     #[serde(
         deserialize_with = "deserialize_annotation_component",
         default = "default_ordering"
     )]
     ordering: AnnotationComponent,
+    /// This annotation key is used to write the form column.
+    /// Default is `{ ns = "annis", name = "tok" }`.
+    ///
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// form = { ns = "norm", name = "norm" }
+    /// ```
     #[serde(
         deserialize_with = "deserialize_anno_key",
         default = "default_form_key"
     )]
     form: AnnoKey,
+    /// This annotation key is used to write the lemma column.
+    /// Default is `{ ns = "", name = "tok" }`.
+    ///
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// lemma = { ns = "norm", name = "lemma" }
+    /// ```
     #[serde(
         deserialize_with = "deserialize_anno_key",
         default = "default_lemma_key"
     )]
     lemma: AnnoKey,
+    /// This annotation key is used to write the upos column.
+    /// Default is `{ ns = "", name = "upos" }`.
+    ///
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// upos = { ns = "norm", name = "pos" }
+    /// ```
     #[serde(
         deserialize_with = "deserialize_anno_key",
         default = "default_upos_key"
     )]
     upos: AnnoKey,
+    /// This annotation key is used to write the xpos column.
+    /// Default is `{ ns = "", name = "xpos" }`.
+    ///
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// upos = { ns = "norm", name = "pos_spec" }
+    /// ```
     #[serde(
         deserialize_with = "deserialize_anno_key",
         default = "default_xpos_key"
     )]
     xpos: AnnoKey,
+    /// This list of annotation keys will be represented in the feature column.
+    /// Default is the empty list.
+    ///
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// features = ["Animacy", "Tense", "VerbClass"]
+    /// ```
     #[serde(deserialize_with = "deserialize_anno_key_seq", default)]
     features: Vec<AnnoKey>,
+    /// The nodes connected by this annotation component are used to export dependencies.
+    /// Default is none, so nothing will be exported.
+    ///
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// dependency_component = { ctype = "Pointing", layer = "", name = "dependencies" }
+    /// ```
     #[serde(deserialize_with = "deserialize_annotation_component_opt", default)]
     dependency_component: Option<AnnotationComponent>, // this is an option, because by default no edges are exported, as dependency anotations are not usually given and exporting conll usually serves actually parsing the data
+    /// This annotation key is used to write the dependency relation, which will be looked for on the dependency edges.
+    /// Default is none, so nothing will be exported.
+    ///
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// dependency_anno = { ns = "", name = "deprel" }
+    /// ```
     #[serde(deserialize_with = "deserialize_anno_key_opt", default)]
     dependency_anno: Option<AnnoKey>, // same reason for option as in component field
+    /// The listed components will be used to export enhanced dependencies. More than
+    /// one component can be listed.
+    /// Default is the empty list, so nothing will be exported.
+    ///
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// enhanced_components = [{ ctype = "Pointing", layer = "", name = "dependencies" }]
+    /// ```
     #[serde(deserialize_with = "deserialize_annotation_component_seq", default)]
     enhanced_components: Vec<AnnotationComponent>,
+    /// This list of annotation keys defines the annotation keys, that correspond to the
+    /// edge labels in the component listed in `enhanced_components`. The i-th element of
+    /// one list belongs to the i-th element in the other list. Default is the empty list.
+    ///
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// enhanced_annos = ["func"]
+    /// ```
     #[serde(deserialize_with = "deserialize_anno_key_seq", default)]
     enhanced_annos: Vec<AnnoKey>,
+    /// This list of annotation keys will be represented in the misc column.
+    /// Default is the empty list.
+    ///
+    /// Example:
+    /// ```toml
+    /// [export.config]
+    /// misc = ["NoSpaceAfter", "Referent"]
+    /// ```
     #[serde(deserialize_with = "deserialize_anno_key_seq", default)]
     misc: Vec<AnnoKey>,
 }
