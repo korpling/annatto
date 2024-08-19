@@ -128,8 +128,7 @@ impl SaltDocumentGraphMapper {
             let has_timeline = ordering_components.len() > 1
                 && ordering_components
                     .iter()
-                    .position(|c| c.name.is_empty() && c.layer == ANNIS_NS)
-                    .is_some();
+                    .any(|c| c.name.is_empty() && c.layer == ANNIS_NS);
 
             for n in corpusgraph_helper.all_nodes_part_of(document_node_id) {
                 let n = n?;
@@ -505,6 +504,8 @@ impl SaltDocumentGraphMapper {
         document_node_id: NodeID,
     ) -> anyhow::Result<(String, Vec<TextProperty>)> {
         let mut content = String::new();
+        // Keep a separate counter for the length of the string in characters.
+        let mut content_len_in_chars = 0;
         let text_name = c.name.as_str();
         let gs = graph
             .get_graphstorage_as_ref(c)
@@ -522,21 +523,24 @@ impl SaltDocumentGraphMapper {
                         .get_node_annos()
                         .get_value_for_item(&step.node, &TOK_WHITESPACE_BEFORE_KEY)?
                     {
-                        content.push_str(&tok_whitespace_before)
+                        content.push_str(&tok_whitespace_before);
+                        content_len_in_chars += tok_whitespace_before.chars().count();
                     }
-                    let start = content.len();
+                    let start = content_len_in_chars;
                     if let Some(tok_value) = graph
                         .get_node_annos()
                         .get_value_for_item(&step.node, &TOKEN_KEY)?
                     {
-                        content.push_str(&tok_value)
+                        content.push_str(&tok_value);
+                        content_len_in_chars += tok_value.chars().count();
                     }
-                    let end = content.len();
+                    let end = content_len_in_chars;
                     if let Some(tok_whitespace_after) = graph
                         .get_node_annos()
                         .get_value_for_item(&step.node, &TOK_WHITESPACE_AFTER_KEY)?
                     {
-                        content.push_str(&tok_whitespace_after)
+                        content.push_str(&tok_whitespace_after);
+                        content_len_in_chars += tok_whitespace_after.chars().count();
                     }
 
                     let prop = TextProperty {

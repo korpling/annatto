@@ -183,3 +183,77 @@ fn export_example_segmentation() {
     let doc = std::fs::read_to_string(p).unwrap();
     assert_snapshot!(doc);
 }
+
+#[test]
+fn export_token_non_trivial_chars() {
+    let mut u = GraphUpdate::new();
+    example_generator::create_corpus_structure_simple(&mut u);
+
+    let token_strings = [
+        ("", "Anöther", " "),
+        ("", "example", " "),
+        ("", "for", " "),
+        ("", "a", " "),
+        ("'", "Tractaͤtlein", "'"),
+    ];
+    for (i, (ws_before, t, ws_after)) in token_strings.iter().enumerate() {
+        let ws_before = if ws_before.is_empty() {
+            None
+        } else {
+            Some(*ws_before)
+        };
+        let ws_after = if ws_after.is_empty() {
+            None
+        } else {
+            Some(*ws_after)
+        };
+        example_generator::create_token_node(
+            &mut u,
+            &format!("root/doc1#tok{i}"),
+            t,
+            ws_before,
+            ws_after,
+            Some("root/doc1"),
+        );
+    }
+
+    // add the order relations
+    for i in 0..token_strings.len() {
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: format!("root/doc1#tok{i}"),
+            target_node: format!("root/doc1#tok{}", i + 1),
+            layer: ANNIS_NS.to_string(),
+            component_type: "Ordering".to_string(),
+            component_name: "".to_string(),
+        })
+        .unwrap();
+    }
+
+    let mut g = AnnotationGraph::with_default_graphstorages(true).unwrap();
+    g.apply_update(&mut u, |_msg| {}).unwrap();
+
+    let exporter = ExportSaltXml {};
+    let output_path = TempDir::new().unwrap();
+    let corpus_dir = output_path.path().join("root");
+    std::fs::create_dir(&corpus_dir).unwrap();
+
+    let step_id = StepID {
+        module_name: "export_saltxml".to_string(),
+        path: Some(corpus_dir.clone()),
+    };
+
+    exporter
+        .export_corpus(&g, &corpus_dir, step_id.clone(), None)
+        .unwrap();
+
+    // There should be a saltProject.salt file
+    let project_path = corpus_dir.join("saltProject.salt");
+    assert_eq!(true, project_path.is_file());
+
+    // Also check the existince and content of the created document graph files
+    let p = corpus_dir.join("root/doc1.salt");
+    assert_eq!(true, p.is_file());
+
+    let doc = std::fs::read_to_string(p).unwrap();
+    assert_snapshot!(doc);
+}
