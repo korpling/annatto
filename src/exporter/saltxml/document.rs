@@ -115,7 +115,6 @@ impl SaltDocumentGraphMapper {
             let mut salt_writer = SaltWriter::new(graph, writer, &output_path, progress)?;
 
             // Map all nodes in the annotation graph
-
             let tok_helper = TokenHelper::new(graph)?;
             let all_dominance_gs: Vec<_> = graph
                 .get_all_components(Some(AnnotationComponentType::Dominance), None)
@@ -123,14 +122,29 @@ impl SaltDocumentGraphMapper {
                 .filter_map(|c| graph.get_graphstorage(&c))
                 .collect();
             let mut span_nodes = Vec::new();
+
+            let ordering_components =
+                graph.get_all_components(Some(AnnotationComponentType::Ordering), None);
+            let has_timeline = ordering_components.len() > 1
+                && ordering_components
+                    .iter()
+                    .position(|c| c.name.is_empty() && c.layer == ANNIS_NS)
+                    .is_some();
+
             for n in corpusgraph_helper.all_nodes_part_of(document_node_id) {
                 let n = n?;
                 if corpusgraph_helper.is_annotation_node(n)? {
                     let salt_type = if tok_helper.is_token(n)? {
                         "sDocumentStructure:SToken"
                     } else if node_is_span(n, &tok_helper, &all_dominance_gs)? {
-                        span_nodes.push(n);
-                        "sDocumentStructure:SSpan"
+                        if has_timeline && node_annos.has_value_for_item(&n, &TOKEN_KEY)? {
+                            // This is a segmentation token that is mapped do an
+                            // SToken if there is a timeline
+                            "sDocumentStructure:SToken"
+                        } else {
+                            span_nodes.push(n);
+                            "sDocumentStructure:SSpan"
+                        }
                     } else {
                         "sDocumentStructure:SStructure"
                     };
