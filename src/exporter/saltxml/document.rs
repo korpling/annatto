@@ -184,7 +184,7 @@ impl SaltDocumentGraphMapper {
                         let referenced_file_value =
                             SaltObject::Url(format!("file:/{}", relative_path.to_string_lossy()));
                         salt_writer.write_node(
-                            NodeType::Id(n),
+                            NodeType::Custom(node_id.to_string()),
                             &node_name,
                             "sDocumentStructure:SAudioDS",
                             &[],
@@ -257,7 +257,7 @@ impl SaltDocumentGraphMapper {
             )?;
 
             // export media file references and annis:time annotations
-            self.map_media_relations(graph, &mut salt_writer)?;
+            self.map_media_relations(graph, &tok_helper, &mut salt_writer)?;
 
             // Write out the layer XML nodes
             salt_writer.write_all_layers()?;
@@ -549,6 +549,7 @@ impl SaltDocumentGraphMapper {
     fn map_media_relations<W>(
         &self,
         graph: &AnnotationGraph,
+        tok_helper: &TokenHelper,
         salt_writer: &mut SaltWriter<W>,
     ) -> anyhow::Result<()>
     where
@@ -560,43 +561,61 @@ impl SaltDocumentGraphMapper {
             name: "time".into(),
         };
         for t in self.collected_token.iter() {
-            if let Some(annis_time) =
-                node_annos.get_value_for_item(&t.source_token, &annis_time_key)?
-            {
-                let mut features = Vec::new();
-                let (start, end) =
-                    parse_time_range(&annis_time).context("Invalid annis::time range")?;
-                if let Some(start) = start {
-                    features.push((
-                        AnnoKey {
-                            name: "SSTART".into(),
-                            ns: "salt".into(),
-                        },
-                        SaltObject::Float(start),
-                    ));
-                }
-                if let Some(end) = end {
-                    features.push((
-                        AnnoKey {
-                            name: "SEND".into(),
-                            ns: "salt".into(),
-                        },
-                        SaltObject::Float(end),
-                    ));
-                }
+            // Get the timeline items for this token
+            let mut start: Option<f64> = None;
+            let mut end: Option<f64> = None;
+            for tli in tok_helper.covered_token(t.source_token)? {
+                if let Some(annis_time) = node_annos.get_value_for_item(&tli, &annis_time_key)? {
+                    let (tli_start, tli_end) =
+                        parse_time_range(&annis_time).context("Invalid annis::time range")?;
 
-                // Write an alignment edge to all known media sources
-                if !features.is_empty() {
-                    for (ds, _path) in self.media_ds_node_names.iter() {
-                        salt_writer.write_edge(
-                            NodeType::Id(t.source_token),
-                            NodeType::Custom(ds.to_string()),
-                            "sDocumentStructure:SAudioRelation",
-                            &[],
-                            &features,
-                            None,
-                        )?;
+                    if let Some(tli_start) = tli_start {
+                        if let Some(orig) = start {
+                            start = Some(orig.max(tli_start));
+                        } else {
+                            start = Some(tli_start);
+                        }
                     }
+                    if let Some(tli_end) = tli_end {
+                        if let Some(orig) = end {
+                            end = Some(orig.max(tli_end));
+                        } else {
+                            end = Some(tli_end);
+                        }
+                    }
+                }
+            }
+            let mut features = Vec::new();
+            if let Some(start) = start {
+                features.push((
+                    AnnoKey {
+                        name: "SSTART".into(),
+                        ns: "salt".into(),
+                    },
+                    SaltObject::Float(start),
+                ));
+            }
+            if let Some(end) = end {
+                features.push((
+                    AnnoKey {
+                        name: "SEND".into(),
+                        ns: "salt".into(),
+                    },
+                    SaltObject::Float(end),
+                ));
+            }
+
+            // Write an alignment edge from the actual SToken (not timeline items) to all known media sources
+            if !features.is_empty() {
+                for (ds, _path) in self.media_ds_node_names.iter() {
+                    salt_writer.write_edge(
+                        NodeType::Id(t.source_token),
+                        NodeType::Custom(ds.to_string()),
+                        "sDocumentStructure:SAudioRelation",
+                        &[],
+                        &features,
+                        None,
+                    )?;
                 }
             }
         }

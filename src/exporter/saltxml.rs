@@ -381,12 +381,12 @@ where
         let source_position = self
             .node_positions
             .get(&source)
-            .context("Missing position for source node")?;
+            .with_context(|| format!("Missing position for source node {:?}", source))?;
 
         let target_position = self
             .node_positions
             .get(&target)
-            .context("Missing position for target node")?;
+            .with_context(|| format!("Missing position for target node {:?}", target))?;
 
         attributes.push(("source".to_string(), format!("//@nodes.{source_position}")));
         attributes.push(("target".to_string(), format!("//@nodes.{target_position}")));
