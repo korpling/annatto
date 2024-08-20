@@ -435,7 +435,13 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         let mut component_layer = "default_ns".to_string();
         if let Some(layers_attribute) = rel.attribute("layers") {
             if let Some(first_layer) = layers_attribute.split(' ').next() {
-                component_layer = first_layer.to_string();
+                let layer_node = resolve_element(first_layer, "layers", &self.layers)
+                    .context("Could not resolve layer")?;
+                if let Some(SaltObject::Text(layer_name)) =
+                    get_feature_by_qname(&layer_node, "salt", "SNAME")
+                {
+                    component_layer = layer_name;
+                }
             }
         }
 

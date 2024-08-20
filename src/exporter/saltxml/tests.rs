@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use graphannis::{
     update::{GraphUpdate, UpdateEvent},
     AnnotationGraph,
@@ -6,7 +8,10 @@ use insta::assert_snapshot;
 use tempfile::TempDir;
 
 use super::*;
-use crate::{util::example_generator, StepID};
+use crate::{
+    importer::saltxml::ImportSaltXml, test_util::compare_graphs, util::example_generator,
+    ExporterStep, ImporterStep, StepID,
+};
 
 #[test]
 fn export_corpus_structure() {
@@ -256,4 +261,43 @@ fn export_token_non_trivial_chars() {
 
     let doc = std::fs::read_to_string(p).unwrap();
     assert_snapshot!(doc);
+}
+
+#[test]
+fn import_export_sample_sentence() {
+    let importer: ImportSaltXml = toml::from_str(r#"missing_anno_ns_from_layer = false"#).unwrap();
+    let exporter = ExportSaltXml::default();
+
+    // Import the example project
+    let path = Path::new("./tests/data/import/salt/SaltSampleCorpus");
+    let orig_import_step = ImporterStep {
+        module: crate::ReadFrom::SaltXml(importer),
+        path: path.to_path_buf(),
+    };
+    let mut updates = orig_import_step.execute(None).unwrap();
+    let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
+    original_graph.apply_update(&mut updates, |_| {}).unwrap();
+
+    // Export to SaltXML project, read it again and then compare the annotation graphs
+    let tmp_outputdir = TempDir::new().unwrap();
+    let output_dir = tmp_outputdir.path().join("SaltSampleCorpus");
+    std::fs::create_dir(&output_dir).unwrap();
+    let exporter = crate::WriteAs::SaltXml(exporter);
+    let export_step = ExporterStep {
+        module: exporter,
+        path: output_dir.clone(),
+    };
+    export_step.execute(&original_graph, None).unwrap();
+
+    let importer: ImportSaltXml = toml::from_str(r#"missing_anno_ns_from_layer = false"#).unwrap();
+    let second_import_step = ImporterStep {
+        module: crate::ReadFrom::SaltXml(importer),
+        path: output_dir.clone(),
+    };
+    let mut updates = second_import_step.execute(None).unwrap();
+    let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
+
+    written_graph.apply_update(&mut updates, |_| {}).unwrap();
+
+    compare_graphs(&original_graph, &written_graph);
 }

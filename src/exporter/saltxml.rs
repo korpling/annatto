@@ -12,7 +12,7 @@ use std::{
 use crate::{importer::saltxml::SaltObject, progress::ProgressReporter};
 
 use super::Exporter;
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{bail, Context, Result};
 use bimap::BiBTreeMap;
 use corpus_structure::SaltCorpusStructureMapper;
 use document::SaltDocumentGraphMapper;
@@ -36,7 +36,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// (<https://corpus-tools.org/pepper/>). SaltXML is an XMI serialization of the
 /// [Salt
 /// model](https://raw.githubusercontent.com/korpling/salt/master/gh-site/doc/salt_modelGuide.pdf).
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Default)]
 #[serde(deny_unknown_fields)]
 pub struct ExportSaltXml {}
 
@@ -116,17 +116,6 @@ lazy_static! {
     };
 }
 
-fn parse_attr_name<S>(name: S) -> Result<String>
-where
-    S: AsRef<str>,
-{
-    let result = name
-        .as_ref()
-        .parse()
-        .map_err(|_| anyhow!("Invalid attribute name '{}'", name.as_ref()))?;
-    Ok(result)
-}
-
 impl<'a, W> SaltWriter<'a, W>
 where
     W: std::io::Write,
@@ -158,7 +147,7 @@ where
         let layer_positions = layer_names
             .into_iter()
             .enumerate()
-            .map(|(pos, layer)| (layer, pos + 1))
+            .map(|(pos, layer)| (layer, pos))
             .collect();
 
         Ok(SaltWriter {
@@ -256,7 +245,7 @@ where
         self.node_positions.insert(n.clone(), node_position);
 
         let mut attributes: Vec<(String, String)> = Vec::new();
-        attributes.push((parse_attr_name("xsi:type")?, salt_type.to_string()));
+        attributes.push(("xsi:type".to_string(), salt_type.to_string()));
 
         // Add the layer reference to the attributes
         if let Some(layer) = layer {
@@ -265,7 +254,7 @@ where
                 .get_by_left(&layer)
                 .context("Unknown position for layer")?;
             let layer_att_value = format!("//@layers.{pos}");
-            attributes.push((parse_attr_name("layer")?, layer_att_value));
+            attributes.push(("layers".to_string(), layer_att_value));
             self.nodes_in_layer
                 .entry(layer.to_string())
                 .or_default()
@@ -387,7 +376,7 @@ where
         layer: Option<String>,
     ) -> Result<()> {
         let mut attributes = Vec::new();
-        attributes.push((parse_attr_name("xsi:type")?, salt_type.to_string()));
+        attributes.push(("xsi:type".to_string(), salt_type.to_string()));
 
         let source_position = self
             .node_positions
@@ -399,14 +388,8 @@ where
             .get(&target)
             .context("Missing position for target node")?;
 
-        attributes.push((
-            parse_attr_name("source")?,
-            format!("//@nodes.{source_position}"),
-        ));
-        attributes.push((
-            parse_attr_name("target")?,
-            format!("//@nodes.{target_position}"),
-        ));
+        attributes.push(("source".to_string(), format!("//@nodes.{source_position}")));
+        attributes.push(("target".to_string(), format!("//@nodes.{target_position}")));
 
         // Add the layer reference to the attributes
         if let Some(layer) = layer {
@@ -415,7 +398,7 @@ where
                 .get_by_left(&layer)
                 .context("Unknown position for layer")?;
             let layer_att_value = format!("//@layers.{pos}");
-            attributes.push((parse_attr_name("layer")?, layer_att_value));
+            attributes.push(("layers".to_string(), layer_att_value));
             self.edges_in_layer
                 .entry(layer)
                 .or_default()
@@ -453,42 +436,48 @@ where
         // Iterate over the layers in order of their position
         for (layer, pos) in self.layer_positions.right_range(..) {
             let mut attributes = Vec::new();
-            attributes.push((parse_attr_name("xsi:type")?, "saltCore:SLayer".to_string()));
+            attributes.push(("xsi:type".to_string(), "saltCore:SLayer".to_string()));
+
+            let mut layer_has_elements = false;
 
             // Write nodes as attribute
             if let Some(included_positions) = self.nodes_in_layer.get(layer) {
+                layer_has_elements = layer_has_elements || !included_positions.is_empty();
                 let att_value = position_references_to_string(included_positions, "nodes");
-                attributes.push((parse_attr_name("nodes")?, att_value));
+                attributes.push(("nodes".to_string(), att_value));
             }
 
             // Write edges as attributes
             if let Some(included_positions) = self.edges_in_layer.get(layer) {
+                layer_has_elements = layer_has_elements || !included_positions.is_empty();
                 let att_value = position_references_to_string(included_positions, "edges");
-                attributes.push((parse_attr_name("edges")?, att_value));
+                attributes.push(("edges".to_string(), att_value));
             }
 
-            let layers_tag = BytesStart::new("layers")
-                .with_attributes(attributes.iter().map(|(n, v)| (n.as_str(), v.as_str())));
-            self.xml.write_event(Event::Start(layers_tag.borrow()))?;
+            if layer_has_elements {
+                let layers_tag = BytesStart::new("layers")
+                    .with_attributes(attributes.iter().map(|(n, v)| (n.as_str(), v.as_str())));
+                self.xml.write_event(Event::Start(layers_tag.borrow()))?;
 
-            let marshalled_id = format!("T::l{pos}");
-            self.xml
-                .create_element("labels")
-                .with_attribute(("xsi:type", "saltCore:SElementId"))
-                .with_attribute(("namespace", "salt"))
-                .with_attribute(("name", "id"))
-                .with_attribute(("value", marshalled_id.as_str()))
-                .write_empty()?;
+                let marshalled_id = format!("T::l{pos}");
+                self.xml
+                    .create_element("labels")
+                    .with_attribute(("xsi:type", "saltCore:SElementId"))
+                    .with_attribute(("namespace", "salt"))
+                    .with_attribute(("name", "id"))
+                    .with_attribute(("value", marshalled_id.as_str()))
+                    .write_empty()?;
 
-            let marshalled_name = format!("T::{layer}");
-            self.xml
-                .create_element("labels")
-                .with_attribute(("xsi:type", "saltCore:SFeature"))
-                .with_attribute(("namespace", "salt"))
-                .with_attribute(("name", "SNAME"))
-                .with_attribute(("value", marshalled_name.as_str()))
-                .write_empty()?;
-            self.xml.write_event(Event::End(layers_tag.to_end()))?;
+                let marshalled_name = format!("T::{layer}");
+                self.xml
+                    .create_element("labels")
+                    .with_attribute(("xsi:type", "saltCore:SFeature"))
+                    .with_attribute(("namespace", "salt"))
+                    .with_attribute(("name", "SNAME"))
+                    .with_attribute(("value", marshalled_name.as_str()))
+                    .write_empty()?;
+                self.xml.write_event(Event::End(layers_tag.to_end()))?;
+            }
         }
         Ok(())
     }

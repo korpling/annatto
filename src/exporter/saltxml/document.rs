@@ -159,11 +159,13 @@ impl SaltDocumentGraphMapper {
                 AnnotationComponentType::Pointing,
                 AnnotationComponentType::Ordering,
             ] {
-                for c in graph.get_all_components(Some(ctype), None) {
-                    let gs = graph
-                        .get_graphstorage(&c)
-                        .context("Missing graph storage for component")?;
-                    anno_graph_storages.push((c, gs));
+                for c in graph.get_all_components(Some(ctype.clone()), None) {
+                    if !(c.layer == ANNIS_NS && ctype == AnnotationComponentType::Dominance) {
+                        let gs = graph
+                            .get_graphstorage(&c)
+                            .context("Missing graph storage for component")?;
+                        anno_graph_storages.push((c, gs));
+                    }
                 }
             }
 
@@ -364,7 +366,6 @@ impl SaltDocumentGraphMapper {
     {
         let text_name = c.name.as_str();
 
-        // TODO find matching "datasource" for this text and use its name
         let sname = if text_name.is_empty() {
             "sText1"
         } else {
@@ -396,7 +397,6 @@ impl SaltDocumentGraphMapper {
         W: std::io::Write,
     {
         for text_property in &self.collected_token {
-            // TODO: map  the timeline relations from this segmentation node
             let source = NodeType::Id(text_property.source_token);
             let target_ds = self
                 .textual_ds_node_names
