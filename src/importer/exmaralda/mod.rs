@@ -95,7 +95,7 @@ impl ImportEXMARaLDA {
         let mut already_defined: BTreeSet<String> = BTreeSet::new();
         let mut named_orderings: BTreeMap<String, Vec<(OrderedFloat<f64>, String)>> =
             BTreeMap::new();
-        let mut time_to_tli_attrs: BTreeMap<OrderedFloat<f64>, Vec<String>> = BTreeMap::new();
+        let mut tlis = Vec::new();
         // reader
         let f = File::open(document_path)?;
         let mut parser_cfg = ParserConfig::new();
@@ -156,7 +156,7 @@ impl ImportEXMARaLDA {
                             }
                         }
                         "tli" => {
-                            if let Some(time_value) = attr_map.get("time") {
+                            let time = if let Some(time_value) = attr_map.get("time") {
                                 let time =
                                     if let Ok(t_val) = time_value.parse::<OrderedFloat<f64>>() {
                                         t_val
@@ -168,18 +168,12 @@ impl ImportEXMARaLDA {
                                         };
                                         return Err(err);
                                     };
-                                time_to_tli_attrs
-                                    .entry(time)
-                                    .or_default()
-                                    .push(attr_map["id"].to_string());
+                                Some(time)
                             } else {
-                                let err = AnnattoError::Import {
-                                    reason: "A timeline item does not have a time value."
-                                        .to_string(),
-                                    importer: step_id.module_name.clone(),
-                                    path: document_path.to_path_buf(),
-                                };
-                                return Err(err);
+                                None
+                            };
+                            if let Some(id) = attr_map.get("id") {
+                                tlis.push((id.to_string(), time));
                             }
                         }
                         "language" => {
@@ -219,12 +213,54 @@ impl ImportEXMARaLDA {
                             }
                         }
                         "common-timeline" => {
+                            // check for integrity of timeline
+                            let mut used_time_values = BTreeSet::default();
+                            let mut last = OrderedFloat::from(-1.);
+                            let mut corrupted = false;
+                            for (_, to) in &tlis {
+                                if let Some(t) = to {
+                                    if used_time_values.contains(t) {
+                                        return Err(AnnattoError::Import {
+                                            reason: format!(
+                                                "Time value {t} is used more than once."
+                                            ),
+                                            importer: step_id.module_name.to_string(),
+                                            path: document_path.to_path_buf(),
+                                        });
+                                    }
+                                    if t <= &last {
+                                        if let Some(sender) = &tx {
+                                            sender.send(StatusMessage::Warning(
+                                                "Unordered timeline, will try to fix ..."
+                                                    .to_string(),
+                                            ))?;
+                                        }
+                                        corrupted = true;
+                                    }
+                                    last = *t;
+                                    used_time_values.insert(*t);
+                                }
+                            }
+                            if corrupted {
+                                if tlis.iter().any(|(_, t_opt)| t_opt.is_none()) {
+                                    // impossible, order of mentioning of tlis in xml-file is relevant
+                                    return Err(AnnattoError::Import {
+                                        reason: "Timeline cannot be fixed automatically."
+                                            .to_string(),
+                                        importer: step_id.to_string(),
+                                        path: document_path.to_path_buf(),
+                                    });
+                                } else {
+                                    tlis.sort_by(|(_, t_opt_a), (_, t_opt_b)| {
+                                        t_opt_a
+                                            .unwrap_or_default()
+                                            .cmp(&t_opt_b.unwrap_or_default())
+                                    });
+                                }
+                            }
                             // build empty toks
-                            for (time_value, tli_ids) in
-                                time_to_tli_attrs.iter().sorted_by(|e0, e1| e0.0.cmp(e1.0))
-                            {
-                                let tli_id_suffix = tli_ids.join("_");
-                                let node_name = format!("{}#{}", &doc_node_name, tli_id_suffix);
+                            for (tli_id, time_opt) in &tlis {
+                                let node_name = format!("{}#{}", &doc_node_name, tli_id);
                                 update.add_event(UpdateEvent::AddNode {
                                     node_name: node_name.to_string(),
                                     node_type: "node".to_string(),
@@ -235,12 +271,10 @@ impl ImportEXMARaLDA {
                                     anno_name: "tok".to_string(),
                                     anno_value: " ".to_string(),
                                 })?;
-                                for tli_id in tli_ids {
-                                    timeline.insert(
-                                        tli_id.to_string(),
-                                        (*time_value, node_name.to_string()),
-                                    );
-                                }
+                                timeline.insert(
+                                    tli_id.to_string(),
+                                    ((*time_opt), node_name.to_string()),
+                                );
                                 update.add_event(UpdateEvent::AddEdge {
                                     source_node: node_name.to_string(),
                                     target_node: doc_node_name.to_string(),
@@ -250,13 +284,8 @@ impl ImportEXMARaLDA {
                                 })?;
                             }
                             // order timeline elements / empty toks
-                            ordered_tl_nodes.extend(
-                                timeline
-                                    .iter()
-                                    .sorted_by(|a, b| a.1 .0.cmp(&b.1 .0))
-                                    .map(|t| t.0.to_string())
-                                    .collect_vec(),
-                            );
+                            ordered_tl_nodes
+                                .extend(tlis.iter().map(|e| e.0.to_string()).collect_vec());
                             for i in 1..ordered_tl_nodes.len() {
                                 if let (Some(source), Some(target)) = (
                                     &timeline.get(&ordered_tl_nodes[i - 1]),
@@ -412,7 +441,7 @@ impl ImportEXMARaLDA {
                                 "{}#{}_{}_{}-{}",
                                 doc_node_name, tier_type, speaker_id, start_id, end_id
                             ); // this is not a unique id as not intended to be
-                            let start_time = if let Some((t, _)) = timeline.get(key) {
+                            let start_time = if let Some((Some(t), _)) = timeline.get(key) {
                                 t
                             } else {
                                 if let Some(sender) = tx {
@@ -459,11 +488,11 @@ impl ImportEXMARaLDA {
                                                 "Could not determine end time of event {}::{}:{}-{}. Event will be skipped.",
                                                 &speaker_id, &anno_name, &start_id, &end_id
                                             );
-                                        sender.send(StatusMessage::Warning(msg))?;
+                                        sender.send(StatusMessage::Info(msg))?;
                                     }
                                     continue;
                                 };
-                                if let Some((end_time, _)) = node_tpl {
+                                if let Some((Some(end_time), _)) = node_tpl {
                                     update.add_event(UpdateEvent::AddNodeLabel {
                                         node_name: node_name.to_string(),
                                         anno_ns: ANNIS_NS.to_string(),
