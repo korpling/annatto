@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `conllu` as export format
 - import of `conllu` now supports enhanced dependencies
 
+### Changed
+
+- `exmaralda` import now ranks order of tlis higher than sorting by time value (more compatible with modern EXMARaLDA files)
+
 ## [0.15.0] - 2024-08-14
 
 ## [0.15.0] - 2024-08-14
