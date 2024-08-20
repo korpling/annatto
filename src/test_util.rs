@@ -150,7 +150,7 @@ pub fn compare_graphs(g1: &AnnotationGraph, g2: &AnnotationGraph) {
     let nodes2: Vec<String> = g2
         .get_node_annos()
         .exact_anno_search(Some(ANNIS_NS), "node_name", ValueSearch::Any)
-        .filter_map(|m| m.unwrap().extract_annotation(g1.get_node_annos()).unwrap())
+        .filter_map(|m| m.unwrap().extract_annotation(g2.get_node_annos()).unwrap())
         .map(|a| a.val.into())
         .sorted()
         .collect();
