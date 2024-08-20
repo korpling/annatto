@@ -25,10 +25,6 @@ expression: doc
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1#tok0"/>
     <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::tok0"/>
   </nodes>
-  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.1" target="//@nodes.0" layers="//@layers.0"/>
-  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.2" target="//@nodes.1" layers="//@layers.0"/>
-  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.3" target="//@nodes.2" layers="//@layers.0"/>
-  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.4" target="//@nodes.3" layers="//@layers.0"/>
   <nodes xsi:type="sDocumentStructure:STextualDS">
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1#sText1"/>
     <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::sText1"/>
@@ -54,7 +50,7 @@ expression: doc
     <labels xsi:type="saltCore:SFeature" namespace="salt" name="SSTART" value="N::23"/>
     <labels xsi:type="saltCore:SFeature" namespace="salt" name="SEND" value="N::35"/>
   </edges>
-  <layers xsi:type="saltCore:SLayer" edges="//@edges.0 //@edges.1 //@edges.2 //@edges.3">
+  <layers xsi:type="saltCore:SLayer">
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::l0"/>
     <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::annis"/>
   </layers>

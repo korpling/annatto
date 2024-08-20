@@ -438,46 +438,40 @@ where
             let mut attributes = Vec::new();
             attributes.push(("xsi:type".to_string(), "saltCore:SLayer".to_string()));
 
-            let mut layer_has_elements = false;
-
             // Write nodes as attribute
             if let Some(included_positions) = self.nodes_in_layer.get(layer) {
-                layer_has_elements = layer_has_elements || !included_positions.is_empty();
                 let att_value = position_references_to_string(included_positions, "nodes");
                 attributes.push(("nodes".to_string(), att_value));
             }
 
             // Write edges as attributes
             if let Some(included_positions) = self.edges_in_layer.get(layer) {
-                layer_has_elements = layer_has_elements || !included_positions.is_empty();
                 let att_value = position_references_to_string(included_positions, "edges");
                 attributes.push(("edges".to_string(), att_value));
             }
 
-            if layer_has_elements {
-                let layers_tag = BytesStart::new("layers")
-                    .with_attributes(attributes.iter().map(|(n, v)| (n.as_str(), v.as_str())));
-                self.xml.write_event(Event::Start(layers_tag.borrow()))?;
+            let layers_tag = BytesStart::new("layers")
+                .with_attributes(attributes.iter().map(|(n, v)| (n.as_str(), v.as_str())));
+            self.xml.write_event(Event::Start(layers_tag.borrow()))?;
 
-                let marshalled_id = format!("T::l{pos}");
-                self.xml
-                    .create_element("labels")
-                    .with_attribute(("xsi:type", "saltCore:SElementId"))
-                    .with_attribute(("namespace", "salt"))
-                    .with_attribute(("name", "id"))
-                    .with_attribute(("value", marshalled_id.as_str()))
-                    .write_empty()?;
+            let marshalled_id = format!("T::l{pos}");
+            self.xml
+                .create_element("labels")
+                .with_attribute(("xsi:type", "saltCore:SElementId"))
+                .with_attribute(("namespace", "salt"))
+                .with_attribute(("name", "id"))
+                .with_attribute(("value", marshalled_id.as_str()))
+                .write_empty()?;
 
-                let marshalled_name = format!("T::{layer}");
-                self.xml
-                    .create_element("labels")
-                    .with_attribute(("xsi:type", "saltCore:SFeature"))
-                    .with_attribute(("namespace", "salt"))
-                    .with_attribute(("name", "SNAME"))
-                    .with_attribute(("value", marshalled_name.as_str()))
-                    .write_empty()?;
-                self.xml.write_event(Event::End(layers_tag.to_end()))?;
-            }
+            let marshalled_name = format!("T::{layer}");
+            self.xml
+                .create_element("labels")
+                .with_attribute(("xsi:type", "saltCore:SFeature"))
+                .with_attribute(("namespace", "salt"))
+                .with_attribute(("name", "SNAME"))
+                .with_attribute(("value", marshalled_name.as_str()))
+                .write_empty()?;
+            self.xml.write_event(Event::End(layers_tag.to_end()))?;
         }
         Ok(())
     }

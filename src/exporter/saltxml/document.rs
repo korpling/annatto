@@ -160,7 +160,12 @@ impl SaltDocumentGraphMapper {
                 AnnotationComponentType::Ordering,
             ] {
                 for c in graph.get_all_components(Some(ctype.clone()), None) {
-                    if !(c.layer == ANNIS_NS && ctype == AnnotationComponentType::Dominance) {
+                    let is_combined_dominance =
+                        ctype == AnnotationComponentType::Dominance && c.layer == ANNIS_NS;
+                    let is_default_ordering = ctype == AnnotationComponentType::Ordering
+                        && c.layer == ANNIS_NS
+                        && c.name.is_empty();
+                    if !is_combined_dominance && !is_default_ordering {
                         let gs = graph
                             .get_graphstorage(&c)
                             .context("Missing graph storage for component")?;

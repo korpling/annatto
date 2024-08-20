@@ -54,16 +54,6 @@ expression: doc1
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::salt:/root/doc1#tok0"/>
     <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::tok0"/>
   </nodes>
-  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.2" target="//@nodes.1" layers="//@layers.0"/>
-  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.3" target="//@nodes.2" layers="//@layers.0"/>
-  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.4" target="//@nodes.3" layers="//@layers.0"/>
-  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.5" target="//@nodes.4" layers="//@layers.0"/>
-  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.6" target="//@nodes.5" layers="//@layers.0"/>
-  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.7" target="//@nodes.6" layers="//@layers.0"/>
-  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.8" target="//@nodes.7" layers="//@layers.0"/>
-  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.9" target="//@nodes.8" layers="//@layers.0"/>
-  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.10" target="//@nodes.9" layers="//@layers.0"/>
-  <edges xsi:type="sDocumentStructure:SOrderRelation" source="//@nodes.11" target="//@nodes.10" layers="//@layers.0"/>
   <edges xsi:type="sDocumentStructure:SSpanningRelation" source="//@nodes.0" target="//@nodes.10"/>
   <edges xsi:type="sDocumentStructure:SSpanningRelation" source="//@nodes.0" target="//@nodes.9"/>
   <nodes xsi:type="sDocumentStructure:STextualDS">
@@ -115,7 +105,7 @@ expression: doc1
     <labels xsi:type="saltCore:SFeature" namespace="salt" name="SSTART" value="N::54"/>
     <labels xsi:type="saltCore:SFeature" namespace="salt" name="SEND" value="N::55"/>
   </edges>
-  <layers xsi:type="saltCore:SLayer" edges="//@edges.0 //@edges.1 //@edges.2 //@edges.3 //@edges.4 //@edges.5 //@edges.6 //@edges.7 //@edges.8 //@edges.9">
+  <layers xsi:type="saltCore:SLayer">
     <labels xsi:type="saltCore:SElementId" namespace="salt" name="id" value="T::l0"/>
     <labels xsi:type="saltCore:SFeature" namespace="salt" name="SNAME" value="T::annis"/>
   </layers>
