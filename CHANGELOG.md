@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `exmaralda` import now ranks order of tlis higher than sorting by time value (more compatible with modern EXMARaLDA files)
 
+### Fixed
+
+- `exmaralda` import keeps events with missing time values
+
 ## [0.15.0] - 2024-08-14
 
 ## [0.15.0] - 2024-08-14
