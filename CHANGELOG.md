@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `table` export has feature to customize n/a-value, which by default is the empty string
 - Add `conllu` as export format
+- import of `conllu` now supports enhanced dependencies
 
 ## [0.15.0] - 2024-08-14
 

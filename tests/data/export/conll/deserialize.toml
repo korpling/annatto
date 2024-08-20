@@ -3,5 +3,5 @@ misc = ["SpaceAfter"]
 groupby = "sent_id"
 dependency_component = { ctype = "Pointing", layer = "", name = "dep" }
 dependency_anno = "deprel"
-enhanced_components = [{ ctype = "Pointing", layer = "", name = "dep" }]  # this is intended to double the representation of dependencies in the enhanced column
+enhanced_components = [{ ctype = "Pointing", layer = "enh", name = "dep" }]
 enhanced_annos = ["deprel"]  
