@@ -39,6 +39,16 @@ Example:
 quote_char = "\""
 ```
 
+###  no_value
+
+Provides the string sequence used for n/a. Default is the empty string.
+
+Example:
+```toml
+[export.config]
+no_value = "n/a"
+```
+
 ###  ingoing
 
 By listing annotation components, the ingoing edges of that component and their annotations

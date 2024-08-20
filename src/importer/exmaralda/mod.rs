@@ -93,8 +93,7 @@ impl ImportEXMARaLDA {
         let mut speaker_map = BTreeMap::new();
         let mut parent_map: BTreeMap<String, BTreeMap<String, String>> = BTreeMap::new();
         let mut already_defined: BTreeSet<String> = BTreeSet::new();
-        let mut named_orderings: BTreeMap<String, Vec<(OrderedFloat<f64>, String)>> =
-            BTreeMap::new();
+        let mut named_orderings: BTreeMap<String, Vec<(usize, String)>> = BTreeMap::new();
         let mut tlis = Vec::new();
         // reader
         let f = File::open(document_path)?;
@@ -441,18 +440,6 @@ impl ImportEXMARaLDA {
                                 "{}#{}_{}_{}-{}",
                                 doc_node_name, tier_type, speaker_id, start_id, end_id
                             ); // this is not a unique id as not intended to be
-                            let start_time = if let Some((Some(t), _)) = timeline.get(key) {
-                                t
-                            } else {
-                                if let Some(sender) = tx {
-                                    let msg = format!(
-                                            "Could not determine start time of event {}::{}:{}-{}. Event will be skipped.",
-                                            &speaker_id, &anno_name, &start_id, &end_id
-                                        );
-                                    sender.send(StatusMessage::Warning(msg))?;
-                                }
-                                continue;
-                            };
                             if !already_defined.contains(&node_name) {
                                 update.add_event(UpdateEvent::AddNode {
                                     node_name: node_name.to_string(),
@@ -492,7 +479,9 @@ impl ImportEXMARaLDA {
                                     }
                                     continue;
                                 };
-                                if let Some((Some(end_time), _)) = node_tpl {
+                                if let (Some((Some(start_time), _)), Some((Some(end_time), _))) =
+                                    (timeline.get(key), node_tpl)
+                                {
                                     update.add_event(UpdateEvent::AddNodeLabel {
                                         node_name: node_name.to_string(),
                                         anno_ns: ANNIS_NS.to_string(),
@@ -517,7 +506,7 @@ impl ImportEXMARaLDA {
                                     anno_value: text.to_string(),
                                 })?;
                                 // order nodes
-                                let order_tpl = (*start_time, node_name.to_string());
+                                let order_tpl = (start_i, node_name.to_string());
                                 match named_orderings.entry(anno_name.to_string()) {
                                     std::collections::btree_map::Entry::Vacant(e) => {
                                         e.insert(vec![order_tpl]);
@@ -574,10 +563,7 @@ impl ImportEXMARaLDA {
         // build order relations
         for (name, node_name_vec) in named_orderings {
             let mut prev = None;
-            for (_, node_name) in node_name_vec
-                .into_iter()
-                .sorted_by(|a, b| a.0.total_cmp(&b.0))
-            {
+            for (_, node_name) in node_name_vec.into_iter().sorted_by(|a, b| a.0.cmp(&b.0)) {
                 if let Some(source) = prev {
                     update.add_event(UpdateEvent::AddEdge {
                         source_node: source,
