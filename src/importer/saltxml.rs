@@ -154,7 +154,7 @@ impl SaltObject {
             SaltObject::Boolean(v) => format!("B::{v}"),
             SaltObject::Integer(v) => format!("N::{v}"),
             SaltObject::Float(v) => format!("F::{v}"),
-            SaltObject::Url(v) => format!("u::{v}"),
+            SaltObject::Url(v) => format!("U::{v}"),
             SaltObject::Null => String::default(),
         }
     }

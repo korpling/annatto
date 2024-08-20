@@ -1,6 +1,7 @@
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     convert::TryInto,
+    env,
     fs::File,
     io::BufWriter,
     path::PathBuf,
@@ -60,7 +61,7 @@ fn node_is_span(
 
 pub(super) struct SaltDocumentGraphMapper {
     textual_ds_node_names: BTreeMap<String, String>,
-    media_ds_node_names: Vec<String>,
+    media_ds_node_names: BTreeMap<String, String>,
     collected_token: Vec<TextProperty>,
     timeline_items: Vec<TextProperty>,
 }
@@ -69,7 +70,7 @@ impl SaltDocumentGraphMapper {
     pub(super) fn new() -> SaltDocumentGraphMapper {
         SaltDocumentGraphMapper {
             textual_ds_node_names: BTreeMap::new(),
-            media_ds_node_names: Vec::new(),
+            media_ds_node_names: BTreeMap::new(),
             collected_token: Vec::new(),
             timeline_items: Vec::new(),
         }
@@ -85,7 +86,7 @@ impl SaltDocumentGraphMapper {
         let corpusgraph_helper = CorpusGraphHelper::new(graph);
 
         let (output_path, output_file) =
-            self.create_saltfile(graph, document_node_id, &corpusgraph_helper, output_path)?;
+            self.create_saltfile(graph, document_node_id, &corpusgraph_helper, &output_path)?;
         progress.info(&format!(
             "Writing SaltXML file {}",
             output_path.to_string_lossy()
@@ -159,22 +160,38 @@ impl SaltDocumentGraphMapper {
                         .get_node_annos()
                         .get_value_for_item(&n, &NODE_NAME_KEY)?
                         .context("Missing node name")?;
-                    self.media_ds_node_names.push(node_id.to_string());
+                    let file_anno = graph
+                        .get_node_annos()
+                        .get_value_for_item(
+                            &n,
+                            &AnnoKey {
+                                name: "file".into(),
+                                ns: ANNIS_NS.into(),
+                            },
+                        )?
+                        .context("Missing 'file' annotation")?;
+                    self.media_ds_node_names
+                        .insert(node_id.to_string(), file_anno.to_string());
                     let node_name = format!("audio{}", self.media_ds_node_names.len());
                     let referenced_file_key = AnnoKey {
                         ns: "salt".into(),
                         name: "SAUDIO_REFERENCE".into(),
                     };
-                    // The node ID is the path to the file
-                    let referenced_file_value = SaltObject::Url(format!("file://{}", node_id));
-                    salt_writer.write_node(
-                        NodeType::Id(n),
-                        &node_name,
-                        "SAudioDS",
-                        &[],
-                        &[(referenced_file_key, referenced_file_value)],
-                        None,
-                    )?;
+                    if let Some(relative_path) = pathdiff::diff_paths(
+                        env::current_dir()?.join(file_anno.to_string()),
+                        &output_path,
+                    ) {
+                        let referenced_file_value =
+                            SaltObject::Url(format!("file:/{}", relative_path.to_string_lossy()));
+                        salt_writer.write_node(
+                            NodeType::Id(n),
+                            &node_name,
+                            "sDocumentStructure:SAudioDS",
+                            &[],
+                            &[(referenced_file_key, referenced_file_value)],
+                            None,
+                        )?;
+                    }
                 }
             }
 
@@ -570,7 +587,7 @@ impl SaltDocumentGraphMapper {
 
                 // Write an alignment edge to all known media sources
                 if !features.is_empty() {
-                    for ds in self.media_ds_node_names.iter() {
+                    for (ds, _path) in self.media_ds_node_names.iter() {
                         salt_writer.write_edge(
                             NodeType::Id(t.source_token),
                             NodeType::Custom(ds.to_string()),

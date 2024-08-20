@@ -238,7 +238,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                 let mut element_id = orig_element_id;
                 let mut file_path = referenced_url.to_string();
                 if referenced_url.scheme() == "file" {
-                    // Resolve this file URL against the input direcotry and
+                    // Resolve this file URL against the input directory and
                     // store it relative to the current working directory.
                     let referenced_path = Path::new(referenced_url.path());
                     let referenced_path = pathdiff::diff_paths(
@@ -248,6 +248,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                     .unwrap_or_else(|| referenced_path.to_path_buf());
 
                     file_path = referenced_path.to_string_lossy().to_string();
+
                     // Use the file name as element ID
                     if let Some(file_name) = referenced_path.file_name() {
                         element_id = format!(
@@ -309,7 +310,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                             // Attach start and end time to the same token
                             updates.add_event(UpdateEvent::AddNodeLabel {
                                 node_name: self.get_tli_node_name(*first_tli),
-                                anno_ns: "annis".to_string(),
+                                anno_ns: ANNIS_NS.to_string(),
                                 anno_name: "time".to_string(),
                                 anno_value: format!("{start}-{end}"),
                             })?;
@@ -318,13 +319,13 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                             // last token
                             updates.add_event(UpdateEvent::AddNodeLabel {
                                 node_name: self.get_tli_node_name(*first_tli),
-                                anno_ns: "annis".to_string(),
+                                anno_ns: ANNIS_NS.to_string(),
                                 anno_name: "time".to_string(),
                                 anno_value: format!("{start}-"),
                             })?;
                             updates.add_event(UpdateEvent::AddNodeLabel {
                                 node_name: self.get_tli_node_name(*last_tli),
-                                anno_ns: "annis".to_string(),
+                                anno_ns: ANNIS_NS.to_string(),
                                 anno_name: "time".to_string(),
                                 anno_value: format!("-{end}"),
                             })?;
