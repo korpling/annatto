@@ -273,7 +273,7 @@ impl ImportEXMARaLDA {
                                 })?;
                                 timeline.insert(
                                     tli_id.to_string(),
-                                    ((*time_opt).clone(), node_name.to_string()),
+                                    ((*time_opt), node_name.to_string()),
                                 );
                                 update.add_event(UpdateEvent::AddEdge {
                                     source_node: node_name.to_string(),
