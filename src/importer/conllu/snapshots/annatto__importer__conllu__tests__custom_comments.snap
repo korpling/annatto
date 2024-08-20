@@ -198,53 +198,59 @@ it has two lines, what are you going to do about it?!</data>
         <edge id="e19" source="comments/test#t19_38" target="comments/test#t18_64" label="Pointing//dep">
             <data key="k16">det</data>
         </edge>
-        <edge id="e20" source="comments/test#t7_1" target="comments/test#t7_68" label="Ordering/annis/">
+        <edge id="e20" source="comments/test#t9_32" target="comments/test#t7_1" label="Pointing/enh/dep">
+            <data key="k16">nsubj</data>
         </edge>
-        <edge id="e21" source="comments/test#t7_68" target="comments/test#t8_67" label="Ordering/annis/">
+        <edge id="e21" source="comments/test#t9_32" target="comments/test#t10_76" label="Pointing/enh/dep">
+            <data key="k16">obj</data>
         </edge>
-        <edge id="e22" source="comments/test#t8_67" target="comments/test#t9_32" label="Ordering/annis/">
+        <edge id="e22" source="comments/test#t7_1" target="comments/test#t7_68" label="Ordering/annis/">
         </edge>
-        <edge id="e23" source="comments/test#t9_32" target="comments/test#t10_76" label="Ordering/annis/">
+        <edge id="e23" source="comments/test#t7_68" target="comments/test#t8_67" label="Ordering/annis/">
         </edge>
-        <edge id="e24" source="comments/test#t10_76" target="comments/test#t11_66" label="Ordering/annis/">
+        <edge id="e24" source="comments/test#t8_67" target="comments/test#t9_32" label="Ordering/annis/">
         </edge>
-        <edge id="e25" source="comments/test#t11_66" target="comments/test#t16_13" label="Ordering/annis/">
+        <edge id="e25" source="comments/test#t9_32" target="comments/test#t10_76" label="Ordering/annis/">
         </edge>
-        <edge id="e26" source="comments/test#t16_13" target="comments/test#t17_57" label="Ordering/annis/">
+        <edge id="e26" source="comments/test#t10_76" target="comments/test#t11_66" label="Ordering/annis/">
         </edge>
-        <edge id="e27" source="comments/test#t17_57" target="comments/test#t18_64" label="Ordering/annis/">
+        <edge id="e27" source="comments/test#t11_66" target="comments/test#t16_13" label="Ordering/annis/">
         </edge>
-        <edge id="e28" source="comments/test#t18_64" target="comments/test#t19_38" label="Ordering/annis/">
+        <edge id="e28" source="comments/test#t16_13" target="comments/test#t17_57" label="Ordering/annis/">
         </edge>
-        <edge id="e29" source="comments/test#t19_38" target="comments/test#t20_54" label="Ordering/annis/">
+        <edge id="e29" source="comments/test#t17_57" target="comments/test#t18_64" label="Ordering/annis/">
         </edge>
-        <edge id="e30" source="comments/test" target="comments" label="PartOf/annis/">
+        <edge id="e30" source="comments/test#t18_64" target="comments/test#t19_38" label="Ordering/annis/">
         </edge>
-        <edge id="e31" source="comments/test#t7_1" target="comments/test" label="PartOf/annis/">
+        <edge id="e31" source="comments/test#t19_38" target="comments/test#t20_54" label="Ordering/annis/">
         </edge>
-        <edge id="e32" source="comments/test#t7_68" target="comments/test" label="PartOf/annis/">
+        <edge id="e32" source="comments/test" target="comments" label="PartOf/annis/">
         </edge>
-        <edge id="e33" source="comments/test#t8_67" target="comments/test" label="PartOf/annis/">
+        <edge id="e33" source="comments/test#t7_1" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e34" source="comments/test#t9_32" target="comments/test" label="PartOf/annis/">
+        <edge id="e34" source="comments/test#t7_68" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e35" source="comments/test#t10_76" target="comments/test" label="PartOf/annis/">
+        <edge id="e35" source="comments/test#t8_67" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e36" source="comments/test#t11_66" target="comments/test" label="PartOf/annis/">
+        <edge id="e36" source="comments/test#t9_32" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e37" source="comments/test#s1_1" target="comments/test" label="PartOf/annis/">
+        <edge id="e37" source="comments/test#t10_76" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e38" source="comments/test#t16_13" target="comments/test" label="PartOf/annis/">
+        <edge id="e38" source="comments/test#t11_66" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e39" source="comments/test#t17_57" target="comments/test" label="PartOf/annis/">
+        <edge id="e39" source="comments/test#s1_1" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e40" source="comments/test#t18_64" target="comments/test" label="PartOf/annis/">
+        <edge id="e40" source="comments/test#t16_13" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e41" source="comments/test#t19_38" target="comments/test" label="PartOf/annis/">
+        <edge id="e41" source="comments/test#t17_57" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e42" source="comments/test#t20_54" target="comments/test" label="PartOf/annis/">
+        <edge id="e42" source="comments/test#t18_64" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e43" source="comments/test#s12_34" target="comments/test" label="PartOf/annis/">
+        <edge id="e43" source="comments/test#t19_38" target="comments/test" label="PartOf/annis/">
+        </edge>
+        <edge id="e44" source="comments/test#t20_54" target="comments/test" label="PartOf/annis/">
+        </edge>
+        <edge id="e45" source="comments/test#s12_34" target="comments/test" label="PartOf/annis/">
         </edge>
     </graph>
 </graphml>
