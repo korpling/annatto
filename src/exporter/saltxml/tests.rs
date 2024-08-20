@@ -301,3 +301,42 @@ fn import_export_sample_sentence() {
 
     compare_graphs(&original_graph, &written_graph);
 }
+
+#[test]
+fn import_export_dialog_demo() {
+    let importer: ImportSaltXml = toml::from_str(r#"missing_anno_ns_from_layer = false"#).unwrap();
+    let exporter = ExportSaltXml::default();
+
+    // Import the example project
+    let path = Path::new("./tests/data/import/salt/dialog.demo");
+    let orig_import_step = ImporterStep {
+        module: crate::ReadFrom::SaltXml(importer),
+        path: path.to_path_buf(),
+    };
+    let mut updates = orig_import_step.execute(None).unwrap();
+    let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
+    original_graph.apply_update(&mut updates, |_| {}).unwrap();
+
+    // Export to SaltXML project, read it again and then compare the annotation graphs
+    let tmp_outputdir = TempDir::new().unwrap();
+    let output_dir = tmp_outputdir.path().join("dialog.demo");
+    std::fs::create_dir(&output_dir).unwrap();
+    let exporter = crate::WriteAs::SaltXml(exporter);
+    let export_step = ExporterStep {
+        module: exporter,
+        path: output_dir.clone(),
+    };
+    export_step.execute(&original_graph, None).unwrap();
+
+    let importer: ImportSaltXml = toml::from_str(r#"missing_anno_ns_from_layer = false"#).unwrap();
+    let second_import_step = ImporterStep {
+        module: crate::ReadFrom::SaltXml(importer),
+        path: output_dir.clone(),
+    };
+    let mut updates = second_import_step.execute(None).unwrap();
+    let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
+
+    written_graph.apply_update(&mut updates, |_| {}).unwrap();
+
+    compare_graphs(&original_graph, &written_graph);
+}

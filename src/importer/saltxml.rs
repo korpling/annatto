@@ -136,6 +136,7 @@ impl SaltType {
     }
 }
 
+#[derive(Debug)]
 pub(crate) enum SaltObject {
     Text(String),
     Boolean(bool),

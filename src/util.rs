@@ -174,18 +174,6 @@ impl<'a> CorpusGraphHelper<'a> {
         Ok(true)
     }
 
-    /// Tests if that node has the node type `node` and thus belongs to the
-    /// annotation graph part.
-    pub(crate) fn is_annotation_node(&self, node: NodeID) -> anyhow::Result<bool> {
-        let node_annos = self.graph.get_node_annos();
-
-        let node_type = node_annos
-            .get_value_for_item(&node, &NODE_TYPE_KEY)?
-            .context("Missing node type")?;
-
-        Ok(node_type == "node")
-    }
-
     /// Returns true if there is a path from the `child` node to the `ancestor` node in any of the [`AnnotationComponentType::PartOf`] components.
     pub(crate) fn is_part_of(&self, child: NodeID, ancestor: NodeID) -> anyhow::Result<bool> {
         if self.all_partof_gs.len() == 1 {

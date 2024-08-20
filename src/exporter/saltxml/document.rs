@@ -15,7 +15,7 @@ use graphannis::{
 };
 use graphannis_core::{
     dfs::CycleSafeDFS,
-    graph::{ANNIS_NS, NODE_NAME_KEY},
+    graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY},
 };
 use quick_xml::events::{BytesDecl, Event};
 use regex::Regex;
@@ -60,6 +60,7 @@ fn node_is_span(
 
 pub(super) struct SaltDocumentGraphMapper {
     textual_ds_node_names: BTreeMap<String, String>,
+    media_ds_node_names: Vec<String>,
     collected_token: Vec<TextProperty>,
     timeline_items: Vec<TextProperty>,
 }
@@ -68,6 +69,7 @@ impl SaltDocumentGraphMapper {
     pub(super) fn new() -> SaltDocumentGraphMapper {
         SaltDocumentGraphMapper {
             textual_ds_node_names: BTreeMap::new(),
+            media_ds_node_names: Vec::new(),
             collected_token: Vec::new(),
             timeline_items: Vec::new(),
         }
@@ -100,17 +102,17 @@ impl SaltDocumentGraphMapper {
             .with_attribute(("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"))
             .with_attribute(("xsi:version", "2.0"));
         let node_annos = graph.get_node_annos();
-        let node_name = node_annos
+        let document_node_name = node_annos
             .get_value_for_item(&document_node_id, &NODE_NAME_KEY)?
             .context("Missing node name for document graph")?;
-        let salt_id = format!("T::salt:/{node_name}");
+        let document_salt_id = format!("T::salt:/{document_node_name}");
         graph_tag.write_inner_content::<_, Error>(|writer| {
             writer
                 .create_element("labels")
                 .with_attribute(("xsi:type", "saltCore:SElementId"))
                 .with_attribute(("namespace", "salt"))
                 .with_attribute(("name", "id"))
-                .with_attribute(("value", salt_id.as_str()))
+                .with_attribute(("value", document_salt_id.as_str()))
                 .write_empty()?;
             let mut salt_writer = SaltWriter::new(graph, writer, &output_path, progress)?;
 
@@ -132,7 +134,11 @@ impl SaltDocumentGraphMapper {
 
             for n in corpusgraph_helper.all_nodes_part_of(document_node_id) {
                 let n = n?;
-                if corpusgraph_helper.is_annotation_node(n)? {
+                let node_type = node_annos
+                    .get_value_for_item(&n, &NODE_TYPE_KEY)?
+                    .context("Missing node type")?;
+
+                if node_type == "node" {
                     let salt_type = if tok_helper.is_token(n)? {
                         "sDocumentStructure:SToken"
                     } else if node_is_span(n, &tok_helper, &all_dominance_gs)? {
@@ -148,6 +154,27 @@ impl SaltDocumentGraphMapper {
                         "sDocumentStructure:SStructure"
                     };
                     salt_writer.write_graphannis_node(n, salt_type)?;
+                } else if node_type == "file" {
+                    let node_id = graph
+                        .get_node_annos()
+                        .get_value_for_item(&n, &NODE_NAME_KEY)?
+                        .context("Missing node name")?;
+                    self.media_ds_node_names.push(node_id.to_string());
+                    let node_name = format!("audio{}", self.media_ds_node_names.len());
+                    let referenced_file_key = AnnoKey {
+                        ns: "salt".into(),
+                        name: "SAUDIO_REFERENCE".into(),
+                    };
+                    // The node ID is the path to the file
+                    let referenced_file_value = SaltObject::Url(format!("file://{}", node_id));
+                    salt_writer.write_node(
+                        NodeType::Id(n),
+                        &node_name,
+                        "SAudioDS",
+                        &[],
+                        &[(referenced_file_key, referenced_file_value)],
+                        None,
+                    )?;
                 }
             }
 
@@ -212,7 +239,8 @@ impl SaltDocumentGraphMapper {
                 &mut salt_writer,
             )?;
 
-            // TODO: export media file references and annis:time annotations
+            // export media file references and annis:time annotations
+            self.map_media_relations(graph, &mut salt_writer)?;
 
             // Write out the layer XML nodes
             salt_writer.write_all_layers()?;
@@ -501,6 +529,63 @@ impl SaltDocumentGraphMapper {
         Ok(())
     }
 
+    fn map_media_relations<W>(
+        &self,
+        graph: &AnnotationGraph,
+        salt_writer: &mut SaltWriter<W>,
+    ) -> anyhow::Result<()>
+    where
+        W: std::io::Write,
+    {
+        let node_annos = graph.get_node_annos();
+        let annis_time_key = AnnoKey {
+            ns: ANNIS_NS.into(),
+            name: "time".into(),
+        };
+        for t in self.collected_token.iter() {
+            if let Some(annis_time) =
+                node_annos.get_value_for_item(&t.source_token, &annis_time_key)?
+            {
+                let mut features = Vec::new();
+                let (start, end) =
+                    parse_time_range(&annis_time).context("Invalid annis::time range")?;
+                if let Some(start) = start {
+                    features.push((
+                        AnnoKey {
+                            name: "SSTART".into(),
+                            ns: "salt".into(),
+                        },
+                        SaltObject::Float(start),
+                    ));
+                }
+                if let Some(end) = end {
+                    features.push((
+                        AnnoKey {
+                            name: "SEND".into(),
+                            ns: "salt".into(),
+                        },
+                        SaltObject::Float(end),
+                    ));
+                }
+
+                // Write an alignment edge to all known media sources
+                if !features.is_empty() {
+                    for ds in self.media_ds_node_names.iter() {
+                        salt_writer.write_edge(
+                            NodeType::Id(t.source_token),
+                            NodeType::Custom(ds.to_string()),
+                            "sDocumentStructure:SAudioRelation",
+                            &[],
+                            &features,
+                            None,
+                        )?;
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
     fn collect_token_for_component(
         &self,
         c: &AnnotationComponent,
@@ -561,4 +646,22 @@ impl SaltDocumentGraphMapper {
 
         Ok((content, token))
     }
+}
+
+fn parse_time_range(value: &str) -> anyhow::Result<(Option<f64>, Option<f64>)> {
+    let splitted = value.split_once("-");
+    let start_str = splitted.map(|(v, _)| v).unwrap_or_default();
+    let end_str = splitted.map(|(_, v)| v).unwrap_or_default();
+
+    let start = if start_str.is_empty() {
+        None
+    } else {
+        Some(start_str.parse::<f64>()?)
+    };
+    let end = if end_str.is_empty() {
+        None
+    } else {
+        Some(end_str.parse::<f64>()?)
+    };
+    Ok((start, end))
 }

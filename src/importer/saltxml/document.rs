@@ -650,7 +650,6 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         }
 
         // Connect all spans with the token using the spanning relations
-
         for spanning_rel in self
             .edges
             .iter()
