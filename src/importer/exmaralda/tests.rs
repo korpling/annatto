@@ -236,21 +236,31 @@ fn invalid_fail() {
 #[test]
 fn import() {
     let r = run_test("./tests/data/import/exmaralda/clean/import/", 0);
-    assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
+    assert!(r.is_ok(), "Probing core test result {:?}", r);
     assert_snapshot!(r.unwrap());
 }
 
 #[test]
 fn broken_audio_pass() {
     let r = run_test("./tests/data/import/exmaralda/broken_audio/import/", 1);
-    assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
+    assert!(r.is_ok(), "Probing core test result {:?}", r);
     assert_snapshot!(r.unwrap());
 }
 
 #[test]
 fn missing_type_attr_pass() {
     let r = run_test("./tests/data/import/exmaralda/pass-no_tier_type/import/", 9);
-    assert_eq!(r.is_ok(), true, "Probing core test result {:?}", r);
+    assert!(r.is_ok(), "Probing core test result {:?}", r);
+    assert_snapshot!(r.unwrap());
+}
+
+#[test]
+fn sparse_timeline_pass() {
+    let r = run_test(
+        "./tests/data/import/exmaralda/valid-no-timevalues/import/",
+        0,
+    );
+    assert!(r.is_ok(), "Probing core test result {:?}", r);
     assert_snapshot!(r.unwrap());
 }
 
