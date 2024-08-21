@@ -1,5 +1,6 @@
+use core::f64;
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet, HashMap},
     convert::{TryFrom, TryInto},
     path::Path,
 };
@@ -286,6 +287,15 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
     }
 
     fn map_media_relations(&mut self, updates: &mut GraphUpdate) -> Result<()> {
+        // Collect start and end times for all timeline items. SaltXML attaches
+        // the time to the token and not timeline items and thus different token
+        // can contain more or less fine-grained information about the start/end
+        // time. By iterating over all media relations first, we make sure to
+        // collect the most fine-grained information.
+        let mut tli_to_start: HashMap<i64, f64> = HashMap::new();
+        let mut tli_to_end: HashMap<i64, f64> = HashMap::new();
+        let mut tlis = BTreeSet::new();
+
         for media_rel in self
             .edges
             .iter()
@@ -303,37 +313,47 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
 
             if let (SaltObject::Float(start), SaltObject::Float(end)) = (start, end) {
                 if let Some(covered_tli) = self.token_to_tli.get(&token_id) {
-                    if let (Some(first_tli), Some(last_tli)) =
-                        (covered_tli.first(), covered_tli.last())
-                    {
-                        if first_tli == last_tli {
-                            // Attach start and end time to the same token
-                            updates.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: self.get_tli_node_name(*first_tli),
-                                anno_ns: ANNIS_NS.to_string(),
-                                anno_name: "time".to_string(),
-                                anno_value: format!("{start}-{end}"),
-                            })?;
-                        } else {
-                            // Attach start time to first token and end time to
-                            // last token
-                            updates.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: self.get_tli_node_name(*first_tli),
-                                anno_ns: ANNIS_NS.to_string(),
-                                anno_name: "time".to_string(),
-                                anno_value: format!("{start}-"),
-                            })?;
-                            updates.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: self.get_tli_node_name(*last_tli),
-                                anno_ns: ANNIS_NS.to_string(),
-                                anno_name: "time".to_string(),
-                                anno_value: format!("-{end}"),
-                            })?;
-                        }
+                    if let Some(first_tli) = covered_tli.first() {
+                        let start_entry = tli_to_start.entry(*first_tli).or_insert(f64::MAX);
+                        *start_entry = start_entry.min(start);
                     }
+                    if let Some(last_tli) = covered_tli.last() {
+                        let end_entry = tli_to_end.entry(*last_tli).or_insert(f64::MIN);
+                        *end_entry = end_entry.max(end);
+                    }
+                    tlis.extend(covered_tli);
                 }
             } else {
                 bail!("SSTART/SEND not a float")
+            }
+        }
+
+        for t in tlis {
+            let node_name = self.get_tli_node_name(t);
+            let start = tli_to_start.get(&t);
+            let end = tli_to_end.get(&t);
+
+            if let (Some(start), Some(end)) = (start, end) {
+                updates.add_event(UpdateEvent::AddNodeLabel {
+                    node_name,
+                    anno_ns: ANNIS_NS.to_string(),
+                    anno_name: "time".to_string(),
+                    anno_value: format!("{start}-{end}"),
+                })?;
+            } else if let Some(start) = start {
+                updates.add_event(UpdateEvent::AddNodeLabel {
+                    node_name,
+                    anno_ns: ANNIS_NS.to_string(),
+                    anno_name: "time".to_string(),
+                    anno_value: format!("{start}-"),
+                })?;
+            } else if let Some(end) = end {
+                updates.add_event(UpdateEvent::AddNodeLabel {
+                    node_name,
+                    anno_ns: ANNIS_NS.to_string(),
+                    anno_name: "time".to_string(),
+                    anno_value: format!("-{end}"),
+                })?;
             }
         }
 
