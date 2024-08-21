@@ -10,7 +10,7 @@ use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
 };
-use graphannis_core::graph::ANNIS_NS;
+use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use itertools::Itertools;
 use normpath::{BasePathBuf, PathExt};
 use roxmltree::Node;
@@ -453,7 +453,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             .map(|t| t.to_string())
             .unwrap_or_else(|| fallback_component_name.to_string());
 
-        let mut component_layer = "default_ns".to_string();
+        let mut component_layer = DEFAULT_NS.to_string();
         if let Some(layers_attribute) = rel.attribute("layers") {
             if let Some(first_layer) = layers_attribute.split(' ').next() {
                 let layer_node = resolve_element(first_layer, "layers", &self.layers)
@@ -667,35 +667,13 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             .iter()
             .filter(|rel| SaltType::from_node(rel) == SaltType::SpanningRelation)
         {
-            let target_att = spanning_rel
-                .attribute("target")
-                .context("Missing target attribute for SSpanningRelation")?;
-            let target_node = resolve_element(target_att, "nodes", &self.nodes)
-                .context("Could not resolve target for SSpanningRelation")?;
-            let target_node_id = get_element_id(&target_node).context("Target token has no ID")?;
-
-            if let Some(tli_token) = self.token_to_tli.get(&target_node_id) {
-                // Add a coverage edge to the indirectly covered timeline item token
-                for tli in tli_token {
-                    let tli_id = self.get_tli_node_name(*tli);
-                    self.map_edge(
-                        spanning_rel,
-                        Some(tli_id),
-                        AnnotationComponentType::Coverage,
-                        "",
-                        updates,
-                    )?;
-                }
-            } else {
-                // Directly map the coverage edge
-                self.map_edge(
-                    spanning_rel,
-                    None,
-                    AnnotationComponentType::Coverage,
-                    "",
-                    updates,
-                )?;
-            }
+            self.map_edge(
+                spanning_rel,
+                None,
+                AnnotationComponentType::Coverage,
+                "",
+                updates,
+            )?;
         }
         // Add all dominance relations
         for dominance_rel in self

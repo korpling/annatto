@@ -217,7 +217,9 @@ impl SaltDocumentGraphMapper {
                     let is_default_ordering = ctype == AnnotationComponentType::Ordering
                         && c.layer == ANNIS_NS
                         && c.name.is_empty();
-                    if !is_combined_dominance && !is_default_ordering {
+                    let ordering_has_text =
+                        has_timeline && ctype == AnnotationComponentType::Ordering;
+                    if !is_combined_dominance && !is_default_ordering && !ordering_has_text {
                         let gs = graph
                             .get_graphstorage(&c)
                             .context("Missing graph storage for component")?;
