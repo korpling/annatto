@@ -322,7 +322,7 @@ mod tests {
         g.apply_update(&mut updates, |_msg| {}).unwrap();
 
         let chunker = Chunk {
-            max_characters: 10,
+            max_characters: 15,
             anno_key: AnnoKey {
                 ns: "chunk".into(),
                 name: "segment".into(),

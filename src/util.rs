@@ -3,7 +3,7 @@ use crate::{
     StepID,
 };
 use graphannis::{
-    graph::EdgeContainer,
+    graph::{EdgeContainer, GraphStorage},
     model::{AnnotationComponent, AnnotationComponentType},
     AnnotationGraph,
 };
@@ -11,13 +11,16 @@ use graphannis::{
 use anyhow::Context;
 use graphannis_core::{
     annostorage::ValueSearch,
-    graph::{storage::union::UnionEdgeContainer, ANNIS_NS, NODE_NAME_KEY, NODE_TYPE},
+    dfs::CycleSafeDFS,
+    errors::GraphAnnisCoreError,
+    graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE, NODE_TYPE_KEY},
     types::{Edge, NodeID},
 };
 use itertools::Itertools;
 use std::{
     collections::BTreeSet,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 #[cfg(test)]
@@ -72,56 +75,177 @@ pub trait Traverse<N, E> {
     ) -> Result<()>;
 }
 
-/// Returns a sorted list of node names of all the corpus graph nodes without any outgoing `PartOf` edge.
-pub(crate) fn get_root_corpus_node_names(graph: &AnnotationGraph) -> anyhow::Result<Vec<String>> {
-    let mut roots: BTreeSet<String> = BTreeSet::new();
-    let all_part_of_gs = graph
-        .get_all_components(Some(AnnotationComponentType::PartOf), None)
-        .into_iter()
-        .filter_map(|c| graph.get_graphstorage(&c))
-        .collect_vec();
-    let all_part_of_edge_container = all_part_of_gs
-        .iter()
-        .map(|gs| gs.as_edgecontainer())
-        .collect_vec();
-    let part_of_gs = UnionEdgeContainer::new(all_part_of_edge_container);
+/// Provides utility functions for corpus and document nodes which form the
+/// corpus graph.
+///
+/// This struct also implements [`EdgeContainer`] by providing an union of all
+/// [`AnnotationComponentType::PartOf`] graph components.
+pub(crate) struct CorpusGraphHelper<'a> {
+    graph: &'a AnnotationGraph,
+    all_partof_gs: Vec<Arc<dyn GraphStorage>>,
+}
 
-    for candidate in graph.get_node_annos().exact_anno_search(
-        Some(ANNIS_NS),
-        NODE_TYPE,
-        ValueSearch::Some("corpus"),
-    ) {
-        let candidate = candidate?;
-        // Check if this target node is a root corpus node
-        if !part_of_gs.has_outgoing_edges(candidate.node)? {
-            let root_node_name = graph
-                .get_node_annos()
-                .get_value_for_item(&candidate.node, &NODE_NAME_KEY)?
-                .context("Missing node name")?
-                .to_string();
-            roots.insert(root_node_name);
+impl<'a> CorpusGraphHelper<'a> {
+    pub(crate) fn new(graph: &'a AnnotationGraph) -> Self {
+        let all_partof_gs: Vec<_> = graph
+            .get_all_components(Some(AnnotationComponentType::PartOf), None)
+            .into_iter()
+            .filter_map(|c| graph.get_graphstorage(&c))
+            .collect();
+        CorpusGraphHelper {
+            graph,
+            all_partof_gs,
         }
     }
 
-    Ok(roots.into_iter().collect_vec())
+    /// Returns a list of node names of all the corpus graph nodes without any
+    /// outgoing `PartOf` edge.
+    pub(crate) fn get_root_corpus_node_names(&self) -> anyhow::Result<Vec<String>> {
+        let mut roots: BTreeSet<String> = BTreeSet::new();
+
+        let node_annos = self.graph.get_node_annos();
+
+        for candidate in
+            node_annos.exact_anno_search(Some(ANNIS_NS), NODE_TYPE, ValueSearch::Some("corpus"))
+        {
+            let candidate = candidate?;
+            // Check if this target node is a root corpus node
+            if !self.has_outgoing_edges(candidate.node)? {
+                let root_node_name = node_annos
+                    .get_value_for_item(&candidate.node, &NODE_NAME_KEY)?
+                    .context("Missing node name")?
+                    .to_string();
+                roots.insert(root_node_name);
+            }
+        }
+
+        Ok(roots.into_iter().collect_vec())
+    }
+
+    /// Returns a list of node names nodes of the corpus graph that are documents.
+    ///
+    /// Documents have no ingoing edges from other nodes of the type "corpus".
+    pub(crate) fn get_document_node_names(&self) -> anyhow::Result<Vec<String>> {
+        let mut documents: BTreeSet<String> = BTreeSet::new();
+
+        let node_annos = self.graph.get_node_annos();
+
+        for candidate in
+            node_annos.exact_anno_search(Some(ANNIS_NS), NODE_TYPE, ValueSearch::Some("corpus"))
+        {
+            let candidate = candidate?;
+
+            if self.is_document(candidate.node)? {
+                let candidate_node_name = node_annos
+                    .get_value_for_item(&candidate.node, &NODE_NAME_KEY)?
+                    .context("Missing node name")?
+                    .to_string();
+
+                documents.insert(candidate_node_name);
+            }
+        }
+        Ok(documents.into_iter().collect_vec())
+    }
+
+    /// Checks if the given node is a document in the strcutural sense.
+    ///
+    /// Having a `annis:doc` label is not necessary, but the node type must be
+    /// `corpus` and there must be no incoming [`AnnotationComponentType::PartOf`] edges
+    /// from other corpus nodes.
+    pub(crate) fn is_document(&self, node: NodeID) -> anyhow::Result<bool> {
+        let node_annos = self.graph.get_node_annos();
+
+        let node_type = node_annos
+            .get_value_for_item(&node, &NODE_TYPE_KEY)?
+            .context("Missing node type")?;
+        if node_type != "corpus" {
+            return Ok(false);
+        }
+        for ingoing in self.get_ingoing_edges(node) {
+            let ingoing = ingoing?;
+            if let Some(ingoing_node_type) =
+                node_annos.get_value_for_item(&ingoing, &NODE_TYPE_KEY)?
+            {
+                if ingoing_node_type == "corpus" {
+                    return Ok(false);
+                }
+            }
+        }
+        Ok(true)
+    }
+
+    /// Returns true if there is a path from the `child` node to the `ancestor` node in any of the [`AnnotationComponentType::PartOf`] components.
+    pub(crate) fn is_part_of(&self, child: NodeID, ancestor: NodeID) -> anyhow::Result<bool> {
+        if self.all_partof_gs.len() == 1 {
+            let connected = self.all_partof_gs[0].is_connected(
+                child,
+                ancestor,
+                1,
+                std::ops::Bound::Unbounded,
+            )?;
+            return Ok(connected);
+        } else {
+            for step in CycleSafeDFS::new(self, child, 1, usize::MAX) {
+                let step = step?;
+                if step.node == ancestor {
+                    return Ok(true);
+                }
+            }
+        }
+
+        Ok(false)
+    }
+
+    /// Find all nodes that are part of the given ancestor node.
+    pub(crate) fn all_nodes_part_of(
+        &'a self,
+        ancestor: NodeID,
+    ) -> Box<dyn Iterator<Item = std::result::Result<u64, GraphAnnisCoreError>> + 'a> {
+        if self.all_partof_gs.len() == 1 {
+            let it = self.all_partof_gs[0].find_connected_inverse(
+                ancestor,
+                1,
+                std::ops::Bound::Unbounded,
+            );
+            it
+        } else {
+            let it =
+                CycleSafeDFS::new_inverse(self, ancestor, 1, usize::MAX).map_ok(|step| step.node);
+            Box::new(it)
+        }
+    }
 }
 
-/// Returns a sorted list of node names of all the corpus graph nodes without any ingoing `PartOf` edge.
-pub(crate) fn get_document_node_names(graph: &AnnotationGraph) -> anyhow::Result<Vec<String>> {
-    let mut documents: BTreeSet<String> = BTreeSet::new();
-
-    for candidate in
-        graph
-            .get_node_annos()
-            .exact_anno_search(Some(ANNIS_NS), "doc", ValueSearch::Any)
-    {
-        let candidate = candidate?;
-        let root_node_name = graph
-            .get_node_annos()
-            .get_value_for_item(&candidate.node, &NODE_NAME_KEY)?
-            .context("Missing node name")?
-            .to_string();
-        documents.insert(root_node_name);
+impl<'c> EdgeContainer for CorpusGraphHelper<'c> {
+    fn get_outgoing_edges<'a>(
+        &'a self,
+        node: NodeID,
+    ) -> Box<dyn Iterator<Item = graphannis_core::errors::Result<NodeID>> + 'a> {
+        let it = self
+            .all_partof_gs
+            .iter()
+            .flat_map(move |gs| gs.get_outgoing_edges(node));
+        Box::new(it)
     }
-    Ok(documents.into_iter().collect_vec())
+
+    fn get_ingoing_edges<'a>(
+        &'a self,
+        node: NodeID,
+    ) -> Box<dyn Iterator<Item = graphannis_core::errors::Result<NodeID>> + 'a> {
+        let it = self
+            .all_partof_gs
+            .iter()
+            .flat_map(move |gs| gs.get_ingoing_edges(node));
+        Box::new(it)
+    }
+
+    fn source_nodes<'a>(
+        &'a self,
+    ) -> Box<dyn Iterator<Item = graphannis_core::errors::Result<NodeID>> + 'a> {
+        let it = self
+            .all_partof_gs
+            .iter()
+            .flat_map(move |gs| gs.source_nodes());
+        Box::new(it)
+    }
 }

@@ -2,4 +2,4 @@
 source: src/importer/exmaralda/tests.rs
 expression: r.err().unwrap().to_string()
 ---
-Error during importing corpus to ./tests/data/import/exmaralda/fail-invalid/import/exmaralda/test_doc_invalid.exb with "import_exmaralda": "Start time is bigger than end time for ids: T1--T2 "
+Error during importing corpus from ./tests/data/import/exmaralda/fail-invalid/import/exmaralda/test_doc_invalid.exb with "import_exmaralda": "Start time is bigger than end time for ids: T1--T2 "

@@ -1,6 +1,6 @@
 use super::Manipulator;
 use crate::{
-    util::{self, token_helper::TokenHelper},
+    util::{token_helper::TokenHelper, CorpusGraphHelper},
     StepID,
 };
 use anyhow::{Context, Result};
@@ -102,7 +102,7 @@ pub struct Visualize {
     /// ```
     ///
     /// Alternativly it can be configured to include all documents (`root = "all"`) or you can give the ID of the document as argument.
-    /// ``toml
+    /// ```toml
     /// [graph_op.config]
     /// root = "mycorpus/subcorpus1/mydocument"
     /// ```
@@ -233,14 +233,15 @@ impl Visualize {
     }
 
     fn get_root_node_name(&self, graph: &AnnotationGraph) -> Result<String> {
+        let corpusgraph_helper = CorpusGraphHelper::new(graph);
         match &self.root {
             Include::All => {
-                let roots = util::get_root_corpus_node_names(graph)?;
+                let roots = corpusgraph_helper.get_root_corpus_node_names()?;
                 let first_root = roots.into_iter().next().unwrap_or_default();
                 Ok(first_root)
             }
             Include::FirstDocument => {
-                let documents = util::get_document_node_names(graph)?;
+                let documents = corpusgraph_helper.get_document_node_names()?;
                 let first_document = documents.into_iter().next().unwrap_or_default();
                 Ok(first_document)
             }
