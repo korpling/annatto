@@ -603,15 +603,6 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                     anno_name: "tok".to_string(),
                     anno_value: covered_text.iter().collect(),
                 })?;
-                if timeline.is_some() {
-                    // Add the token value as additional annotation
-                    updates.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: token_id.clone(),
-                        anno_ns: text_prop.segmentation.clone(),
-                        anno_name: text_prop.segmentation.clone(),
-                        anno_value: covered_text.iter().collect(),
-                    })?;
-                }
 
                 // Get the whitespace before the first token
                 if previous_token.is_none() && start > 0 {

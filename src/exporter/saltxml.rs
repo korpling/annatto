@@ -205,7 +205,13 @@ where
             .map(|l| l.to_string());
 
         // Collect all annotations for this nodes labels
-        let annotations = self.graph.get_node_annos().get_annotations_for_item(&n)?;
+        let annotations: Vec<_> = self
+            .graph
+            .get_node_annos()
+            .get_annotations_for_item(&n)?
+            .into_iter()
+            .filter(|a| a.key.ns != "annis" || a.key.name != "tok")
+            .collect();
 
         // Use the "annis:doc" label as SNAME or the fragment of the URI as fallback
         let sname = if salt_type == "sCorpusStructure:SDocument" {
