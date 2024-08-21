@@ -5,7 +5,7 @@ mod tests;
 
 use std::{
     borrow::Cow,
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     path::PathBuf,
 };
 
@@ -87,6 +87,7 @@ struct SaltWriter<'a, W> {
     number_of_edges: usize,
     nodes_in_layer: HashMap<String, Vec<usize>>,
     edges_in_layer: HashMap<String, Vec<usize>>,
+    excluded_nodes: HashSet<NodeID>,
 }
 
 lazy_static! {
@@ -160,6 +161,7 @@ where
             node_positions: BTreeMap::new(),
             nodes_in_layer: HashMap::new(),
             edges_in_layer: HashMap::new(),
+            excluded_nodes: HashSet::new(),
         })
     }
 
@@ -320,6 +322,10 @@ where
     }
 
     fn write_graphannis_edge(&mut self, edge: Edge, component: &AnnotationComponent) -> Result<()> {
+        if self.excluded_nodes.contains(&edge.source) || self.excluded_nodes.contains(&edge.target)
+        {
+            return Ok(());
+        }
         // Invert edge for PartOf components
         let output_edge = if component.get_type() == AnnotationComponentType::PartOf {
             edge.inverse()

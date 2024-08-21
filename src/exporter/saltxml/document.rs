@@ -141,20 +141,28 @@ impl SaltDocumentGraphMapper {
 
                 if node_type == "node" {
                     let salt_type = if tok_helper.is_token(n)? {
-                        "sDocumentStructure:SToken"
+                        if has_timeline {
+                            // Ignore all timeline token in export
+                            salt_writer.excluded_nodes.insert(n);
+                            None
+                        } else {
+                            Some("sDocumentStructure:SToken")
+                        }
                     } else if node_is_span(n, &tok_helper, &all_dominance_gs)? {
                         if has_timeline && node_annos.has_value_for_item(&n, &TOKEN_KEY)? {
                             // This is a segmentation token that is mapped do an
                             // SToken if there is a timeline
-                            "sDocumentStructure:SToken"
+                            Some("sDocumentStructure:SToken")
                         } else {
                             span_nodes.push(n);
-                            "sDocumentStructure:SSpan"
+                            Some("sDocumentStructure:SSpan")
                         }
                     } else {
-                        "sDocumentStructure:SStructure"
+                        Some("sDocumentStructure:SStructure")
                     };
-                    salt_writer.write_graphannis_node(n, salt_type)?;
+                    if let Some(salt_type) = salt_type {
+                        salt_writer.write_graphannis_node(n, salt_type)?;
+                    }
                 } else if node_type == "file" {
                     let node_id = graph
                         .get_node_annos()
