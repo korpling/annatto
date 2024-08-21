@@ -17,6 +17,7 @@ use graphannis_core::{
     util::{join_qname, split_qname},
 };
 use itertools::Itertools;
+use linked_hash_set::LinkedHashSet;
 use pest::{
     iterators::{Pair, Pairs},
     Parser,
@@ -107,7 +108,7 @@ impl Display for Rule {
     }
 }
 
-type DepSpec = (usize, Option<String>);
+type DepSpec = LinkedHashSet<(usize, Option<String>)>;
 
 impl ImportCoNLLU {
     fn import_document(
@@ -187,11 +188,21 @@ impl ImportCoNLLU {
         for member in sentence.into_inner() {
             match member.as_rule() {
                 Rule::token => {
-                    let (tok_name, tok_id, dep) =
+                    let (tok_name, tok_id, mut deps) =
                         self.map_token(step_id, update, document_node_name, member, tx)?;
                     id_to_tok_name.insert(tok_id, tok_name.to_string());
-                    if let Some(dependency) = dep {
-                        dependencies.push((tok_name, dependency.0, dependency.1));
+                    if let Some(dependency) = deps.pop_front() {
+                        dependencies.push((
+                            tok_name.to_string(),
+                            dependency.0,
+                            dependency.1.clone(),
+                            "",
+                            "dep",
+                        ));
+                    }
+
+                    for (h, r) in deps {
+                        dependencies.push((tok_name.to_string(), h, r, "enh", "dep"));
                     }
                 }
                 Rule::multi_token | Rule::invalid_multi_token => {
@@ -268,23 +279,23 @@ impl ImportCoNLLU {
                     component_name: "".to_string(),
                 })?;
             }
-            for (target_node_name, head_id, deprel) in dependencies {
+            for (target_node_name, head_id, deprel, clayer, cname) in dependencies {
                 if head_id > 0 {
                     if let Some(source_node_name) = id_to_tok_name.get(&head_id) {
                         update.add_event(UpdateEvent::AddEdge {
                             source_node: source_node_name.to_string(),
                             target_node: target_node_name.to_string(),
-                            layer: "".to_string(),
+                            layer: clayer.to_string(),
                             component_type: AnnotationComponentType::Pointing.to_string(),
-                            component_name: "dep".to_string(),
+                            component_name: cname.to_string(),
                         })?;
                         if let Some(deprel_value) = deprel {
                             update.add_event(UpdateEvent::AddEdgeLabel {
                                 source_node: source_node_name.to_string(),
                                 target_node: target_node_name.to_string(),
-                                layer: "".to_string(),
+                                layer: clayer.to_string(),
                                 component_type: AnnotationComponentType::Pointing.to_string(),
-                                component_name: "dep".to_string(),
+                                component_name: cname.to_string(),
                                 anno_ns: "".to_string(),
                                 anno_name: "deprel".to_string(),
                                 anno_value: deprel_value.to_string(),
@@ -313,7 +324,7 @@ impl ImportCoNLLU {
         document_node_name: &str,
         token: Pair<Rule>,
         _tx: &Option<StatusSender>,
-    ) -> anyhow::Result<(String, usize, Option<DepSpec>)> {
+    ) -> anyhow::Result<(String, usize, DepSpec)> {
         let (l, c) = token.line_col();
         let line = token.as_str().to_string();
         let node_name = format!("{document_node_name}#t{l}_{c}");
@@ -335,8 +346,7 @@ impl ImportCoNLLU {
             anno_value: "default_layer".to_string(),
         })?;
         let mut token_id = None;
-        let mut head_id = None;
-        let mut deprel = None;
+        let mut dependencies = DepSpec::default();
         for member in token.into_inner() {
             let rule = member.as_rule();
             match rule {
@@ -390,21 +400,38 @@ impl ImportCoNLLU {
                 Rule::head => {
                     for id_or_else in member.into_inner() {
                         if id_or_else.as_rule() == Rule::id {
-                            head_id = Some(id_or_else.as_str().trim().parse::<usize>()?);
-                            break;
+                            dependencies
+                                .insert((id_or_else.as_str().trim().parse::<usize>()?, None));
                         }
                     }
                 }
                 Rule::deprel => {
-                    deprel = Some(member.as_str().trim().to_string());
+                    if let Some((base_head, None)) = dependencies.pop_back() {
+                        dependencies.insert((base_head, Some(member.as_str().trim().to_string())));
+                    }
                 }
-                Rule::enhanced_deps => {}
+                Rule::enhanced_deps => {
+                    for enh_dep in member.into_inner() {
+                        let mut inner = enh_dep.into_inner();
+                        if let Some(enh_id) = inner.next() {
+                            let head = enh_id.as_str().trim().parse::<usize>()?;
+                            if let Some(enh_rel) = inner.next() {
+                                let rel = enh_rel.as_str().to_string();
+                                let value = (head, Some(rel));
+                                // this is to avoid the basic dependency to be anywhere else than in the first position, because this position needs to be treated differently
+                                // to avoid cycles in the graph
+                                if !dependencies.contains(&value) {
+                                    dependencies.insert(value);
+                                }
+                            }
+                        }
+                    }
+                }
                 _ => {}
             }
         }
-        let dependency = head_id.map(|v| (v, deprel));
         if let Some(id) = token_id {
-            Ok((node_name, id, dependency))
+            Ok((node_name, id, dependencies))
         } else {
             // by grammar spec this branch should never be possible
             let reason = format!("Token `{line}` ({l}, {c}) has no id which is invalid.");

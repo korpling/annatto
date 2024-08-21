@@ -194,53 +194,59 @@ expression: actual.unwrap()
         <edge id="e19" source="valid/website_example#t16_38" target="valid/website_example#t15_64" label="Pointing//dep">
             <data key="k15">det</data>
         </edge>
-        <edge id="e20" source="valid/website_example#t5_1" target="valid/website_example#t5_68" label="Ordering/annis/">
+        <edge id="e20" source="valid/website_example#t7_32" target="valid/website_example#t5_1" label="Pointing/enh/dep">
+            <data key="k15">nsubj</data>
         </edge>
-        <edge id="e21" source="valid/website_example#t5_68" target="valid/website_example#t6_67" label="Ordering/annis/">
+        <edge id="e21" source="valid/website_example#t7_32" target="valid/website_example#t8_76" label="Pointing/enh/dep">
+            <data key="k15">obj</data>
         </edge>
-        <edge id="e22" source="valid/website_example#t6_67" target="valid/website_example#t7_32" label="Ordering/annis/">
+        <edge id="e22" source="valid/website_example#t5_1" target="valid/website_example#t5_68" label="Ordering/annis/">
         </edge>
-        <edge id="e23" source="valid/website_example#t7_32" target="valid/website_example#t8_76" label="Ordering/annis/">
+        <edge id="e23" source="valid/website_example#t5_68" target="valid/website_example#t6_67" label="Ordering/annis/">
         </edge>
-        <edge id="e24" source="valid/website_example#t8_76" target="valid/website_example#t9_66" label="Ordering/annis/">
+        <edge id="e24" source="valid/website_example#t6_67" target="valid/website_example#t7_32" label="Ordering/annis/">
         </edge>
-        <edge id="e25" source="valid/website_example#t9_66" target="valid/website_example#t14_1" label="Ordering/annis/">
+        <edge id="e25" source="valid/website_example#t7_32" target="valid/website_example#t8_76" label="Ordering/annis/">
         </edge>
-        <edge id="e26" source="valid/website_example#t14_1" target="valid/website_example#t14_57" label="Ordering/annis/">
+        <edge id="e26" source="valid/website_example#t8_76" target="valid/website_example#t9_66" label="Ordering/annis/">
         </edge>
-        <edge id="e27" source="valid/website_example#t14_57" target="valid/website_example#t15_64" label="Ordering/annis/">
+        <edge id="e27" source="valid/website_example#t9_66" target="valid/website_example#t14_1" label="Ordering/annis/">
         </edge>
-        <edge id="e28" source="valid/website_example#t15_64" target="valid/website_example#t16_38" label="Ordering/annis/">
+        <edge id="e28" source="valid/website_example#t14_1" target="valid/website_example#t14_57" label="Ordering/annis/">
         </edge>
-        <edge id="e29" source="valid/website_example#t16_38" target="valid/website_example#t17_54" label="Ordering/annis/">
+        <edge id="e29" source="valid/website_example#t14_57" target="valid/website_example#t15_64" label="Ordering/annis/">
         </edge>
-        <edge id="e30" source="valid/website_example" target="valid" label="PartOf/annis/">
+        <edge id="e30" source="valid/website_example#t15_64" target="valid/website_example#t16_38" label="Ordering/annis/">
         </edge>
-        <edge id="e31" source="valid/website_example#t5_1" target="valid/website_example" label="PartOf/annis/">
+        <edge id="e31" source="valid/website_example#t16_38" target="valid/website_example#t17_54" label="Ordering/annis/">
         </edge>
-        <edge id="e32" source="valid/website_example#t5_68" target="valid/website_example" label="PartOf/annis/">
+        <edge id="e32" source="valid/website_example" target="valid" label="PartOf/annis/">
         </edge>
-        <edge id="e33" source="valid/website_example#t6_67" target="valid/website_example" label="PartOf/annis/">
+        <edge id="e33" source="valid/website_example#t5_1" target="valid/website_example" label="PartOf/annis/">
         </edge>
-        <edge id="e34" source="valid/website_example#t7_32" target="valid/website_example" label="PartOf/annis/">
+        <edge id="e34" source="valid/website_example#t5_68" target="valid/website_example" label="PartOf/annis/">
         </edge>
-        <edge id="e35" source="valid/website_example#t8_76" target="valid/website_example" label="PartOf/annis/">
+        <edge id="e35" source="valid/website_example#t6_67" target="valid/website_example" label="PartOf/annis/">
         </edge>
-        <edge id="e36" source="valid/website_example#t9_66" target="valid/website_example" label="PartOf/annis/">
+        <edge id="e36" source="valid/website_example#t7_32" target="valid/website_example" label="PartOf/annis/">
         </edge>
-        <edge id="e37" source="valid/website_example#s1_1" target="valid/website_example" label="PartOf/annis/">
+        <edge id="e37" source="valid/website_example#t8_76" target="valid/website_example" label="PartOf/annis/">
         </edge>
-        <edge id="e38" source="valid/website_example#t14_1" target="valid/website_example" label="PartOf/annis/">
+        <edge id="e38" source="valid/website_example#t9_66" target="valid/website_example" label="PartOf/annis/">
         </edge>
-        <edge id="e39" source="valid/website_example#t14_57" target="valid/website_example" label="PartOf/annis/">
+        <edge id="e39" source="valid/website_example#s1_1" target="valid/website_example" label="PartOf/annis/">
         </edge>
-        <edge id="e40" source="valid/website_example#t15_64" target="valid/website_example" label="PartOf/annis/">
+        <edge id="e40" source="valid/website_example#t14_1" target="valid/website_example" label="PartOf/annis/">
         </edge>
-        <edge id="e41" source="valid/website_example#t16_38" target="valid/website_example" label="PartOf/annis/">
+        <edge id="e41" source="valid/website_example#t14_57" target="valid/website_example" label="PartOf/annis/">
         </edge>
-        <edge id="e42" source="valid/website_example#t17_54" target="valid/website_example" label="PartOf/annis/">
+        <edge id="e42" source="valid/website_example#t15_64" target="valid/website_example" label="PartOf/annis/">
         </edge>
-        <edge id="e43" source="valid/website_example#s10_34" target="valid/website_example" label="PartOf/annis/">
+        <edge id="e43" source="valid/website_example#t16_38" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e44" source="valid/website_example#t17_54" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e45" source="valid/website_example#s10_34" target="valid/website_example" label="PartOf/annis/">
         </edge>
     </graph>
 </graphml>

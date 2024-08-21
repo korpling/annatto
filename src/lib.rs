@@ -20,9 +20,9 @@ use std::{
 use documented::{Documented, DocumentedFields};
 use error::Result;
 use exporter::{
-    exmaralda::ExportExmaralda, graphml::GraphMLExporter, saltxml::ExportSaltXml,
-    sequence::ExportSequence, table::ExportTable, textgrid::ExportTextGrid, xlsx::ExportXlsx,
-    Exporter,
+    conllu::ExportCoNLLU, exmaralda::ExportExmaralda, graphml::GraphMLExporter,
+    saltxml::ExportSaltXml, sequence::ExportSequence, table::ExportTable, textgrid::ExportTextGrid,
+    xlsx::ExportXlsx, Exporter,
 };
 use graphannis::AnnotationGraph;
 use importer::{
@@ -54,6 +54,7 @@ pub struct ModuleConfiguration {
 #[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum WriteAs {
+    CoNLLU(#[serde(default)] Box<ExportCoNLLU>),
     EXMARaLDA(#[serde(default)] ExportExmaralda),
     GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
     SaltXml(#[serde(default)] ExportSaltXml),
@@ -80,6 +81,7 @@ impl WriteAs {
             WriteAs::Table(m) => m,
             WriteAs::TextGrid(m) => m,
             WriteAs::Xlsx(m) => m,
+            WriteAs::CoNLLU(m) => &**m,
         }
     }
 }
@@ -94,6 +96,7 @@ impl WriteAsDiscriminants {
             WriteAsDiscriminants::Table => ExportTable::DOCS,
             WriteAsDiscriminants::TextGrid => ExportTextGrid::DOCS,
             WriteAsDiscriminants::Xlsx => ExportXlsx::DOCS,
+            WriteAsDiscriminants::CoNLLU => ExportCoNLLU::DOCS,
         }
     }
 
@@ -125,6 +128,9 @@ impl WriteAsDiscriminants {
             ),
             WriteAsDiscriminants::Xlsx => {
                 (ExportXlsx::FIELD_NAMES_AS_SLICE, ExportXlsx::FIELD_DOCS)
+            }
+            WriteAsDiscriminants::CoNLLU => {
+                (ExportCoNLLU::FIELD_NAMES_AS_SLICE, ExportCoNLLU::FIELD_DOCS)
             }
         };
         for (idx, n) in field_names.iter().enumerate() {

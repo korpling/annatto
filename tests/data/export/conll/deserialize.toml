@@ -1,0 +1,7 @@
+features = ["Number", "Person", "Case", "Gender", "PronType", "Tense"]
+misc = ["SpaceAfter"]
+groupby = "sent_id"
+dependency_component = { ctype = "Pointing", layer = "", name = "dep" }
+dependency_anno = "deprel"
+enhanced_components = [{ ctype = "Pointing", layer = "enh", name = "dep" }]
+enhanced_annos = ["deprel"]  

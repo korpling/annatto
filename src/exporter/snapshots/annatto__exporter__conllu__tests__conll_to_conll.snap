@@ -1,0 +1,17 @@
+---
+source: src/exporter/conllu.rs
+expression: actual.unwrap()
+---
+1	They	they	PRON	PRP	Case=Nom|Number=Plur	2	nsubj	2:nsubj|4:nsubj	_
+2	buy	buy	VERB	VBP	Number=Plur|Person=3|Tense=Pres	_	_	_	_
+3	and	and	CONJ	CC	_	4	cc	4:cc	_
+4	sell	sell	VERB	VBP	Number=Plur|Person=3|Tense=Pres	2	conj	2:conj	_
+5	books	book	NOUN	NNS	Number=Plur	2	obj	2:obj|4:obj	SpaceAfter=No
+6	.	.	PUNCT	.	_	2	punct	2:punct	_
+
+1	I	I	PRON	PRP	Case=Nom|Number=Sing|Person=1	2	nsubj	2:nsubj	_
+2	have	have	VERB	VBP	Number=Sing|Person=1|Tense=Pres	_	_	_	_
+3	no	no	DET	DT	PronType=Neg	4	det	4:det	_
+4	clue	clue	NOUN	NN	Number=Sing	2	obj	2:obj	SpaceAfter=No
+5	.	.	PUNCT	.	_	2	punct	2:punct	_
+

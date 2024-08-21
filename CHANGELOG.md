@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `table` export has feature to customize n/a-value, which by default is the empty string
+- Add `conllu` as export format
+- import of `conllu` now supports enhanced dependencies
+
+### Changed
+
+- `exmaralda` import now ranks order of tlis higher than sorting by time value (more compatible with modern EXMARaLDA files)
+
+### Fixed
+
+- `exmaralda` import keeps events with missing time values
 
 ## [0.15.0] - 2024-08-14
 
