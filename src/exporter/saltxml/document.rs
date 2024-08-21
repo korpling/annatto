@@ -86,7 +86,7 @@ impl SaltDocumentGraphMapper {
         let corpusgraph_helper = CorpusGraphHelper::new(graph);
 
         let (output_path, output_file) =
-            self.create_saltfile(graph, document_node_id, &corpusgraph_helper, &output_path)?;
+            self.create_saltfile(graph, document_node_id, &corpusgraph_helper, output_path)?;
         progress.info(&format!(
             "Writing SaltXML file {}",
             output_path.to_string_lossy()
