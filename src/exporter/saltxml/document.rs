@@ -579,7 +579,7 @@ impl SaltDocumentGraphMapper {
 
                     if let Some(tli_start) = tli_start {
                         if let Some(orig) = start {
-                            start = Some(orig.max(tli_start));
+                            start = Some(orig.min(tli_start));
                         } else {
                             start = Some(tli_start);
                         }
