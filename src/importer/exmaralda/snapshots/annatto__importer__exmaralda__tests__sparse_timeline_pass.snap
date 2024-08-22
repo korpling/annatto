@@ -46,7 +46,7 @@ expression: r.unwrap()
         </node>
         <node id="import/exmaralda/test_file.wav">
             <data key="k12">file</data>
-            <data key="k6">tests/data/import/exmaralda/valid-no-timevalues/import/exmaralda/test_file.wav</data>
+            <data key="k6">tests/data/import/exmaralda/valid-sparse-timevalues/import/exmaralda/test_file.wav</data>
         </node>
         <node id="import/exmaralda/test_doc#T286">
             <data key="k12">node</data>
