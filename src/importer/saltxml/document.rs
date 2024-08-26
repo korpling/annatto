@@ -1,5 +1,6 @@
+use core::f64;
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet, HashMap},
     convert::{TryFrom, TryInto},
     path::Path,
 };
@@ -9,7 +10,7 @@ use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
 };
-use graphannis_core::graph::ANNIS_NS;
+use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use itertools::Itertools;
 use normpath::{BasePathBuf, PathExt};
 use roxmltree::Node;
@@ -238,7 +239,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                 let mut element_id = orig_element_id;
                 let mut file_path = referenced_url.to_string();
                 if referenced_url.scheme() == "file" {
-                    // Resolve this file URL against the input direcotry and
+                    // Resolve this file URL against the input directory and
                     // store it relative to the current working directory.
                     let referenced_path = Path::new(referenced_url.path());
                     let referenced_path = pathdiff::diff_paths(
@@ -248,6 +249,7 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                     .unwrap_or_else(|| referenced_path.to_path_buf());
 
                     file_path = referenced_path.to_string_lossy().to_string();
+
                     // Use the file name as element ID
                     if let Some(file_name) = referenced_path.file_name() {
                         element_id = format!(
@@ -285,6 +287,15 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
     }
 
     fn map_media_relations(&mut self, updates: &mut GraphUpdate) -> Result<()> {
+        // Collect start and end times for all timeline items. SaltXML attaches
+        // the time to the token and not timeline items and thus different token
+        // can contain more or less fine-grained information about the start/end
+        // time. By iterating over all media relations first, we make sure to
+        // collect the most fine-grained information.
+        let mut tli_to_start: HashMap<i64, f64> = HashMap::new();
+        let mut tli_to_end: HashMap<i64, f64> = HashMap::new();
+        let mut tlis = BTreeSet::new();
+
         for media_rel in self
             .edges
             .iter()
@@ -302,37 +313,47 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
 
             if let (SaltObject::Float(start), SaltObject::Float(end)) = (start, end) {
                 if let Some(covered_tli) = self.token_to_tli.get(&token_id) {
-                    if let (Some(first_tli), Some(last_tli)) =
-                        (covered_tli.first(), covered_tli.last())
-                    {
-                        if first_tli == last_tli {
-                            // Attach start and end time to the same token
-                            updates.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: self.get_tli_node_name(*first_tli),
-                                anno_ns: "annis".to_string(),
-                                anno_name: "time".to_string(),
-                                anno_value: format!("{start}-{end}"),
-                            })?;
-                        } else {
-                            // Attach start time to first token and end time to
-                            // last token
-                            updates.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: self.get_tli_node_name(*first_tli),
-                                anno_ns: "annis".to_string(),
-                                anno_name: "time".to_string(),
-                                anno_value: format!("{start}-"),
-                            })?;
-                            updates.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: self.get_tli_node_name(*last_tli),
-                                anno_ns: "annis".to_string(),
-                                anno_name: "time".to_string(),
-                                anno_value: format!("-{end}"),
-                            })?;
-                        }
+                    if let Some(first_tli) = covered_tli.first() {
+                        let start_entry = tli_to_start.entry(*first_tli).or_insert(f64::MAX);
+                        *start_entry = start_entry.min(start);
                     }
+                    if let Some(last_tli) = covered_tli.last() {
+                        let end_entry = tli_to_end.entry(*last_tli).or_insert(f64::MIN);
+                        *end_entry = end_entry.max(end);
+                    }
+                    tlis.extend(covered_tli);
                 }
             } else {
                 bail!("SSTART/SEND not a float")
+            }
+        }
+
+        for t in tlis {
+            let node_name = self.get_tli_node_name(t);
+            let start = tli_to_start.get(&t);
+            let end = tli_to_end.get(&t);
+
+            if let (Some(start), Some(end)) = (start, end) {
+                updates.add_event(UpdateEvent::AddNodeLabel {
+                    node_name,
+                    anno_ns: ANNIS_NS.to_string(),
+                    anno_name: "time".to_string(),
+                    anno_value: format!("{start}-{end}"),
+                })?;
+            } else if let Some(start) = start {
+                updates.add_event(UpdateEvent::AddNodeLabel {
+                    node_name,
+                    anno_ns: ANNIS_NS.to_string(),
+                    anno_name: "time".to_string(),
+                    anno_value: format!("{start}-"),
+                })?;
+            } else if let Some(end) = end {
+                updates.add_event(UpdateEvent::AddNodeLabel {
+                    node_name,
+                    anno_ns: ANNIS_NS.to_string(),
+                    anno_name: "time".to_string(),
+                    anno_value: format!("-{end}"),
+                })?;
             }
         }
 
@@ -432,10 +453,16 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
             .map(|t| t.to_string())
             .unwrap_or_else(|| fallback_component_name.to_string());
 
-        let mut component_layer = "default_ns".to_string();
+        let mut component_layer = DEFAULT_NS.to_string();
         if let Some(layers_attribute) = rel.attribute("layers") {
             if let Some(first_layer) = layers_attribute.split(' ').next() {
-                component_layer = first_layer.to_string();
+                let layer_node = resolve_element(first_layer, "layers", &self.layers)
+                    .context("Could not resolve layer")?;
+                if let Some(SaltObject::Text(layer_name)) =
+                    get_feature_by_qname(&layer_node, "salt", "SNAME")
+                {
+                    component_layer = layer_name;
+                }
             }
         }
 
@@ -576,15 +603,6 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
                     anno_name: "tok".to_string(),
                     anno_value: covered_text.iter().collect(),
                 })?;
-                if timeline.is_some() {
-                    // Add the token value as additional annotation
-                    updates.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: token_id.clone(),
-                        anno_ns: text_prop.segmentation.clone(),
-                        anno_name: text_prop.segmentation.clone(),
-                        anno_value: covered_text.iter().collect(),
-                    })?;
-                }
 
                 // Get the whitespace before the first token
                 if previous_token.is_none() && start > 0 {
@@ -644,41 +662,18 @@ impl<'a, 'input> DocumentMapper<'a, 'input> {
         }
 
         // Connect all spans with the token using the spanning relations
-
         for spanning_rel in self
             .edges
             .iter()
             .filter(|rel| SaltType::from_node(rel) == SaltType::SpanningRelation)
         {
-            let target_att = spanning_rel
-                .attribute("target")
-                .context("Missing target attribute for SSpanningRelation")?;
-            let target_node = resolve_element(target_att, "nodes", &self.nodes)
-                .context("Could not resolve target for SSpanningRelation")?;
-            let target_node_id = get_element_id(&target_node).context("Target token has no ID")?;
-
-            if let Some(tli_token) = self.token_to_tli.get(&target_node_id) {
-                // Add a coverage edge to the indirectly covered timeline item token
-                for tli in tli_token {
-                    let tli_id = self.get_tli_node_name(*tli);
-                    self.map_edge(
-                        spanning_rel,
-                        Some(tli_id),
-                        AnnotationComponentType::Coverage,
-                        "",
-                        updates,
-                    )?;
-                }
-            } else {
-                // Directly map the coverage edge
-                self.map_edge(
-                    spanning_rel,
-                    None,
-                    AnnotationComponentType::Coverage,
-                    "",
-                    updates,
-                )?;
-            }
+            self.map_edge(
+                spanning_rel,
+                None,
+                AnnotationComponentType::Coverage,
+                "",
+                updates,
+            )?;
         }
         // Add all dominance relations
         for dominance_rel in self

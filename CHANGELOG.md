@@ -10,16 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `table` export has feature to customize n/a-value, which by default is the empty string
 - Add `conllu` as export format
 - import of `conllu` now supports enhanced dependencies
+- Adds `saltxml` export format
 
 ### Changed
 
 - `exmaralda` import now ranks order of tlis higher than sorting by time value (more compatible with modern EXMARaLDA files)
+- `xlsx` importer will connect spans to their corresponding segmentation node
+  with coverage edges instead of connecting them with the base tokens generated
+  for the timeline items. Thus, the configured connection between spans and base
+  text is not lost.
 
 ### Fixed
 
 - `exmaralda` import keeps events with missing time values
-
-## [0.15.0] - 2024-08-14
 
 ## [0.15.0] - 2024-08-14
 

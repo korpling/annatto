@@ -1,5 +1,5 @@
 ---
 source: src/importer/exmaralda/tests.rs
-expression: r.err().unwrap()
+expression: r.err().unwrap().to_string()
 ---
-Error during importing corpus to ./tests/data/import/exmaralda/fail-bad_timevalue/test_doc.exb with "import_exmaralda": "Failed to parse tli time value."
+Error during importing corpus from ./tests/data/import/exmaralda/fail-bad_timevalue/test_doc.exb with "import_exmaralda": "Failed to parse tli time value."

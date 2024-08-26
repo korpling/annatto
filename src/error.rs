@@ -15,13 +15,13 @@ pub type StandardErrorResult<T> = std::result::Result<T, Box<dyn std::error::Err
 pub enum AnnattoError {
     #[error("Conversion failed with errors: {}", errors.iter().map(|e| e.to_string()).join("\n"))]
     ConversionFailed { errors: Vec<AnnattoError> },
-    #[error("Error during exporting corpus from {path} with {exporter:?}: {reason:?}")]
+    #[error("Error during exporting corpus to {path} with {exporter:?}: {reason:?}")]
     Export {
         reason: String,
         exporter: String,
         path: PathBuf,
     },
-    #[error("Error during importing corpus to {path} with {importer:?}: {reason:?}")]
+    #[error("Error during importing corpus from {path} with {importer:?}: {reason:?}")]
     Import {
         reason: String,
         importer: String,
@@ -75,11 +75,13 @@ pub enum AnnattoError {
     #[error("Could not parse TOML workflow file: {error}")]
     TOMLError { error: String },
     #[error("Could not read XSLS file: {0}")]
-    XlsxRead(#[from] umya_spreadsheet::reader::xlsx::XlsxError),
+    XlsxRead(#[from] umya_spreadsheet::XlsxError),
     #[error("Error waiting for finished conversion thread")]
     JoinHandle,
     #[error("Glob pattern caused an error: {0}")]
     GlobError(String),
+    #[error(transparent)]
+    Anyhow(#[from] anyhow::Error),
 }
 
 impl<T> From<std::sync::PoisonError<T>> for AnnattoError {

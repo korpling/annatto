@@ -21,8 +21,8 @@ use documented::{Documented, DocumentedFields};
 use error::Result;
 use exporter::{
     conllu::ExportCoNLLU, exmaralda::ExportExmaralda, graphml::GraphMLExporter,
-    sequence::ExportSequence, table::ExportTable, textgrid::ExportTextGrid, xlsx::ExportXlsx,
-    Exporter,
+    saltxml::ExportSaltXml, sequence::ExportSequence, table::ExportTable, textgrid::ExportTextGrid,
+    xlsx::ExportXlsx, Exporter,
 };
 use graphannis::AnnotationGraph;
 use importer::{
@@ -55,8 +55,9 @@ pub struct ModuleConfiguration {
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum WriteAs {
     CoNLLU(#[serde(default)] Box<ExportCoNLLU>),
-    GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
     EXMARaLDA(#[serde(default)] ExportExmaralda),
+    GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
+    SaltXml(#[serde(default)] ExportSaltXml),
     Sequence(#[serde(default)] ExportSequence),
     Table(#[serde(default)] ExportTable),
     TextGrid(ExportTextGrid), // do not use default, as all attributes have their individual defaults
@@ -73,8 +74,9 @@ impl Default for WriteAs {
 impl WriteAs {
     fn writer(&self) -> &dyn Exporter {
         match self {
-            WriteAs::GraphML(m) => m,
             WriteAs::EXMARaLDA(m) => m,
+            WriteAs::GraphML(m) => m,
+            WriteAs::SaltXml(m) => m,
             WriteAs::Sequence(m) => m,
             WriteAs::Table(m) => m,
             WriteAs::TextGrid(m) => m,
@@ -87,8 +89,9 @@ impl WriteAs {
 impl WriteAsDiscriminants {
     pub fn module_doc(&self) -> &str {
         match self {
-            WriteAsDiscriminants::GraphML => GraphMLExporter::DOCS,
             WriteAsDiscriminants::EXMARaLDA => ExportExmaralda::DOCS,
+            WriteAsDiscriminants::GraphML => GraphMLExporter::DOCS,
+            WriteAsDiscriminants::SaltXml => ExportSaltXml::DOCS,
             WriteAsDiscriminants::Sequence => ExportSequence::DOCS,
             WriteAsDiscriminants::Table => ExportTable::DOCS,
             WriteAsDiscriminants::TextGrid => ExportTextGrid::DOCS,
@@ -100,13 +103,17 @@ impl WriteAsDiscriminants {
     pub fn module_configs(&self) -> Vec<ModuleConfiguration> {
         let mut result = Vec::new();
         let (field_names, field_docs) = match self {
+            WriteAsDiscriminants::EXMARaLDA => (
+                ExportExmaralda::FIELD_NAMES_AS_SLICE,
+                ExportExmaralda::FIELD_DOCS,
+            ),
             WriteAsDiscriminants::GraphML => (
                 GraphMLExporter::FIELD_NAMES_AS_SLICE,
                 GraphMLExporter::FIELD_DOCS,
             ),
-            WriteAsDiscriminants::EXMARaLDA => (
-                ExportExmaralda::FIELD_NAMES_AS_SLICE,
-                ExportExmaralda::FIELD_DOCS,
+            WriteAsDiscriminants::SaltXml => (
+                ExportSaltXml::FIELD_NAMES_AS_SLICE,
+                ExportSaltXml::FIELD_DOCS,
             ),
             WriteAsDiscriminants::Sequence => (
                 ExportSequence::FIELD_NAMES_AS_SLICE,
