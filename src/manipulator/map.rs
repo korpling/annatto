@@ -148,7 +148,7 @@ impl Manipulator for MapAnnos {
         };
         let progress = ProgressReporter::new_unknown_total_work(tx, step_id)?;
         graph.apply_update(&mut updates, move |msg| {
-            if let Err(e) = progress.info(&format!("Applying `map` updates: {msg}")) {
+            if let Err(e) = progress.info(&format!("`map` updates: {msg}")) {
                 log::error!("{e}");
             }
         })?;
