@@ -35,7 +35,7 @@ use importer::{
 use manipulator::{
     check::Check, chunker::Chunk, collapse::Collapse, enumerate::EnumerateMatches,
     filter::FilterNodes, link::LinkNodes, map::MapAnnos, no_op::NoOp, re::Revise,
-    split::SplitValues, visualize::Visualize, Manipulator,
+    split::SplitValues, time::Filltime, visualize::Visualize, Manipulator,
 };
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
@@ -309,6 +309,7 @@ pub enum GraphOp {
     Link(LinkNodes),                  // no default, has required attributes
     Map(MapAnnos),                    // no default, has a (required) path attribute
     Revise(#[serde(default)] Revise), // does nothing on default
+    Time(#[serde(default)] Filltime),
     Chunk(#[serde(default)] Chunk),
     Split(#[serde(default)] SplitValues), // default does nothing
     None(#[serde(default)] NoOp),         // has no attributes
@@ -335,6 +336,7 @@ impl GraphOp {
             GraphOp::Chunk(m) => m,
             GraphOp::Split(m) => m,
             GraphOp::Filter(m) => m,
+            GraphOp::Time(m) => m,
         }
     }
 }
@@ -353,6 +355,7 @@ impl GraphOpDiscriminants {
             GraphOpDiscriminants::None => NoOp::DOCS,
             GraphOpDiscriminants::Split => SplitValues::DOCS,
             GraphOpDiscriminants::Filter => FilterNodes::DOCS,
+            GraphOpDiscriminants::Time => Filltime::DOCS,
         }
     }
 
@@ -381,6 +384,7 @@ impl GraphOpDiscriminants {
             GraphOpDiscriminants::Filter => {
                 (FilterNodes::FIELD_NAMES_AS_SLICE, FilterNodes::FIELD_DOCS)
             }
+            GraphOpDiscriminants::Time => (Filltime::FIELD_NAMES_AS_SLICE, Filltime::FIELD_DOCS),
         };
         for (idx, n) in field_names.iter().enumerate() {
             if idx < field_docs.len() {

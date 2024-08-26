@@ -257,7 +257,7 @@ fn missing_type_attr_pass() {
 #[test]
 fn sparse_timeline_pass() {
     let r = run_test(
-        "./tests/data/import/exmaralda/valid-no-timevalues/import/",
+        "./tests/data/import/exmaralda/valid-sparse-timevalues/import/",
         0,
     );
     assert!(r.is_ok(), "Probing core test result {:?}", r);
