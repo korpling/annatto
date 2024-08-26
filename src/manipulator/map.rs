@@ -146,7 +146,12 @@ impl Manipulator for MapAnnos {
             };
             map_impl.run()?
         };
-        graph.apply_update(&mut updates, |_| {})?;
+        let progress = ProgressReporter::new_unknown_total_work(tx, step_id)?;
+        graph.apply_update(&mut updates, move |msg| {
+            if let Err(e) = progress.info(&format!("Applying `map` updates: {msg}")) {
+                log::error!("{e}");
+            }
+        })?;
 
         Ok(())
     }
