@@ -93,8 +93,6 @@ impl Manipulator for FilterNodes {
                     matching_nodes.insert(member.node);
                 }
             });
-        dbg!(&matching_nodes);
-        dbg!(&terminals);
         if self.inverse {
             // delete matching nodes (without terminals aka real tokens)
             for n in matching_nodes.difference(&terminals) {
