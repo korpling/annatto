@@ -1,6 +1,7 @@
 use std::{collections::BTreeMap, ops::Bound, usize};
 
 use anyhow::{anyhow, bail};
+use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::{AnnoKey, EdgeContainer, NodeID},
     model::{AnnotationComponent, AnnotationComponentType},
@@ -11,12 +12,24 @@ use graphannis_core::graph::{storage::union::UnionEdgeContainer, ANNIS_NS, NODE_
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use serde::Deserialize;
+use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::progress::ProgressReporter;
 
 use super::Manipulator;
 
-#[derive(Deserialize, Default)]
+/// This module adds time values to all nodes of type `node` in a graph. It either fills gaps in time values as long
+/// as the start and end of an ordering have defined values, or it adds time values from 0 to the number of ordered
+/// nodes in the case that absolutely no time values exist yet. In all other cases it will fail. Time values are
+/// interpolated along ordering edges and propagated along coverage edges.
+///
+/// Example:
+/// ```toml
+/// [[graph_op]]
+/// action = "time"
+/// config = {}
+/// ```
+#[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct Filltime {}
 
