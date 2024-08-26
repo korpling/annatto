@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `conllu` as export format
 - import of `conllu` now supports enhanced dependencies
 - Adds `saltxml` export format
+- The `table` exporter now supports the `id_column` parameter to
+  enable/disable the ID column.
 
 ### Changed
 

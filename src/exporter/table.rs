@@ -99,6 +99,8 @@ pub struct ExportTable {
     /// ```
     #[serde(default, deserialize_with = "deserialize_annotation_component_seq")]
     outgoing: Vec<AnnotationComponent>,
+    /// If `true` (the default), always output a column with the ID of the node.
+    id_column: bool,
 }
 
 impl Default for ExportTable {
@@ -110,6 +112,7 @@ impl Default for ExportTable {
             no_value: String::default(),
             ingoing: vec![],
             outgoing: vec![],
+            id_column: true,
         }
     }
 }
@@ -265,10 +268,13 @@ impl ExportTable {
                         let id_name = format!("id_{qname}");
                         let index = if let Some(index) = index_map.get(&qname) {
                             *index
-                        } else {
+                        } else if self.id_column {
                             index_map.insert(qname.to_string(), index_map.len());
                             index_map.insert(id_name.to_string(), index_map.len());
                             index_map.len() - 2
+                        } else {
+                            index_map.insert(qname.to_string(), index_map.len());
+                            index_map.len() - 1
                         };
                         let value = node_annos
                             .get_value_for_item(&rn, &anno_key)?
