@@ -12,6 +12,8 @@ use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY};
 use serde::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
+use crate::progress::ProgressReporter;
+
 use super::Manipulator;
 
 /// This module acts as a positive filter, i. e., all nodes that do not match the query and are not real tokens
@@ -56,8 +58,8 @@ impl Manipulator for FilterNodes {
         &self,
         graph: &mut graphannis::AnnotationGraph,
         _workflow_directory: &std::path::Path,
-        _step_id: crate::StepID,
-        _tx: Option<crate::workflow::StatusSender>,
+        step_id: crate::StepID,
+        tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
         let query = aql::parse(&self.query, false)?;
@@ -126,7 +128,12 @@ impl Manipulator for FilterNodes {
                 }
             }
         }
-        graph.apply_update(&mut update, |_| {})?;
+        let progress = ProgressReporter::new_unknown_total_work(tx, step_id)?;
+        graph.apply_update(&mut update, move |msg| {
+            if let Err(e) = progress.info(&format!("`filter` updates: {msg}")) {
+                log::error!("{e}");
+            }
+        })?;
         Ok(())
     }
 }
