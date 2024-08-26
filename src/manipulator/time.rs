@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, ops::Bound, usize};
+use std::{collections::BTreeMap, ops::Bound};
 
 use anyhow::{anyhow, bail};
 use documented::{Documented, DocumentedFields};
@@ -76,7 +76,7 @@ impl Manipulator for Filltime {
                 .get_node_annos()
                 .get_value_for_item(&node, &m.anno_key)?
             {
-                if let Some((start_s, end_s)) = value.split_once("-") {
+                if let Some((start_s, end_s)) = value.split_once('-') {
                     if !start_s.is_empty() {
                         node_to_start.insert(node, start_s.parse::<f64>()?.into());
                     };
@@ -214,9 +214,7 @@ fn order_interpolate(
     let mut untimed_nodes = Vec::new();
     for node in ordered_nodes {
         if untimed_nodes.is_empty() {
-            if !start_cache.contains_key(&node) {
-                start_cache.insert(node, last_known_time);
-            }
+            start_cache.entry(node).or_insert(last_known_time);
             if let Some(t) = end_cache.get(&node) {
                 last_known_time = *t;
             } else {
