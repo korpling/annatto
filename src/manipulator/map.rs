@@ -4,6 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use super::Manipulator;
 use crate::{
     progress::ProgressReporter,
     util::token_helper::{TokenHelper, TOKEN_KEY},
@@ -23,8 +24,7 @@ use graphannis_core::graph::{
 use regex::Regex;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
-
-use super::Manipulator;
+use unicode_normalization::UnicodeNormalization;
 
 /// Creates new or updates annotations based on existing annotation values.
 ///
@@ -120,10 +120,11 @@ impl Manipulator for MapAnnos {
             }
         };
         let config = read_config(read_from_path.as_path())?;
+        let progress = ProgressReporter::new(tx.clone(), step_id.clone(), config.rules.len())?;
 
+        progress.info("Ensure all graph storages are loaded.")?;
         graph.ensure_loaded_all()?;
 
-        let progress = ProgressReporter::new(tx.clone(), step_id.clone(), config.rules.len())?;
         let mut updates = {
             let tok_helper = TokenHelper::new(graph)?;
             let all_part_of_gs: Vec<_> = graph
@@ -249,7 +250,7 @@ impl Rule {
                 target,
                 replacements,
             } => {
-                let mut val = target.resolve_value(graph, mg, ' ')?;
+                let mut val = target.resolve_value(graph, mg, ' ')?.nfc().to_string();
                 for (search, replace) in replacements {
                     // replace all occurences of the value
                     let search = Regex::new(search)?;
@@ -275,6 +276,8 @@ impl<'a> MapperImpl<'a> {
         let mut update = GraphUpdate::default();
 
         for rule in self.config.rules.clone() {
+            self.progress
+                .info(&format!("Applying rule with query `{}`", &rule.query))?;
             let query = graphannis::aql::parse(&rule.query, false)
                 .with_context(|| format!("could not parse query '{}'", &rule.query))?;
             let result_it =
