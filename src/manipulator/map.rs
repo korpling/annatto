@@ -24,7 +24,6 @@ use graphannis_core::graph::{
 use regex::Regex;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
-use unicode_normalization::UnicodeNormalization;
 
 /// Creates new or updates annotations based on existing annotation values.
 ///
@@ -250,7 +249,7 @@ impl Rule {
                 target,
                 replacements,
             } => {
-                let mut val = target.resolve_value(graph, mg, ' ')?.nfc().to_string();
+                let mut val = target.resolve_value(graph, mg, ' ')?;
                 for (search, replace) in replacements {
                     // replace all occurences of the value
                     let search = Regex::new(search)?;
@@ -561,6 +560,51 @@ replacements = [["([A-Z])[a-z]+ ([A-Z])[a-z]+", "${1}${2}"]]
     }
 
     #[test]
+    fn test_ridges_clean_resolver() {
+        let config = r#"
+[[rules]]                                                                                      
+query = "tok"
+target = 1
+ns = "test" 
+name = "clean"
+
+[rules.value]
+target = 1
+replacements = [
+    ['ð', 'der'],
+    ['(.*)(.)\u0304(.*)', '$1$2/MACRON_M/$3|$1$2/MACRON_N/$3'],
+    ['([^|]*)([^|])\u0304([^|]*)', '$1$2/MACRON_M/$3|$1$2/MACRON_N/$3'],
+    ['/MACRON_M/', 'm'],
+	['/MACRON_N/', 'n'],
+]
+"#;
+
+        let m: Mapping = toml::from_str(config).unwrap();
+
+        let g = tokens_with_macrons().unwrap();
+
+        let singlemacron = g
+            .get_node_annos()
+            .exact_anno_search(Some("annis"), "tok", ValueSearch::Some("anðthalbē"))
+            .next()
+            .unwrap()
+            .unwrap();
+
+        let result = m.rules[0].resolve_value(&g, &[singlemacron]).unwrap();
+        assert_eq!("anderthalbem|anderthalben", result);
+
+        let multiple_macron = g
+            .get_node_annos()
+            .exact_anno_search(Some("annis"), "tok", ValueSearch::Some("ellēbogē"))
+            .next()
+            .unwrap()
+            .unwrap();
+
+        let result = m.rules[0].resolve_value(&g, &[multiple_macron]).unwrap();
+        assert_eq!("ellembogem|ellenbogem|ellembogen|ellenbogen", result);
+    }
+
+    #[test]
     fn test_map_spans() {
         let mut updates = GraphUpdate::new();
         example_generator::create_corpus_structure_simple(&mut updates);
@@ -707,6 +751,50 @@ value = "PROPN"
             node_type: "corpus".to_string(),
         })?;
         for (i, text) in ["I", "am", "in", "New York"].iter().enumerate() {
+            let node_name = format!("doc#t{}", &i + &1);
+            u.add_event(UpdateEvent::AddNode {
+                node_name: node_name.to_string(),
+                node_type: "node".to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddNodeLabel {
+                node_name: node_name.to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "tok".to_string(),
+                anno_value: text.to_string(),
+            })?;
+            if i > 0 {
+                u.add_event(UpdateEvent::AddEdge {
+                    source_node: format!("doc#t{i}"),
+                    target_node: node_name.to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::Ordering.to_string(),
+                    component_name: "".to_string(),
+                })?;
+            }
+        }
+        g.apply_update(&mut u, |_| {})?;
+        Ok(g)
+    }
+
+    fn tokens_with_macrons() -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
+        let mut g = AnnotationGraph::with_default_graphstorages(true)?;
+        let mut u = GraphUpdate::default();
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "doc".to_string(),
+            node_type: "corpus".to_string(),
+        })?;
+        for (i, text) in [
+            "ein",
+            "kraut",
+            "wechſzt",
+            "etwan",
+            "anðthalbē",
+            "ellēbogē",
+            "hoch",
+        ]
+        .iter()
+        .enumerate()
+        {
             let node_name = format!("doc#t{}", &i + &1);
             u.add_event(UpdateEvent::AddNode {
                 node_name: node_name.to_string(),
