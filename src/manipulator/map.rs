@@ -78,7 +78,7 @@ use super::Manipulator;
 /// This would add a new annotation value "complidoged" to any token with the value "complicated".
 ///
 /// The `replacement` value can contain back references to the regular
-/// expression (e.g. "$0" for the whole match or "$1" for the first match
+/// expression (e.g. "${0}" for the whole match or "${1}" for the first match
 /// group).
 /// ```toml
 /// [[rules]]    
@@ -86,7 +86,7 @@ use super::Manipulator;
 /// target = 1
 /// ns = ""
 /// name = "abbr"
-/// value = {target = 1, search = "([A-Z])[a-z]+ ([A-Z])[a-z]+", replacement = "$1$2"}
+/// value = {target = 1, search = "([A-Z])[a-z]+ ([A-Z])[a-z]+", replacement = "${1}${2}"}
 /// ```
 /// This example would add an annotation with the value "NY".
 ///
@@ -539,7 +539,7 @@ name = "abbr"
 
 [rules.value]
 target = 1
-replacements = [["([A-Z])[a-z]+ ([A-Z])[a-z]+", "$1$2"]]
+replacements = [["([A-Z])[a-z]+ ([A-Z])[a-z]+", "${1}${2}"]]
 "#;
 
         let m: Mapping = toml::from_str(config).unwrap();
