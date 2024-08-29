@@ -22,63 +22,96 @@ fn add_subcorpora(
 
     // Get the files and sort them according to their path, to get a predictable
     // order of adding the documents to the graph.
-    let mut files_in_directory = Vec::new();
-    for entry in std::fs::read_dir(file_path)? {
-        let entry = entry?;
-        files_in_directory.push(entry);
-    }
-    files_in_directory.sort_by_key(|dir_entry| dir_entry.path());
 
-    for entry in files_in_directory {
-        let entry_type = entry.file_type()?;
-        let entry_path = entry.path();
-        let subcorpus_name = entry_path
+    if file_path.is_file()
+        && file_endings
+            .iter()
+            .any(|ext| file_path.extension().unwrap_or_default().to_string_lossy() == *ext)
+    {
+        // Add the file itself as document
+        let subcorpus_name = file_path
             .file_stem()
-            .map(|f| f.to_os_string())
-            .unwrap_or_else(|| entry.file_name())
-            .to_string_lossy()
-            .to_string();
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_else(|| "document".to_string());
         let node_name = format!("{}/{}", parent_corpus, subcorpus_name);
-        let add_node = if entry_type.is_file() {
-            if let Some(actual_ending) = entry.path().extension() {
-                file_endings
-                    .iter()
-                    .any(|ext| *ext == actual_ending.to_string_lossy().as_ref())
-            } else {
-                false
-            }
-        } else {
-            entry_type.is_dir()
-        };
-        if add_node {
-            u.add_event(UpdateEvent::AddNode {
-                node_name: node_name.clone(),
-                node_type: "corpus".to_string(),
-            })?;
-            u.add_event(UpdateEvent::AddEdge {
-                source_node: node_name.clone(),
-                target_node: parent_corpus.to_string(),
-                layer: ANNIS_NS.to_string(),
-                component_type: AnnotationComponentType::PartOf.to_string(),
-                component_name: "".to_string(),
-            })?;
+        u.add_event(UpdateEvent::AddNode {
+            node_name: node_name.clone(),
+            node_type: "corpus".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: node_name.clone(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "doc".to_string(),
+            anno_value: subcorpus_name.to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddEdge {
+            source_node: node_name.clone(),
+            target_node: parent_corpus.to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
+        let result = (file_path.to_path_buf(), node_name);
+        Ok(vec![result])
+    } else {
+        let mut files_in_directory = Vec::new();
+        for entry in std::fs::read_dir(file_path)? {
+            let entry = entry?;
+            files_in_directory.push(entry);
+        }
+        files_in_directory.sort_by_key(|dir_entry| dir_entry.path());
 
-            if entry_type.is_dir() {
-                result.extend(add_subcorpora(u, &entry.path(), &node_name, file_endings)?);
-            } else if entry_type.is_file() {
-                // Also add the special "annis:doc" label to mark this as document
-                u.add_event(UpdateEvent::AddNodeLabel {
+        for entry in files_in_directory {
+            let entry_type = entry.file_type()?;
+            let entry_path = entry.path();
+            let subcorpus_name = entry_path
+                .file_stem()
+                .map(|f| f.to_os_string())
+                .unwrap_or_else(|| entry.file_name())
+                .to_string_lossy()
+                .to_string();
+            let node_name = format!("{}/{}", parent_corpus, subcorpus_name);
+            let add_node = if entry_type.is_file() {
+                if let Some(actual_ending) = entry.path().extension() {
+                    file_endings
+                        .iter()
+                        .any(|ext| *ext == actual_ending.to_string_lossy().as_ref())
+                } else {
+                    false
+                }
+            } else {
+                entry_type.is_dir()
+            };
+            if add_node {
+                u.add_event(UpdateEvent::AddNode {
                     node_name: node_name.clone(),
-                    anno_ns: ANNIS_NS.to_string(),
-                    anno_name: "doc".to_string(),
-                    anno_value: subcorpus_name.to_string(),
+                    node_type: "corpus".to_string(),
                 })?;
-                // Only add the corpus graph leafs to the result vector
-                result.push((entry.path(), node_name));
+                u.add_event(UpdateEvent::AddEdge {
+                    source_node: node_name.clone(),
+                    target_node: parent_corpus.to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::PartOf.to_string(),
+                    component_name: "".to_string(),
+                })?;
+
+                if entry_type.is_dir() {
+                    result.extend(add_subcorpora(u, &entry.path(), &node_name, file_endings)?);
+                } else if entry_type.is_file() {
+                    // Also add the special "annis:doc" label to mark this as document
+                    u.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: node_name.clone(),
+                        anno_ns: ANNIS_NS.to_string(),
+                        anno_name: "doc".to_string(),
+                        anno_value: subcorpus_name.to_string(),
+                    })?;
+                    // Only add the corpus graph leafs to the result vector
+                    result.push((entry.path(), node_name));
+                }
             }
         }
+        Ok(result)
     }
-    Ok(result)
 }
 
 pub fn root_corpus_from_path(root_path: &Path) -> Result<String> {
