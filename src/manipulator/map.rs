@@ -45,7 +45,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// A `target` can also be a list. In this case, a new span is created that
 /// covers the same token as the referenced nodes of the match.
 /// ```toml
-/// [[rules]]    
+/// [[rules]]
 /// query = "tok=/more/ . tok"
 /// target = [1,2]
 /// ns = "mapper"
@@ -56,7 +56,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// Instead of a fixed value, you can also use an existing annotation value
 /// from the matched nodes copy the value.
 /// ```toml
-/// [[rules]]    
+/// [[rules]]
 /// query = "tok=\"complicated\""
 /// target = 1
 /// ns = ""
@@ -67,7 +67,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// It is also possible to replace all occurences in the original value that
 /// match a `search` regular expression with a `replacement` value.
 /// ```toml
-/// [[rules]]    
+/// [[rules]]
 /// query = "tok=\"complicated\""
 /// target = 1
 /// ns = ""
@@ -80,7 +80,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// expression (e.g. "${0}" for the whole match or "${1}" for the first match
 /// group).
 /// ```toml
-/// [[rules]]    
+/// [[rules]]
 /// query = "tok=\"New York\""
 /// target = 1
 /// ns = ""
@@ -449,10 +449,10 @@ mod tests {
         g.apply_update(&mut updates, |_msg| {}).unwrap();
 
         let config = r#"
-        [[rules]]                                                                                      
+        [[rules]]
         query = "tok"
         target = 1
-        ns = "test_ns" 
+        ns = "test_ns"
         name = "test"
         value = {copy = 1}
         "#;
@@ -533,10 +533,10 @@ mod tests {
     #[test]
     fn test_parse_complicated_replace() {
         let config = r#"
-[[rules]]                                                                                      
+[[rules]]
 query = "tok=\"New York\""
 target = 1
-ns = "" 
+ns = ""
 name = "abbr"
 
 [rules.value]
@@ -562,10 +562,10 @@ replacements = [["([A-Z])[a-z]+ ([A-Z])[a-z]+", "${1}${2}"]]
     #[test]
     fn test_ridges_clean_resolver() {
         let config = r#"
-[[rules]]                                                                                      
+[[rules]]
 query = "tok"
 target = 1
-ns = "test" 
+ns = "test"
 name = "clean"
 
 [rules.value]
@@ -613,7 +613,7 @@ replacements = [
         g.apply_update(&mut updates, |_msg| {}).unwrap();
 
         let config = r#"
-[[rules]]            
+[[rules]]
 query = "tok=/more/ . tok"
 target = [1,2]
 ns = "mapper"
@@ -659,26 +659,26 @@ value = "comparison"
 
     fn main_test(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
         let config = r#"
-[[rules]]            
+[[rules]]
 query = "tok=/I/"
 target = 1
 ns = ""
 name = "pos"
-value = "PRON"            
+value = "PRON"
 
 [[rules]]
 query = "tok=/am/"
 target = 1
 ns = ""
 name = "pos"
-value = "VERB"            
+value = "VERB"
 
 [[rules]]
 query = "tok=/in/"
 target = 1
 ns = ""
 name = "pos"
-value = "ADP"            
+value = "ADP"
 
 [[rules]]
 query = "tok=/New York/"

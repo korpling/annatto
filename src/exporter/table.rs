@@ -100,7 +100,12 @@ pub struct ExportTable {
     #[serde(default, deserialize_with = "deserialize_annotation_component_seq")]
     outgoing: Vec<AnnotationComponent>,
     /// If `true` (the default), always output a column with the ID of the node.
+    #[serde(default = "default_id_column")]
     id_column: bool,
+}
+
+fn default_id_column() -> bool {
+    true
 }
 
 impl Default for ExportTable {
@@ -112,7 +117,7 @@ impl Default for ExportTable {
             no_value: String::default(),
             ingoing: vec![],
             outgoing: vec![],
-            id_column: true,
+            id_column: default_id_column(),
         }
     }
 }
