@@ -26,7 +26,7 @@ use super::Exporter;
 
 use crate::{
     deserialize::{deserialize_anno_key, deserialize_annotation_component_seq},
-    workflow::StatusMessage,
+    progress::ProgressReporter,
 };
 
 /// This module exports all ordered nodes and nodes connected by coverage edges of any name into a table.
@@ -140,9 +140,11 @@ impl Exporter for ExportTable {
         &self,
         graph: &graphannis::AnnotationGraph,
         output_path: &std::path::Path,
-        _step_id: crate::StepID,
+        step_id: crate::StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        let progress = ProgressReporter::new_unknown_total_work(tx.clone(), step_id.clone())?;
+
         let base_ordering = AnnotationComponent::new(
             AnnotationComponentType::Ordering,
             ANNIS_NS.into(),
@@ -164,11 +166,7 @@ impl Exporter for ExportTable {
             .filter_map(|c| graph.get_graphstorage(c))
             .collect_vec();
         if coverage_storages.is_empty() {
-            if let Some(sender) = &tx {
-                sender.send(StatusMessage::Warning(
-                    "No coverage storages available".to_string(),
-                ))?;
-            }
+            progress.warn("No coverage storages available")?;
         }
         let mut doc_node_to_start = BTreeMap::new();
         for node in storage.source_nodes().flatten().filter(|n| {
@@ -206,9 +204,16 @@ impl Exporter for ExportTable {
                 }
             }
         }
+        let progress = ProgressReporter::new(tx, step_id, doc_node_to_start.len())?;
+        progress.info(&format!("Exporting {} documents", doc_node_to_start.len()))?;
         doc_node_to_start
             .into_iter()
-            .try_for_each(|(doc, start)| self.export_document(graph, output_path, doc, start))?;
+            .try_for_each(move |(doc, start)| -> anyhow::Result<()> {
+                progress.info(&format!("Exporting {doc} as table"))?;
+                self.export_document(graph, output_path, doc, start)?;
+                progress.worked(1)?;
+                Ok(())
+            })?;
         Ok(())
     }
 
@@ -285,7 +290,9 @@ impl ExportTable {
                             .get_value_for_item(&rn, &anno_key)?
                             .ok_or(anyhow!("Annotation has no value"))?;
                         data.insert(index, value.to_string());
-                        data.insert(index + 1, node_name.to_string());
+                        if self.id_column {
+                            data.insert(index + 1, node_name.to_string());
+                        }
                     }
                 }
                 if follow_edges {
