@@ -161,7 +161,7 @@ fn convert(workflow_file: PathBuf, read_env: bool, in_memory: bool) -> Result<()
                         pb.set_style(not_started_style.clone());
                         pb.set_prefix(format!("#{idx:<2}"));
                         pb.set_message(s.to_string());
-                        pb.enable_steady_tick(Duration::from_millis(250));
+                        pb.enable_steady_tick(Duration::from_secs(1));
                         all_bars.insert(s, pb);
                     }
                 }

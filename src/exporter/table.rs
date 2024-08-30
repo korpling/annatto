@@ -209,7 +209,6 @@ impl Exporter for ExportTable {
         doc_node_to_start
             .into_iter()
             .try_for_each(move |(doc, start)| -> anyhow::Result<()> {
-                progress.info(&format!("Exporting {doc} as table"))?;
                 self.export_document(graph, output_path, doc, start)?;
                 progress.worked(1)?;
                 Ok(())
