@@ -319,11 +319,13 @@ impl MapperImpl {
             ))?;
         }
         let number_of_updates = updates.len()?;
-        graph.apply_update(&mut updates, |msg| {
-            if let Err(e) = self.progress.info(&format!("`map` updates: {msg}")) {
-                log::error!("{e}");
-            }
-        })?;
+        if number_of_updates > 0 {
+            graph.apply_update(&mut updates, |msg| {
+                if let Err(e) = self.progress.info(&format!("`map` updates: {msg}")) {
+                    log::error!("{e}");
+                }
+            })?;
+        }
         Ok(number_of_updates)
     }
     fn map_single_node(
