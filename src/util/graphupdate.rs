@@ -353,16 +353,23 @@ mod tests {
     #[test]
     fn single_file_import() {
         let mut u = GraphUpdate::new();
-        import_corpus_graph_from_files(
+        let result = import_corpus_graph_from_files(
             &mut u,
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda/test_doc.exb"),
             &["exb"],
         )
         .unwrap();
 
-        let result: graphannis_core::errors::Result<Vec<_>> = u.iter().unwrap().collect();
-        let result = result.unwrap();
+        assert_eq!(1, result.len());
+        assert_eq!(
+            "tests/data/import/exmaralda/clean/import/exmaralda/test_doc.exb",
+            result[0].0.to_string_lossy()
+        );
+        assert_eq!("test_doc/test_doc", result[0].1);
 
-        assert_debug_snapshot!(result);
+        let created_updates: graphannis_core::errors::Result<Vec<_>> = u.iter().unwrap().collect();
+        let created_updates = created_updates.unwrap();
+
+        assert_debug_snapshot!(created_updates);
     }
 }

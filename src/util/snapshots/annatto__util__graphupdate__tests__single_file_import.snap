@@ -1,6 +1,6 @@
 ---
 source: src/util/graphupdate.rs
-expression: result
+expression: created_updates
 ---
 [
     (
