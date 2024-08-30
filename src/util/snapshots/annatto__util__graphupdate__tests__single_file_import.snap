@@ -1,0 +1,39 @@
+---
+source: src/util/graphupdate.rs
+expression: result
+---
+[
+    (
+        1,
+        AddNode {
+            node_name: "test_doc",
+            node_type: "corpus",
+        },
+    ),
+    (
+        2,
+        AddNode {
+            node_name: "test_doc/test_doc",
+            node_type: "corpus",
+        },
+    ),
+    (
+        3,
+        AddNodeLabel {
+            node_name: "test_doc/test_doc",
+            anno_ns: "annis",
+            anno_name: "doc",
+            anno_value: "test_doc",
+        },
+    ),
+    (
+        4,
+        AddEdge {
+            source_node: "test_doc/test_doc",
+            target_node: "test_doc",
+            layer: "annis",
+            component_type: "PartOf",
+            component_name: "",
+        },
+    ),
+]

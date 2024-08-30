@@ -117,7 +117,7 @@ fn add_subcorpora(
 pub fn root_corpus_from_path(root_path: &Path) -> Result<String> {
     let norm_path = root_path.normalize()?;
     let root_name = norm_path
-        .file_name()
+        .file_stem()
         .unwrap_or_else(|| OsStr::new("root-corpus"))
         .to_string_lossy();
 
@@ -339,4 +339,30 @@ pub fn map_annotations<S: AsRef<str>>(
     }
 
     Ok(span_id)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use graphannis::update::GraphUpdate;
+    use insta::assert_debug_snapshot;
+
+    use super::import_corpus_graph_from_files;
+
+    #[test]
+    fn single_file_import() {
+        let mut u = GraphUpdate::new();
+        import_corpus_graph_from_files(
+            &mut u,
+            Path::new("tests/data/import/exmaralda/clean/import/exmaralda/test_doc.exb"),
+            &["exb"],
+        )
+        .unwrap();
+
+        let result: graphannis_core::errors::Result<Vec<_>> = u.iter().unwrap().collect();
+        let result = result.unwrap();
+
+        assert_debug_snapshot!(result);
+    }
 }
