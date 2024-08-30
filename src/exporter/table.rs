@@ -605,4 +605,28 @@ mod tests {
         assert!(export.is_ok(), "error: {:?}", export.err());
         assert_snapshot!(export.unwrap());
     }
+
+    #[test]
+    fn no_id_column() {
+        let exmaralda = ImportEXMARaLDA {};
+        let mprt = exmaralda.import_corpus(
+            Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
+            StepID {
+                module_name: "test_import_exb".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(mprt.is_ok());
+        let mut update_import = mprt.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update_import, |_| {}).is_ok());
+        let mut exporter = ExportTable::default();
+        exporter.id_column = false;
+        let export = export_to_string(&graph, exporter);
+        assert!(export.is_ok(), "error: {:?}", export.err());
+        assert_snapshot!(export.unwrap());
+    }
 }
