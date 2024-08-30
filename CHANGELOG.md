@@ -13,10 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adds `saltxml` export format
 - The `table` exporter now supports the `id_column` parameter to
   enable/disable the ID column.
+- Importers that map directories to (sub)-corpora and files to documents can now also importt the
+  corpus if the `path` argument points to a single file.
 
 ### Changed
 
-- `exmaralda` import now ranks order of tlis higher than sorting by time value (more compatible with modern EXMARaLDA files)
+- `exmaralda` import now ranks order of tlis higher than sorting by time value (more compatible with
+  modern EXMARaLDA files)
 - `xlsx` importer will connect spans to their corresponding segmentation node
   with coverage edges instead of connecting them with the base tokens generated
   for the timeline items. Thus, the configured connection between spans and base
@@ -76,7 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `visualize` graph operation that allows to output the current graph (somehwere
   in the conversion process) to SVG or DOT for debugging.
-  
+
 ### Fixed
 
 - removed debug output
@@ -173,7 +176,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fix non-resolved relative path when importing EXMARaLDA files. 
+- Fix non-resolved relative path when importing EXMARaLDA files.
 - Limit the table width when listing the module properties, so they fit in the
   current terminal.
 
@@ -203,9 +206,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added simple chunker module based on
   [text-splitter](https://crates.io/crates/text-splitter).
-- `check` can write check report to file 
+- `check` can write check report to file
 - `check` can test a corpus graph comparing results to an external corpus graph loaded from a graphANNIS database
-- import `ptb` can now split node annotations to derive a label for the incoming edge, when a delimiter is provided 
+- import `ptb` can now split node annotations to derive a label for the incoming edge, when a delimiter is provided
   using `edge_delimiter`. E. g., `NP-sbj` will create a node of category `NP`, whose incoming edge has function `sbj`,
   given the following config is used: `edge_delimiter = "-"`
 - config attribute `stable_order` for exporting graphml enforces stable ordering of edges and nodes in output
@@ -247,7 +250,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `exmaralda` returns error when there is no time value for a timeline item
 - fixed and simplified import of corpus node annotations
 - `exmaralda` import's paths to linked media files are relative to the working directory
-- `xlsx` importer now adds `PartOf` relations to the document nodes  
+- `xlsx` importer now adds `PartOf` relations to the document nodes
 
 ## [0.4.0] - 2023-11-13
 
