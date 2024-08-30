@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `conllu` as export format
 - import of `conllu` now supports enhanced dependencies
 - Adds `saltxml` export format
+- Adds `time` graph op to add or enrich time annotations
 - The `table` exporter now supports the `id_column` parameter to
   enable/disable the ID column.
 - Importers that map directories to (sub)-corpora and files to documents can now also importt the

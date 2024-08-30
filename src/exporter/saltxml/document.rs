@@ -695,7 +695,7 @@ impl SaltDocumentGraphMapper {
 }
 
 fn parse_time_range(value: &str) -> anyhow::Result<(Option<f64>, Option<f64>)> {
-    let splitted = value.split_once("-");
+    let splitted = value.split_once('-');
     let start_str = splitted.map(|(v, _)| v).unwrap_or_default();
     let end_str = splitted.map(|(_, v)| v).unwrap_or_default();
 

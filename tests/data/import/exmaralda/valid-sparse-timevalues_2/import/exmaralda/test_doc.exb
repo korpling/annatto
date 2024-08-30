@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<basic-transcription>
+<head>
+<meta-information><project-name></project-name><transcription-name></transcription-name><referenced-file url="test_file.wav"/><ud-meta-information></ud-meta-information><comment></comment><transcription-convention></transcription-convention></meta-information><speakertable><speaker id="dipl">
+<abbreviation>dipl</abbreviation>
+<sex value="u"/>
+<languages-used></languages-used>
+<l1></l1>
+<l2></l2>
+<ud-speaker-information>
+</ud-speaker-information>
+<comment>was late for elicitation</comment>
+</speaker>
+<speaker id="norm">
+<abbreviation>norm</abbreviation>
+<sex value="u"/>
+<languages-used><language lang="eng"/><language lang="eng"/></languages-used>
+<l1><language lang="eng"/></l1>
+<l2><language lang="deu"/></l2>
+<ud-speaker-information>
+<ud-information attribute-name="personal-anno-key-1">personal-anno-value-1</ud-information><ud-information attribute-name="personal-anno-key-2">personal-anno-value-2</ud-information></ud-speaker-information>
+<comment>was on time</comment>
+</speaker>
+</speakertable></head>
+<basic-body>
+<common-timeline>
+<tli id="T286" time="0.0"/>
+<tli id="T0" time = "1.0"/>
+<tli id="T1"/>
+<tli id="T2"/>
+<tli id="T3" time="4.44444"/>
+<tli id="T4" time="5.55555"/>
+</common-timeline>
+<tier id="TIE0" speaker="dipl" category="dipl" type="t" display-name="dipl [dipl]"><event start="T286" end="T1">I'm</event>
+<event start="T1" end="T2">in</event>
+<event start="T2" end="T3">New</event>
+<event start="T3" end="T4">York</event>
+</tier><tier id="TIE1" speaker="norm" category="norm" type="t" display-name="norm [norm]"><event start="T286" end="T0">I</event>
+<event start="T0" end="T1">am</event>
+<event start="T1" end="T2">in</event>
+<event start="T2" end="T4">New York</event>
+</tier><tier id="TIE19" speaker="dipl" category="sentence" type="a" display-name="dipl [sentence]"><event start="T286" end="T4">1</event>
+</tier><tier id="TIE21" speaker="norm" category="lemma" type="a" display-name="norm [lemma]"><event start="T286" end="T0">I</event>
+<event start="T0" end="T1">be</event>
+<event start="T1" end="T2">in</event>
+<event start="T2" end="T4">New York</event>
+</tier><tier id="POS_TIER" speaker="norm" category="pos" type="a" display-name="norm [pos]"><event start="T286" end="T0">PRON</event>
+<event start="T0" end="T1">VERB</event>
+<event start="T1" end="T2">ADP</event>
+<event start="T2" end="T4">PRON</event>
+</tier></basic-body>
+</basic-transcription>

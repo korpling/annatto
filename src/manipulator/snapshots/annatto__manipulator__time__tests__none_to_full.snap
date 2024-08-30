@@ -1,0 +1,270 @@
+---
+source: src/manipulator/time.rs
+expression: actual.unwrap()
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>
+    <key id="k1" for="node" attr.name="Case" attr.type="string"/>
+    <key id="k2" for="node" attr.name="Number" attr.type="string"/>
+    <key id="k3" for="node" attr.name="Person" attr.type="string"/>
+    <key id="k4" for="node" attr.name="PronType" attr.type="string"/>
+    <key id="k5" for="node" attr.name="SpaceAfter" attr.type="string"/>
+    <key id="k6" for="node" attr.name="Tense" attr.type="string"/>
+    <key id="k7" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k8" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k9" for="node" attr.name="lemma" attr.type="string"/>
+    <key id="k10" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k11" for="node" attr.name="sent_id" attr.type="string"/>
+    <key id="k12" for="node" attr.name="text" attr.type="string"/>
+    <key id="k13" for="node" attr.name="annis::time" attr.type="string"/>
+    <key id="k14" for="node" attr.name="annis::tok" attr.type="string"/>
+    <key id="k15" for="node" attr.name="upos" attr.type="string"/>
+    <key id="k16" for="node" attr.name="xpos" attr.type="string"/>
+    <key id="k17" for="node" attr.name="deprel" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <data key="k0"><![CDATA[
+# configure visualizations here
+]]></data>
+        <node id="valid">
+            <data key="k10">corpus</data>
+        </node>
+        <node id="valid/website_example">
+            <data key="k10">corpus</data>
+            <data key="k7">website_example</data>
+        </node>
+        <node id="valid/website_example#t5_1">
+            <data key="k1">Nom</data>
+            <data key="k10">node</data>
+            <data key="k13">0.0000000000000000-1.0000000000000000</data>
+            <data key="k14">They</data>
+            <data key="k15">PRON</data>
+            <data key="k16">PRP</data>
+            <data key="k2">Plur</data>
+            <data key="k8">default_layer</data>
+            <data key="k9">they</data>
+        </node>
+        <node id="valid/website_example#t5_68">
+            <data key="k10">node</data>
+            <data key="k13">1.0000000000000000-2.0000000000000000</data>
+            <data key="k14">buy</data>
+            <data key="k15">VERB</data>
+            <data key="k16">VBP</data>
+            <data key="k2">Plur</data>
+            <data key="k3">3</data>
+            <data key="k6">Pres</data>
+            <data key="k8">default_layer</data>
+            <data key="k9">buy</data>
+        </node>
+        <node id="valid/website_example#t6_67">
+            <data key="k10">node</data>
+            <data key="k13">2.0000000000000000-3.0000000000000000</data>
+            <data key="k14">and</data>
+            <data key="k15">CONJ</data>
+            <data key="k16">CC</data>
+            <data key="k8">default_layer</data>
+            <data key="k9">and</data>
+        </node>
+        <node id="valid/website_example#t7_32">
+            <data key="k10">node</data>
+            <data key="k13">3.0000000000000000-4.0000000000000000</data>
+            <data key="k14">sell</data>
+            <data key="k15">VERB</data>
+            <data key="k16">VBP</data>
+            <data key="k2">Plur</data>
+            <data key="k3">3</data>
+            <data key="k6">Pres</data>
+            <data key="k8">default_layer</data>
+            <data key="k9">sell</data>
+        </node>
+        <node id="valid/website_example#t8_76">
+            <data key="k10">node</data>
+            <data key="k13">4.0000000000000000-5.0000000000000000</data>
+            <data key="k14">books</data>
+            <data key="k15">NOUN</data>
+            <data key="k16">NNS</data>
+            <data key="k2">Plur</data>
+            <data key="k5">No</data>
+            <data key="k8">default_layer</data>
+            <data key="k9">book</data>
+        </node>
+        <node id="valid/website_example#t9_66">
+            <data key="k10">node</data>
+            <data key="k13">5.0000000000000000-6.0000000000000000</data>
+            <data key="k14">.</data>
+            <data key="k15">PUNCT</data>
+            <data key="k16">.</data>
+            <data key="k8">default_layer</data>
+            <data key="k9">.</data>
+        </node>
+        <node id="valid/website_example#s1_1">
+            <data key="k10">node</data>
+            <data key="k11">1</data>
+            <data key="k12">They buy and sell books.</data>
+            <data key="k13">0.0000000000000000-6.0000000000000000</data>
+        </node>
+        <node id="valid/website_example#t14_1">
+            <data key="k1">Nom</data>
+            <data key="k10">node</data>
+            <data key="k13">6.0000000000000000-7.0000000000000000</data>
+            <data key="k14">I</data>
+            <data key="k15">PRON</data>
+            <data key="k16">PRP</data>
+            <data key="k2">Sing</data>
+            <data key="k3">1</data>
+            <data key="k8">default_layer</data>
+            <data key="k9">I</data>
+        </node>
+        <node id="valid/website_example#t14_57">
+            <data key="k10">node</data>
+            <data key="k13">7.0000000000000000-8.0000000000000000</data>
+            <data key="k14">have</data>
+            <data key="k15">VERB</data>
+            <data key="k16">VBP</data>
+            <data key="k2">Sing</data>
+            <data key="k3">1</data>
+            <data key="k6">Pres</data>
+            <data key="k8">default_layer</data>
+            <data key="k9">have</data>
+        </node>
+        <node id="valid/website_example#t15_64">
+            <data key="k10">node</data>
+            <data key="k13">8.0000000000000000-9.0000000000000000</data>
+            <data key="k14">no</data>
+            <data key="k15">DET</data>
+            <data key="k16">DT</data>
+            <data key="k4">Neg</data>
+            <data key="k8">default_layer</data>
+            <data key="k9">no</data>
+        </node>
+        <node id="valid/website_example#t16_38">
+            <data key="k10">node</data>
+            <data key="k13">9.0000000000000000-10.0000000000000000</data>
+            <data key="k14">clue</data>
+            <data key="k15">NOUN</data>
+            <data key="k16">NN</data>
+            <data key="k2">Sing</data>
+            <data key="k5">No</data>
+            <data key="k8">default_layer</data>
+            <data key="k9">clue</data>
+        </node>
+        <node id="valid/website_example#t17_54">
+            <data key="k10">node</data>
+            <data key="k13">10.0000000000000000-11.0000000000000000</data>
+            <data key="k14">.</data>
+            <data key="k15">PUNCT</data>
+            <data key="k16">.</data>
+            <data key="k8">default_layer</data>
+            <data key="k9">.</data>
+        </node>
+        <node id="valid/website_example#s10_34">
+            <data key="k10">node</data>
+            <data key="k11">2</data>
+            <data key="k12">I have no clue.</data>
+            <data key="k13">6.0000000000000000-11.0000000000000000</data>
+        </node>
+        <edge id="e0" source="valid/website_example#s1_1" target="valid/website_example#t5_1" label="Coverage/annis/">
+        </edge>
+        <edge id="e1" source="valid/website_example#s1_1" target="valid/website_example#t5_68" label="Coverage/annis/">
+        </edge>
+        <edge id="e2" source="valid/website_example#s1_1" target="valid/website_example#t6_67" label="Coverage/annis/">
+        </edge>
+        <edge id="e3" source="valid/website_example#s1_1" target="valid/website_example#t7_32" label="Coverage/annis/">
+        </edge>
+        <edge id="e4" source="valid/website_example#s1_1" target="valid/website_example#t8_76" label="Coverage/annis/">
+        </edge>
+        <edge id="e5" source="valid/website_example#s1_1" target="valid/website_example#t9_66" label="Coverage/annis/">
+        </edge>
+        <edge id="e6" source="valid/website_example#s10_34" target="valid/website_example#t14_1" label="Coverage/annis/">
+        </edge>
+        <edge id="e7" source="valid/website_example#s10_34" target="valid/website_example#t14_57" label="Coverage/annis/">
+        </edge>
+        <edge id="e8" source="valid/website_example#s10_34" target="valid/website_example#t15_64" label="Coverage/annis/">
+        </edge>
+        <edge id="e9" source="valid/website_example#s10_34" target="valid/website_example#t16_38" label="Coverage/annis/">
+        </edge>
+        <edge id="e10" source="valid/website_example#s10_34" target="valid/website_example#t17_54" label="Coverage/annis/">
+        </edge>
+        <edge id="e11" source="valid/website_example#t5_68" target="valid/website_example#t5_1" label="Pointing//dep">
+            <data key="k17">nsubj</data>
+        </edge>
+        <edge id="e12" source="valid/website_example#t5_68" target="valid/website_example#t7_32" label="Pointing//dep">
+            <data key="k17">conj</data>
+        </edge>
+        <edge id="e13" source="valid/website_example#t5_68" target="valid/website_example#t8_76" label="Pointing//dep">
+            <data key="k17">obj</data>
+        </edge>
+        <edge id="e14" source="valid/website_example#t5_68" target="valid/website_example#t9_66" label="Pointing//dep">
+            <data key="k17">punct</data>
+        </edge>
+        <edge id="e15" source="valid/website_example#t7_32" target="valid/website_example#t6_67" label="Pointing//dep">
+            <data key="k17">cc</data>
+        </edge>
+        <edge id="e16" source="valid/website_example#t14_57" target="valid/website_example#t14_1" label="Pointing//dep">
+            <data key="k17">nsubj</data>
+        </edge>
+        <edge id="e17" source="valid/website_example#t14_57" target="valid/website_example#t16_38" label="Pointing//dep">
+            <data key="k17">obj</data>
+        </edge>
+        <edge id="e18" source="valid/website_example#t14_57" target="valid/website_example#t17_54" label="Pointing//dep">
+            <data key="k17">punct</data>
+        </edge>
+        <edge id="e19" source="valid/website_example#t16_38" target="valid/website_example#t15_64" label="Pointing//dep">
+            <data key="k17">det</data>
+        </edge>
+        <edge id="e20" source="valid/website_example#t7_32" target="valid/website_example#t5_1" label="Pointing/enh/dep">
+            <data key="k17">nsubj</data>
+        </edge>
+        <edge id="e21" source="valid/website_example#t7_32" target="valid/website_example#t8_76" label="Pointing/enh/dep">
+            <data key="k17">obj</data>
+        </edge>
+        <edge id="e22" source="valid/website_example#t5_1" target="valid/website_example#t5_68" label="Ordering/annis/">
+        </edge>
+        <edge id="e23" source="valid/website_example#t5_68" target="valid/website_example#t6_67" label="Ordering/annis/">
+        </edge>
+        <edge id="e24" source="valid/website_example#t6_67" target="valid/website_example#t7_32" label="Ordering/annis/">
+        </edge>
+        <edge id="e25" source="valid/website_example#t7_32" target="valid/website_example#t8_76" label="Ordering/annis/">
+        </edge>
+        <edge id="e26" source="valid/website_example#t8_76" target="valid/website_example#t9_66" label="Ordering/annis/">
+        </edge>
+        <edge id="e27" source="valid/website_example#t9_66" target="valid/website_example#t14_1" label="Ordering/annis/">
+        </edge>
+        <edge id="e28" source="valid/website_example#t14_1" target="valid/website_example#t14_57" label="Ordering/annis/">
+        </edge>
+        <edge id="e29" source="valid/website_example#t14_57" target="valid/website_example#t15_64" label="Ordering/annis/">
+        </edge>
+        <edge id="e30" source="valid/website_example#t15_64" target="valid/website_example#t16_38" label="Ordering/annis/">
+        </edge>
+        <edge id="e31" source="valid/website_example#t16_38" target="valid/website_example#t17_54" label="Ordering/annis/">
+        </edge>
+        <edge id="e32" source="valid/website_example" target="valid" label="PartOf/annis/">
+        </edge>
+        <edge id="e33" source="valid/website_example#t5_1" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e34" source="valid/website_example#t5_68" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e35" source="valid/website_example#t6_67" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e36" source="valid/website_example#t7_32" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e37" source="valid/website_example#t8_76" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e38" source="valid/website_example#t9_66" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e39" source="valid/website_example#s1_1" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e40" source="valid/website_example#t14_1" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e41" source="valid/website_example#t14_57" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e42" source="valid/website_example#t15_64" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e43" source="valid/website_example#t16_38" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e44" source="valid/website_example#t17_54" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+        <edge id="e45" source="valid/website_example#s10_34" target="valid/website_example" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>
