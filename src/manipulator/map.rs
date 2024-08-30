@@ -4,6 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use super::Manipulator;
 use crate::{
     progress::ProgressReporter,
     util::token_helper::{TokenHelper, TOKEN_KEY},
@@ -23,8 +24,6 @@ use graphannis_core::graph::{
 use regex::Regex;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
-
-use super::Manipulator;
 
 /// Creates new or updates annotations based on existing annotation values.
 ///
@@ -46,7 +45,7 @@ use super::Manipulator;
 /// A `target` can also be a list. In this case, a new span is created that
 /// covers the same token as the referenced nodes of the match.
 /// ```toml
-/// [[rules]]    
+/// [[rules]]
 /// query = "tok=/more/ . tok"
 /// target = [1,2]
 /// ns = "mapper"
@@ -57,7 +56,7 @@ use super::Manipulator;
 /// Instead of a fixed value, you can also use an existing annotation value
 /// from the matched nodes copy the value.
 /// ```toml
-/// [[rules]]    
+/// [[rules]]
 /// query = "tok=\"complicated\""
 /// target = 1
 /// ns = ""
@@ -68,7 +67,7 @@ use super::Manipulator;
 /// It is also possible to replace all occurences in the original value that
 /// match a `search` regular expression with a `replacement` value.
 /// ```toml
-/// [[rules]]    
+/// [[rules]]
 /// query = "tok=\"complicated\""
 /// target = 1
 /// ns = ""
@@ -78,15 +77,15 @@ use super::Manipulator;
 /// This would add a new annotation value "complidoged" to any token with the value "complicated".
 ///
 /// The `replacement` value can contain back references to the regular
-/// expression (e.g. "$0" for the whole match or "$1" for the first match
+/// expression (e.g. "${0}" for the whole match or "${1}" for the first match
 /// group).
 /// ```toml
-/// [[rules]]    
+/// [[rules]]
 /// query = "tok=\"New York\""
 /// target = 1
 /// ns = ""
 /// name = "abbr"
-/// value = {target = 1, search = "([A-Z])[a-z]+ ([A-Z])[a-z]+", replacement = "$1$2"}
+/// value = {target = 1, search = "([A-Z])[a-z]+ ([A-Z])[a-z]+", replacement = "${1}${2}"}
 /// ```
 /// This example would add an annotation with the value "NY".
 ///
@@ -120,10 +119,11 @@ impl Manipulator for MapAnnos {
             }
         };
         let config = read_config(read_from_path.as_path())?;
+        let progress = ProgressReporter::new(tx.clone(), step_id.clone(), config.rules.len())?;
 
+        progress.info("Ensure all graph storages are loaded.")?;
         graph.ensure_loaded_all()?;
 
-        let progress = ProgressReporter::new(tx.clone(), step_id.clone(), config.rules.len())?;
         let mut updates = {
             let tok_helper = TokenHelper::new(graph)?;
             let all_part_of_gs: Vec<_> = graph
@@ -146,7 +146,12 @@ impl Manipulator for MapAnnos {
             };
             map_impl.run()?
         };
-        graph.apply_update(&mut updates, |_| {})?;
+        let progress = ProgressReporter::new_unknown_total_work(tx, step_id)?;
+        graph.apply_update(&mut updates, move |msg| {
+            if let Err(e) = progress.info(&format!("`map` updates: {msg}")) {
+                log::error!("{e}");
+            }
+        })?;
 
         Ok(())
     }
@@ -270,6 +275,8 @@ impl<'a> MapperImpl<'a> {
         let mut update = GraphUpdate::default();
 
         for rule in self.config.rules.clone() {
+            self.progress
+                .info(&format!("Applying rule with query `{}`", &rule.query))?;
             let query = graphannis::aql::parse(&rule.query, false)
                 .with_context(|| format!("could not parse query '{}'", &rule.query))?;
             let result_it =
@@ -442,10 +449,10 @@ mod tests {
         g.apply_update(&mut updates, |_msg| {}).unwrap();
 
         let config = r#"
-        [[rules]]                                                                                      
+        [[rules]]
         query = "tok"
         target = 1
-        ns = "test_ns" 
+        ns = "test_ns"
         name = "test"
         value = {copy = 1}
         "#;
@@ -526,15 +533,15 @@ mod tests {
     #[test]
     fn test_parse_complicated_replace() {
         let config = r#"
-[[rules]]                                                                                      
+[[rules]]
 query = "tok=\"New York\""
 target = 1
-ns = "" 
+ns = ""
 name = "abbr"
 
 [rules.value]
 target = 1
-replacements = [["([A-Z])[a-z]+ ([A-Z])[a-z]+", "$1$2"]]
+replacements = [["([A-Z])[a-z]+ ([A-Z])[a-z]+", "${1}${2}"]]
 "#;
 
         let m: Mapping = toml::from_str(config).unwrap();
@@ -553,6 +560,51 @@ replacements = [["([A-Z])[a-z]+ ([A-Z])[a-z]+", "$1$2"]]
     }
 
     #[test]
+    fn test_ridges_clean_resolver() {
+        let config = r#"
+[[rules]]
+query = "tok"
+target = 1
+ns = "test"
+name = "clean"
+
+[rules.value]
+target = 1
+replacements = [
+    ['ð', 'der'],
+    ['(.*)(.)\u0304(.*)', '$1$2/MACRON_M/$3|$1$2/MACRON_N/$3'],
+    ['([^|]*)([^|])\u0304([^|]*)', '$1$2/MACRON_M/$3|$1$2/MACRON_N/$3'],
+    ['/MACRON_M/', 'm'],
+	['/MACRON_N/', 'n'],
+]
+"#;
+
+        let m: Mapping = toml::from_str(config).unwrap();
+
+        let g = tokens_with_macrons().unwrap();
+
+        let singlemacron = g
+            .get_node_annos()
+            .exact_anno_search(Some("annis"), "tok", ValueSearch::Some("anðthalbē"))
+            .next()
+            .unwrap()
+            .unwrap();
+
+        let result = m.rules[0].resolve_value(&g, &[singlemacron]).unwrap();
+        assert_eq!("anderthalbem|anderthalben", result);
+
+        let multiple_macron = g
+            .get_node_annos()
+            .exact_anno_search(Some("annis"), "tok", ValueSearch::Some("ellēbogē"))
+            .next()
+            .unwrap()
+            .unwrap();
+
+        let result = m.rules[0].resolve_value(&g, &[multiple_macron]).unwrap();
+        assert_eq!("ellembogem|ellenbogem|ellembogen|ellenbogen", result);
+    }
+
+    #[test]
     fn test_map_spans() {
         let mut updates = GraphUpdate::new();
         example_generator::create_corpus_structure_simple(&mut updates);
@@ -561,7 +613,7 @@ replacements = [["([A-Z])[a-z]+ ([A-Z])[a-z]+", "$1$2"]]
         g.apply_update(&mut updates, |_msg| {}).unwrap();
 
         let config = r#"
-[[rules]]            
+[[rules]]
 query = "tok=/more/ . tok"
 target = [1,2]
 ns = "mapper"
@@ -607,26 +659,26 @@ value = "comparison"
 
     fn main_test(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
         let config = r#"
-[[rules]]            
+[[rules]]
 query = "tok=/I/"
 target = 1
 ns = ""
 name = "pos"
-value = "PRON"            
+value = "PRON"
 
 [[rules]]
 query = "tok=/am/"
 target = 1
 ns = ""
 name = "pos"
-value = "VERB"            
+value = "VERB"
 
 [[rules]]
 query = "tok=/in/"
 target = 1
 ns = ""
 name = "pos"
-value = "ADP"            
+value = "ADP"
 
 [[rules]]
 query = "tok=/New York/"
@@ -699,6 +751,50 @@ value = "PROPN"
             node_type: "corpus".to_string(),
         })?;
         for (i, text) in ["I", "am", "in", "New York"].iter().enumerate() {
+            let node_name = format!("doc#t{}", &i + &1);
+            u.add_event(UpdateEvent::AddNode {
+                node_name: node_name.to_string(),
+                node_type: "node".to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddNodeLabel {
+                node_name: node_name.to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "tok".to_string(),
+                anno_value: text.to_string(),
+            })?;
+            if i > 0 {
+                u.add_event(UpdateEvent::AddEdge {
+                    source_node: format!("doc#t{i}"),
+                    target_node: node_name.to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::Ordering.to_string(),
+                    component_name: "".to_string(),
+                })?;
+            }
+        }
+        g.apply_update(&mut u, |_| {})?;
+        Ok(g)
+    }
+
+    fn tokens_with_macrons() -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
+        let mut g = AnnotationGraph::with_default_graphstorages(true)?;
+        let mut u = GraphUpdate::default();
+        u.add_event(UpdateEvent::AddNode {
+            node_name: "doc".to_string(),
+            node_type: "corpus".to_string(),
+        })?;
+        for (i, text) in [
+            "ein",
+            "kraut",
+            "wechſzt",
+            "etwan",
+            "anðthalbē",
+            "ellēbogē",
+            "hoch",
+        ]
+        .iter()
+        .enumerate()
+        {
             let node_name = format!("doc#t{}", &i + &1);
             u.add_event(UpdateEvent::AddNode {
                 node_name: node_name.to_string(),

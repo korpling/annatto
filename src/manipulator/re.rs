@@ -774,7 +774,12 @@ impl Manipulator for Revise {
                 remove_subgraph(graph, &mut update, node_name)?;
             }
         }
-        graph.apply_update(&mut update, |_| {})?;
+        graph.apply_update(&mut update, move |msg| {
+            if let Err(e) = progress_reporter.info(&format!("`revise` updates: {msg}")) {
+                log::error!("{e}");
+            }
+        })?;
+
         Ok(())
     }
 }

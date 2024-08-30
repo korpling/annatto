@@ -26,7 +26,7 @@ use super::Exporter;
 
 use crate::{
     deserialize::{deserialize_anno_key, deserialize_annotation_component_seq},
-    workflow::StatusMessage,
+    progress::ProgressReporter,
 };
 
 /// This module exports all ordered nodes and nodes connected by coverage edges of any name into a table.
@@ -99,6 +99,13 @@ pub struct ExportTable {
     /// ```
     #[serde(default, deserialize_with = "deserialize_annotation_component_seq")]
     outgoing: Vec<AnnotationComponent>,
+    /// If `true` (the default), always output a column with the ID of the node.
+    #[serde(default = "default_id_column")]
+    id_column: bool,
+}
+
+fn default_id_column() -> bool {
+    true
 }
 
 impl Default for ExportTable {
@@ -110,6 +117,7 @@ impl Default for ExportTable {
             no_value: String::default(),
             ingoing: vec![],
             outgoing: vec![],
+            id_column: default_id_column(),
         }
     }
 }
@@ -132,9 +140,11 @@ impl Exporter for ExportTable {
         &self,
         graph: &graphannis::AnnotationGraph,
         output_path: &std::path::Path,
-        _step_id: crate::StepID,
+        step_id: crate::StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        let progress = ProgressReporter::new_unknown_total_work(tx.clone(), step_id.clone())?;
+
         let base_ordering = AnnotationComponent::new(
             AnnotationComponentType::Ordering,
             ANNIS_NS.into(),
@@ -156,11 +166,7 @@ impl Exporter for ExportTable {
             .filter_map(|c| graph.get_graphstorage(c))
             .collect_vec();
         if coverage_storages.is_empty() {
-            if let Some(sender) = &tx {
-                sender.send(StatusMessage::Warning(
-                    "No coverage storages available".to_string(),
-                ))?;
-            }
+            progress.warn("No coverage storages available")?;
         }
         let mut doc_node_to_start = BTreeMap::new();
         for node in storage.source_nodes().flatten().filter(|n| {
@@ -198,9 +204,16 @@ impl Exporter for ExportTable {
                 }
             }
         }
+        let progress = ProgressReporter::new(tx, step_id, doc_node_to_start.len())?;
+        progress.info(&format!("Exporting {} documents", doc_node_to_start.len()))?;
         doc_node_to_start
             .into_iter()
-            .try_for_each(|(doc, start)| self.export_document(graph, output_path, doc, start))?;
+            .try_for_each(move |(doc, start)| -> anyhow::Result<()> {
+                progress.info(&format!("Exporting {doc} as table"))?;
+                self.export_document(graph, output_path, doc, start)?;
+                progress.worked(1)?;
+                Ok(())
+            })?;
         Ok(())
     }
 
@@ -265,16 +278,21 @@ impl ExportTable {
                         let id_name = format!("id_{qname}");
                         let index = if let Some(index) = index_map.get(&qname) {
                             *index
-                        } else {
+                        } else if self.id_column {
                             index_map.insert(qname.to_string(), index_map.len());
                             index_map.insert(id_name.to_string(), index_map.len());
                             index_map.len() - 2
+                        } else {
+                            index_map.insert(qname.to_string(), index_map.len());
+                            index_map.len() - 1
                         };
                         let value = node_annos
                             .get_value_for_item(&rn, &anno_key)?
                             .ok_or(anyhow!("Annotation has no value"))?;
                         data.insert(index, value.to_string());
-                        data.insert(index + 1, node_name.to_string());
+                        if self.id_column {
+                            data.insert(index + 1, node_name.to_string());
+                        }
                     }
                 }
                 if follow_edges {
@@ -584,6 +602,30 @@ mod tests {
                 ..Default::default()
             },
         );
+        assert!(export.is_ok(), "error: {:?}", export.err());
+        assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
+    fn no_id_column() {
+        let exmaralda = ImportEXMARaLDA {};
+        let mprt = exmaralda.import_corpus(
+            Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
+            StepID {
+                module_name: "test_import_exb".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(mprt.is_ok());
+        let mut update_import = mprt.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update_import, |_| {}).is_ok());
+        let mut exporter = ExportTable::default();
+        exporter.id_column = false;
+        let export = export_to_string(&graph, exporter);
         assert!(export.is_ok(), "error: {:?}", export.err());
         assert_snapshot!(export.unwrap());
     }
