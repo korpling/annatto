@@ -590,4 +590,69 @@ mod tests {
         let it = graphannis::aql::execute_query_on_graph(&written_graph, &q, false, None).unwrap();
         assert_eq!(1, it.count());
     }
+
+    #[test]
+    fn with_meta() {
+        let importer: ImportSpreadsheet = toml::from_str(
+            r#"
+        column_map = {"tok" = ["lb"]}
+        metasheet = "meta"
+        metasheet_skip_rows = 1
+            "#,
+        )
+        .unwrap();
+        let exporter = ExportXlsx::default();
+
+        // Import an example document
+        let path = Path::new("./tests/data/import/xlsx/sample_sentence/");
+        let importer = crate::ReadFrom::Xlsx(importer);
+        let orig_import_step = ImporterStep {
+            module: importer,
+            path: path.to_path_buf(),
+        };
+        let mut updates = orig_import_step.execute(None).unwrap();
+        let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        original_graph.apply_update(&mut updates, |_| {}).unwrap();
+
+        // Export to Excel file and read it again
+        let tmp_outputdir = TempDir::new().unwrap();
+        let output_dir = tmp_outputdir.path().join("sample_sentence");
+        std::fs::create_dir(&output_dir).unwrap();
+        let exporter = crate::WriteAs::Xlsx(exporter);
+        let export_step = ExporterStep {
+            module: exporter,
+            path: output_dir.clone(),
+        };
+        export_step.execute(&original_graph, None).unwrap();
+
+        let importer: ImportSpreadsheet = toml::from_str(
+            r#"
+        column_map = {"tok" = ["lb"]}
+        metasheet = "meta"
+        metasheet_skip_rows = 1
+            "#,
+        )
+        .unwrap();
+        let second_import_step = ImporterStep {
+            module: crate::ReadFrom::Xlsx(importer),
+            path: output_dir.clone(),
+        };
+        let mut updates = second_import_step.execute(None).unwrap();
+
+        let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        written_graph.apply_update(&mut updates, |_| {}).unwrap();
+
+        let q = graphannis::aql::parse("Author=\"Unknown\" _ident_ annis:doc", false).unwrap();
+        let it = graphannis::aql::execute_query_on_graph(&written_graph, &q, false, None).unwrap();
+        assert_eq!(1, it.count());
+
+        let q = graphannis::aql::parse("Year=\"2024\" _ident_ annis:doc", false).unwrap();
+        let it = graphannis::aql::execute_query_on_graph(&written_graph, &q, false, None).unwrap();
+        assert_eq!(1, it.count());
+
+        // The header should not be imported
+        let q = graphannis::aql::parse("Name _ident_ annis:doc", false).unwrap();
+        let it = graphannis::aql::execute_query_on_graph(&written_graph, &q, false, None).unwrap();
+        assert_eq!(0, it.count());
+    }
 }
