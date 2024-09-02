@@ -145,6 +145,29 @@ impl ExportXlsx {
             worksheet.remove_column_by_index(&1, &1);
         }
 
+        // Add meta data sheet
+        let meta_annos = g.get_node_annos().get_annotations_for_item(&doc_node_id)?;
+        if !meta_annos.is_empty() {
+            let meta_sheet = book.new_sheet("meta").map_err(|e| anyhow!(e))?;
+            meta_sheet.insert_new_row(&1, &2);
+            meta_sheet.get_cell_mut((&1, &1)).set_value_string("Name");
+            meta_sheet.get_cell_mut((&2, &1)).set_value_string("Value");
+
+            let mut currrent_row = 2;
+            for a in meta_annos {
+                if a.key.ns != ANNIS_NS {
+                    meta_sheet.insert_new_row(&currrent_row, &2);
+                    meta_sheet
+                        .get_cell_mut((&1, &currrent_row))
+                        .set_value_string(join_qname(&a.key.ns, &a.key.name));
+                    meta_sheet
+                        .get_cell_mut((&2, &currrent_row))
+                        .set_value_string(a.val);
+                    currrent_row += 1;
+                }
+            }
+        }
+
         let output_path = output_path.join(format!("{}.xlsx", doc_name));
         umya_spreadsheet::writer::xlsx::write(&book, output_path)?;
 

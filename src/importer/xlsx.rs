@@ -62,7 +62,11 @@ pub struct ImportSpreadsheet {
     /// Optional value of the Excel sheet that contains the metadata table. If
     /// no metadata is imported.    
     metasheet: Option<SheetAddress>,
+    /// Skip the first given rows in the meta data sheet.
+    #[serde(default)]
+    metasheet_skip_rows: u32,
     /// Map the given annotation columns as token annotations and not as span if possible.
+    #[serde(default)]
     token_annos: Vec<String>,
 }
 
@@ -360,7 +364,7 @@ impl ImportSpreadsheet {
         update: &mut GraphUpdate,
     ) -> Result<(), AnnattoError> {
         let max_row_num = sheet.get_highest_row(); // 1-based
-        for row_num in 1..max_row_num + 1 {
+        for row_num in (self.metasheet_skip_rows + 1)..max_row_num + 1 {
             let entries = sheet.get_collection_by_row(&row_num); // sorting not necessarily by col number
             let entry_map = entries
                 .into_iter()
@@ -590,6 +594,7 @@ mod tests {
             datasheet: None,
             metasheet: None,
             token_annos: vec![],
+            metasheet_skip_rows: 0,
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
@@ -699,6 +704,7 @@ mod tests {
             datasheet: None,
             metasheet: None,
             token_annos: vec![],
+            metasheet_skip_rows: 0,
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/dirty/xlsx/");
@@ -733,6 +739,7 @@ mod tests {
             datasheet: None,
             metasheet: None,
             token_annos: vec![],
+            metasheet_skip_rows: 0,
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/warnings/xlsx/");
@@ -811,6 +818,7 @@ mod tests {
             datasheet: None,
             metasheet: None,
             token_annos: vec![],
+            metasheet_skip_rows: 0,
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
@@ -902,6 +910,7 @@ mod tests {
             datasheet: None,
             metasheet: Some(SheetAddress::Name("meta".to_string())),
             token_annos: vec![],
+            metasheet_skip_rows: 0,
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
