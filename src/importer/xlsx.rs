@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, HashSet},
     fmt::Display,
     path::Path,
 };
@@ -14,12 +14,15 @@ use graphannis_core::{
     util::split_qname,
 };
 use itertools::Itertools;
+use percent_encoding::utf8_percent_encode;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 use umya_spreadsheet::Cell;
 
 use super::Importer;
-use crate::{error::AnnattoError, progress::ProgressReporter, util, StepID};
+use crate::{
+    error::AnnattoError, importer::NODE_NAME_ENCODE_SET, progress::ProgressReporter, util, StepID,
+};
 use documented::{Documented, DocumentedFields};
 
 /// Imports Excel Spreadsheets where each line is a token, the other columns are
@@ -59,6 +62,8 @@ pub struct ImportSpreadsheet {
     /// Optional value of the Excel sheet that contains the metadata table. If
     /// no metadata is imported.    
     metasheet: Option<SheetAddress>,
+    /// Map the given annotation columns as token annotations and not as span if possible.
+    token_annos: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -178,6 +183,8 @@ impl ImportSpreadsheet {
                 })?;
                 Ok::<(), AnnattoError>(())
             })?;
+
+        let token_annos: HashSet<String> = self.token_annos.clone().into_iter().collect();
         for (tok_name, anno_names) in &fullmap {
             let mut names = if tok_name.is_empty() {
                 vec![]
@@ -219,8 +226,19 @@ impl ImportSpreadsheet {
                         let base_token_end = *end_row_excl as usize - 2;
                         let overlapped_base_tokens: &[String] =
                             &base_tokens[base_token_start..base_token_end]; // TODO check indices
-                        let node_name =
-                            format!("{}#{}_{}-{}", &doc_path, tok_name, start_row, end_row_excl);
+
+                        let node_name = if token_annos.contains(name) {
+                            format!("{}#{}_{}-{}", &doc_path, tok_name, start_row, end_row_excl)
+                        } else {
+                            format!(
+                                "{}#span_{}_{}-{}",
+                                &doc_path,
+                                utf8_percent_encode(&name, &NODE_NAME_ENCODE_SET),
+                                start_row,
+                                end_row_excl
+                            )
+                        };
+
                         update.add_event(UpdateEvent::AddNode {
                             node_name: node_name.to_string(),
                             node_type: "node".to_string(),
@@ -571,6 +589,7 @@ mod tests {
             fallback: fallback.clone(),
             datasheet: None,
             metasheet: None,
+            token_annos: vec![],
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
@@ -679,6 +698,7 @@ mod tests {
             fallback: None,
             datasheet: None,
             metasheet: None,
+            token_annos: vec![],
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/dirty/xlsx/");
@@ -712,6 +732,7 @@ mod tests {
             fallback: None,
             datasheet: None,
             metasheet: None,
+            token_annos: vec![],
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/warnings/xlsx/");
@@ -789,6 +810,7 @@ mod tests {
             fallback: Some("tok".to_string()),
             datasheet: None,
             metasheet: None,
+            token_annos: vec![],
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
@@ -879,6 +901,7 @@ mod tests {
             fallback: None,
             datasheet: None,
             metasheet: Some(SheetAddress::Name("meta".to_string())),
+            token_annos: vec![],
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");

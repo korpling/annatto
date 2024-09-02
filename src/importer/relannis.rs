@@ -1,11 +1,11 @@
 use crate::progress::ProgressReporter;
 
-use super::Importer;
+use super::{Importer, NODE_NAME_ENCODE_SET};
 use anyhow::{anyhow, Result};
 use documented::{Documented, DocumentedFields};
 use graphannis::model::AnnotationComponentType;
 use graphannis::update::{GraphUpdate, UpdateEvent};
-use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
+use percent_encoding::utf8_percent_encode;
 use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
@@ -87,27 +87,6 @@ impl Importer for ImportRelAnnis {
         &[]
     }
 }
-
-/// An encoding set for node names.
-///
-/// This disallows `:` to avoid any possible ambiguities with the `::` annotation
-/// match seperator. `/` disallowed so this separator can be used to build
-/// hierarchical node IDs and simplifies using node names as file names.
-/// Spaces ` ` are encoded to avoid problems with annotation names in the AQL syntax.
-/// Since node names might be used as file names, all reserved charactes for
-/// Windows file names are encoded as well.
-pub const NODE_NAME_ENCODE_SET: &AsciiSet = &CONTROLS
-    .add(b':')
-    .add(b'/')
-    .add(b' ')
-    .add(b'%')
-    .add(b'\\')
-    .add(b'<')
-    .add(b'>')
-    .add(b'"')
-    .add(b'|')
-    .add(b'?')
-    .add(b'*');
 
 const TOK_WHITESPACE_BEFORE: &str = "tok-whitespace-before";
 const TOK_WHITESPACE_AFTER: &str = "tok-whitespace-after";

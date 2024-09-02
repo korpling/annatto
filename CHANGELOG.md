@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   enable/disable the ID column.
 - Importers that map directories to (sub)-corpora and files to documents can now also importt the
   corpus if the `path` argument points to a single file.
+- `xlsx` importer now maps columns as spans if the column is not configured to
+  be a `token_column`.
 
 ### Changed
 
