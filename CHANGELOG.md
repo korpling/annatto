@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2024-09-02
+
 ### Added
 
 - `table` export has feature to customize n/a-value, which by default is the empty string
