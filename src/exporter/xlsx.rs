@@ -138,7 +138,6 @@ impl ExportXlsx {
 
         // Output all spans
         let name_to_column = self.get_span_columns(g, &token_helper, 2)?;
-        dbg!(&name_to_column);
         self.create_span_columns(g, &name_to_column, token_to_row, &token_helper, worksheet)?;
 
         if has_only_empty_token {

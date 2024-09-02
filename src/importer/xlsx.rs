@@ -233,7 +233,7 @@ impl ImportSpreadsheet {
                             format!(
                                 "{}#span_{}_{}-{}",
                                 &doc_path,
-                                utf8_percent_encode(&name, &NODE_NAME_ENCODE_SET),
+                                utf8_percent_encode(name, NODE_NAME_ENCODE_SET),
                                 start_row,
                                 end_row_excl
                             )
