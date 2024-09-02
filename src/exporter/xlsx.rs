@@ -7,7 +7,7 @@ use anyhow::anyhow;
 use graphannis::{graph::GraphStorage, model::AnnotationComponentType, AnnotationGraph};
 use graphannis_core::{
     annostorage::{NodeAnnotationStorage, ValueSearch},
-    graph::ANNIS_NS,
+    graph::{ANNIS_NS, NODE_TYPE_KEY},
     types::{AnnoKey, Component, NodeID},
     util::join_qname,
 };
@@ -76,14 +76,23 @@ fn is_span_column(
     node_annos: &dyn NodeAnnotationStorage,
     token_helper: &TokenHelper,
 ) -> anyhow::Result<bool> {
-    // Check that none of the nodes having this key are token
+    // Check that none of the nodes having this key are token and that there is at least one non-corpus node.
+    // Document meta data and annotations inside documents could share the same
+    // annotation names, but we only want to include the ones that are used as
+    // annotations in a document.
+    let mut has_non_corpus_match = false;
     for m in node_annos.exact_anno_search(Some(&anno_key.ns), &anno_key.name, ValueSearch::Any) {
         let m = m?;
         if token_helper.is_token(m.node)? {
             return Ok(false);
         }
+        if let Some(node_type) = node_annos.get_value_for_item(&m.node, &NODE_TYPE_KEY)? {
+            if node_type == "node" {
+                has_non_corpus_match = true;
+            }
+        }
     }
-    Ok(true)
+    Ok(has_non_corpus_match)
 }
 
 fn overwritten_position_for_key(
@@ -129,6 +138,7 @@ impl ExportXlsx {
 
         // Output all spans
         let name_to_column = self.get_span_columns(g, &token_helper, 2)?;
+        dbg!(&name_to_column);
         self.create_span_columns(g, &name_to_column, token_to_row, &token_helper, worksheet)?;
 
         if has_only_empty_token {
