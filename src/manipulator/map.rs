@@ -94,6 +94,28 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// to more than one copy of the query by using arrays instead of a single
 /// number. In this case, the node values are concatenated using a space as
 /// seperator.
+///
+/// You can also apply a set of rules repeatedly. The standard is to only
+/// executed it once. But you can configure
+/// ```toml
+/// repetition = {Fixed = {n = 3}}
+///
+/// [[rules]]
+/// # ...
+/// ```
+/// at the beginning to set the fixed number of repetitions (in this case `3`).
+/// An even more advanced usage is to apply the changes until none of the
+/// queries in the rules matches anymore.
+/// ```toml
+/// repetition = "UntilUnchanged"
+///
+/// [[rules]]
+/// # ...
+/// ```
+/// Make sure that the updates in the rules actually change the condition of the
+/// rule, otherwise you might get an endless loop and the workflow will never
+/// finish!
+///
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct MapAnnos {
@@ -447,6 +469,8 @@ mod tests {
         AnnotationGraph,
     };
     use graphannis_core::{annostorage::ValueSearch, graph::ANNIS_NS};
+
+    use pretty_assertions::assert_eq;
     use tempfile::NamedTempFile;
 
     use crate::{manipulator::Manipulator, test_util, util::example_generator, StepID};
@@ -638,6 +662,92 @@ replacements = [
     }
 
     #[test]
+    fn repeat_mapping_fixed() {
+        let config = r#"
+repetition = {Fixed = {n = 3}}
+
+[[rules]]
+query = "tok"
+target = 1
+ns = "annis"
+name = "tok"
+
+[rules.value]
+target = 1
+# Only replace the last character of each token.
+replacements = [
+    ['(\w\u0304?)X*$', 'X'],
+]
+        "#;
+        let mut g = tokens_with_macrons().unwrap();
+
+        let tmp = NamedTempFile::new().unwrap();
+
+        std::fs::write(tmp.path(), config).unwrap();
+        let mapper = MapAnnos {
+            rule_file: tmp.path().to_path_buf(),
+        };
+        let step_id = StepID {
+            module_name: "test_map".to_string(),
+            path: None,
+        };
+        mapper
+            .manipulate_corpus(&mut g, tmp.path().parent().unwrap(), step_id, None)
+            .unwrap();
+
+        let th = TokenHelper::new(&g).unwrap();
+
+        let tokens = th.get_ordered_token("doc", None).unwrap();
+        let text = th.spanned_text(&tokens).unwrap();
+
+        // The rule is applied three times, to the last 3 characters of each
+        // token should have been replaced.
+        assert_eq!("X krX wechX etX anðthaX ellēbX hX", text);
+    }
+
+    #[test]
+    fn repeat_mapping_until_unchanged() {
+        let config = r#"
+repetition = "UntilUnchanged"
+
+[[rules]]
+query = 'tok!="X"'
+target = 1
+ns = "annis"
+name = "tok"
+
+[rules.value]
+target = 1
+replacements = [
+    ['[^X]X*$', 'X'],
+]
+        "#;
+        let mut g = tokens_with_macrons().unwrap();
+
+        let tmp = NamedTempFile::new().unwrap();
+
+        std::fs::write(tmp.path(), config).unwrap();
+        let mapper = MapAnnos {
+            rule_file: tmp.path().to_path_buf(),
+        };
+        let step_id = StepID {
+            module_name: "test_map".to_string(),
+            path: None,
+        };
+        mapper
+            .manipulate_corpus(&mut g, tmp.path().parent().unwrap(), step_id, None)
+            .unwrap();
+
+        let th = TokenHelper::new(&g).unwrap();
+
+        let tokens = th.get_ordered_token("doc", None).unwrap();
+        let text = th.spanned_text(&tokens).unwrap();
+
+        // The rule is applied until all characters have been replaced.
+        assert_eq!("X X X X X X X", text);
+    }
+
+    #[test]
     fn test_map_spans() {
         let mut updates = GraphUpdate::new();
         example_generator::create_corpus_structure_simple(&mut updates);
@@ -809,6 +919,7 @@ value = "PROPN"
         Ok(g)
     }
 
+    /// Create tokens "ein kraut wechſzt etwan anðthalbē ellēbogē hoch".
     fn tokens_with_macrons() -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
         let mut g = AnnotationGraph::with_default_graphstorages(true)?;
         let mut u = GraphUpdate::default();
@@ -838,6 +949,13 @@ value = "PROPN"
                 anno_ns: ANNIS_NS.to_string(),
                 anno_name: "tok".to_string(),
                 anno_value: text.to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddEdge {
+                source_node: format!("doc#t{i}"),
+                target_node: "doc".to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".to_string(),
             })?;
             if i > 0 {
                 u.add_event(UpdateEvent::AddEdge {
