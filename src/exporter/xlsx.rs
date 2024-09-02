@@ -7,7 +7,7 @@ use anyhow::anyhow;
 use graphannis::{graph::GraphStorage, model::AnnotationComponentType, AnnotationGraph};
 use graphannis_core::{
     annostorage::{NodeAnnotationStorage, ValueSearch},
-    graph::ANNIS_NS,
+    graph::{ANNIS_NS, NODE_TYPE_KEY},
     types::{AnnoKey, Component, NodeID},
     util::join_qname,
 };
@@ -76,14 +76,23 @@ fn is_span_column(
     node_annos: &dyn NodeAnnotationStorage,
     token_helper: &TokenHelper,
 ) -> anyhow::Result<bool> {
-    // Check that none of the nodes having this key are token
+    // Check that none of the nodes having this key are token and that there is at least one non-corpus node.
+    // Document meta data and annotations inside documents could share the same
+    // annotation names, but we only want to include the ones that are used as
+    // annotations in a document.
+    let mut has_non_corpus_match = false;
     for m in node_annos.exact_anno_search(Some(&anno_key.ns), &anno_key.name, ValueSearch::Any) {
         let m = m?;
         if token_helper.is_token(m.node)? {
             return Ok(false);
         }
+        if let Some(node_type) = node_annos.get_value_for_item(&m.node, &NODE_TYPE_KEY)? {
+            if node_type == "node" {
+                has_non_corpus_match = true;
+            }
+        }
     }
-    Ok(true)
+    Ok(has_non_corpus_match)
 }
 
 fn overwritten_position_for_key(
@@ -134,6 +143,29 @@ impl ExportXlsx {
         if has_only_empty_token {
             // Remove the empty token column
             worksheet.remove_column_by_index(&1, &1);
+        }
+
+        // Add meta data sheet
+        let meta_annos = g.get_node_annos().get_annotations_for_item(&doc_node_id)?;
+        if !meta_annos.is_empty() {
+            let meta_sheet = book.new_sheet("meta").map_err(|e| anyhow!(e))?;
+            meta_sheet.insert_new_row(&1, &2);
+            meta_sheet.get_cell_mut((&1, &1)).set_value_string("Name");
+            meta_sheet.get_cell_mut((&2, &1)).set_value_string("Value");
+
+            let mut currrent_row = 2;
+            for a in meta_annos {
+                if a.key.ns != ANNIS_NS {
+                    meta_sheet.insert_new_row(&currrent_row, &2);
+                    meta_sheet
+                        .get_cell_mut((&1, &currrent_row))
+                        .set_value_string(join_qname(&a.key.ns, &a.key.name));
+                    meta_sheet
+                        .get_cell_mut((&2, &currrent_row))
+                        .set_value_string(a.val);
+                    currrent_row += 1;
+                }
+            }
         }
 
         let output_path = output_path.join(format!("{}.xlsx", doc_name));
@@ -557,5 +589,70 @@ mod tests {
         let q = graphannis::aql::parse("mynamespace:lb=\"2\"", false).unwrap();
         let it = graphannis::aql::execute_query_on_graph(&written_graph, &q, false, None).unwrap();
         assert_eq!(1, it.count());
+    }
+
+    #[test]
+    fn with_meta() {
+        let importer: ImportSpreadsheet = toml::from_str(
+            r#"
+        column_map = {"tok" = ["lb"]}
+        metasheet = "meta"
+        metasheet_skip_rows = 1
+            "#,
+        )
+        .unwrap();
+        let exporter = ExportXlsx::default();
+
+        // Import an example document
+        let path = Path::new("./tests/data/import/xlsx/sample_sentence/");
+        let importer = crate::ReadFrom::Xlsx(importer);
+        let orig_import_step = ImporterStep {
+            module: importer,
+            path: path.to_path_buf(),
+        };
+        let mut updates = orig_import_step.execute(None).unwrap();
+        let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        original_graph.apply_update(&mut updates, |_| {}).unwrap();
+
+        // Export to Excel file and read it again
+        let tmp_outputdir = TempDir::new().unwrap();
+        let output_dir = tmp_outputdir.path().join("sample_sentence");
+        std::fs::create_dir(&output_dir).unwrap();
+        let exporter = crate::WriteAs::Xlsx(exporter);
+        let export_step = ExporterStep {
+            module: exporter,
+            path: output_dir.clone(),
+        };
+        export_step.execute(&original_graph, None).unwrap();
+
+        let importer: ImportSpreadsheet = toml::from_str(
+            r#"
+        column_map = {"tok" = ["lb"]}
+        metasheet = "meta"
+        metasheet_skip_rows = 1
+            "#,
+        )
+        .unwrap();
+        let second_import_step = ImporterStep {
+            module: crate::ReadFrom::Xlsx(importer),
+            path: output_dir.clone(),
+        };
+        let mut updates = second_import_step.execute(None).unwrap();
+
+        let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        written_graph.apply_update(&mut updates, |_| {}).unwrap();
+
+        let q = graphannis::aql::parse("Author=\"Unknown\" _ident_ annis:doc", false).unwrap();
+        let it = graphannis::aql::execute_query_on_graph(&written_graph, &q, false, None).unwrap();
+        assert_eq!(1, it.count());
+
+        let q = graphannis::aql::parse("Year=\"2024\" _ident_ annis:doc", false).unwrap();
+        let it = graphannis::aql::execute_query_on_graph(&written_graph, &q, false, None).unwrap();
+        assert_eq!(1, it.count());
+
+        // The header should not be imported
+        let q = graphannis::aql::parse("Name _ident_ annis:doc", false).unwrap();
+        let it = graphannis::aql::execute_query_on_graph(&written_graph, &q, false, None).unwrap();
+        assert_eq!(0, it.count());
     }
 }

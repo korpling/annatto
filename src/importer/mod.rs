@@ -17,6 +17,7 @@ pub mod xml;
 
 use crate::{workflow::StatusSender, StepID};
 use graphannis::update::GraphUpdate;
+use percent_encoding::{AsciiSet, CONTROLS};
 use std::path::Path;
 
 /// An importer is a module that takes a path and produces a list of graph update events.
@@ -40,3 +41,24 @@ pub trait Importer: Sync {
 
     fn file_extensions(&self) -> &[&str];
 }
+
+/// An encoding set for node names.
+///
+/// This disallows `:` to avoid any possible ambiguities with the `::` annotation
+/// match seperator. `/` disallowed so this separator can be used to build
+/// hierarchical node IDs and simplifies using node names as file names.
+/// Spaces ` ` are encoded to avoid problems with annotation names in the AQL syntax.
+/// Since node names might be used as file names, all reserved charactes for
+/// Windows file names are encoded as well.
+pub const NODE_NAME_ENCODE_SET: &AsciiSet = &CONTROLS
+    .add(b':')
+    .add(b'/')
+    .add(b' ')
+    .add(b'%')
+    .add(b'\\')
+    .add(b'<')
+    .add(b'>')
+    .add(b'"')
+    .add(b'|')
+    .add(b'?')
+    .add(b'*');

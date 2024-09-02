@@ -7,7 +7,10 @@ use std::{
 use super::Manipulator;
 use crate::{
     progress::ProgressReporter,
-    util::token_helper::{TokenHelper, TOKEN_KEY},
+    util::{
+        token_helper::{TokenHelper, TOKEN_KEY},
+        CorpusGraphHelper,
+    },
     StepID,
 };
 use anyhow::Context;
@@ -18,9 +21,7 @@ use graphannis::{
     update::{GraphUpdate, UpdateEvent},
     AnnotationGraph,
 };
-use graphannis_core::graph::{
-    storage::union::UnionEdgeContainer, ANNIS_NS, DEFAULT_NS, NODE_NAME_KEY, NODE_TYPE_KEY,
-};
+use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS, NODE_NAME_KEY, NODE_TYPE_KEY};
 use regex::Regex;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
@@ -94,7 +95,27 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// number. In this case, the node values are concatenated using a space as
 /// seperator.
 ///
-
+/// You can also apply a set of rules repeatedly. The standard is to only
+/// executed it once. But you can configure
+/// ```toml
+/// repetition = {Fixed = {n = 3}}
+///
+/// [[rules]]
+/// # ...
+/// ```
+/// at the beginning to set the fixed number of repetitions (in this case `3`).
+/// An even more advanced usage is to apply the changes until none of the
+/// queries in the rules matches anymore.
+/// ```toml
+/// repetition = "UntilUnchanged"
+///
+/// [[rules]]
+/// # ...
+/// ```
+/// Make sure that the updates in the rules actually change the condition of the
+/// rule, otherwise you might get an endless loop and the workflow will never
+/// finish!
+///
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct MapAnnos {
@@ -110,6 +131,8 @@ impl Manipulator for MapAnnos {
         step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        let progress = ProgressReporter::new_unknown_total_work(tx.clone(), step_id.clone())?;
+
         let read_from_path = {
             let p = Path::new(&self.rule_file).to_path_buf();
             if p.is_relative() {
@@ -119,39 +142,16 @@ impl Manipulator for MapAnnos {
             }
         };
         let config = read_config(read_from_path.as_path())?;
-        let progress = ProgressReporter::new(tx.clone(), step_id.clone(), config.rules.len())?;
 
         progress.info("Ensure all graph storages are loaded.")?;
         graph.ensure_loaded_all()?;
 
-        let mut updates = {
-            let tok_helper = TokenHelper::new(graph)?;
-            let all_part_of_gs: Vec<_> = graph
-                .get_all_components(Some(AnnotationComponentType::PartOf), None)
-                .into_iter()
-                .filter_map(|c| graph.get_graphstorage(&c))
-                .collect();
-            let all_part_of_edge_container: Vec<_> = all_part_of_gs
-                .iter()
-                .map(|gs| gs.as_edgecontainer())
-                .collect();
-            let part_of_gs = UnionEdgeContainer::new(all_part_of_edge_container);
-            let mut map_impl = MapperImpl {
-                config,
-                added_spans: 0,
-                graph,
-                part_of_gs,
-                tok_helper,
-                progress,
-            };
-            map_impl.run()?
+        let mut map_impl = MapperImpl {
+            config,
+            added_spans: 0,
+            progress,
         };
-        let progress = ProgressReporter::new_unknown_total_work(tx, step_id)?;
-        graph.apply_update(&mut updates, move |msg| {
-            if let Err(e) = progress.info(&format!("`map` updates: {msg}")) {
-                log::error!("{e}");
-            }
-        })?;
+        map_impl.run(graph)?;
 
         Ok(())
     }
@@ -163,9 +163,25 @@ fn read_config(path: &Path) -> Result<Mapping, Box<dyn std::error::Error>> {
     Ok(m)
 }
 
+#[derive(Debug, Deserialize)]
+enum RepetitionMode {
+    /// Repeat applying the rules n times.
+    Fixed { n: usize },
+    /// Repeat applying the rules until no changes are made.
+    UntilUnchanged,
+}
+
+impl Default for RepetitionMode {
+    fn default() -> Self {
+        Self::Fixed { n: 1 }
+    }
+}
+
 #[derive(Deserialize, Debug)]
 struct Mapping {
     rules: Vec<Rule>,
+    #[serde(default)]
+    repetition: RepetitionMode,
 }
 
 #[derive(Clone, Deserialize, Debug)]
@@ -261,53 +277,89 @@ impl Rule {
     }
 }
 
-struct MapperImpl<'a> {
+struct MapperImpl {
     config: Mapping,
     added_spans: usize,
-    graph: &'a AnnotationGraph,
-    part_of_gs: UnionEdgeContainer<'a>,
-    tok_helper: TokenHelper<'a>,
+
     progress: ProgressReporter,
 }
 
-impl<'a> MapperImpl<'a> {
-    fn run(&mut self) -> anyhow::Result<GraphUpdate> {
-        let mut update = GraphUpdate::default();
+impl MapperImpl {
+    fn run(&mut self, graph: &mut AnnotationGraph) -> anyhow::Result<()> {
+        match self.config.repetition {
+            RepetitionMode::Fixed { n } => {
+                for i in 0..n {
+                    self.progress.info(&format!(
+                        "Applying rule set of `map` module run {}/{n}",
+                        i + 1
+                    ))?;
+                    self.apply_ruleset(graph)?;
+                }
+            }
+            RepetitionMode::UntilUnchanged => {
+                let mut run_nr = 1;
+                loop {
+                    self.progress
+                        .info(&format!("Applying rule set of `map` module run {run_nr}"))?;
+                    let new_update_size = self.apply_ruleset(graph)?;
+                    if new_update_size > 0 {
+                        self.progress.info(&format!("Added {new_update_size} updates because of rules, repeating to apply all rules until no updates are generated."))?;
 
+                        run_nr += 1;
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn apply_ruleset(&mut self, graph: &mut AnnotationGraph) -> anyhow::Result<usize> {
+        let mut updates = GraphUpdate::default();
         for rule in self.config.rules.clone() {
-            self.progress
-                .info(&format!("Applying rule with query `{}`", &rule.query))?;
             let query = graphannis::aql::parse(&rule.query, false)
                 .with_context(|| format!("could not parse query '{}'", &rule.query))?;
-            let result_it =
-                graphannis::aql::execute_query_on_graph(self.graph, &query, true, None)?;
+            let result_it = graphannis::aql::execute_query_on_graph(graph, &query, true, None)?;
+            let mut n = 0;
             for match_group in result_it {
                 let match_group = match_group?;
                 match rule.target {
                     TargetRef::Node(target) => {
-                        self.map_single_node(&rule, target, &match_group, &mut update)?;
+                        self.map_single_node(&rule, target, &match_group, graph, &mut updates)?;
                     }
                     TargetRef::Span(ref all_targets) => {
-                        self.map_span(&rule, all_targets, &match_group, &mut update)?;
+                        self.map_span(&rule, all_targets, &match_group, graph, &mut updates)?;
                     }
                 }
+                n += 1;
             }
-
-            self.progress.worked(1)?;
+            self.progress.info(&format!(
+                "Rule with query `{}` matched {n} time(s).",
+                &rule.query
+            ))?;
         }
-        Ok(update)
+        let number_of_updates = updates.len()?;
+        if number_of_updates > 0 {
+            graph.apply_update(&mut updates, |msg| {
+                if let Err(e) = self.progress.info(&format!("`map` updates: {msg}")) {
+                    log::error!("{e}");
+                }
+            })?;
+        }
+        Ok(number_of_updates)
     }
-
     fn map_single_node(
         &self,
         rule: &Rule,
         target: usize,
         match_group: &[Match],
+        graph: &AnnotationGraph,
         update: &mut GraphUpdate,
     ) -> anyhow::Result<()> {
         if let Some(m) = match_group.get(target - 1) {
-            let match_node_name = self
-                .graph
+            let match_node_name = graph
                 .get_node_annos()
                 .get_value_for_item(&m.node, &NODE_NAME_KEY)?
                 .context("Missing node name for matched node")?;
@@ -315,7 +367,7 @@ impl<'a> MapperImpl<'a> {
                 node_name: match_node_name.to_string(),
                 anno_ns: rule.ns.to_string(),
                 anno_name: rule.name.to_string(),
-                anno_value: rule.resolve_value(self.graph, match_group)?,
+                anno_value: rule.resolve_value(graph, match_group)?,
             })?;
         }
         Ok(())
@@ -326,8 +378,11 @@ impl<'a> MapperImpl<'a> {
         rule: &Rule,
         targets: &[usize],
         match_group: &[Match],
+        graph: &AnnotationGraph,
         update: &mut GraphUpdate,
     ) -> anyhow::Result<()> {
+        let tok_helper = TokenHelper::new(graph)?;
+        let corpusgraph_helper = CorpusGraphHelper::new(graph);
         if let Some(first_match) = targets
             .first()
             .copied()
@@ -337,17 +392,16 @@ impl<'a> MapperImpl<'a> {
             let mut covered_token = BTreeSet::new();
             for t in targets {
                 if let Some(n) = match_group.get(t - 1) {
-                    if self.tok_helper.is_token(n.node)? {
+                    if tok_helper.is_token(n.node)? {
                         covered_token.insert(n.node);
                     } else {
-                        covered_token.extend(self.tok_helper.covered_token(n.node)?);
+                        covered_token.extend(tok_helper.covered_token(n.node)?);
                     }
                 }
             }
 
             // Determine the new node name by extending the node name of the first target
-            let first_node_name = self
-                .graph
+            let first_node_name = graph
                 .get_node_annos()
                 .get_value_for_item(&first_match.node, &NODE_NAME_KEY)?
                 .context("Missing node name")?;
@@ -363,14 +417,16 @@ impl<'a> MapperImpl<'a> {
                 node_name: new_node_name.clone(),
                 anno_ns: rule.ns.to_string(),
                 anno_name: rule.name.to_string(),
-                anno_value: rule.resolve_value(self.graph, match_group)?,
+                anno_value: rule.resolve_value(graph, match_group)?,
             })?;
 
             // Add the new node to the common parent
-            if let Some(parent_node) = self.part_of_gs.get_outgoing_edges(first_match.node).next() {
+            if let Some(parent_node) = corpusgraph_helper
+                .get_outgoing_edges(first_match.node)
+                .next()
+            {
                 let parent_node = parent_node?;
-                let parent_node_name = self
-                    .graph
+                let parent_node_name = graph
                     .get_node_annos()
                     .get_value_for_item(&parent_node, &NODE_NAME_KEY)?
                     .context("Missing node name for parent node")?;
@@ -384,8 +440,7 @@ impl<'a> MapperImpl<'a> {
             }
             // Add the coverage edges to the covered tokens
             for t in covered_token {
-                let token_node_name = self
-                    .graph
+                let token_node_name = graph
                     .get_node_annos()
                     .get_value_for_item(&t, &NODE_NAME_KEY)?
                     .context("Missing node name for covered token")?;
@@ -414,6 +469,8 @@ mod tests {
         AnnotationGraph,
     };
     use graphannis_core::{annostorage::ValueSearch, graph::ANNIS_NS};
+
+    use pretty_assertions::assert_eq;
     use tempfile::NamedTempFile;
 
     use crate::{manipulator::Manipulator, test_util, util::example_generator, StepID};
@@ -605,6 +662,92 @@ replacements = [
     }
 
     #[test]
+    fn repeat_mapping_fixed() {
+        let config = r#"
+repetition = {Fixed = {n = 3}}
+
+[[rules]]
+query = "tok"
+target = 1
+ns = "annis"
+name = "tok"
+
+[rules.value]
+target = 1
+# Only replace the last character of each token.
+replacements = [
+    ['(\w\u0304?)X*$', 'X'],
+]
+        "#;
+        let mut g = tokens_with_macrons().unwrap();
+
+        let tmp = NamedTempFile::new().unwrap();
+
+        std::fs::write(tmp.path(), config).unwrap();
+        let mapper = MapAnnos {
+            rule_file: tmp.path().to_path_buf(),
+        };
+        let step_id = StepID {
+            module_name: "test_map".to_string(),
+            path: None,
+        };
+        mapper
+            .manipulate_corpus(&mut g, tmp.path().parent().unwrap(), step_id, None)
+            .unwrap();
+
+        let th = TokenHelper::new(&g).unwrap();
+
+        let tokens = th.get_ordered_token("doc", None).unwrap();
+        let text = th.spanned_text(&tokens).unwrap();
+
+        // The rule is applied three times, to the last 3 characters of each
+        // token should have been replaced.
+        assert_eq!("X krX wechX etX anðthaX ellēbX hX", text);
+    }
+
+    #[test]
+    fn repeat_mapping_until_unchanged() {
+        let config = r#"
+repetition = "UntilUnchanged"
+
+[[rules]]
+query = 'tok!="X"'
+target = 1
+ns = "annis"
+name = "tok"
+
+[rules.value]
+target = 1
+replacements = [
+    ['[^X]X*$', 'X'],
+]
+        "#;
+        let mut g = tokens_with_macrons().unwrap();
+
+        let tmp = NamedTempFile::new().unwrap();
+
+        std::fs::write(tmp.path(), config).unwrap();
+        let mapper = MapAnnos {
+            rule_file: tmp.path().to_path_buf(),
+        };
+        let step_id = StepID {
+            module_name: "test_map".to_string(),
+            path: None,
+        };
+        mapper
+            .manipulate_corpus(&mut g, tmp.path().parent().unwrap(), step_id, None)
+            .unwrap();
+
+        let th = TokenHelper::new(&g).unwrap();
+
+        let tokens = th.get_ordered_token("doc", None).unwrap();
+        let text = th.spanned_text(&tokens).unwrap();
+
+        // The rule is applied until all characters have been replaced.
+        assert_eq!("X X X X X X X", text);
+    }
+
+    #[test]
     fn test_map_spans() {
         let mut updates = GraphUpdate::new();
         example_generator::create_corpus_structure_simple(&mut updates);
@@ -776,6 +919,7 @@ value = "PROPN"
         Ok(g)
     }
 
+    /// Create tokens "ein kraut wechſzt etwan anðthalbē ellēbogē hoch".
     fn tokens_with_macrons() -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
         let mut g = AnnotationGraph::with_default_graphstorages(true)?;
         let mut u = GraphUpdate::default();
@@ -805,6 +949,13 @@ value = "PROPN"
                 anno_ns: ANNIS_NS.to_string(),
                 anno_name: "tok".to_string(),
                 anno_value: text.to_string(),
+            })?;
+            u.add_event(UpdateEvent::AddEdge {
+                source_node: format!("doc#t{i}"),
+                target_node: "doc".to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".to_string(),
             })?;
             if i > 0 {
                 u.add_event(UpdateEvent::AddEdge {
