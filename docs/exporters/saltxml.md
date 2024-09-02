@@ -1,6 +1,8 @@
 # saltxml (exporter)
 
-Exports Excel Spreadsheets where each line is a token, the other columns are
-spans and merged cells can be used for spans that cover more than one token.
+Exports to the SaltXML format used by Pepper
+(<https://corpus-tools.org/pepper/>). SaltXML is an XMI serialization of the
+[Salt
+model](https://raw.githubusercontent.com/korpling/salt/master/gh-site/doc/salt_modelGuide.pdf).
 
 *No Configuration*

@@ -52,7 +52,7 @@ value = {target = 1, search = "cat", replacement = "dog"}
 This would add a new annotation value "complidoged" to any token with the value "complicated".
 
 The `replacement` value can contain back references to the regular
-expression (e.g. "$0" for the whole match or "$1" for the first match
+expression (e.g. "${0}" for the whole match or "${1}" for the first match
 group).
 ```toml
 [[rules]]
@@ -60,7 +60,7 @@ query = "tok=\"New York\""
 target = 1
 ns = ""
 name = "abbr"
-value = {target = 1, search = "([A-Z])[a-z]+ ([A-Z])[a-z]+", replacement = "$1$2"}
+value = {target = 1, search = "([A-Z])[a-z]+ ([A-Z])[a-z]+", replacement = "${1}${2}"}
 ```
 This example would add an annotation with the value "NY".
 
@@ -68,6 +68,27 @@ The `copy` and `target` fields in the value description can also refer
 to more than one copy of the query by using arrays instead of a single
 number. In this case, the node values are concatenated using a space as
 seperator.
+
+You can also apply a set of rules repeatedly. The standard is to only
+executed it once. But you can configure
+```toml
+repetition = {Fixed = {n = 3}}
+
+[[rules]]
+# ...
+```
+at the beginning to set the fixed number of repetitions (in this case `3`).
+An even more advanced usage is to apply the changes until none of the
+queries in the rules matches anymore.
+```toml
+repetition = "UntilUnchanged"
+
+[[rules]]
+# ...
+```
+Make sure that the updates in the rules actually change the condition of the
+rule, otherwise you might get an endless loop and the workflow will never
+finish!
 
 
 ## Configuration

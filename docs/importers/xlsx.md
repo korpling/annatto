@@ -45,3 +45,11 @@ the first sheet is used.
 Optional value of the Excel sheet that contains the metadata table. If
 no metadata is imported.
 
+###  metasheet_skip_rows
+
+Skip the first given rows in the meta data sheet.
+
+###  token_annos
+
+Map the given annotation columns as token annotations and not as span if possible.
+

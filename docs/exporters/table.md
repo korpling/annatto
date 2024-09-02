@@ -73,3 +73,7 @@ Example:
 outgoing = [{ ctype = "Pointing", layer = "", ns = "reference"}]
 ```
 
+###  id_column
+
+If `true` (the default), always output a column with the ID of the node.
+
