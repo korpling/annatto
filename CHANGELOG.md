@@ -5,6 +5,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `xlsx` importer did not give the correct node name to segmentation token. Due
+  to this inconsistency, span annotations on segmentation nodes where not
+  connected to the segmentation token.
+
 ## [0.16.0] - 2024-09-02
 
 ### Added
