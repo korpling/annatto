@@ -231,7 +231,7 @@ impl ImportSpreadsheet {
                         let overlapped_base_tokens: &[String] =
                             &base_tokens[base_token_start..base_token_end]; // TODO check indices
 
-                        let node_name = if token_annos.contains(name) {
+                        let node_name = if name == tok_name || token_annos.contains(name) {
                             format!("{}#{}_{}-{}", &doc_path, tok_name, start_row, end_row_excl)
                         } else {
                             format!(
