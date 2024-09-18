@@ -45,6 +45,7 @@ pub enum StatusMessage {
 /// The manipulators are executed in their defined sequence and can change the annotation graph.
 /// Last, all exporters are called with the now read-only annotation graph in parallel.
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Workflow {
     import: Vec<ImporterStep>,
     graph_op: Option<Vec<ManipulatorStep>>,

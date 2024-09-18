@@ -452,6 +452,7 @@ impl Display for StepID {
 pub trait Step {}
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImporterStep {
     #[serde(flatten)]
     module: ReadFrom,
@@ -473,6 +474,7 @@ impl ImporterStep {
 impl Step for ImporterStep {}
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ExporterStep {
     #[serde(flatten)]
     module: WriteAs,
@@ -495,6 +497,7 @@ impl ExporterStep {
 impl Step for ExporterStep {}
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ManipulatorStep {
     #[serde(flatten)]
     module: GraphOp,
