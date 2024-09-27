@@ -2,9 +2,11 @@
 source: src/exporter/table.rs
 expression: export.unwrap()
 ---
+---- test_doc.csv:
 norm::lemma	norm::pos	dipl::sentence	norm::norm	dipl::dipl
 I	PRON	1	I	I'm
 be	VERB	1	am	I'm
 in	ADP	1	in	in
 New York	PRON	1	New York	New
 New York	PRON	1	New York	York
+

@@ -5,7 +5,7 @@ expression: output
 | Type             | Modules                                                                                                              |
 |------------------|----------------------------------------------------------------------------------------------------------------------|
 | Import formats   | conllu, exmaralda, graphml, meta, none, opus, path, ptb, relannis, saltxml, textgrid, toolbox, treetagger, xlsx, xml |
-| Export formats   | conllu, exmaralda, graphml, saltxml, sequence, table, textgrid, xlsx                                                 |
+| Export formats   | conllu, exmaralda, graphml, meta, saltxml, sequence, table, textgrid, xlsx                                           |
 | Graph operations | check, collapse, filter, visualize, enumerate, link, map, revise, time, chunk, split, none                           |
 
 Use `annatto info <name>` to get more information about one of the formats or graph operations.

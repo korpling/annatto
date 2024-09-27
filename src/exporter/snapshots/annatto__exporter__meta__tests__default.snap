@@ -1,0 +1,15 @@
+---
+source: src/exporter/meta.rs
+expression: export.unwrap()
+---
+---- test_doc.meta:
+abbreviation=dipl
+abbreviation=norm
+comment=was late for elicitation
+comment=was on time
+l1=eng
+l2=deu
+languages-used=eng,eng
+personal-anno-key-1=personal-anno-value-1
+personal-anno-key-2=personal-anno-value-2
+

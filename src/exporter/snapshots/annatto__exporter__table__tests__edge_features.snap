@@ -2,6 +2,7 @@
 source: src/exporter/table.rs
 expression: export.unwrap()
 ---
+---- website_example.csv:
 lemma	id_lemma	upos	id_upos	xpos	id_xpos	Case	id_Case	Number	id_Number	in_Pointing__dep_deprel	in_Pointing__dep	sent_id	id_sent_id	text	id_text	Person	id_Person	Tense	id_Tense	SpaceAfter	id_SpaceAfter	PronType	id_PronType
 they	valid/website_example#t5_1	PRON	valid/website_example#t5_1	PRP	valid/website_example#t5_1	Nom	valid/website_example#t5_1	Plur	valid/website_example#t5_1	nsubj	valid/website_example#t5_68	1	valid/website_example#s1_1	They buy and sell books.	valid/website_example#s1_1								
 buy	valid/website_example#t5_68	VERB	valid/website_example#t5_68	VBP	valid/website_example#t5_68			Plur	valid/website_example#t5_68			1	valid/website_example#s1_1	They buy and sell books.	valid/website_example#s1_1	3	valid/website_example#t5_68	Pres	valid/website_example#t5_68				

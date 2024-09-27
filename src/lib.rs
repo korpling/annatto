@@ -20,7 +20,7 @@ use std::{
 use documented::{Documented, DocumentedFields};
 use error::Result;
 use exporter::{
-    conllu::ExportCoNLLU, exmaralda::ExportExmaralda, graphml::GraphMLExporter,
+    conllu::ExportCoNLLU, exmaralda::ExportExmaralda, graphml::GraphMLExporter, meta::ExportMeta,
     saltxml::ExportSaltXml, sequence::ExportSequence, table::ExportTable, textgrid::ExportTextGrid,
     xlsx::ExportXlsx, Exporter,
 };
@@ -56,7 +56,8 @@ pub struct ModuleConfiguration {
 pub enum WriteAs {
     CoNLLU(#[serde(default)] Box<ExportCoNLLU>),
     EXMARaLDA(#[serde(default)] ExportExmaralda),
-    GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited
+    GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited in the future
+    Meta(#[serde(default)] ExportMeta),
     SaltXml(#[serde(default)] ExportSaltXml),
     Sequence(#[serde(default)] ExportSequence),
     Table(#[serde(default)] ExportTable),
@@ -82,6 +83,7 @@ impl WriteAs {
             WriteAs::TextGrid(m) => m,
             WriteAs::Xlsx(m) => m,
             WriteAs::CoNLLU(m) => &**m,
+            WriteAs::Meta(m) => m,
         }
     }
 }
@@ -97,6 +99,7 @@ impl WriteAsDiscriminants {
             WriteAsDiscriminants::TextGrid => ExportTextGrid::DOCS,
             WriteAsDiscriminants::Xlsx => ExportXlsx::DOCS,
             WriteAsDiscriminants::CoNLLU => ExportCoNLLU::DOCS,
+            WriteAsDiscriminants::Meta => ExportMeta::DOCS,
         }
     }
 
@@ -131,6 +134,9 @@ impl WriteAsDiscriminants {
             }
             WriteAsDiscriminants::CoNLLU => {
                 (ExportCoNLLU::FIELD_NAMES_AS_SLICE, ExportCoNLLU::FIELD_DOCS)
+            }
+            WriteAsDiscriminants::Meta => {
+                (ExportMeta::FIELD_NAMES_AS_SLICE, ExportMeta::FIELD_DOCS)
             }
         };
         for (idx, n) in field_names.iter().enumerate() {
