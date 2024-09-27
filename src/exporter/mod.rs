@@ -3,6 +3,7 @@
 pub mod conllu;
 pub mod exmaralda;
 pub mod graphml;
+pub(crate) mod meta;
 pub mod saltxml;
 pub mod sequence;
 pub(crate) mod table;

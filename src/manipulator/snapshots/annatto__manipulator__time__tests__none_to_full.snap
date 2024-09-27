@@ -2,6 +2,7 @@
 source: src/manipulator/time.rs
 expression: actual.unwrap()
 ---
+---- valid.graphml:
 <?xml version="1.0" encoding="UTF-8"?>
 <graphml>
     <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>

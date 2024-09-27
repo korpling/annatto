@@ -2,6 +2,7 @@
 source: src/exporter/exmaralda.rs
 expression: actual.unwrap()
 ---
+---- test_doc.exb:
 <?xml version="1.0" encoding="UTF-8"?>
 <basic-transcription>
   <head>

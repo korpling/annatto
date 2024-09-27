@@ -2,6 +2,7 @@
 source: src/exporter/table.rs
 expression: export.unwrap()
 ---
+---- test_doc.csv:
 "norm::lemma"	"id_norm::lemma"	"norm::pos"	"id_norm::pos"	"dipl::sentence"	"id_dipl::sentence"	"norm::norm"	"id_norm::norm"	"dipl::dipl"	"id_dipl::dipl"
 "I"	"exmaralda/test_doc#a_norm_T286-T0"	"PRON"	"exmaralda/test_doc#a_norm_T286-T0"	"1"	"exmaralda/test_doc#a_dipl_T286-T4"	"I"	"exmaralda/test_doc#t_norm_T286-T0"	"I'm"	"exmaralda/test_doc#t_dipl_T286-T1"
 "be"	"exmaralda/test_doc#a_norm_T0-T1"	"VERB"	"exmaralda/test_doc#a_norm_T0-T1"	"1"	"exmaralda/test_doc#a_dipl_T286-T4"	"am"	"exmaralda/test_doc#t_norm_T0-T1"	"I'm"	"exmaralda/test_doc#t_dipl_T286-T1"

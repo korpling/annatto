@@ -1,0 +1,7 @@
+---
+source: src/exporter/meta.rs
+expression: export.unwrap()
+---
+---- test_doc.meta:
+doc=test_doc
+

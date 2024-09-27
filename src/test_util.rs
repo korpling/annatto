@@ -100,6 +100,12 @@ where
         })?;
     let mut buffer = String::new();
     for path in get_all_files(output_path.as_ref(), &[exporter.file_extension()])? {
+        let path_str = if let Some(file_name) = path.file_name() {
+            file_name.to_string_lossy().to_string()
+        } else {
+            "".to_string()
+        };
+        buffer.push_str(format!("---- {}:\n", path_str).as_str());
         let file_data = fs::read_to_string(path)?;
         buffer.push_str(&file_data);
     }

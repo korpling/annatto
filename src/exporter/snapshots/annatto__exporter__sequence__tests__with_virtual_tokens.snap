@@ -2,6 +2,7 @@
 source: src/exporter/sequence.rs
 expression: estr.unwrap()
 ---
+---- test_file.txt:
 I am
 in New York
 

@@ -2,6 +2,7 @@
 source: src/exporter/textgrid.rs
 expression: export.unwrap()
 ---
+---- test_doc.TextGrid:
 File type = "ooTextFile"
 Object class = "TextGrid"
 
