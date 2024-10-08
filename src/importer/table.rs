@@ -249,9 +249,9 @@ impl ImportTable {
             }
 
             // Add all columns as token annotations
-            for i in 0..column_names.len() {
+            for (i, name) in column_names.iter().enumerate() {
                 if let Some(val) = record.get(i) {
-                    let (ns, name) = split_qname(&column_names[i]);
+                    let (ns, name) = split_qname(name);
                     update.add_event(UpdateEvent::AddNodeLabel {
                         node_name: node_name.clone(),
                         anno_ns: ns.unwrap_or_default().to_string(),
