@@ -9,6 +9,7 @@ pub mod opus;
 pub mod ptb;
 pub mod relannis;
 pub mod saltxml;
+pub mod table;
 pub mod textgrid;
 pub mod toolbox;
 pub mod treetagger;
