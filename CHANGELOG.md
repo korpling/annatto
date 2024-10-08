@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Export token in `table` exporter instead of ignoring them.
+- Export token in `table` exporter instead of ignoring them. You can disable
+  exporting the token with the `skip_token` parameter.
 
 ## [0.17.0] - 2024-09-27
 

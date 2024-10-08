@@ -27,6 +27,7 @@ use super::Exporter;
 use crate::{
     deserialize::{deserialize_anno_key, deserialize_annotation_component_seq},
     progress::ProgressReporter,
+    util::token_helper::TOKEN_KEY,
 };
 
 /// This module exports all ordered nodes and nodes connected by coverage edges of any name into a table.
@@ -106,6 +107,8 @@ pub struct ExportTable {
     column_names: Vec<String>,
     /// If true, do not output the first line with the column names.
     skip_header: bool,
+    /// If true, do not output the `annis:tok` column
+    skip_token: bool,
 }
 
 fn default_id_column() -> bool {
@@ -124,6 +127,7 @@ impl Default for ExportTable {
             id_column: default_id_column(),
             column_names: Vec::default(),
             skip_header: false,
+            skip_token: false,
         }
     }
 }
@@ -286,7 +290,9 @@ impl ExportTable {
                     .get_value_for_item(&rn, &NODE_NAME_KEY)?
                     .ok_or(anyhow!("Node has no name"))?;
                 for anno_key in node_annos.get_all_keys_for_item(&rn, None, None)? {
-                    if anno_key.ns.as_str() != ANNIS_NS || anno_key.name == "tok" {
+                    if anno_key.ns.as_str() != ANNIS_NS
+                        || (!self.skip_token && anno_key.as_ref() == TOKEN_KEY.as_ref())
+                    {
                         let qname = join_qname(anno_key.ns.as_str(), anno_key.name.as_str());
                         let id_name = format!("id_{qname}");
                         let index = if let Some(index) = index_map.get(&qname) {
@@ -542,6 +548,7 @@ mod tests {
             &graph,
             ExportTable {
                 quote_char: Some('"'),
+                skip_token: true,
                 ..Default::default()
             },
         );
@@ -640,6 +647,7 @@ mod tests {
         assert!(graph.apply_update(&mut update_import, |_| {}).is_ok());
         let mut exporter = ExportTable::default();
         exporter.id_column = false;
+        exporter.skip_token = true;
         let export = export_to_string(&graph, exporter);
         assert!(export.is_ok(), "error: {:?}", export.err());
         assert_snapshot!(export.unwrap());
