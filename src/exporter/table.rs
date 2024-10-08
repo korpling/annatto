@@ -104,6 +104,8 @@ pub struct ExportTable {
     id_column: bool,
     /// Export the given columns (qualified annotation names) in the given order.
     column_names: Vec<String>,
+    /// If true, do not output the first line with the column names.
+    skip_header: bool,
 }
 
 fn default_id_column() -> bool {
@@ -121,6 +123,7 @@ impl Default for ExportTable {
             outgoing: vec![],
             id_column: default_id_column(),
             column_names: Vec::default(),
+            skip_header: false,
         }
     }
 }
@@ -362,12 +365,14 @@ impl ExportTable {
             writer_builder.quote_style(csv::QuoteStyle::Always);
         }
         let mut writer = writer_builder.from_path(file_path)?;
-        let header = index_map
-            .iter()
-            .sorted_by(|(_, v), (_, v_)| v.cmp(v_))
-            .map(|(k, _)| k)
-            .collect_vec();
-        writer.write_record(header)?;
+        if !self.skip_header {
+            let header = index_map
+                .iter()
+                .sorted_by(|(_, v), (_, v_)| v.cmp(v_))
+                .map(|(k, _)| k)
+                .collect_vec();
+            writer.write_record(header)?;
+        }
         let index_bound = index_map.len();
         for mut entry in table_data {
             let mut row = Vec::with_capacity(index_bound);

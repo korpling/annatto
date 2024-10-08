@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Allow to set the order of output columns in `table` export with the parameter
-  `column_names`. 
+  `column_names` and to skip the column header with the `skip_header` param. 
 
 ### Fixed
 
