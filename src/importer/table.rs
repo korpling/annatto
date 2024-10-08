@@ -8,7 +8,7 @@ use csv::Reader;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::AnnoKey,
-    model::AnnotationComponentType,
+    model::{AnnotationComponent, AnnotationComponentType},
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::{graph::ANNIS_NS, util::split_qname};
@@ -21,7 +21,17 @@ use crate::{
     progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files, StepID,
 };
 
-use crate::deserialize::deserialize_anno_key_opt;
+use crate::deserialize::{deserialize_anno_key, deserialize_annotation_component_opt};
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct EmptyLineGroup {
+    #[serde(deserialize_with = "deserialize_anno_key")]
+    anno: AnnoKey,
+    value: String,
+    #[serde(deserialize_with = "deserialize_annotation_component_opt", default)]
+    component: Option<AnnotationComponent>,
+}
 
 /// Import CSV files with token and token annotations.
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
@@ -49,16 +59,22 @@ pub struct ImportTable {
     #[serde(default)]
     quote_char: Option<char>,
     /// If given, treat empty lines as separator for spans of token (e.g.
-    /// sentences).
+    /// sentences). You need to configure the name of the annotation to create
+    /// (`anno`), the `value`.
     /// Example:
     /// ```toml
     /// [import.config]
-    /// empty_line_group = "csv::sent"
+    /// empty_line_group = {anno = "csv::sentence, value="S"} "
     /// ```
-    #[serde(deserialize_with = "deserialize_anno_key_opt", default)]
-    empty_line_group: Option<AnnoKey>,
-    /// If `empty_line_group` is set, use this as the annotation value.
-    empty_line_group_value: String,
+    /// Per default, a span is created, but you can change the `component` e.g. to a one of the type dominance.
+    ///
+    /// ```toml
+    /// [import.config]
+    /// empty_line_group = {anno = "csv::sentence, value="S", component = {ctype="Dominance", layer="syntax", name="cat"}}
+    /// ```
+    ///
+    #[serde(default)]
+    empty_line_group: Option<EmptyLineGroup>,
 }
 
 fn default_delimiter() -> char {
@@ -72,7 +88,6 @@ impl Default for ImportTable {
             quote_char: None,
             delimiter: default_delimiter(),
             empty_line_group: None,
-            empty_line_group_value: String::default(),
         }
     }
 }
@@ -147,9 +162,9 @@ impl ImportTable {
                     })?;
                     update.add_event(UpdateEvent::AddNodeLabel {
                         node_name: group_span_name.clone(),
-                        anno_ns: empty_line_group.ns.to_string(),
-                        anno_name: empty_line_group.name.to_string(),
-                        anno_value: self.empty_line_group_value.clone(),
+                        anno_ns: empty_line_group.anno.ns.to_string(),
+                        anno_name: empty_line_group.anno.name.to_string(),
+                        anno_value: empty_line_group.value.clone(),
                     })?;
                     update.add_event(UpdateEvent::AddEdge {
                         source_node: group_span_name.clone(),
@@ -160,13 +175,23 @@ impl ImportTable {
                     })?;
                     // Add spanning relations for all covered token
                     for t in group_start_token..next_token_idx {
-                        update.add_event(UpdateEvent::AddEdge {
-                            source_node: group_span_name.clone(),
-                            target_node: format!("{document_node_name}/t{t}"),
-                            layer: ANNIS_NS.to_string(),
-                            component_type: AnnotationComponentType::Coverage.to_string(),
-                            component_name: "".to_string(),
-                        })?;
+                        if let Some(c) = &empty_line_group.component {
+                            update.add_event(UpdateEvent::AddEdge {
+                                source_node: group_span_name.clone(),
+                                target_node: format!("{document_node_name}/t{t}"),
+                                layer: c.layer.to_string(),
+                                component_type: c.get_type().to_string(),
+                                component_name: c.name.to_string(),
+                            })?;
+                        } else {
+                            update.add_event(UpdateEvent::AddEdge {
+                                source_node: group_span_name.clone(),
+                                target_node: format!("{document_node_name}/t{t}"),
+                                layer: ANNIS_NS.to_string(),
+                                component_type: AnnotationComponentType::Coverage.to_string(),
+                                component_name: "".to_string(),
+                            })?;
+                        }
                     }
                     group_start_token = next_token_idx;
                 } else {
