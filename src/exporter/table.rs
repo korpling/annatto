@@ -102,6 +102,8 @@ pub struct ExportTable {
     /// If `true` (the default), always output a column with the ID of the node.
     #[serde(default = "default_id_column")]
     id_column: bool,
+    /// Export the given columns (qualified annotation names) in the given order.
+    column_names: Vec<String>,
 }
 
 fn default_id_column() -> bool {
@@ -118,6 +120,7 @@ impl Default for ExportTable {
             ingoing: vec![],
             outgoing: vec![],
             id_column: default_id_column(),
+            column_names: Vec::default(),
         }
     }
 }
@@ -256,6 +259,14 @@ impl ExportTable {
             .filter_map(|c| graph.get_graphstorage(c))
             .collect_vec();
         let mut index_map = BTreeMap::default();
+        for c in &self.column_names {
+            index_map.insert(c.to_string(), index_map.len());
+            if self.id_column {
+                let id_name = format!("id_{c}");
+                index_map.insert(id_name.to_string(), index_map.len());
+            }
+        }
+
         let follow_edges = !self.outgoing.is_empty() || !self.ingoing.is_empty();
         for node in ordered_nodes {
             let reachable_nodes = coverage_storages

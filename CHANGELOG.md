@@ -5,6 +5,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Allow to set the order of output columns in `table` export with the parameter
+  `column_names`. 
+
 ### Fixed
 
 - Export token in `table` exporter instead of ignoring them.
