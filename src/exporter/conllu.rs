@@ -258,6 +258,7 @@ impl Exporter for ExportCoNLLU {
         _step_id: crate::StepID,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        std::fs::create_dir_all(output_path)?;
         let mut doc_nodes = graph
             .get_node_annos()
             .exact_anno_search(
