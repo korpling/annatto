@@ -187,7 +187,7 @@ fn order_interpolate(
         ))
         .ok_or(anyhow!("Ordering storage unavailable."))?;
     let ordered_nodes = ordering_storage
-        .find_connected(start_node, 0, Bound::Included(usize::MAX))
+        .find_connected(start_node, 0, Bound::Unbounded)
         .flatten()
         .collect_vec();
     let has_time_values = ordered_nodes
