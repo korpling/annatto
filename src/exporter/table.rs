@@ -272,7 +272,7 @@ impl ExportTable {
                     .get_value_for_item(&rn, &NODE_NAME_KEY)?
                     .ok_or(anyhow!("Node has no name"))?;
                 for anno_key in node_annos.get_all_keys_for_item(&rn, None, None)? {
-                    if anno_key.ns.as_str() != ANNIS_NS {
+                    if anno_key.ns.as_str() != ANNIS_NS || anno_key.name == "tok" {
                         let qname = join_qname(anno_key.ns.as_str(), anno_key.name.as_str());
                         let id_name = format!("id_{qname}");
                         let index = if let Some(index) = index_map.get(&qname) {
