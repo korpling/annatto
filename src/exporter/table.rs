@@ -27,6 +27,7 @@ use super::Exporter;
 use crate::{
     deserialize::{deserialize_anno_key, deserialize_annotation_component_seq},
     progress::ProgressReporter,
+    util::token_helper::TOKEN_KEY,
 };
 
 /// This module exports all ordered nodes and nodes connected by coverage edges of any name into a table.
@@ -102,6 +103,12 @@ pub struct ExportTable {
     /// If `true` (the default), always output a column with the ID of the node.
     #[serde(default = "default_id_column")]
     id_column: bool,
+    /// Export the given columns (qualified annotation names) in the given order.
+    column_names: Vec<String>,
+    /// If true, do not output the first line with the column names.
+    skip_header: bool,
+    /// If true, do not output the `annis:tok` column
+    skip_token: bool,
 }
 
 fn default_id_column() -> bool {
@@ -118,6 +125,9 @@ impl Default for ExportTable {
             ingoing: vec![],
             outgoing: vec![],
             id_column: default_id_column(),
+            column_names: Vec::default(),
+            skip_header: false,
+            skip_token: false,
         }
     }
 }
@@ -256,6 +266,14 @@ impl ExportTable {
             .filter_map(|c| graph.get_graphstorage(c))
             .collect_vec();
         let mut index_map = BTreeMap::default();
+        for c in &self.column_names {
+            index_map.insert(c.to_string(), index_map.len());
+            if self.id_column {
+                let id_name = format!("id_{c}");
+                index_map.insert(id_name.to_string(), index_map.len());
+            }
+        }
+
         let follow_edges = !self.outgoing.is_empty() || !self.ingoing.is_empty();
         for node in ordered_nodes {
             let reachable_nodes = coverage_storages
@@ -272,7 +290,9 @@ impl ExportTable {
                     .get_value_for_item(&rn, &NODE_NAME_KEY)?
                     .ok_or(anyhow!("Node has no name"))?;
                 for anno_key in node_annos.get_all_keys_for_item(&rn, None, None)? {
-                    if anno_key.ns.as_str() != ANNIS_NS {
+                    if anno_key.ns.as_str() != ANNIS_NS
+                        || (!self.skip_token && anno_key.as_ref() == TOKEN_KEY.as_ref())
+                    {
                         let qname = join_qname(anno_key.ns.as_str(), anno_key.name.as_str());
                         let id_name = format!("id_{qname}");
                         let index = if let Some(index) = index_map.get(&qname) {
@@ -351,12 +371,14 @@ impl ExportTable {
             writer_builder.quote_style(csv::QuoteStyle::Always);
         }
         let mut writer = writer_builder.from_path(file_path)?;
-        let header = index_map
-            .iter()
-            .sorted_by(|(_, v), (_, v_)| v.cmp(v_))
-            .map(|(k, _)| k)
-            .collect_vec();
-        writer.write_record(header)?;
+        if !self.skip_header {
+            let header = index_map
+                .iter()
+                .sorted_by(|(_, v), (_, v_)| v.cmp(v_))
+                .map(|(k, _)| k)
+                .collect_vec();
+            writer.write_record(header)?;
+        }
         let index_bound = index_map.len();
         for mut entry in table_data {
             let mut row = Vec::with_capacity(index_bound);
@@ -526,6 +548,7 @@ mod tests {
             &graph,
             ExportTable {
                 quote_char: Some('"'),
+                skip_token: true,
                 ..Default::default()
             },
         );
@@ -606,6 +629,68 @@ mod tests {
     }
 
     #[test]
+    fn manual_column_ordering_no_id() {
+        let exmaralda = ImportEXMARaLDA {};
+        let mprt = exmaralda.import_corpus(
+            Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
+            StepID {
+                module_name: "test_import_exb".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(mprt.is_ok());
+        let mut update_import = mprt.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update_import, |_| {}).is_ok());
+        let m = ExportTable {
+            column_names: vec![
+                "norm::pos".to_string(),
+                "annis::tok".to_string(),
+                "dipl::sentence".to_string(),
+            ],
+            id_column: false,
+            ..Default::default()
+        };
+        let export = export_to_string(&graph, m);
+        assert!(export.is_ok(), "error: {:?}", export.err());
+        assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
+    fn manual_column_ordering_with_id() {
+        let exmaralda = ImportEXMARaLDA {};
+        let mprt = exmaralda.import_corpus(
+            Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
+            StepID {
+                module_name: "test_import_exb".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(mprt.is_ok());
+        let mut update_import = mprt.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update_import, |_| {}).is_ok());
+        let m = ExportTable {
+            column_names: vec![
+                "norm::pos".to_string(),
+                "annis::tok".to_string(),
+                "dipl::sentence".to_string(),
+            ],
+            id_column: true,
+            ..Default::default()
+        };
+        let export = export_to_string(&graph, m);
+        assert!(export.is_ok(), "error: {:?}", export.err());
+        assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
     fn no_id_column() {
         let exmaralda = ImportEXMARaLDA {};
         let mprt = exmaralda.import_corpus(
@@ -624,6 +709,7 @@ mod tests {
         assert!(graph.apply_update(&mut update_import, |_| {}).is_ok());
         let mut exporter = ExportTable::default();
         exporter.id_column = false;
+        exporter.skip_token = true;
         let export = export_to_string(&graph, exporter);
         assert!(export.is_ok(), "error: {:?}", export.err());
         assert_snapshot!(export.unwrap());

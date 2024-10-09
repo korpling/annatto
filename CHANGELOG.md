@@ -5,6 +5,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add new `table` importer for CSV files.
+- Allow to set the order of output columns in `table` export with the parameter
+  `column_names` and to skip the column header with the `skip_header` param. 
+
+### Fixed
+
+- Export token in `table` exporter instead of ignoring them. You can disable
+  exporting the token with the `skip_token` parameter.
+- Fixed `find_connected` calls with `Bound::Included(usize::MAX)`, which can
+  lead to invalid results when using the linear graph storage. Replaced with the
+  correct `Bound::Unbounded`. 
+
 ## [0.17.0] - 2024-09-27
 
 ### Added

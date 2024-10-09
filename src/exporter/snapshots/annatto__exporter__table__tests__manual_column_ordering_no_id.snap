@@ -1,0 +1,11 @@
+---
+source: src/exporter/table.rs
+expression: export.unwrap()
+---
+---- test_doc.csv:
+norm::pos	annis::tok	dipl::sentence	norm::lemma	norm::norm	dipl::dipl
+PRON	 	1	I	I	I'm
+VERB	 	1	be	am	I'm
+ADP	 	1	in	in	in
+PRON	 	1	New York	New York	New
+PRON	 	1	New York	New York	York

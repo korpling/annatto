@@ -258,6 +258,7 @@ impl Exporter for ExportCoNLLU {
         _step_id: crate::StepID,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        std::fs::create_dir_all(output_path)?;
         let mut doc_nodes = graph
             .get_node_annos()
             .exact_anno_search(
@@ -304,7 +305,7 @@ impl ExportCoNLLU {
             .get_graphstorage(&self.ordering)
             .ok_or(anyhow!("Ordering storage is unavailable."))?;
         let start_node = part_of_storage
-            .find_connected_inverse(doc_node, 0, Bound::Included(usize::MAX))
+            .find_connected_inverse(doc_node, 0, Bound::Unbounded)
             .flatten()
             .find(|n| {
                 !ordering_storage.has_ingoing_edges(*n).unwrap_or_default()
@@ -319,7 +320,7 @@ impl ExportCoNLLU {
         let mut node_id = 1;
         let mut last_group = None;
         let ordered_nodes = ordering_storage
-            .find_connected(start_node, 0, Bound::Included(usize::MAX))
+            .find_connected(start_node, 0, Bound::Unbounded)
             .flatten()
             .collect_vec(); // can be memory intense, but we need indices
         let node_to_index: BTreeMap<NodeID, usize> = ordered_nodes
@@ -426,7 +427,7 @@ impl ExportCoNLLU {
         let mut connected_nodes = BTreeSet::default();
         for storage in coverage_storages {
             storage
-                .find_connected(node, 0, Bound::Included(usize::MAX))
+                .find_connected(node, 0, Bound::Unbounded)
                 .flatten()
                 .for_each(|n| {
                     connected_nodes.insert(n);
@@ -435,7 +436,7 @@ impl ExportCoNLLU {
                 .iter()
                 .map(|n| {
                     storage
-                        .find_connected_inverse(*n, 1, Bound::Included(usize::MAX))
+                        .find_connected_inverse(*n, 1, Bound::Unbounded)
                         .flatten()
                 })
                 .collect_vec();

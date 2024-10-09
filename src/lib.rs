@@ -28,9 +28,9 @@ use graphannis::AnnotationGraph;
 use importer::{
     conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
     graphml::GraphMLImporter, meta::AnnotateCorpus, none::CreateEmptyCorpus, opus::ImportOpusLinks,
-    ptb::ImportPTB, relannis::ImportRelAnnis, saltxml::ImportSaltXml, textgrid::ImportTextgrid,
-    toolbox::ImportToolBox, treetagger::ImportTreeTagger, xlsx::ImportSpreadsheet, xml::ImportXML,
-    Importer,
+    ptb::ImportPTB, relannis::ImportRelAnnis, saltxml::ImportSaltXml, table::ImportTable,
+    textgrid::ImportTextgrid, toolbox::ImportToolBox, treetagger::ImportTreeTagger,
+    xlsx::ImportSpreadsheet, xml::ImportXML, Importer,
 };
 use manipulator::{
     check::Check, chunker::Chunk, collapse::Collapse, enumerate::EnumerateMatches,
@@ -171,6 +171,7 @@ pub enum ReadFrom {
     PTB(#[serde(default)] ImportPTB),
     RelAnnis(#[serde(default)] ImportRelAnnis),
     SaltXml(#[serde(default)] ImportSaltXml),
+    Table(#[serde(default)] ImportTable),
     TextGrid(#[serde(default)] ImportTextgrid),
     Toolbox(#[serde(default)] ImportToolBox),
     TreeTagger(#[serde(default)] ImportTreeTagger),
@@ -198,6 +199,7 @@ impl ReadFrom {
             ReadFrom::PTB(m) => m,
             ReadFrom::RelAnnis(m) => m,
             ReadFrom::SaltXml(m) => m,
+            ReadFrom::Table(m) => m,
             ReadFrom::TextGrid(m) => m,
             ReadFrom::Toolbox(m) => m,
             ReadFrom::TreeTagger(m) => m,
@@ -220,6 +222,7 @@ impl ReadFromDiscriminants {
             ReadFromDiscriminants::PTB => ImportPTB::DOCS,
             ReadFromDiscriminants::RelAnnis => ImportRelAnnis::DOCS,
             ReadFromDiscriminants::SaltXml => ImportSaltXml::DOCS,
+            ReadFromDiscriminants::Table => ImportTable::DOCS,
             ReadFromDiscriminants::TextGrid => ImportTextgrid::DOCS,
             ReadFromDiscriminants::Toolbox => ImportToolBox::DOCS,
             ReadFromDiscriminants::TreeTagger => ImportTreeTagger::DOCS,
@@ -263,6 +266,9 @@ impl ReadFromDiscriminants {
                 ImportTextgrid::FIELD_NAMES_AS_SLICE,
                 ImportTextgrid::FIELD_DOCS,
             ),
+            ReadFromDiscriminants::Table => {
+                (ImportTable::FIELD_NAMES_AS_SLICE, ImportTable::FIELD_DOCS)
+            }
             ReadFromDiscriminants::TreeTagger => (
                 ImportTreeTagger::FIELD_NAMES_AS_SLICE,
                 ImportTreeTagger::FIELD_DOCS,
