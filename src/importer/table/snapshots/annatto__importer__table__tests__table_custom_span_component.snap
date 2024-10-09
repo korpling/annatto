@@ -1,0 +1,248 @@
+---
+source: src/importer/table/tests.rs
+expression: actual.unwrap()
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="node" attr.name="Feigenblatt" attr.type="string"/>
+    <key id="k1" for="node" attr.name="NN" attr.type="string"/>
+    <key id="k2" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k3" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k4" for="node" attr.name="sentence" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <node id="simple">
+            <data key="k3">corpus</data>
+        </node>
+        <node id="simple/example">
+            <data key="k2">example</data>
+            <data key="k3">corpus</data>
+        </node>
+        <node id="simple/example/t1">
+            <data key="k0">Die</data>
+            <data key="k1">ART</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="simple/example/t2">
+            <data key="k0">Jugendlichen</data>
+            <data key="k1">NN</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="simple/example/t3">
+            <data key="k0">in</data>
+            <data key="k1">APPR</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="simple/example/t4">
+            <data key="k0">Zossen</data>
+            <data key="k1">NE</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="simple/example/t5">
+            <data key="k0">wollen</data>
+            <data key="k1">VMFIN</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="simple/example/t6">
+            <data key="k0">ein</data>
+            <data key="k1">ART</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="simple/example/t7">
+            <data key="k0">Musikcafé</data>
+            <data key="k1">NN</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="simple/example/t8">
+            <data key="k0">.</data>
+            <data key="k1">$.</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="simple/example/t9">
+            <data key="k0">Das</data>
+            <data key="k1">PDS</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="simple/example/t10">
+            <data key="k0">forderten</data>
+            <data key="k1">VVFIN</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="simple/example/t11">
+            <data key="k0">sie</data>
+            <data key="k1">PPER</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="simple/example/t12">
+            <data key="k0">bei</data>
+            <data key="k1">APPR</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="simple/example/t13">
+            <data key="k0">der</data>
+            <data key="k1">ART</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="simple/example/t14">
+            <data key="k0">ersten</data>
+            <data key="k1">ADJA</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="simple/example/t15">
+            <data key="k0">Zossener</data>
+            <data key="k1">ADJA</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="simple/example/t16">
+            <data key="k0">Runde</data>
+            <data key="k1">NN</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="simple/example/t17">
+            <data key="k0">am</data>
+            <data key="k1">APPRART</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="simple/example/t18">
+            <data key="k0">Dienstagabend</data>
+            <data key="k1">NN</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="simple/example/t19">
+            <data key="k0">.</data>
+            <data key="k1">$.</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="simple/example/group_span_1_1">
+            <data key="k3">node</data>
+            <data key="k4">S</data>
+        </node>
+        <node id="simple/example/group_span_2_9">
+            <data key="k3">node</data>
+            <data key="k4">S</data>
+        </node>
+        <node id="simple/example/group_span_10_19">
+            <data key="k3">node</data>
+            <data key="k4">S</data>
+        </node>
+        <edge id="e0" source="simple/example/group_span_1_1" target="simple/example/t1" label="Dominance/test/sent">
+        </edge>
+        <edge id="e1" source="simple/example/group_span_2_9" target="simple/example/t2" label="Dominance/test/sent">
+        </edge>
+        <edge id="e2" source="simple/example/group_span_2_9" target="simple/example/t3" label="Dominance/test/sent">
+        </edge>
+        <edge id="e3" source="simple/example/group_span_2_9" target="simple/example/t4" label="Dominance/test/sent">
+        </edge>
+        <edge id="e4" source="simple/example/group_span_2_9" target="simple/example/t5" label="Dominance/test/sent">
+        </edge>
+        <edge id="e5" source="simple/example/group_span_2_9" target="simple/example/t6" label="Dominance/test/sent">
+        </edge>
+        <edge id="e6" source="simple/example/group_span_2_9" target="simple/example/t7" label="Dominance/test/sent">
+        </edge>
+        <edge id="e7" source="simple/example/group_span_2_9" target="simple/example/t8" label="Dominance/test/sent">
+        </edge>
+        <edge id="e8" source="simple/example/group_span_2_9" target="simple/example/t9" label="Dominance/test/sent">
+        </edge>
+        <edge id="e9" source="simple/example/group_span_10_19" target="simple/example/t10" label="Dominance/test/sent">
+        </edge>
+        <edge id="e10" source="simple/example/group_span_10_19" target="simple/example/t11" label="Dominance/test/sent">
+        </edge>
+        <edge id="e11" source="simple/example/group_span_10_19" target="simple/example/t12" label="Dominance/test/sent">
+        </edge>
+        <edge id="e12" source="simple/example/group_span_10_19" target="simple/example/t13" label="Dominance/test/sent">
+        </edge>
+        <edge id="e13" source="simple/example/group_span_10_19" target="simple/example/t14" label="Dominance/test/sent">
+        </edge>
+        <edge id="e14" source="simple/example/group_span_10_19" target="simple/example/t15" label="Dominance/test/sent">
+        </edge>
+        <edge id="e15" source="simple/example/group_span_10_19" target="simple/example/t16" label="Dominance/test/sent">
+        </edge>
+        <edge id="e16" source="simple/example/group_span_10_19" target="simple/example/t17" label="Dominance/test/sent">
+        </edge>
+        <edge id="e17" source="simple/example/group_span_10_19" target="simple/example/t18" label="Dominance/test/sent">
+        </edge>
+        <edge id="e18" source="simple/example/group_span_10_19" target="simple/example/t19" label="Dominance/test/sent">
+        </edge>
+        <edge id="e19" source="simple/example/t1" target="simple/example/t2" label="Ordering/annis/">
+        </edge>
+        <edge id="e20" source="simple/example/t2" target="simple/example/t3" label="Ordering/annis/">
+        </edge>
+        <edge id="e21" source="simple/example/t3" target="simple/example/t4" label="Ordering/annis/">
+        </edge>
+        <edge id="e22" source="simple/example/t4" target="simple/example/t5" label="Ordering/annis/">
+        </edge>
+        <edge id="e23" source="simple/example/t5" target="simple/example/t6" label="Ordering/annis/">
+        </edge>
+        <edge id="e24" source="simple/example/t6" target="simple/example/t7" label="Ordering/annis/">
+        </edge>
+        <edge id="e25" source="simple/example/t7" target="simple/example/t8" label="Ordering/annis/">
+        </edge>
+        <edge id="e26" source="simple/example/t8" target="simple/example/t9" label="Ordering/annis/">
+        </edge>
+        <edge id="e27" source="simple/example/t9" target="simple/example/t10" label="Ordering/annis/">
+        </edge>
+        <edge id="e28" source="simple/example/t10" target="simple/example/t11" label="Ordering/annis/">
+        </edge>
+        <edge id="e29" source="simple/example/t11" target="simple/example/t12" label="Ordering/annis/">
+        </edge>
+        <edge id="e30" source="simple/example/t12" target="simple/example/t13" label="Ordering/annis/">
+        </edge>
+        <edge id="e31" source="simple/example/t13" target="simple/example/t14" label="Ordering/annis/">
+        </edge>
+        <edge id="e32" source="simple/example/t14" target="simple/example/t15" label="Ordering/annis/">
+        </edge>
+        <edge id="e33" source="simple/example/t15" target="simple/example/t16" label="Ordering/annis/">
+        </edge>
+        <edge id="e34" source="simple/example/t16" target="simple/example/t17" label="Ordering/annis/">
+        </edge>
+        <edge id="e35" source="simple/example/t17" target="simple/example/t18" label="Ordering/annis/">
+        </edge>
+        <edge id="e36" source="simple/example/t18" target="simple/example/t19" label="Ordering/annis/">
+        </edge>
+        <edge id="e37" source="simple/example" target="simple" label="PartOf/annis/">
+        </edge>
+        <edge id="e38" source="simple/example/t1" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e39" source="simple/example/t2" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e40" source="simple/example/t3" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e41" source="simple/example/t4" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e42" source="simple/example/t5" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e43" source="simple/example/t6" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e44" source="simple/example/t7" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e45" source="simple/example/t8" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e46" source="simple/example/t9" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e47" source="simple/example/t10" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e48" source="simple/example/t11" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e49" source="simple/example/t12" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e50" source="simple/example/t13" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e51" source="simple/example/t14" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e52" source="simple/example/t15" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e53" source="simple/example/t16" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e54" source="simple/example/t17" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e55" source="simple/example/t18" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e56" source="simple/example/t19" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e57" source="simple/example/group_span_1_1" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e58" source="simple/example/group_span_2_9" target="simple/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e59" source="simple/example/group_span_10_19" target="simple/example" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>

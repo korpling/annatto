@@ -25,3 +25,12 @@ fn table_sentence_span() {
     assert!(actual.is_ok());
     assert_snapshot!(actual.unwrap());
 }
+
+#[test]
+fn table_custom_span_component() {
+    let m: ImportTable =
+        toml::from_str(r#"empty_line_group = {anno="sentence", value="S", component = {ctype="Dominance", layer="test", name="sent"}}"#).unwrap();
+    let actual = import_as_graphml_string(m, Path::new("tests/data/import/table/simple/"), None);
+    assert!(actual.is_ok());
+    assert_snapshot!(actual.unwrap());
+}
