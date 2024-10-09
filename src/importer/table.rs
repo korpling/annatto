@@ -146,61 +146,90 @@ impl ImportTable {
             let f = File::open(document_path)?;
             let buffered_reader = BufReader::new(f);
 
-            let mut group_start_token = 1;
+            let mut group_start_token: u64 = 1;
             let mut next_token_idx = 1;
             for line in buffered_reader.lines() {
                 let line = line?;
 
                 if line.is_empty() {
-                    let group_span_name = format!(
-                        "{document_node_name}/group_span_{group_start_token}_{next_token_idx}"
-                    );
-
-                    update.add_event(UpdateEvent::AddNode {
-                        node_name: group_span_name.clone(),
-                        node_type: "node".to_string(),
-                    })?;
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: group_span_name.clone(),
-                        anno_ns: empty_line_group.anno.ns.to_string(),
-                        anno_name: empty_line_group.anno.name.to_string(),
-                        anno_value: empty_line_group.value.clone(),
-                    })?;
-                    update.add_event(UpdateEvent::AddEdge {
-                        source_node: group_span_name.clone(),
-                        target_node: document_node_name.to_string(),
-                        layer: ANNIS_NS.to_string(),
-                        component_type: AnnotationComponentType::PartOf.to_string(),
-                        component_name: "".to_string(),
-                    })?;
-                    // Add spanning relations for all covered token
-                    for t in group_start_token..next_token_idx {
-                        if let Some(c) = &empty_line_group.component {
-                            update.add_event(UpdateEvent::AddEdge {
-                                source_node: group_span_name.clone(),
-                                target_node: format!("{document_node_name}/t{t}"),
-                                layer: c.layer.to_string(),
-                                component_type: c.get_type().to_string(),
-                                component_name: c.name.to_string(),
-                            })?;
-                        } else {
-                            update.add_event(UpdateEvent::AddEdge {
-                                source_node: group_span_name.clone(),
-                                target_node: format!("{document_node_name}/t{t}"),
-                                layer: ANNIS_NS.to_string(),
-                                component_type: AnnotationComponentType::Coverage.to_string(),
-                                component_name: "".to_string(),
-                            })?;
-                        }
-                    }
+                    self.map_span(
+                        update,
+                        group_start_token,
+                        next_token_idx,
+                        empty_line_group,
+                        &document_node_name,
+                    )?;
                     group_start_token = next_token_idx;
                 } else {
                     // Token are only added for non-empty lines
                     next_token_idx += 1;
                 }
             }
+            if next_token_idx > group_start_token {
+                // Map the last group as well
+                self.map_span(
+                    update,
+                    group_start_token,
+                    next_token_idx - 1,
+                    empty_line_group,
+                    &document_node_name,
+                )?;
+            }
         }
 
+        Ok(())
+    }
+
+    fn map_span(
+        &self,
+        update: &mut GraphUpdate,
+        group_start_token: u64,
+        next_token_idx: u64,
+        empty_line_group: &EmptyLineGroup,
+        document_node_name: &str,
+    ) -> anyhow::Result<()> {
+        let group_span_name = format!(
+            "{document_node_name}/group_span_{group_start_token}_{}",
+            next_token_idx - 1
+        );
+
+        update.add_event(UpdateEvent::AddNode {
+            node_name: group_span_name.clone(),
+            node_type: "node".to_string(),
+        })?;
+        update.add_event(UpdateEvent::AddNodeLabel {
+            node_name: group_span_name.clone(),
+            anno_ns: empty_line_group.anno.ns.to_string(),
+            anno_name: empty_line_group.anno.name.to_string(),
+            anno_value: empty_line_group.value.clone(),
+        })?;
+        update.add_event(UpdateEvent::AddEdge {
+            source_node: group_span_name.clone(),
+            target_node: document_node_name.to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
+        // Add spanning relations for all covered token
+        for t in group_start_token..next_token_idx {
+            if let Some(c) = &empty_line_group.component {
+                update.add_event(UpdateEvent::AddEdge {
+                    source_node: group_span_name.clone(),
+                    target_node: format!("{document_node_name}/t{t}"),
+                    layer: c.layer.to_string(),
+                    component_type: c.get_type().to_string(),
+                    component_name: c.name.to_string(),
+                })?;
+            } else {
+                update.add_event(UpdateEvent::AddEdge {
+                    source_node: group_span_name.clone(),
+                    target_node: format!("{document_node_name}/t{t}"),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::Coverage.to_string(),
+                    component_name: "".to_string(),
+                })?;
+            }
+        }
         Ok(())
     }
 
@@ -266,3 +295,6 @@ impl ImportTable {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests;
