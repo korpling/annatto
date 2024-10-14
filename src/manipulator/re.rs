@@ -63,6 +63,15 @@ pub struct Revise {
     /// query = "pos=/PROPN/ _=_ norm"  # remove all proper nouns and their norm entry as well
     /// remove = [1, 2]
     /// ```
+    ///
+    /// To only delete the annotation and not the node, give the referenced node
+    /// as `node` and the annotation key to remove as `anno` parameter.
+    ///
+    /// ```toml
+    /// [[graph_op.config.remove_match]]
+    /// query = "pos=/PROPN/ _=_ norm"
+    /// remove = [{node=1, anno="pos"}]
+    /// ```
     #[serde(default)]
     remove_match: Vec<RemoveMatch>,
     /// also move annotations to other host nodes determined by namespace
@@ -96,7 +105,18 @@ struct RemoveMatch {
     /// The query to obtain the results.
     query: String,
     /// The node indices (starting at 1) from the query of nodes to be removed.
-    remove: Vec<usize>,
+    remove: Vec<RemoveTarget>,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum RemoveTarget {
+    Node(usize),
+    Annotation {
+        node: usize,
+        #[serde(deserialize_with = "deserialize_anno_key")]
+        anno: AnnoKey,
+    },
 }
 
 #[derive(Deserialize, Debug, PartialEq)]
@@ -158,16 +178,29 @@ fn remove_by_query(
         let disj = aql::parse(&match_definition.query, false)?;
         for m in aql::execute_query_on_graph(graph, &disj, true, None)? {
             let matching_nodes = m?;
-            for index in &match_definition.remove {
-                if (*index - 1) < matching_nodes.len() {
-                    let node_id = matching_nodes[*index - 1].node;
+            for target in &match_definition.remove {
+                let index = match target {
+                    RemoveTarget::Node(index) => *index,
+                    RemoveTarget::Annotation { node, .. } => *node,
+                };
+                if (index - 1) < matching_nodes.len() {
+                    let node_id = matching_nodes[index - 1].node;
                     if let Some(node_name) = graph
                         .get_node_annos()
                         .get_value_for_item(&node_id, &NODE_NAME_KEY)?
                     {
-                        update.add_event(UpdateEvent::DeleteNode {
-                            node_name: node_name.to_string(),
-                        })?;
+                        match target {
+                            RemoveTarget::Node(_) => update.add_event(UpdateEvent::DeleteNode {
+                                node_name: node_name.to_string(),
+                            })?,
+                            RemoveTarget::Annotation { anno: key, .. } => {
+                                update.add_event(UpdateEvent::DeleteNodeLabel {
+                                    node_name: node_name.to_string(),
+                                    anno_ns: key.ns.to_string(),
+                                    anno_name: key.name.to_string(),
+                                })?;
+                            }
+                        }
                     } else {
                         bail!("Could not obtain node name of node {node_id}, thus it could not be deleted.");
                     }
@@ -792,6 +825,7 @@ mod tests {
 
     use crate::exporter::graphml::GraphMLExporter;
     use crate::importer::exmaralda::ImportEXMARaLDA;
+    use crate::importer::graphml::GraphMLImporter;
     use crate::importer::Importer;
     use crate::manipulator::re::{ComponentMapping, KeyMapping, Revise};
     use crate::manipulator::Manipulator;
@@ -2470,6 +2504,39 @@ remove = [1, 2]
         let import = ImportEXMARaLDA::default();
         let u = import.import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
+            StepID {
+                module_name: "_test_helper_import".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(u.is_ok());
+        let mut import_update = u.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut import_update, |_| {}).is_ok());
+        let mut update = GraphUpdate::default();
+        let gen_update = super::remove_by_query(&graph, &vec![remove_match], &mut update);
+        assert!(gen_update.is_ok(), "{:?}", gen_update.err());
+        assert!(graph.apply_update(&mut update, |_| {}).is_ok());
+        let export = export_to_string(&graph, GraphMLExporter::default());
+        assert!(export.is_ok());
+        assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
+    fn remove_by_query_node_anno() {
+        let toml_str = r#"
+query = "tok=\"ein\""
+remove = [{node=1, anno="default_ns::pos"}]
+        "#;
+        let rmm: std::result::Result<RemoveMatch, _> = toml::from_str(toml_str);
+        assert!(rmm.is_ok());
+        let remove_match = rmm.unwrap();
+        let import = GraphMLImporter::default();
+        let u = import.import_corpus(
+            Path::new("tests/data/import/graphml/single_sentence.graphml"),
             StepID {
                 module_name: "_test_helper_import".to_string(),
                 path: None,

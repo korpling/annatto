@@ -128,6 +128,7 @@ impl ImportTable {
         reader_builder
             .delimiter(self.delimiter as u8)
             .quoting(false)
+            .trim(csv::Trim::All)
             .flexible(true);
         if let Some(c) = &self.quote_char {
             reader_builder.quoting(true).quote(*c as u8);
@@ -151,7 +152,7 @@ impl ImportTable {
             for line in buffered_reader.lines() {
                 let line = line?;
 
-                if line.is_empty() {
+                if line.trim_ascii().is_empty() {
                     self.map_span(
                         update,
                         group_start_token,
