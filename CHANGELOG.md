@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add new `table` importer for CSV files.
 - Allow to set the order of output columns in `table` export with the parameter
   `column_names` and to skip the column header with the `skip_header` param. 
+- `remove_match` option in `revise` now allows to delete the annotation but not
+  the referenced node. 
 
 ### Fixed
 

@@ -63,6 +63,15 @@ pub struct Revise {
     /// query = "pos=/PROPN/ _=_ norm"  # remove all proper nouns and their norm entry as well
     /// remove = [1, 2]
     /// ```
+    ///
+    /// To only delete the annotation and not the node, give the referenced node
+    /// as `node` and the annotation key to remove as `anno` parameter.
+    ///
+    /// ```toml
+    /// [[graph_op.config.remove_match]]
+    /// query = "pos=/PROPN/ _=_ norm"
+    /// remove = [{node=1, anno="pos"}]
+    /// ```
     #[serde(default)]
     remove_match: Vec<RemoveMatch>,
     /// also move annotations to other host nodes determined by namespace
@@ -96,7 +105,18 @@ struct RemoveMatch {
     /// The query to obtain the results.
     query: String,
     /// The node indices (starting at 1) from the query of nodes to be removed.
-    remove: Vec<usize>,
+    remove: Vec<RemoveTarget>,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum RemoveTarget {
+    Node(usize),
+    Annotation {
+        node: usize,
+        #[serde(deserialize_with = "deserialize_anno_key")]
+        anno: AnnoKey,
+    },
 }
 
 #[derive(Deserialize, Debug, PartialEq)]
@@ -158,16 +178,29 @@ fn remove_by_query(
         let disj = aql::parse(&match_definition.query, false)?;
         for m in aql::execute_query_on_graph(graph, &disj, true, None)? {
             let matching_nodes = m?;
-            for index in &match_definition.remove {
-                if (*index - 1) < matching_nodes.len() {
-                    let node_id = matching_nodes[*index - 1].node;
+            for target in &match_definition.remove {
+                let index = match target {
+                    RemoveTarget::Node(index) => *index,
+                    RemoveTarget::Annotation { node, .. } => *node,
+                };
+                if (index - 1) < matching_nodes.len() {
+                    let node_id = matching_nodes[index - 1].node;
                     if let Some(node_name) = graph
                         .get_node_annos()
                         .get_value_for_item(&node_id, &NODE_NAME_KEY)?
                     {
-                        update.add_event(UpdateEvent::DeleteNode {
-                            node_name: node_name.to_string(),
-                        })?;
+                        match target {
+                            RemoveTarget::Node(_) => update.add_event(UpdateEvent::DeleteNode {
+                                node_name: node_name.to_string(),
+                            })?,
+                            RemoveTarget::Annotation { anno: key, .. } => {
+                                update.add_event(UpdateEvent::DeleteNodeLabel {
+                                    node_name: node_name.to_string(),
+                                    anno_ns: key.ns.to_string(),
+                                    anno_name: key.name.to_string(),
+                                })?;
+                            }
+                        }
                     } else {
                         bail!("Could not obtain node name of node {node_id}, thus it could not be deleted.");
                     }

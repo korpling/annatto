@@ -151,7 +151,7 @@ impl ImportTable {
             for line in buffered_reader.lines() {
                 let line = line?;
 
-                if line.is_empty() {
+                if line.trim_ascii().is_empty() {
                     self.map_span(
                         update,
                         group_start_token,
