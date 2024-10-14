@@ -825,6 +825,7 @@ mod tests {
 
     use crate::exporter::graphml::GraphMLExporter;
     use crate::importer::exmaralda::ImportEXMARaLDA;
+    use crate::importer::graphml::GraphMLImporter;
     use crate::importer::Importer;
     use crate::manipulator::re::{ComponentMapping, KeyMapping, Revise};
     use crate::manipulator::Manipulator;
@@ -2503,6 +2504,39 @@ remove = [1, 2]
         let import = ImportEXMARaLDA::default();
         let u = import.import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
+            StepID {
+                module_name: "_test_helper_import".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(u.is_ok());
+        let mut import_update = u.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut import_update, |_| {}).is_ok());
+        let mut update = GraphUpdate::default();
+        let gen_update = super::remove_by_query(&graph, &vec![remove_match], &mut update);
+        assert!(gen_update.is_ok(), "{:?}", gen_update.err());
+        assert!(graph.apply_update(&mut update, |_| {}).is_ok());
+        let export = export_to_string(&graph, GraphMLExporter::default());
+        assert!(export.is_ok());
+        assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
+    fn remove_by_query_node_anno() {
+        let toml_str = r#"
+query = "tok=\"ein\""
+remove = [{node=1, anno="default_ns::pos"}]
+        "#;
+        let rmm: std::result::Result<RemoveMatch, _> = toml::from_str(toml_str);
+        assert!(rmm.is_ok());
+        let remove_match = rmm.unwrap();
+        let import = GraphMLImporter::default();
+        let u = import.import_corpus(
+            Path::new("tests/data/import/graphml/single_sentence.graphml"),
             StepID {
                 module_name: "_test_helper_import".to_string(),
                 path: None,

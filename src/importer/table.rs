@@ -128,6 +128,7 @@ impl ImportTable {
         reader_builder
             .delimiter(self.delimiter as u8)
             .quoting(false)
+            .trim(csv::Trim::All)
             .flexible(true);
         if let Some(c) = &self.quote_char {
             reader_builder.quoting(true).quote(*c as u8);
