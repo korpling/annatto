@@ -66,18 +66,21 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// ```
 ///
 /// It is also possible to replace all occurences in the original value that
-/// match a `search` regular expression with a `replacement` value.
+/// match a regular expression with a replacement value.
+/// The `replacements` parameter is a list of pairs where the left part is the
+/// search string and the right part the replacement string.
 /// ```toml
 /// [[rules]]
 /// query = "tok=\"complicated\""
 /// target = 1
 /// ns = ""
 /// name = "newtok"
-/// value = {target = 1, search = "cat", replacement = "dog"}
+/// value = {target = 1, replacements = [["cat", "dog"]]}
 /// ```
 /// This would add a new annotation value "complidoged" to any token with the value "complicated".
+/// You can define more
 ///
-/// The `replacement` value can contain back references to the regular
+/// The `replacements` values can contain back references to the regular
 /// expression (e.g. "${0}" for the whole match or "${1}" for the first match
 /// group).
 /// ```toml
@@ -86,7 +89,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// target = 1
 /// ns = ""
 /// name = "abbr"
-/// value = {target = 1, search = "([A-Z])[a-z]+ ([A-Z])[a-z]+", replacement = "${1}${2}"}
+/// value = {target = 1, replacements = [["([A-Z])[a-z]+ ([A-Z])[a-z]+", "${1}${2}"]]}
 /// ```
 /// This example would add an annotation with the value "NY".
 ///
