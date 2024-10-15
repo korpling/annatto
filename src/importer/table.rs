@@ -171,7 +171,7 @@ impl ImportTable {
                 self.map_span(
                     update,
                     group_start_token,
-                    next_token_idx - 1,
+                    next_token_idx,
                     empty_line_group,
                     &document_node_name,
                 )?;
