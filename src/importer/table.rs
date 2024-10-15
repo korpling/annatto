@@ -28,7 +28,6 @@ use crate::deserialize::{deserialize_anno_key, deserialize_annotation_component_
 struct EmptyLineGroup {
     #[serde(deserialize_with = "deserialize_anno_key")]
     anno: AnnoKey,
-    value: String,
     #[serde(deserialize_with = "deserialize_annotation_component_opt", default)]
     component: Option<AnnotationComponent>,
 }
@@ -60,12 +59,14 @@ pub struct ImportTable {
     quote_char: Option<char>,
     /// If given, treat empty lines as separator for spans of token (e.g.
     /// sentences). You need to configure the name of the annotation to create
-    /// (`anno`), the `value`.
+    /// (`anno`).
     /// Example:
     /// ```toml
     /// [import.config]
-    /// empty_line_group = {anno = "csv::sentence, value="S"} "
+    /// empty_line_group = {anno="csv::sent_id"}
     /// ```
+    /// The annotation value will be a sequential number.
+    ///
     /// Per default, a span is created, but you can change the `component` e.g. to a one of the type dominance.
     ///
     /// ```toml
@@ -147,6 +148,7 @@ impl ImportTable {
             let f = File::open(document_path)?;
             let buffered_reader = BufReader::new(f);
 
+            let mut empty_line_nr = 1;
             let mut group_start_token: u64 = 1;
             let mut next_token_idx = 1;
             for line in buffered_reader.lines() {
@@ -159,7 +161,9 @@ impl ImportTable {
                         next_token_idx,
                         empty_line_group,
                         &document_node_name,
+                        empty_line_nr.to_string(),
                     )?;
+                    empty_line_nr += 1;
                     group_start_token = next_token_idx;
                 } else {
                     // Token are only added for non-empty lines
@@ -174,6 +178,7 @@ impl ImportTable {
                     next_token_idx,
                     empty_line_group,
                     &document_node_name,
+                    empty_line_nr.to_string(),
                 )?;
             }
         }
@@ -188,6 +193,7 @@ impl ImportTable {
         next_token_idx: u64,
         empty_line_group: &EmptyLineGroup,
         document_node_name: &str,
+        value: String,
     ) -> anyhow::Result<()> {
         let group_span_name = format!(
             "{document_node_name}/group_span_{group_start_token}_{}",
@@ -202,7 +208,7 @@ impl ImportTable {
             node_name: group_span_name.clone(),
             anno_ns: empty_line_group.anno.ns.to_string(),
             anno_name: empty_line_group.anno.name.to_string(),
-            anno_value: empty_line_group.value.clone(),
+            anno_value: value,
         })?;
         update.add_event(UpdateEvent::AddEdge {
             source_node: group_span_name.clone(),

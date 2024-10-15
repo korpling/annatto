@@ -104,10 +104,13 @@ pub struct ExportTable {
     #[serde(default = "default_id_column")]
     id_column: bool,
     /// Export the given columns (qualified annotation names) in the given order.
+    #[serde(default)]
     column_names: Vec<String>,
     /// If true, do not output the first line with the column names.
+    #[serde(default)]
     skip_header: bool,
     /// If true, do not output the `annis:tok` column
+    #[serde(default)]
     skip_token: bool,
 }
 
