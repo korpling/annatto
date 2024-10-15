@@ -77,3 +77,15 @@ outgoing = [{ ctype = "Pointing", layer = "", ns = "reference"}]
 
 If `true` (the default), always output a column with the ID of the node.
 
+###  column_names
+
+Export the given columns (qualified annotation names) in the given order.
+
+###  skip_header
+
+If true, do not output the first line with the column names.
+
+###  skip_token
+
+If true, do not output the `annis:tok` column
+

@@ -38,6 +38,15 @@ query = "pos=/PROPN/ _=_ norm"  # remove all proper nouns and their norm entry a
 remove = [1, 2]
 ```
 
+To only delete the annotation and not the node, give the referenced node
+as `node` and the annotation key to remove as `anno` parameter.
+
+```toml
+[[graph_op.config.remove_match]]
+query = "pos=/PROPN/ _=_ norm"
+remove = [{node=1, anno="pos"}]
+```
+
 ###  move_node_annos
 
 also move annotations to other host nodes determined by namespace
