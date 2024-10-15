@@ -47,7 +47,6 @@ pub struct ExportCoNLLU {
     )]
     doc: AnnoKey,
     /// This optional annotation key is used to identify annotation spans, that constitute a sentence. Default is no export of sentence blocks.
-    /// Default is `annis::doc`, or `{ ns = "annis", name = "doc" }`.
     ///
     /// Example:
     /// ```toml

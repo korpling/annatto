@@ -114,15 +114,15 @@ expression: actual.unwrap()
         </node>
         <node id="simple/example/group_span_1_1">
             <data key="k3">node</data>
-            <data key="k4">S</data>
+            <data key="k4">1</data>
         </node>
         <node id="simple/example/group_span_2_9">
             <data key="k3">node</data>
-            <data key="k4">S</data>
+            <data key="k4">2</data>
         </node>
         <node id="simple/example/group_span_10_20">
             <data key="k3">node</data>
-            <data key="k4">S</data>
+            <data key="k4">3</data>
         </node>
         <edge id="e0" source="simple/example/group_span_1_1" target="simple/example/t1" label="Coverage/annis/">
         </edge>
