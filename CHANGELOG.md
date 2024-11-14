@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- import `exmaralda` allows tiers that have no speaker assigned
+
 ## [0.18.0] - 2024-10-15
 
 ### Added
