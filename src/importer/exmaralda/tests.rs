@@ -74,32 +74,8 @@ fn category_fail() {
 }
 
 #[test]
-fn speaker_fail() {
-    let import = crate::ReadFrom::EXMARaLDA(ImportEXMARaLDA::default());
-    let import_path = "./tests/data/import/exmaralda/fail-no_speaker/";
-    let import_step = ImporterStep {
-        module: import,
-        path: PathBuf::from(import_path),
-    };
-
-    let step_id = StepID::from_importer_step(&import_step);
-
-    let (sender, _receiver) = mpsc::channel();
-    let r = import_step.execute(Some(sender));
-    assert!(r.is_err());
-    assert_snapshot!(r.err().unwrap().to_string());
-    let document_path = Path::new(import_path).join("test_doc.exb");
-    let mut u = GraphUpdate::default();
-    assert!(ImportEXMARaLDA::default()
-        .import_document(
-            &step_id,
-            "fail-no_speaker/test_doc",
-            document_path.as_path(),
-            &mut u,
-            &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
-            &None
-        )
-        .is_err());
+fn no_speaker_attr_pass() {
+    assert!(run_test("./tests/data/import/exmaralda/pass-no_speaker/", 1).is_ok());
 }
 
 #[test]
