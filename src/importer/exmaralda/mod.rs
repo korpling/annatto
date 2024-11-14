@@ -314,19 +314,15 @@ impl ImportEXMARaLDA {
                             };
                             let speaker_id_opt = tier_info.get("speaker");
                             let speaker_id = if let Some(speaker_id_val) = speaker_id_opt {
-                                speaker_id_val
+                                speaker_id_val.as_str()
                             } else {
-                                let rs = "Undefined speaker (not defined in tier attributes).";
-                                let err = AnnattoError::Import {
-                                    reason: rs.to_string(),
-                                    importer: step_id.module_name.clone(),
-                                    path: document_path.to_path_buf(),
-                                };
-                                return Err(err);
+                                ""
                             };
                             let speaker_name_opt = speaker_map.get(speaker_id);
                             let speaker_name = if let Some(speaker_name_value) = speaker_name_opt {
-                                speaker_name_value
+                                speaker_name_value.as_str()
+                            } else if speaker_id.trim().is_empty() {
+                                speaker_id
                             } else {
                                 let rs = format!(
                                     "Speaker `{speaker_id}` has not been defined in speaker-table."
