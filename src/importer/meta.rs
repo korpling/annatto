@@ -4,9 +4,13 @@ use std::{
     path::Path,
 };
 
+use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
-use graphannis::update::{GraphUpdate, UpdateEvent};
-use graphannis_core::util::split_qname;
+use graphannis::{
+    model::AnnotationComponentType,
+    update::{GraphUpdate, UpdateEvent},
+};
+use graphannis_core::{graph::ANNIS_NS, util::split_qname};
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
@@ -18,9 +22,29 @@ use super::Importer;
 /// [`pepper.before.readMeta`](https://corpus-tools.org/pepper/generalCustomizationProperties.html)
 /// and imports metadata property files for documents and corpora by using the file
 /// name as path to the document.
+/// Alternatively, you can import csv-tables, that specify the target node in a specific column. The
+/// header of said column has to be provided as `identifier`, which also needs to be a used annotation
+/// key found in the corpus graph at the target node.
+///
+/// Example (for csv files):
+/// ```toml
+/// [import.config]
+/// identifier = { ns = "annis", name = "doc" }  # this is the default and can be omitted
+/// ```
 #[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
-pub struct AnnotateCorpus {}
+pub struct AnnotateCorpus {
+    #[serde(default)]
+    identifier: Option<String>,
+    #[serde(default = "default_delimiter")]
+    delimiter: String,
+}
+
+const DEFAULT_DELIMITER: &str = ",";
+
+fn default_delimiter() -> String {
+    DEFAULT_DELIMITER.to_string()
+}
 
 const KV_SEPARATOR: &str = "=";
 
@@ -45,7 +69,7 @@ fn read_annotations(
     Ok(anno_map)
 }
 
-const FILE_EXTENSIONS: [&str; 1] = ["meta"];
+const FILE_EXTENSIONS: [&str; 2] = ["meta", "csv"];
 
 impl Importer for AnnotateCorpus {
     fn import_corpus(
@@ -68,24 +92,33 @@ impl Importer for AnnotateCorpus {
                     .warn(format!("Skipping file: {}", file_path.to_string_lossy()).as_str())?;
                 continue;
             };
-            let full_path = &parent.join(file_stem);
-            let node_name = &full_path.to_string_lossy()[start_index..];
-            update.add_event(UpdateEvent::AddNode {
-                node_name: node_name.to_string(),
-                node_type: "corpus".to_string(),
-            })?; // this is required, corpus annotations might be first updates to be processed
-            let annotations = read_annotations(&file_path, &progress)?;
-            for (k, v) in annotations {
-                let (anno_ns, anno_name) = match split_qname(k.as_str()) {
-                    (None, name) => ("", name),
-                    (Some(ns), name) => (ns, name),
-                };
-                update.add_event(UpdateEvent::AddNodeLabel {
+            if file_path.extension().unwrap_or_default().to_string_lossy() == "csv" {
+                let s_ix = parent
+                    .to_string_lossy()
+                    .rfind(std::path::MAIN_SEPARATOR_STR)
+                    .unwrap_or_default()
+                    + 1;
+                self.import_from_csv(&file_path, &parent.to_string_lossy()[s_ix..], &mut update)?;
+            } else {
+                let full_path = &parent.join(file_stem);
+                let node_name = &full_path.to_string_lossy()[start_index..];
+                update.add_event(UpdateEvent::AddNode {
                     node_name: node_name.to_string(),
-                    anno_ns: anno_ns.to_string(),
-                    anno_name: anno_name.to_string(),
-                    anno_value: v,
-                })?;
+                    node_type: "corpus".to_string(),
+                })?; // this is required, corpus annotations might be first updates to be processed
+                let annotations = read_annotations(&file_path, &progress)?;
+                for (k, v) in annotations {
+                    let (anno_ns, anno_name) = match split_qname(k.as_str()) {
+                        (None, name) => ("", name),
+                        (Some(ns), name) => (ns, name),
+                    };
+                    update.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: node_name.to_string(),
+                        anno_ns: anno_ns.to_string(),
+                        anno_name: anno_name.to_string(),
+                        anno_value: v,
+                    })?;
+                }
             }
             progress.worked(1)?;
         }
@@ -97,9 +130,68 @@ impl Importer for AnnotateCorpus {
     }
 }
 
+impl AnnotateCorpus {
+    fn import_from_csv(
+        &self,
+        path: &Path,
+        parent: &str,
+        update: &mut GraphUpdate,
+    ) -> Result<(), anyhow::Error> {
+        let node_column = self
+            .identifier
+            .as_ref()
+            .ok_or(anyhow!("No identifier column defined"))?;
+        let del = self
+            .delimiter
+            .as_bytes()
+            .first()
+            .ok_or(anyhow!("Delimiter undefined."))?;
+        let mut reader = csv::ReaderBuilder::new().delimiter(*del).from_path(path)?;
+        let header: Vec<String> = reader.headers()?.iter().map(|e| e.to_string()).collect();
+        let mut node_name_opt = None;
+        let mut annotations = Vec::new();
+        for line in reader.into_records().flatten() {
+            for (name, value) in header.iter().zip(line.iter()) {
+                if name == node_column {
+                    node_name_opt = Some([parent, value].join("/"));
+                } else {
+                    annotations.push((name.to_string(), value.to_string()));
+                }
+            }
+        }
+        if let Some(node_name) = node_name_opt {
+            update.add_event(UpdateEvent::AddNode {
+                node_name: parent.to_string(),
+                node_type: "corpus".to_string(),
+            })?;
+            update.add_event(UpdateEvent::AddNode {
+                node_name: node_name.to_string(),
+                node_type: "corpus".to_string(),
+            })?;
+            update.add_event(UpdateEvent::AddEdge {
+                source_node: node_name.to_string(),
+                target_node: parent.to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".to_string(),
+            })?;
+            for (k, v) in annotations {
+                let (ns, name) = split_qname(&k);
+                update.add_event(UpdateEvent::AddNodeLabel {
+                    node_name: node_name.to_string(),
+                    anno_ns: ns.unwrap_or_default().to_string(),
+                    anno_name: name.to_string(),
+                    anno_value: v.trim().to_string(),
+                })?;
+            }
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use std::io::Write;
+    use std::{fs, io::Write, path::Path};
 
     use graphannis::{
         corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
@@ -108,11 +200,43 @@ mod tests {
         AnnotationGraph, CorpusStorage,
     };
     use graphannis_core::graph::ANNIS_NS;
+    use insta::assert_snapshot;
     use tempfile::tempdir;
 
-    use crate::{ImporterStep, ReadFrom};
+    use crate::{
+        exporter::graphml::GraphMLExporter, importer::Importer, test_util::export_to_string,
+        ImporterStep, ReadFrom,
+    };
 
     use super::AnnotateCorpus;
+
+    #[test]
+    fn from_csv() {
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let mut u = GraphUpdate::default();
+        assert!(external_updates(&mut u).is_ok());
+        assert!(graph.apply_update(&mut u, |_| {}).is_ok());
+        let toml_str = fs::read_to_string("./tests/data/import/meta/deserialize.toml");
+        assert!(toml_str.is_ok());
+        let import: Result<AnnotateCorpus, _> = toml::from_str(toml_str.unwrap().as_str());
+        assert!(import.is_ok());
+        let r = import.unwrap().import_corpus(
+            Path::new("./tests/data/import/meta/corpus/"),
+            crate::StepID {
+                module_name: "test".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(r.is_ok(), "ERROR: {:?}", r.err());
+        u = r.unwrap();
+        assert!(graph.apply_update(&mut u, |_| {}).is_ok());
+        let actual = export_to_string(&graph, GraphMLExporter::default());
+        assert!(actual.is_ok(), "ERROR: {:?}", actual.err());
+        assert_snapshot!(actual.unwrap());
+    }
 
     #[test]
     fn test_metadata_in_mem() {
