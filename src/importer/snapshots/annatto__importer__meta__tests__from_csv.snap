@@ -1,0 +1,46 @@
+---
+source: src/importer/meta.rs
+expression: actual.unwrap()
+---
+---- corpus.graphml:
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>
+    <key id="k1" for="node" attr.name="age" attr.type="string"/>
+    <key id="k2" for="node" attr.name="author" attr.type="string"/>
+    <key id="k3" for="node" attr.name="date" attr.type="string"/>
+    <key id="k4" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k5" for="node" attr.name="annis::tok" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <data key="k0"><![CDATA[
+# configure visualizations here
+]]></data>
+        <node id="corpus">
+            <data key="k4">corpus</data>
+        </node>
+        <node id="corpus/doc">
+            <data key="k1">37</data>
+            <data key="k2">me</data>
+            <data key="k3">today</data>
+            <data key="k4">corpus</data>
+        </node>
+        <node id="corpus/doc#t1">
+            <data key="k4">node</data>
+            <data key="k5">a</data>
+        </node>
+        <node id="corpus/doc#t2">
+            <data key="k4">node</data>
+            <data key="k5">b</data>
+        </node>
+        <node id="corpus/doc#t3">
+            <data key="k4">node</data>
+            <data key="k5">c</data>
+        </node>
+        <edge id="e0" source="corpus/doc#t1" target="corpus/doc#t2" label="Ordering/annis/">
+        </edge>
+        <edge id="e1" source="corpus/doc#t2" target="corpus/doc#t3" label="Ordering/annis/">
+        </edge>
+        <edge id="e2" source="corpus/doc" target="corpus" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>
