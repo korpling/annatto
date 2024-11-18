@@ -18,6 +18,18 @@ and already provides a basic set of data handling modules.
 Annatto is a command line program, which is available pre-compiled for Linux, Windows and macOS.
 Download and extract the [latest release file](https://github.com/korpling/annatto/releases/latest) for your platform. 
 
+After extracting the binary to a directory of your choice, you can run the binary by opening a terminal and execute
+```bash
+<path-to-directory>/annatto
+```
+on Linux and macOS and 
+```bash
+<path-to-directory>\annatto.exe
+```
+on Windows.
+If the annatto binary is located in the current working directory, you can also just execute `./annatto` on Linux and macOS and `annatto.exe` on Windows.
+In the following examples, the prefix to the path is omitted.
+
 The main usage of annatto is through the command line interface. Run
 ```bash
 annatto --help
