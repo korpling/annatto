@@ -108,13 +108,10 @@ impl Importer for AnnotateCorpus {
                 })?; // this is required, corpus annotations might be first updates to be processed
                 let annotations = read_annotations(&file_path, &progress)?;
                 for (k, v) in annotations {
-                    let (anno_ns, anno_name) = match split_qname(k.as_str()) {
-                        (None, name) => ("", name),
-                        (Some(ns), name) => (ns, name),
-                    };
+                    let (anno_ns, anno_name) = split_qname(k.as_str());
                     update.add_event(UpdateEvent::AddNodeLabel {
                         node_name: node_name.to_string(),
-                        anno_ns: anno_ns.to_string(),
+                        anno_ns: anno_ns.unwrap_or_default().to_string(),
                         anno_name: anno_name.to_string(),
                         anno_value: v,
                     })?;
@@ -148,9 +145,9 @@ impl AnnotateCorpus {
             .ok_or(anyhow!("Delimiter undefined."))?;
         let mut reader = csv::ReaderBuilder::new().delimiter(*del).from_path(path)?;
         let header: Vec<String> = reader.headers()?.iter().map(|e| e.to_string()).collect();
-        let mut node_name_opt = None;
-        let mut annotations = Vec::new();
         for line in reader.into_records().flatten() {
+            let mut node_name_opt = None;
+            let mut annotations = Vec::new();
             for (name, value) in header.iter().zip(line.iter()) {
                 if name == node_column {
                     node_name_opt = Some([parent, value].join("/"));
@@ -158,31 +155,31 @@ impl AnnotateCorpus {
                     annotations.push((name.to_string(), value.to_string()));
                 }
             }
-        }
-        if let Some(node_name) = node_name_opt {
-            update.add_event(UpdateEvent::AddNode {
-                node_name: parent.to_string(),
-                node_type: "corpus".to_string(),
-            })?;
-            update.add_event(UpdateEvent::AddNode {
-                node_name: node_name.to_string(),
-                node_type: "corpus".to_string(),
-            })?;
-            update.add_event(UpdateEvent::AddEdge {
-                source_node: node_name.to_string(),
-                target_node: parent.to_string(),
-                layer: ANNIS_NS.to_string(),
-                component_type: AnnotationComponentType::PartOf.to_string(),
-                component_name: "".to_string(),
-            })?;
-            for (k, v) in annotations {
-                let (ns, name) = split_qname(&k);
-                update.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: node_name.to_string(),
-                    anno_ns: ns.unwrap_or_default().to_string(),
-                    anno_name: name.to_string(),
-                    anno_value: v.trim().to_string(),
+            if let Some(node_name) = node_name_opt {
+                update.add_event(UpdateEvent::AddNode {
+                    node_name: parent.to_string(),
+                    node_type: "corpus".to_string(),
                 })?;
+                update.add_event(UpdateEvent::AddNode {
+                    node_name: node_name.to_string(),
+                    node_type: "corpus".to_string(),
+                })?;
+                update.add_event(UpdateEvent::AddEdge {
+                    source_node: node_name.to_string(),
+                    target_node: parent.to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::PartOf.to_string(),
+                    component_name: "".to_string(),
+                })?;
+                for (k, v) in annotations {
+                    let (ns, name) = split_qname(&k);
+                    update.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: node_name.to_string(),
+                        anno_ns: ns.unwrap_or_default().to_string(),
+                        anno_name: name.to_string(),
+                        anno_value: v.trim().to_string(),
+                    })?;
+                }
             }
         }
         Ok(())
