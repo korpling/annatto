@@ -5,9 +5,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- import `meta` additionally supports csv tables
+
 ### Changed
 
 - import `exmaralda` allows tiers that have no speaker assigned
+
+### Fixed
+
+- import meta csv tables iterates over all lines and completely imports the entire table unlike before
 
 ## [0.18.0] - 2024-10-15
 
