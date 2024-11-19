@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - import `exmaralda` allows tiers that have no speaker assigned
+- import `meta` trims annotation keys and values for property format
 
 ### Fixed
 
