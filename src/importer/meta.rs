@@ -108,12 +108,12 @@ impl Importer for AnnotateCorpus {
                 })?; // this is required, corpus annotations might be first updates to be processed
                 let annotations = read_annotations(&file_path, &progress)?;
                 for (k, v) in annotations {
-                    let (anno_ns, anno_name) = split_qname(k.as_str());
+                    let (anno_ns, anno_name) = split_qname(&k);
                     update.add_event(UpdateEvent::AddNodeLabel {
                         node_name: node_name.to_string(),
-                        anno_ns: anno_ns.unwrap_or_default().to_string(),
-                        anno_name: anno_name.to_string(),
-                        anno_value: v,
+                        anno_ns: anno_ns.unwrap_or_default().trim().to_string(),
+                        anno_name: anno_name.trim().to_string(),
+                        anno_value: v.trim().to_string(),
                     })?;
                 }
             }
