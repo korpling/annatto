@@ -3,10 +3,11 @@ whitespace = _{ "\t" }
 initial_padding = _{ SOI ~ (NEWLINE*)? }
 final_padding = _{ (NEWLINE*)? ~ EOI }
 conllu = ${ initial_padding ~ sentence+ ~ final_padding }
-sentence = ${ ( s_anno )* ~ (multi_token | empty_node | token)+ ~ NEWLINE? }
-s_anno = ${ "#" ~ " "* ~ name ~ " "* ~ equals ~ " "* ~ s_anno_value ~ NEWLINE }
+sentence = ${ ( s_anno | s_comment )* ~ (multi_token | empty_node | token)+ ~ NEWLINE? }
+s_anno = ${ hash ~ space* ~ name ~ space* ~ equals ~ space* ~ s_anno_value ~ NEWLINE }
 s_anno_value = @{ (char | WHITESPACE )+ }
-s_comment = ${ "#" ~ " "* ~ comment_char+ ~ NEWLINE }
+s_comment = ${ hash ~ space* ~ comment ~ NEWLINE }
+comment = @{ comment_char+ }
 
 token = ${ id ~ whitespace
 ~ ( no_value | form ) ~ whitespace
@@ -56,18 +57,21 @@ name = @{ feat_char+ }
 value = @{ feat_char+ }
 head = @{ ASCII_DIGIT+ }
 deprel = ${ char+ }
-enhanced_deps = ${ enhanced_dep ~ ("|" ~ enhanced_dep)* }
-enhanced_dep = ${ enhanced_head ~ ":" ~ enhanced_rel }
+enhanced_deps = ${ enhanced_dep ~ (delim ~ enhanced_dep)* }
+enhanced_dep = ${ enhanced_head ~ colon ~ enhanced_rel }
 enhanced_head = ${ ASCII_DIGIT+ }
 enhanced_rel = @{ enhanced_char+ }
 misc = ${ feature ~ ( delim ~ feature )* }
 
 char = _{ !(WHITESPACE | NEWLINE | EOI) ~ ANY }
-feat_char = { !(NEWLINE | WHITESPACE | " " | equals | delim ) ~ ANY }
+feat_char = { !(NEWLINE | WHITESPACE | space | equals | delim ) ~ ANY }
 comment_char = { !(NEWLINE | equals ) ~ ANY }
-enhanced_char = _{ !(":" | "|" | WHITESPACE | NEWLINE ) ~ ANY }
+enhanced_char = _{ !(colon | delim | WHITESPACE | NEWLINE ) ~ ANY }
+colon = _{ ":" }
 delim = _{ "|" }
 equals = _{ "=" }
 to = _{"-"}
 sub_delim = _{ "." }
+hash = _{ "#" }
+space = _{ " " }
 no_value = @{ "_" ~ &( WHITESPACE | NEWLINE | EOI ) }

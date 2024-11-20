@@ -220,15 +220,7 @@ impl ImportCoNLLU {
                             _ => {}
                         }
                     }
-                    if let Some(n) = name {
-                        let (fk, fv) = if let Some(v) = value {
-                            (n, v)
-                        } else {
-                            (
-                                join_qname(&self.comment_anno.ns, &self.comment_anno.name),
-                                n,
-                            )
-                        };
+                    if let (Some(fk), Some(fv)) = (name, value) {
                         match s_annos.entry(fk) {
                             Entry::Vacant(e) => {
                                 e.insert(vec![fv]);
@@ -236,6 +228,18 @@ impl ImportCoNLLU {
                             Entry::Occupied(mut e) => {
                                 e.get_mut().push(fv);
                             }
+                        }
+                    }
+                }
+                Rule::s_comment => {
+                    let comment = member.into_inner().as_str();
+                    let key = join_qname(&self.comment_anno.ns, &self.comment_anno.name);
+                    match s_annos.entry(key) {
+                        Entry::Vacant(vacant_entry) => {
+                            vacant_entry.insert(vec![comment.to_string()]);
+                        }
+                        Entry::Occupied(mut occupied_entry) => {
+                            occupied_entry.get_mut().push(comment.to_string());
                         }
                     }
                 }
