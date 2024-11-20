@@ -123,7 +123,7 @@ impl ImportCoNLLU {
         let mut decoder = DecodeReaderBytes::new(f);
         let mut file_content = String::new();
         decoder.read_to_string(&mut file_content)?; // TODO this needs to be buffered. UD Files can be very large
-        let conllu: Pairs<Rule> = CoNLLUParser::parse(Rule::conll, &file_content)?;
+        let conllu: Pairs<Rule> = CoNLLUParser::parse(Rule::conllu, &file_content)?;
         self.map_document(step_id, update, document_node_name, conllu, tx)?;
         Ok(())
     }
@@ -138,7 +138,7 @@ impl ImportCoNLLU {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut token_names = Vec::new();
         if let Some(pair) = conllu.next() {
-            if pair.as_rule() == Rule::conll {
+            if pair.as_rule() == Rule::conllu {
                 for sentence in pair.into_inner() {
                     // iterate over sentences
                     if sentence.as_rule() == Rule::sentence {
@@ -184,12 +184,13 @@ impl ImportCoNLLU {
         let mut id_to_tok_name = BTreeMap::new();
         let mut dependencies = Vec::new();
         let mut s_annos: BTreeMap<String, Vec<String>> = BTreeMap::default();
-        let (l, c) = sentence.line_col();
+        let (l, _) = sentence.line_col();
         for member in sentence.into_inner() {
             match member.as_rule() {
                 Rule::token => {
                     let (tok_name, tok_id, mut deps) =
                         self.map_token(step_id, update, document_node_name, member, tx)?;
+
                     id_to_tok_name.insert(tok_id, tok_name.to_string());
                     if let Some(dependency) = deps.pop_front() {
                         dependencies.push((
@@ -205,12 +206,6 @@ impl ImportCoNLLU {
                         dependencies.push((tok_name.to_string(), h, r, "enh", "dep"));
                     }
                 }
-                Rule::multi_token | Rule::invalid_multi_token => {
-                    // todo future work if needed
-                }
-                Rule::empty_node | Rule::invalid_empty_node => {
-                    // todo future work if needed
-                }
                 Rule::s_anno => {
                     let mut name = None;
                     let mut value = None;
@@ -219,7 +214,7 @@ impl ImportCoNLLU {
                             Rule::name => {
                                 name = Some(name_or_s_value.as_str().trim().to_string());
                             }
-                            Rule::s_value => {
+                            Rule::s_anno_value => {
                                 value = Some(name_or_s_value.as_str().trim().to_string())
                             }
                             _ => {}
@@ -248,7 +243,7 @@ impl ImportCoNLLU {
             }
         }
         if !id_to_tok_name.is_empty() {
-            let node_name = format!("{document_node_name}#s{l}_{c}");
+            let node_name = format!("{document_node_name}#s{l}");
             update.add_event(UpdateEvent::AddNode {
                 node_name: node_name.to_string(),
                 node_type: "node".to_string(),
@@ -303,7 +298,7 @@ impl ImportCoNLLU {
                         }
                     } else {
                         let msg =
-                            format!("Failed to build dependency tree: Unknown head id `{head_id}` ({l}, {c})");
+                            format!("Failed to build dependency tree: Unknown head id `{head_id}` (line {l})");
                         let err = AnnattoError::Import {
                             reason: msg,
                             importer: step_id.module_name.clone(),
@@ -325,9 +320,9 @@ impl ImportCoNLLU {
         token: Pair<Rule>,
         _tx: &Option<StatusSender>,
     ) -> anyhow::Result<(String, usize, DepSpec)> {
-        let (l, c) = token.line_col();
+        let (l, _) = token.line_col();
         let line = token.as_str().to_string();
-        let node_name = format!("{document_node_name}#t{l}_{c}");
+        let node_name = format!("{document_node_name}#t{l}");
         update.add_event(UpdateEvent::AddNode {
             node_name: node_name.to_string(),
             node_type: "node".to_string(),
@@ -389,21 +384,13 @@ impl ImportCoNLLU {
                                         anno_name: n.trim().to_string(),
                                         anno_value: v.trim().to_string(),
                                     })?;
-                                    break;
                                 }
                             }
-                        } else if feature.as_rule() == Rule::no_value {
-                            break;
                         }
                     }
                 }
                 Rule::head => {
-                    for id_or_else in member.into_inner() {
-                        if id_or_else.as_rule() == Rule::id {
-                            dependencies
-                                .insert((id_or_else.as_str().trim().parse::<usize>()?, None));
-                        }
-                    }
+                    dependencies.insert((member.as_str().trim().parse::<usize>()?, None));
                 }
                 Rule::deprel => {
                     if let Some((base_head, None)) = dependencies.pop_back() {
@@ -434,7 +421,7 @@ impl ImportCoNLLU {
             Ok((node_name, id, dependencies))
         } else {
             // by grammar spec this branch should never be possible
-            let reason = format!("Token `{line}` ({l}, {c}) has no id which is invalid.");
+            let reason = format!("Token `{line}` ({l}) has no id which is invalid.");
 
             Err(AnnattoError::Import {
                 reason,

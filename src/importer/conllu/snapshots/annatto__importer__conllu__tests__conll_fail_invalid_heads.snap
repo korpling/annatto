@@ -2,4 +2,4 @@
 source: src/importer/conllu/tests.rs
 expression: job.err().unwrap().to_string()
 ---
-Error during importing corpus from invalid-heads/test_file with "import_conllu": "Failed to build dependency tree: Unknown head id `9` (1, 1)"
+Error during importing corpus from invalid-heads/test_file with "import_conllu": "Failed to build dependency tree: Unknown head id `9` (line 1)"
