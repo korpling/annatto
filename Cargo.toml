@@ -35,7 +35,7 @@ normpath = "1.1"
 ordered-float = {version = "4.1", default-features = false}
 pathdiff = "0.2"
 percent-encoding = "2.3.1"
-pest = "2.7"
+pest = "2.7.14"
 pest_derive = "2.0"
 quick-xml = "0.34"
 rayon = "1.1"

@@ -36,6 +36,20 @@ fn test_conll_fail_invalid() {
 }
 
 #[test]
+fn fail_missing_column() {
+    let import = ReadFrom::CoNLLU(ImportCoNLLU::default());
+    let import_path = Path::new("tests/data/import/conll/missing-column/");
+    let import_step = ImporterStep {
+        module: import,
+        path: import_path.to_path_buf(),
+    };
+    let (sender, _receiver) = mpsc::channel();
+    let job = import_step.execute(Some(sender));
+    assert!(job.is_err());
+    assert_snapshot!(job.err().unwrap().to_string());
+}
+
+#[test]
 fn test_conll_fail_invalid_heads() {
     let import = ReadFrom::CoNLLU(ImportCoNLLU::default());
     let import_path = Path::new("tests/data/import/conll/invalid-heads/");

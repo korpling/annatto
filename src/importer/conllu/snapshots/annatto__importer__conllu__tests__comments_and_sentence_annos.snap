@@ -29,7 +29,7 @@ expression: actual.unwrap()
             <data key="k10">corpus</data>
             <data key="k7">test</data>
         </node>
-        <node id="comments/test#t7_1">
+        <node id="comments/test#t7">
             <data key="k0">Nom</data>
             <data key="k1">Plur</data>
             <data key="k10">node</data>
@@ -39,7 +39,7 @@ expression: actual.unwrap()
             <data key="k8">default_layer</data>
             <data key="k9">they</data>
         </node>
-        <node id="comments/test#t7_68">
+        <node id="comments/test#t8">
             <data key="k1">Plur</data>
             <data key="k10">node</data>
             <data key="k13">buy</data>
@@ -50,7 +50,7 @@ expression: actual.unwrap()
             <data key="k8">default_layer</data>
             <data key="k9">buy</data>
         </node>
-        <node id="comments/test#t8_67">
+        <node id="comments/test#t9">
             <data key="k10">node</data>
             <data key="k13">and</data>
             <data key="k14">CONJ</data>
@@ -58,7 +58,7 @@ expression: actual.unwrap()
             <data key="k8">default_layer</data>
             <data key="k9">and</data>
         </node>
-        <node id="comments/test#t9_32">
+        <node id="comments/test#t10">
             <data key="k1">Plur</data>
             <data key="k10">node</data>
             <data key="k13">sell</data>
@@ -69,7 +69,7 @@ expression: actual.unwrap()
             <data key="k8">default_layer</data>
             <data key="k9">sell</data>
         </node>
-        <node id="comments/test#t10_76">
+        <node id="comments/test#t11">
             <data key="k1">Plur</data>
             <data key="k10">node</data>
             <data key="k13">books</data>
@@ -79,7 +79,7 @@ expression: actual.unwrap()
             <data key="k8">default_layer</data>
             <data key="k9">book</data>
         </node>
-        <node id="comments/test#t11_66">
+        <node id="comments/test#t12">
             <data key="k10">node</data>
             <data key="k13">.</data>
             <data key="k14">PUNCT</data>
@@ -87,14 +87,14 @@ expression: actual.unwrap()
             <data key="k8">default_layer</data>
             <data key="k9">.</data>
         </node>
-        <node id="comments/test#s1_1">
+        <node id="comments/test#s3">
             <data key="k10">node</data>
             <data key="k11">1</data>
             <data key="k12">They buy and sell books.</data>
             <data key="k6">this is just a comment
 it has two lines, what are you going to do about it?!</data>
         </node>
-        <node id="comments/test#t16_13">
+        <node id="comments/test#t17">
             <data key="k0">Nom</data>
             <data key="k1">Sing</data>
             <data key="k10">node</data>
@@ -105,7 +105,7 @@ it has two lines, what are you going to do about it?!</data>
             <data key="k8">default_layer</data>
             <data key="k9">I</data>
         </node>
-        <node id="comments/test#t17_57">
+        <node id="comments/test#t18">
             <data key="k1">Sing</data>
             <data key="k10">node</data>
             <data key="k13">have</data>
@@ -116,7 +116,7 @@ it has two lines, what are you going to do about it?!</data>
             <data key="k8">default_layer</data>
             <data key="k9">have</data>
         </node>
-        <node id="comments/test#t18_64">
+        <node id="comments/test#t19">
             <data key="k10">node</data>
             <data key="k13">no</data>
             <data key="k14">DET</data>
@@ -125,7 +125,7 @@ it has two lines, what are you going to do about it?!</data>
             <data key="k8">default_layer</data>
             <data key="k9">no</data>
         </node>
-        <node id="comments/test#t19_38">
+        <node id="comments/test#t20">
             <data key="k1">Sing</data>
             <data key="k10">node</data>
             <data key="k13">clue</data>
@@ -135,7 +135,7 @@ it has two lines, what are you going to do about it?!</data>
             <data key="k8">default_layer</data>
             <data key="k9">clue</data>
         </node>
-        <node id="comments/test#t20_54">
+        <node id="comments/test#t21">
             <data key="k10">node</data>
             <data key="k13">.</data>
             <data key="k14">PUNCT</data>
@@ -143,114 +143,114 @@ it has two lines, what are you going to do about it?!</data>
             <data key="k8">default_layer</data>
             <data key="k9">.</data>
         </node>
-        <node id="comments/test#s12_34">
+        <node id="comments/test#s14">
             <data key="k10">node</data>
             <data key="k11">2</data>
             <data key="k12">I have no clue.</data>
             <data key="k6">TODO: read</data>
         </node>
-        <edge id="e0" source="comments/test#s1_1" target="comments/test#t7_1" label="Coverage/annis/">
+        <edge id="e0" source="comments/test#s3" target="comments/test#t7" label="Coverage/annis/">
         </edge>
-        <edge id="e1" source="comments/test#s1_1" target="comments/test#t7_68" label="Coverage/annis/">
+        <edge id="e1" source="comments/test#s3" target="comments/test#t8" label="Coverage/annis/">
         </edge>
-        <edge id="e2" source="comments/test#s1_1" target="comments/test#t8_67" label="Coverage/annis/">
+        <edge id="e2" source="comments/test#s3" target="comments/test#t9" label="Coverage/annis/">
         </edge>
-        <edge id="e3" source="comments/test#s1_1" target="comments/test#t9_32" label="Coverage/annis/">
+        <edge id="e3" source="comments/test#s3" target="comments/test#t10" label="Coverage/annis/">
         </edge>
-        <edge id="e4" source="comments/test#s1_1" target="comments/test#t10_76" label="Coverage/annis/">
+        <edge id="e4" source="comments/test#s3" target="comments/test#t11" label="Coverage/annis/">
         </edge>
-        <edge id="e5" source="comments/test#s1_1" target="comments/test#t11_66" label="Coverage/annis/">
+        <edge id="e5" source="comments/test#s3" target="comments/test#t12" label="Coverage/annis/">
         </edge>
-        <edge id="e6" source="comments/test#s12_34" target="comments/test#t16_13" label="Coverage/annis/">
+        <edge id="e6" source="comments/test#s14" target="comments/test#t17" label="Coverage/annis/">
         </edge>
-        <edge id="e7" source="comments/test#s12_34" target="comments/test#t17_57" label="Coverage/annis/">
+        <edge id="e7" source="comments/test#s14" target="comments/test#t18" label="Coverage/annis/">
         </edge>
-        <edge id="e8" source="comments/test#s12_34" target="comments/test#t18_64" label="Coverage/annis/">
+        <edge id="e8" source="comments/test#s14" target="comments/test#t19" label="Coverage/annis/">
         </edge>
-        <edge id="e9" source="comments/test#s12_34" target="comments/test#t19_38" label="Coverage/annis/">
+        <edge id="e9" source="comments/test#s14" target="comments/test#t20" label="Coverage/annis/">
         </edge>
-        <edge id="e10" source="comments/test#s12_34" target="comments/test#t20_54" label="Coverage/annis/">
+        <edge id="e10" source="comments/test#s14" target="comments/test#t21" label="Coverage/annis/">
         </edge>
-        <edge id="e11" source="comments/test#t7_68" target="comments/test#t7_1" label="Pointing//dep">
+        <edge id="e11" source="comments/test#t8" target="comments/test#t7" label="Pointing//dep">
             <data key="k16">nsubj</data>
         </edge>
-        <edge id="e12" source="comments/test#t7_68" target="comments/test#t9_32" label="Pointing//dep">
+        <edge id="e12" source="comments/test#t8" target="comments/test#t10" label="Pointing//dep">
             <data key="k16">conj</data>
         </edge>
-        <edge id="e13" source="comments/test#t7_68" target="comments/test#t10_76" label="Pointing//dep">
+        <edge id="e13" source="comments/test#t8" target="comments/test#t11" label="Pointing//dep">
             <data key="k16">obj</data>
         </edge>
-        <edge id="e14" source="comments/test#t7_68" target="comments/test#t11_66" label="Pointing//dep">
+        <edge id="e14" source="comments/test#t8" target="comments/test#t12" label="Pointing//dep">
             <data key="k16">punct</data>
         </edge>
-        <edge id="e15" source="comments/test#t9_32" target="comments/test#t8_67" label="Pointing//dep">
+        <edge id="e15" source="comments/test#t10" target="comments/test#t9" label="Pointing//dep">
             <data key="k16">cc</data>
         </edge>
-        <edge id="e16" source="comments/test#t17_57" target="comments/test#t16_13" label="Pointing//dep">
+        <edge id="e16" source="comments/test#t18" target="comments/test#t17" label="Pointing//dep">
             <data key="k16">nsubj</data>
         </edge>
-        <edge id="e17" source="comments/test#t17_57" target="comments/test#t19_38" label="Pointing//dep">
+        <edge id="e17" source="comments/test#t18" target="comments/test#t20" label="Pointing//dep">
             <data key="k16">obj</data>
         </edge>
-        <edge id="e18" source="comments/test#t17_57" target="comments/test#t20_54" label="Pointing//dep">
+        <edge id="e18" source="comments/test#t18" target="comments/test#t21" label="Pointing//dep">
             <data key="k16">punct</data>
         </edge>
-        <edge id="e19" source="comments/test#t19_38" target="comments/test#t18_64" label="Pointing//dep">
+        <edge id="e19" source="comments/test#t20" target="comments/test#t19" label="Pointing//dep">
             <data key="k16">det</data>
         </edge>
-        <edge id="e20" source="comments/test#t9_32" target="comments/test#t7_1" label="Pointing/enh/dep">
+        <edge id="e20" source="comments/test#t10" target="comments/test#t7" label="Pointing/enh/dep">
             <data key="k16">nsubj</data>
         </edge>
-        <edge id="e21" source="comments/test#t9_32" target="comments/test#t10_76" label="Pointing/enh/dep">
+        <edge id="e21" source="comments/test#t10" target="comments/test#t11" label="Pointing/enh/dep">
             <data key="k16">obj</data>
         </edge>
-        <edge id="e22" source="comments/test#t7_1" target="comments/test#t7_68" label="Ordering/annis/">
+        <edge id="e22" source="comments/test#t7" target="comments/test#t8" label="Ordering/annis/">
         </edge>
-        <edge id="e23" source="comments/test#t7_68" target="comments/test#t8_67" label="Ordering/annis/">
+        <edge id="e23" source="comments/test#t8" target="comments/test#t9" label="Ordering/annis/">
         </edge>
-        <edge id="e24" source="comments/test#t8_67" target="comments/test#t9_32" label="Ordering/annis/">
+        <edge id="e24" source="comments/test#t9" target="comments/test#t10" label="Ordering/annis/">
         </edge>
-        <edge id="e25" source="comments/test#t9_32" target="comments/test#t10_76" label="Ordering/annis/">
+        <edge id="e25" source="comments/test#t10" target="comments/test#t11" label="Ordering/annis/">
         </edge>
-        <edge id="e26" source="comments/test#t10_76" target="comments/test#t11_66" label="Ordering/annis/">
+        <edge id="e26" source="comments/test#t11" target="comments/test#t12" label="Ordering/annis/">
         </edge>
-        <edge id="e27" source="comments/test#t11_66" target="comments/test#t16_13" label="Ordering/annis/">
+        <edge id="e27" source="comments/test#t12" target="comments/test#t17" label="Ordering/annis/">
         </edge>
-        <edge id="e28" source="comments/test#t16_13" target="comments/test#t17_57" label="Ordering/annis/">
+        <edge id="e28" source="comments/test#t17" target="comments/test#t18" label="Ordering/annis/">
         </edge>
-        <edge id="e29" source="comments/test#t17_57" target="comments/test#t18_64" label="Ordering/annis/">
+        <edge id="e29" source="comments/test#t18" target="comments/test#t19" label="Ordering/annis/">
         </edge>
-        <edge id="e30" source="comments/test#t18_64" target="comments/test#t19_38" label="Ordering/annis/">
+        <edge id="e30" source="comments/test#t19" target="comments/test#t20" label="Ordering/annis/">
         </edge>
-        <edge id="e31" source="comments/test#t19_38" target="comments/test#t20_54" label="Ordering/annis/">
+        <edge id="e31" source="comments/test#t20" target="comments/test#t21" label="Ordering/annis/">
         </edge>
         <edge id="e32" source="comments/test" target="comments" label="PartOf/annis/">
         </edge>
-        <edge id="e33" source="comments/test#t7_1" target="comments/test" label="PartOf/annis/">
+        <edge id="e33" source="comments/test#t7" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e34" source="comments/test#t7_68" target="comments/test" label="PartOf/annis/">
+        <edge id="e34" source="comments/test#t8" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e35" source="comments/test#t8_67" target="comments/test" label="PartOf/annis/">
+        <edge id="e35" source="comments/test#t9" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e36" source="comments/test#t9_32" target="comments/test" label="PartOf/annis/">
+        <edge id="e36" source="comments/test#t10" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e37" source="comments/test#t10_76" target="comments/test" label="PartOf/annis/">
+        <edge id="e37" source="comments/test#t11" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e38" source="comments/test#t11_66" target="comments/test" label="PartOf/annis/">
+        <edge id="e38" source="comments/test#t12" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e39" source="comments/test#s1_1" target="comments/test" label="PartOf/annis/">
+        <edge id="e39" source="comments/test#s3" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e40" source="comments/test#t16_13" target="comments/test" label="PartOf/annis/">
+        <edge id="e40" source="comments/test#t17" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e41" source="comments/test#t17_57" target="comments/test" label="PartOf/annis/">
+        <edge id="e41" source="comments/test#t18" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e42" source="comments/test#t18_64" target="comments/test" label="PartOf/annis/">
+        <edge id="e42" source="comments/test#t19" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e43" source="comments/test#t19_38" target="comments/test" label="PartOf/annis/">
+        <edge id="e43" source="comments/test#t20" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e44" source="comments/test#t20_54" target="comments/test" label="PartOf/annis/">
+        <edge id="e44" source="comments/test#t21" target="comments/test" label="PartOf/annis/">
         </edge>
-        <edge id="e45" source="comments/test#s12_34" target="comments/test" label="PartOf/annis/">
+        <edge id="e45" source="comments/test#s14" target="comments/test" label="PartOf/annis/">
         </edge>
     </graph>
 </graphml>

@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - import meta csv tables iterates over all lines and completely imports the entire table unlike before
+- import `conllu` did not fail on missing column, but rather dropped the remaining content without notification
 
 ## [0.18.0] - 2024-10-15
 
