@@ -124,6 +124,20 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 pub struct MapAnnos {
     /// The path of the TOML file containing an array of mapping rules.
     rule_file: PathBuf,
+    /// If you wish for detailled output about the match count of each rule,
+    /// set this to `true`. Default is `false`, so no output.
+    ///
+    /// Example:
+    /// ```toml
+    /// [[graph_op]]
+    /// action = "map"
+    ///
+    /// [graph_op.config]
+    /// rule_file = "mapping-rules.toml"
+    /// debug = true
+    /// ```
+    #[serde(default)]
+    debug: bool,
 }
 
 impl Manipulator for MapAnnos {
@@ -152,7 +166,13 @@ impl Manipulator for MapAnnos {
         let mut map_impl = MapperImpl {
             config,
             added_spans: 0,
-            progress,
+            progress: {
+                if self.debug {
+                    Some(progress)
+                } else {
+                    None
+                }
+            },
         };
         map_impl.run(graph)?;
 
@@ -284,7 +304,7 @@ struct MapperImpl {
     config: Mapping,
     added_spans: usize,
 
-    progress: ProgressReporter,
+    progress: Option<ProgressReporter>,
 }
 
 impl MapperImpl {
@@ -292,22 +312,26 @@ impl MapperImpl {
         match self.config.repetition {
             RepetitionMode::Fixed { n } => {
                 for i in 0..n {
-                    self.progress.info(&format!(
-                        "Applying rule set of `map` module run {}/{n}",
-                        i + 1
-                    ))?;
+                    if let Some(p) = &self.progress {
+                        p.info(&format!(
+                            "Applying rule set of `map` module run {}/{n}",
+                            i + 1
+                        ))?;
+                    }
                     self.apply_ruleset(graph)?;
                 }
             }
             RepetitionMode::UntilUnchanged => {
                 let mut run_nr = 1;
                 loop {
-                    self.progress
-                        .info(&format!("Applying rule set of `map` module run {run_nr}"))?;
+                    if let Some(p) = &self.progress {
+                        p.info(&format!("Applying rule set of `map` module run {run_nr}"))?;
+                    }
                     let new_update_size = self.apply_ruleset(graph)?;
                     if new_update_size > 0 {
-                        self.progress.info(&format!("Added {new_update_size} updates because of rules, repeating to apply all rules until no updates are generated."))?;
-
+                        if let Some(p) = &self.progress {
+                            p.info(&format!("Added {new_update_size} updates because of rules, repeating to apply all rules until no updates are generated."))?;
+                        }
                         run_nr += 1;
                     } else {
                         break;
@@ -338,16 +362,20 @@ impl MapperImpl {
                 }
                 n += 1;
             }
-            self.progress.info(&format!(
-                "Rule with query `{}` matched {n} time(s).",
-                &rule.query
-            ))?;
+            if let Some(p) = &self.progress {
+                p.info(&format!(
+                    "Rule with query `{}` matched {n} time(s).",
+                    &rule.query
+                ))?;
+            }
         }
         let number_of_updates = updates.len()?;
         if number_of_updates > 0 {
             graph.apply_update(&mut updates, |msg| {
-                if let Err(e) = self.progress.info(&format!("`map` updates: {msg}")) {
-                    log::error!("{e}");
+                if let Some(p) = &self.progress {
+                    if let Err(e) = p.info(&format!("`map` updates: {msg}")) {
+                        log::error!("{e}");
+                    }
                 }
             })?;
         }
@@ -689,6 +717,7 @@ replacements = [
         std::fs::write(tmp.path(), config).unwrap();
         let mapper = MapAnnos {
             rule_file: tmp.path().to_path_buf(),
+            debug: true,
         };
         let step_id = StepID {
             module_name: "test_map".to_string(),
@@ -732,6 +761,7 @@ replacements = [
         std::fs::write(tmp.path(), config).unwrap();
         let mapper = MapAnnos {
             rule_file: tmp.path().to_path_buf(),
+            debug: true,
         };
         let step_id = StepID {
             module_name: "test_map".to_string(),
@@ -770,6 +800,7 @@ value = "comparison"
         std::fs::write(tmp.path(), config).unwrap();
         let mapper = MapAnnos {
             rule_file: tmp.path().to_path_buf(),
+            debug: true,
         };
         let step_id = StepID {
             module_name: "test_map".to_string(),
@@ -837,6 +868,7 @@ value = "PROPN"
         std::fs::write(tmp.path(), config).unwrap();
         let mapper = MapAnnos {
             rule_file: tmp.path().to_path_buf(),
+            debug: true,
         };
         let mut g = source_graph(on_disk)?;
         let (sender, _receiver) = mpsc::channel();
