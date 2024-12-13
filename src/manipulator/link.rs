@@ -133,7 +133,7 @@ fn gather_link_data(
     query: String,
     node_index: usize,
     value_indices: &[usize],
-    sep: &String,
+    sep: &str,
     step_id: &StepID,
 ) -> Result<BTreeMap<String, Vec<String>>, Box<dyn std::error::Error>> {
     let mut data: BTreeMap<String, Vec<String>> = BTreeMap::new();

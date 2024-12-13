@@ -216,7 +216,7 @@ impl<'a> CorpusGraphHelper<'a> {
     }
 }
 
-impl<'c> EdgeContainer for CorpusGraphHelper<'c> {
+impl EdgeContainer for CorpusGraphHelper<'_> {
     fn get_outgoing_edges<'a>(
         &'a self,
         node: NodeID,

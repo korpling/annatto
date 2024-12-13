@@ -35,8 +35,8 @@ struct DocumentMapper {
     edge_delimiter: Option<String>,
 }
 
-impl<'a> DocumentMapper {
-    fn map(&mut self, u: &mut GraphUpdate, mut ptb: Pairs<'a, Rule>) -> anyhow::Result<()> {
+impl DocumentMapper {
+    fn map(&mut self, u: &mut GraphUpdate, mut ptb: Pairs<Rule>) -> anyhow::Result<()> {
         // Add a subcorpus like node for the text
         u.add_event(UpdateEvent::AddNode {
             node_name: self.text_node_name.clone(),

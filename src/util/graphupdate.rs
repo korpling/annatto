@@ -130,7 +130,6 @@ pub fn root_corpus_from_path(root_path: &Path) -> Result<String> {
 /// The root directory is mapped as root corpus, sub-directories as sub-corpora
 /// and files as documents. The found documents are returned with the
 /// corresponding file path and the document node ID as string.
-
 pub fn import_corpus_graph_from_files(
     u: &mut GraphUpdate,
     root_path: &Path,

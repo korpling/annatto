@@ -57,7 +57,7 @@ struct DocumentMapper<'a> {
     number_of_spans: usize,
 }
 
-impl<'a> DocumentMapper<'a> {
+impl DocumentMapper<'_> {
     fn map(&mut self, u: &mut GraphUpdate) -> Result<()> {
         // Add a subcorpus like node for the text
         u.add_event(UpdateEvent::AddNode {

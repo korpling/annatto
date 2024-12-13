@@ -38,7 +38,7 @@ pub(super) struct DocumentMapper<'a, 'input> {
     input_directory: BasePathBuf,
 }
 
-impl<'a, 'input> DocumentMapper<'a, 'input> {
+impl<'input> DocumentMapper<'_, 'input> {
     pub(super) fn read_document(
         input: &'input str,
         input_path: &Path,
