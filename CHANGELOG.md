@@ -5,9 +5,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## Changed
+### Changed
 
 - import `table` uses different node name scheme (parallel to other import modules)
+
+### Fixed
+
+- `enumerate` now works with a stable graph
 
 ## [0.19.0] - 2024-11-20
 
