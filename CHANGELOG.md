@@ -8,10 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - import `table` uses different node name scheme (parallel to other import modules)
-
-### Fixed
-
-- `enumerate` now works with a stable graph
+- `enumerate` now works slightly different internally
 
 ## [0.19.0] - 2024-11-20
 
