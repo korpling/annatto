@@ -76,94 +76,96 @@ impl Manipulator for EnumerateMatches {
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let corpus_name = "current";
-        let tmp_dir = tempdir()?;
-        graph.save_to(&tmp_dir.path().join(corpus_name))?;
-        let cs = CorpusStorage::with_auto_cache_size(tmp_dir.path(), true)?;
-        let progress = ProgressReporter::new(tx, step_id.clone(), self.queries.len())?;
-        for query_s in &self.queries {
-            let query = SearchQuery {
-                corpus_names: &["current"],
-                query: query_s,
-                query_language: QueryLanguage::AQL,
-                timeout: None,
-            };
-            let search_results = cs.find(
-                query,
-                0,
-                None,
-                graphannis::corpusstorage::ResultOrder::Normal,
-            )?;
-            let mut offset = 0;
-            let mut visited = BTreeSet::new();
-            for (i, m) in search_results.into_iter().enumerate() {
-                let matching_nodes = m
-                    .split(' ')
-                    .filter_map(|s| s.split("::").last())
-                    .collect_vec();
-                if let Some(target_node) = matching_nodes.get(self.target - 1) {
-                    if visited.contains(*target_node) {
-                        offset += 1;
-                    } else {
-                        if let Some(value_i) = self.value {
-                            let mut coords = m.split(' ').collect_vec();
-                            if value_i <= coords.len() {
-                                let coord = coords.remove(value_i - 1);
-                                let (coord_ns, coord_name, coord_node_name) =
-                                    match coord.rsplit_once("::") {
-                                        Some((anno, node_name)) => {
-                                            let (ns, anno_name) =
-                                                anno.split_once("::").unwrap_or(("", anno));
-                                            (ns, anno_name, node_name)
-                                        }
-                                        None => (ANNIS_NS, "tok", coord),
-                                    };
-                                if let Some(internal_id) = graph
-                                    .get_node_annos()
-                                    .get_node_id_from_name(coord_node_name)?
-                                {
-                                    if let Some(prefix) =
-                                        graph.get_node_annos().get_value_for_item(
-                                            &internal_id,
-                                            &AnnoKey {
-                                                ns: coord_ns.into(),
-                                                name: coord_name.into(),
-                                            },
-                                        )?
+        {
+            let corpus_name = "enumerate-this";
+            let tmp_dir = tempdir()?;
+            graph.save_to(&tmp_dir.path().join(corpus_name))?;
+            let cs = CorpusStorage::with_auto_cache_size(tmp_dir.path(), true)?;
+            let progress = ProgressReporter::new(tx, step_id.clone(), self.queries.len())?;
+            for query_s in &self.queries {
+                let query = SearchQuery {
+                    corpus_names: &[corpus_name],
+                    query: query_s,
+                    query_language: QueryLanguage::AQL,
+                    timeout: None,
+                };
+                let search_results = cs.find(
+                    query,
+                    0,
+                    None,
+                    graphannis::corpusstorage::ResultOrder::Normal,
+                )?;
+                let mut offset = 0;
+                let mut visited = BTreeSet::new();
+                for (i, m) in search_results.into_iter().enumerate() {
+                    let matching_nodes = m
+                        .split(' ')
+                        .filter_map(|s| s.split("::").last())
+                        .collect_vec();
+                    if let Some(target_node) = matching_nodes.get(self.target - 1) {
+                        if visited.contains(*target_node) {
+                            offset += 1;
+                        } else {
+                            if let Some(value_i) = self.value {
+                                let mut coords = m.split(' ').collect_vec();
+                                if value_i <= coords.len() {
+                                    let coord = coords.remove(value_i - 1);
+                                    let (coord_ns, coord_name, coord_node_name) =
+                                        match coord.rsplit_once("::") {
+                                            Some((anno, node_name)) => {
+                                                let (ns, anno_name) =
+                                                    anno.split_once("::").unwrap_or(("", anno));
+                                                (ns, anno_name, node_name)
+                                            }
+                                            None => (ANNIS_NS, "tok", coord),
+                                        };
+                                    if let Some(internal_id) = graph
+                                        .get_node_annos()
+                                        .get_node_id_from_name(coord_node_name)?
                                     {
-                                        update.add_event(UpdateEvent::AddNodeLabel {
-                                            node_name: target_node.to_string(),
-                                            anno_ns: self.label.ns.to_string(),
-                                            anno_name: self.label.name.to_string(),
-                                            anno_value: format!(
-                                                "{prefix}-{}",
-                                                i as u64 + self.start - offset
-                                            ),
-                                        })?;
+                                        if let Some(prefix) =
+                                            graph.get_node_annos().get_value_for_item(
+                                                &internal_id,
+                                                &AnnoKey {
+                                                    ns: coord_ns.into(),
+                                                    name: coord_name.into(),
+                                                },
+                                            )?
+                                        {
+                                            update.add_event(UpdateEvent::AddNodeLabel {
+                                                node_name: target_node.to_string(),
+                                                anno_ns: self.label.ns.to_string(),
+                                                anno_name: self.label.name.to_string(),
+                                                anno_value: format!(
+                                                    "{prefix}-{}",
+                                                    i as u64 + self.start - offset
+                                                ),
+                                            })?;
+                                        }
                                     }
                                 }
+                            } else {
+                                update.add_event(UpdateEvent::AddNodeLabel {
+                                    node_name: target_node.to_string(),
+                                    anno_ns: self.label.ns.to_string(),
+                                    anno_name: self.label.name.to_string(),
+                                    anno_value: (i as u64 + self.start - offset).to_string(),
+                                })?;
                             }
-                        } else {
-                            update.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: target_node.to_string(),
-                                anno_ns: self.label.ns.to_string(),
-                                anno_name: self.label.name.to_string(),
-                                anno_value: (i as u64 + self.start - offset).to_string(),
-                            })?;
+                            visited.insert(target_node.to_string());
                         }
-                        visited.insert(target_node.to_string());
+                    } else {
+                        return Err(Box::new(AnnattoError::Manipulator {
+                            reason: format!(
+                                "No matching node with index {} for query {query_s}",
+                                &self.target
+                            ),
+                            manipulator: step_id.module_name.clone(),
+                        }));
                     }
-                } else {
-                    return Err(Box::new(AnnattoError::Manipulator {
-                        reason: format!(
-                            "No matching node with index {} for query {query_s}",
-                            &self.target
-                        ),
-                        manipulator: step_id.module_name.clone(),
-                    }));
                 }
+                progress.worked(1)?;
             }
-            progress.worked(1)?;
         }
         graph.apply_update(&mut update, |_| {})?;
         Ok(())
@@ -180,9 +182,15 @@ mod tests {
         AnnotationGraph,
     };
     use graphannis_core::{annostorage::ValueSearch, graph::ANNIS_NS, types::AnnoKey};
+    use insta::assert_snapshot;
     use itertools::Itertools;
 
-    use crate::{manipulator::Manipulator, test_util::compare_results, StepID};
+    use crate::{
+        exporter::graphml::GraphMLExporter,
+        manipulator::Manipulator,
+        test_util::{compare_results, export_to_string},
+        StepID,
+    };
 
     use super::EnumerateMatches;
 
@@ -264,6 +272,11 @@ mod tests {
             assert!(ovalue.is_some());
             assert_eq!(evalue.unwrap(), ovalue.unwrap());
         }
+        if on_disk {
+            let actual = export_to_string(&input_g, GraphMLExporter::default());
+            assert!(actual.is_ok());
+            assert_snapshot!(actual.unwrap());
+        }
         Ok(())
     }
 
@@ -320,6 +333,11 @@ mod tests {
             assert!(evalue.is_some());
             assert!(ovalue.is_some());
             assert_eq!(evalue.unwrap(), ovalue.unwrap());
+        }
+        if on_disk {
+            let actual = export_to_string(&input_g, GraphMLExporter::default());
+            assert!(actual.is_ok());
+            assert_snapshot!(actual.unwrap());
         }
         Ok(())
     }
