@@ -196,7 +196,7 @@ impl ImportTable {
         value: String,
     ) -> anyhow::Result<()> {
         let group_span_name = format!(
-            "{document_node_name}/group_span_{group_start_token}_{}",
+            "{document_node_name}#group_span_{group_start_token}_{}",
             next_token_idx - 1
         );
 
@@ -222,7 +222,7 @@ impl ImportTable {
             if let Some(c) = &empty_line_group.component {
                 update.add_event(UpdateEvent::AddEdge {
                     source_node: group_span_name.clone(),
-                    target_node: format!("{document_node_name}/t{t}"),
+                    target_node: format!("{document_node_name}#t{t}"),
                     layer: c.layer.to_string(),
                     component_type: c.get_type().to_string(),
                     component_name: c.name.to_string(),
@@ -230,7 +230,7 @@ impl ImportTable {
             } else {
                 update.add_event(UpdateEvent::AddEdge {
                     source_node: group_span_name.clone(),
-                    target_node: format!("{document_node_name}/t{t}"),
+                    target_node: format!("{document_node_name}#t{t}"),
                     layer: ANNIS_NS.to_string(),
                     component_type: AnnotationComponentType::Coverage.to_string(),
                     component_name: "".to_string(),
@@ -261,7 +261,7 @@ impl ImportTable {
             let record = record?;
 
             // Add node for token
-            let node_name = format!("{document_node_name}/t{token_idx}");
+            let node_name = format!("{document_node_name}#t{token_idx}");
             update.add_event(UpdateEvent::AddNode {
                 node_name: node_name.clone(),
                 node_type: "node".to_string(),
@@ -274,7 +274,7 @@ impl ImportTable {
                 component_name: "".to_string(),
             })?;
             if token_idx > 0 {
-                let last_token_node_name = format!("{document_node_name}/t{}", token_idx - 1);
+                let last_token_node_name = format!("{document_node_name}#t{}", token_idx - 1);
                 update.add_event(UpdateEvent::AddEdge {
                     source_node: last_token_node_name.clone(),
                     target_node: node_name.clone(),
