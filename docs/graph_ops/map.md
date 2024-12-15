@@ -100,3 +100,18 @@ finish!
 
 The path of the TOML file containing an array of mapping rules.
 
+###  debug
+
+If you wish for detailled output about the match count of each rule,
+set this to `true`. Default is `false`, so no output.
+
+Example:
+```toml
+[[graph_op]]
+action = "map"
+
+[graph_op.config]
+rule_file = "mapping-rules.toml"
+debug = true
+```
+

@@ -17,6 +17,10 @@ The 1-based index selecting the value providing node in the AQL source query.
 
 Contains one or multiple 1-based indexes, from which (in order of mentioning) the value for mapping source and target will be concatenated.
 
+###  source_to_edge
+
+This 1-based index list can be used to copy the given annotations from the source query to the edge that is to be created.
+
 ###  target_query
 
 The AQL query to find all target node annotations.
@@ -28,6 +32,10 @@ The 1-based index selecting the value providing node in the AQL target query.
 ###  target_value
 
 Contains one or multiple 1-based indexes, from which (in order of mentioning) the value for mapping source and target will be concatenated.
+
+###  target_to_edge
+
+This 1-based index list can be used to copy the given annotations from the target query to the edge that is to be created.
 
 ###  component
 
