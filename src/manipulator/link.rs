@@ -7,17 +7,17 @@ use crate::{
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
-    corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
+    aql,
+    graph::NodeID,
     model::AnnotationComponent,
     update::{GraphUpdate, UpdateEvent},
-    AnnotationGraph, CorpusStorage,
+    AnnotationGraph,
 };
-use graphannis_core::{types::AnnoKey, util::split_qname};
+use graphannis_core::{graph::NODE_NAME_KEY, types::AnnoKey};
 use itertools::Itertools;
 use serde_derive::Deserialize;
-use std::{collections::BTreeMap, env::temp_dir};
+use std::{collections::BTreeMap, ops::Deref};
 use struct_field_names_as_array::FieldNamesAsSlice;
-use tempfile::tempdir_in;
 
 /// Link nodes within a graph. Source and target of a link are determined via
 /// queries; type, layer, and name of the link component can be configured.
@@ -30,12 +30,18 @@ pub struct LinkNodes {
     source_node: usize,
     /// Contains one or multiple 1-based indexes, from which (in order of mentioning) the value for mapping source and target will be concatenated.
     source_value: Vec<usize>,
+    /// This 1-based index list can be used to copy the given annotations from the source query to the edge that is to be created.
+    #[serde(default)]
+    source_to_edge: Vec<usize>,
     /// The AQL query to find all target node annotations.
     target_query: String,
     /// The 1-based index selecting the value providing node in the AQL target query.    
     target_node: usize,
     /// Contains one or multiple 1-based indexes, from which (in order of mentioning) the value for mapping source and target will be concatenated.
     target_value: Vec<usize>,
+    /// This 1-based index list can be used to copy the given annotations from the target query to the edge that is to be created.
+    #[serde(default)]
+    target_to_edge: Vec<usize>,
     /// The edge component to be built.
     #[serde(deserialize_with = "deserialize_annotation_component")]
     component: AnnotationComponent,
@@ -52,113 +58,84 @@ impl Manipulator for LinkNodes {
         step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let db_dir = tempdir_in(temp_dir())?;
-        graph.save_to(db_dir.path().join("current").as_path())?;
-        let cs = CorpusStorage::with_auto_cache_size(db_dir.path(), true)?;
         let link_sources = gather_link_data(
             graph,
-            &cs,
             self.source_query.to_string(),
             self.source_node,
             &self.source_value,
+            &self.source_to_edge,
             &self.value_sep,
             &step_id,
         )?;
+        dbg!(&link_sources);
         let link_targets = gather_link_data(
             graph,
-            &cs,
             self.target_query.to_string(),
             self.target_node,
             &self.target_value,
+            &self.target_to_edge,
             &self.value_sep,
             &step_id,
         )?;
+        dbg!(&&link_targets);
         let mut update = self.link_nodes(link_sources, link_targets, tx, step_id)?;
         graph.apply_update(&mut update, |_| {})?;
         Ok(())
     }
 }
 
-type NodeBundle = Vec<(Option<AnnoKey>, String)>;
+type NodeBundle = Vec<(AnnoKey, NodeID)>;
 
 /// This function executes a single query and returns bundled results or an error.
 /// A bundled result is the annotation key the node has a match for and the matching node itself.
 fn retrieve_nodes_with_values(
-    cs: &CorpusStorage,
+    graph: &AnnotationGraph,
     query: String,
 ) -> Result<Vec<NodeBundle>, Box<dyn std::error::Error>> {
     let mut node_bundles = Vec::new();
-    for m in cs.find(
-        SearchQuery {
-            corpus_names: &["current"],
-            query: query.as_str(),
-            query_language: QueryLanguage::AQL,
-            timeout: None,
-        },
-        0,
-        None,
-        ResultOrder::Normal,
-    )? {
+    let disj = aql::parse(&query, false)?;
+
+    for m in aql::execute_query_on_graph(graph, &disj, true, None)?.flatten() {
         node_bundles.push(
-            m.split(' ')
-                .map(|match_member| {
-                    match_member
-                        .rsplit_once("::")
-                        .map_or((None, match_member.to_string()), |(pref, suff)| {
-                            (Some(anno_key(pref)), suff.to_string())
-                        })
-                })
+            m.into_iter()
+                .map(|match_member| (match_member.anno_key.deref().clone(), match_member.node))
                 .collect_vec(),
         );
     }
     Ok(node_bundles)
 }
 
-fn anno_key(qname: &str) -> AnnoKey {
-    let (ns, name) = split_qname(qname);
-    AnnoKey {
-        name: name.into(),
-        ns: match ns {
-            None => "".into(),
-            Some(v) => v.into(),
-        },
-    }
-}
+type NodeNameWithEdgeData = (String, Vec<(AnnoKey, String)>);
 
 /// This function queries the corpus graph and returns the relevant match data.
 /// The returned data maps an annotation value or a joint value (value) to the nodes holding said value.
 fn gather_link_data(
     graph: &AnnotationGraph,
-    cs: &CorpusStorage,
     query: String,
     node_index: usize,
     value_indices: &[usize],
+    edge_indices: &[usize],
     sep: &str,
     step_id: &StepID,
-) -> Result<BTreeMap<String, Vec<String>>, Box<dyn std::error::Error>> {
-    let mut data: BTreeMap<String, Vec<String>> = BTreeMap::new();
+) -> Result<BTreeMap<String, Vec<NodeNameWithEdgeData>>, Box<dyn std::error::Error>> {
+    let mut data: BTreeMap<String, Vec<NodeNameWithEdgeData>> = BTreeMap::new();
     let node_annos = graph.get_node_annos();
-    for group_of_bundles in retrieve_nodes_with_values(cs, query.to_string())? {
-        if let Some((_, link_node_name)) = group_of_bundles.get(node_index - 1) {
+    for group_of_bundles in retrieve_nodes_with_values(graph, query.to_string())? {
+        if let Some((_, link_node_id)) = group_of_bundles.get(node_index - 1) {
             let mut target_data = Vec::new();
             let mut value_segments = Vec::new();
+            let mut edge_data = Vec::new();
+            for edge_index in edge_indices {
+                if let Some((k, n)) = group_of_bundles.get(edge_index - 1) {
+                    if let Some(v) = graph.get_node_annos().get_value_for_item(n, k)? {
+                        edge_data.push(((*k).clone(), v.to_string()));
+                    }
+                }
+            }
             for value_index in value_indices {
-                if let Some((Some(anno_key), carrying_node_name)) =
-                    group_of_bundles.get(*value_index - 1)
-                {
-                    let value_node_id = if let Some(node_id) =
-                        node_annos.get_node_id_from_name(carrying_node_name)?
-                    {
-                        node_id
-                    } else {
-                        return Err(anyhow!(
-                            "Could not determine node id from name {}",
-                            carrying_node_name
-                        )
-                        .into());
-                    };
+                if let Some((anno_key, value_node_id)) = group_of_bundles.get(*value_index - 1) {
                     if let Some(anno_value) =
-                        node_annos.get_value_for_item(&value_node_id, anno_key)?
+                        node_annos.get_value_for_item(value_node_id, anno_key)?
                     {
                         value_segments.push(anno_value.trim().to_lowercase()); // simply concatenate values
                     }
@@ -172,7 +149,12 @@ fn gather_link_data(
                     }
                     .into());
                 }
-                target_data.push(link_node_name.to_string());
+                let link_node_name = graph
+                    .get_node_annos()
+                    .get_value_for_item(link_node_id, &NODE_NAME_KEY)?
+                    .ok_or(anyhow!("Could not determine node name."))?
+                    .to_string();
+                target_data.push((link_node_name, edge_data.clone())); // memory-inefficient for large queries, but that should usually not happen
             }
             let joint_value = value_segments.join(sep);
             if let Some(nodes_with_value) = data.get_mut(&joint_value) {
@@ -197,8 +179,8 @@ fn gather_link_data(
 impl LinkNodes {
     fn link_nodes(
         &self,
-        sources: BTreeMap<String, Vec<String>>,
-        targets: BTreeMap<String, Vec<String>>,
+        sources: BTreeMap<String, Vec<NodeNameWithEdgeData>>,
+        targets: BTreeMap<String, Vec<NodeNameWithEdgeData>>,
         tx: Option<StatusSender>,
         step_id: StepID,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
@@ -206,7 +188,9 @@ impl LinkNodes {
         let progress = ProgressReporter::new(tx, step_id, sources.len())?;
         for (anno_value, node_list) in sources {
             if let Some(target_node_list) = targets.get(&anno_value) {
-                for (source, target) in node_list.iter().cartesian_product(target_node_list) {
+                for ((source, src_edge_data), (target, tgt_edge_data)) in
+                    node_list.iter().cartesian_product(target_node_list)
+                {
                     update.add_event(UpdateEvent::AddEdge {
                         source_node: source.to_string(),
                         target_node: target.to_string(),
@@ -214,6 +198,20 @@ impl LinkNodes {
                         component_type: self.component.get_type().to_string(),
                         component_name: self.component.name.to_string(),
                     })?;
+                    for data in [src_edge_data, tgt_edge_data] {
+                        for (k, v) in data {
+                            update.add_event(UpdateEvent::AddEdgeLabel {
+                                source_node: source.to_string(),
+                                target_node: target.to_string(),
+                                layer: self.component.layer.to_string(),
+                                component_type: self.component.get_type().to_string(),
+                                component_name: self.component.name.to_string(),
+                                anno_ns: k.ns.to_string(),
+                                anno_name: k.name.to_string(),
+                                anno_value: v.to_string(),
+                            })?;
+                        }
+                    }
                 }
             }
             progress.worked(1)?;
@@ -224,50 +222,26 @@ impl LinkNodes {
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        collections::{BTreeMap, BTreeSet},
-        sync::mpsc,
-    };
+    use std::path::Path;
 
     use graphannis::{
-        corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
         model::{AnnotationComponent, AnnotationComponentType},
         update::{GraphUpdate, UpdateEvent},
-        AnnotationGraph, CorpusStorage,
+        AnnotationGraph,
     };
-    use graphannis_core::{
-        annostorage::ValueSearch,
-        graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY},
-        util::join_qname,
-    };
-    use itertools::Itertools;
-    use tempfile::{tempdir, TempDir};
+    use graphannis_core::graph::ANNIS_NS;
+    use insta::assert_snapshot;
 
     use crate::{
-        manipulator::{
-            link::{gather_link_data, retrieve_nodes_with_values, LinkNodes},
-            Manipulator,
-        },
-        workflow::StatusMessage,
+        exporter::graphml::GraphMLExporter,
+        manipulator::{link::LinkNodes, Manipulator},
+        test_util::export_to_string,
         StepID,
     };
 
     #[test]
-    fn test_linker_on_disk() {
-        let r = main_test(true);
-        assert!(r.is_ok(), "Error in main test: {:?}", r.err());
-    }
-
-    #[test]
-    fn test_linker_in_mem() {
-        let r = main_test(false);
-        assert!(r.is_ok(), "Error in main test: {:?}", r.err());
-    }
-
-    fn main_test(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
-        let mut e_g = target_graph(on_disk)?;
-        let (sender, receiver) = mpsc::channel();
-        let mut g = source_graph(on_disk)?;
+    fn link() -> Result<(), Box<dyn std::error::Error>> {
+        let mut graph = source_graph()?;
         let linker = LinkNodes {
             source_query: "norm _=_ lemma".to_string(),
             source_node: 1,
@@ -281,334 +255,26 @@ mod tests {
                 "morphology".into(),
             ),
             value_sep: "".to_string(),
+            source_to_edge: vec![2],
+            target_to_edge: vec![1],
         };
-        let dummy_dir = tempdir()?;
-        let dummy_path = dummy_dir.path();
-        let step_id = StepID {
-            module_name: "linler".to_string(),
-            path: None,
-        };
-        let link = linker.manipulate_corpus(&mut g, dummy_path, step_id, Some(sender));
-        assert!(
-            link.is_ok(),
-            "Importer update failed with error: {:?}",
-            link.err()
-        );
-        // corpus nodes
-        let e_corpus_nodes: BTreeSet<String> = e_g
-            .get_node_annos()
-            .exact_anno_search(
-                Some(&NODE_TYPE_KEY.ns),
-                &NODE_TYPE_KEY.name,
-                ValueSearch::Some("corpus"),
-            )
-            .into_iter()
-            .map(|r| r.unwrap().node)
-            .map(|id_| {
-                e_g.get_node_annos()
-                    .get_value_for_item(&id_, &NODE_NAME_KEY)
-                    .unwrap()
-                    .unwrap()
-                    .to_string()
-            })
-            .collect();
-        let g_corpus_nodes: BTreeSet<String> = g
-            .get_node_annos()
-            .exact_anno_search(
-                Some(&NODE_TYPE_KEY.ns),
-                &NODE_TYPE_KEY.name,
-                ValueSearch::Some("corpus"),
-            )
-            .into_iter()
-            .map(|r| r.unwrap().node)
-            .map(|id_| {
-                g.get_node_annos()
-                    .get_value_for_item(&id_, &NODE_NAME_KEY)
-                    .unwrap()
-                    .unwrap()
-                    .to_string()
-            })
-            .collect();
-        assert_eq!(e_corpus_nodes, g_corpus_nodes);
-        // anno names
-        let e_anno_names = e_g.get_node_annos().annotation_keys()?;
-        let g_anno_names = g.get_node_annos().annotation_keys()?;
-        let e_name_iter = e_anno_names
-            .iter()
-            .sorted_by(|a, b| join_qname(&a.ns, &a.name).cmp(&join_qname(&b.ns, &b.name)));
-        let g_name_iter = g_anno_names
-            .iter()
-            .sorted_by(|a, b| join_qname(&a.ns, &a.name).cmp(&join_qname(&b.ns, &b.name)));
-        for (e_qname, g_qname) in e_name_iter.zip(g_name_iter) {
-            assert_eq!(
-                e_qname, g_qname,
-                "Differing annotation keys between expected and generated graph: `{:?}` vs. `{:?}`",
-                e_qname, g_qname
-            );
-        }
-        assert_eq!(
-            e_anno_names.len(),
-            g_anno_names.len(),
-            "Expected graph and generated graph do not contain the same number of annotation keys."
-        );
-        let e_c_list = e_g
-            .get_all_components(None, None)
-            .into_iter()
-            .filter(|c| e_g.get_graphstorage(c).unwrap().source_nodes().count() > 0)
-            .collect_vec();
-        let g_c_list = g
-            .get_all_components(None, None)
-            .into_iter()
-            .filter(|c| g.get_graphstorage(c).unwrap().source_nodes().count() > 0) // graph might contain empty components after merge
-            .collect_vec();
-        assert_eq!(
-            e_c_list.len(),
-            g_c_list.len(),
-            "components expected:\n{:?};\ncomponents are:\n{:?}",
-            &e_c_list,
-            &g_c_list
-        );
-        for c in e_c_list {
-            let candidates = g.get_all_components(Some(c.get_type()), Some(c.name.as_str()));
-            assert_eq!(candidates.len(), 1);
-            let c_o = candidates.get(0);
-            assert_eq!(&c, c_o.unwrap());
-        }
-        //test with queries
-        let queries = [
-            ("norm:norm ->morphology node", 2),
-            ("node ->morphology node", 2),
-            ("node ->morphology morph", 2),
-            ("norm:norm ->morphology morph=/New York/", 1),
-            ("norm:norm ->morphology morph=/New York/ > node", 2),
-            ("norm:norm ->morphology morph=/New York/ > morph=/New/", 1),
-            ("norm:norm ->morphology morph=/New York/ > morph=/York/", 1),
-            ("norm:norm ->morphology morph=/I/", 1),
-        ];
-        let corpus_name = "current";
-        let (cs_e, _tmpe) = store_corpus(&mut e_g, corpus_name)?;
-        let (cs_g, _tmpg) = store_corpus(&mut g, corpus_name)?;
-        for (query_s, expected_n) in queries {
-            let query = SearchQuery {
-                corpus_names: &[corpus_name],
-                query: query_s,
-                query_language: QueryLanguage::AQL,
-                timeout: None,
-            };
-            let matches_e = cs_e.find(query.clone(), 0, None, ResultOrder::Normal)?;
-            let matches_g = cs_g.find(query, 0, None, ResultOrder::Normal)?;
-            assert_eq!(
-                matches_e.len(),
-                expected_n,
-                "Number of results for query `{}` does not match for expected graph. Expected:{} vs. Is:{}",
-                query_s,
-                expected_n,
-                matches_e.len()
-            );
-            assert_eq!(
-                matches_e.len(),
-                matches_g.len(),
-                "Failed with query: {}",
-                query_s
-            );
-            for (match_g, match_e) in matches_g.iter().zip(&matches_e) {
-                assert_eq!(match_g, match_e);
-            }
-        }
-        let message_count = receiver
-            .into_iter()
-            .filter(|m| !matches!(m, &StatusMessage::Progress { .. }))
-            .count();
-        assert_eq!(0, message_count);
+        linker.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            StepID {
+                module_name: "test_linker".into(),
+                path: None,
+            },
+            None,
+        )?;
+        let actual = export_to_string(&graph, GraphMLExporter::default())?;
+        assert_snapshot!(actual);
         Ok(())
     }
 
-    fn store_corpus(
-        graph: &mut AnnotationGraph,
-        corpus_name: &str,
-    ) -> Result<(CorpusStorage, TempDir), Box<dyn std::error::Error>> {
-        let tmp_dir = tempdir()?;
-        graph.save_to(&tmp_dir.path().join(corpus_name))?;
-        Ok((
-            CorpusStorage::with_auto_cache_size(&tmp_dir.path(), true)?,
-            tmp_dir,
-        ))
-    }
-
-    #[test]
-    fn test_retrieve_nodes_with_values() {
-        let g = source_graph(false);
-        assert!(g.is_ok());
-        let mut graph = g.unwrap();
-        let corpus_name = "current";
-        let cs_r = store_corpus(&mut graph, corpus_name);
-        assert!(cs_r.is_ok());
-        let (cs, _tmp) = cs_r.unwrap();
-        // 1
-        let r1 = retrieve_nodes_with_values(&cs, "tok=/.*/".to_string());
-        assert!(r1.is_ok(), "not Ok: {:?}", r1.err());
-        let results_1 = r1.unwrap();
-        assert_eq!(6, results_1.len());
-        for match_v in results_1 {
-            assert_eq!(1, match_v.len());
-            assert!(match_v.get(0).unwrap().0.is_none());
-        }
-        // 2
-        let r2 = retrieve_nodes_with_values(&cs, "norm _=_ pos".to_string());
-        assert!(r2.is_ok(), "not Ok: {:?}", r2.err());
-        let results_2 = r2.unwrap();
-        assert_eq!(4, results_2.len());
-        for match_v in results_2 {
-            assert_eq!(2, match_v.len());
-            assert!(match_v.get(0).unwrap().0.is_some());
-        }
-    }
-
-    #[test]
-    fn test_gather_link_data() {
-        let g = source_graph(false);
-        assert!(g.is_ok());
-        let mut graph = g.unwrap();
-        let corpus_name = "current";
-        let cs_r = store_corpus(&mut graph, corpus_name);
-        assert!(cs_r.is_ok());
-        let (cs, _tmp) = cs_r.unwrap();
-        let ldr = gather_link_data(
-            &graph,
-            &cs,
-            "norm _=_ pos".to_string(),
-            1,
-            &[1, 2],
-            &" ".to_string(),
-            &StepID {
-                module_name: "link".to_string(),
-                path: None,
-            },
-        );
-        assert!(ldr.is_ok(), "not Ok: {:?}", ldr.err());
-        let link_data = ldr.unwrap();
-        let expected_link_data: BTreeMap<String, Vec<String>> = vec![
-            (
-                "i pron".to_string(),
-                vec![
-                    "import/exmaralda/test_doc#t_norm_T286-T0".to_string(),
-                    "import/exmaralda/test_doc#t_norm_T286-T0".to_string(),
-                ],
-            ),
-            (
-                "am verb".to_string(),
-                vec![
-                    "import/exmaralda/test_doc#t_norm_T0-T1".to_string(),
-                    "import/exmaralda/test_doc#t_norm_T0-T1".to_string(),
-                ],
-            ),
-            (
-                "in adp".to_string(),
-                vec![
-                    "import/exmaralda/test_doc#t_norm_T1-T2".to_string(),
-                    "import/exmaralda/test_doc#t_norm_T1-T2".to_string(),
-                ],
-            ),
-            (
-                "new york propn".to_string(),
-                vec![
-                    "import/exmaralda/test_doc#t_norm_T2-T4".to_string(),
-                    "import/exmaralda/test_doc#t_norm_T2-T4".to_string(),
-                ],
-            ),
-        ]
-        .into_iter()
-        .collect();
-        assert_eq!(expected_link_data, link_data);
-    }
-
-    #[test]
-    fn test_link_nodes() {
-        let g = source_graph(false);
-        assert!(g.is_ok());
-        let mut graph = g.unwrap();
-        let linker = LinkNodes {
-            source_query: "dummy query -- value not used".to_string(),
-            source_node: 1,        // dummy value
-            source_value: vec![1], // dummy value
-            target_query: "dummy query -- value not used".to_string(),
-            target_node: 1,        // dummy value
-            target_value: vec![1], // dummy value
-            component: AnnotationComponent::new(
-                AnnotationComponentType::Pointing,
-                "".into(),
-                "link".into(),
-            ),
-            value_sep: "dummy value".to_string(),
-        };
-        let source_map = vec![
-            (
-                "i_am_im".to_string(),
-                vec!["import/exmaralda/test_doc#t_dipl_T286-T1".to_string()],
-            ),
-            (
-                "New_York".to_string(),
-                vec![
-                    "import/exmaralda/test_doc#t_dipl_T2-T3".to_string(),
-                    "import/exmaralda/test_doc#t_dipl_T3-T4".to_string(),
-                ],
-            ),
-        ]
-        .into_iter()
-        .collect();
-        let target_map = vec![
-            (
-                "i_am_im".to_string(),
-                vec![
-                    "import/exmaralda/test_doc#t_norm_T286-T0".to_string(),
-                    "import/exmaralda/test_doc#t_norm_T0-T1".to_string(),
-                ],
-            ),
-            (
-                "New_York".to_string(),
-                vec!["import/exmaralda/test_doc#t_norm_T2-T4".to_string()],
-            ),
-        ]
-        .into_iter()
-        .collect();
-        let r = linker.link_nodes(
-            source_map,
-            target_map,
-            None,
-            StepID {
-                module_name: "test".to_string(),
-                path: None,
-            },
-        );
-        assert!(r.is_ok());
-        let mut u = r.unwrap();
-        assert!(graph.apply_update(&mut u, |_| {}).is_ok());
-        let storage_bundle = store_corpus(&mut graph, "current");
-        assert!(storage_bundle.is_ok());
-        let (cs, _tmp) = storage_bundle.unwrap();
-        let queries_with_results = [
-            ("dipl=/I'm/ ->link norm=/I/ . norm=/am/ & #1 ->link #3", 1),
-            (
-                "dipl=/New/ . dipl=/York/ & #1 ->link norm=/New York/ & #2 ->link #3",
-                1,
-            ),
-        ];
-        for (q, n) in queries_with_results {
-            let query = SearchQuery {
-                corpus_names: &["current"],
-                query: q,
-                query_language: QueryLanguage::AQL,
-                timeout: None,
-            };
-            let c = cs.count(query);
-            assert!(c.is_ok());
-            assert_eq!(n, c.unwrap());
-        }
-    }
-
-    fn source_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
+    fn source_graph() -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
         // copied this from exmaralda test
-        let mut graph = AnnotationGraph::with_default_graphstorages(on_disk)?;
+        let mut graph = AnnotationGraph::with_default_graphstorages(true)?;
         let mut u = GraphUpdate::default();
         u.add_event(UpdateEvent::AddNode {
             node_name: "import".to_string(),
@@ -862,26 +528,5 @@ mod tests {
         })?;
         graph.apply_update(&mut u, |_| {})?;
         Ok(graph)
-    }
-
-    fn target_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
-        let mut u = GraphUpdate::default();
-        u.add_event(UpdateEvent::AddEdge {
-            source_node: "import/exmaralda/test_doc#t_norm_T2-T4".to_string(),
-            target_node: "import/lex/new_york#root".to_string(),
-            layer: "".to_string(),
-            component_type: AnnotationComponentType::Pointing.to_string(),
-            component_name: "morphology".to_string(),
-        })?;
-        u.add_event(UpdateEvent::AddEdge {
-            source_node: "import/exmaralda/test_doc#t_norm_T286-T0".to_string(),
-            target_node: "import/lex/i#root".to_string(),
-            layer: "".to_string(),
-            component_type: AnnotationComponentType::Pointing.to_string(),
-            component_name: "morphology".to_string(),
-        })?;
-        let mut g = source_graph(on_disk)?;
-        g.apply_update(&mut u, |_| {})?;
-        Ok(g)
     }
 }

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - import `table` uses different node name scheme (parallel to other import modules)
 - `enumerate` now works slightly different internally
+- `link` does not use a corpus storage anymore
+- `link` allows to copy node annotations to the newly created edges
 
 ## [0.19.0] - 2024-11-20
 
