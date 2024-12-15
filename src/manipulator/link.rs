@@ -67,7 +67,6 @@ impl Manipulator for LinkNodes {
             &self.value_sep,
             &step_id,
         )?;
-        dbg!(&link_sources);
         let link_targets = gather_link_data(
             graph,
             self.target_query.to_string(),
@@ -77,7 +76,6 @@ impl Manipulator for LinkNodes {
             &self.value_sep,
             &step_id,
         )?;
-        dbg!(&&link_targets);
         let mut update = self.link_nodes(link_sources, link_targets, tx, step_id)?;
         graph.apply_update(&mut update, |_| {})?;
         Ok(())
