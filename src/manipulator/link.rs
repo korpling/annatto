@@ -135,7 +135,7 @@ fn gather_link_data(
             for value_index in value_indices {
                 if let Some((anno_key, value_node_id)) = group_of_bundles.get(*value_index - 1) {
                     if let Some(anno_value) =
-                        node_annos.get_value_for_item(&value_node_id, anno_key)?
+                        node_annos.get_value_for_item(value_node_id, anno_key)?
                     {
                         value_segments.push(anno_value.trim().to_lowercase()); // simply concatenate values
                     }
