@@ -33,6 +33,31 @@ fn single_speaker() {
 }
 
 #[test]
+fn empty_intervals() {
+    let mut tg = BTreeMap::new();
+    tg.insert(
+        "tok".to_string(),
+        vec!["lemma".to_string(), "pos".to_string()]
+            .into_iter()
+            .collect(),
+    );
+    let actual = import_as_graphml_string(
+        ImportTextgrid {
+            tier_groups: Some(tg),
+            skip_timeline_generation: true,
+            skip_audio: false,
+            skip_time_annotations: false,
+            audio_extension: None,
+        },
+        Path::new("tests/data/import/textgrid/emptyIntervals"),
+        None,
+    )
+    .unwrap();
+
+    assert_snapshot!(actual);
+}
+
+#[test]
 fn two_speakers() {
     let mut tg = BTreeMap::new();
     tg.insert(

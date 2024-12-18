@@ -1,0 +1,290 @@
+---
+source: src/importer/textgrid/tests.rs
+expression: actual
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k1" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k2" for="node" attr.name="lemma" attr.type="string"/>
+    <key id="k3" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k4" for="node" attr.name="pos" attr.type="string"/>
+    <key id="k5" for="node" attr.name="annis::time" attr.type="string"/>
+    <key id="k6" for="node" attr.name="annis::tok" attr.type="string"/>
+    <key id="k7" for="node" attr.name="annis::tok-whitespace-after" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <node id="emptyIntervals">
+            <data key="k3">corpus</data>
+        </node>
+        <node id="emptyIntervals/doc1">
+            <data key="k0">doc1</data>
+            <data key="k3">corpus</data>
+        </node>
+        <node id="emptyIntervals/doc1#text">
+            <data key="k3">datasource</data>
+        </node>
+        <node id="emptyIntervals/doc1#t1">
+            <data key="k1">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k5">0-1</data>
+            <data key="k6">Is</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="emptyIntervals/doc1#t2">
+            <data key="k1">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k5">1-2</data>
+            <data key="k6">this</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="emptyIntervals/doc1#t3">
+            <data key="k1">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k5">2-3</data>
+            <data key="k6">example</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="emptyIntervals/doc1#t4">
+            <data key="k1">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k5">3-4</data>
+            <data key="k6">more</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="emptyIntervals/doc1#t5">
+            <data key="k1">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k5">4-5</data>
+            <data key="k6">complicated</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="emptyIntervals/doc1#t6">
+            <data key="k1">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k5">5-6</data>
+            <data key="k6">than</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="emptyIntervals/doc1#t7">
+            <data key="k1">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k5">6-7</data>
+            <data key="k6">it</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="emptyIntervals/doc1#t8">
+            <data key="k1">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k5">7-8</data>
+            <data key="k6">appears</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="emptyIntervals/doc1#t9">
+            <data key="k1">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k5">10-11</data>
+            <data key="k6">?</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="emptyIntervals/doc1#sSpan1">
+            <data key="k1">default_ns</data>
+            <data key="k2">be</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="emptyIntervals/doc1#sSpan2">
+            <data key="k1">default_ns</data>
+            <data key="k2">this</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="emptyIntervals/doc1#sSpan3">
+            <data key="k1">default_ns</data>
+            <data key="k2">example</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="emptyIntervals/doc1#sSpan4">
+            <data key="k1">default_ns</data>
+            <data key="k2">more</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="emptyIntervals/doc1#sSpan5">
+            <data key="k1">default_ns</data>
+            <data key="k2">complicated</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="emptyIntervals/doc1#sSpan6">
+            <data key="k1">default_ns</data>
+            <data key="k2">than</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="emptyIntervals/doc1#sSpan7">
+            <data key="k1">default_ns</data>
+            <data key="k2">it</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="emptyIntervals/doc1#sSpan8">
+            <data key="k1">default_ns</data>
+            <data key="k2">appear</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="emptyIntervals/doc1#sSpan9">
+            <data key="k1">default_ns</data>
+            <data key="k2">?</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="emptyIntervals/doc1#sSpan10">
+            <data key="k1">default_ns</data>
+            <data key="k3">node</data>
+            <data key="k4">VBZ</data>
+        </node>
+        <node id="emptyIntervals/doc1#sSpan11">
+            <data key="k1">default_ns</data>
+            <data key="k3">node</data>
+            <data key="k4">DT</data>
+        </node>
+        <node id="emptyIntervals/doc1#sSpan12">
+            <data key="k1">default_ns</data>
+            <data key="k3">node</data>
+            <data key="k4">NN</data>
+        </node>
+        <node id="emptyIntervals/doc1#sSpan13">
+            <data key="k1">default_ns</data>
+            <data key="k3">node</data>
+            <data key="k4">RBR</data>
+        </node>
+        <node id="emptyIntervals/doc1#sSpan14">
+            <data key="k1">default_ns</data>
+            <data key="k3">node</data>
+            <data key="k4">JJ</data>
+        </node>
+        <node id="emptyIntervals/doc1#sSpan15">
+            <data key="k1">default_ns</data>
+            <data key="k3">node</data>
+            <data key="k4">IN</data>
+        </node>
+        <node id="emptyIntervals/doc1#sSpan16">
+            <data key="k1">default_ns</data>
+            <data key="k3">node</data>
+            <data key="k4">PRP</data>
+        </node>
+        <node id="emptyIntervals/doc1#sSpan17">
+            <data key="k1">default_ns</data>
+            <data key="k3">node</data>
+            <data key="k4">VBZ</data>
+        </node>
+        <node id="emptyIntervals/doc1#sSpan18">
+            <data key="k1">default_ns</data>
+            <data key="k3">node</data>
+            <data key="k4">.</data>
+        </node>
+        <edge id="e0" source="emptyIntervals/doc1#sSpan1" target="emptyIntervals/doc1#t1" label="Coverage/annis/">
+        </edge>
+        <edge id="e1" source="emptyIntervals/doc1#sSpan2" target="emptyIntervals/doc1#t2" label="Coverage/annis/">
+        </edge>
+        <edge id="e2" source="emptyIntervals/doc1#sSpan3" target="emptyIntervals/doc1#t3" label="Coverage/annis/">
+        </edge>
+        <edge id="e3" source="emptyIntervals/doc1#sSpan4" target="emptyIntervals/doc1#t4" label="Coverage/annis/">
+        </edge>
+        <edge id="e4" source="emptyIntervals/doc1#sSpan5" target="emptyIntervals/doc1#t5" label="Coverage/annis/">
+        </edge>
+        <edge id="e5" source="emptyIntervals/doc1#sSpan6" target="emptyIntervals/doc1#t6" label="Coverage/annis/">
+        </edge>
+        <edge id="e6" source="emptyIntervals/doc1#sSpan7" target="emptyIntervals/doc1#t7" label="Coverage/annis/">
+        </edge>
+        <edge id="e7" source="emptyIntervals/doc1#sSpan8" target="emptyIntervals/doc1#t8" label="Coverage/annis/">
+        </edge>
+        <edge id="e8" source="emptyIntervals/doc1#sSpan9" target="emptyIntervals/doc1#t9" label="Coverage/annis/">
+        </edge>
+        <edge id="e9" source="emptyIntervals/doc1#sSpan10" target="emptyIntervals/doc1#t1" label="Coverage/annis/">
+        </edge>
+        <edge id="e10" source="emptyIntervals/doc1#sSpan11" target="emptyIntervals/doc1#t2" label="Coverage/annis/">
+        </edge>
+        <edge id="e11" source="emptyIntervals/doc1#sSpan12" target="emptyIntervals/doc1#t3" label="Coverage/annis/">
+        </edge>
+        <edge id="e12" source="emptyIntervals/doc1#sSpan13" target="emptyIntervals/doc1#t4" label="Coverage/annis/">
+        </edge>
+        <edge id="e13" source="emptyIntervals/doc1#sSpan14" target="emptyIntervals/doc1#t5" label="Coverage/annis/">
+        </edge>
+        <edge id="e14" source="emptyIntervals/doc1#sSpan15" target="emptyIntervals/doc1#t6" label="Coverage/annis/">
+        </edge>
+        <edge id="e15" source="emptyIntervals/doc1#sSpan16" target="emptyIntervals/doc1#t7" label="Coverage/annis/">
+        </edge>
+        <edge id="e16" source="emptyIntervals/doc1#sSpan17" target="emptyIntervals/doc1#t8" label="Coverage/annis/">
+        </edge>
+        <edge id="e17" source="emptyIntervals/doc1#sSpan18" target="emptyIntervals/doc1#t9" label="Coverage/annis/">
+        </edge>
+        <edge id="e18" source="emptyIntervals/doc1#t1" target="emptyIntervals/doc1#t2" label="Ordering/annis/">
+        </edge>
+        <edge id="e19" source="emptyIntervals/doc1#t2" target="emptyIntervals/doc1#t3" label="Ordering/annis/">
+        </edge>
+        <edge id="e20" source="emptyIntervals/doc1#t3" target="emptyIntervals/doc1#t4" label="Ordering/annis/">
+        </edge>
+        <edge id="e21" source="emptyIntervals/doc1#t4" target="emptyIntervals/doc1#t5" label="Ordering/annis/">
+        </edge>
+        <edge id="e22" source="emptyIntervals/doc1#t5" target="emptyIntervals/doc1#t6" label="Ordering/annis/">
+        </edge>
+        <edge id="e23" source="emptyIntervals/doc1#t6" target="emptyIntervals/doc1#t7" label="Ordering/annis/">
+        </edge>
+        <edge id="e24" source="emptyIntervals/doc1#t7" target="emptyIntervals/doc1#t8" label="Ordering/annis/">
+        </edge>
+        <edge id="e25" source="emptyIntervals/doc1#t8" target="emptyIntervals/doc1#t9" label="Ordering/annis/">
+        </edge>
+        <edge id="e26" source="emptyIntervals/doc1" target="emptyIntervals" label="PartOf/annis/">
+        </edge>
+        <edge id="e27" source="emptyIntervals/doc1#text" target="emptyIntervals/doc1" label="PartOf/annis/">
+        </edge>
+        <edge id="e28" source="emptyIntervals/doc1#t1" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e29" source="emptyIntervals/doc1#t2" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e30" source="emptyIntervals/doc1#t3" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e31" source="emptyIntervals/doc1#t4" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e32" source="emptyIntervals/doc1#t5" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e33" source="emptyIntervals/doc1#t6" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e34" source="emptyIntervals/doc1#t7" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e35" source="emptyIntervals/doc1#t8" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e36" source="emptyIntervals/doc1#t9" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e37" source="emptyIntervals/doc1#sSpan1" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e38" source="emptyIntervals/doc1#sSpan2" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e39" source="emptyIntervals/doc1#sSpan3" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e40" source="emptyIntervals/doc1#sSpan4" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e41" source="emptyIntervals/doc1#sSpan5" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e42" source="emptyIntervals/doc1#sSpan6" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e43" source="emptyIntervals/doc1#sSpan7" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e44" source="emptyIntervals/doc1#sSpan8" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e45" source="emptyIntervals/doc1#sSpan9" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e46" source="emptyIntervals/doc1#sSpan10" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e47" source="emptyIntervals/doc1#sSpan11" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e48" source="emptyIntervals/doc1#sSpan12" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e49" source="emptyIntervals/doc1#sSpan13" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e50" source="emptyIntervals/doc1#sSpan14" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e51" source="emptyIntervals/doc1#sSpan15" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e52" source="emptyIntervals/doc1#sSpan16" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e53" source="emptyIntervals/doc1#sSpan17" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e54" source="emptyIntervals/doc1#sSpan18" target="emptyIntervals/doc1#text" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>
