@@ -205,10 +205,12 @@ impl DocumentMapper<'_> {
                 {
                     if name == token_tier_name {
                         for i in intervals {
-                            token_sorted_by_time.insert(
-                                (OrderedFloat(i.xmin), OrderedFloat(i.xmax)),
-                                i.text.clone(),
-                            );
+                            if !i.text.trim().is_empty() {
+                                token_sorted_by_time.insert(
+                                    (OrderedFloat(i.xmin), OrderedFloat(i.xmax)),
+                                    i.text.clone(),
+                                );
+                            }
                         }
                     }
                 }
