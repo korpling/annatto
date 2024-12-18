@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `textgrid` does not import empty timeline intervals anymore
 - `conllu` now properly handles tokens that are not covered by the defined group span
+- `conllu` export allows to use the same annotation key in multiple columns
 
 ## [0.20.1] - 2024-12-16
 
