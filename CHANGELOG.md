@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `textgrid` does not empty timeline intervals anymore
+- `textgrid` does not import empty timeline intervals anymore
+- `conllu` now properly handles tokens that are not covered by the defined group span
 
 ## [0.20.1] - 2024-12-16
 
