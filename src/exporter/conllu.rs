@@ -337,6 +337,12 @@ impl ExportCoNLLU {
                     node_id = 1;
                 }
             } else {
+                if last_group.xor(group_node).is_some()
+                    && ordering_storage.has_ingoing_edges(node)?
+                {
+                    writer.write_all("\n".as_bytes())?;
+                    node_id = 1;
+                }
                 last_group = group_node;
             }
             let mut line = Vec::new();
@@ -541,7 +547,13 @@ fn map_dependency_data(
 mod tests {
     use std::{fs, path::Path};
 
-    use graphannis::AnnotationGraph;
+    use graphannis::{
+        graph::AnnoKey,
+        model::AnnotationComponentType,
+        update::{GraphUpdate, UpdateEvent},
+        AnnotationGraph,
+    };
+    use graphannis_core::graph::ANNIS_NS;
     use insta::assert_snapshot;
 
     use crate::{
@@ -577,6 +589,130 @@ mod tests {
         );
         let actual = export_to_string(&graph, conll_out.unwrap());
         assert!(actual.is_ok(), "failed: {:?}", actual.err());
+        assert_snapshot!(actual.unwrap());
+    }
+
+    #[test]
+    fn groupless_tokens() {
+        let mut u = GraphUpdate::default();
+        assert!(u
+            .add_event(UpdateEvent::AddNode {
+                node_name: "corpus".to_string(),
+                node_type: "corpus".to_string()
+            })
+            .is_ok());
+        assert!(u
+            .add_event(UpdateEvent::AddNodeLabel {
+                node_name: "corpus".to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "doc".to_string(),
+                anno_value: "corpus".to_string()
+            })
+            .is_ok());
+        let mut i = 0;
+        for (sentence, span) in [
+            (vec!["This", "is", "a", "test", "."], Some("s1")),
+            (vec!["<noise>"], None),
+            (vec!["And", "one", "more"], Some("s2")),
+        ] {
+            let span_node = if let Some(span_value) = span {
+                let span_name = format!("corpus#{span_value}");
+                assert!(u
+                    .add_event(UpdateEvent::AddNode {
+                        node_name: span_name.to_string(),
+                        node_type: "node".to_string(),
+                    })
+                    .is_ok());
+                assert!(u
+                    .add_event(UpdateEvent::AddEdge {
+                        source_node: span_name.to_string(),
+                        target_node: "corpus".to_string(),
+                        layer: ANNIS_NS.to_string(),
+                        component_type: AnnotationComponentType::PartOf.to_string(),
+                        component_name: "".to_string()
+                    })
+                    .is_ok());
+                assert!(u
+                    .add_event(UpdateEvent::AddNodeLabel {
+                        node_name: span_name.to_string(),
+                        anno_ns: "".to_string(),
+                        anno_name: "sentence".to_string(),
+                        anno_value: span_value.to_string()
+                    })
+                    .is_ok());
+                Some(span_name)
+            } else {
+                None
+            };
+            for token in sentence {
+                i += 1;
+                let token_name = format!("corpus#t{}", i + 1);
+                assert!(u
+                    .add_event(UpdateEvent::AddNode {
+                        node_name: token_name.to_string(),
+                        node_type: "node".to_string(),
+                    })
+                    .is_ok());
+                assert!(u
+                    .add_event(UpdateEvent::AddNodeLabel {
+                        node_name: token_name.to_string(),
+                        anno_ns: ANNIS_NS.to_string(),
+                        anno_name: "tok".to_string(),
+                        anno_value: token.to_string()
+                    })
+                    .is_ok());
+                assert!(u
+                    .add_event(UpdateEvent::AddEdge {
+                        source_node: token_name.to_string(),
+                        target_node: "corpus".to_string(),
+                        layer: ANNIS_NS.to_string(),
+                        component_type: AnnotationComponentType::PartOf.to_string(),
+                        component_name: "".to_string()
+                    })
+                    .is_ok());
+                if i > 0 {
+                    assert!(u
+                        .add_event(UpdateEvent::AddEdge {
+                            source_node: format!("corpus#t{i}"),
+                            target_node: token_name.to_string(),
+                            layer: ANNIS_NS.to_string(),
+                            component_type: AnnotationComponentType::Ordering.to_string(),
+                            component_name: "".to_string()
+                        })
+                        .is_ok());
+                }
+                if let Some(span_name) = &span_node {
+                    assert!(u
+                        .add_event(UpdateEvent::AddEdge {
+                            source_node: span_name.to_string(),
+                            target_node: token_name.to_string(),
+                            layer: ANNIS_NS.to_string(),
+                            component_type: AnnotationComponentType::Coverage.to_string(),
+                            component_name: "".to_string()
+                        })
+                        .is_ok());
+                }
+            }
+        }
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut u, |_| {}).is_ok());
+        let actual = export_to_string(
+            &graph,
+            ExportCoNLLU {
+                form: AnnoKey {
+                    name: "tok".into(),
+                    ns: ANNIS_NS.into(),
+                },
+                groupby: Some(AnnoKey {
+                    ns: "".into(),
+                    name: "sentence".into(),
+                }),
+                ..Default::default()
+            },
+        );
+        assert!(actual.is_ok());
         assert_snapshot!(actual.unwrap());
     }
 }
