@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.2] - 2024-12-18
+
 ### Fixed
 
 - `textgrid` does not import empty timeline intervals anymore
