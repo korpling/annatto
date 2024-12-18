@@ -328,7 +328,7 @@ impl ExportCoNLLU {
             .map(|(i, n)| (*n, i))
             .collect();
         for node in ordered_nodes {
-            let (mut data, group_node, dependency_data) =
+            let (data, group_node, dependency_data) =
                 self.node_data(graph, anno_keys.clone(), node)?;
             if let (Some(gn), Some(gn_)) = (last_group, group_node) {
                 if gn != gn_ {
@@ -347,8 +347,8 @@ impl ExportCoNLLU {
             }
             let mut line = Vec::new();
             line.push(node_id.to_string());
-            if let Some(value) = data.remove(&self.form) {
-                line.push(value);
+            if let Some(value) = data.get(&self.form) {
+                line.push(value.to_string());
             } else {
                 bail!(
                     "No form value for node {}",
@@ -358,12 +358,17 @@ impl ExportCoNLLU {
                 );
             }
             for k in [&self.lemma, &self.upos, &self.xpos] {
-                line.push(data.remove(k).unwrap_or(NO_VALUE.to_string()));
+                let value = if let Some(v) = data.get(k) {
+                    v.to_string()
+                } else {
+                    NO_VALUE.to_string()
+                };
+                line.push(value);
             }
             let mut features = Vec::with_capacity(self.features.len());
             for k in &self.features {
-                if let Some(value) = data.remove(k) {
-                    features.push([k.name.to_string(), value].join("="));
+                if let Some(value) = data.get(k) {
+                    features.push([k.name.to_string(), value.to_string()].join("="));
                 }
             }
             features.sort();
@@ -398,8 +403,8 @@ impl ExportCoNLLU {
             // misc
             features.clear();
             for k in &self.misc {
-                if let Some(value) = data.remove(k) {
-                    features.push([k.name.to_string(), value].join("="));
+                if let Some(value) = data.get(k) {
+                    features.push([k.name.to_string(), value.to_string()].join("="));
                 }
             }
             features.sort();
