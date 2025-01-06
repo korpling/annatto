@@ -15,6 +15,16 @@ expression: actual.unwrap()
         <data key="k0"><![CDATA[
 # configure visualizations here
 ]]></data>
+        <node id="root">
+            <data key="k4">corpus</data>
+        </node>
+        <node id="root/doc1">
+            <data key="k3">doc1</data>
+            <data key="k4">corpus</data>
+        </node>
+        <node id="root/doc1#text1">
+            <data key="k4">datasource</data>
+        </node>
         <node id="root/doc1#tli1">
             <data key="k4">node</data>
             <data key="k5"> </data>
@@ -75,49 +85,39 @@ expression: actual.unwrap()
             <data key="k4">node</data>
             <data key="k5">text</data>
         </node>
-        <node id="root">
-            <data key="k4">corpus</data>
-        </node>
-        <node id="root/doc1">
-            <data key="k3">doc1</data>
-            <data key="k4">corpus</data>
-        </node>
-        <node id="root/doc1#text1">
-            <data key="k4">datasource</data>
-        </node>
-        <edge id="e0" source="root/doc1#a2" target="root/doc1#tli3" label="Coverage//">
+        <edge id="e0" source="root/doc1#a1" target="root/doc1#tli1" label="Coverage//">
         </edge>
-        <edge id="e1" source="root/doc1#b1" target="root/doc1#tli1" label="Coverage//">
+        <edge id="e1" source="root/doc1#a1" target="root/doc1#tli2" label="Coverage//">
         </edge>
-        <edge id="e2" source="root/doc1#b3" target="root/doc1#tli3" label="Coverage//">
+        <edge id="e2" source="root/doc1#a2" target="root/doc1#tli3" label="Coverage//">
         </edge>
-        <edge id="e3" source="root/doc1#b3" target="root/doc1#tli4" label="Coverage//">
+        <edge id="e3" source="root/doc1#a3" target="root/doc1#tli4" label="Coverage//">
         </edge>
-        <edge id="e4" source="root/doc1#b4" target="root/doc1#tli5" label="Coverage//">
+        <edge id="e4" source="root/doc1#a4" target="root/doc1#tli5" label="Coverage//">
         </edge>
-        <edge id="e5" source="root/doc1#a3" target="root/doc1#tli4" label="Coverage//">
+        <edge id="e5" source="root/doc1#b1" target="root/doc1#tli1" label="Coverage//">
         </edge>
-        <edge id="e6" source="root/doc1#a4" target="root/doc1#tli5" label="Coverage//">
+        <edge id="e6" source="root/doc1#b2" target="root/doc1#tli2" label="Coverage//">
         </edge>
-        <edge id="e7" source="root/doc1#b2" target="root/doc1#tli2" label="Coverage//">
+        <edge id="e7" source="root/doc1#b3" target="root/doc1#tli3" label="Coverage//">
         </edge>
-        <edge id="e8" source="root/doc1#a1" target="root/doc1#tli1" label="Coverage//">
+        <edge id="e8" source="root/doc1#b3" target="root/doc1#tli4" label="Coverage//">
         </edge>
-        <edge id="e9" source="root/doc1#a1" target="root/doc1#tli2" label="Coverage//">
+        <edge id="e9" source="root/doc1#b4" target="root/doc1#tli5" label="Coverage//">
         </edge>
-        <edge id="e10" source="root/doc1#tli4" target="root/doc1#tli5" label="Ordering/annis/">
+        <edge id="e10" source="root/doc1#tli1" target="root/doc1#tli2" label="Ordering/annis/">
         </edge>
-        <edge id="e11" source="root/doc1#tli3" target="root/doc1#tli4" label="Ordering/annis/">
+        <edge id="e11" source="root/doc1#tli2" target="root/doc1#tli3" label="Ordering/annis/">
         </edge>
-        <edge id="e12" source="root/doc1#tli2" target="root/doc1#tli3" label="Ordering/annis/">
+        <edge id="e12" source="root/doc1#tli3" target="root/doc1#tli4" label="Ordering/annis/">
         </edge>
-        <edge id="e13" source="root/doc1#tli1" target="root/doc1#tli2" label="Ordering/annis/">
+        <edge id="e13" source="root/doc1#tli4" target="root/doc1#tli5" label="Ordering/annis/">
         </edge>
-        <edge id="e14" source="root/doc1#a3" target="root/doc1#a4" label="Ordering/default_ns/a">
+        <edge id="e14" source="root/doc1#a1" target="root/doc1#a2" label="Ordering/default_ns/a">
         </edge>
         <edge id="e15" source="root/doc1#a2" target="root/doc1#a3" label="Ordering/default_ns/a">
         </edge>
-        <edge id="e16" source="root/doc1#a1" target="root/doc1#a2" label="Ordering/default_ns/a">
+        <edge id="e16" source="root/doc1#a3" target="root/doc1#a4" label="Ordering/default_ns/a">
         </edge>
         <edge id="e17" source="root/doc1#b1" target="root/doc1#b2" label="Ordering/default_ns/b">
         </edge>
@@ -127,33 +127,33 @@ expression: actual.unwrap()
         </edge>
         <edge id="e20" source="root/doc1" target="root" label="PartOf/annis/">
         </edge>
-        <edge id="e21" source="root/doc1#tli2" target="root/doc1" label="PartOf/annis/">
+        <edge id="e21" source="root/doc1#text1" target="root/doc1" label="PartOf/annis/">
         </edge>
-        <edge id="e22" source="root/doc1#a4" target="root/doc1" label="PartOf/annis/">
+        <edge id="e22" source="root/doc1#tli1" target="root/doc1" label="PartOf/annis/">
         </edge>
-        <edge id="e23" source="root/doc1#tli1" target="root/doc1" label="PartOf/annis/">
+        <edge id="e23" source="root/doc1#tli2" target="root/doc1" label="PartOf/annis/">
         </edge>
-        <edge id="e24" source="root/doc1#tli4" target="root/doc1" label="PartOf/annis/">
+        <edge id="e24" source="root/doc1#tli3" target="root/doc1" label="PartOf/annis/">
         </edge>
-        <edge id="e25" source="root/doc1#b1" target="root/doc1" label="PartOf/annis/">
+        <edge id="e25" source="root/doc1#tli4" target="root/doc1" label="PartOf/annis/">
         </edge>
-        <edge id="e26" source="root/doc1#b2" target="root/doc1" label="PartOf/annis/">
+        <edge id="e26" source="root/doc1#tli5" target="root/doc1" label="PartOf/annis/">
         </edge>
-        <edge id="e27" source="root/doc1#b3" target="root/doc1" label="PartOf/annis/">
+        <edge id="e27" source="root/doc1#a1" target="root/doc1" label="PartOf/annis/">
         </edge>
-        <edge id="e28" source="root/doc1#a1" target="root/doc1" label="PartOf/annis/">
+        <edge id="e28" source="root/doc1#a2" target="root/doc1" label="PartOf/annis/">
         </edge>
-        <edge id="e29" source="root/doc1#b4" target="root/doc1" label="PartOf/annis/">
+        <edge id="e29" source="root/doc1#a3" target="root/doc1" label="PartOf/annis/">
         </edge>
-        <edge id="e30" source="root/doc1#a2" target="root/doc1" label="PartOf/annis/">
+        <edge id="e30" source="root/doc1#a4" target="root/doc1" label="PartOf/annis/">
         </edge>
-        <edge id="e31" source="root/doc1#tli3" target="root/doc1" label="PartOf/annis/">
+        <edge id="e31" source="root/doc1#b1" target="root/doc1" label="PartOf/annis/">
         </edge>
-        <edge id="e32" source="root/doc1#a3" target="root/doc1" label="PartOf/annis/">
+        <edge id="e32" source="root/doc1#b2" target="root/doc1" label="PartOf/annis/">
         </edge>
-        <edge id="e33" source="root/doc1#text1" target="root/doc1" label="PartOf/annis/">
+        <edge id="e33" source="root/doc1#b3" target="root/doc1" label="PartOf/annis/">
         </edge>
-        <edge id="e34" source="root/doc1#tli5" target="root/doc1" label="PartOf/annis/">
+        <edge id="e34" source="root/doc1#b4" target="root/doc1" label="PartOf/annis/">
         </edge>
     </graph>
 </graphml>

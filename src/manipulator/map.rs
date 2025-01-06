@@ -544,7 +544,7 @@ mod tests {
         let mut updates = GraphUpdate::new();
         example_generator::create_corpus_structure_simple(&mut updates);
         example_generator::create_multiple_segmentations(&mut updates, "root/doc1");
-        let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        let mut g = AnnotationGraph::with_default_graphstorages(true).unwrap();
         g.apply_update(&mut updates, |_msg| {}).unwrap();
 
         let map_with_deletion = Rule {
