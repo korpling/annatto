@@ -13,7 +13,7 @@ use crate::{
     },
     StepID,
 };
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::{EdgeContainer, Match},
@@ -119,6 +119,20 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// rule, otherwise you might get an endless loop and the workflow will never
 /// finish!
 ///
+/// If you want to delete an existing annotation while mapping, you can use `delete`, which accepts a list
+/// of query node indices. This will not delete nodes, but the annotation described in the query. The given
+/// example queries for annotations of name "norm", creates an annotation "normalisation" with the same value
+/// at the same node and then deletes the "norm" annotation:
+///
+/// ```toml
+/// [[rules]]
+/// query = "norm"
+/// target = 1
+/// ns = ""
+/// name = "normalisation"
+/// value = { copy = 1 }
+/// delete = [1]
+/// ```
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct MapAnnos {
@@ -277,6 +291,8 @@ struct Rule {
     ns: String,
     name: String,
     value: Value,
+    #[serde(default)]
+    delete: Vec<usize>,
 }
 
 impl Rule {
@@ -360,6 +376,7 @@ impl MapperImpl {
                         self.map_span(&rule, all_targets, &match_group, graph, &mut updates)?;
                     }
                 }
+                self.delete_existing_annotations(&rule, &match_group, graph, &mut updates)?;
                 n += 1;
             }
             if let Some(p) = &self.progress {
@@ -487,6 +504,29 @@ impl MapperImpl {
 
         Ok(())
     }
+
+    fn delete_existing_annotations(
+        &mut self,
+        rule: &Rule,
+        match_group: &[Match],
+        graph: &AnnotationGraph,
+        update: &mut GraphUpdate,
+    ) -> anyhow::Result<()> {
+        for query_index in &rule.delete {
+            if let Some(m) = match_group.get(*query_index - 1) {
+                let delete_from_node = graph
+                    .get_node_annos()
+                    .get_value_for_item(&m.node, &NODE_NAME_KEY)?
+                    .ok_or(anyhow!("Node has no node name."))?;
+                update.add_event(UpdateEvent::DeleteNodeLabel {
+                    node_name: delete_from_node.to_string(),
+                    anno_ns: m.anno_key.ns.to_string(),
+                    anno_name: m.anno_key.name.to_string(),
+                })?;
+            }
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -501,12 +541,53 @@ mod tests {
     };
     use graphannis_core::{annostorage::ValueSearch, graph::ANNIS_NS};
 
+    use insta::assert_snapshot;
     use pretty_assertions::assert_eq;
     use tempfile::NamedTempFile;
+    use tests::test_util::export_to_string;
 
-    use crate::{manipulator::Manipulator, test_util, util::example_generator, StepID};
+    use crate::{
+        exporter::graphml::GraphMLExporter, manipulator::Manipulator, test_util,
+        util::example_generator, StepID,
+    };
 
     use super::*;
+
+    #[test]
+    fn test_delete() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_multiple_segmentations(&mut updates, "root/doc1");
+        let mut g = AnnotationGraph::with_default_graphstorages(true).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let map_with_deletion = Rule {
+            query: "b".to_string(),
+            target: super::TargetRef::Node(1),
+            ns: "".to_string(),
+            name: "c".to_string(),
+            value: Value::Copy {
+                copy: TargetRef::Node(1),
+            },
+            delete: vec![1],
+        };
+
+        let mapping = Mapping {
+            repetition: super::RepetitionMode::Fixed { n: 1 },
+            rules: vec![map_with_deletion],
+        };
+        let mut mapper = super::MapperImpl {
+            config: mapping,
+            added_spans: 0,
+            progress: None,
+        };
+
+        assert!(mapper.apply_ruleset(&mut g).is_ok());
+
+        let actual = export_to_string(&g, GraphMLExporter::default());
+        assert!(actual.is_ok());
+        assert_snapshot!(actual.unwrap());
+    }
 
     #[test]
     fn test_resolve_value_fixed() {
@@ -522,6 +603,7 @@ mod tests {
             ns: "test_ns".to_string(),
             name: "test".to_string(),
             value: Value::Fixed("myvalue".to_string()),
+            delete: vec![],
         };
 
         let resolved = fixed_value.resolve_value(&g, &vec![]).unwrap();
@@ -575,6 +657,7 @@ mod tests {
                 target: TargetRef::Node(1),
                 replacements: vec![("cat".to_string(), "dog".to_string())],
             },
+            delete: vec![],
         };
 
         let tok_match = g
@@ -605,6 +688,7 @@ mod tests {
                 target: TargetRef::Node(1),
                 replacements: vec![("cat.*".to_string(), "$0$0".to_string())],
             },
+            delete: vec![],
         };
 
         let tok_match = g
