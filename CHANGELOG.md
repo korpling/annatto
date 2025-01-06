@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `map` allows to delete annotation via query index
+
 ## [0.20.2] - 2024-12-18
 
 ### Fixed
