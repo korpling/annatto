@@ -93,6 +93,20 @@ Make sure that the updates in the rules actually change the condition of the
 rule, otherwise you might get an endless loop and the workflow will never
 finish!
 
+If you want to delete an existing annotation while mapping, you can use `delete`, which accepts a list
+of query node indices. This will not delete nodes, but the annotation described in the query. The given
+example queries for annotations of name "norm", creates an annotation "normalisation" with the same value
+at the same node and then deletes the "norm" annotation:
+
+```toml
+[[rules]]
+query = "norm"
+target = 1
+ns = ""
+name = "normalisation"
+value = { copy = 1 }
+delete = [1]
+```
 
 ## Configuration
 
