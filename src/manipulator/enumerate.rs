@@ -165,7 +165,7 @@ impl Manipulator for EnumerateMatches {
                             for (bi, ci) in self.by.iter().enumerate() {
                                 if let Some(match_entry) = coords.get(*ci - 1) {
                                     let (coord_ns, coord_name, coord_node_name) =
-                                        read_match_entry(*match_entry);
+                                        read_match_entry(match_entry);
                                     let internal_id = graph
                                         .get_node_annos()
                                         .get_node_id_from_name(coord_node_name)?
