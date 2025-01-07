@@ -28,16 +28,28 @@ pub struct EnumerateMatches {
     queries: Vec<String>,
     /// The target node in the query that is assigned the numeric annotation. Holds for all queries. This is a 1-based index and counts by mention in the query.
     target: usize,
+    /// First sort by the values of the provided node indices referring to the query. Sorting is stable. The first index ranks higher then the second, an so forth.
+    /// Everytime the value or the tuple of values of the selected nodes changes, the count is restartet at the `start` value.
+    /// Example:
+    /// ```toml
+    /// [graph_op.config]
+    /// query = "tok _=_ pos=/NN/ @* doc"
+    /// by = [3]
+    /// ```
+    ///
+    /// The example sorts the results by the value of doc (the rest is kept stable).
+    #[serde(default)]
+    by: Vec<usize>,
     /// The anno key of the numeric annotation that should be created.
     /// Example:
     /// ```toml
-    /// [export.config]
+    /// [graph_op.config]
     /// label = { ns = "order", name = "i" }
     /// ```
     ///
     /// You can also provide this as a string:
     /// ```toml
-    /// [export.config]
+    /// [graph_op.config]
     /// label = "order::i"
     /// ```
     #[serde(default = "default_label", deserialize_with = "deserialize_anno_key")]
@@ -45,7 +57,7 @@ pub struct EnumerateMatches {
     /// An optional 1-based index pointing to the annotation node in the query that holds a prefix value that will be added to the numeric annotation.
     value: Option<usize>,
     /// This can be used to offset the numeric values in the annotations.
-    start: u64,
+    start: usize,
 }
 
 fn default_label() -> AnnoKey {
@@ -59,6 +71,7 @@ impl Default for EnumerateMatches {
     fn default() -> Self {
         Self {
             queries: vec!["node".to_string()],
+            by: vec![],
             target: 1,
             label: default_label(),
             value: None,
@@ -89,15 +102,57 @@ impl Manipulator for EnumerateMatches {
                     query_language: QueryLanguage::AQL,
                     timeout: None,
                 };
-                let search_results = cs.find(
+                let mut search_results = cs.find(
                     query,
                     0,
                     None,
                     graphannis::corpusstorage::ResultOrder::Normal,
                 )?;
+                // presort, this should be solved more efficiently in a later version
+                if !self.by.is_empty() {
+                    // this is inefficient as values are fetched multiple times (see below in the for-loop), this should be optimized in the future
+                    search_results.sort_by(|a, b| {
+                        let mut values: [Vec<String>; 2] = [Vec::default(), Vec::default()];
+                        for (i, data) in [a, b].iter().enumerate() {
+                            let raw = data.split(' ').collect_vec();
+                            for j in &self.by {
+                                if let Some(result_member) = raw.get(j - 1) {
+                                    let (ns, name, node_name) =
+                                        match result_member.rsplit_once("::") {
+                                            Some((anno, node_name)) => {
+                                                let (ns, anno_name) =
+                                                    anno.split_once("::").unwrap_or(("", anno));
+                                                (ns, anno_name, node_name)
+                                            }
+                                            None => (ANNIS_NS, "tok", *result_member),
+                                        };
+                                    if let Ok(Some(n)) =
+                                        graph.get_node_annos().get_node_id_from_name(node_name)
+                                    {
+                                        if let Ok(Some(v)) =
+                                            graph.get_node_annos().get_value_for_item(
+                                                &n,
+                                                &AnnoKey {
+                                                    name: name.into(),
+                                                    ns: ns.into(),
+                                                },
+                                            )
+                                        {
+                                            values[i].push(v.to_string());
+                                        }
+                                    }
+                                };
+                            }
+                        }
+                        values[0].cmp(&values[1])
+                    });
+                }
                 let mut offset = 0;
+                let mut i_correction = 0;
                 let mut visited = BTreeSet::new();
+                let mut by_values = Vec::with_capacity(self.by.len());
                 for (i, m) in search_results.into_iter().enumerate() {
+                    let mut reset_count = false;
                     let matching_nodes = m
                         .split(' ')
                         .filter_map(|s| s.split("::").last())
@@ -106,42 +161,66 @@ impl Manipulator for EnumerateMatches {
                         if visited.contains(*target_node) {
                             offset += 1;
                         } else {
+                            let mut coords = m.split(' ').collect_vec();
+                            for (bi, ci) in self.by.iter().enumerate() {
+                                if let Some(match_entry) = coords.get(*ci - 1) {
+                                    let (coord_ns, coord_name, coord_node_name) =
+                                        read_match_entry(*match_entry);
+                                    let internal_id = graph
+                                        .get_node_annos()
+                                        .get_node_id_from_name(coord_node_name)?
+                                        .unwrap_or_default();
+                                    let next_value = graph
+                                        .get_node_annos()
+                                        .get_value_for_item(
+                                            &internal_id,
+                                            &AnnoKey {
+                                                name: coord_name.into(),
+                                                ns: coord_ns.into(),
+                                            },
+                                        )?
+                                        .unwrap_or_default()
+                                        .to_string();
+                                    if let Some(previous_value) = by_values.get(bi) {
+                                        if &next_value != previous_value {
+                                            // reset count
+                                            reset_count = true;
+                                        }
+                                    }
+                                    by_values.insert(bi, next_value);
+                                }
+                            }
+                            if reset_count {
+                                i_correction = i;
+                            }
                             if let Some(value_i) = self.value {
-                                let mut coords = m.split(' ').collect_vec();
                                 if value_i <= coords.len() {
                                     let coord = coords.remove(value_i - 1);
                                     let (coord_ns, coord_name, coord_node_name) =
-                                        match coord.rsplit_once("::") {
-                                            Some((anno, node_name)) => {
-                                                let (ns, anno_name) =
-                                                    anno.split_once("::").unwrap_or(("", anno));
-                                                (ns, anno_name, node_name)
-                                            }
-                                            None => (ANNIS_NS, "tok", coord),
-                                        };
-                                    if let Some(internal_id) = graph
+                                        read_match_entry(coord);
+                                    let internal_id = graph
                                         .get_node_annos()
                                         .get_node_id_from_name(coord_node_name)?
+                                        .unwrap_or_default();
+
+                                    if let Some(prefix) =
+                                        graph.get_node_annos().get_value_for_item(
+                                            &internal_id,
+                                            &AnnoKey {
+                                                ns: coord_ns.into(),
+                                                name: coord_name.into(),
+                                            },
+                                        )?
                                     {
-                                        if let Some(prefix) =
-                                            graph.get_node_annos().get_value_for_item(
-                                                &internal_id,
-                                                &AnnoKey {
-                                                    ns: coord_ns.into(),
-                                                    name: coord_name.into(),
-                                                },
-                                            )?
-                                        {
-                                            update.add_event(UpdateEvent::AddNodeLabel {
-                                                node_name: target_node.to_string(),
-                                                anno_ns: self.label.ns.to_string(),
-                                                anno_name: self.label.name.to_string(),
-                                                anno_value: format!(
-                                                    "{prefix}-{}",
-                                                    i as u64 + self.start - offset
-                                                ),
-                                            })?;
-                                        }
+                                        update.add_event(UpdateEvent::AddNodeLabel {
+                                            node_name: target_node.to_string(),
+                                            anno_ns: self.label.ns.to_string(),
+                                            anno_name: self.label.name.to_string(),
+                                            anno_value: format!(
+                                                "{prefix}-{}",
+                                                i + self.start - offset - i_correction
+                                            ),
+                                        })?;
                                     }
                                 }
                             } else {
@@ -149,7 +228,8 @@ impl Manipulator for EnumerateMatches {
                                     node_name: target_node.to_string(),
                                     anno_ns: self.label.ns.to_string(),
                                     anno_name: self.label.name.to_string(),
-                                    anno_value: (i as u64 + self.start - offset).to_string(),
+                                    anno_value: (i + self.start - offset - i_correction)
+                                        .to_string(),
                                 })?;
                             }
                             visited.insert(target_node.to_string());
@@ -172,6 +252,16 @@ impl Manipulator for EnumerateMatches {
     }
 }
 
+fn read_match_entry(entry: &str) -> (&str, &str, &str) {
+    match entry.rsplit_once("::") {
+        Some((anno, node_name)) => {
+            let (ns, anno_name) = anno.split_once("::").unwrap_or(("", anno));
+            (ns, anno_name, node_name)
+        }
+        None => (ANNIS_NS, "tok", entry),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::Path;
@@ -189,6 +279,7 @@ mod tests {
         exporter::graphml::GraphMLExporter,
         manipulator::Manipulator,
         test_util::{compare_results, export_to_string},
+        util::example_generator,
         StepID,
     };
 
@@ -218,6 +309,37 @@ mod tests {
         assert!(r.is_ok(), "Error testing enumerate on disk: {:?}", r.err());
     }
 
+    #[test]
+    fn by() {
+        let mut update = GraphUpdate::default();
+        example_generator::create_corpus_structure_two_documents(&mut update);
+        example_generator::create_multiple_segmentations(&mut update, "root/doc1");
+        example_generator::create_tokens(&mut update, Some("root/doc2"));
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update, |_| {}).is_ok());
+        assert!(EnumerateMatches {
+            queries: vec!["tok @* doc".to_string()],
+            by: vec![2],
+            target: 1,
+            ..Default::default()
+        }
+        .manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            StepID {
+                module_name: "test_enumerate".to_string(),
+                path: None
+            },
+            None
+        )
+        .is_ok());
+        let actual = export_to_string(&graph, GraphMLExporter::default());
+        assert!(actual.is_ok());
+        assert_snapshot!(actual.unwrap());
+    }
+
     fn enumerate_bare(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
         let mut input_g = base_graph(on_disk)?;
         let mut expected_g = base_graph(on_disk)?;
@@ -237,6 +359,7 @@ mod tests {
                 ns: "count".into(),
             },
             queries: vec!["annis:node_type=\"node\"".to_string()],
+            by: vec![],
             target: 1,
             start: 1,
             value: None,
@@ -299,6 +422,7 @@ mod tests {
                 ns: "count".into(),
             },
             queries: vec!["sentiment".to_string()],
+            by: vec![],
             target: 1,
             start: 1,
             value: Some(1),

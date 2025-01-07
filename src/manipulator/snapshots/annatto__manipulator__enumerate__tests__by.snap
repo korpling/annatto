@@ -1,0 +1,283 @@
+---
+source: src/manipulator/enumerate.rs
+expression: actual.unwrap()
+---
+---- root.graphml:
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>
+    <key id="k1" for="node" attr.name="a" attr.type="string"/>
+    <key id="k2" for="node" attr.name="b" attr.type="string"/>
+    <key id="k3" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k4" for="node" attr.name="i" attr.type="string"/>
+    <key id="k5" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k6" for="node" attr.name="annis::tok" attr.type="string"/>
+    <key id="k7" for="node" attr.name="annis::tok-whitespace-after" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <data key="k0"><![CDATA[
+# configure visualizations here
+]]></data>
+        <node id="root">
+            <data key="k5">corpus</data>
+        </node>
+        <node id="root/doc1">
+            <data key="k3">doc1</data>
+            <data key="k5">corpus</data>
+        </node>
+        <node id="root/doc2">
+            <data key="k3">doc2</data>
+            <data key="k5">corpus</data>
+        </node>
+        <node id="root/doc1#text1">
+            <data key="k5">datasource</data>
+        </node>
+        <node id="root/doc2#text1">
+            <data key="k5">datasource</data>
+        </node>
+        <node id="root/doc1#tli1">
+            <data key="k4">0</data>
+            <data key="k5">node</data>
+            <data key="k6"> </data>
+        </node>
+        <node id="root/doc1#tli2">
+            <data key="k4">1</data>
+            <data key="k5">node</data>
+            <data key="k6"> </data>
+        </node>
+        <node id="root/doc1#tli3">
+            <data key="k4">2</data>
+            <data key="k5">node</data>
+            <data key="k6"> </data>
+        </node>
+        <node id="root/doc1#tli4">
+            <data key="k4">3</data>
+            <data key="k5">node</data>
+            <data key="k6"> </data>
+        </node>
+        <node id="root/doc1#tli5">
+            <data key="k4">4</data>
+            <data key="k5">node</data>
+            <data key="k6"> </data>
+        </node>
+        <node id="root/doc1#a1">
+            <data key="k1">Another</data>
+            <data key="k5">node</data>
+            <data key="k6">Another</data>
+        </node>
+        <node id="root/doc1#a2">
+            <data key="k1">ex</data>
+            <data key="k5">node</data>
+            <data key="k6">ex</data>
+        </node>
+        <node id="root/doc1#a3">
+            <data key="k1">ample</data>
+            <data key="k5">node</data>
+            <data key="k6">ample</data>
+        </node>
+        <node id="root/doc1#a4">
+            <data key="k1">text</data>
+            <data key="k5">node</data>
+            <data key="k6">text</data>
+        </node>
+        <node id="root/doc1#b1">
+            <data key="k2">An</data>
+            <data key="k5">node</data>
+            <data key="k6">An</data>
+        </node>
+        <node id="root/doc1#b2">
+            <data key="k2">other</data>
+            <data key="k5">node</data>
+            <data key="k6">other</data>
+        </node>
+        <node id="root/doc1#b3">
+            <data key="k2">example</data>
+            <data key="k5">node</data>
+            <data key="k6">example</data>
+        </node>
+        <node id="root/doc1#b4">
+            <data key="k2">text</data>
+            <data key="k5">node</data>
+            <data key="k6">text</data>
+        </node>
+        <node id="root/doc2#tok0">
+            <data key="k4">0</data>
+            <data key="k5">node</data>
+            <data key="k6">Is</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="root/doc2#tok1">
+            <data key="k4">1</data>
+            <data key="k5">node</data>
+            <data key="k6">this</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="root/doc2#tok2">
+            <data key="k4">2</data>
+            <data key="k5">node</data>
+            <data key="k6">example</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="root/doc2#tok3">
+            <data key="k4">3</data>
+            <data key="k5">node</data>
+            <data key="k6">more</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="root/doc2#tok4">
+            <data key="k4">4</data>
+            <data key="k5">node</data>
+            <data key="k6">complicated</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="root/doc2#tok5">
+            <data key="k4">5</data>
+            <data key="k5">node</data>
+            <data key="k6">than</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="root/doc2#tok6">
+            <data key="k4">6</data>
+            <data key="k5">node</data>
+            <data key="k6">it</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="root/doc2#tok7">
+            <data key="k4">7</data>
+            <data key="k5">node</data>
+            <data key="k6">appears</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="root/doc2#tok8">
+            <data key="k4">8</data>
+            <data key="k5">node</data>
+            <data key="k6">to</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="root/doc2#tok9">
+            <data key="k4">9</data>
+            <data key="k5">node</data>
+            <data key="k6">be</data>
+        </node>
+        <node id="root/doc2#tok10">
+            <data key="k4">10</data>
+            <data key="k5">node</data>
+            <data key="k6">?</data>
+        </node>
+        <edge id="e0" source="root/doc1#a1" target="root/doc1#tli1" label="Coverage//">
+        </edge>
+        <edge id="e1" source="root/doc1#a1" target="root/doc1#tli2" label="Coverage//">
+        </edge>
+        <edge id="e2" source="root/doc1#a2" target="root/doc1#tli3" label="Coverage//">
+        </edge>
+        <edge id="e3" source="root/doc1#a3" target="root/doc1#tli4" label="Coverage//">
+        </edge>
+        <edge id="e4" source="root/doc1#a4" target="root/doc1#tli5" label="Coverage//">
+        </edge>
+        <edge id="e5" source="root/doc1#b1" target="root/doc1#tli1" label="Coverage//">
+        </edge>
+        <edge id="e6" source="root/doc1#b2" target="root/doc1#tli2" label="Coverage//">
+        </edge>
+        <edge id="e7" source="root/doc1#b3" target="root/doc1#tli3" label="Coverage//">
+        </edge>
+        <edge id="e8" source="root/doc1#b3" target="root/doc1#tli4" label="Coverage//">
+        </edge>
+        <edge id="e9" source="root/doc1#b4" target="root/doc1#tli5" label="Coverage//">
+        </edge>
+        <edge id="e10" source="root/doc1#tli1" target="root/doc1#tli2" label="Ordering/annis/">
+        </edge>
+        <edge id="e11" source="root/doc1#tli2" target="root/doc1#tli3" label="Ordering/annis/">
+        </edge>
+        <edge id="e12" source="root/doc1#tli3" target="root/doc1#tli4" label="Ordering/annis/">
+        </edge>
+        <edge id="e13" source="root/doc1#tli4" target="root/doc1#tli5" label="Ordering/annis/">
+        </edge>
+        <edge id="e14" source="root/doc2#tok0" target="root/doc2#tok1" label="Ordering/annis/">
+        </edge>
+        <edge id="e15" source="root/doc2#tok1" target="root/doc2#tok2" label="Ordering/annis/">
+        </edge>
+        <edge id="e16" source="root/doc2#tok2" target="root/doc2#tok3" label="Ordering/annis/">
+        </edge>
+        <edge id="e17" source="root/doc2#tok3" target="root/doc2#tok4" label="Ordering/annis/">
+        </edge>
+        <edge id="e18" source="root/doc2#tok4" target="root/doc2#tok5" label="Ordering/annis/">
+        </edge>
+        <edge id="e19" source="root/doc2#tok5" target="root/doc2#tok6" label="Ordering/annis/">
+        </edge>
+        <edge id="e20" source="root/doc2#tok6" target="root/doc2#tok7" label="Ordering/annis/">
+        </edge>
+        <edge id="e21" source="root/doc2#tok7" target="root/doc2#tok8" label="Ordering/annis/">
+        </edge>
+        <edge id="e22" source="root/doc2#tok8" target="root/doc2#tok9" label="Ordering/annis/">
+        </edge>
+        <edge id="e23" source="root/doc2#tok9" target="root/doc2#tok10" label="Ordering/annis/">
+        </edge>
+        <edge id="e24" source="root/doc1#a1" target="root/doc1#a2" label="Ordering/default_ns/a">
+        </edge>
+        <edge id="e25" source="root/doc1#a2" target="root/doc1#a3" label="Ordering/default_ns/a">
+        </edge>
+        <edge id="e26" source="root/doc1#a3" target="root/doc1#a4" label="Ordering/default_ns/a">
+        </edge>
+        <edge id="e27" source="root/doc1#b1" target="root/doc1#b2" label="Ordering/default_ns/b">
+        </edge>
+        <edge id="e28" source="root/doc1#b2" target="root/doc1#b3" label="Ordering/default_ns/b">
+        </edge>
+        <edge id="e29" source="root/doc1#b3" target="root/doc1#b4" label="Ordering/default_ns/b">
+        </edge>
+        <edge id="e30" source="root/doc1" target="root" label="PartOf/annis/">
+        </edge>
+        <edge id="e31" source="root/doc1#text1" target="root/doc1" label="PartOf/annis/">
+        </edge>
+        <edge id="e32" source="root/doc2" target="root" label="PartOf/annis/">
+        </edge>
+        <edge id="e33" source="root/doc2#text1" target="root/doc2" label="PartOf/annis/">
+        </edge>
+        <edge id="e34" source="root/doc1#tli1" target="root/doc1" label="PartOf/annis/">
+        </edge>
+        <edge id="e35" source="root/doc1#tli2" target="root/doc1" label="PartOf/annis/">
+        </edge>
+        <edge id="e36" source="root/doc1#tli3" target="root/doc1" label="PartOf/annis/">
+        </edge>
+        <edge id="e37" source="root/doc1#tli4" target="root/doc1" label="PartOf/annis/">
+        </edge>
+        <edge id="e38" source="root/doc1#tli5" target="root/doc1" label="PartOf/annis/">
+        </edge>
+        <edge id="e39" source="root/doc1#a1" target="root/doc1" label="PartOf/annis/">
+        </edge>
+        <edge id="e40" source="root/doc1#a2" target="root/doc1" label="PartOf/annis/">
+        </edge>
+        <edge id="e41" source="root/doc1#a3" target="root/doc1" label="PartOf/annis/">
+        </edge>
+        <edge id="e42" source="root/doc1#a4" target="root/doc1" label="PartOf/annis/">
+        </edge>
+        <edge id="e43" source="root/doc1#b1" target="root/doc1" label="PartOf/annis/">
+        </edge>
+        <edge id="e44" source="root/doc1#b2" target="root/doc1" label="PartOf/annis/">
+        </edge>
+        <edge id="e45" source="root/doc1#b3" target="root/doc1" label="PartOf/annis/">
+        </edge>
+        <edge id="e46" source="root/doc1#b4" target="root/doc1" label="PartOf/annis/">
+        </edge>
+        <edge id="e47" source="root/doc2#tok0" target="root/doc2" label="PartOf/annis/">
+        </edge>
+        <edge id="e48" source="root/doc2#tok1" target="root/doc2" label="PartOf/annis/">
+        </edge>
+        <edge id="e49" source="root/doc2#tok2" target="root/doc2" label="PartOf/annis/">
+        </edge>
+        <edge id="e50" source="root/doc2#tok3" target="root/doc2" label="PartOf/annis/">
+        </edge>
+        <edge id="e51" source="root/doc2#tok4" target="root/doc2" label="PartOf/annis/">
+        </edge>
+        <edge id="e52" source="root/doc2#tok5" target="root/doc2" label="PartOf/annis/">
+        </edge>
+        <edge id="e53" source="root/doc2#tok6" target="root/doc2" label="PartOf/annis/">
+        </edge>
+        <edge id="e54" source="root/doc2#tok7" target="root/doc2" label="PartOf/annis/">
+        </edge>
+        <edge id="e55" source="root/doc2#tok8" target="root/doc2" label="PartOf/annis/">
+        </edge>
+        <edge id="e56" source="root/doc2#tok9" target="root/doc2" label="PartOf/annis/">
+        </edge>
+        <edge id="e57" source="root/doc2#tok10" target="root/doc2" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>
