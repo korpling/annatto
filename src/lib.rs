@@ -34,7 +34,7 @@ use importer::{
 };
 use manipulator::{
     check::Check, chunker::Chunk, collapse::Collapse, enumerate::EnumerateMatches,
-    filter::FilterNodes, link::LinkNodes, map::MapAnnos, no_op::NoOp, re::Revise,
+    filter::FilterNodes, link::LinkNodes, map::MapAnnos, no_op::NoOp, re::Revise, sleep::Sleep,
     split::SplitValues, time::Filltime, visualize::Visualize, Manipulator,
 };
 use serde_derive::Deserialize;
@@ -324,7 +324,8 @@ pub enum GraphOp {
     Time(#[serde(default)] Filltime),
     Chunk(#[serde(default)] Chunk),
     Split(#[serde(default)] SplitValues), // default does nothing
-    None(#[serde(default)] NoOp),         // has no attributes
+    Sleep(#[serde(default)] Sleep),
+    None(#[serde(default)] NoOp), // has no attributes
 }
 
 impl Default for GraphOp {
@@ -349,6 +350,7 @@ impl GraphOp {
             GraphOp::Split(m) => m,
             GraphOp::Filter(m) => m,
             GraphOp::Time(m) => m,
+            GraphOp::Sleep(m) => m,
         }
     }
 }
@@ -368,6 +370,7 @@ impl GraphOpDiscriminants {
             GraphOpDiscriminants::Split => SplitValues::DOCS,
             GraphOpDiscriminants::Filter => FilterNodes::DOCS,
             GraphOpDiscriminants::Time => Filltime::DOCS,
+            GraphOpDiscriminants::Sleep => Sleep::DOCS,
         }
     }
 
@@ -397,6 +400,7 @@ impl GraphOpDiscriminants {
                 (FilterNodes::FIELD_NAMES_AS_SLICE, FilterNodes::FIELD_DOCS)
             }
             GraphOpDiscriminants::Time => (Filltime::FIELD_NAMES_AS_SLICE, Filltime::FIELD_DOCS),
+            GraphOpDiscriminants::Sleep => (Sleep::FIELD_NAMES_AS_SLICE, Sleep::FIELD_DOCS),
         };
         for (idx, n) in field_names.iter().enumerate() {
             if idx < field_docs.len() {
