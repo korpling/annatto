@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `map` allows to delete annotation via query index
 - `enumerate` via its attribute `by` allows to restart counting when the value of a node specified in the query changes.
+- `sleep` lets annatto sleep
 
 ## [0.20.2] - 2024-12-18
 
