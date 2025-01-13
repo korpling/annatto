@@ -167,7 +167,7 @@ impl From<&str> for SaltObject {
         } else if let Some(value) = value.strip_prefix("U::") {
             SaltObject::Url(value.to_string())
         } else if let Some(value) = value.strip_prefix("B::") {
-            let value = value.to_ascii_lowercase() == "true";
+            let value = value.eq_ignore_ascii_case("true");
             SaltObject::Boolean(value)
         } else if let Some(value) = value.strip_prefix("N::") {
             let value = value.parse::<i64>().unwrap_or_default();
