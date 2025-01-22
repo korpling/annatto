@@ -29,7 +29,7 @@ use super::Manipulator;
 /// query = "pos=/NOUN/"
 /// inverse = true
 /// ```
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, FieldsHaveDefault)]
 #[serde(deny_unknown_fields)]
 pub struct FilterNodes {
     /// The AQL query to use to identify all relevant nodes.

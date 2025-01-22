@@ -29,7 +29,7 @@ use super::Manipulator;
 /// action = "time"
 /// config = {}
 /// ```
-#[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice, FieldsHaveDefault)]
 #[serde(deny_unknown_fields)]
 pub struct Filltime {}
 

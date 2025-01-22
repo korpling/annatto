@@ -31,7 +31,7 @@ use crate::{
 };
 
 /// This module exports all ordered nodes and nodes connected by coverage edges of any name into a table.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, FieldsHaveDefault)]
 #[serde(deny_unknown_fields)]
 pub struct ExportTable {
     /// The provided annotation key defines which nodes within the part-of component define a document. All nodes holding said annotation

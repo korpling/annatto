@@ -23,7 +23,7 @@ use crate::{
 
 /// Runs AQL queries on the corpus and checks for constraints on the result.
 /// Can fail the workflow when one of the checks fail
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, FieldsHaveDefault)]
 #[serde(deny_unknown_fields)]
 pub struct Check {
     /// The tests to run on the current graph.

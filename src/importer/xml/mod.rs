@@ -20,7 +20,7 @@ use documented::{Documented, DocumentedFields};
 use super::Importer;
 
 /// Generic importer for XML files.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, FieldsHaveDefault)]
 #[serde(deny_unknown_fields)]
 pub struct ImportXML {}
 

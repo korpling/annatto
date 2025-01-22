@@ -15,7 +15,7 @@ use crate::{deserialize::deserialize_anno_key, error::Result, progress::Progress
 use super::Manipulator;
 
 /// This operation splits conflated annotation values into individual annotations.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, FieldsHaveDefault)]
 #[serde(deny_unknown_fields)]
 pub struct SplitValues {
     /// This is the delimiter between the parts of the conflated annotation in the input graph

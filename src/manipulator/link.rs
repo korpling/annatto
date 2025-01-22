@@ -21,7 +21,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 
 /// Link nodes within a graph. Source and target of a link are determined via
 /// queries; type, layer, and name of the link component can be configured.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, FieldsHaveDefault)]
 #[serde(deny_unknown_fields)]
 pub struct LinkNodes {
     /// The AQL query to find all source node annotations. Source and target nodes are then paired by equal value for their query match.

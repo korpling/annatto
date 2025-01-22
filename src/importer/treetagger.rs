@@ -319,7 +319,7 @@ pub enum AttributeDecoding {
 }
 
 /// Importer for the file format used by the TreeTagger.
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, FieldsHaveDefault)]
 #[serde(default, deny_unknown_fields)]
 pub struct ImportTreeTagger {
     column_names: Vec<String>,

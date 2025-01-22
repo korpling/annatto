@@ -33,7 +33,7 @@ struct EmptyLineGroup {
 }
 
 /// Import CSV files with token and token annotations.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, FieldsHaveDefault)]
 #[serde(default, deny_unknown_fields)]
 pub struct ImportTable {
     /// If not empty, skip the first row and use this list as the fully qualified annotation name for each column.

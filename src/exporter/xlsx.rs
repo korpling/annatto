@@ -29,7 +29,7 @@ use super::Exporter;
 
 /// Exports Excel Spreadsheets where each line is a token, the other columns are
 /// spans and merged cells can be used for spans that cover more than one token.
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, FieldsHaveDefault)]
 #[serde(default, deny_unknown_fields)]
 pub struct ExportXlsx {
     /// If `true`, include the annotation namespace in the column header.

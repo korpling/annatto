@@ -21,7 +21,7 @@ use super::Manipulator;
 
 /// Adds a node label to all matched nodes for set of queries with the number of
 /// the match as value.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, FieldsHaveDefault)]
 #[serde(default, deny_unknown_fields)]
 pub struct EnumerateMatches {
     /// A list of queries to find the nodes that are to be enumerated.
