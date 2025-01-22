@@ -12,6 +12,7 @@ repository = "https://github.com/korpling/annatto/"
 version = "0.21.0"
 
 [dependencies]
+anatto-derive = { path = "annatto-derive" }
 ansi_term = "0.12"
 anyhow = "1.0"
 bimap = "0.6.3"
@@ -81,6 +82,9 @@ panic = 'abort'
 debug = true
 inherits = "release"
 split-debuginfo = "packed"
+
+[workspace]
+members = ["anatto-derive"]
 
 # Config for 'dist'
 [workspace.metadata.dist]
