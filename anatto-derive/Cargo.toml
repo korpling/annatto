@@ -1,0 +1,13 @@
+[package]
+name = "annatto-derive"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+proc-macro2 = "1.0.93"
+serde = "1.0"
+syn = "2.0"
+quote = "1.0"
+
+[lib]
+proc-macro = true
