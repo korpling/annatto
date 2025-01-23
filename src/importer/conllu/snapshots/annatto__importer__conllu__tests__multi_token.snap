@@ -1,0 +1,121 @@
+---
+source: src/importer/conllu/tests.rs
+expression: actual.unwrap()
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k1" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k2" for="node" attr.name="lemma" attr.type="string"/>
+    <key id="k3" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k4" for="node" attr.name="default_ns::norm" attr.type="string"/>
+    <key id="k5" for="node" attr.name="annis::tok" attr.type="string"/>
+    <key id="k6" for="node" attr.name="upos" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <node id="multi-tok">
+            <data key="k3">corpus</data>
+        </node>
+        <node id="multi-tok/test_doc">
+            <data key="k0">test_doc</data>
+            <data key="k3">corpus</data>
+        </node>
+        <node id="multi-tok/test_doc#t2">
+            <data key="k1">default_layer</data>
+            <data key="k2">ir</data>
+            <data key="k3">node</data>
+            <data key="k5">vamos</data>
+            <data key="k6">VERB</data>
+        </node>
+        <node id="multi-tok/test_doc#span1-2">
+            <data key="k3">node</data>
+            <data key="k4">vámonos</data>
+        </node>
+        <node id="multi-tok/test_doc#t3">
+            <data key="k1">default_layer</data>
+            <data key="k2">nosotros</data>
+            <data key="k3">node</data>
+            <data key="k5">nos</data>
+            <data key="k6">PRON</data>
+        </node>
+        <node id="multi-tok/test_doc#t5">
+            <data key="k1">default_layer</data>
+            <data key="k2">a</data>
+            <data key="k3">node</data>
+            <data key="k5">a</data>
+            <data key="k6">ADP</data>
+        </node>
+        <node id="multi-tok/test_doc#span3-4">
+            <data key="k3">node</data>
+            <data key="k4">al</data>
+        </node>
+        <node id="multi-tok/test_doc#t6">
+            <data key="k1">default_layer</data>
+            <data key="k2">el</data>
+            <data key="k3">node</data>
+            <data key="k5">el</data>
+            <data key="k6">PRON</data>
+        </node>
+        <node id="multi-tok/test_doc#t7">
+            <data key="k1">default_layer</data>
+            <data key="k2">mar</data>
+            <data key="k3">node</data>
+            <data key="k5">mar</data>
+            <data key="k6">NOUN</data>
+        </node>
+        <node id="multi-tok/test_doc#span7">
+            <data key="k3">node</data>
+            <data key="k4">mar</data>
+        </node>
+        <node id="multi-tok/test_doc#s1">
+            <data key="k3">node</data>
+        </node>
+        <edge id="e0" source="multi-tok/test_doc#span1-2" target="multi-tok/test_doc#t2" label="Coverage/annis/">
+        </edge>
+        <edge id="e1" source="multi-tok/test_doc#span1-2" target="multi-tok/test_doc#t3" label="Coverage/annis/">
+        </edge>
+        <edge id="e2" source="multi-tok/test_doc#span3-4" target="multi-tok/test_doc#t5" label="Coverage/annis/">
+        </edge>
+        <edge id="e3" source="multi-tok/test_doc#span3-4" target="multi-tok/test_doc#t6" label="Coverage/annis/">
+        </edge>
+        <edge id="e4" source="multi-tok/test_doc#span7" target="multi-tok/test_doc#t7" label="Coverage/annis/">
+        </edge>
+        <edge id="e5" source="multi-tok/test_doc#s1" target="multi-tok/test_doc#t2" label="Coverage/annis/">
+        </edge>
+        <edge id="e6" source="multi-tok/test_doc#s1" target="multi-tok/test_doc#t3" label="Coverage/annis/">
+        </edge>
+        <edge id="e7" source="multi-tok/test_doc#s1" target="multi-tok/test_doc#t5" label="Coverage/annis/">
+        </edge>
+        <edge id="e8" source="multi-tok/test_doc#s1" target="multi-tok/test_doc#t6" label="Coverage/annis/">
+        </edge>
+        <edge id="e9" source="multi-tok/test_doc#s1" target="multi-tok/test_doc#t7" label="Coverage/annis/">
+        </edge>
+        <edge id="e10" source="multi-tok/test_doc#t2" target="multi-tok/test_doc#t3" label="Ordering/annis/">
+        </edge>
+        <edge id="e11" source="multi-tok/test_doc#t3" target="multi-tok/test_doc#t5" label="Ordering/annis/">
+        </edge>
+        <edge id="e12" source="multi-tok/test_doc#t5" target="multi-tok/test_doc#t6" label="Ordering/annis/">
+        </edge>
+        <edge id="e13" source="multi-tok/test_doc#t6" target="multi-tok/test_doc#t7" label="Ordering/annis/">
+        </edge>
+        <edge id="e14" source="multi-tok/test_doc" target="multi-tok" label="PartOf/annis/">
+        </edge>
+        <edge id="e15" source="multi-tok/test_doc#t2" target="multi-tok/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e16" source="multi-tok/test_doc#span1-2" target="multi-tok/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e17" source="multi-tok/test_doc#t3" target="multi-tok/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e18" source="multi-tok/test_doc#t5" target="multi-tok/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e19" source="multi-tok/test_doc#span3-4" target="multi-tok/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e20" source="multi-tok/test_doc#t6" target="multi-tok/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e21" source="multi-tok/test_doc#t7" target="multi-tok/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e22" source="multi-tok/test_doc#span7" target="multi-tok/test_doc" label="PartOf/annis/">
+        </edge>
+        <edge id="e23" source="multi-tok/test_doc#s1" target="multi-tok/test_doc" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>

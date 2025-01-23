@@ -96,11 +96,33 @@ fn custom_comments() {
                 ns: "custom".into(),
                 name: "comment_key".into(),
             },
+            ..Default::default()
         },
         Path::new("tests/data/import/conll/comments/"),
         None,
     );
     assert!(actual.is_ok());
+    assert_snapshot!(actual.unwrap());
+}
+
+#[test]
+fn multi_token() {
+    let actual = import_as_graphml_string(
+        ImportCoNLLU {
+            multi_tok: super::MultiTokMode::With(AnnoKey {
+                name: "norm".into(),
+                ns: "default_ns".into(),
+            }),
+            ..Default::default()
+        },
+        Path::new("tests/data/import/conll/multi-tok/"),
+        None,
+    );
+    assert!(
+        actual.is_ok(),
+        "Error in multi-tok import: {:?}",
+        actual.err()
+    );
     assert_snapshot!(actual.unwrap());
 }
 
@@ -116,14 +138,24 @@ fn deser_default() {
 fn deser_custom() {
     let toml_str = "comment_anno = { ns = \"custom_ns\", name = \"custom_name\" }";
     let mprt: Result<ImportCoNLLU, _> = toml::from_str(toml_str);
-    assert!(mprt.is_ok());
+    assert!(mprt.is_ok(), "Error when deserializing: {:?}", mprt.err());
+    let import = mprt.unwrap();
     assert!(
-        mprt.unwrap().comment_anno
+        import.comment_anno
             == AnnoKey {
                 ns: "custom_ns".into(),
                 name: "custom_name".into()
             }
     );
+}
+
+#[test]
+fn deser_multi() {
+    let toml_str = "multi_tok = { ns = \"default_ns\", name = \"norm\"}";
+    let mprt: Result<ImportCoNLLU, _> = toml::from_str(toml_str);
+    assert!(mprt.is_ok(), "Error when deserializing: {:?}", mprt.err());
+    let import = mprt.unwrap();
+    assert!(matches!(import.multi_tok, super::MultiTokMode::With { .. },));
 }
 
 #[test]
