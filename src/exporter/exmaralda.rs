@@ -9,7 +9,8 @@ use std::{
 };
 
 use crate::{
-    deserialize::deserialize_anno_key, documentation::FieldsHaveDefault, error::AnnattoError, importer::exmaralda::LANGUAGE_SEP, progress::ProgressReporter, util::Traverse, StepID
+    deserialize::deserialize_anno_key, documentation::FieldsHaveDefault, error::AnnattoError,
+    importer::exmaralda::LANGUAGE_SEP, progress::ProgressReporter, util::Traverse, StepID,
 };
 use documented::{Documented, DocumentedFields};
 use graphannis::{
