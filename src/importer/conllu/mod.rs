@@ -5,6 +5,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
 use encoding_rs_io::DecodeReaderBytes;
 use graphannis::{
@@ -51,12 +52,16 @@ pub struct ImportCoNLLU {
         deserialize_with = "deserialize_anno_key"
     )]
     comment_anno: AnnoKey,
+    /// For importing multi-tokens, a mode can be set. By default, multi-tokens are skipped.
+    #[serde(default)]
+    multi_tok: MultiTokMode,
 }
 
 impl Default for ImportCoNLLU {
     fn default() -> Self {
         Self {
             comment_anno: default_comment_key(),
+            multi_tok: MultiTokMode::Skip,
         }
     }
 }
@@ -66,6 +71,14 @@ fn default_comment_key() -> AnnoKey {
         name: "comment".into(),
         ns: "conll".into(),
     }
+}
+
+#[derive(Default, Deserialize)]
+#[serde(untagged)]
+enum MultiTokMode {
+    #[default]
+    Skip,
+    With(#[serde(deserialize_with = "deserialize_anno_key")] AnnoKey),
 }
 
 const FILE_EXTENSIONS: [&str; 2] = ["conll", "conllu"];
@@ -184,12 +197,20 @@ impl ImportCoNLLU {
         let mut id_to_tok_name = BTreeMap::new();
         let mut dependencies = Vec::new();
         let mut s_annos: BTreeMap<String, Vec<String>> = BTreeMap::default();
+        let mut multi_tok = None;
+        let mut multi_tok_time_out: isize = 0;
         let (l, _) = sentence.line_col();
         for member in sentence.into_inner() {
             match member.as_rule() {
                 Rule::token => {
-                    let (tok_name, tok_id, mut deps) =
-                        self.map_token(step_id, update, document_node_name, member, tx)?;
+                    let (tok_name, tok_id, mut deps) = self.map_token(
+                        step_id,
+                        update,
+                        document_node_name,
+                        member,
+                        &multi_tok,
+                        tx,
+                    )?;
 
                     id_to_tok_name.insert(tok_id, tok_name.to_string());
                     if let Some(dependency) = deps.pop_front() {
@@ -202,9 +223,33 @@ impl ImportCoNLLU {
                         ));
                     }
 
+                    multi_tok_time_out -= 1;
+                    if multi_tok_time_out < 0 {
+                        multi_tok_time_out = 0; // prevent underflow for very large corpora
+                        multi_tok = None;
+                    }
+
                     for (h, r) in deps {
                         dependencies.push((tok_name.to_string(), h, r, "enh", "dep"));
                     }
+                }
+                Rule::multi_token => {
+                    let mut inner = member.into_inner();
+                    let multi_id = inner
+                        .next()
+                        .ok_or(anyhow!("No valid id for multi token."))?
+                        .as_str();
+                    let form = inner
+                        .next()
+                        .ok_or(anyhow!("Multi token has no valid form."))?
+                        .as_str();
+                    let (from_token, to_token) = multi_id
+                        .split_once("-")
+                        .ok_or(anyhow!("No valid id range for multi token."))?;
+                    let start_id = from_token.parse::<usize>()?;
+                    let end_id = to_token.parse::<usize>()?;
+                    multi_tok = Some((start_id, end_id, form.to_string()));
+                    multi_tok_time_out = end_id as isize - start_id as isize;
                 }
                 Rule::s_anno => {
                     let mut name = None;
@@ -322,6 +367,7 @@ impl ImportCoNLLU {
         update: &mut GraphUpdate,
         document_node_name: &str,
         token: Pair<Rule>,
+        multi_token: &Option<(usize, usize, String)>,
         _tx: &Option<StatusSender>,
     ) -> anyhow::Result<(String, usize, DepSpec)> {
         let (l, _) = token.line_col();
@@ -359,6 +405,44 @@ impl ImportCoNLLU {
                         anno_name: "tok".to_string(),
                         anno_value: member.as_str().to_string(),
                     })?;
+                    if let MultiTokMode::With(anno) = &self.multi_tok {
+                        let (span_name, text_value) = if let Some((start, end, value)) = multi_token
+                        {
+                            (
+                                format!("{document_node_name}#span{start}-{end}"),
+                                value.to_string(),
+                            )
+                        } else {
+                            (
+                                format!("{document_node_name}#span{l}"),
+                                member.as_str().to_string(),
+                            )
+                        };
+                        update.add_event(UpdateEvent::AddNode {
+                            node_name: span_name.to_string(),
+                            node_type: "node".to_string(),
+                        })?;
+                        update.add_event(UpdateEvent::AddNodeLabel {
+                            node_name: span_name.to_string(),
+                            anno_ns: anno.ns.to_string(),
+                            anno_name: anno.name.to_string(),
+                            anno_value: text_value.to_string(),
+                        })?;
+                        update.add_event(UpdateEvent::AddEdge {
+                            source_node: span_name.to_string(),
+                            target_node: document_node_name.to_string(),
+                            layer: ANNIS_NS.to_string(),
+                            component_type: AnnotationComponentType::PartOf.to_string(),
+                            component_name: "".to_string(),
+                        })?;
+                        update.add_event(UpdateEvent::AddEdge {
+                            source_node: span_name.to_string(),
+                            target_node: node_name.to_string(),
+                            layer: ANNIS_NS.to_string(),
+                            component_type: AnnotationComponentType::Coverage.to_string(),
+                            component_name: "".to_string(),
+                        })?;
+                    }
                 }
                 Rule::lemma | Rule::upos | Rule::xpos => {
                     let anno_name = rule.to_string();

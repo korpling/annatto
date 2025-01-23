@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `conllu` supports multi-tokens in import
+
 ## [0.21.0] - 2025-01-07
 
 ### Added
