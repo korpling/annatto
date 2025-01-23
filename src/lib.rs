@@ -1,6 +1,7 @@
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 
 pub mod deserialize;
+pub mod documentation;
 pub mod error;
 pub mod exporter;
 pub mod importer;

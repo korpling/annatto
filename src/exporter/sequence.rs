@@ -23,7 +23,7 @@ use crate::{
 use super::Exporter;
 
 /// This exports a node sequence as horizontal or vertical text.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, FieldsHaveDefault)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields, default)]
 pub struct ExportSequence {
     /// Choose horizontal mode if you want one group (e. g. sentence) per line,

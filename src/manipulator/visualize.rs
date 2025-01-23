@@ -57,7 +57,7 @@ pub(crate) enum Include {
 /// limit_tokens = true
 /// token_limit = 10
 /// ```
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, FieldsHaveDefault)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct Visualize {
     /// Configure whether to limit the number of tokens visualized. If `true`,

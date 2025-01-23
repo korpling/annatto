@@ -12,7 +12,7 @@ use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 /// Add file nodes for all files in the imported directory.
-#[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice, FieldsHaveDefault)]
+#[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct CreateFileNodes {
     corpus_name: Option<String>,

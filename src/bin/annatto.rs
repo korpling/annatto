@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate annatto_derive;
 use annatto::{
     error::AnnattoError,
     workflow::{execute_from_file, StatusMessage, Workflow},

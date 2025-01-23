@@ -33,7 +33,7 @@ use crate::{
 use documented::{Documented, DocumentedFields};
 
 /// Manipulate annotations, like deleting or renaming them.
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, FieldsHaveDefault)]
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct Revise {
     /// A map of nodes to rename, usually useful for corpus nodes. If the target name exists,

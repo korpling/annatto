@@ -1,11 +1,3 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    fs,
-    io::{LineWriter, Write},
-    ops::Bound,
-    path::Path,
-};
-
 use anyhow::{anyhow, bail};
 use documented::{Documented, DocumentedFields};
 use graphannis::{
@@ -19,14 +11,24 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use serde::Deserialize;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fs,
+    io::{LineWriter, Write},
+    ops::Bound,
+    path::Path,
+};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Exporter;
 
-use crate::deserialize::{
-    deserialize_anno_key, deserialize_anno_key_opt, deserialize_anno_key_seq,
-    deserialize_annotation_component, deserialize_annotation_component_opt,
-    deserialize_annotation_component_seq,
+use crate::{
+    deserialize::{
+        deserialize_anno_key, deserialize_anno_key_opt, deserialize_anno_key_seq,
+        deserialize_annotation_component, deserialize_annotation_component_opt,
+        deserialize_annotation_component_seq,
+    },
+    documentation::FieldsHaveDefault,
 };
 
 /// This module exports a graph in CoNLL-U format.

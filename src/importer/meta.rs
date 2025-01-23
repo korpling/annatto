@@ -31,7 +31,7 @@ use super::Importer;
 /// [import.config]
 /// identifier = { ns = "annis", name = "doc" }  # this is the default and can be omitted
 /// ```
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, FieldsHaveDefault)]
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct AnnotateCorpus {
     #[serde(default)]

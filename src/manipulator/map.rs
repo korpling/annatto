@@ -133,7 +133,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// value = { copy = 1 }
 /// delete = [1]
 /// ```
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, FieldsHaveDefault)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct MapAnnos {
     /// The path of the TOML file containing an array of mapping rules.

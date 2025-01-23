@@ -84,7 +84,7 @@ inherits = "release"
 split-debuginfo = "packed"
 
 [workspace]
-members = ["anatto-derive"]
+members = ["annatto-derive"]
 
 # Config for 'dist'
 [workspace.metadata.dist]

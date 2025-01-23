@@ -9,8 +9,7 @@ use std::{
 };
 
 use crate::{
-    deserialize::deserialize_anno_key, error::AnnattoError, importer::exmaralda::LANGUAGE_SEP,
-    progress::ProgressReporter, util::Traverse, StepID,
+    deserialize::deserialize_anno_key, documentation::FieldsHaveDefault, error::AnnattoError, importer::exmaralda::LANGUAGE_SEP, progress::ProgressReporter, util::Traverse, StepID
 };
 use documented::{Documented, DocumentedFields};
 use graphannis::{
@@ -47,7 +46,7 @@ use super::Exporter;
 /// [export.config]
 /// copy_media = false
 /// ```
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, FieldsHaveDefault)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct ExportExmaralda {
     /// If `true`, copy linked media files to the output location.

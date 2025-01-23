@@ -20,7 +20,7 @@ use super::Importer;
 
 /// Add alignment edges for parallel corpora from the XML format used by the
 /// [OPUS](https://opus.nlpl.eu/) corpora.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, FieldsHaveDefault, FieldsHaveDefault)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct ImportOpusLinks {
     default_name: String,
