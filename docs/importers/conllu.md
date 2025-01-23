@@ -17,3 +17,7 @@ comment_anno = { ns = "comment_namespace", name = "comment_name"}
 The field defaults to `{ ns = "conll", name = "comment" }`.
 
 
+###  multi_tok
+
+For importing multi-tokens, a mode can be set. By default, multi-tokens are skipped.
+
