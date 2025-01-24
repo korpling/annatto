@@ -12,4 +12,5 @@ accepted = [
   "OpenSSL",
   "0BSD",
   "Unicode-DFS-2016",
+  "Unicode-3.0"
 ]
