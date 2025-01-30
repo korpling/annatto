@@ -68,6 +68,7 @@ impl ImportXML {
         let mut node_counts = BTreeMap::default();
         node_counts.insert(default_key.to_string(), 0_usize);
         let mut node_stack: Vec<(String, String)> = Vec::new();
+        let mut text_stack = Vec::default();
         loop {
             let xml_event = reader.next().map_err(|_| AnnattoError::Import {
                 reason: "Error parsing xml.".to_string(),
@@ -103,10 +104,22 @@ impl ImportXML {
                         })?;
                     }
                     node_stack.push((node_name, name.to_string()));
+                    text_stack.push(String::new());
                 }
                 xml::reader::XmlEvent::EndElement { name } => {
-                    if let Some((_, pop_node_type)) = node_stack.last() {
+                    if let Some((node_name, pop_node_type)) = node_stack.last() {
                         if &name.to_string() == pop_node_type {
+                            if let Some(last_string) = text_stack.pop() {
+                                update.add_event(UpdateEvent::AddNodeLabel {
+                                    node_name: node_name.to_string(),
+                                    anno_ns: GENERIC_NS.to_string(),
+                                    anno_name: name.local_name.to_string(),
+                                    anno_value: last_string.to_string(),
+                                })?;
+                                if let Some(new_last) = text_stack.last_mut() {
+                                    new_last.push_str(&last_string);
+                                }
+                            }
                             node_stack.pop();
                         }
                     }
@@ -138,6 +151,9 @@ impl ImportXML {
                                 component_type: AnnotationComponentType::Coverage.to_string(),
                                 component_name: "".to_string(),
                             })?;
+                        }
+                        if let Some(last_string) = text_stack.last_mut() {
+                            last_string.push(token);
                         }
                     }
                 }
