@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0] - 2025-01-30
+
 ### Added
 
 - import of `xml` includes tag names as annotation names with their contained text as annotation value
