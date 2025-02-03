@@ -11,7 +11,8 @@ integrity to facilitate data handling with regard to annotation, releases
 and integration. 
 
 For efficiency annatto relies on the [graphANNIS representation](https://korpling.github.io/graphANNIS/docs/v2.2/data-model.html)
-and already provides a basic set of data handling modules.
+and already provides a basic set of data handling modules. We recommend to get acquianted with the [ANNIS Query language](http://korpling.github.io/ANNIS/4/user-guide/aql/index.html)
+to better understand the more advanced features of Annatto.
 
 ## Installing and running annatto
 
