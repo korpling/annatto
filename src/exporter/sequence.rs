@@ -410,7 +410,7 @@ mod tests {
         );
         assert!(u.is_ok());
         let mut update = u.unwrap();
-        let g = AnnotationGraph::with_default_graphstorages(false);
+        let g = AnnotationGraph::with_default_graphstorages(true);
         assert!(g.is_ok());
         let mut graph = g.unwrap();
         let au = graph.apply_update(&mut update, |_| {});
