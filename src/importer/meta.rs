@@ -7,9 +7,14 @@ use std::{
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
-    graph::AnnoKey, model::AnnotationComponentType, update::{GraphUpdate, UpdateEvent}
+    graph::AnnoKey,
+    model::AnnotationComponentType,
+    update::{GraphUpdate, UpdateEvent},
 };
-use graphannis_core::{graph::ANNIS_NS, util::{join_qname, split_qname}};
+use graphannis_core::{
+    graph::ANNIS_NS,
+    util::{join_qname, split_qname},
+};
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
@@ -36,7 +41,10 @@ use super::Importer;
 #[serde(default, deny_unknown_fields)]
 pub struct AnnotateCorpus {
     /// The annotation key identifying document nodes.
-    #[serde(default = "default_identifier", deserialize_with = "deserialize_anno_key")]
+    #[serde(
+        default = "default_identifier",
+        deserialize_with = "deserialize_anno_key"
+    )]
     identifier: AnnoKey,
     /// The delimiter used in csv files.
     #[serde(default = "default_delimiter")]
@@ -46,7 +54,10 @@ pub struct AnnotateCorpus {
 const DEFAULT_DELIMITER: &str = ",";
 
 fn default_identifier() -> AnnoKey {
-    AnnoKey { ns: ANNIS_NS.into(), name: "doc".into() }
+    AnnoKey {
+        ns: ANNIS_NS.into(),
+        name: "doc".into(),
+    }
 }
 
 fn default_delimiter() -> String {
