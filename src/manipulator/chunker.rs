@@ -39,7 +39,7 @@ pub struct Chunk {
     #[serde(
         default = "default_anno_key",
         deserialize_with = "deserialize_anno_key"
-    )]    
+    )]
     anno_key: AnnoKey,
     /// Used annotation value.
     #[serde(default)]
