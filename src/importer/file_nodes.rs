@@ -15,6 +15,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 #[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct CreateFileNodes {
+    /// The name of the corpus root node.
     corpus_name: Option<String>,
 }
 

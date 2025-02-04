@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add import `whisper`
+
 ## [0.23.0] - 2025-01-30
 
 ### Added

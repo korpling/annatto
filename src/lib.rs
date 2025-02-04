@@ -30,7 +30,7 @@ use importer::{
     graphml::GraphMLImporter, meta::AnnotateCorpus, none::CreateEmptyCorpus, opus::ImportOpusLinks,
     ptb::ImportPTB, relannis::ImportRelAnnis, saltxml::ImportSaltXml, table::ImportTable,
     textgrid::ImportTextgrid, toolbox::ImportToolBox, treetagger::ImportTreeTagger,
-    xlsx::ImportSpreadsheet, xml::ImportXML, Importer,
+    whisper::ImportWhisper, xlsx::ImportSpreadsheet, xml::ImportXML, Importer,
 };
 use manipulator::{
     check::Check, chunker::Chunk, collapse::Collapse, enumerate::EnumerateMatches,
@@ -143,7 +143,7 @@ impl WriteAsDiscriminants {
             if idx < field_docs.len() {
                 result.push(ModuleConfiguration {
                     name: n.to_string(),
-                    description: field_docs[idx].unwrap_or_default().to_string(),
+                    description: field_docs[idx].to_string(),
                 });
             } else {
                 result.push(ModuleConfiguration {
@@ -175,6 +175,7 @@ pub enum ReadFrom {
     TextGrid(#[serde(default)] ImportTextgrid),
     Toolbox(#[serde(default)] ImportToolBox),
     TreeTagger(#[serde(default)] ImportTreeTagger),
+    Whisper(#[serde(default)] ImportWhisper),
     Xlsx(#[serde(default)] ImportSpreadsheet),
     Xml(ImportXML),
 }
@@ -203,6 +204,7 @@ impl ReadFrom {
             ReadFrom::TextGrid(m) => m,
             ReadFrom::Toolbox(m) => m,
             ReadFrom::TreeTagger(m) => m,
+            ReadFrom::Whisper(m) => m,
             ReadFrom::Xlsx(m) => m,
             ReadFrom::Xml(m) => m,
         }
@@ -226,6 +228,7 @@ impl ReadFromDiscriminants {
             ReadFromDiscriminants::TextGrid => ImportTextgrid::DOCS,
             ReadFromDiscriminants::Toolbox => ImportToolBox::DOCS,
             ReadFromDiscriminants::TreeTagger => ImportTreeTagger::DOCS,
+            ReadFromDiscriminants::Whisper => ImportWhisper::DOCS,
             ReadFromDiscriminants::Xlsx => ImportSpreadsheet::DOCS,
             ReadFromDiscriminants::Xml => ImportXML::DOCS,
         }
@@ -290,12 +293,16 @@ impl ReadFromDiscriminants {
                 ImportSaltXml::FIELD_NAMES_AS_SLICE,
                 ImportSaltXml::FIELD_DOCS,
             ),
+            ReadFromDiscriminants::Whisper => (
+                ImportWhisper::FIELD_NAMES_AS_SLICE,
+                ImportWhisper::FIELD_DOCS,
+            ),
         };
         for (idx, n) in field_names.iter().enumerate() {
             if idx < field_docs.len() {
                 result.push(ModuleConfiguration {
                     name: n.to_string(),
-                    description: field_docs[idx].unwrap_or_default().to_string(),
+                    description: field_docs[idx].to_string(),
                 });
             } else {
                 result.push(ModuleConfiguration {
@@ -406,7 +413,7 @@ impl GraphOpDiscriminants {
             if idx < field_docs.len() {
                 result.push(ModuleConfiguration {
                     name: n.to_string(),
-                    description: field_docs[idx].unwrap_or_default().to_string(),
+                    description: field_docs[idx].to_string(),
                 });
             } else {
                 result.push(ModuleConfiguration {

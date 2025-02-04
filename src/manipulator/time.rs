@@ -27,7 +27,8 @@ use super::Manipulator;
 /// ```toml
 /// [[graph_op]]
 /// action = "time"
-/// config = {}
+///
+/// [graph_op.config]
 /// ```
 #[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]

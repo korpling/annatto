@@ -1,0 +1,660 @@
+---
+source: src/importer/whisper.rs
+expression: actual.unwrap()
+---
+---- whisper.graphml:
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>
+    <key id="k1" for="node" attr.name="whisper::avg_logprob" attr.type="string"/>
+    <key id="k2" for="node" attr.name="whisper::compression_ratio" attr.type="string"/>
+    <key id="k3" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k4" for="node" attr.name="whisper::language" attr.type="string"/>
+    <key id="k5" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k6" for="node" attr.name="whisper::no_speech_prob" attr.type="string"/>
+    <key id="k7" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k8" for="node" attr.name="whisper::seek" attr.type="string"/>
+    <key id="k9" for="node" attr.name="whisper::segment" attr.type="string"/>
+    <key id="k10" for="node" attr.name="whisper::segment_id" attr.type="string"/>
+    <key id="k11" for="node" attr.name="whisper::temperature" attr.type="string"/>
+    <key id="k12" for="node" attr.name="whisper::text" attr.type="string"/>
+    <key id="k13" for="node" attr.name="annis::time" attr.type="string"/>
+    <key id="k14" for="node" attr.name="annis::tok" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <data key="k0"><![CDATA[
+# configure visualizations here
+]]></data>
+        <node id="whisper">
+            <data key="k7">corpus</data>
+        </node>
+        <node id="whisper/example">
+            <data key="k3">example</data>
+            <data key="k4">de</data>
+            <data key="k7">corpus</data>
+        </node>
+        <node id="whisper/example#datasource">
+            <data key="k12">Hallo, ich würde für den Fall F16 aussagen wollen. Und zwar war ich am Montag um 15.30 Uhr an der ... und habe dann zufällig mitbekommen, wie das Unfall entstanden ist. Und zwar habe ich beobachtet, dass ein Mann mit einer Dame, der einen Ball in der Hand hat, die Straße überqueren wollte. Und auf der gegenüberliegenden Straße war eine Dame mit einem Hund. Und genau in dem Moment, als der Mann seinen Ball verlor, ist dann der Hund auf den Ball zugerannt. Und genau in dem Moment kamen halt die zwei Autos. Und weil das blaue Golf anhalten musste, ist dann das andere Auto hinten eingestiegen. Und dann ist er dann wieder angeprallt.</data>
+            <data key="k7">datasource</data>
+        </node>
+        <node id="whisper/example#s0">
+            <data key="k1">-0.22026673952738443</data>
+            <data key="k10">0</data>
+            <data key="k11">0</data>
+            <data key="k13">0-6.58</data>
+            <data key="k2">1.3275862068965518</data>
+            <data key="k6">0.03653755784034729</data>
+            <data key="k7">node</data>
+            <data key="k8">0</data>
+            <data key="k9">Hallo, ich würde für den Fall F16 aussagen wollen.</data>
+        </node>
+        <node id="whisper/example#t0-0">
+            <data key="k14">&lt;UNK&gt;</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t0-1">
+            <data key="k14">Hallo</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t0-2">
+            <data key="k14">,</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t0-3">
+            <data key="k14">ich</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t0-4">
+            <data key="k14">wÃ¼rde</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t0-5">
+            <data key="k14">fÃ¼r</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t0-6">
+            <data key="k14">den</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t0-7">
+            <data key="k14">Fall</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t0-8">
+            <data key="k14">F</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t0-9">
+            <data key="k14">16</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t0-10">
+            <data key="k14">auss</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t0-11">
+            <data key="k14">agen</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t0-12">
+            <data key="k14">wollen</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t0-13">
+            <data key="k14">.</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t0-14">
+            <data key="k14">&lt;UNK&gt;</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#s1">
+            <data key="k1">-0.22026673952738443</data>
+            <data key="k10">1</data>
+            <data key="k11">0</data>
+            <data key="k13">7.28-11.94</data>
+            <data key="k2">1.3275862068965518</data>
+            <data key="k6">0.03653755784034729</data>
+            <data key="k7">node</data>
+            <data key="k8">0</data>
+            <data key="k9">Und zwar war ich am Montag um 15.30 Uhr an der ...</data>
+        </node>
+        <node id="whisper/example#t1-0">
+            <data key="k14">&lt;UNK&gt;</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t1-1">
+            <data key="k14">Und</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t1-2">
+            <data key="k14">zwar</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t1-3">
+            <data key="k14">war</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t1-4">
+            <data key="k14">ich</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t1-5">
+            <data key="k14">am</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t1-6">
+            <data key="k14">Mont</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t1-7">
+            <data key="k14">ag</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t1-8">
+            <data key="k14">um</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t1-9">
+            <data key="k14">15</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t1-10">
+            <data key="k14">.</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t1-11">
+            <data key="k14">30</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t1-12">
+            <data key="k14">Uhr</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t1-13">
+            <data key="k14">an</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t1-14">
+            <data key="k14">der</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t1-15">
+            <data key="k14">...</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t1-16">
+            <data key="k14">&lt;UNK&gt;</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#s2">
+            <data key="k1">-0.22026673952738443</data>
+            <data key="k10">2</data>
+            <data key="k11">0</data>
+            <data key="k13">11.94-19.32</data>
+            <data key="k2">1.3275862068965518</data>
+            <data key="k6">0.03653755784034729</data>
+            <data key="k7">node</data>
+            <data key="k8">0</data>
+            <data key="k9">und habe dann zufällig mitbekommen, wie das Unfall entstanden ist.</data>
+        </node>
+        <node id="whisper/example#t2-0">
+            <data key="k14">&lt;UNK&gt;</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t2-1">
+            <data key="k14">und</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t2-2">
+            <data key="k14">habe</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t2-3">
+            <data key="k14">dann</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t2-4">
+            <data key="k14">zu</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t2-5">
+            <data key="k14">f</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t2-6">
+            <data key="k14">Ã¤ll</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t2-7">
+            <data key="k14">ig</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t2-8">
+            <data key="k14">mit</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t2-9">
+            <data key="k14">be</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t2-10">
+            <data key="k14">kommen</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t2-11">
+            <data key="k14">,</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t2-12">
+            <data key="k14">wie</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t2-13">
+            <data key="k14">das</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t2-14">
+            <data key="k14">Un</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t2-15">
+            <data key="k14">fall</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t2-16">
+            <data key="k14">ent</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t2-17">
+            <data key="k14">standen</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t2-18">
+            <data key="k14">ist</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t2-19">
+            <data key="k14">.</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <node id="whisper/example#t2-20">
+            <data key="k14">&lt;UNK&gt;</data>
+            <data key="k5">default_layer</data>
+            <data key="k7">node</data>
+        </node>
+        <edge id="e0" source="whisper/example#s0" target="whisper/example#t0-0" label="Coverage/annis/">
+        </edge>
+        <edge id="e1" source="whisper/example#s0" target="whisper/example#t0-1" label="Coverage/annis/">
+        </edge>
+        <edge id="e2" source="whisper/example#s0" target="whisper/example#t0-2" label="Coverage/annis/">
+        </edge>
+        <edge id="e3" source="whisper/example#s0" target="whisper/example#t0-3" label="Coverage/annis/">
+        </edge>
+        <edge id="e4" source="whisper/example#s0" target="whisper/example#t0-4" label="Coverage/annis/">
+        </edge>
+        <edge id="e5" source="whisper/example#s0" target="whisper/example#t0-5" label="Coverage/annis/">
+        </edge>
+        <edge id="e6" source="whisper/example#s0" target="whisper/example#t0-6" label="Coverage/annis/">
+        </edge>
+        <edge id="e7" source="whisper/example#s0" target="whisper/example#t0-7" label="Coverage/annis/">
+        </edge>
+        <edge id="e8" source="whisper/example#s0" target="whisper/example#t0-8" label="Coverage/annis/">
+        </edge>
+        <edge id="e9" source="whisper/example#s0" target="whisper/example#t0-9" label="Coverage/annis/">
+        </edge>
+        <edge id="e10" source="whisper/example#s0" target="whisper/example#t0-10" label="Coverage/annis/">
+        </edge>
+        <edge id="e11" source="whisper/example#s0" target="whisper/example#t0-11" label="Coverage/annis/">
+        </edge>
+        <edge id="e12" source="whisper/example#s0" target="whisper/example#t0-12" label="Coverage/annis/">
+        </edge>
+        <edge id="e13" source="whisper/example#s0" target="whisper/example#t0-13" label="Coverage/annis/">
+        </edge>
+        <edge id="e14" source="whisper/example#s0" target="whisper/example#t0-14" label="Coverage/annis/">
+        </edge>
+        <edge id="e15" source="whisper/example#s1" target="whisper/example#t1-0" label="Coverage/annis/">
+        </edge>
+        <edge id="e16" source="whisper/example#s1" target="whisper/example#t1-1" label="Coverage/annis/">
+        </edge>
+        <edge id="e17" source="whisper/example#s1" target="whisper/example#t1-2" label="Coverage/annis/">
+        </edge>
+        <edge id="e18" source="whisper/example#s1" target="whisper/example#t1-3" label="Coverage/annis/">
+        </edge>
+        <edge id="e19" source="whisper/example#s1" target="whisper/example#t1-4" label="Coverage/annis/">
+        </edge>
+        <edge id="e20" source="whisper/example#s1" target="whisper/example#t1-5" label="Coverage/annis/">
+        </edge>
+        <edge id="e21" source="whisper/example#s1" target="whisper/example#t1-6" label="Coverage/annis/">
+        </edge>
+        <edge id="e22" source="whisper/example#s1" target="whisper/example#t1-7" label="Coverage/annis/">
+        </edge>
+        <edge id="e23" source="whisper/example#s1" target="whisper/example#t1-8" label="Coverage/annis/">
+        </edge>
+        <edge id="e24" source="whisper/example#s1" target="whisper/example#t1-9" label="Coverage/annis/">
+        </edge>
+        <edge id="e25" source="whisper/example#s1" target="whisper/example#t1-10" label="Coverage/annis/">
+        </edge>
+        <edge id="e26" source="whisper/example#s1" target="whisper/example#t1-11" label="Coverage/annis/">
+        </edge>
+        <edge id="e27" source="whisper/example#s1" target="whisper/example#t1-12" label="Coverage/annis/">
+        </edge>
+        <edge id="e28" source="whisper/example#s1" target="whisper/example#t1-13" label="Coverage/annis/">
+        </edge>
+        <edge id="e29" source="whisper/example#s1" target="whisper/example#t1-14" label="Coverage/annis/">
+        </edge>
+        <edge id="e30" source="whisper/example#s1" target="whisper/example#t1-15" label="Coverage/annis/">
+        </edge>
+        <edge id="e31" source="whisper/example#s1" target="whisper/example#t1-16" label="Coverage/annis/">
+        </edge>
+        <edge id="e32" source="whisper/example#s2" target="whisper/example#t2-0" label="Coverage/annis/">
+        </edge>
+        <edge id="e33" source="whisper/example#s2" target="whisper/example#t2-1" label="Coverage/annis/">
+        </edge>
+        <edge id="e34" source="whisper/example#s2" target="whisper/example#t2-2" label="Coverage/annis/">
+        </edge>
+        <edge id="e35" source="whisper/example#s2" target="whisper/example#t2-3" label="Coverage/annis/">
+        </edge>
+        <edge id="e36" source="whisper/example#s2" target="whisper/example#t2-4" label="Coverage/annis/">
+        </edge>
+        <edge id="e37" source="whisper/example#s2" target="whisper/example#t2-5" label="Coverage/annis/">
+        </edge>
+        <edge id="e38" source="whisper/example#s2" target="whisper/example#t2-6" label="Coverage/annis/">
+        </edge>
+        <edge id="e39" source="whisper/example#s2" target="whisper/example#t2-7" label="Coverage/annis/">
+        </edge>
+        <edge id="e40" source="whisper/example#s2" target="whisper/example#t2-8" label="Coverage/annis/">
+        </edge>
+        <edge id="e41" source="whisper/example#s2" target="whisper/example#t2-9" label="Coverage/annis/">
+        </edge>
+        <edge id="e42" source="whisper/example#s2" target="whisper/example#t2-10" label="Coverage/annis/">
+        </edge>
+        <edge id="e43" source="whisper/example#s2" target="whisper/example#t2-11" label="Coverage/annis/">
+        </edge>
+        <edge id="e44" source="whisper/example#s2" target="whisper/example#t2-12" label="Coverage/annis/">
+        </edge>
+        <edge id="e45" source="whisper/example#s2" target="whisper/example#t2-13" label="Coverage/annis/">
+        </edge>
+        <edge id="e46" source="whisper/example#s2" target="whisper/example#t2-14" label="Coverage/annis/">
+        </edge>
+        <edge id="e47" source="whisper/example#s2" target="whisper/example#t2-15" label="Coverage/annis/">
+        </edge>
+        <edge id="e48" source="whisper/example#s2" target="whisper/example#t2-16" label="Coverage/annis/">
+        </edge>
+        <edge id="e49" source="whisper/example#s2" target="whisper/example#t2-17" label="Coverage/annis/">
+        </edge>
+        <edge id="e50" source="whisper/example#s2" target="whisper/example#t2-18" label="Coverage/annis/">
+        </edge>
+        <edge id="e51" source="whisper/example#s2" target="whisper/example#t2-19" label="Coverage/annis/">
+        </edge>
+        <edge id="e52" source="whisper/example#s2" target="whisper/example#t2-20" label="Coverage/annis/">
+        </edge>
+        <edge id="e53" source="whisper/example#t0-0" target="whisper/example#t0-1" label="Ordering/annis/">
+        </edge>
+        <edge id="e54" source="whisper/example#t0-1" target="whisper/example#t0-2" label="Ordering/annis/">
+        </edge>
+        <edge id="e55" source="whisper/example#t0-2" target="whisper/example#t0-3" label="Ordering/annis/">
+        </edge>
+        <edge id="e56" source="whisper/example#t0-3" target="whisper/example#t0-4" label="Ordering/annis/">
+        </edge>
+        <edge id="e57" source="whisper/example#t0-4" target="whisper/example#t0-5" label="Ordering/annis/">
+        </edge>
+        <edge id="e58" source="whisper/example#t0-5" target="whisper/example#t0-6" label="Ordering/annis/">
+        </edge>
+        <edge id="e59" source="whisper/example#t0-6" target="whisper/example#t0-7" label="Ordering/annis/">
+        </edge>
+        <edge id="e60" source="whisper/example#t0-7" target="whisper/example#t0-8" label="Ordering/annis/">
+        </edge>
+        <edge id="e61" source="whisper/example#t0-8" target="whisper/example#t0-9" label="Ordering/annis/">
+        </edge>
+        <edge id="e62" source="whisper/example#t0-9" target="whisper/example#t0-10" label="Ordering/annis/">
+        </edge>
+        <edge id="e63" source="whisper/example#t0-10" target="whisper/example#t0-11" label="Ordering/annis/">
+        </edge>
+        <edge id="e64" source="whisper/example#t0-11" target="whisper/example#t0-12" label="Ordering/annis/">
+        </edge>
+        <edge id="e65" source="whisper/example#t0-12" target="whisper/example#t0-13" label="Ordering/annis/">
+        </edge>
+        <edge id="e66" source="whisper/example#t0-13" target="whisper/example#t0-14" label="Ordering/annis/">
+        </edge>
+        <edge id="e67" source="whisper/example#t1-0" target="whisper/example#t1-1" label="Ordering/annis/">
+        </edge>
+        <edge id="e68" source="whisper/example#t1-1" target="whisper/example#t1-2" label="Ordering/annis/">
+        </edge>
+        <edge id="e69" source="whisper/example#t1-2" target="whisper/example#t1-3" label="Ordering/annis/">
+        </edge>
+        <edge id="e70" source="whisper/example#t1-3" target="whisper/example#t1-4" label="Ordering/annis/">
+        </edge>
+        <edge id="e71" source="whisper/example#t1-4" target="whisper/example#t1-5" label="Ordering/annis/">
+        </edge>
+        <edge id="e72" source="whisper/example#t1-5" target="whisper/example#t1-6" label="Ordering/annis/">
+        </edge>
+        <edge id="e73" source="whisper/example#t1-6" target="whisper/example#t1-7" label="Ordering/annis/">
+        </edge>
+        <edge id="e74" source="whisper/example#t1-7" target="whisper/example#t1-8" label="Ordering/annis/">
+        </edge>
+        <edge id="e75" source="whisper/example#t1-8" target="whisper/example#t1-9" label="Ordering/annis/">
+        </edge>
+        <edge id="e76" source="whisper/example#t1-9" target="whisper/example#t1-10" label="Ordering/annis/">
+        </edge>
+        <edge id="e77" source="whisper/example#t1-10" target="whisper/example#t1-11" label="Ordering/annis/">
+        </edge>
+        <edge id="e78" source="whisper/example#t1-11" target="whisper/example#t1-12" label="Ordering/annis/">
+        </edge>
+        <edge id="e79" source="whisper/example#t1-12" target="whisper/example#t1-13" label="Ordering/annis/">
+        </edge>
+        <edge id="e80" source="whisper/example#t1-13" target="whisper/example#t1-14" label="Ordering/annis/">
+        </edge>
+        <edge id="e81" source="whisper/example#t1-14" target="whisper/example#t1-15" label="Ordering/annis/">
+        </edge>
+        <edge id="e82" source="whisper/example#t1-15" target="whisper/example#t1-16" label="Ordering/annis/">
+        </edge>
+        <edge id="e83" source="whisper/example#t2-0" target="whisper/example#t2-1" label="Ordering/annis/">
+        </edge>
+        <edge id="e84" source="whisper/example#t2-1" target="whisper/example#t2-2" label="Ordering/annis/">
+        </edge>
+        <edge id="e85" source="whisper/example#t2-2" target="whisper/example#t2-3" label="Ordering/annis/">
+        </edge>
+        <edge id="e86" source="whisper/example#t2-3" target="whisper/example#t2-4" label="Ordering/annis/">
+        </edge>
+        <edge id="e87" source="whisper/example#t2-4" target="whisper/example#t2-5" label="Ordering/annis/">
+        </edge>
+        <edge id="e88" source="whisper/example#t2-5" target="whisper/example#t2-6" label="Ordering/annis/">
+        </edge>
+        <edge id="e89" source="whisper/example#t2-6" target="whisper/example#t2-7" label="Ordering/annis/">
+        </edge>
+        <edge id="e90" source="whisper/example#t2-7" target="whisper/example#t2-8" label="Ordering/annis/">
+        </edge>
+        <edge id="e91" source="whisper/example#t2-8" target="whisper/example#t2-9" label="Ordering/annis/">
+        </edge>
+        <edge id="e92" source="whisper/example#t2-9" target="whisper/example#t2-10" label="Ordering/annis/">
+        </edge>
+        <edge id="e93" source="whisper/example#t2-10" target="whisper/example#t2-11" label="Ordering/annis/">
+        </edge>
+        <edge id="e94" source="whisper/example#t2-11" target="whisper/example#t2-12" label="Ordering/annis/">
+        </edge>
+        <edge id="e95" source="whisper/example#t2-12" target="whisper/example#t2-13" label="Ordering/annis/">
+        </edge>
+        <edge id="e96" source="whisper/example#t2-13" target="whisper/example#t2-14" label="Ordering/annis/">
+        </edge>
+        <edge id="e97" source="whisper/example#t2-14" target="whisper/example#t2-15" label="Ordering/annis/">
+        </edge>
+        <edge id="e98" source="whisper/example#t2-15" target="whisper/example#t2-16" label="Ordering/annis/">
+        </edge>
+        <edge id="e99" source="whisper/example#t2-16" target="whisper/example#t2-17" label="Ordering/annis/">
+        </edge>
+        <edge id="e100" source="whisper/example#t2-17" target="whisper/example#t2-18" label="Ordering/annis/">
+        </edge>
+        <edge id="e101" source="whisper/example#t2-18" target="whisper/example#t2-19" label="Ordering/annis/">
+        </edge>
+        <edge id="e102" source="whisper/example#t2-19" target="whisper/example#t2-20" label="Ordering/annis/">
+        </edge>
+        <edge id="e103" source="whisper/example" target="whisper" label="PartOf/annis/">
+        </edge>
+        <edge id="e104" source="whisper/example#datasource" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e105" source="whisper/example#s0" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e106" source="whisper/example#t0-0" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e107" source="whisper/example#t0-1" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e108" source="whisper/example#t0-2" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e109" source="whisper/example#t0-3" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e110" source="whisper/example#t0-4" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e111" source="whisper/example#t0-5" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e112" source="whisper/example#t0-6" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e113" source="whisper/example#t0-7" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e114" source="whisper/example#t0-8" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e115" source="whisper/example#t0-9" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e116" source="whisper/example#t0-10" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e117" source="whisper/example#t0-11" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e118" source="whisper/example#t0-12" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e119" source="whisper/example#t0-13" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e120" source="whisper/example#t0-14" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e121" source="whisper/example#s1" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e122" source="whisper/example#t1-0" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e123" source="whisper/example#t1-1" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e124" source="whisper/example#t1-2" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e125" source="whisper/example#t1-3" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e126" source="whisper/example#t1-4" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e127" source="whisper/example#t1-5" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e128" source="whisper/example#t1-6" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e129" source="whisper/example#t1-7" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e130" source="whisper/example#t1-8" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e131" source="whisper/example#t1-9" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e132" source="whisper/example#t1-10" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e133" source="whisper/example#t1-11" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e134" source="whisper/example#t1-12" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e135" source="whisper/example#t1-13" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e136" source="whisper/example#t1-14" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e137" source="whisper/example#t1-15" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e138" source="whisper/example#t1-16" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e139" source="whisper/example#s2" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e140" source="whisper/example#t2-0" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e141" source="whisper/example#t2-1" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e142" source="whisper/example#t2-2" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e143" source="whisper/example#t2-3" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e144" source="whisper/example#t2-4" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e145" source="whisper/example#t2-5" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e146" source="whisper/example#t2-6" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e147" source="whisper/example#t2-7" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e148" source="whisper/example#t2-8" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e149" source="whisper/example#t2-9" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e150" source="whisper/example#t2-10" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e151" source="whisper/example#t2-11" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e152" source="whisper/example#t2-12" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e153" source="whisper/example#t2-13" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e154" source="whisper/example#t2-14" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e155" source="whisper/example#t2-15" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e156" source="whisper/example#t2-16" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e157" source="whisper/example#t2-17" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e158" source="whisper/example#t2-18" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e159" source="whisper/example#t2-19" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e160" source="whisper/example#t2-20" target="whisper/example" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>

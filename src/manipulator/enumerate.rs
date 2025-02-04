@@ -26,7 +26,13 @@ use super::Manipulator;
 pub struct EnumerateMatches {
     /// A list of queries to find the nodes that are to be enumerated.
     queries: Vec<String>,
-    /// The target node in the query that is assigned the numeric annotation. Holds for all queries. This is a 1-based index and counts by mention in the query.
+    /// The target node in the query that is assigned the numeric annotation.
+    /// Holds for all queries. This is a 1-based index and counts by mention in the query.
+    /// E. g., for a query "tok _=_ pos _=_ lemma", a target "2" refers to the node holding
+    /// the `pos` annotation, "3" to the node holding the `lemma` annotation. The index picks
+    /// a node for EACH result of the query, that is returned, i. e. for the given example query
+    /// and a target index 2, each node with a `pos` annotation that overlaps identically with
+    /// a `tok` node and a node holding a lemma annotation, is selected as an annotation target.
     target: usize,
     /// First sort by the values of the provided node indices referring to the query. Sorting is stable. The first index ranks higher then the second, an so forth.
     /// Everytime the value or the tuple of values of the selected nodes changes, the count is restartet at the `start` value.

@@ -13,6 +13,7 @@ pub mod table;
 pub mod textgrid;
 pub mod toolbox;
 pub mod treetagger;
+pub mod whisper;
 pub mod xlsx;
 pub mod xml;
 

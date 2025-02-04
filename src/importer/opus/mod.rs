@@ -23,9 +23,13 @@ use super::Importer;
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct ImportOpusLinks {
+    /// The component name of the edges for the default direction.
     default_name: String,
+    /// The component type of the edges for the default direction.
     default_type: AnnotationComponentType,
+    /// The component name of the edges for the reverse direction.
     reverse_name: Option<String>,
+    /// The component type of the edges for the reverse direction.
     reverse_type: AnnotationComponentType,
 }
 

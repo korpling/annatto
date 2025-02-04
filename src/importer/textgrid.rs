@@ -31,10 +31,15 @@ const FILE_ENDINGS: [&str; 3] = ["textgrid", "TextGrid", "textGrid"];
 #[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct ImportTextgrid {
+    /// A mapping from segments to tiers, that refer to these segments.
     tier_groups: Option<BTreeMap<String, BTreeSet<String>>>,
+    /// If true, no timeline will be generated.
     skip_timeline_generation: bool,
+    /// If true, no audio file will be linked in the graph.
     skip_audio: bool,
+    /// If true, no time annotations will be created.
     skip_time_annotations: bool,
+    /// Provide an optional audio extension.
     audio_extension: Option<String>,
 }
 
