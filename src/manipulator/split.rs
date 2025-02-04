@@ -27,6 +27,7 @@ pub struct SplitValues {
     /// This maps a target annotation name to a list of potential values to be found in the split parts.
     #[serde(default)]
     layers: Vec<Layer>,
+    /// If set to `true`, the original annotations will be deleted.
     #[serde(default)]
     delete: bool,
 }

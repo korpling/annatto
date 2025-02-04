@@ -340,6 +340,7 @@ pub struct ImportTreeTagger {
     column_names: Vec<String>,
     /// The encoding to use when for the input files. Defaults to UTF-8.
     file_encoding: Option<String>,
+    /// Options are `None` (default) and `Entities`.
     attribute_decoding: AttributeDecoding,
 }
 

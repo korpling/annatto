@@ -7,14 +7,15 @@ use std::{
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
-    model::AnnotationComponentType,
-    update::{GraphUpdate, UpdateEvent},
+    graph::AnnoKey, model::AnnotationComponentType, update::{GraphUpdate, UpdateEvent}
 };
-use graphannis_core::{graph::ANNIS_NS, util::split_qname};
+use graphannis_core::{graph::ANNIS_NS, util::{join_qname, split_qname}};
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
-use crate::{progress::ProgressReporter, util::get_all_files, StepID};
+use crate::{
+    deserialize::deserialize_anno_key, progress::ProgressReporter, util::get_all_files, StepID,
+};
 
 use super::Importer;
 
@@ -34,13 +35,19 @@ use super::Importer;
 #[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(default, deny_unknown_fields)]
 pub struct AnnotateCorpus {
-    #[serde(default)]
-    identifier: Option<String>,
+    /// The annotation key identifying document nodes.
+    #[serde(default = "default_identifier", deserialize_with = "deserialize_anno_key")]
+    identifier: AnnoKey,
+    /// The delimiter used in csv files.
     #[serde(default = "default_delimiter")]
     delimiter: String,
 }
 
 const DEFAULT_DELIMITER: &str = ",";
+
+fn default_identifier() -> AnnoKey {
+    AnnoKey { ns: ANNIS_NS.into(), name: "doc".into() }
+}
 
 fn default_delimiter() -> String {
     DEFAULT_DELIMITER.to_string()
@@ -134,10 +141,11 @@ impl AnnotateCorpus {
         parent: &str,
         update: &mut GraphUpdate,
     ) -> Result<(), anyhow::Error> {
-        let node_column = self
-            .identifier
-            .as_ref()
-            .ok_or(anyhow!("No identifier column defined"))?;
+        let node_column = if self.identifier.ns.is_empty() {
+            self.identifier.name.to_string()
+        } else {
+            join_qname(&self.identifier.ns, &self.identifier.name)
+        };
         let del = self
             .delimiter
             .as_bytes()
@@ -149,7 +157,7 @@ impl AnnotateCorpus {
             let mut node_name_opt = None;
             let mut annotations = Vec::new();
             for (name, value) in header.iter().zip(line.iter()) {
-                if name == node_column {
+                if *name == node_column {
                     node_name_opt = Some([parent, value].join("/"));
                 } else {
                     annotations.push((name.to_string(), value.to_string()));

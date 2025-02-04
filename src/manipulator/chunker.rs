@@ -32,15 +32,19 @@ use text_splitter::TextSplitter;
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct Chunk {
+    /// Maximum chunk length.
     #[serde(default)]
     max_characters: usize,
+    /// Annotation key used to annotate chunks with a value.
     #[serde(
         default = "default_anno_key",
         deserialize_with = "deserialize_anno_key"
-    )]
+    )]    
     anno_key: AnnoKey,
+    /// Used annotation value.
     #[serde(default)]
     anno_value: String,
+    /// Optional segmentation name.
     #[serde(default)]
     segmentation: Option<String>,
 }
