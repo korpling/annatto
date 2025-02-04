@@ -434,7 +434,6 @@ mod tests {
                 "norm".into(),
             ),
         };
-        std::thread::sleep(std::time::Duration::from_secs(3));
         let estr = export_to_string(&graph, exporter);
         assert!(estr.is_ok(), "Export failed: {:?}", estr.err());
         assert_snapshot!(estr.unwrap());
