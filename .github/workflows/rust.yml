@@ -30,6 +30,7 @@ jobs:
   unit-tests:
     env:
       RUST_BACKTRACE: 0
+      RUST_TEST_THREADS: 1
     name: Unit tests
     needs: format
     runs-on: ubuntu-latest
