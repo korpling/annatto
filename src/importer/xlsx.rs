@@ -1,11 +1,12 @@
 use std::{
-    collections::{BTreeMap, BTreeSet, HashSet},
+    collections::{BTreeMap, BTreeSet},
     fmt::Display,
     path::Path,
 };
 
-use anyhow::{bail, Context};
+use anyhow::bail;
 use graphannis::{
+    graph::AnnoKey,
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
 };
@@ -109,249 +110,157 @@ impl ImportSpreadsheet {
         &self,
         doc_path: &str,
         sheet: &umya_spreadsheet::Worksheet,
+        reverse_col_map: &BTreeMap<String, String>,
         update: &mut GraphUpdate,
-        progress_reporter: &ProgressReporter,
+        progress: &ProgressReporter,
     ) -> Result<(), AnnattoError> {
-        let mut fullmap = self.column_map.clone();
-        let known_names = self
-            .column_map
-            .values()
-            .flatten()
-            .collect::<BTreeSet<&String>>();
-        if let Some(fallback_name) = &self.fallback {
-            if fallback_name.is_empty() {
-                fullmap.insert("".to_string(), BTreeSet::new());
-            }
+        let base_tokens =
+            Self::build_tokens(update, doc_path, sheet.get_highest_row().max(0) as usize)?;
+        let mut merged_cells = Self::collect_merged_cells(sheet, progress)?;
+        for col_num in 1..=sheet.get_highest_column() {
+            let mc = merged_cells.remove(&col_num).unwrap_or_default();
+            self.import_column(
+                update,
+                doc_path,
+                sheet,
+                col_num,
+                mc.into_iter().collect(),
+                &base_tokens,
+                reverse_col_map,
+                progress,
+            )?;
         }
-        let name_to_col_0index = {
-            let mut m = BTreeMap::new();
-            let header_row = sheet.get_collection_by_row(&1);
-            for cell in header_row {
-                let name = cell.get_cell_value().get_value().trim().to_string();
-                if !name.is_empty() {
-                    m.insert(name.to_string(), cell.get_coordinate().get_col_num() - 1);
-                    if let Some(fallback_name) = &self.fallback {
-                        if !known_names.contains(&name) && !fullmap.contains_key(&name) {
-                            if let Some(anno_names) = fullmap.get_mut(fallback_name) {
-                                anno_names.insert(name);
-                            } else {
-                                progress_reporter.warn(&format!(
-                                    "`{fallback_name}` is not a valid fallback. Only empty string and keys of the column map are allowed. Column `{name}` will be ignored."))?;
-                            }
-                        }
-                    }
-                }
-            }
-            m
+        Ok(())
+    }
+
+    fn import_column(
+        &self,
+        update: &mut GraphUpdate,
+        doc_node_name: &str,
+        sheet: &umya_spreadsheet::Worksheet,
+        col_num: u32,
+        mut merged_cells: BTreeMap<u32, u32>,
+        base_tokens: &[String],
+        reverse_col_map: &BTreeMap<String, String>,
+        progress: &ProgressReporter,
+    ) -> Result<(), anyhow::Error> {
+        let merge_members: BTreeSet<u32> = merged_cells
+            .iter()
+            .map(|(s, e)| *s..=*e)
+            .flatten()
+            .collect();
+        let col_name_opt = sheet.get_cell((col_num, 1));
+        let col_name = if let Some(name) = col_name_opt {
+            name.get_raw_value().to_string()
+        } else {
+            return Ok(());
         };
-        let merged_cells =
-            MergedCellHelper::new(doc_path, sheet, &name_to_col_0index, progress_reporter)?;
-        let mut base_tokens = Vec::new();
-        for i in 2..=sheet.get_highest_row() {
-            let tok_id = format!("{}#t{}", &doc_path, i - 1);
+        let (_, name) = split_qname(&col_name);
+        let is_segmentation = self.column_map.contains_key(&name.to_string())
+            || self.column_map.contains_key(&col_name);
+        let anno_key = if is_segmentation {
+            AnnoKey {
+                ns: name.into(),
+                name: name.into(),
+            }
+        } else if let Some(seg_name) = reverse_col_map
+            .get(name)
+            .or(reverse_col_map.get(&col_name))
+            .or(self.fallback.as_ref())
+        {
+            AnnoKey {
+                ns: seg_name.into(),
+                name: name.into(),
+            }
+        } else {
+            let msg = format!(
+                "Unknown column {col_name} will not be imported from document {doc_node_name}"
+            );
+            progress.warn(&msg)?;
+            return Ok(());
+        };
+        let mut last_segment_node = None;
+        for row_num in 2..=sheet.get_highest_column() {
+            let covered_tokens = if let Some(end_num) = merged_cells.remove(&row_num) {
+                if end_num as usize - 2 >= base_tokens.len() {
+                    bail!("Row index larger than highest row index in document {doc_node_name}")
+                } else {
+                    let start = row_num as usize - 2;
+                    let end = end_num as usize - 2;
+                    &base_tokens[start..end]
+                }
+            } else if merge_members.contains(&row_num) {
+                continue;
+            } else {
+                if row_num as usize - 2 >= base_tokens.len() {
+                    bail!("Row index larger than highest row index in document {doc_node_name}");
+                }
+                let start = row_num as usize - 2;
+                &base_tokens[start..start + 1]
+            };
+            let cell_value = if let Some(cell) = sheet.get_cell((col_num, row_num)) {
+                cell.get_raw_value().to_string()
+            } else {
+                continue;
+            };
+            let node_name = if is_segmentation || self.token_annos.contains(&col_name) {
+                format!(
+                    "{doc_node_name}#{}_{}-{}",
+                    &col_name,
+                    row_num,
+                    row_num as usize + covered_tokens.len()
+                )
+            } else {
+                format!(
+                    "{doc_node_name}#span_{}_{}-{}",
+                    utf8_percent_encode(name, NODE_NAME_ENCODE_SET),
+                    row_num,
+                    row_num as usize + covered_tokens.len()
+                )
+            };
             update.add_event(UpdateEvent::AddNode {
-                node_name: tok_id.to_string(),
+                node_name: node_name.to_string(),
                 node_type: "node".to_string(),
             })?;
-            update.add_event(UpdateEvent::AddNodeLabel {
-                node_name: tok_id.to_string(),
-                anno_ns: ANNIS_NS.to_string(),
-                anno_name: "tok".to_string(),
-                anno_value: " ".to_string(),
-            })?;
-            update.add_event(UpdateEvent::AddNodeLabel {
-                node_name: tok_id.to_string(),
-                anno_ns: ANNIS_NS.to_string(),
-                anno_name: "layer".to_string(),
-                anno_value: "default_layer".to_string(),
-            })?;
             update.add_event(UpdateEvent::AddEdge {
-                source_node: tok_id.to_string(),
-                target_node: doc_path.to_string(),
+                source_node: node_name.to_string(),
+                target_node: doc_node_name.to_string(),
                 layer: ANNIS_NS.to_string(),
                 component_type: AnnotationComponentType::PartOf.to_string(),
                 component_name: "".to_string(),
             })?;
-            base_tokens.push(tok_id);
-        }
-        base_tokens
-            .iter()
-            .tuple_windows()
-            .try_for_each(|(first, second)| {
+            update.add_event(UpdateEvent::AddNodeLabel {
+                node_name: node_name.to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "layer".to_string(),
+                anno_value: anno_key.ns.to_string(),
+            })?;
+            update.add_event(UpdateEvent::AddNodeLabel {
+                node_name: node_name.to_string(),
+                anno_ns: anno_key.ns.to_string(),
+                anno_name: anno_key.name.to_string(),
+                anno_value: cell_value,
+            })?;
+            for tok_id in covered_tokens {
                 update.add_event(UpdateEvent::AddEdge {
-                    source_node: first.to_string(),
-                    target_node: second.to_string(),
+                    source_node: node_name.to_string(),
+                    target_node: tok_id.to_string(),
                     layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Ordering.to_string(),
+                    component_type: AnnotationComponentType::Coverage.to_string(),
                     component_name: "".to_string(),
                 })?;
-                Ok::<(), AnnattoError>(())
-            })?;
-
-        let token_annos: HashSet<String> = self.token_annos.clone().into_iter().collect();
-        for (tok_name, anno_names) in &fullmap {
-            let mut names = if tok_name.is_empty() {
-                vec![]
-            } else {
-                vec![tok_name]
-            };
-            names.extend(anno_names);
-            for name in names {
-                let index_opt = match name_to_col_0index.get(name) {
-                    Some(v) => Some(v),
-                    None => {
-                        let k = split_qname(name).1;
-                        name_to_col_0index.get(k)
-                    }
-                };
-                let mut nodes = Vec::new();
-                if let Some(col_0i) = index_opt {
-                    let mut row_nums = if let Some(indices) =
-                        merged_cells.valid_rows_by_column.get(col_0i)
-                    {
-                        indices.iter().collect_vec()
-                    } else {
-                        progress_reporter.warn(format!("Can not determine row indices of column {name}, thus it will be skipped.").as_str())?;
-                        continue;
-                    };
-                    row_nums.sort_unstable();
-
-                    for (start_row, end_row_excl) in row_nums.into_iter().tuple_windows() {
-                        let cell = match sheet.get_cell(((col_0i + 1), *start_row)) {
-                            Some(cl) => cl,
-                            None => continue,
-                        };
-                        let cell_value = cell.get_value();
-                        let value = cell_value.trim();
-                        if value.is_empty() {
-                            continue;
-                        }
-                        let base_token_start = *start_row as usize - 2;
-                        let base_token_end = *end_row_excl as usize - 2;
-                        let overlapped_base_tokens: &[String] =
-                            &base_tokens[base_token_start..base_token_end]; // TODO check indices
-
-                        let node_name = if name == tok_name || token_annos.contains(name) {
-                            format!("{}#{}_{}-{}", &doc_path, tok_name, start_row, end_row_excl)
-                        } else {
-                            format!(
-                                "{}#span_{}_{}-{}",
-                                &doc_path,
-                                utf8_percent_encode(name, NODE_NAME_ENCODE_SET),
-                                start_row,
-                                end_row_excl
-                            )
-                        };
-
-                        update.add_event(UpdateEvent::AddNode {
-                            node_name: node_name.to_string(),
-                            node_type: "node".to_string(),
-                        })?;
-                        update.add_event(UpdateEvent::AddEdge {
-                            source_node: node_name.clone(),
-                            target_node: doc_path.to_string(),
-                            layer: ANNIS_NS.to_string(),
-                            component_type: AnnotationComponentType::PartOf.to_string(),
-                            component_name: "".to_string(),
-                        })?;
-                        if !tok_name.is_empty() {
-                            update.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: node_name.to_string(),
-                                anno_ns: ANNIS_NS.to_string(),
-                                anno_name: "layer".to_string(),
-                                anno_value: tok_name.to_string(),
-                            })?;
-                            if name == tok_name {
-                                update.add_event(UpdateEvent::AddNodeLabel {
-                                    node_name: node_name.to_string(),
-                                    anno_ns: ANNIS_NS.to_string(),
-                                    anno_name: "tok".to_string(),
-                                    anno_value: value.to_string(),
-                                })?;
-                            } else {
-                                // Add coverage edges between this span and the
-                                // segmentation token. Find all segmentation
-                                // token that cover the same rows.
-                                if let Some(segmentation_column) = name_to_col_0index.get(tok_name)
-                                {
-                                    if let Some(segmentation_column_row_nums) =
-                                        merged_cells.valid_rows_by_column.get(segmentation_column)
-                                    {
-                                        for segmentation_start_row in *start_row..*end_row_excl {
-                                            // Skip cells that are merged with a previous row
-                                            if segmentation_column_row_nums
-                                                .contains(&segmentation_start_row)
-                                            {
-                                                let segmentation_end_row = merged_cells.start_row_by_column
-                                                .get(segmentation_column)
-                                                .with_context(|| format!("Merged cell helper not found for segmentation column {segmentation_column} ({doc_path})"))?.
-                                                get(&segmentation_start_row).unwrap_or(&segmentation_start_row);
-
-                                                let segmentation_node_name = format!(
-                                                    "{}#{}_{}-{}",
-                                                    &doc_path,
-                                                    tok_name,
-                                                    segmentation_start_row,
-                                                    segmentation_end_row + 1
-                                                );
-
-                                                update.add_event(UpdateEvent::AddEdge {
-                                                    source_node: node_name.to_string(),
-                                                    target_node: segmentation_node_name,
-                                                    layer: ANNIS_NS.to_string(),
-                                                    component_type:
-                                                        AnnotationComponentType::Coverage
-                                                            .to_string(),
-                                                    component_name: "".to_string(),
-                                                })?;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        let (anno_ns, anno_name) = split_qname(name);
-
-                        update.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: node_name.to_string(),
-                            anno_ns: anno_ns.unwrap_or(tok_name).to_string(),
-                            anno_name: anno_name.to_string(),
-                            anno_value: value.to_string(),
-                        })?;
-
-                        for target_id in overlapped_base_tokens {
-                            update.add_event(UpdateEvent::AddEdge {
-                                source_node: node_name.to_string(),
-                                target_node: target_id.to_string(),
-                                layer: ANNIS_NS.to_string(),
-                                component_type: AnnotationComponentType::Coverage.to_string(),
-                                component_name: "".to_string(),
-                            })?;
-                        }
-                        if !name.is_empty() && name == tok_name {
-                            nodes.push(node_name);
-                        }
-                    }
-                    if !nodes.is_empty() {
-                        nodes.iter().tuple_windows().try_for_each(
-                            |(first_name, second_name)| {
-                                update.add_event(UpdateEvent::AddEdge {
-                                    source_node: first_name.to_string(),
-                                    target_node: second_name.to_string(),
-                                    layer: DEFAULT_NS.to_string(),
-                                    component_type: AnnotationComponentType::Ordering.to_string(),
-                                    component_name: tok_name.to_string(),
-                                })?;
-                                Ok::<(), AnnattoError>(())
-                            },
-                        )?;
-                        nodes.clear();
-                    }
-                } else {
-                    progress_reporter.info(&format!("No column `{name}` in file {}", &doc_path))?;
-                    continue;
+            }
+            if is_segmentation {
+                if let Some(prev_name) = last_segment_node {
+                    update.add_event(UpdateEvent::AddEdge {
+                        source_node: prev_name,
+                        target_node: node_name.to_string(),
+                        layer: DEFAULT_NS.to_string(),
+                        component_type: AnnotationComponentType::Ordering.to_string(),
+                        component_name: anno_key.ns.to_string(),
+                    })?;
                 }
+                last_segment_node = Some(node_name);
             }
         }
         Ok(())
@@ -396,123 +305,104 @@ impl ImportSpreadsheet {
         update: &mut GraphUpdate,
         path: &Path,
         doc_node_name: &str,
+        reverse_col_map: &BTreeMap<String, String>,
         progress_reporter: &ProgressReporter,
     ) -> Result<(), AnnattoError> {
         let book = umya_spreadsheet::reader::xlsx::read(path)?;
         if let Some(sheet) = sheet_from_address(&book, &self.datasheet, Some(0)) {
-            self.import_datasheet(doc_node_name, sheet, update, progress_reporter)?;
+            self.import_datasheet(
+                doc_node_name,
+                sheet,
+                reverse_col_map,
+                update,
+                progress_reporter,
+            )?;
         }
         if let Some(sheet) = sheet_from_address(&book, &self.metasheet, None) {
             self.import_metasheet(doc_node_name, sheet, update)?;
         }
         Ok(())
     }
-}
 
-struct MergedCellHelper {
-    /// Set of valid row numbers for each column. The column index is 0-based.
-    /// For merged cells, only the first row of the cell is included in the set.
-    valid_rows_by_column: BTreeMap<u32, BTreeSet<u32>>,
-    /// The actual start row for any merged cell by the column. The column index
-    /// is 0-based.
-    start_row_by_column: BTreeMap<u32, BTreeMap<u32, u32>>,
-}
+    fn build_tokens(
+        update: &mut GraphUpdate,
+        doc_node_name: &str,
+        n: usize,
+    ) -> Result<Vec<String>, anyhow::Error> {
+        let mut base_tokens = Vec::new();
+        for i in 2..n + 2 {
+            // keep spreadsheet row indices in token names for easier debugging
+            let tok_id = format!("{doc_node_name}#row{}", i);
+            update.add_event(UpdateEvent::AddNode {
+                node_name: tok_id.to_string(),
+                node_type: "node".to_string(),
+            })?;
+            update.add_event(UpdateEvent::AddNodeLabel {
+                node_name: tok_id.to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "tok".to_string(),
+                anno_value: " ".to_string(),
+            })?;
+            update.add_event(UpdateEvent::AddNodeLabel {
+                node_name: tok_id.to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "layer".to_string(),
+                anno_value: "default_layer".to_string(),
+            })?;
+            update.add_event(UpdateEvent::AddEdge {
+                source_node: tok_id.to_string(),
+                target_node: doc_node_name.to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".to_string(),
+            })?;
+            base_tokens.push(tok_id);
+        }
+        base_tokens
+            .iter()
+            .tuple_windows()
+            .try_for_each(|(first, second)| {
+                update.add_event(UpdateEvent::AddEdge {
+                    source_node: first.to_string(),
+                    target_node: second.to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::Ordering.to_string(),
+                    component_name: "".to_string(),
+                })?;
+                Ok::<(), AnnattoError>(())
+            })?;
+        Ok(base_tokens)
+    }
 
-impl MergedCellHelper {
-    /// Get the merged cells of the given sheet and return a helper data
-    /// structure that makes it easier to retrieve relevant information about
-    /// these merged cells.
-    fn new(
-        doc_path: &str,
+    fn collect_merged_cells(
         sheet: &umya_spreadsheet::Worksheet,
-        name_to_col_0index: &BTreeMap<String, u32>,
-        progress_reporter: &ProgressReporter,
-    ) -> anyhow::Result<Self> {
-        let mut valid_rows_by_column = BTreeMap::new();
-        let mut start_row_by_column: BTreeMap<u32, BTreeMap<u32, u32>> = BTreeMap::new();
-        // pre-fill values for each column
-        for col_0i in name_to_col_0index.values() {
-            valid_rows_by_column.insert(
-                *col_0i,
-                (2..sheet.get_highest_row() + 2).collect::<BTreeSet<u32>>(),
-            );
-            start_row_by_column.insert(*col_0i, BTreeMap::new());
-        }
-        let merged_cells = sheet.get_merge_cells();
-        // remove obselete indices of merged cells
-        for cell_range in merged_cells {
-            let start_col = match cell_range.get_coordinate_start_col() {
-                Some(c) => c,
-                None => {
-                    progress_reporter.warn(&format!(
-                        "Could not parse start column of merged cell {}",
-                        cell_range.get_range()
-                    ))?;
+        progress: &ProgressReporter,
+    ) -> Result<BTreeMap<u32, Vec<(u32, u32)>>, anyhow::Error> {
+        let mut cell_map: BTreeMap<u32, Vec<(u32, u32)>> = BTreeMap::default();
+        for rng in sheet.get_merge_cells() {
+            if let (Some(start_col), Some(end_col), Some(start_row), Some(end_row)) = (
+                rng.get_coordinate_start_col(),
+                rng.get_coordinate_end_col(),
+                rng.get_coordinate_start_row(),
+                rng.get_coordinate_end_row(),
+            ) {
+                if start_col == end_col {
+                    progress.warn(
+                        format!(
+                            "Merged cell with multiple columns will be ignored: {:?}",
+                            rng
+                        )
+                        .as_str(),
+                    )?;
                     continue;
                 }
-            };
-            let col_1i = start_col.get_num();
-            let end_col = match cell_range.get_coordinate_end_col() {
-                Some(c) => c,
-                None => {
-                    progress_reporter.info(&format!(
-                        "Could not parse end column of merged cell {}, using start column value",
-                        cell_range.get_range()
-                    ))?;
-                    start_col
-                }
-            };
-            if col_1i != end_col.get_num() {
-                // cannot handle that kind of stuff
-                bail!("Merged cells across multiple columns cannot be mapped.")
-            }
-            let start_row = match cell_range.get_coordinate_start_row() {
-                Some(r) => r,
-                None => {
-                    progress_reporter.warn(&format!(
-                        "Could not parse start row of merged cell {}",
-                        cell_range.get_range()
-                    ))?;
-                    continue;
-                }
-            };
-            let start_1i = start_row.get_num();
-            let end_row = match cell_range.get_coordinate_end_row() {
-                Some(r) => r,
-                None => {
-                    progress_reporter.info(&format!(
-                        "Could not parse end row of merged cell {}, using start row value",
-                        cell_range.get_range()
-                    ))?;
-
-                    start_row
-                }
-            };
-            let end_1i = end_row.get_num();
-            if let Some(row_set) = valid_rows_by_column.get_mut(&(col_1i - 1)) {
-                let obsolete_indices = (*start_1i + 1..*end_1i + 1).collect::<BTreeSet<u32>>();
-                obsolete_indices.iter().for_each(|e| {
-                    row_set.remove(e);
-                });
-            } else {
-                progress_reporter.warn(&format!(
-                    "Merged cells {} ({}) could not be mapped to a known column",
-                    cell_range.get_range(),
-                    doc_path,
-                ))?;
-            }
-            for i in *start_1i..*end_1i {
-                start_row_by_column
-                    .entry(*col_1i - 1)
+                cell_map
+                    .entry(*start_col.get_num())
                     .or_default()
-                    .insert(i, *start_1i);
+                    .push((*start_row.get_num(), *end_row.get_num()));
             }
         }
-        let result = Self {
-            valid_rows_by_column,
-            start_row_by_column,
-        };
-        Ok(result)
+        Ok(cell_map)
     }
 }
 
@@ -535,10 +425,21 @@ impl Importer for ImportSpreadsheet {
         let number_of_files = all_files.len();
         // Each file is a work step
         let reporter = ProgressReporter::new(tx, step_id.clone(), number_of_files)?;
-
+        let reverse_col_map = self
+            .column_map
+            .iter()
+            .map(|(k, v)| v.into_iter().map(move |vv| (vv.to_string(), k.to_string())))
+            .flatten()
+            .collect();
         all_files.into_iter().try_for_each(|(pb, doc_node_name)| {
             reporter.info(&format!("Importing {}", pb.to_string_lossy()))?;
-            self.import_workbook(&mut updates, &pb, &doc_node_name, &reporter)?;
+            self.import_workbook(
+                &mut updates,
+                &pb,
+                &doc_node_name,
+                &reverse_col_map,
+                &reporter,
+            )?;
             reporter.worked(1)?;
             Ok::<(), AnnattoError>(())
         })?;
@@ -556,7 +457,7 @@ mod tests {
     use std::sync::mpsc;
 
     use graphannis::{
-        corpusstorage::{QueryLanguage, SearchQuery},
+        corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
         AnnotationGraph, CorpusStorage,
     };
     use graphannis_core::{annostorage::ValueSearch, types::AnnoKey};
@@ -653,11 +554,13 @@ mod tests {
                 query_language: QueryLanguage::AQL,
                 timeout: None,
             };
-            let count = cs.count(query)?;
+            let results_are = cs.find(query, 0, None, ResultOrder::Normal)?;
             assert_eq!(
-                count, expected_result,
-                "Result for query `{}` does not match",
-                query_s
+                results_are.len(),
+                expected_result,
+                "Result for query `{}` does not match: {:?}",
+                query_s,
+                results_are
             );
         }
         Ok(())
