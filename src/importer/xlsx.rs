@@ -192,6 +192,7 @@ struct DatasheetMapper<'a> {
     max_row: u32,
     max_col: u32,
     column_map: &'a BTreeMap<String, BTreeSet<String>>,
+    reverse_col_map: &'a BTreeMap<String, String>,
     fallback: Option<String>,
     token_annos: &'a Vec<String>,
 }
@@ -200,14 +201,16 @@ impl<'a> DatasheetMapper<'a> {
     fn new(
         sheet: &'a umya_spreadsheet::Worksheet,
         column_map: &'a BTreeMap<String, BTreeSet<String>>,
+        reverse_col_map: &'a BTreeMap<String, String>,
         fallback: Option<String>,
         token_annos: &'a Vec<String>,
     ) -> Result<DatasheetMapper<'a>, anyhow::Error> {
         Ok(DatasheetMapper {
-            sheet: &sheet,
+            sheet,
             max_row: max_row(sheet)?,
             max_col: max_column(sheet)?,
             column_map,
+            reverse_col_map,
             fallback,
             token_annos,
         })
@@ -216,14 +219,13 @@ impl<'a> DatasheetMapper<'a> {
     fn import_datasheet(
         &self,
         doc_node_name: &str,
-        reverse_col_map: &BTreeMap<String, String>,
         update: &mut GraphUpdate,
         progress: &ProgressReporter,
     ) -> Result<(), AnnattoError> {
-        let expected_names = reverse_col_map
+        let expected_names = self
+            .reverse_col_map
             .keys()
-            .into_iter()
-            .chain(reverse_col_map.values().into_iter())
+            .chain(self.reverse_col_map.values())
             .map(|e| e.as_str())
             .collect_vec();
         let mut merged_cells = self.collect_merged_cells(expected_names, progress)?;
@@ -236,7 +238,6 @@ impl<'a> DatasheetMapper<'a> {
                 col_num,
                 mc.into_iter().collect(),
                 &base_tokens,
-                reverse_col_map,
                 progress,
             )?;
         }
@@ -250,14 +251,9 @@ impl<'a> DatasheetMapper<'a> {
         col_num: u32,
         mut merged_cells: BTreeMap<u32, u32>,
         base_tokens: &[String],
-        reverse_col_map: &BTreeMap<String, String>,
         progress: &ProgressReporter,
     ) -> Result<(), anyhow::Error> {
-        let merge_members: BTreeSet<u32> = merged_cells
-            .iter()
-            .map(|(s, e)| *s..=*e)
-            .flatten()
-            .collect();
+        let merge_members: BTreeSet<u32> = merged_cells.iter().flat_map(|(s, e)| *s..=*e).collect();
         let col_name_opt = self.sheet.get_cell((col_num, 1));
         let col_name = if let Some(name) = col_name_opt {
             name.get_raw_value().to_string()
@@ -272,9 +268,10 @@ impl<'a> DatasheetMapper<'a> {
                 ns: ns.unwrap_or(name).into(), // prefer the namespace in the column header
                 name: name.into(),
             }
-        } else if let Some(seg_name) = reverse_col_map
+        } else if let Some(seg_name) = self
+            .reverse_col_map
             .get(name)
-            .or(reverse_col_map.get(&col_name))
+            .or(self.reverse_col_map.get(&col_name))
             .or(self.fallback.as_ref())
         {
             AnnoKey {
@@ -326,9 +323,10 @@ impl<'a> DatasheetMapper<'a> {
             } else if self.token_annos.contains(&col_name) {
                 // this attempts to recreate the node name of the original segmentation node (if they span different timeline items, the indices will distinguish the names)
                 // It falls back to the column name
-                let qualifier = reverse_col_map
+                let qualifier = self
+                    .reverse_col_map
                     .get(name)
-                    .or(reverse_col_map.get(&col_name))
+                    .or(self.reverse_col_map.get(&col_name))
                     .or(self.fallback.as_ref())
                     .unwrap_or(&col_name);
                 format!(
@@ -497,18 +495,23 @@ impl ImportSpreadsheet {
         update: &mut GraphUpdate,
         path: &Path,
         doc_node_name: &str,
-        reverse_col_map: &BTreeMap<String, String>,
         progress_reporter: &ProgressReporter,
     ) -> Result<(), AnnattoError> {
         let book = umya_spreadsheet::reader::xlsx::read(path)?;
+        let reverse_col_map = self
+            .column_map
+            .iter()
+            .flat_map(|(k, v)| v.iter().map(move |vv| (vv.to_string(), k.to_string())))
+            .collect();
         if let Some(sheet) = sheet_from_address(&book, &self.datasheet, Some(0)) {
             let mapper = DatasheetMapper::new(
                 sheet,
                 &self.column_map,
+                &reverse_col_map,
                 self.fallback.clone(),
                 &self.token_annos,
             )?;
-            mapper.import_datasheet(doc_node_name, reverse_col_map, update, progress_reporter)?;
+            mapper.import_datasheet(doc_node_name, update, progress_reporter)?;
         }
         if let Some(sheet) = sheet_from_address(&book, &self.metasheet, None) {
             let mapper = MetasheetMapper::new(sheet, self.metasheet_skip_rows)?;
@@ -535,21 +538,9 @@ impl Importer for ImportSpreadsheet {
         let number_of_files = all_files.len();
         // Each file is a work step
         let reporter = ProgressReporter::new(tx, step_id.clone(), number_of_files)?;
-        let reverse_col_map = self
-            .column_map
-            .iter()
-            .map(|(k, v)| v.into_iter().map(move |vv| (vv.to_string(), k.to_string())))
-            .flatten()
-            .collect();
         all_files.into_iter().try_for_each(|(pb, doc_node_name)| {
             reporter.info(&format!("Importing {}", pb.to_string_lossy()))?;
-            self.import_workbook(
-                &mut updates,
-                &pb,
-                &doc_node_name,
-                &reverse_col_map,
-                &reporter,
-            )?;
+            self.import_workbook(&mut updates, &pb, &doc_node_name, &reporter)?;
             reporter.worked(1)?;
             Ok::<(), AnnattoError>(())
         })?;
