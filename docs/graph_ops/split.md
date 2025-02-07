@@ -18,5 +18,5 @@ This maps a target annotation name to a list of potential values to be found in 
 
 ###  delete
 
-*No description*
+If set to `true`, the original annotations will be deleted.
 

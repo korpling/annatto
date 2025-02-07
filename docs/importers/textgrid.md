@@ -10,21 +10,21 @@ for more information on the format itself.
 
 ###  tier_groups
 
-*No description*
+A mapping from segments to tiers, that refer to these segments.
 
 ###  skip_timeline_generation
 
-*No description*
+If true, no timeline will be generated.
 
 ###  skip_audio
 
-*No description*
+If true, no audio file will be linked in the graph.
 
 ###  skip_time_annotations
 
-*No description*
+If true, no time annotations will be created.
 
 ###  audio_extension
 
-*No description*
+Provide an optional audio extension.
 

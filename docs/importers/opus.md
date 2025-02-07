@@ -7,17 +7,17 @@ Add alignment edges for parallel corpora from the XML format used by the
 
 ###  default_name
 
-*No description*
+The component name of the edges for the default direction.
 
 ###  default_type
 
-*No description*
+The component type of the edges for the default direction.
 
 ###  reverse_name
 
-*No description*
+The component name of the edges for the reverse direction.
 
 ###  reverse_type
 
-*No description*
+The component type of the edges for the reverse direction.
 

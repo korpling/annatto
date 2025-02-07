@@ -18,9 +18,9 @@ identifier = { ns = "annis", name = "doc" }  # this is the default and can be om
 
 ###  identifier
 
-*No description*
+The annotation key identifying document nodes.
 
 ###  delimiter
 
-*No description*
+The delimiter used in csv files.
 
