@@ -264,12 +264,12 @@ impl<'a> DatasheetMapper<'a> {
         } else {
             return Ok(());
         };
-        let (_, name) = split_qname(&col_name);
+        let (ns, name) = split_qname(&col_name);
         let is_segmentation = self.column_map.contains_key(&name.to_string())
             || self.column_map.contains_key(&col_name);
         let anno_key = if is_segmentation {
             AnnoKey {
-                ns: name.into(),
+                ns: ns.unwrap_or(name).into(), // prefer the namespace in the column header
                 name: name.into(),
             }
         } else if let Some(seg_name) = reverse_col_map
@@ -278,7 +278,7 @@ impl<'a> DatasheetMapper<'a> {
             .or(self.fallback.as_ref())
         {
             AnnoKey {
-                ns: seg_name.into(),
+                ns: ns.unwrap_or(seg_name).into(), // prefer the namespace in the column header
                 name: name.into(),
             }
         } else {
