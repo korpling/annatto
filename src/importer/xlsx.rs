@@ -1,11 +1,12 @@
 use std::{
-    collections::{BTreeMap, BTreeSet, HashSet},
+    collections::{BTreeMap, BTreeSet},
     fmt::Display,
     path::Path,
 };
 
-use anyhow::{bail, Context};
+use anyhow::{anyhow, bail};
 use graphannis::{
+    graph::AnnoKey,
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
 };
@@ -64,7 +65,7 @@ pub struct ImportSpreadsheet {
     metasheet: Option<SheetAddress>,
     /// Skip the first given rows in the meta data sheet.
     #[serde(default)]
-    metasheet_skip_rows: u32,
+    metasheet_skip_rows: usize,
     /// Map the given annotation columns as token annotations and not as span if possible.
     #[serde(default)]
     token_annos: Vec<String>,
@@ -104,51 +105,301 @@ fn sheet_from_address<'a>(
     }
 }
 
-impl ImportSpreadsheet {
-    fn import_datasheet(
-        &self,
-        doc_path: &str,
-        sheet: &umya_spreadsheet::Worksheet,
-        update: &mut GraphUpdate,
-        progress_reporter: &ProgressReporter,
-    ) -> Result<(), AnnattoError> {
-        let mut fullmap = self.column_map.clone();
-        let known_names = self
-            .column_map
-            .values()
-            .flatten()
-            .collect::<BTreeSet<&String>>();
-        if let Some(fallback_name) = &self.fallback {
-            if fallback_name.is_empty() {
-                fullmap.insert("".to_string(), BTreeSet::new());
+/// We implement our own max row function as sheet.get_highest_row() is unreliable
+/// and usually outputs a too low number
+fn max_row(sheet: &umya_spreadsheet::Worksheet) -> Result<u32, anyhow::Error> {
+    sheet
+        .get_row_dimensions()
+        .iter()
+        .map(|r| *r.get_row_num())
+        .max()
+        .ok_or(anyhow!("Could not determine highest row number."))
+}
+
+/// As highest column is computed the same way as highest row by umya_spreadsheet,
+/// we play it safe by using our own function to compute the highest column and
+/// only do it for the first row, as this is the header
+fn max_column(sheet: &umya_spreadsheet::Worksheet) -> Result<u32, anyhow::Error> {
+    sheet
+        .get_cell_collection()
+        .iter()
+        .map(|c| c.get_coordinate())
+        .filter_map(|xy| {
+            if *xy.get_row_num() == 1 {
+                Some(*xy.get_col_num())
+            } else {
+                None
             }
-        }
-        let name_to_col_0index = {
-            let mut m = BTreeMap::new();
-            let header_row = sheet.get_collection_by_row(&1);
-            for cell in header_row {
-                let name = cell.get_cell_value().get_value().trim().to_string();
-                if !name.is_empty() {
-                    m.insert(name.to_string(), cell.get_coordinate().get_col_num() - 1);
-                    if let Some(fallback_name) = &self.fallback {
-                        if !known_names.contains(&name) && !fullmap.contains_key(&name) {
-                            if let Some(anno_names) = fullmap.get_mut(fallback_name) {
-                                anno_names.insert(name);
-                            } else {
-                                progress_reporter.warn(&format!(
-                                    "`{fallback_name}` is not a valid fallback. Only empty string and keys of the column map are allowed. Column `{name}` will be ignored."))?;
-                            }
-                        }
+        })
+        .max()
+        .ok_or(anyhow!("Could not determine highest column number."))
+}
+
+struct MetasheetMapper<'a> {
+    sheet: &'a umya_spreadsheet::Worksheet,
+    skip_rows: usize,
+    max_row: u32,
+}
+
+impl<'a> MetasheetMapper<'a> {
+    fn new(
+        sheet: &'a umya_spreadsheet::Worksheet,
+        skip_rows: usize,
+    ) -> Result<MetasheetMapper<'a>, anyhow::Error> {
+        Ok(MetasheetMapper {
+            sheet,
+            skip_rows,
+            max_row: max_row(sheet)?,
+        })
+    }
+
+    fn import_as_metadata(
+        &self,
+        doc_node_name: &str,
+        update: &mut GraphUpdate,
+    ) -> Result<(), AnnattoError> {
+        let max_row_num = self.max_row as usize; // 1-based
+        for row_num in (self.skip_rows + 1)..max_row_num + 1 {
+            let entries = self.sheet.get_collection_by_row(&(row_num as u32)); // sorting not necessarily by col number
+            let entry_map = entries
+                .into_iter()
+                .map(|c| (*c.get_coordinate().get_col_num(), c))
+                .collect::<BTreeMap<u32, &Cell>>();
+            if let Some(key_cell) = entry_map.get(&1) {
+                if let Some(value_cell) = entry_map.get(&2) {
+                    let kv = key_cell.get_value();
+                    let key = kv.trim();
+                    if !key.is_empty() {
+                        let (ns, name) = split_qname(key);
+                        let vv = value_cell.get_value();
+                        let value = vv.trim();
+                        update.add_event(UpdateEvent::AddNodeLabel {
+                            node_name: doc_node_name.to_string(),
+                            anno_ns: ns.map_or("".to_string(), str::to_string),
+                            anno_name: name.to_string(),
+                            anno_value: value.to_string(),
+                        })?;
                     }
                 }
             }
-            m
+        }
+        Ok(())
+    }
+}
+
+struct DatasheetMapper<'a> {
+    sheet: &'a umya_spreadsheet::Worksheet,
+    max_row: u32,
+    max_col: u32,
+    column_map: &'a BTreeMap<String, BTreeSet<String>>,
+    reverse_col_map: &'a BTreeMap<String, String>,
+    fallback: Option<String>,
+    token_annos: &'a Vec<String>,
+}
+
+impl<'a> DatasheetMapper<'a> {
+    fn new(
+        sheet: &'a umya_spreadsheet::Worksheet,
+        column_map: &'a BTreeMap<String, BTreeSet<String>>,
+        reverse_col_map: &'a BTreeMap<String, String>,
+        fallback: Option<String>,
+        token_annos: &'a Vec<String>,
+    ) -> Result<DatasheetMapper<'a>, anyhow::Error> {
+        Ok(DatasheetMapper {
+            sheet,
+            max_row: max_row(sheet)?,
+            max_col: max_column(sheet)?,
+            column_map,
+            reverse_col_map,
+            fallback,
+            token_annos,
+        })
+    }
+
+    fn import_datasheet(
+        &self,
+        doc_node_name: &str,
+        update: &mut GraphUpdate,
+        progress: &ProgressReporter,
+    ) -> Result<(), AnnattoError> {
+        let expected_names = self
+            .reverse_col_map
+            .keys()
+            .chain(self.reverse_col_map.values())
+            .map(|e| e.as_str())
+            .collect_vec();
+        let mut merged_cells = self.collect_merged_cells(expected_names, progress)?;
+        let base_tokens = self.build_tokens(update, doc_node_name)?;
+        for col_num in 1..=self.max_col {
+            let mc = merged_cells.remove(&col_num).unwrap_or_default();
+            self.import_column(
+                update,
+                doc_node_name,
+                col_num,
+                mc.into_iter().collect(),
+                &base_tokens,
+                progress,
+            )?;
+        }
+        Ok(())
+    }
+
+    fn import_column(
+        &self,
+        update: &mut GraphUpdate,
+        doc_node_name: &str,
+        col_num: u32,
+        mut merged_cells: BTreeMap<u32, u32>,
+        base_tokens: &[String],
+        progress: &ProgressReporter,
+    ) -> Result<(), anyhow::Error> {
+        let merge_members: BTreeSet<u32> = merged_cells.iter().flat_map(|(s, e)| *s..=*e).collect();
+        let col_name_opt = self.sheet.get_cell((col_num, 1));
+        let col_name = if let Some(name) = col_name_opt {
+            name.get_raw_value().to_string()
+        } else {
+            return Ok(());
         };
-        let merged_cells =
-            MergedCellHelper::new(doc_path, sheet, &name_to_col_0index, progress_reporter)?;
-        let mut base_tokens = Vec::new();
-        for i in 2..=sheet.get_highest_row() {
-            let tok_id = format!("{}#t{}", &doc_path, i - 1);
+        let (ns, name) = split_qname(&col_name);
+        let is_segmentation = self.column_map.contains_key(&name.to_string())
+            || self.column_map.contains_key(&col_name);
+        let anno_key = if is_segmentation {
+            AnnoKey {
+                ns: ns.unwrap_or(name).into(), // prefer the namespace in the column header
+                name: name.into(),
+            }
+        } else if let Some(seg_name) = self
+            .reverse_col_map
+            .get(name)
+            .or(self.reverse_col_map.get(&col_name))
+            .or(self.fallback.as_ref())
+        {
+            AnnoKey {
+                ns: ns.unwrap_or(seg_name).into(), // prefer the namespace in the column header
+                name: name.into(),
+            }
+        } else {
+            let msg = format!(
+                "Unknown column {col_name} will not be imported from document {doc_node_name}"
+            );
+            progress.warn(&msg)?;
+            return Ok(());
+        };
+        let mut last_segment_node = None;
+        for row_num in 2..=self.max_row {
+            let covered_tokens = if let Some(end_num) = merged_cells.remove(&row_num) {
+                if end_num as usize - 2 >= base_tokens.len() {
+                    bail!("Row index larger than highest row index in document {doc_node_name}")
+                } else {
+                    let start = row_num as usize - 2;
+                    let end = end_num as usize - 2;
+                    &base_tokens[start..=end] // excel uses intervals with inclusive boundaries
+                }
+            } else if merge_members.contains(&row_num) {
+                continue;
+            } else {
+                if row_num as usize - 2 >= base_tokens.len() {
+                    bail!("Row index larger than highest row index in document {doc_node_name}");
+                }
+                let start = row_num as usize - 2;
+                &base_tokens[start..start + 1]
+            };
+            let cell_value = if let Some(cell) = self
+                .sheet
+                .get_cell((col_num, row_num))
+                .filter(|c| !c.get_raw_value().is_empty())
+            {
+                cell.get_raw_value().to_string()
+            } else {
+                continue;
+            };
+            let node_name = if is_segmentation {
+                format!(
+                    "{doc_node_name}#{}_{}-{}",
+                    &col_name,
+                    row_num,
+                    row_num as usize + covered_tokens.len()
+                )
+            } else if self.token_annos.contains(&col_name) {
+                // this attempts to recreate the node name of the original segmentation node (if they span different timeline items, the indices will distinguish the names)
+                // It falls back to the column name
+                let qualifier = self
+                    .reverse_col_map
+                    .get(name)
+                    .or(self.reverse_col_map.get(&col_name))
+                    .or(self.fallback.as_ref())
+                    .unwrap_or(&col_name);
+                format!(
+                    "{doc_node_name}#{}_{}-{}",
+                    qualifier,
+                    row_num,
+                    row_num as usize + covered_tokens.len()
+                )
+            } else {
+                format!(
+                    "{doc_node_name}#span_{}_{}-{}",
+                    utf8_percent_encode(name, NODE_NAME_ENCODE_SET),
+                    row_num,
+                    row_num as usize + covered_tokens.len()
+                )
+            };
+            update.add_event(UpdateEvent::AddNode {
+                node_name: node_name.to_string(),
+                node_type: "node".to_string(),
+            })?;
+            update.add_event(UpdateEvent::AddEdge {
+                source_node: node_name.to_string(),
+                target_node: doc_node_name.to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".to_string(),
+            })?;
+            update.add_event(UpdateEvent::AddNodeLabel {
+                node_name: node_name.to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "layer".to_string(),
+                anno_value: anno_key.ns.to_string(),
+            })?;
+            update.add_event(UpdateEvent::AddNodeLabel {
+                node_name: node_name.to_string(),
+                anno_ns: anno_key.ns.to_string(),
+                anno_name: anno_key.name.to_string(),
+                anno_value: cell_value.trim().to_string(),
+            })?;
+            for tok_id in covered_tokens {
+                update.add_event(UpdateEvent::AddEdge {
+                    source_node: node_name.to_string(),
+                    target_node: tok_id.to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::Coverage.to_string(),
+                    component_name: "".to_string(),
+                })?;
+            }
+            if is_segmentation {
+                if let Some(prev_name) = last_segment_node {
+                    update.add_event(UpdateEvent::AddEdge {
+                        source_node: prev_name,
+                        target_node: node_name.to_string(),
+                        layer: DEFAULT_NS.to_string(),
+                        component_type: AnnotationComponentType::Ordering.to_string(),
+                        component_name: anno_key.ns.to_string(),
+                    })?;
+                }
+                last_segment_node = Some(node_name);
+            }
+        }
+        Ok(())
+    }
+
+    fn build_tokens(
+        &self,
+        update: &mut GraphUpdate,
+        doc_node_name: &str,
+    ) -> Result<Vec<String>, anyhow::Error> {
+        let mut base_tokens = Vec::with_capacity(self.max_row as usize);
+        for i in 2..=self.max_row as usize {
+            // keep spreadsheet row indices in token names for easier debugging
+            let tok_id = format!("{doc_node_name}#row{}", i);
             update.add_event(UpdateEvent::AddNode {
                 node_name: tok_id.to_string(),
                 node_type: "node".to_string(),
@@ -167,7 +418,7 @@ impl ImportSpreadsheet {
             })?;
             update.add_event(UpdateEvent::AddEdge {
                 source_node: tok_id.to_string(),
-                target_node: doc_path.to_string(),
+                target_node: doc_node_name.to_string(),
                 layer: ANNIS_NS.to_string(),
                 component_type: AnnotationComponentType::PartOf.to_string(),
                 component_name: "".to_string(),
@@ -187,210 +438,58 @@ impl ImportSpreadsheet {
                 })?;
                 Ok::<(), AnnattoError>(())
             })?;
-
-        let token_annos: HashSet<String> = self.token_annos.clone().into_iter().collect();
-        for (tok_name, anno_names) in &fullmap {
-            let mut names = if tok_name.is_empty() {
-                vec![]
-            } else {
-                vec![tok_name]
-            };
-            names.extend(anno_names);
-            for name in names {
-                let index_opt = match name_to_col_0index.get(name) {
-                    Some(v) => Some(v),
-                    None => {
-                        let k = split_qname(name).1;
-                        name_to_col_0index.get(k)
-                    }
-                };
-                let mut nodes = Vec::new();
-                if let Some(col_0i) = index_opt {
-                    let mut row_nums = if let Some(indices) =
-                        merged_cells.valid_rows_by_column.get(col_0i)
-                    {
-                        indices.iter().collect_vec()
-                    } else {
-                        progress_reporter.warn(format!("Can not determine row indices of column {name}, thus it will be skipped.").as_str())?;
-                        continue;
-                    };
-                    row_nums.sort_unstable();
-
-                    for (start_row, end_row_excl) in row_nums.into_iter().tuple_windows() {
-                        let cell = match sheet.get_cell(((col_0i + 1), *start_row)) {
-                            Some(cl) => cl,
-                            None => continue,
-                        };
-                        let cell_value = cell.get_value();
-                        let value = cell_value.trim();
-                        if value.is_empty() {
-                            continue;
-                        }
-                        let base_token_start = *start_row as usize - 2;
-                        let base_token_end = *end_row_excl as usize - 2;
-                        let overlapped_base_tokens: &[String] =
-                            &base_tokens[base_token_start..base_token_end]; // TODO check indices
-
-                        let node_name = if name == tok_name || token_annos.contains(name) {
-                            format!("{}#{}_{}-{}", &doc_path, tok_name, start_row, end_row_excl)
-                        } else {
-                            format!(
-                                "{}#span_{}_{}-{}",
-                                &doc_path,
-                                utf8_percent_encode(name, NODE_NAME_ENCODE_SET),
-                                start_row,
-                                end_row_excl
-                            )
-                        };
-
-                        update.add_event(UpdateEvent::AddNode {
-                            node_name: node_name.to_string(),
-                            node_type: "node".to_string(),
-                        })?;
-                        update.add_event(UpdateEvent::AddEdge {
-                            source_node: node_name.clone(),
-                            target_node: doc_path.to_string(),
-                            layer: ANNIS_NS.to_string(),
-                            component_type: AnnotationComponentType::PartOf.to_string(),
-                            component_name: "".to_string(),
-                        })?;
-                        if !tok_name.is_empty() {
-                            update.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: node_name.to_string(),
-                                anno_ns: ANNIS_NS.to_string(),
-                                anno_name: "layer".to_string(),
-                                anno_value: tok_name.to_string(),
-                            })?;
-                            if name == tok_name {
-                                update.add_event(UpdateEvent::AddNodeLabel {
-                                    node_name: node_name.to_string(),
-                                    anno_ns: ANNIS_NS.to_string(),
-                                    anno_name: "tok".to_string(),
-                                    anno_value: value.to_string(),
-                                })?;
-                            } else {
-                                // Add coverage edges between this span and the
-                                // segmentation token. Find all segmentation
-                                // token that cover the same rows.
-                                if let Some(segmentation_column) = name_to_col_0index.get(tok_name)
-                                {
-                                    if let Some(segmentation_column_row_nums) =
-                                        merged_cells.valid_rows_by_column.get(segmentation_column)
-                                    {
-                                        for segmentation_start_row in *start_row..*end_row_excl {
-                                            // Skip cells that are merged with a previous row
-                                            if segmentation_column_row_nums
-                                                .contains(&segmentation_start_row)
-                                            {
-                                                let segmentation_end_row = merged_cells.start_row_by_column
-                                                .get(segmentation_column)
-                                                .with_context(|| format!("Merged cell helper not found for segmentation column {segmentation_column} ({doc_path})"))?.
-                                                get(&segmentation_start_row).unwrap_or(&segmentation_start_row);
-
-                                                let segmentation_node_name = format!(
-                                                    "{}#{}_{}-{}",
-                                                    &doc_path,
-                                                    tok_name,
-                                                    segmentation_start_row,
-                                                    segmentation_end_row + 1
-                                                );
-
-                                                update.add_event(UpdateEvent::AddEdge {
-                                                    source_node: node_name.to_string(),
-                                                    target_node: segmentation_node_name,
-                                                    layer: ANNIS_NS.to_string(),
-                                                    component_type:
-                                                        AnnotationComponentType::Coverage
-                                                            .to_string(),
-                                                    component_name: "".to_string(),
-                                                })?;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        let (anno_ns, anno_name) = split_qname(name);
-
-                        update.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: node_name.to_string(),
-                            anno_ns: anno_ns.unwrap_or(tok_name).to_string(),
-                            anno_name: anno_name.to_string(),
-                            anno_value: value.to_string(),
-                        })?;
-
-                        for target_id in overlapped_base_tokens {
-                            update.add_event(UpdateEvent::AddEdge {
-                                source_node: node_name.to_string(),
-                                target_node: target_id.to_string(),
-                                layer: ANNIS_NS.to_string(),
-                                component_type: AnnotationComponentType::Coverage.to_string(),
-                                component_name: "".to_string(),
-                            })?;
-                        }
-                        if !name.is_empty() && name == tok_name {
-                            nodes.push(node_name);
-                        }
-                    }
-                    if !nodes.is_empty() {
-                        nodes.iter().tuple_windows().try_for_each(
-                            |(first_name, second_name)| {
-                                update.add_event(UpdateEvent::AddEdge {
-                                    source_node: first_name.to_string(),
-                                    target_node: second_name.to_string(),
-                                    layer: DEFAULT_NS.to_string(),
-                                    component_type: AnnotationComponentType::Ordering.to_string(),
-                                    component_name: tok_name.to_string(),
-                                })?;
-                                Ok::<(), AnnattoError>(())
-                            },
-                        )?;
-                        nodes.clear();
-                    }
-                } else {
-                    progress_reporter.info(&format!("No column `{name}` in file {}", &doc_path))?;
-                    continue;
-                }
-            }
-        }
-        Ok(())
+        Ok(base_tokens)
     }
 
-    fn import_metasheet(
+    fn collect_merged_cells(
         &self,
-        doc_path: &str,
-        sheet: &umya_spreadsheet::Worksheet,
-        update: &mut GraphUpdate,
-    ) -> Result<(), AnnattoError> {
-        let max_row_num = sheet.get_highest_row(); // 1-based
-        for row_num in (self.metasheet_skip_rows + 1)..max_row_num + 1 {
-            let entries = sheet.get_collection_by_row(&row_num); // sorting not necessarily by col number
-            let entry_map = entries
-                .into_iter()
-                .map(|c| (*c.get_coordinate().get_col_num(), c))
-                .collect::<BTreeMap<u32, &Cell>>();
-            if let Some(key_cell) = entry_map.get(&1) {
-                if let Some(value_cell) = entry_map.get(&2) {
-                    let kv = key_cell.get_value();
-                    let key = kv.trim();
-                    if !key.is_empty() {
-                        let (ns, name) = split_qname(key);
-                        let vv = value_cell.get_value();
-                        let value = vv.trim();
-                        update.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: doc_path.to_string(),
-                            anno_ns: ns.map_or("".to_string(), str::to_string),
-                            anno_name: name.to_string(),
-                            anno_value: value.to_string(),
-                        })?;
+        col_names: Vec<&str>,
+        progress: &ProgressReporter,
+    ) -> Result<BTreeMap<u32, Vec<(u32, u32)>>, anyhow::Error> {
+        let mut cell_map: BTreeMap<u32, Vec<(u32, u32)>> = BTreeMap::default();
+        for rng in self.sheet.get_merge_cells() {
+            if let (Some(start_col), Some(end_col), Some(start_row), Some(end_row)) = (
+                rng.get_coordinate_start_col(),
+                rng.get_coordinate_end_col(),
+                rng.get_coordinate_start_row(),
+                rng.get_coordinate_end_row(),
+            ) {
+                if start_col != end_col {
+                    if (*start_col.get_num()..=*end_col.get_num()).any(|c| {
+                        if let Some(cell) = self.sheet.get_cell((c, 1)) {
+                            col_names.contains(&cell.get_raw_value().to_string().as_str())
+                        } else {
+                            false
+                        }
+                    }) {
+                        // At least one of the affected columns of the multi-column merge cell
+                        // is a column to be imported, which is forbidden
+                        // (this way the user can still import sheet by omitting dirty columns in the column map)
+                        bail!("A merge cell affects at least one column that is set to be imported: {:?}", rng);
+                    } else {
+                        progress.warn(
+                            format!(
+                                "Merged cell with multiple columns will be ignored: {:?}",
+                                rng
+                            )
+                            .as_str(),
+                        )?;
+                        continue;
                     }
                 }
+                cell_map
+                    .entry(*start_col.get_num())
+                    .or_default()
+                    .push((*start_row.get_num(), *end_row.get_num()));
             }
         }
-        Ok(())
+        Ok(cell_map)
     }
+}
 
+const FILE_EXTENSIONS: [&str; 1] = ["xlsx"];
+
+impl ImportSpreadsheet {
     fn import_workbook(
         &self,
         update: &mut GraphUpdate,
@@ -399,124 +498,28 @@ impl ImportSpreadsheet {
         progress_reporter: &ProgressReporter,
     ) -> Result<(), AnnattoError> {
         let book = umya_spreadsheet::reader::xlsx::read(path)?;
+        let reverse_col_map = self
+            .column_map
+            .iter()
+            .flat_map(|(k, v)| v.iter().map(move |vv| (vv.to_string(), k.to_string())))
+            .collect();
         if let Some(sheet) = sheet_from_address(&book, &self.datasheet, Some(0)) {
-            self.import_datasheet(doc_node_name, sheet, update, progress_reporter)?;
+            let mapper = DatasheetMapper::new(
+                sheet,
+                &self.column_map,
+                &reverse_col_map,
+                self.fallback.clone(),
+                &self.token_annos,
+            )?;
+            mapper.import_datasheet(doc_node_name, update, progress_reporter)?;
         }
         if let Some(sheet) = sheet_from_address(&book, &self.metasheet, None) {
-            self.import_metasheet(doc_node_name, sheet, update)?;
+            let mapper = MetasheetMapper::new(sheet, self.metasheet_skip_rows)?;
+            mapper.import_as_metadata(doc_node_name, update)?;
         }
         Ok(())
     }
 }
-
-struct MergedCellHelper {
-    /// Set of valid row numbers for each column. The column index is 0-based.
-    /// For merged cells, only the first row of the cell is included in the set.
-    valid_rows_by_column: BTreeMap<u32, BTreeSet<u32>>,
-    /// The actual start row for any merged cell by the column. The column index
-    /// is 0-based.
-    start_row_by_column: BTreeMap<u32, BTreeMap<u32, u32>>,
-}
-
-impl MergedCellHelper {
-    /// Get the merged cells of the given sheet and return a helper data
-    /// structure that makes it easier to retrieve relevant information about
-    /// these merged cells.
-    fn new(
-        doc_path: &str,
-        sheet: &umya_spreadsheet::Worksheet,
-        name_to_col_0index: &BTreeMap<String, u32>,
-        progress_reporter: &ProgressReporter,
-    ) -> anyhow::Result<Self> {
-        let mut valid_rows_by_column = BTreeMap::new();
-        let mut start_row_by_column: BTreeMap<u32, BTreeMap<u32, u32>> = BTreeMap::new();
-        // pre-fill values for each column
-        for col_0i in name_to_col_0index.values() {
-            valid_rows_by_column.insert(
-                *col_0i,
-                (2..sheet.get_highest_row() + 2).collect::<BTreeSet<u32>>(),
-            );
-            start_row_by_column.insert(*col_0i, BTreeMap::new());
-        }
-        let merged_cells = sheet.get_merge_cells();
-        // remove obselete indices of merged cells
-        for cell_range in merged_cells {
-            let start_col = match cell_range.get_coordinate_start_col() {
-                Some(c) => c,
-                None => {
-                    progress_reporter.warn(&format!(
-                        "Could not parse start column of merged cell {}",
-                        cell_range.get_range()
-                    ))?;
-                    continue;
-                }
-            };
-            let col_1i = start_col.get_num();
-            let end_col = match cell_range.get_coordinate_end_col() {
-                Some(c) => c,
-                None => {
-                    progress_reporter.info(&format!(
-                        "Could not parse end column of merged cell {}, using start column value",
-                        cell_range.get_range()
-                    ))?;
-                    start_col
-                }
-            };
-            if col_1i != end_col.get_num() {
-                // cannot handle that kind of stuff
-                bail!("Merged cells across multiple columns cannot be mapped.")
-            }
-            let start_row = match cell_range.get_coordinate_start_row() {
-                Some(r) => r,
-                None => {
-                    progress_reporter.warn(&format!(
-                        "Could not parse start row of merged cell {}",
-                        cell_range.get_range()
-                    ))?;
-                    continue;
-                }
-            };
-            let start_1i = start_row.get_num();
-            let end_row = match cell_range.get_coordinate_end_row() {
-                Some(r) => r,
-                None => {
-                    progress_reporter.info(&format!(
-                        "Could not parse end row of merged cell {}, using start row value",
-                        cell_range.get_range()
-                    ))?;
-
-                    start_row
-                }
-            };
-            let end_1i = end_row.get_num();
-            if let Some(row_set) = valid_rows_by_column.get_mut(&(col_1i - 1)) {
-                let obsolete_indices = (*start_1i + 1..*end_1i + 1).collect::<BTreeSet<u32>>();
-                obsolete_indices.iter().for_each(|e| {
-                    row_set.remove(e);
-                });
-            } else {
-                progress_reporter.warn(&format!(
-                    "Merged cells {} ({}) could not be mapped to a known column",
-                    cell_range.get_range(),
-                    doc_path,
-                ))?;
-            }
-            for i in *start_1i..*end_1i {
-                start_row_by_column
-                    .entry(*col_1i - 1)
-                    .or_default()
-                    .insert(i, *start_1i);
-            }
-        }
-        let result = Self {
-            valid_rows_by_column,
-            start_row_by_column,
-        };
-        Ok(result)
-    }
-}
-
-const FILE_EXTENSIONS: [&str; 1] = ["xlsx"];
 
 impl Importer for ImportSpreadsheet {
     fn import_corpus(
@@ -535,7 +538,6 @@ impl Importer for ImportSpreadsheet {
         let number_of_files = all_files.len();
         // Each file is a work step
         let reporter = ProgressReporter::new(tx, step_id.clone(), number_of_files)?;
-
         all_files.into_iter().try_for_each(|(pb, doc_node_name)| {
             reporter.info(&format!("Importing {}", pb.to_string_lossy()))?;
             self.import_workbook(&mut updates, &pb, &doc_node_name, &reporter)?;
@@ -556,15 +558,46 @@ mod tests {
     use std::sync::mpsc;
 
     use graphannis::{
-        corpusstorage::{QueryLanguage, SearchQuery},
+        corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
         AnnotationGraph, CorpusStorage,
     };
     use graphannis_core::{annostorage::ValueSearch, types::AnnoKey};
+    use insta::assert_snapshot;
     use tempfile::tempdir;
 
-    use crate::{workflow::Workflow, ImporterStep, ReadFrom};
+    use crate::{
+        exporter::graphml::GraphMLExporter, test_util::export_to_string, workflow::Workflow,
+        ImporterStep, ReadFrom,
+    };
 
     use super::*;
+
+    #[test]
+    fn snapshot_test() {
+        let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
+        let config = "column_map = { dipl = [\"sentence\", \"seg\"], norm = [\"pos\", \"lemma\"] }";
+        let m: Result<ImportSpreadsheet, _> = toml::from_str(config);
+        assert!(m.is_ok(), "Could not deserialize config: {:?}", m.err());
+        let import = m.unwrap();
+        let u = import.import_corpus(
+            path,
+            StepID {
+                module_name: "test_xslx_import".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(u.is_ok(), "Failed to import: {:?}", u.err());
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut u.unwrap(), |_| {}).is_ok());
+        let e: Result<GraphMLExporter, _> = toml::from_str("stable_order = true");
+        assert!(e.is_ok(), "Could not deserialize exporter: {:?}", e.err());
+        let actual = export_to_string(&graph, e.unwrap());
+        assert!(actual.is_ok(), "Could not export: {:?}", actual.err());
+        assert_snapshot!(actual.unwrap());
+    }
 
     fn run_spreadsheet_import(
         on_disk: bool,
@@ -638,7 +671,7 @@ mod tests {
             ("annis:doc=\"test_file\"", 1),
             ("dipl .dipl dipl .dipl dipl .dipl dipl", 1),
             ("norm .norm norm .norm norm .norm norm", 1),
-            ("annis:node_name=/.*#t.*/ @ annis:doc", 6),
+            ("annis:node_name=/.*#row.*/ @ annis:doc", 6),
         ];
         let corpus_name = "current";
         let tmp_dir = tempdir()?;
@@ -653,11 +686,13 @@ mod tests {
                 query_language: QueryLanguage::AQL,
                 timeout: None,
             };
-            let count = cs.count(query)?;
+            let results_are = cs.find(query, 0, None, ResultOrder::Normal)?;
             assert_eq!(
-                count, expected_result,
-                "Result for query `{}` does not match",
-                query_s
+                results_are.len(),
+                expected_result,
+                "Result for query `{}` does not match: {:?}",
+                query_s,
+                results_are
             );
         }
         Ok(())
@@ -736,7 +771,7 @@ mod tests {
         let importer = ImportSpreadsheet {
             column_map: col_map,
             fallback: None,
-            datasheet: None,
+            datasheet: Some(SheetAddress::Name("Sheet1".to_string())),
             metasheet: None,
             token_annos: vec![],
             metasheet_skip_rows: 0,
@@ -749,7 +784,7 @@ mod tests {
         };
         let (sender, receiver) = mpsc::channel();
         let import = import_step.execute(Some(sender));
-        assert!(import.is_ok());
+        assert!(import.is_ok(), "Error occurred: {:?}", import.err());
         assert_ne!(receiver.into_iter().count(), 0);
     }
 

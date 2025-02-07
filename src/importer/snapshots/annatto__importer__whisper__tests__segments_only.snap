@@ -1,0 +1,61 @@
+---
+source: src/importer/whisper.rs
+expression: actual.unwrap()
+---
+---- whisper.graphml:
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>
+    <key id="k1" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k2" for="node" attr.name="whisper::language" attr.type="string"/>
+    <key id="k3" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k4" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k5" for="node" attr.name="whisper::text" attr.type="string"/>
+    <key id="k6" for="node" attr.name="annis::tok" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <data key="k0"><![CDATA[
+# configure visualizations here
+]]></data>
+        <node id="whisper">
+            <data key="k4">corpus</data>
+        </node>
+        <node id="whisper/example">
+            <data key="k1">example</data>
+            <data key="k2">de</data>
+            <data key="k4">corpus</data>
+        </node>
+        <node id="whisper/example#datasource">
+            <data key="k4">datasource</data>
+            <data key="k5">Hallo, ich würde für den Fall F16 aussagen wollen. Und zwar war ich am Montag um 15.30 Uhr an der ... und habe dann zufällig mitbekommen, wie das Unfall entstanden ist. Und zwar habe ich beobachtet, dass ein Mann mit einer Dame, der einen Ball in der Hand hat, die Straße überqueren wollte. Und auf der gegenüberliegenden Straße war eine Dame mit einem Hund. Und genau in dem Moment, als der Mann seinen Ball verlor, ist dann der Hund auf den Ball zugerannt. Und genau in dem Moment kamen halt die zwei Autos. Und weil das blaue Golf anhalten musste, ist dann das andere Auto hinten eingestiegen. Und dann ist er dann wieder angeprallt.</data>
+        </node>
+        <node id="whisper/example#s0">
+            <data key="k3">default_layer</data>
+            <data key="k4">node</data>
+            <data key="k6">Hallo, ich würde für den Fall F16 aussagen wollen.</data>
+        </node>
+        <node id="whisper/example#s1">
+            <data key="k3">default_layer</data>
+            <data key="k4">node</data>
+            <data key="k6">Und zwar war ich am Montag um 15.30 Uhr an der ...</data>
+        </node>
+        <node id="whisper/example#s2">
+            <data key="k3">default_layer</data>
+            <data key="k4">node</data>
+            <data key="k6">und habe dann zufällig mitbekommen, wie das Unfall entstanden ist.</data>
+        </node>
+        <edge id="e0" source="whisper/example#s0" target="whisper/example#s1" label="Ordering/annis/">
+        </edge>
+        <edge id="e1" source="whisper/example#s1" target="whisper/example#s2" label="Ordering/annis/">
+        </edge>
+        <edge id="e2" source="whisper/example" target="whisper" label="PartOf/annis/">
+        </edge>
+        <edge id="e3" source="whisper/example#datasource" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e4" source="whisper/example#s0" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e5" source="whisper/example#s1" target="whisper/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e6" source="whisper/example#s2" target="whisper/example" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>

@@ -5,6 +5,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add import `whisper` (json format)
+
+### Fixed
+
+- Fixed bug in computation of valid row indices in import of `xlsx`, which led skipping cells at the end of a document
+- refactor the code base of import `xlsx` for easier future debugging
+
 ## [0.23.0] - 2025-01-30
 
 ### Added
