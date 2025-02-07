@@ -10,17 +10,17 @@ to segment the text into chunks.
 
 ###  max_characters
 
-*No description*
+Maximum chunk length.
 
 ###  anno_key
 
-*No description*
+Annotation key used to annotate chunks with a value.
 
 ###  anno_value
 
-*No description*
+Used annotation value.
 
 ###  segmentation
 
-*No description*
+Optional segmentation name.
 

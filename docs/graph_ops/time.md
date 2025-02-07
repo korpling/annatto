@@ -9,7 +9,8 @@ Example:
 ```toml
 [[graph_op]]
 action = "time"
-config = {}
+
+[graph_op.config]
 ```
 
 *No Configuration*
