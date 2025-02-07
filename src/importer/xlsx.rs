@@ -316,10 +316,24 @@ impl<'a> DatasheetMapper<'a> {
             } else {
                 continue;
             };
-            let node_name = if is_segmentation || self.token_annos.contains(&col_name) {
+            let node_name = if is_segmentation {
                 format!(
                     "{doc_node_name}#{}_{}-{}",
                     &col_name,
+                    row_num,
+                    row_num as usize + covered_tokens.len()
+                )
+            } else if self.token_annos.contains(&col_name) {
+                // this attempts to recreate the node name of the original segmentation node (if they span different timeline items, the indices will distinguish the names)
+                // It falls back to the column name
+                let qualifier = reverse_col_map
+                    .get(name)
+                    .or(reverse_col_map.get(&col_name))
+                    .or(self.fallback.as_ref())
+                    .unwrap_or(&col_name);
+                format!(
+                    "{doc_node_name}#{}_{}-{}",
+                    qualifier,
                     row_num,
                     row_num as usize + covered_tokens.len()
                 )
