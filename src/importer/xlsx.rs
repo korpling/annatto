@@ -4,7 +4,7 @@ use std::{
     path::Path,
 };
 
-use anyhow::bail;
+use anyhow::{anyhow, bail};
 use graphannis::{
     graph::AnnoKey,
     model::AnnotationComponentType,
@@ -65,7 +65,7 @@ pub struct ImportSpreadsheet {
     metasheet: Option<SheetAddress>,
     /// Skip the first given rows in the meta data sheet.
     #[serde(default)]
-    metasheet_skip_rows: u32,
+    metasheet_skip_rows: usize,
     /// Map the given annotation columns as token annotations and not as span if possible.
     #[serde(default)]
     token_annos: Vec<String>,
@@ -105,24 +105,134 @@ fn sheet_from_address<'a>(
     }
 }
 
-impl ImportSpreadsheet {
+/// We implement our own max row function as sheet.get_highest_row() is unreliable
+/// and usually outputs a too low number
+fn max_row(sheet: &umya_spreadsheet::Worksheet) -> Result<u32, anyhow::Error> {
+    sheet
+        .get_row_dimensions()
+        .iter()
+        .map(|r| *r.get_row_num())
+        .max()
+        .ok_or(anyhow!("Could not determine highest row number."))
+}
+
+/// As highest column is computed the same way as highest row by umya_spreadsheet,
+/// we play it safe by using our own function to compute the highest column and
+/// only do it for the first row, as this is the header
+fn max_column(sheet: &umya_spreadsheet::Worksheet) -> Result<u32, anyhow::Error> {
+    sheet
+        .get_cell_collection()
+        .iter()
+        .map(|c| c.get_coordinate())
+        .filter_map(|xy| {
+            if *xy.get_row_num() == 1 {
+                Some(*xy.get_col_num())
+            } else {
+                None
+            }
+        })
+        .max()
+        .ok_or(anyhow!("Could not determine highest column number."))
+}
+
+struct MetasheetMapper<'a> {
+    sheet: &'a umya_spreadsheet::Worksheet,
+    skip_rows: usize,
+    max_row: u32,
+}
+
+impl<'a> MetasheetMapper<'a> {
+    fn new(
+        sheet: &'a umya_spreadsheet::Worksheet,
+        skip_rows: usize,
+    ) -> Result<MetasheetMapper<'a>, anyhow::Error> {
+        Ok(MetasheetMapper {
+            sheet,
+            skip_rows,
+            max_row: max_row(sheet)?,
+        })
+    }
+
+    fn import_as_metadata(
+        &self,
+        doc_node_name: &str,
+        update: &mut GraphUpdate,
+    ) -> Result<(), AnnattoError> {
+        let max_row_num = self.max_row as usize; // 1-based
+        for row_num in (self.skip_rows + 1)..max_row_num + 1 {
+            let entries = self.sheet.get_collection_by_row(&(row_num as u32)); // sorting not necessarily by col number
+            let entry_map = entries
+                .into_iter()
+                .map(|c| (*c.get_coordinate().get_col_num(), c))
+                .collect::<BTreeMap<u32, &Cell>>();
+            if let Some(key_cell) = entry_map.get(&1) {
+                if let Some(value_cell) = entry_map.get(&2) {
+                    let kv = key_cell.get_value();
+                    let key = kv.trim();
+                    if !key.is_empty() {
+                        let (ns, name) = split_qname(key);
+                        let vv = value_cell.get_value();
+                        let value = vv.trim();
+                        update.add_event(UpdateEvent::AddNodeLabel {
+                            node_name: doc_node_name.to_string(),
+                            anno_ns: ns.map_or("".to_string(), str::to_string),
+                            anno_name: name.to_string(),
+                            anno_value: value.to_string(),
+                        })?;
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+struct DatasheetMapper<'a> {
+    sheet: &'a umya_spreadsheet::Worksheet,
+    max_row: u32,
+    max_col: u32,
+    column_map: &'a BTreeMap<String, BTreeSet<String>>,
+    fallback: Option<String>,
+    token_annos: &'a Vec<String>,
+}
+
+impl<'a> DatasheetMapper<'a> {
+    fn new(
+        sheet: &'a umya_spreadsheet::Worksheet,
+        column_map: &'a BTreeMap<String, BTreeSet<String>>,
+        fallback: Option<String>,
+        token_annos: &'a Vec<String>,
+    ) -> Result<DatasheetMapper<'a>, anyhow::Error> {
+        Ok(DatasheetMapper {
+            sheet: &sheet,
+            max_row: max_row(sheet)?,
+            max_col: max_column(sheet)?,
+            column_map,
+            fallback,
+            token_annos,
+        })
+    }
+
     fn import_datasheet(
         &self,
-        doc_path: &str,
-        sheet: &umya_spreadsheet::Worksheet,
+        doc_node_name: &str,
         reverse_col_map: &BTreeMap<String, String>,
         update: &mut GraphUpdate,
         progress: &ProgressReporter,
     ) -> Result<(), AnnattoError> {
-        let base_tokens =
-            Self::build_tokens(update, doc_path, sheet.get_highest_row().max(0) as usize)?;
-        let mut merged_cells = Self::collect_merged_cells(sheet, progress)?;
-        for col_num in 1..=sheet.get_highest_column() {
+        let expected_names = reverse_col_map
+            .keys()
+            .into_iter()
+            .chain(reverse_col_map.values().into_iter())
+            .map(|e| e.as_str())
+            .collect_vec();
+        let mut merged_cells = self.collect_merged_cells(expected_names, progress)?;
+        let base_tokens = self.build_tokens(update, doc_node_name)?;
+        for col_num in 1..=self.max_col {
             let mc = merged_cells.remove(&col_num).unwrap_or_default();
             self.import_column(
                 update,
-                doc_path,
-                sheet,
+                doc_node_name,
                 col_num,
                 mc.into_iter().collect(),
                 &base_tokens,
@@ -137,7 +247,6 @@ impl ImportSpreadsheet {
         &self,
         update: &mut GraphUpdate,
         doc_node_name: &str,
-        sheet: &umya_spreadsheet::Worksheet,
         col_num: u32,
         mut merged_cells: BTreeMap<u32, u32>,
         base_tokens: &[String],
@@ -149,7 +258,7 @@ impl ImportSpreadsheet {
             .map(|(s, e)| *s..=*e)
             .flatten()
             .collect();
-        let col_name_opt = sheet.get_cell((col_num, 1));
+        let col_name_opt = self.sheet.get_cell((col_num, 1));
         let col_name = if let Some(name) = col_name_opt {
             name.get_raw_value().to_string()
         } else {
@@ -180,14 +289,14 @@ impl ImportSpreadsheet {
             return Ok(());
         };
         let mut last_segment_node = None;
-        for row_num in 2..=sheet.get_highest_column() {
+        for row_num in 2..=self.max_row {
             let covered_tokens = if let Some(end_num) = merged_cells.remove(&row_num) {
                 if end_num as usize - 2 >= base_tokens.len() {
                     bail!("Row index larger than highest row index in document {doc_node_name}")
                 } else {
                     let start = row_num as usize - 2;
                     let end = end_num as usize - 2;
-                    &base_tokens[start..end]
+                    &base_tokens[start..=end] // excel uses intervals with inclusive boundaries
                 }
             } else if merge_members.contains(&row_num) {
                 continue;
@@ -198,7 +307,11 @@ impl ImportSpreadsheet {
                 let start = row_num as usize - 2;
                 &base_tokens[start..start + 1]
             };
-            let cell_value = if let Some(cell) = sheet.get_cell((col_num, row_num)) {
+            let cell_value = if let Some(cell) = self
+                .sheet
+                .get_cell((col_num, row_num))
+                .filter(|c| !c.get_raw_value().is_empty())
+            {
                 cell.get_raw_value().to_string()
             } else {
                 continue;
@@ -239,7 +352,7 @@ impl ImportSpreadsheet {
                 node_name: node_name.to_string(),
                 anno_ns: anno_key.ns.to_string(),
                 anno_name: anno_key.name.to_string(),
-                anno_value: cell_value,
+                anno_value: cell_value.trim().to_string(),
             })?;
             for tok_id in covered_tokens {
                 update.add_event(UpdateEvent::AddEdge {
@@ -266,71 +379,13 @@ impl ImportSpreadsheet {
         Ok(())
     }
 
-    fn import_metasheet(
-        &self,
-        doc_path: &str,
-        sheet: &umya_spreadsheet::Worksheet,
-        update: &mut GraphUpdate,
-    ) -> Result<(), AnnattoError> {
-        let max_row_num = sheet.get_highest_row(); // 1-based
-        for row_num in (self.metasheet_skip_rows + 1)..max_row_num + 1 {
-            let entries = sheet.get_collection_by_row(&row_num); // sorting not necessarily by col number
-            let entry_map = entries
-                .into_iter()
-                .map(|c| (*c.get_coordinate().get_col_num(), c))
-                .collect::<BTreeMap<u32, &Cell>>();
-            if let Some(key_cell) = entry_map.get(&1) {
-                if let Some(value_cell) = entry_map.get(&2) {
-                    let kv = key_cell.get_value();
-                    let key = kv.trim();
-                    if !key.is_empty() {
-                        let (ns, name) = split_qname(key);
-                        let vv = value_cell.get_value();
-                        let value = vv.trim();
-                        update.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: doc_path.to_string(),
-                            anno_ns: ns.map_or("".to_string(), str::to_string),
-                            anno_name: name.to_string(),
-                            anno_value: value.to_string(),
-                        })?;
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
-
-    fn import_workbook(
-        &self,
-        update: &mut GraphUpdate,
-        path: &Path,
-        doc_node_name: &str,
-        reverse_col_map: &BTreeMap<String, String>,
-        progress_reporter: &ProgressReporter,
-    ) -> Result<(), AnnattoError> {
-        let book = umya_spreadsheet::reader::xlsx::read(path)?;
-        if let Some(sheet) = sheet_from_address(&book, &self.datasheet, Some(0)) {
-            self.import_datasheet(
-                doc_node_name,
-                sheet,
-                reverse_col_map,
-                update,
-                progress_reporter,
-            )?;
-        }
-        if let Some(sheet) = sheet_from_address(&book, &self.metasheet, None) {
-            self.import_metasheet(doc_node_name, sheet, update)?;
-        }
-        Ok(())
-    }
-
     fn build_tokens(
+        &self,
         update: &mut GraphUpdate,
         doc_node_name: &str,
-        n: usize,
     ) -> Result<Vec<String>, anyhow::Error> {
-        let mut base_tokens = Vec::new();
-        for i in 2..n + 2 {
+        let mut base_tokens = Vec::with_capacity(self.max_row as usize);
+        for i in 2..=self.max_row as usize {
             // keep spreadsheet row indices in token names for easier debugging
             let tok_id = format!("{doc_node_name}#row{}", i);
             update.add_event(UpdateEvent::AddNode {
@@ -375,26 +430,40 @@ impl ImportSpreadsheet {
     }
 
     fn collect_merged_cells(
-        sheet: &umya_spreadsheet::Worksheet,
+        &self,
+        col_names: Vec<&str>,
         progress: &ProgressReporter,
     ) -> Result<BTreeMap<u32, Vec<(u32, u32)>>, anyhow::Error> {
         let mut cell_map: BTreeMap<u32, Vec<(u32, u32)>> = BTreeMap::default();
-        for rng in sheet.get_merge_cells() {
+        for rng in self.sheet.get_merge_cells() {
             if let (Some(start_col), Some(end_col), Some(start_row), Some(end_row)) = (
                 rng.get_coordinate_start_col(),
                 rng.get_coordinate_end_col(),
                 rng.get_coordinate_start_row(),
                 rng.get_coordinate_end_row(),
             ) {
-                if start_col == end_col {
-                    progress.warn(
-                        format!(
-                            "Merged cell with multiple columns will be ignored: {:?}",
-                            rng
-                        )
-                        .as_str(),
-                    )?;
-                    continue;
+                if start_col != end_col {
+                    if (*start_col.get_num()..=*end_col.get_num()).any(|c| {
+                        if let Some(cell) = self.sheet.get_cell((c, 1)) {
+                            col_names.contains(&cell.get_raw_value().to_string().as_str())
+                        } else {
+                            false
+                        }
+                    }) {
+                        // At least one of the affected columns of the multi-column merge cell
+                        // is a column to be imported, which is forbidden
+                        // (this way the user can still import sheet by omitting dirty columns in the column map)
+                        bail!("A merge cell affects at least one column that is set to be imported: {:?}", rng);
+                    } else {
+                        progress.warn(
+                            format!(
+                                "Merged cell with multiple columns will be ignored: {:?}",
+                                rng
+                            )
+                            .as_str(),
+                        )?;
+                        continue;
+                    }
                 }
                 cell_map
                     .entry(*start_col.get_num())
@@ -407,6 +476,33 @@ impl ImportSpreadsheet {
 }
 
 const FILE_EXTENSIONS: [&str; 1] = ["xlsx"];
+
+impl ImportSpreadsheet {
+    fn import_workbook(
+        &self,
+        update: &mut GraphUpdate,
+        path: &Path,
+        doc_node_name: &str,
+        reverse_col_map: &BTreeMap<String, String>,
+        progress_reporter: &ProgressReporter,
+    ) -> Result<(), AnnattoError> {
+        let book = umya_spreadsheet::reader::xlsx::read(path)?;
+        if let Some(sheet) = sheet_from_address(&book, &self.datasheet, Some(0)) {
+            let mapper = DatasheetMapper::new(
+                sheet,
+                &self.column_map,
+                self.fallback.clone(),
+                &self.token_annos,
+            )?;
+            mapper.import_datasheet(doc_node_name, reverse_col_map, update, progress_reporter)?;
+        }
+        if let Some(sheet) = sheet_from_address(&book, &self.metasheet, None) {
+            let mapper = MetasheetMapper::new(sheet, self.metasheet_skip_rows)?;
+            mapper.import_as_metadata(doc_node_name, update)?;
+        }
+        Ok(())
+    }
+}
 
 impl Importer for ImportSpreadsheet {
     fn import_corpus(
@@ -461,11 +557,42 @@ mod tests {
         AnnotationGraph, CorpusStorage,
     };
     use graphannis_core::{annostorage::ValueSearch, types::AnnoKey};
+    use insta::assert_snapshot;
     use tempfile::tempdir;
 
-    use crate::{workflow::Workflow, ImporterStep, ReadFrom};
+    use crate::{
+        exporter::graphml::GraphMLExporter, test_util::export_to_string, workflow::Workflow,
+        ImporterStep, ReadFrom,
+    };
 
     use super::*;
+
+    #[test]
+    fn snapshot_test() {
+        let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
+        let config = "column_map = { dipl = [\"sentence\", \"seg\"], norm = [\"pos\", \"lemma\"] }";
+        let m: Result<ImportSpreadsheet, _> = toml::from_str(config);
+        assert!(m.is_ok(), "Could not deserialize config: {:?}", m.err());
+        let import = m.unwrap();
+        let u = import.import_corpus(
+            path,
+            StepID {
+                module_name: "test_xslx_import".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(u.is_ok(), "Failed to import: {:?}", u.err());
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut u.unwrap(), |_| {}).is_ok());
+        let e: Result<GraphMLExporter, _> = toml::from_str("stable_order = true");
+        assert!(e.is_ok(), "Could not deserialize exporter: {:?}", e.err());
+        let actual = export_to_string(&graph, e.unwrap());
+        assert!(actual.is_ok(), "Could not export: {:?}", actual.err());
+        assert_snapshot!(actual.unwrap());
+    }
 
     fn run_spreadsheet_import(
         on_disk: bool,
@@ -539,7 +666,7 @@ mod tests {
             ("annis:doc=\"test_file\"", 1),
             ("dipl .dipl dipl .dipl dipl .dipl dipl", 1),
             ("norm .norm norm .norm norm .norm norm", 1),
-            ("annis:node_name=/.*#t.*/ @ annis:doc", 6),
+            ("annis:node_name=/.*#row.*/ @ annis:doc", 6),
         ];
         let corpus_name = "current";
         let tmp_dir = tempdir()?;
@@ -639,7 +766,7 @@ mod tests {
         let importer = ImportSpreadsheet {
             column_map: col_map,
             fallback: None,
-            datasheet: None,
+            datasheet: Some(SheetAddress::Name("Sheet1".to_string())),
             metasheet: None,
             token_annos: vec![],
             metasheet_skip_rows: 0,
@@ -652,7 +779,7 @@ mod tests {
         };
         let (sender, receiver) = mpsc::channel();
         let import = import_step.execute(Some(sender));
-        assert!(import.is_ok());
+        assert!(import.is_ok(), "Error occurred: {:?}", import.err());
         assert_ne!(receiver.into_iter().count(), 0);
     }
 
