@@ -265,6 +265,12 @@ impl ImportWhisper {
                 anno_name: "layer".to_string(),
                 anno_value: "default_layer".to_string(),
             })?;
+            update.add_event(UpdateEvent::AddNodeLabel {
+                node_name: span.to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "time".to_string(),
+                anno_value: format!("{}-{}", segment.start, segment.end),
+            })?;
             update.add_event(UpdateEvent::AddEdge {
                 source_node: span.to_string(),
                 target_node: node_name.to_string(),
