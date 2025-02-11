@@ -11,7 +11,8 @@ expression: actual.unwrap()
     <key id="k3" for="node" attr.name="annis::layer" attr.type="string"/>
     <key id="k4" for="node" attr.name="annis::node_type" attr.type="string"/>
     <key id="k5" for="node" attr.name="whisper::text" attr.type="string"/>
-    <key id="k6" for="node" attr.name="annis::tok" attr.type="string"/>
+    <key id="k6" for="node" attr.name="annis::time" attr.type="string"/>
+    <key id="k7" for="node" attr.name="annis::tok" attr.type="string"/>
     <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
         <data key="k0"><![CDATA[
 # configure visualizations here
@@ -31,17 +32,20 @@ expression: actual.unwrap()
         <node id="whisper/example#s0">
             <data key="k3">default_layer</data>
             <data key="k4">node</data>
-            <data key="k6">Hallo, ich würde für den Fall F16 aussagen wollen.</data>
+            <data key="k6">0-6.58</data>
+            <data key="k7">Hallo, ich würde für den Fall F16 aussagen wollen.</data>
         </node>
         <node id="whisper/example#s1">
             <data key="k3">default_layer</data>
             <data key="k4">node</data>
-            <data key="k6">Und zwar war ich am Montag um 15.30 Uhr an der ...</data>
+            <data key="k6">7.28-11.94</data>
+            <data key="k7">Und zwar war ich am Montag um 15.30 Uhr an der ...</data>
         </node>
         <node id="whisper/example#s2">
             <data key="k3">default_layer</data>
             <data key="k4">node</data>
-            <data key="k6">und habe dann zufällig mitbekommen, wie das Unfall entstanden ist.</data>
+            <data key="k6">11.94-19.32</data>
+            <data key="k7">und habe dann zufällig mitbekommen, wie das Unfall entstanden ist.</data>
         </node>
         <edge id="e0" source="whisper/example#s0" target="whisper/example#s1" label="Ordering/annis/">
         </edge>
