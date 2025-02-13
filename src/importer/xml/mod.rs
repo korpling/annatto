@@ -152,6 +152,15 @@ impl ImportXML {
                                 component_name: "".to_string(),
                             })?;
                         }
+                        if let Some((dom_node, _)) = node_stack.last() {
+                            update.add_event(UpdateEvent::AddEdge {
+                                source_node: dom_node.to_string(),
+                                target_node: node_name.to_string(),
+                                layer: ANNIS_NS.to_string(),
+                                component_type: AnnotationComponentType::Dominance.to_string(),
+                                component_name: "".to_string(),
+                            })?;
+                        }
                         if let Some(last_string) = text_stack.last_mut() {
                             last_string.push(token);
                         }
