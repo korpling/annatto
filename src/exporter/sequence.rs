@@ -54,7 +54,7 @@ pub struct ExportSequence {
     /// Example:
     /// ```toml
     /// [export.config]
-    /// component = { ctype = "Pointing", layer = "", "coreference" }
+    /// component = { ctype = "Pointing", layer = "", name = "coreference" }
     /// ```
     component: AnnotationComponent,
     /// The annotation key that determines the values in the exported sequence (annis::tok by default).
