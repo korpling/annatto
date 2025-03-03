@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- enable import of `xml` to represent stand-off data
+
 ## [0.24.0] - 2025-02-07
 
 ### Added

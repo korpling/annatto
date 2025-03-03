@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<document>
+	<text>This is an<br/>example</text>
+	<tokens>
+		<token id="t1" text="This" lemma="this" pos="PRON"/>
+		<token id="t2" text="is" lemma="be" pos="VERB"/>
+		<token id="t3" text="an" lemma="a" pos="DET"/>
+		<token id="t4" text="example" lemma="example" pos="NOUN"/>
+	</tokens>
+	<constituents>
+		<constituent id="subj" members="t1"/>
+		<constituent id="ip" members="t2 t3 t4"/>
+		<constituent id="s" members="subj ip"/>
+	</constituents>
+</document>
