@@ -31,7 +31,7 @@ name is empty.
 Example:
 ```toml
 [export.config]
-component = { ctype = "Pointing", layer = "", "coreference" }
+component = { ctype = "Pointing", layer = "", name = "coreference" }
 ```
 
 ###  anno
