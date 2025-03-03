@@ -1,0 +1,863 @@
+---
+source: src/importer/xml/tests.rs
+expression: actual
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="node" attr.name="xml::br" attr.type="string"/>
+    <key id="k1" for="node" attr.name="xml::constituent" attr.type="string"/>
+    <key id="k2" for="node" attr.name="xml::constituents" attr.type="string"/>
+    <key id="k3" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k4" for="node" attr.name="xml::document" attr.type="string"/>
+    <key id="k5" for="node" attr.name="xml::id" attr.type="string"/>
+    <key id="k6" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k7" for="node" attr.name="xml::lemma" attr.type="string"/>
+    <key id="k8" for="node" attr.name="xml::members" attr.type="string"/>
+    <key id="k9" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k10" for="node" attr.name="xml::pos" attr.type="string"/>
+    <key id="k11" for="node" attr.name="xml::text" attr.type="string"/>
+    <key id="k12" for="node" attr.name="annis::tok" attr.type="string"/>
+    <key id="k13" for="node" attr.name="xml::token" attr.type="string"/>
+    <key id="k14" for="node" attr.name="xml::tokens" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <node id="standoff">
+            <data key="k9">corpus</data>
+        </node>
+        <node id="standoff/test_file">
+            <data key="k3">test_file</data>
+            <data key="k9">corpus</data>
+        </node>
+        <node id="standoff/test_file#document1">
+            <data key="k4">This is anexample</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#text1">
+            <data key="k11">This is anexample</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#1">
+            <data key="k12">T</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#2">
+            <data key="k12">h</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#3">
+            <data key="k12">i</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#4">
+            <data key="k12">s</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#5">
+            <data key="k12"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#6">
+            <data key="k12">i</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#7">
+            <data key="k12">s</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#8">
+            <data key="k12"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#9">
+            <data key="k12">a</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#10">
+            <data key="k12">n</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#br1">
+            <data key="k0"></data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#11">
+            <data key="k12"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#12">
+            <data key="k12">e</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#13">
+            <data key="k12">x</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#14">
+            <data key="k12">a</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#15">
+            <data key="k12">m</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#16">
+            <data key="k12">p</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#17">
+            <data key="k12">l</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#18">
+            <data key="k12">e</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#19">
+            <data key="k12"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#tokens1">
+            <data key="k14"></data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#token1">
+            <data key="k10">PRON</data>
+            <data key="k11">This</data>
+            <data key="k13"></data>
+            <data key="k5">t1</data>
+            <data key="k6">default_layer</data>
+            <data key="k7">this</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#20">
+            <data key="k12">T</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#21">
+            <data key="k12">h</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#22">
+            <data key="k12">i</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#23">
+            <data key="k12">s</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#24">
+            <data key="k12"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#token2">
+            <data key="k10">VERB</data>
+            <data key="k11">is</data>
+            <data key="k13"></data>
+            <data key="k5">t2</data>
+            <data key="k6">default_layer</data>
+            <data key="k7">be</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#25">
+            <data key="k12">i</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#26">
+            <data key="k12">s</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#27">
+            <data key="k12"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#token3">
+            <data key="k10">DET</data>
+            <data key="k11">an</data>
+            <data key="k13"></data>
+            <data key="k5">t3</data>
+            <data key="k6">default_layer</data>
+            <data key="k7">a</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#28">
+            <data key="k12">a</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#29">
+            <data key="k12">n</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#30">
+            <data key="k12"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#token4">
+            <data key="k10">NOUN</data>
+            <data key="k11">example</data>
+            <data key="k13"></data>
+            <data key="k5">t4</data>
+            <data key="k6">default_layer</data>
+            <data key="k7">example</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#31">
+            <data key="k12">e</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#32">
+            <data key="k12">x</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#33">
+            <data key="k12">a</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#34">
+            <data key="k12">m</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#35">
+            <data key="k12">p</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#36">
+            <data key="k12">l</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#37">
+            <data key="k12">e</data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#38">
+            <data key="k12"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#39">
+            <data key="k12"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#constituents1">
+            <data key="k2"></data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#constituent1">
+            <data key="k1"></data>
+            <data key="k5">subj</data>
+            <data key="k6">default_layer</data>
+            <data key="k8">t1</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#40">
+            <data key="k12"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#constituent2">
+            <data key="k1"></data>
+            <data key="k5">ip</data>
+            <data key="k6">default_layer</data>
+            <data key="k8">t2 t3 t4</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#41">
+            <data key="k12"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#constituent3">
+            <data key="k1"></data>
+            <data key="k5">s</data>
+            <data key="k6">default_layer</data>
+            <data key="k8">subj ip</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#42">
+            <data key="k12"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#43">
+            <data key="k12"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <node id="standoff/test_file#44">
+            <data key="k12"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k9">node</data>
+        </node>
+        <edge id="e0" source="standoff/test_file#document1" target="standoff/test_file#1" label="Coverage/xml/">
+        </edge>
+        <edge id="e1" source="standoff/test_file#document1" target="standoff/test_file#2" label="Coverage/xml/">
+        </edge>
+        <edge id="e2" source="standoff/test_file#document1" target="standoff/test_file#3" label="Coverage/xml/">
+        </edge>
+        <edge id="e3" source="standoff/test_file#document1" target="standoff/test_file#4" label="Coverage/xml/">
+        </edge>
+        <edge id="e4" source="standoff/test_file#document1" target="standoff/test_file#5" label="Coverage/xml/">
+        </edge>
+        <edge id="e5" source="standoff/test_file#document1" target="standoff/test_file#6" label="Coverage/xml/">
+        </edge>
+        <edge id="e6" source="standoff/test_file#document1" target="standoff/test_file#7" label="Coverage/xml/">
+        </edge>
+        <edge id="e7" source="standoff/test_file#document1" target="standoff/test_file#8" label="Coverage/xml/">
+        </edge>
+        <edge id="e8" source="standoff/test_file#document1" target="standoff/test_file#9" label="Coverage/xml/">
+        </edge>
+        <edge id="e9" source="standoff/test_file#document1" target="standoff/test_file#10" label="Coverage/xml/">
+        </edge>
+        <edge id="e10" source="standoff/test_file#document1" target="standoff/test_file#11" label="Coverage/xml/">
+        </edge>
+        <edge id="e11" source="standoff/test_file#document1" target="standoff/test_file#12" label="Coverage/xml/">
+        </edge>
+        <edge id="e12" source="standoff/test_file#document1" target="standoff/test_file#13" label="Coverage/xml/">
+        </edge>
+        <edge id="e13" source="standoff/test_file#document1" target="standoff/test_file#14" label="Coverage/xml/">
+        </edge>
+        <edge id="e14" source="standoff/test_file#document1" target="standoff/test_file#15" label="Coverage/xml/">
+        </edge>
+        <edge id="e15" source="standoff/test_file#document1" target="standoff/test_file#16" label="Coverage/xml/">
+        </edge>
+        <edge id="e16" source="standoff/test_file#document1" target="standoff/test_file#17" label="Coverage/xml/">
+        </edge>
+        <edge id="e17" source="standoff/test_file#document1" target="standoff/test_file#18" label="Coverage/xml/">
+        </edge>
+        <edge id="e18" source="standoff/test_file#document1" target="standoff/test_file#19" label="Coverage/xml/">
+        </edge>
+        <edge id="e19" source="standoff/test_file#document1" target="standoff/test_file#20" label="Coverage/xml/">
+        </edge>
+        <edge id="e20" source="standoff/test_file#document1" target="standoff/test_file#21" label="Coverage/xml/">
+        </edge>
+        <edge id="e21" source="standoff/test_file#document1" target="standoff/test_file#22" label="Coverage/xml/">
+        </edge>
+        <edge id="e22" source="standoff/test_file#document1" target="standoff/test_file#23" label="Coverage/xml/">
+        </edge>
+        <edge id="e23" source="standoff/test_file#document1" target="standoff/test_file#24" label="Coverage/xml/">
+        </edge>
+        <edge id="e24" source="standoff/test_file#document1" target="standoff/test_file#25" label="Coverage/xml/">
+        </edge>
+        <edge id="e25" source="standoff/test_file#document1" target="standoff/test_file#26" label="Coverage/xml/">
+        </edge>
+        <edge id="e26" source="standoff/test_file#document1" target="standoff/test_file#27" label="Coverage/xml/">
+        </edge>
+        <edge id="e27" source="standoff/test_file#document1" target="standoff/test_file#28" label="Coverage/xml/">
+        </edge>
+        <edge id="e28" source="standoff/test_file#document1" target="standoff/test_file#29" label="Coverage/xml/">
+        </edge>
+        <edge id="e29" source="standoff/test_file#document1" target="standoff/test_file#30" label="Coverage/xml/">
+        </edge>
+        <edge id="e30" source="standoff/test_file#document1" target="standoff/test_file#31" label="Coverage/xml/">
+        </edge>
+        <edge id="e31" source="standoff/test_file#document1" target="standoff/test_file#32" label="Coverage/xml/">
+        </edge>
+        <edge id="e32" source="standoff/test_file#document1" target="standoff/test_file#33" label="Coverage/xml/">
+        </edge>
+        <edge id="e33" source="standoff/test_file#document1" target="standoff/test_file#34" label="Coverage/xml/">
+        </edge>
+        <edge id="e34" source="standoff/test_file#document1" target="standoff/test_file#35" label="Coverage/xml/">
+        </edge>
+        <edge id="e35" source="standoff/test_file#document1" target="standoff/test_file#36" label="Coverage/xml/">
+        </edge>
+        <edge id="e36" source="standoff/test_file#document1" target="standoff/test_file#37" label="Coverage/xml/">
+        </edge>
+        <edge id="e37" source="standoff/test_file#document1" target="standoff/test_file#38" label="Coverage/xml/">
+        </edge>
+        <edge id="e38" source="standoff/test_file#document1" target="standoff/test_file#39" label="Coverage/xml/">
+        </edge>
+        <edge id="e39" source="standoff/test_file#document1" target="standoff/test_file#40" label="Coverage/xml/">
+        </edge>
+        <edge id="e40" source="standoff/test_file#document1" target="standoff/test_file#41" label="Coverage/xml/">
+        </edge>
+        <edge id="e41" source="standoff/test_file#document1" target="standoff/test_file#42" label="Coverage/xml/">
+        </edge>
+        <edge id="e42" source="standoff/test_file#document1" target="standoff/test_file#43" label="Coverage/xml/">
+        </edge>
+        <edge id="e43" source="standoff/test_file#document1" target="standoff/test_file#44" label="Coverage/xml/">
+        </edge>
+        <edge id="e44" source="standoff/test_file#text1" target="standoff/test_file#1" label="Coverage/xml/">
+        </edge>
+        <edge id="e45" source="standoff/test_file#text1" target="standoff/test_file#2" label="Coverage/xml/">
+        </edge>
+        <edge id="e46" source="standoff/test_file#text1" target="standoff/test_file#3" label="Coverage/xml/">
+        </edge>
+        <edge id="e47" source="standoff/test_file#text1" target="standoff/test_file#4" label="Coverage/xml/">
+        </edge>
+        <edge id="e48" source="standoff/test_file#text1" target="standoff/test_file#5" label="Coverage/xml/">
+        </edge>
+        <edge id="e49" source="standoff/test_file#text1" target="standoff/test_file#6" label="Coverage/xml/">
+        </edge>
+        <edge id="e50" source="standoff/test_file#text1" target="standoff/test_file#7" label="Coverage/xml/">
+        </edge>
+        <edge id="e51" source="standoff/test_file#text1" target="standoff/test_file#8" label="Coverage/xml/">
+        </edge>
+        <edge id="e52" source="standoff/test_file#text1" target="standoff/test_file#9" label="Coverage/xml/">
+        </edge>
+        <edge id="e53" source="standoff/test_file#text1" target="standoff/test_file#10" label="Coverage/xml/">
+        </edge>
+        <edge id="e54" source="standoff/test_file#text1" target="standoff/test_file#11" label="Coverage/xml/">
+        </edge>
+        <edge id="e55" source="standoff/test_file#text1" target="standoff/test_file#12" label="Coverage/xml/">
+        </edge>
+        <edge id="e56" source="standoff/test_file#text1" target="standoff/test_file#13" label="Coverage/xml/">
+        </edge>
+        <edge id="e57" source="standoff/test_file#text1" target="standoff/test_file#14" label="Coverage/xml/">
+        </edge>
+        <edge id="e58" source="standoff/test_file#text1" target="standoff/test_file#15" label="Coverage/xml/">
+        </edge>
+        <edge id="e59" source="standoff/test_file#text1" target="standoff/test_file#16" label="Coverage/xml/">
+        </edge>
+        <edge id="e60" source="standoff/test_file#text1" target="standoff/test_file#17" label="Coverage/xml/">
+        </edge>
+        <edge id="e61" source="standoff/test_file#text1" target="standoff/test_file#18" label="Coverage/xml/">
+        </edge>
+        <edge id="e62" source="standoff/test_file#text1" target="standoff/test_file#19" label="Coverage/xml/">
+        </edge>
+        <edge id="e63" source="standoff/test_file#br1" target="standoff/test_file#11" label="Coverage/xml/">
+        </edge>
+        <edge id="e64" source="standoff/test_file#tokens1" target="standoff/test_file#20" label="Coverage/xml/">
+        </edge>
+        <edge id="e65" source="standoff/test_file#tokens1" target="standoff/test_file#21" label="Coverage/xml/">
+        </edge>
+        <edge id="e66" source="standoff/test_file#tokens1" target="standoff/test_file#22" label="Coverage/xml/">
+        </edge>
+        <edge id="e67" source="standoff/test_file#tokens1" target="standoff/test_file#23" label="Coverage/xml/">
+        </edge>
+        <edge id="e68" source="standoff/test_file#tokens1" target="standoff/test_file#24" label="Coverage/xml/">
+        </edge>
+        <edge id="e69" source="standoff/test_file#tokens1" target="standoff/test_file#25" label="Coverage/xml/">
+        </edge>
+        <edge id="e70" source="standoff/test_file#tokens1" target="standoff/test_file#26" label="Coverage/xml/">
+        </edge>
+        <edge id="e71" source="standoff/test_file#tokens1" target="standoff/test_file#27" label="Coverage/xml/">
+        </edge>
+        <edge id="e72" source="standoff/test_file#tokens1" target="standoff/test_file#28" label="Coverage/xml/">
+        </edge>
+        <edge id="e73" source="standoff/test_file#tokens1" target="standoff/test_file#29" label="Coverage/xml/">
+        </edge>
+        <edge id="e74" source="standoff/test_file#tokens1" target="standoff/test_file#30" label="Coverage/xml/">
+        </edge>
+        <edge id="e75" source="standoff/test_file#tokens1" target="standoff/test_file#31" label="Coverage/xml/">
+        </edge>
+        <edge id="e76" source="standoff/test_file#tokens1" target="standoff/test_file#32" label="Coverage/xml/">
+        </edge>
+        <edge id="e77" source="standoff/test_file#tokens1" target="standoff/test_file#33" label="Coverage/xml/">
+        </edge>
+        <edge id="e78" source="standoff/test_file#tokens1" target="standoff/test_file#34" label="Coverage/xml/">
+        </edge>
+        <edge id="e79" source="standoff/test_file#tokens1" target="standoff/test_file#35" label="Coverage/xml/">
+        </edge>
+        <edge id="e80" source="standoff/test_file#tokens1" target="standoff/test_file#36" label="Coverage/xml/">
+        </edge>
+        <edge id="e81" source="standoff/test_file#tokens1" target="standoff/test_file#37" label="Coverage/xml/">
+        </edge>
+        <edge id="e82" source="standoff/test_file#tokens1" target="standoff/test_file#38" label="Coverage/xml/">
+        </edge>
+        <edge id="e83" source="standoff/test_file#tokens1" target="standoff/test_file#39" label="Coverage/xml/">
+        </edge>
+        <edge id="e84" source="standoff/test_file#token1" target="standoff/test_file#20" label="Coverage/xml/">
+        </edge>
+        <edge id="e85" source="standoff/test_file#token1" target="standoff/test_file#21" label="Coverage/xml/">
+        </edge>
+        <edge id="e86" source="standoff/test_file#token1" target="standoff/test_file#22" label="Coverage/xml/">
+        </edge>
+        <edge id="e87" source="standoff/test_file#token1" target="standoff/test_file#23" label="Coverage/xml/">
+        </edge>
+        <edge id="e88" source="standoff/test_file#token1" target="standoff/test_file#24" label="Coverage/xml/">
+        </edge>
+        <edge id="e89" source="standoff/test_file#token2" target="standoff/test_file#25" label="Coverage/xml/">
+        </edge>
+        <edge id="e90" source="standoff/test_file#token2" target="standoff/test_file#26" label="Coverage/xml/">
+        </edge>
+        <edge id="e91" source="standoff/test_file#token2" target="standoff/test_file#27" label="Coverage/xml/">
+        </edge>
+        <edge id="e92" source="standoff/test_file#token3" target="standoff/test_file#28" label="Coverage/xml/">
+        </edge>
+        <edge id="e93" source="standoff/test_file#token3" target="standoff/test_file#29" label="Coverage/xml/">
+        </edge>
+        <edge id="e94" source="standoff/test_file#token3" target="standoff/test_file#30" label="Coverage/xml/">
+        </edge>
+        <edge id="e95" source="standoff/test_file#token4" target="standoff/test_file#31" label="Coverage/xml/">
+        </edge>
+        <edge id="e96" source="standoff/test_file#token4" target="standoff/test_file#32" label="Coverage/xml/">
+        </edge>
+        <edge id="e97" source="standoff/test_file#token4" target="standoff/test_file#33" label="Coverage/xml/">
+        </edge>
+        <edge id="e98" source="standoff/test_file#token4" target="standoff/test_file#34" label="Coverage/xml/">
+        </edge>
+        <edge id="e99" source="standoff/test_file#token4" target="standoff/test_file#35" label="Coverage/xml/">
+        </edge>
+        <edge id="e100" source="standoff/test_file#token4" target="standoff/test_file#36" label="Coverage/xml/">
+        </edge>
+        <edge id="e101" source="standoff/test_file#token4" target="standoff/test_file#37" label="Coverage/xml/">
+        </edge>
+        <edge id="e102" source="standoff/test_file#token4" target="standoff/test_file#38" label="Coverage/xml/">
+        </edge>
+        <edge id="e103" source="standoff/test_file#constituents1" target="standoff/test_file#40" label="Coverage/xml/">
+        </edge>
+        <edge id="e104" source="standoff/test_file#constituents1" target="standoff/test_file#41" label="Coverage/xml/">
+        </edge>
+        <edge id="e105" source="standoff/test_file#constituents1" target="standoff/test_file#42" label="Coverage/xml/">
+        </edge>
+        <edge id="e106" source="standoff/test_file#constituents1" target="standoff/test_file#43" label="Coverage/xml/">
+        </edge>
+        <edge id="e107" source="standoff/test_file#constituent1" target="standoff/test_file#40" label="Coverage/xml/">
+        </edge>
+        <edge id="e108" source="standoff/test_file#constituent2" target="standoff/test_file#41" label="Coverage/xml/">
+        </edge>
+        <edge id="e109" source="standoff/test_file#constituent3" target="standoff/test_file#42" label="Coverage/xml/">
+        </edge>
+        <edge id="e110" source="standoff/test_file#document1" target="standoff/test_file#44" label="Dominance/annis/">
+        </edge>
+        <edge id="e111" source="standoff/test_file#text1" target="standoff/test_file#1" label="Dominance/annis/">
+        </edge>
+        <edge id="e112" source="standoff/test_file#text1" target="standoff/test_file#2" label="Dominance/annis/">
+        </edge>
+        <edge id="e113" source="standoff/test_file#text1" target="standoff/test_file#3" label="Dominance/annis/">
+        </edge>
+        <edge id="e114" source="standoff/test_file#text1" target="standoff/test_file#4" label="Dominance/annis/">
+        </edge>
+        <edge id="e115" source="standoff/test_file#text1" target="standoff/test_file#5" label="Dominance/annis/">
+        </edge>
+        <edge id="e116" source="standoff/test_file#text1" target="standoff/test_file#6" label="Dominance/annis/">
+        </edge>
+        <edge id="e117" source="standoff/test_file#text1" target="standoff/test_file#7" label="Dominance/annis/">
+        </edge>
+        <edge id="e118" source="standoff/test_file#text1" target="standoff/test_file#8" label="Dominance/annis/">
+        </edge>
+        <edge id="e119" source="standoff/test_file#text1" target="standoff/test_file#9" label="Dominance/annis/">
+        </edge>
+        <edge id="e120" source="standoff/test_file#text1" target="standoff/test_file#10" label="Dominance/annis/">
+        </edge>
+        <edge id="e121" source="standoff/test_file#text1" target="standoff/test_file#12" label="Dominance/annis/">
+        </edge>
+        <edge id="e122" source="standoff/test_file#text1" target="standoff/test_file#13" label="Dominance/annis/">
+        </edge>
+        <edge id="e123" source="standoff/test_file#text1" target="standoff/test_file#14" label="Dominance/annis/">
+        </edge>
+        <edge id="e124" source="standoff/test_file#text1" target="standoff/test_file#15" label="Dominance/annis/">
+        </edge>
+        <edge id="e125" source="standoff/test_file#text1" target="standoff/test_file#16" label="Dominance/annis/">
+        </edge>
+        <edge id="e126" source="standoff/test_file#text1" target="standoff/test_file#17" label="Dominance/annis/">
+        </edge>
+        <edge id="e127" source="standoff/test_file#text1" target="standoff/test_file#18" label="Dominance/annis/">
+        </edge>
+        <edge id="e128" source="standoff/test_file#text1" target="standoff/test_file#19" label="Dominance/annis/">
+        </edge>
+        <edge id="e129" source="standoff/test_file#br1" target="standoff/test_file#11" label="Dominance/annis/">
+        </edge>
+        <edge id="e130" source="standoff/test_file#tokens1" target="standoff/test_file#39" label="Dominance/annis/">
+        </edge>
+        <edge id="e131" source="standoff/test_file#token1" target="standoff/test_file#20" label="Dominance/annis/">
+        </edge>
+        <edge id="e132" source="standoff/test_file#token1" target="standoff/test_file#21" label="Dominance/annis/">
+        </edge>
+        <edge id="e133" source="standoff/test_file#token1" target="standoff/test_file#22" label="Dominance/annis/">
+        </edge>
+        <edge id="e134" source="standoff/test_file#token1" target="standoff/test_file#23" label="Dominance/annis/">
+        </edge>
+        <edge id="e135" source="standoff/test_file#token1" target="standoff/test_file#24" label="Dominance/annis/">
+        </edge>
+        <edge id="e136" source="standoff/test_file#token2" target="standoff/test_file#25" label="Dominance/annis/">
+        </edge>
+        <edge id="e137" source="standoff/test_file#token2" target="standoff/test_file#26" label="Dominance/annis/">
+        </edge>
+        <edge id="e138" source="standoff/test_file#token2" target="standoff/test_file#27" label="Dominance/annis/">
+        </edge>
+        <edge id="e139" source="standoff/test_file#token3" target="standoff/test_file#28" label="Dominance/annis/">
+        </edge>
+        <edge id="e140" source="standoff/test_file#token3" target="standoff/test_file#29" label="Dominance/annis/">
+        </edge>
+        <edge id="e141" source="standoff/test_file#token3" target="standoff/test_file#30" label="Dominance/annis/">
+        </edge>
+        <edge id="e142" source="standoff/test_file#token4" target="standoff/test_file#31" label="Dominance/annis/">
+        </edge>
+        <edge id="e143" source="standoff/test_file#token4" target="standoff/test_file#32" label="Dominance/annis/">
+        </edge>
+        <edge id="e144" source="standoff/test_file#token4" target="standoff/test_file#33" label="Dominance/annis/">
+        </edge>
+        <edge id="e145" source="standoff/test_file#token4" target="standoff/test_file#34" label="Dominance/annis/">
+        </edge>
+        <edge id="e146" source="standoff/test_file#token4" target="standoff/test_file#35" label="Dominance/annis/">
+        </edge>
+        <edge id="e147" source="standoff/test_file#token4" target="standoff/test_file#36" label="Dominance/annis/">
+        </edge>
+        <edge id="e148" source="standoff/test_file#token4" target="standoff/test_file#37" label="Dominance/annis/">
+        </edge>
+        <edge id="e149" source="standoff/test_file#token4" target="standoff/test_file#38" label="Dominance/annis/">
+        </edge>
+        <edge id="e150" source="standoff/test_file#constituents1" target="standoff/test_file#43" label="Dominance/annis/">
+        </edge>
+        <edge id="e151" source="standoff/test_file#constituent1" target="standoff/test_file#40" label="Dominance/annis/">
+        </edge>
+        <edge id="e152" source="standoff/test_file#constituent2" target="standoff/test_file#41" label="Dominance/annis/">
+        </edge>
+        <edge id="e153" source="standoff/test_file#constituent3" target="standoff/test_file#42" label="Dominance/annis/">
+        </edge>
+        <edge id="e154" source="standoff/test_file#document1" target="standoff/test_file#text1" label="Dominance/xml/">
+        </edge>
+        <edge id="e155" source="standoff/test_file#document1" target="standoff/test_file#tokens1" label="Dominance/xml/">
+        </edge>
+        <edge id="e156" source="standoff/test_file#document1" target="standoff/test_file#constituents1" label="Dominance/xml/">
+        </edge>
+        <edge id="e157" source="standoff/test_file#text1" target="standoff/test_file#br1" label="Dominance/xml/">
+        </edge>
+        <edge id="e158" source="standoff/test_file#tokens1" target="standoff/test_file#token1" label="Dominance/xml/">
+        </edge>
+        <edge id="e159" source="standoff/test_file#tokens1" target="standoff/test_file#token2" label="Dominance/xml/">
+        </edge>
+        <edge id="e160" source="standoff/test_file#tokens1" target="standoff/test_file#token3" label="Dominance/xml/">
+        </edge>
+        <edge id="e161" source="standoff/test_file#tokens1" target="standoff/test_file#token4" label="Dominance/xml/">
+        </edge>
+        <edge id="e162" source="standoff/test_file#constituents1" target="standoff/test_file#constituent1" label="Dominance/xml/">
+        </edge>
+        <edge id="e163" source="standoff/test_file#constituents1" target="standoff/test_file#constituent2" label="Dominance/xml/">
+        </edge>
+        <edge id="e164" source="standoff/test_file#constituents1" target="standoff/test_file#constituent3" label="Dominance/xml/">
+        </edge>
+        <edge id="e165" source="standoff/test_file#1" target="standoff/test_file#2" label="Ordering/annis/">
+        </edge>
+        <edge id="e166" source="standoff/test_file#2" target="standoff/test_file#3" label="Ordering/annis/">
+        </edge>
+        <edge id="e167" source="standoff/test_file#3" target="standoff/test_file#4" label="Ordering/annis/">
+        </edge>
+        <edge id="e168" source="standoff/test_file#4" target="standoff/test_file#5" label="Ordering/annis/">
+        </edge>
+        <edge id="e169" source="standoff/test_file#5" target="standoff/test_file#6" label="Ordering/annis/">
+        </edge>
+        <edge id="e170" source="standoff/test_file#6" target="standoff/test_file#7" label="Ordering/annis/">
+        </edge>
+        <edge id="e171" source="standoff/test_file#7" target="standoff/test_file#8" label="Ordering/annis/">
+        </edge>
+        <edge id="e172" source="standoff/test_file#8" target="standoff/test_file#9" label="Ordering/annis/">
+        </edge>
+        <edge id="e173" source="standoff/test_file#9" target="standoff/test_file#10" label="Ordering/annis/">
+        </edge>
+        <edge id="e174" source="standoff/test_file#10" target="standoff/test_file#11" label="Ordering/annis/">
+        </edge>
+        <edge id="e175" source="standoff/test_file#11" target="standoff/test_file#12" label="Ordering/annis/">
+        </edge>
+        <edge id="e176" source="standoff/test_file#12" target="standoff/test_file#13" label="Ordering/annis/">
+        </edge>
+        <edge id="e177" source="standoff/test_file#13" target="standoff/test_file#14" label="Ordering/annis/">
+        </edge>
+        <edge id="e178" source="standoff/test_file#14" target="standoff/test_file#15" label="Ordering/annis/">
+        </edge>
+        <edge id="e179" source="standoff/test_file#15" target="standoff/test_file#16" label="Ordering/annis/">
+        </edge>
+        <edge id="e180" source="standoff/test_file#16" target="standoff/test_file#17" label="Ordering/annis/">
+        </edge>
+        <edge id="e181" source="standoff/test_file#17" target="standoff/test_file#18" label="Ordering/annis/">
+        </edge>
+        <edge id="e182" source="standoff/test_file#18" target="standoff/test_file#19" label="Ordering/annis/">
+        </edge>
+        <edge id="e183" source="standoff/test_file#19" target="standoff/test_file#20" label="Ordering/annis/">
+        </edge>
+        <edge id="e184" source="standoff/test_file#20" target="standoff/test_file#21" label="Ordering/annis/">
+        </edge>
+        <edge id="e185" source="standoff/test_file#21" target="standoff/test_file#22" label="Ordering/annis/">
+        </edge>
+        <edge id="e186" source="standoff/test_file#22" target="standoff/test_file#23" label="Ordering/annis/">
+        </edge>
+        <edge id="e187" source="standoff/test_file#23" target="standoff/test_file#24" label="Ordering/annis/">
+        </edge>
+        <edge id="e188" source="standoff/test_file#24" target="standoff/test_file#25" label="Ordering/annis/">
+        </edge>
+        <edge id="e189" source="standoff/test_file#25" target="standoff/test_file#26" label="Ordering/annis/">
+        </edge>
+        <edge id="e190" source="standoff/test_file#26" target="standoff/test_file#27" label="Ordering/annis/">
+        </edge>
+        <edge id="e191" source="standoff/test_file#27" target="standoff/test_file#28" label="Ordering/annis/">
+        </edge>
+        <edge id="e192" source="standoff/test_file#28" target="standoff/test_file#29" label="Ordering/annis/">
+        </edge>
+        <edge id="e193" source="standoff/test_file#29" target="standoff/test_file#30" label="Ordering/annis/">
+        </edge>
+        <edge id="e194" source="standoff/test_file#30" target="standoff/test_file#31" label="Ordering/annis/">
+        </edge>
+        <edge id="e195" source="standoff/test_file#31" target="standoff/test_file#32" label="Ordering/annis/">
+        </edge>
+        <edge id="e196" source="standoff/test_file#32" target="standoff/test_file#33" label="Ordering/annis/">
+        </edge>
+        <edge id="e197" source="standoff/test_file#33" target="standoff/test_file#34" label="Ordering/annis/">
+        </edge>
+        <edge id="e198" source="standoff/test_file#34" target="standoff/test_file#35" label="Ordering/annis/">
+        </edge>
+        <edge id="e199" source="standoff/test_file#35" target="standoff/test_file#36" label="Ordering/annis/">
+        </edge>
+        <edge id="e200" source="standoff/test_file#36" target="standoff/test_file#37" label="Ordering/annis/">
+        </edge>
+        <edge id="e201" source="standoff/test_file#37" target="standoff/test_file#38" label="Ordering/annis/">
+        </edge>
+        <edge id="e202" source="standoff/test_file#38" target="standoff/test_file#39" label="Ordering/annis/">
+        </edge>
+        <edge id="e203" source="standoff/test_file#39" target="standoff/test_file#40" label="Ordering/annis/">
+        </edge>
+        <edge id="e204" source="standoff/test_file#40" target="standoff/test_file#41" label="Ordering/annis/">
+        </edge>
+        <edge id="e205" source="standoff/test_file#41" target="standoff/test_file#42" label="Ordering/annis/">
+        </edge>
+        <edge id="e206" source="standoff/test_file#42" target="standoff/test_file#43" label="Ordering/annis/">
+        </edge>
+        <edge id="e207" source="standoff/test_file#43" target="standoff/test_file#44" label="Ordering/annis/">
+        </edge>
+        <edge id="e208" source="standoff/test_file" target="standoff" label="PartOf/annis/">
+        </edge>
+        <edge id="e209" source="standoff/test_file#document1" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e210" source="standoff/test_file#text1" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e211" source="standoff/test_file#1" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e212" source="standoff/test_file#2" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e213" source="standoff/test_file#3" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e214" source="standoff/test_file#4" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e215" source="standoff/test_file#5" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e216" source="standoff/test_file#6" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e217" source="standoff/test_file#7" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e218" source="standoff/test_file#8" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e219" source="standoff/test_file#9" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e220" source="standoff/test_file#10" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e221" source="standoff/test_file#br1" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e222" source="standoff/test_file#11" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e223" source="standoff/test_file#12" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e224" source="standoff/test_file#13" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e225" source="standoff/test_file#14" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e226" source="standoff/test_file#15" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e227" source="standoff/test_file#16" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e228" source="standoff/test_file#17" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e229" source="standoff/test_file#18" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e230" source="standoff/test_file#19" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e231" source="standoff/test_file#tokens1" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e232" source="standoff/test_file#token1" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e233" source="standoff/test_file#20" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e234" source="standoff/test_file#21" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e235" source="standoff/test_file#22" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e236" source="standoff/test_file#23" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e237" source="standoff/test_file#24" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e238" source="standoff/test_file#token2" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e239" source="standoff/test_file#25" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e240" source="standoff/test_file#26" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e241" source="standoff/test_file#27" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e242" source="standoff/test_file#token3" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e243" source="standoff/test_file#28" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e244" source="standoff/test_file#29" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e245" source="standoff/test_file#30" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e246" source="standoff/test_file#token4" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e247" source="standoff/test_file#31" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e248" source="standoff/test_file#32" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e249" source="standoff/test_file#33" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e250" source="standoff/test_file#34" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e251" source="standoff/test_file#35" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e252" source="standoff/test_file#36" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e253" source="standoff/test_file#37" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e254" source="standoff/test_file#38" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e255" source="standoff/test_file#39" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e256" source="standoff/test_file#constituents1" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e257" source="standoff/test_file#constituent1" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e258" source="standoff/test_file#40" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e259" source="standoff/test_file#constituent2" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e260" source="standoff/test_file#41" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e261" source="standoff/test_file#constituent3" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e262" source="standoff/test_file#42" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e263" source="standoff/test_file#43" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e264" source="standoff/test_file#44" target="standoff/test_file" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>
