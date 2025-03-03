@@ -205,13 +205,13 @@ fn build_token(
         .entry("".to_string())
         .and_modify(|e| *e += 1)
         .or_insert(1);
-    let node_name = token_name(&doc_node_name, node_counts[""]);
+    let node_name = token_name(doc_node_name, node_counts[""]);
     let order_data = if node_counts[""] > 1 {
-        Some((token_name(&doc_node_name, node_counts[""] - 1), ""))
+        Some((token_name(doc_node_name, node_counts[""] - 1), ""))
     } else {
         None
     };
-    add_node(update, &doc_node_name, &node_name, order_data)?;
+    add_node(update, doc_node_name, &node_name, order_data)?;
     integrate_token(update, &node_name, token_value, node_stack)?;
     Ok(())
 }
