@@ -353,7 +353,7 @@ mod tests {
     };
 
     #[test]
-    fn sparse_to_full_fail() {
+    fn sparse_to_full_fuzzy() {
         let import_exmaralda = ImportEXMARaLDA::default();
         let import = import_exmaralda.import_corpus(
             Path::new("./tests/data/import/exmaralda/valid-sparse-timevalues/"),
@@ -384,7 +384,7 @@ mod tests {
             },
             None,
         );
-        assert!(fill_time.is_err());
+        assert!(fill_time.is_ok());
     }
 
     #[test]
