@@ -319,7 +319,7 @@ impl Exporter for ExportExmaralda {
                 .iter()
                 .filter(|((d, _), _)| d == doc_node_id)
                 .collect();
-            for ((_, tli_id), t) in &timeline {
+            for ((_, tli_id), t) in timeline.iter().sorted_by(|(_, ta), (_, tb)| ta.cmp(tb)) {
                 writer
                     .create_element("tli")
                     .with_attribute(("id", tli_id.as_str()))
