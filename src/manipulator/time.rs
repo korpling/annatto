@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, ops::Bound};
 
-use anyhow::{anyhow, bail};
+use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::{AnnoKey, EdgeContainer, NodeID},
@@ -210,7 +210,7 @@ fn order_interpolate(
     let mut last_known_time = if let Some(et) = end_cache.get(&start_node) {
         *et
     } else {
-        bail!("Ordering start node has incomplete time values."); // maybe in the future come up with an elegant way to solve this
+        OrderedFloat::from(0) // not accurate, but works for most situations
     };
     let mut untimed_nodes = Vec::new();
     for node in ordered_nodes {
@@ -353,7 +353,7 @@ mod tests {
     };
 
     #[test]
-    fn sparse_to_full_fail() {
+    fn sparse_to_full_fuzzy() {
         let import_exmaralda = ImportEXMARaLDA::default();
         let import = import_exmaralda.import_corpus(
             Path::new("./tests/data/import/exmaralda/valid-sparse-timevalues/"),
@@ -384,7 +384,7 @@ mod tests {
             },
             None,
         );
-        assert!(fill_time.is_err());
+        assert!(fill_time.is_ok());
     }
 
     #[test]
