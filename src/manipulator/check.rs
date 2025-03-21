@@ -219,9 +219,7 @@ impl Check {
                                         };
                                     }
                                     Ok(mut external_g) => {
-                                        if let Err(e) =
-                                            external_g.load_from(&db_dir.join(corpus_name), true)
-                                        {
+                                        if let Err(e) = external_g.open(&db_dir.join(corpus_name)) {
                                             return TestResult::ProcessingError {
                                                 error: Box::new(e),
                                             };
