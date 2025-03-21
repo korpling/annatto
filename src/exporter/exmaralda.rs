@@ -6,7 +6,6 @@ use std::{
     ops::Range,
     path::{Path, PathBuf},
     sync::Arc,
-    usize,
 };
 
 use crate::{
@@ -352,18 +351,12 @@ impl Exporter for ExportExmaralda {
                     let position_a = self
                         .tier_order
                         .iter()
-                        .position(|k| {
-                            (k.ns.is_empty() && a.name == k.name)
-                                || (k.ns == a.ns && k.name == a.name)
-                        })
+                        .position(|k| (k.ns == a.ns || k.ns.is_empty()) && a.name == k.name)
                         .unwrap_or(usize::MAX);
                     let position_b = self
                         .tier_order
                         .iter()
-                        .position(|k| {
-                            (k.ns.is_empty() && b.name == k.name)
-                                || (k.ns == b.ns && k.name == b.name)
-                        })
+                        .position(|k| (k.ns == b.ns || k.ns.is_empty()) && b.name == k.name)
                         .unwrap_or(usize::MAX);
                     position_a.cmp(&position_b)
                 })
