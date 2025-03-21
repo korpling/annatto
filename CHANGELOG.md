@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- update to graphANNIS 3.7
+
 ### Fixed
 
 - export `exmaralda` always writes timeline items in correct order (chronologically)
