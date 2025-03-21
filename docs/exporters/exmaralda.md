@@ -39,3 +39,16 @@ doc_anno = { ns = "annis", name = "node_name" }
 ```
 This defaults to `{ ns = "annis", name = "doc" }`.
 
+###  tier_order
+
+If there is a desired order in which the annotations should be displayed in EXMARaLDA,
+it can be set here by providing a list. Not specifying a namespace will not be interpreted
+as empty namespace, but will group all annotation names with any namespace sharing the
+provided name, together.
+Example:
+
+```toml
+[export.config]
+tier_order = ["norm::norm", "dipl::dipl", "annotator"]
+```
+
