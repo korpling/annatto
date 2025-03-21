@@ -9,8 +9,12 @@ use std::{
 };
 
 use crate::{
-    deserialize::deserialize_anno_key, error::AnnattoError, importer::exmaralda::LANGUAGE_SEP,
-    progress::ProgressReporter, util::Traverse, StepID,
+    deserialize::{deserialize_anno_key, deserialize_anno_key_seq},
+    error::AnnattoError,
+    importer::exmaralda::LANGUAGE_SEP,
+    progress::ProgressReporter,
+    util::Traverse,
+    StepID,
 };
 use documented::{Documented, DocumentedFields};
 use graphannis::{
@@ -71,6 +75,18 @@ pub struct ExportExmaralda {
     /// This defaults to `{ ns = "annis", name = "doc" }`.
     #[serde(default = "default_doc_key", deserialize_with = "deserialize_anno_key")]
     doc_anno: AnnoKey,
+    /// If there is a desired order in which the annotations should be displayed in EXMARaLDA,
+    /// it can be set here by providing a list. Not specifying a namespace will not be interpreted
+    /// as empty namespace, but will group all annotation names with any namespace sharing the
+    /// provided name, together.
+    /// Example:
+    ///
+    /// ```toml
+    /// [export.config]
+    /// tier_order = ["norm::norm", "dipl::dipl", "annotator"]
+    /// ```
+    #[serde(default, deserialize_with = "deserialize_anno_key_seq")]
+    tier_order: Vec<AnnoKey>,
 }
 
 impl Default for ExportExmaralda {
@@ -78,6 +94,7 @@ impl Default for ExportExmaralda {
         Self {
             copy_media: Default::default(),
             doc_anno: default_doc_key(),
+            tier_order: vec![],
         }
     }
 }
@@ -327,7 +344,24 @@ impl Exporter for ExportExmaralda {
                     .write_empty()?;
             }
             writer.write_event(Event::End(BytesEnd::new("common-timeline")))?;
-            for (i, anno_key) in node_annos.annotation_keys()?.iter().enumerate() {
+            for (i, anno_key) in node_annos
+                .annotation_keys()?
+                .iter()
+                .sorted_unstable_by(|a, b| {
+                    let position_a = self
+                        .tier_order
+                        .iter()
+                        .position(|k| (k.ns == a.ns || k.ns.is_empty()) && a.name == k.name)
+                        .unwrap_or(usize::MAX);
+                    let position_b = self
+                        .tier_order
+                        .iter()
+                        .position(|k| (k.ns == b.ns || k.ns.is_empty()) && b.name == k.name)
+                        .unwrap_or(usize::MAX);
+                    position_a.cmp(&position_b)
+                })
+                .enumerate()
+            {
                 if anno_key.ns == ANNIS_NS {
                     continue;
                 }
@@ -718,6 +752,38 @@ mod tests {
 
         let actual =
             export_to_string_in_directory(&graph, ExportExmaralda::default(), &output_path);
+        assert!(actual.is_ok());
+
+        let path_to_remove =
+            pathdiff::diff_paths(std::env::current_dir().unwrap(), output_path.path()).unwrap();
+        let path_to_remove = path_to_remove.to_str().unwrap();
+        insta::with_settings!({filters => vec![
+            (path_to_remove, "[GRAPH_DIR]"),
+        ]}, {
+            assert_snapshot!(actual.unwrap());
+        });
+    }
+
+    #[test]
+    fn test_exmaralda_export_ordered() {
+        let import = ImportEXMARaLDA::default();
+        let step = ImporterStep {
+            module: crate::ReadFrom::EXMARaLDA(import),
+            path: PathBuf::from("./tests/data/import/exmaralda/clean/import/"),
+        };
+        let u = step.execute(None);
+        assert!(u.is_ok());
+        let mut update = u.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update, |_| {}).is_ok());
+
+        let output_path = TempDir::new().unwrap();
+        let exporter: Result<ExportExmaralda, _> =
+            toml::from_str("tier_order = [\"sentence\", \"dipl\", \"norm\"]");
+        assert!(exporter.is_ok(), "Error: {:?}", exporter.err());
+        let actual = export_to_string_in_directory(&graph, exporter.unwrap(), &output_path);
         assert!(actual.is_ok());
 
         let path_to_remove =
