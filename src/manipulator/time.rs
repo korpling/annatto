@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, ops::Bound};
 
-use anyhow::{anyhow, bail};
+use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::{AnnoKey, EdgeContainer, NodeID},
