@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- import `xlsx` removes delimiter "::" from qualified annotation names when building node names for more robust data processing.
+
 ## [0.27.0] - 2025-03-21
 
 ### Added
