@@ -316,7 +316,7 @@ impl<'a> DatasheetMapper<'a> {
             let node_name = if is_segmentation {
                 format!(
                     "{doc_node_name}#{}_{}-{}",
-                    &col_name,
+                    &col_name.replace("::", "_"),
                     row_num,
                     row_num as usize + covered_tokens.len()
                 )
@@ -331,14 +331,14 @@ impl<'a> DatasheetMapper<'a> {
                     .unwrap_or(&col_name);
                 format!(
                     "{doc_node_name}#{}_{}-{}",
-                    qualifier,
+                    qualifier.replace("::", "_"),
                     row_num,
                     row_num as usize + covered_tokens.len()
                 )
             } else {
                 format!(
                     "{doc_node_name}#span_{}_{}-{}",
-                    utf8_percent_encode(name, NODE_NAME_ENCODE_SET),
+                    utf8_percent_encode(&name.replace("::", "_"), NODE_NAME_ENCODE_SET),
                     row_num,
                     row_num as usize + covered_tokens.len()
                 )
@@ -575,6 +575,33 @@ mod tests {
     #[test]
     fn snapshot_test() {
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
+        let config = "column_map = { dipl = [\"sentence\", \"seg\"], norm = [\"pos\", \"lemma\"] }";
+        let m: Result<ImportSpreadsheet, _> = toml::from_str(config);
+        assert!(m.is_ok(), "Could not deserialize config: {:?}", m.err());
+        let import = m.unwrap();
+        let u = import.import_corpus(
+            path,
+            StepID {
+                module_name: "test_xslx_import".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(u.is_ok(), "Failed to import: {:?}", u.err());
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut u.unwrap(), |_| {}).is_ok());
+        let e: Result<GraphMLExporter, _> = toml::from_str("stable_order = true");
+        assert!(e.is_ok(), "Could not deserialize exporter: {:?}", e.err());
+        let actual = export_to_string(&graph, e.unwrap());
+        assert!(actual.is_ok(), "Could not export: {:?}", actual.err());
+        assert_snapshot!(actual.unwrap());
+    }
+
+    #[test]
+    fn snapshot_test_with_ns() {
+        let path = Path::new("./tests/data/import/xlsx/clean/xlsx-with-ns/");
         let config = "column_map = { dipl = [\"sentence\", \"seg\"], norm = [\"pos\", \"lemma\"] }";
         let m: Result<ImportSpreadsheet, _> = toml::from_str(config);
         assert!(m.is_ok(), "Could not deserialize config: {:?}", m.err());
