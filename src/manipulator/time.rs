@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, ops::Bound};
 
-use anyhow::anyhow;
+use anyhow::{anyhow, bail};
 use documented::{Documented, DocumentedFields};
 use graphannis::{
     graph::{AnnoKey, EdgeContainer, NodeID},
@@ -32,7 +32,20 @@ use super::Manipulator;
 /// ```
 #[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
-pub struct Filltime {}
+pub struct Filltime {
+    /// A fallback start time in case it cannot be derived.
+    ///
+    /// Example:
+    /// ```toml
+    /// [[graph_op]]
+    /// action = "time"
+    ///
+    /// [graph_op.config]
+    /// fallback_start = 0.0
+    /// ```
+    #[serde(default)]
+    fallback_start: Option<f64>,
+}
 
 impl Manipulator for Filltime {
     fn manipulate_corpus(
@@ -117,7 +130,13 @@ impl Filltime {
         // spread existing values along coverage edges
         lr_propagate(graph, start_cache, end_cache)?;
         // check ordering for non-timed nodes and if necessary, interpolate
-        order_interpolate(graph, start_node, start_cache, end_cache)?;
+        order_interpolate(
+            graph,
+            start_node,
+            start_cache,
+            end_cache,
+            self.fallback_start,
+        )?;
         // do l-r propagation a second time
         lr_propagate(graph, start_cache, end_cache)?;
         // build update
@@ -179,6 +198,7 @@ fn order_interpolate(
     start_node: NodeID,
     start_cache: &mut BTreeMap<NodeID, OrderedFloat<f64>>,
     end_cache: &mut BTreeMap<NodeID, OrderedFloat<f64>>,
+    fallback: Option<f64>,
 ) -> Result<(), anyhow::Error> {
     let ordering_storage = graph
         .get_graphstorage(&AnnotationComponent::new(
@@ -207,10 +227,12 @@ fn order_interpolate(
             end_cache.insert(*last_node, OrderedFloat::from(ordered_nodes.len() as f64));
         }
     }
-    let mut last_known_time = if let Some(et) = end_cache.get(&start_node) {
-        *et
+    let mut last_known_time = if let Some(et) =
+        end_cache.get(&start_node).copied().map(|o| *o).or(fallback)
+    {
+        OrderedFloat::from(et)
     } else {
-        OrderedFloat::from(0) // not accurate, but works for most situations
+        bail!("Could not determine start time value to initiate interpolation. Consider setting a fallback value.")
     };
     let mut untimed_nodes = Vec::new();
     for node in ordered_nodes {
@@ -353,7 +375,7 @@ mod tests {
     };
 
     #[test]
-    fn sparse_to_full_fuzzy() {
+    fn sparse_to_full_fail() {
         let import_exmaralda = ImportEXMARaLDA::default();
         let import = import_exmaralda.import_corpus(
             Path::new("./tests/data/import/exmaralda/valid-sparse-timevalues/"),
@@ -375,6 +397,43 @@ mod tests {
             apply_update.err()
         );
         let manipulate = Filltime::default();
+        let fill_time = manipulate.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            StepID {
+                module_name: "test_fill_time".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(fill_time.is_err());
+    }
+
+    #[test]
+    fn with_fallback() {
+        let import_exmaralda = ImportEXMARaLDA::default();
+        let import = import_exmaralda.import_corpus(
+            Path::new("./tests/data/import/exmaralda/valid-sparse-timevalues/"),
+            StepID {
+                module_name: "test_import".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(import.is_ok(), "import failed: {:?}", import.err());
+        let mut update = import.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let apply_update = graph.apply_update(&mut update, |_| {});
+        assert!(
+            apply_update.is_ok(),
+            "Applying update failed: {:?}",
+            apply_update.err()
+        );
+        let mnp: Result<Filltime, _> = toml::from_str("fallback_start = 0.0");
+        assert!(mnp.is_ok(), "Error deserializing: {:?}", mnp.err());
+        let manipulate = mnp.unwrap();
         let fill_time = manipulate.manipulate_corpus(
             &mut graph,
             Path::new("./"),
