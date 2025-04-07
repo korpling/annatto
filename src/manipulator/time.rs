@@ -227,8 +227,10 @@ fn order_interpolate(
             end_cache.insert(*last_node, OrderedFloat::from(ordered_nodes.len() as f64));
         }
     }
-    let mut last_known_time = if let Some(et) = (end_cache.get(&start_node).and_then(|o| Some(*o)))
-        .or(fallback.and_then(|f| Some(OrderedFloat::from(f))))
+    let mut last_known_time = if let Some(et) = end_cache
+        .get(&start_node)
+        .map(|o| *o)
+        .or(fallback.map(|f| OrderedFloat::from(f)))
     {
         et
     } else {
