@@ -227,12 +227,10 @@ fn order_interpolate(
             end_cache.insert(*last_node, OrderedFloat::from(ordered_nodes.len() as f64));
         }
     }
-    let mut last_known_time = if let Some(et) = end_cache
-        .get(&start_node)
-        .map(|o| *o)
-        .or(fallback.map(|f| OrderedFloat::from(f)))
+    let mut last_known_time = if let Some(et) =
+        end_cache.get(&start_node).copied().map(|o| *o).or(fallback)
     {
-        et
+        OrderedFloat::from(et)
     } else {
         bail!("Could not determine start time value to initiate interpolation. Consider setting a fallback value.")
     };
