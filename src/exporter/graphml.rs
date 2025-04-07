@@ -185,7 +185,7 @@ fn get_terminal_name(
                 Some(component.name.to_string())
             }
         })
-        .last();
+        .next_back();
     Ok(node_key_opt.unwrap_or_default())
 }
 
@@ -229,7 +229,7 @@ fn media_vis(graph: &AnnotationGraph) -> Result<Vec<Visualizer>, Box<dyn std::er
         let m = match_r?;
         let path_opt = node_annos.get_value_for_item(&m.node, &m.anno_key)?;
         if let Some(path_s) = path_opt {
-            match path_s.split('.').last() {
+            match path_s.split('.').next_back() {
                 None => {}
                 Some(ending) => match ending {
                     "mp3" | "wav" => {
@@ -359,7 +359,7 @@ fn node_annos_vis(graph: &AnnotationGraph) -> Result<Visualizer, Box<dyn std::er
                 if let Some(strge) = graph.get_graphstorage(c) {
                     strge
                         .source_nodes()
-                        .filter_map(|r| if let Ok(n) = r { Some(n) } else { None })
+                        .filter_map(|r| r.ok())
                         .collect::<BTreeSet<u64>>()
                 } else {
                     BTreeSet::default()

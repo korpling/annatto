@@ -227,7 +227,7 @@ where
                 .get_node_annos()
                 .get_value_for_item(&n, &NODE_NAME_KEY)?
                 .context("Missing node name")?;
-            Cow::Owned(node_name.split('#').last().unwrap_or_default().to_string())
+            Cow::Owned(node_name.split('#').next_back().unwrap_or_default().to_string())
         };
 
         // Use the more general method to actual write the XML

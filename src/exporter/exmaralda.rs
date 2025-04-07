@@ -150,7 +150,7 @@ impl Exporter for ExportExmaralda {
                 };
             let doc_path = output_path.join(format!(
                 "{}.{extension}",
-                doc_name.split(['/', '\\']).last().unwrap_or(&doc_name) // This always has a last
+                doc_name.split(['/', '\\']).next_back().unwrap_or(&doc_name) // This always has a last
             ));
             if let Some(doc_parent) = doc_path.as_path().parent() {
                 fs::create_dir_all(doc_parent)?;

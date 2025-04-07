@@ -299,7 +299,7 @@ impl SaltDocumentGraphMapper {
                 // part of the splitted path as folder name.
                 let folder_name = full_corpus_name
                     .split('/')
-                    .last()
+                    .next_back()
                     .context("Empty corpus name")?
                     .to_string();
                 parent_folder_names.push(folder_name);
@@ -320,7 +320,7 @@ impl SaltDocumentGraphMapper {
             .context("Missing node name for document")?;
         let document_file_name = document_node_name
             .split('/')
-            .last()
+            .next_back()
             .context("Empty document name")?;
         salt_file_path.push(format!("{document_file_name}.salt"));
 
