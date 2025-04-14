@@ -126,7 +126,7 @@ impl Check {
                 };
                 let verbose_details = match result {
                     TestResult::Passed => "".to_string(),
-                    TestResult::Failed { matches, .. } => matches.join("\n"),
+                    TestResult::Failed { is: matches, .. } => matches.join("\n"),
                     TestResult::ProcessingError { error } => error.to_string(),
                 };
                 TestTableEntry {
@@ -186,26 +186,36 @@ impl Check {
         match result {
             Ok(r) => {
                 let n = r.len();
-                let passes = match expected_result {
-                    ExpectedQueryResult::Numeric(n_is) => &n == n_is,
-                    ExpectedQueryResult::Query(alt_query) => {
+                let (passes, expected_r) = match expected_result {
+                    QueryResult::Numeric(n_exp) => (&n == n_exp, QueryResult::Numeric(*n_exp)),
+                    QueryResult::Query(alt_query) => {
                         let alt_result = Check::run_query(g, &alt_query[..]);
                         if let Ok(alt_matches) = alt_result {
-                            alt_matches.len() == n
+                            (
+                                alt_matches.len() == n,
+                                QueryResult::Numeric(alt_matches.len()),
+                            )
                         } else {
-                            false
+                            return TestResult::ProcessingError {
+                                error: anyhow!("Could not compute expected result from query")
+                                    .into(),
+                            };
                         }
                     }
-                    ExpectedQueryResult::ClosedInterval(lower, upper) => n.ge(lower) && n.le(upper),
-                    ExpectedQueryResult::SemiOpenInterval(lower, upper) => {
+                    QueryResult::ClosedInterval(lower, upper) => (
+                        n.ge(lower) && n.le(upper),
+                        QueryResult::ClosedInterval(*lower, *upper),
+                    ),
+                    QueryResult::SemiOpenInterval(lower, upper) => {
+                        let forward_r = QueryResult::SemiOpenInterval(*lower, *upper);
                         if upper.is_infinite() || upper.is_nan() {
-                            n.ge(lower)
+                            (n.ge(lower), forward_r)
                         } else {
                             let u = upper.abs().ceil() as usize;
-                            n.ge(lower) && u.gt(&n)
+                            (n.ge(lower) && u.gt(&n), forward_r)
                         }
                     }
-                    ExpectedQueryResult::CorpusQuery(db_dir, corpus_name, query) => {
+                    QueryResult::CorpusQuery(db_dir, corpus_name, query) => {
                         let path = db_dir.join(corpus_name);
                         let path_string = path.to_string_lossy().to_string();
                         let entry = graph_cache.entry(path_string.to_string());
@@ -237,9 +247,12 @@ impl Check {
                         }
                         let e_n = Check::run_query(external_g, query);
                         if let Ok(v) = e_n {
-                            v.len() == n
+                            (v.len() == n, QueryResult::Numeric(v.len()))
                         } else {
-                            false
+                            return TestResult::ProcessingError {
+                                error: anyhow!("Could not compute expected result from query on external corpus")
+                                    .into(),
+                            };
                         }
                     }
                 };
@@ -248,7 +261,8 @@ impl Check {
                 } else {
                     TestResult::Failed {
                         query: test.query.to_string(),
-                        matches: r,
+                        expected: expected_r,
+                        is: r,
                     }
                 }
             }
@@ -299,7 +313,7 @@ impl Check {
 
 struct AQLTest {
     query: String,
-    expected: ExpectedQueryResult,
+    expected: QueryResult,
     description: String,
 }
 
@@ -313,19 +327,13 @@ impl From<&Test> for Vec<AQLTest> {
             } => vec![AQLTest {
                 query: query.to_string(),
                 expected: match expected {
-                    ExpectedQueryResult::Numeric(n) => ExpectedQueryResult::Numeric(*n),
-                    ExpectedQueryResult::Query(q) => ExpectedQueryResult::Query(q.to_string()),
-                    ExpectedQueryResult::ClosedInterval(a, b) => {
-                        ExpectedQueryResult::ClosedInterval(*a, *b)
+                    QueryResult::Numeric(n) => QueryResult::Numeric(*n),
+                    QueryResult::Query(q) => QueryResult::Query(q.to_string()),
+                    QueryResult::ClosedInterval(a, b) => QueryResult::ClosedInterval(*a, *b),
+                    QueryResult::SemiOpenInterval(a, b) => QueryResult::SemiOpenInterval(*a, *b),
+                    QueryResult::CorpusQuery(db, c, q) => {
+                        QueryResult::CorpusQuery(db.to_path_buf(), c.to_string(), q.to_string())
                     }
-                    ExpectedQueryResult::SemiOpenInterval(a, b) => {
-                        ExpectedQueryResult::SemiOpenInterval(*a, *b)
-                    }
-                    ExpectedQueryResult::CorpusQuery(db, c, q) => ExpectedQueryResult::CorpusQuery(
-                        db.to_path_buf(),
-                        c.to_string(),
-                        q.to_string(),
-                    ),
                 },
                 description: description.to_string(),
             }],
@@ -348,12 +356,12 @@ impl From<&Test> for Vec<AQLTest> {
                     tests.push(AQLTest {
                         // each layer needs to be tested for existence as well to be able to properly interpret a 0-result for the joint test
                         query: exist_query,
-                        expected: ExpectedQueryResult::SemiOpenInterval(1, f64::INFINITY),
+                        expected: QueryResult::SemiOpenInterval(1, f64::INFINITY),
                         description: format!("Layer `{anno_qname}` exists"),
                     });
                     tests.push(AQLTest {
                         query: value_query,
-                        expected: ExpectedQueryResult::Numeric(0),
+                        expected: QueryResult::Numeric(0),
                         description: format!("Check layer `{anno_qname}` for invalid values."),
                     })
                 }
@@ -368,7 +376,7 @@ impl From<&Test> for Vec<AQLTest> {
 enum Test {
     QueryTest {
         query: String,
-        expected: ExpectedQueryResult,
+        expected: QueryResult,
         description: String,
     },
     LayerTest {
@@ -377,11 +385,16 @@ enum Test {
     },
 }
 
-#[derive(Debug)]
 enum TestResult {
     Passed,
-    Failed { query: String, matches: Vec<String> },
-    ProcessingError { error: Box<dyn std::error::Error> },
+    Failed {
+        query: String,
+        expected: QueryResult,
+        is: Vec<String>,
+    },
+    ProcessingError {
+        error: Box<dyn std::error::Error>,
+    },
 }
 
 impl Display for TestResult {
@@ -392,12 +405,24 @@ impl Display for TestResult {
                 ansi_term::Color::Green.prefix(),
                 ansi_term::Color::Green.suffix()
             ),
-            TestResult::Failed { matches, .. } => format!(
-                "{}{}{}",
-                ansi_term::Color::Red.prefix(),
-                matches.len(),
-                ansi_term::Color::Red.suffix()
-            ),
+            TestResult::Failed {
+                is: matches,
+                expected,
+                ..
+            } => {
+                let exp = match expected {
+                    QueryResult::Numeric(n) => format!("{n} ≠ "),
+                    QueryResult::ClosedInterval(l, u) => format!("[{l}, {u}] ∌ "),
+                    QueryResult::SemiOpenInterval(l, u) => format!("[{l}, {u}] ∌ "),
+                    _ => "".to_string(),
+                };
+                format!(
+                    "{}{exp}{}{}",
+                    ansi_term::Color::Red.prefix(),
+                    matches.len(),
+                    ansi_term::Color::Red.suffix()
+                )
+            }
             TestResult::ProcessingError { .. } => format!(
                 "{}(bad){}",
                 ansi_term::Color::Purple.prefix(),
@@ -417,7 +442,7 @@ struct TestTableEntry {
 
 #[derive(Deserialize)]
 #[serde(untagged)]
-enum ExpectedQueryResult {
+enum QueryResult {
     Numeric(usize),
     Query(String),
     ClosedInterval(usize, usize),
@@ -441,7 +466,7 @@ mod tests {
 
     use crate::{
         manipulator::{
-            check::{AQLTest, ExpectedQueryResult, FailurePolicy, ReportLevel, TestResult},
+            check::{AQLTest, FailurePolicy, QueryResult, ReportLevel, TestResult},
             Manipulator,
         },
         workflow::StatusMessage,
@@ -539,7 +564,7 @@ mod tests {
         assert!(
             r.iter()
                 .map(|(_, tr)| match tr {
-                    TestResult::Failed { matches, .. } => matches.len(),
+                    TestResult::Failed { is, .. } => is.len(),
                     TestResult::ProcessingError { .. } => 1,
                     _ => 0,
                 })
@@ -695,7 +720,7 @@ mod tests {
         let mut graph = g.unwrap();
         let tests = vec![Test::QueryTest {
             query: "tok".to_string(),
-            expected: ExpectedQueryResult::Numeric(4),
+            expected: QueryResult::Numeric(4),
             description: "Correct number of tokens".to_string(),
         }];
         let tmp = tempdir();
@@ -730,13 +755,13 @@ mod tests {
             tests: vec![
                 Test::QueryTest {
                     query: query.to_string(),
-                    expected: ExpectedQueryResult::Numeric(1),
+                    expected: QueryResult::Numeric(1),
                     description: "Control test to make sure the query actually works".to_string(),
                 },
                 Test::QueryTest {
                     description: "Query sequence.".to_string(),
                     query: query.to_string(),
-                    expected: ExpectedQueryResult::CorpusQuery(
+                    expected: QueryResult::CorpusQuery(
                         Path::new("tests/data/graph_op/check/external_db/").to_path_buf(),
                         "corpus".to_string(),
                         query.to_string(),
@@ -745,7 +770,7 @@ mod tests {
                 Test::QueryTest {
                     description: "Query nodes.".to_string(),
                     query: "node".to_string(),
-                    expected: ExpectedQueryResult::CorpusQuery(
+                    expected: QueryResult::CorpusQuery(
                         Path::new("tests/data/graph_op/check/external_db/").to_path_buf(),
                         "corpus".to_string(),
                         "node".to_string(),
