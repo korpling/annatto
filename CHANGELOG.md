@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `time` graph op does not by default use a fallback start time, it has to be set using `fallback_start`
+- `check` outputs expected and actual result (in that order) whenever a test fails
 
 ## [0.27.1] - 2025-03-25
 
