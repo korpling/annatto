@@ -1042,6 +1042,7 @@ to = "dipl::derived_pos"
             path: None,
         };
         let result = replace.manipulate_corpus(&mut g, tempdir()?.path(), step_id, None);
+        g.calculate_all_statistics().unwrap();
         assert_eq!(result.is_ok(), true, "Probing merge result {:?}", &result);
         let mut e_g = expected_output_for_move(on_disk)?;
         // corpus nodes

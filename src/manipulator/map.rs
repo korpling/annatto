@@ -924,7 +924,7 @@ value = "comparison"
         mapper
             .manipulate_corpus(&mut g, tmp.path().parent().unwrap(), step_id, None)
             .unwrap();
-
+        g.calculate_all_statistics().unwrap();
         let query = aql::parse(
             "mapper:form=\"comparison\" & \"more\" . \"complicated\" & #1 _l_ #2 & #1 _r_ #3",
             false,
@@ -933,7 +933,7 @@ value = "comparison"
         let result: Vec<_> = aql::execute_query_on_graph(&g, &query, true, None)
             .unwrap()
             .collect();
-        assert_eq!(1, result.len());
+        assert_eq!(1, result.len(), "Results are: {:?}", result);
         assert_eq!(true, result[0].is_ok());
     }
 
