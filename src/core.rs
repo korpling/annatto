@@ -5,11 +5,10 @@ use crate::{error::AnnattoError, progress::ProgressReporter, workflow::StatusSen
 
 lazy_static! {
     static ref FALLBACK_STEP_ID: StepID = {
-        let id = StepID {
+        StepID {
             module_name: "(undefined)".to_string(),
             path: None,
-        };
-        id
+        }
     };
 }
 
