@@ -7,11 +7,15 @@ lazy_static! {
     static ref FALLBACK_STEP_ID: StepID = {
         let id = StepID {
             module_name: "(undefined)".to_string(),
-            path: None };
-            id
+            path: None,
         };
+        id
+    };
 }
 
+/// This method applies updates to a graph without re-calculating the statistics.
+/// Additionally, the statistics of the graph are set to `None` to indicate that
+/// the statistics need to be computed if needed.
 pub(crate) fn update_graph(
     graph: &mut AnnotationGraph,
     update: &mut GraphUpdate,
@@ -28,9 +32,7 @@ pub(crate) fn update_graph(
         })
         .map_err(|reason| AnnattoError::UpdateGraph(reason.to_string()))?;
     if let Some(sender) = tx {
-        sender.send(crate::workflow::StatusMessage::StepDone {
-            id: step_id,
-        })?;
+        sender.send(crate::workflow::StatusMessage::StepDone { id: step_id })?;
     };
     if graph.global_statistics.is_some() {
         graph.global_statistics = None;
@@ -38,6 +40,9 @@ pub(crate) fn update_graph(
     Ok(())
 }
 
+/// This method applies updates to a graph without re-calculating the statistics.
+/// Additionally, the statistics of the graph are set to `None` to indicate that
+/// the statistics need to be computed if needed.
 pub(crate) fn update_graph_silent(
     graph: &mut AnnotationGraph,
     update: &mut GraphUpdate,
