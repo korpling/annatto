@@ -537,13 +537,12 @@ impl ManipulatorStep {
         tx: Option<StatusSender>,
     ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let step_id = StepID::from_graphop_step(self, position_in_workflow);
-        self.module.processor().validate_graph(graph, step_id.clone(), tx.clone())?;
-        self.module.processor().manipulate_corpus(
-            graph,
-            workflow_directory,
-            step_id,
-            tx,
-        )
+        self.module
+            .processor()
+            .validate_graph(graph, step_id.clone(), tx.clone())?;
+        self.module
+            .processor()
+            .manipulate_corpus(graph, workflow_directory, step_id, tx)
     }
 }
 
