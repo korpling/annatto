@@ -371,7 +371,13 @@ mod tests {
     use insta::assert_snapshot;
 
     use crate::{
-        core::update_graph_silent, exporter::graphml::GraphMLExporter, importer::{conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, Importer}, manipulator::{time::Filltime, Manipulator}, test_util::export_to_string, util::example_generator, StepID
+        core::update_graph_silent,
+        exporter::graphml::GraphMLExporter,
+        importer::{conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, Importer},
+        manipulator::{time::Filltime, Manipulator},
+        test_util::export_to_string,
+        util::example_generator,
+        StepID,
     };
 
     #[test]

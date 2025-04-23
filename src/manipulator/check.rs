@@ -469,10 +469,14 @@ mod tests {
     use toml;
 
     use crate::{
-        core::update_graph_silent, manipulator::{
+        core::update_graph_silent,
+        manipulator::{
             check::{AQLTest, FailurePolicy, QueryResult, ReportLevel, TestResult},
             Manipulator,
-        }, util::example_generator, workflow::StatusMessage, StepID
+        },
+        util::example_generator,
+        workflow::StatusMessage,
+        StepID,
     };
 
     use super::{Check, Test};
@@ -485,8 +489,22 @@ mod tests {
         let mut u = GraphUpdate::default();
         example_generator::create_corpus_structure_simple(&mut u);
         assert!(update_graph_silent(&mut graph, &mut u).is_ok());
-        let check: Check = Check { tests: vec![], report: None, policy: FailurePolicy::Warn, save: None };
-        assert!(check.validate_graph(&mut graph, StepID { module_name: "test".to_string(), path: None }, None).is_ok());
+        let check: Check = Check {
+            tests: vec![],
+            report: None,
+            policy: FailurePolicy::Warn,
+            save: None,
+        };
+        assert!(check
+            .validate_graph(
+                &mut graph,
+                StepID {
+                    module_name: "test".to_string(),
+                    path: None
+                },
+                None
+            )
+            .is_ok());
         assert!(graph.global_statistics.is_some());
     }
 
