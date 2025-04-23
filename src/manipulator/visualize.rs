@@ -383,7 +383,10 @@ mod tests {
     use insta::assert_snapshot;
     use tempfile::tempdir;
 
-    use crate::{core::update_graph_silent, manipulator::Manipulator, util::example_generator, workflow::execute_from_file, StepID};
+    use crate::{
+        core::update_graph_silent, manipulator::Manipulator, util::example_generator,
+        workflow::execute_from_file, StepID,
+    };
 
     use super::Visualize;
 
