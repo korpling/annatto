@@ -58,7 +58,7 @@ pub trait Manipulator: Sync {
                     step_id.module_name
                 )))?;
             }
-            graph.calculate_all_statistics();
+            graph.calculate_all_statistics()?;
         }
         Ok(())
     }

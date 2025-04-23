@@ -17,7 +17,6 @@ use tabled::{Table, Tabled};
 
 use crate::{
     error::AnnattoError,
-    progress,
     workflow::{StatusMessage, StatusSender},
     Manipulator, StepID,
 };
@@ -104,7 +103,7 @@ impl Manipulator for Check {
         }
         Ok(())
     }
-    
+
     fn requires_statistics(&self) -> bool {
         true
     }

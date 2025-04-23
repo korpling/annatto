@@ -12,7 +12,7 @@ use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY};
 use serde::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
-use crate::{core::update_graph, progress::ProgressReporter};
+use crate::core::update_graph;
 
 use super::Manipulator;
 
