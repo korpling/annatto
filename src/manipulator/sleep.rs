@@ -25,7 +25,7 @@ impl Manipulator for Sleep {
         graph.ensure_loaded_all()?;
         Ok(())
     }
-    
+
     fn requires_statistics(&self) -> bool {
         false
     }
