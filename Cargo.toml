@@ -94,4 +94,4 @@ targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-
 # The preferred dist version to use in CI (Cargo.toml SemVer syntax)
 cargo-dist-version = "0.26.1"
 # Which actions to run on pull requests
-pr-run-mode = "plan"
+#pr-run-mode = "plan"
