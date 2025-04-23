@@ -23,4 +23,8 @@ impl Manipulator for NoOp {
     ) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }
+    
+    fn requires_statistics(&self) -> bool {
+        false
+    }
 }

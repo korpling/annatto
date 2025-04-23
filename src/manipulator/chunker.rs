@@ -2,8 +2,8 @@ use std::collections::BTreeMap;
 
 use super::Manipulator;
 use crate::{
-    deserialize::deserialize_anno_key, progress::ProgressReporter, util::token_helper::TokenHelper,
-    StepID,
+    core::update_graph_silent, deserialize::deserialize_anno_key, progress::ProgressReporter,
+    util::token_helper::TokenHelper, StepID,
 };
 use documented::{Documented, DocumentedFields};
 use graphannis::{
@@ -89,7 +89,7 @@ impl Manipulator for Chunk {
                 .collect();
             let documents = documents?;
 
-            let progress = ProgressReporter::new(tx, step_id, documents.len())?;
+            let progress = ProgressReporter::new(tx, step_id.clone(), documents.len())?;
 
             let token_helper = TokenHelper::new(graph)?;
 
@@ -176,9 +176,13 @@ impl Manipulator for Chunk {
             }
         }
 
-        graph.apply_update(&mut updates, |_| {})?;
+        update_graph_silent(graph, &mut updates)?;
 
         Ok(())
+    }
+
+    fn requires_statistics(&self) -> bool {
+        false
     }
 }
 

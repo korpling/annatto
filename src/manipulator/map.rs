@@ -2,10 +2,12 @@ use std::{
     collections::BTreeSet,
     fs,
     path::{Path, PathBuf},
+    sync::mpsc,
 };
 
 use super::Manipulator;
 use crate::{
+    core::{update_graph, update_graph_silent},
     progress::ProgressReporter,
     util::{
         token_helper::{TokenHelper, TOKEN_KEY},
@@ -191,6 +193,10 @@ impl Manipulator for MapAnnos {
         map_impl.run(graph)?;
 
         Ok(())
+    }
+
+    fn requires_statistics(&self) -> bool {
+        true
     }
 }
 
@@ -388,13 +394,24 @@ impl MapperImpl {
         }
         let number_of_updates = updates.len()?;
         if number_of_updates > 0 {
-            graph.apply_update(&mut updates, |msg| {
-                if let Some(p) = &self.progress {
-                    if let Err(e) = p.info(&format!("`map` updates: {msg}")) {
-                        log::error!("{e}");
-                    }
-                }
-            })?;
+            let tx_rx = if self.progress.is_some() {
+                Some(mpsc::channel())
+            } else {
+                None
+            };
+            if let Some((sender, _receiver)) = tx_rx {
+                update_graph(
+                    graph,
+                    &mut updates,
+                    Some(StepID {
+                        module_name: "map".to_string(),
+                        path: None,
+                    }),
+                    Some(sender),
+                )?;
+            } else {
+                update_graph_silent(graph, &mut updates)?;
+            }
         }
         Ok(number_of_updates)
     }

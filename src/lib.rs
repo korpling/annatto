@@ -1,5 +1,6 @@
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 
+pub(crate) mod core;
 pub mod deserialize;
 pub mod error;
 pub mod exporter;
@@ -535,10 +536,12 @@ impl ManipulatorStep {
         position_in_workflow: usize,
         tx: Option<StatusSender>,
     ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let step_id = StepID::from_graphop_step(self, position_in_workflow);
+        self.module.processor().validate_graph(graph, step_id.clone(), tx.clone())?;
         self.module.processor().manipulate_corpus(
             graph,
             workflow_directory,
-            StepID::from_graphop_step(self, position_in_workflow),
+            step_id,
             tx,
         )
     }

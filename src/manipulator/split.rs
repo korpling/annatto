@@ -10,7 +10,10 @@ use itertools::Itertools;
 use serde::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
-use crate::{deserialize::deserialize_anno_key, error::Result, progress::ProgressReporter};
+use crate::{
+    core::update_graph, deserialize::deserialize_anno_key, error::Result,
+    progress::ProgressReporter,
+};
 
 use super::Manipulator;
 
@@ -112,11 +115,12 @@ impl Manipulator for SplitValues {
             }
             progress.worked(1)?;
         }
-        let application_progress = ProgressReporter::new_unknown_total_work(tx, step_id)?;
-        graph.apply_update(&mut update, move |_| {
-            let _ = application_progress.worked(1);
-        })?;
+        update_graph(graph, &mut update, Some(step_id), tx)?;
         Ok(())
+    }
+
+    fn requires_statistics(&self) -> bool {
+        false
     }
 }
 

@@ -369,6 +369,10 @@ impl Manipulator for Visualize {
 
         Ok(())
     }
+
+    fn requires_statistics(&self) -> bool {
+        false
+    }
 }
 
 #[cfg(test)]

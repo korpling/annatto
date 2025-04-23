@@ -12,7 +12,7 @@ use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY};
 use serde::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
-use crate::progress::ProgressReporter;
+use crate::{core::update_graph, progress::ProgressReporter};
 
 use super::Manipulator;
 
@@ -128,13 +128,12 @@ impl Manipulator for FilterNodes {
                 }
             }
         }
-        let progress = ProgressReporter::new_unknown_total_work(tx, step_id)?;
-        graph.apply_update(&mut update, move |msg| {
-            if let Err(e) = progress.info(&format!("`filter` updates: {msg}")) {
-                log::error!("{e}");
-            }
-        })?;
+        update_graph(graph, &mut update, Some(step_id), tx)?;
         Ok(())
+    }
+
+    fn requires_statistics(&self) -> bool {
+        true
     }
 }
 

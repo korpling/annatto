@@ -20,8 +20,8 @@ use std::{
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
-    deserialize::deserialize_annotation_component, error::AnnattoError, progress::ProgressReporter,
-    workflow::StatusSender, StepID,
+    core::update_graph_silent, deserialize::deserialize_annotation_component, error::AnnattoError,
+    progress::ProgressReporter, workflow::StatusSender, StepID,
 };
 
 use super::Manipulator;
@@ -57,8 +57,12 @@ impl Manipulator for Collapse {
             ))?;
         }
         let mut update = self.collapse(graph, &step_id, tx)?;
-        graph.apply_update(&mut update, |_| {})?;
+        update_graph_silent(graph, &mut update)?;
         Ok(())
+    }
+
+    fn requires_statistics(&self) -> bool {
+        false
     }
 }
 

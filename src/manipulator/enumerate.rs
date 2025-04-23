@@ -14,7 +14,8 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 use tempfile::tempdir;
 
 use crate::{
-    deserialize::deserialize_anno_key, error::AnnattoError, progress::ProgressReporter, StepID,
+    core::update_graph_silent, deserialize::deserialize_anno_key, error::AnnattoError,
+    progress::ProgressReporter, StepID,
 };
 
 use super::Manipulator;
@@ -253,8 +254,12 @@ impl Manipulator for EnumerateMatches {
                 progress.worked(1)?;
             }
         }
-        graph.apply_update(&mut update, |_| {})?;
+        update_graph_silent(graph, &mut update)?;
         Ok(())
+    }
+
+    fn requires_statistics(&self) -> bool {
+        true
     }
 }
 

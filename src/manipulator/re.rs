@@ -22,6 +22,7 @@ use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
+    core::update_graph,
     deserialize::{
         deserialize_anno_key, deserialize_anno_key_opt, deserialize_annotation_component,
         deserialize_annotation_component_opt,
@@ -766,7 +767,8 @@ impl Manipulator for Revise {
         step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let progress_reporter = ProgressReporter::new_unknown_total_work(tx, step_id.clone())?;
+        let progress_reporter =
+            ProgressReporter::new_unknown_total_work(tx.clone(), step_id.clone())?;
         let mut update = GraphUpdate::default();
         for (old_name, new_name) in &self.node_names {
             rename_nodes(graph, &mut update, old_name, new_name, &step_id)?;
@@ -807,13 +809,13 @@ impl Manipulator for Revise {
                 remove_subgraph(graph, &mut update, node_name)?;
             }
         }
-        graph.apply_update(&mut update, move |msg| {
-            if let Err(e) = progress_reporter.info(&format!("`revise` updates: {msg}")) {
-                log::error!("{e}");
-            }
-        })?;
+        update_graph(graph, &mut update, Some(step_id), tx)?;
 
         Ok(())
+    }
+
+    fn requires_statistics(&self) -> bool {
+        true
     }
 }
 

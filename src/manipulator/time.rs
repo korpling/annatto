@@ -14,7 +14,7 @@ use ordered_float::OrderedFloat;
 use serde::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
-use crate::progress::ProgressReporter;
+use crate::{core::update_graph_silent, progress::ProgressReporter};
 
 use super::Manipulator;
 
@@ -112,8 +112,12 @@ impl Manipulator for Filltime {
             )?;
             progress.worked(1)?;
         }
-        graph.apply_update(&mut update, |_| {})?;
+        update_graph_silent(graph, &mut update)?;
         Ok(())
+    }
+
+    fn requires_statistics(&self) -> bool {
+        false
     }
 }
 

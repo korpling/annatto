@@ -13,7 +13,10 @@ pub mod split;
 pub mod time;
 pub mod visualize;
 
-use crate::{workflow::StatusSender, StepID};
+use crate::{
+    workflow::{StatusMessage, StatusSender},
+    StepID,
+};
 use graphannis::AnnotationGraph;
 use std::path::Path;
 
@@ -36,4 +39,27 @@ pub trait Manipulator: Sync {
         step_id: StepID,
         tx: Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>>;
+
+    /// If the manipulator queries the graph using AQL, the search requires graph statistics.
+    fn requires_statistics(&self) -> bool;
+
+    /// This step needs to be run before manipulation to make sure the graph has updated statistics,
+    /// given the module indicates the requirement via [requires_statistics()].
+    fn validate_graph(
+        &self,
+        graph: &mut AnnotationGraph,
+        step_id: StepID,
+        tx: Option<StatusSender>,
+    ) -> Result<(), anyhow::Error> {
+        if self.requires_statistics() && graph.global_statistics.is_none() {
+            if let Some(sender) = tx {
+                sender.send(StatusMessage::Info(format!(
+                    "Computing graph statistics for step {} ...",
+                    step_id.module_name
+                )))?;
+            }
+            graph.calculate_all_statistics();
+        }
+        Ok(())
+    }
 }

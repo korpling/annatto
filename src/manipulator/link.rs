@@ -1,8 +1,8 @@
 //! Created edges between nodes based on their annotation value.
 use super::Manipulator;
 use crate::{
-    deserialize::deserialize_annotation_component, error::AnnattoError, progress::ProgressReporter,
-    workflow::StatusSender, StepID,
+    core::update_graph_silent, deserialize::deserialize_annotation_component, error::AnnattoError,
+    progress::ProgressReporter, workflow::StatusSender, StepID,
 };
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
@@ -130,8 +130,12 @@ impl Manipulator for LinkNodes {
             &step_id,
         )?;
         let mut update = self.link_nodes(link_sources, link_targets, tx, step_id)?;
-        graph.apply_update(&mut update, |_| {})?;
+        update_graph_silent(graph, &mut update)?;
         Ok(())
+    }
+
+    fn requires_statistics(&self) -> bool {
+        true
     }
 }
 
