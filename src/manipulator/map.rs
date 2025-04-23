@@ -341,6 +341,9 @@ impl MapperImpl {
                         ))?;
                     }
                     self.apply_ruleset(graph)?;
+                    if i < n - 1 {
+                        graph.calculate_all_statistics()?;
+                    }
                 }
             }
             RepetitionMode::UntilUnchanged => {
@@ -355,6 +358,7 @@ impl MapperImpl {
                             p.info(&format!("Added {new_update_size} updates because of rules, repeating to apply all rules until no updates are generated."))?;
                         }
                         run_nr += 1;
+                        graph.calculate_all_statistics()?;
                     } else {
                         break;
                     }
@@ -907,6 +911,16 @@ value = "comparison"
             module_name: "test_map".to_string(),
             path: None,
         };
+        mapper
+            .validate_graph(
+                &mut g,
+                StepID {
+                    module_name: "test".to_string(),
+                    path: None,
+                },
+                None,
+            )
+            .unwrap();
         mapper
             .manipulate_corpus(&mut g, tmp.path().parent().unwrap(), step_id, None)
             .unwrap();
