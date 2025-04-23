@@ -1,0 +1,10 @@
+---
+source: src/core.rs
+expression: messages
+---
+(undefined)
+applying list of atomic updates
+applying 6 atomic updates
+extending graph with model-specific index
+memory updates completed, persisting updates to disk
+(undefined)

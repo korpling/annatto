@@ -161,15 +161,51 @@ impl SplitValues {
 mod tests {
     use std::{fs, path::Path};
 
-    use graphannis::AnnotationGraph;
+    use graphannis::{graph::AnnoKey, update::GraphUpdate, AnnotationGraph};
     use insta::assert_snapshot;
 
     use crate::{
+        core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         importer::{treetagger::ImportTreeTagger, Importer},
-        manipulator::{split::SplitValues, Manipulator},
+        manipulator::{
+            split::{default_delimiter, SplitValues},
+            Manipulator,
+        },
         test_util::export_to_string,
+        util::example_generator,
+        StepID,
     };
+
+    #[test]
+    fn graph_statistics() {
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let mut u = GraphUpdate::default();
+        example_generator::create_corpus_structure_simple(&mut u);
+        assert!(update_graph_silent(&mut graph, &mut u).is_ok());
+        let module = SplitValues {
+            delimiter: default_delimiter(),
+            anno: AnnoKey {
+                ns: "".into(),
+                name: "".into(),
+            },
+            layers: vec![],
+            delete: false,
+        };
+        assert!(module
+            .validate_graph(
+                &mut graph,
+                StepID {
+                    module_name: "test".to_string(),
+                    path: None
+                },
+                None
+            )
+            .is_ok());
+        assert!(graph.global_statistics.is_none());
+    }
 
     #[test]
     fn split_features() {

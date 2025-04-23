@@ -48,3 +48,37 @@ pub(crate) fn update_graph_silent(
 ) -> Result<(), anyhow::Error> {
     update_graph(graph, update, None, None)
 }
+
+#[cfg(test)]
+mod tests {
+    use std::sync::mpsc;
+
+    use graphannis::{update::GraphUpdate, AnnotationGraph};
+    use insta::assert_snapshot;
+    use itertools::Itertools;
+
+    use crate::{core::update_graph, util::example_generator};
+
+    #[test]
+    fn is_effective() {
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let mut u = GraphUpdate::default();
+        example_generator::create_corpus_structure_simple(&mut u);
+        let (sender, receiver) = mpsc::channel();
+        assert!(update_graph(&mut graph, &mut u, None, Some(sender)).is_ok());
+        let messages = receiver
+            .into_iter()
+            .map(|m| match m {
+                crate::workflow::StatusMessage::StepsCreated(_) => "".to_string(),
+                crate::workflow::StatusMessage::Info(msg) => msg,
+                crate::workflow::StatusMessage::Warning(w) => w,
+                crate::workflow::StatusMessage::Progress { id, .. } => id.module_name,
+                crate::workflow::StatusMessage::StepDone { id } => id.module_name,
+            })
+            .join("\n");
+        assert_snapshot!(messages);
+        assert!(graph.global_statistics.is_none());
+    }
+}

@@ -141,16 +141,43 @@ impl Manipulator for FilterNodes {
 mod tests {
     use std::{fs, path::Path};
 
-    use graphannis::AnnotationGraph;
+    use graphannis::{update::GraphUpdate, AnnotationGraph};
     use insta::assert_snapshot;
 
     use crate::{
+        core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         importer::{exmaralda::ImportEXMARaLDA, Importer},
         manipulator::{filter::FilterNodes, Manipulator},
         test_util::export_to_string,
+        util::example_generator,
         StepID,
     };
+
+    #[test]
+    fn graph_statistics() {
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let mut u = GraphUpdate::default();
+        example_generator::create_corpus_structure_simple(&mut u);
+        assert!(update_graph_silent(&mut graph, &mut u).is_ok());
+        let module = FilterNodes {
+            query: "node".to_string(),
+            inverse: false,
+        };
+        assert!(module
+            .validate_graph(
+                &mut graph,
+                StepID {
+                    module_name: "test".to_string(),
+                    path: None
+                },
+                None
+            )
+            .is_ok());
+        assert!(graph.global_statistics.is_some());
+    }
 
     #[test]
     fn default() {

@@ -46,7 +46,7 @@ pub trait Manipulator: Sync {
     /// This step needs to be run before manipulation to make sure the graph has updated statistics,
     /// given the module indicates the requirement via [requires_statistics()].
     fn validate_graph(
-        &self,
+        &self, // this is only because Rust doesn't allow associated functions for trait objects while being dyn compatible
         graph: &mut AnnotationGraph,
         step_id: StepID,
         tx: Option<StatusSender>,

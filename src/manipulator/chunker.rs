@@ -199,6 +199,7 @@ mod tests {
     use graphannis_core::graph::ANNIS_NS;
 
     use crate::{
+        core::update_graph_silent,
         manipulator::Manipulator,
         util::{example_generator, token_helper::TokenHelper},
         StepID,
@@ -206,6 +207,28 @@ mod tests {
 
     use super::Chunk;
     use pretty_assertions::assert_eq;
+
+    #[test]
+    fn graph_statistics() {
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let mut u = GraphUpdate::default();
+        example_generator::create_corpus_structure_simple(&mut u);
+        assert!(update_graph_silent(&mut graph, &mut u).is_ok());
+        let module = Chunk::default();
+        assert!(module
+            .validate_graph(
+                &mut graph,
+                StepID {
+                    module_name: "test".to_string(),
+                    path: None
+                },
+                None
+            )
+            .is_ok());
+        assert!(graph.global_statistics.is_none());
+    }
 
     #[test]
     fn simple_chunk_configuration() {

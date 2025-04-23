@@ -469,15 +469,26 @@ mod tests {
     use toml;
 
     use crate::{
-        manipulator::{
+        core::update_graph_silent, manipulator::{
             check::{AQLTest, FailurePolicy, QueryResult, ReportLevel, TestResult},
             Manipulator,
-        },
-        workflow::StatusMessage,
-        StepID,
+        }, util::example_generator, workflow::StatusMessage, StepID
     };
 
     use super::{Check, Test};
+
+    #[test]
+    fn graph_statistics() {
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let mut u = GraphUpdate::default();
+        example_generator::create_corpus_structure_simple(&mut u);
+        assert!(update_graph_silent(&mut graph, &mut u).is_ok());
+        let check: Check = Check { tests: vec![], report: None, policy: FailurePolicy::Warn, save: None };
+        assert!(check.validate_graph(&mut graph, StepID { module_name: "test".to_string(), path: None }, None).is_ok());
+        assert!(graph.global_statistics.is_some());
+    }
 
     #[test]
     fn test_check_on_disk() {
