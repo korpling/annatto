@@ -20,8 +20,8 @@ use std::{
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
-    deserialize::deserialize_annotation_component, error::AnnattoError, progress::ProgressReporter,
-    workflow::StatusSender, StepID,
+    core::update_graph_silent, deserialize::deserialize_annotation_component, error::AnnattoError,
+    progress::ProgressReporter, workflow::StatusSender, StepID,
 };
 
 use super::Manipulator;
@@ -57,8 +57,12 @@ impl Manipulator for Collapse {
             ))?;
         }
         let mut update = self.collapse(graph, &step_id, tx)?;
-        graph.apply_update(&mut update, |_| {})?;
+        update_graph_silent(graph, &mut update)?;
         Ok(())
+    }
+
+    fn requires_statistics(&self) -> bool {
+        false
     }
 }
 
@@ -463,11 +467,42 @@ mod tests {
     use serde_derive::Deserialize;
 
     use crate::{
+        core::update_graph_silent,
         manipulator::{check::Check, Manipulator},
+        util::example_generator,
         StepID,
     };
 
     use super::{Collapse, HYPERNODE_NAME_STEM};
+
+    #[test]
+    fn graph_statistics() {
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let mut u = GraphUpdate::default();
+        example_generator::create_corpus_structure_simple(&mut u);
+        assert!(update_graph_silent(&mut graph, &mut u).is_ok());
+        let module = Collapse {
+            component: AnnotationComponent::new(
+                AnnotationComponentType::Coverage,
+                ANNIS_NS.into(),
+                "".into(),
+            ),
+            disjoint: false,
+        };
+        assert!(module
+            .validate_graph(
+                &mut graph,
+                StepID {
+                    module_name: "test".to_string(),
+                    path: None
+                },
+                None
+            )
+            .is_ok());
+        assert!(graph.global_statistics.is_none());
+    }
 
     #[test]
     fn test_deser() {

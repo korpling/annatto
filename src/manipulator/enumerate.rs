@@ -14,7 +14,8 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 use tempfile::tempdir;
 
 use crate::{
-    deserialize::deserialize_anno_key, error::AnnattoError, progress::ProgressReporter, StepID,
+    core::update_graph_silent, deserialize::deserialize_anno_key, error::AnnattoError,
+    progress::ProgressReporter, StepID,
 };
 
 use super::Manipulator;
@@ -253,8 +254,12 @@ impl Manipulator for EnumerateMatches {
                 progress.worked(1)?;
             }
         }
-        graph.apply_update(&mut update, |_| {})?;
+        update_graph_silent(graph, &mut update)?;
         Ok(())
+    }
+
+    fn requires_statistics(&self) -> bool {
+        true
     }
 }
 
@@ -282,6 +287,7 @@ mod tests {
     use itertools::Itertools;
 
     use crate::{
+        core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         manipulator::Manipulator,
         test_util::{compare_results, export_to_string},
@@ -290,6 +296,28 @@ mod tests {
     };
 
     use super::EnumerateMatches;
+
+    #[test]
+    fn graph_statistics() {
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let mut u = GraphUpdate::default();
+        example_generator::create_corpus_structure_simple(&mut u);
+        assert!(update_graph_silent(&mut graph, &mut u).is_ok());
+        let module = EnumerateMatches::default();
+        assert!(module
+            .validate_graph(
+                &mut graph,
+                StepID {
+                    module_name: "test".to_string(),
+                    path: None
+                },
+                None
+            )
+            .is_ok());
+        assert!(graph.global_statistics.is_some());
+    }
 
     #[test]
     fn bare_enumerate_in_mem() {

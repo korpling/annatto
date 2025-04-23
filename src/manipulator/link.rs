@@ -1,8 +1,8 @@
 //! Created edges between nodes based on their annotation value.
 use super::Manipulator;
 use crate::{
-    deserialize::deserialize_annotation_component, error::AnnattoError, progress::ProgressReporter,
-    workflow::StatusSender, StepID,
+    core::update_graph_silent, deserialize::deserialize_annotation_component, error::AnnattoError,
+    progress::ProgressReporter, workflow::StatusSender, StepID,
 };
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
@@ -130,8 +130,12 @@ impl Manipulator for LinkNodes {
             &step_id,
         )?;
         let mut update = self.link_nodes(link_sources, link_targets, tx, step_id)?;
-        graph.apply_update(&mut update, |_| {})?;
+        update_graph_silent(graph, &mut update)?;
         Ok(())
+    }
+
+    fn requires_statistics(&self) -> bool {
+        true
     }
 }
 
@@ -284,11 +288,50 @@ mod tests {
     use insta::assert_snapshot;
 
     use crate::{
+        core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         manipulator::{link::LinkNodes, Manipulator},
         test_util::export_to_string,
+        util::example_generator,
         StepID,
     };
+
+    #[test]
+    fn graph_statistics() {
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let mut u = GraphUpdate::default();
+        example_generator::create_corpus_structure_simple(&mut u);
+        assert!(update_graph_silent(&mut graph, &mut u).is_ok());
+        let module = LinkNodes {
+            source_query: "node".to_string(),
+            source_node: 1,
+            source_value: vec![],
+            source_to_edge: vec![],
+            target_query: "node".to_string(),
+            target_node: 1,
+            target_value: vec![],
+            target_to_edge: vec![],
+            component: AnnotationComponent::new(
+                AnnotationComponentType::Pointing,
+                "".into(),
+                "link".into(),
+            ),
+            value_sep: "".to_string(),
+        };
+        assert!(module
+            .validate_graph(
+                &mut graph,
+                StepID {
+                    module_name: "test".to_string(),
+                    path: None
+                },
+                None
+            )
+            .is_ok());
+        assert!(graph.global_statistics.is_some());
+    }
 
     #[test]
     fn link() -> Result<(), Box<dyn std::error::Error>> {

@@ -2,8 +2,8 @@ use std::collections::BTreeMap;
 
 use super::Manipulator;
 use crate::{
-    deserialize::deserialize_anno_key, progress::ProgressReporter, util::token_helper::TokenHelper,
-    StepID,
+    core::update_graph_silent, deserialize::deserialize_anno_key, progress::ProgressReporter,
+    util::token_helper::TokenHelper, StepID,
 };
 use documented::{Documented, DocumentedFields};
 use graphannis::{
@@ -89,7 +89,7 @@ impl Manipulator for Chunk {
                 .collect();
             let documents = documents?;
 
-            let progress = ProgressReporter::new(tx, step_id, documents.len())?;
+            let progress = ProgressReporter::new(tx, step_id.clone(), documents.len())?;
 
             let token_helper = TokenHelper::new(graph)?;
 
@@ -176,9 +176,13 @@ impl Manipulator for Chunk {
             }
         }
 
-        graph.apply_update(&mut updates, |_| {})?;
+        update_graph_silent(graph, &mut updates)?;
 
         Ok(())
+    }
+
+    fn requires_statistics(&self) -> bool {
+        false
     }
 }
 
@@ -195,6 +199,7 @@ mod tests {
     use graphannis_core::graph::ANNIS_NS;
 
     use crate::{
+        core::update_graph_silent,
         manipulator::Manipulator,
         util::{example_generator, token_helper::TokenHelper},
         StepID,
@@ -202,6 +207,28 @@ mod tests {
 
     use super::Chunk;
     use pretty_assertions::assert_eq;
+
+    #[test]
+    fn graph_statistics() {
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let mut u = GraphUpdate::default();
+        example_generator::create_corpus_structure_simple(&mut u);
+        assert!(update_graph_silent(&mut graph, &mut u).is_ok());
+        let module = Chunk::default();
+        assert!(module
+            .validate_graph(
+                &mut graph,
+                StepID {
+                    module_name: "test".to_string(),
+                    path: None
+                },
+                None
+            )
+            .is_ok());
+        assert!(graph.global_statistics.is_none());
+    }
 
     #[test]
     fn simple_chunk_configuration() {

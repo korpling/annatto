@@ -22,6 +22,7 @@ use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
+    core::update_graph,
     deserialize::{
         deserialize_anno_key, deserialize_anno_key_opt, deserialize_annotation_component,
         deserialize_annotation_component_opt,
@@ -766,7 +767,8 @@ impl Manipulator for Revise {
         step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let progress_reporter = ProgressReporter::new_unknown_total_work(tx, step_id.clone())?;
+        let progress_reporter =
+            ProgressReporter::new_unknown_total_work(tx.clone(), step_id.clone())?;
         let mut update = GraphUpdate::default();
         for (old_name, new_name) in &self.node_names {
             rename_nodes(graph, &mut update, old_name, new_name, &step_id)?;
@@ -807,13 +809,13 @@ impl Manipulator for Revise {
                 remove_subgraph(graph, &mut update, node_name)?;
             }
         }
-        graph.apply_update(&mut update, move |msg| {
-            if let Err(e) = progress_reporter.info(&format!("`revise` updates: {msg}")) {
-                log::error!("{e}");
-            }
-        })?;
+        update_graph(graph, &mut update, Some(step_id), tx)?;
 
         Ok(())
+    }
+
+    fn requires_statistics(&self) -> bool {
+        true
     }
 }
 
@@ -823,6 +825,7 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
+    use crate::core::update_graph_silent;
     use crate::exporter::graphml::GraphMLExporter;
     use crate::importer::exmaralda::ImportEXMARaLDA;
     use crate::importer::graphml::GraphMLImporter;
@@ -831,6 +834,7 @@ mod tests {
     use crate::manipulator::Manipulator;
     use crate::progress::ProgressReporter;
     use crate::test_util::export_to_string;
+    use crate::util::example_generator;
     use crate::{Result, StepID};
 
     use graphannis::corpusstorage::{QueryLanguage, ResultOrder, SearchQuery};
@@ -845,6 +849,28 @@ mod tests {
     use tempfile::{tempdir, tempfile};
 
     use super::{revise_components, RemoveMatch};
+
+    #[test]
+    fn graph_statistics() {
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let mut u = GraphUpdate::default();
+        example_generator::create_corpus_structure_simple(&mut u);
+        assert!(update_graph_silent(&mut graph, &mut u).is_ok());
+        let module = Revise::default();
+        assert!(module
+            .validate_graph(
+                &mut graph,
+                StepID {
+                    module_name: "test".to_string(),
+                    path: None
+                },
+                None
+            )
+            .is_ok());
+        assert!(graph.global_statistics.is_some());
+    }
 
     #[test]
     fn test_remove_in_mem() {
@@ -1040,6 +1066,7 @@ to = "dipl::derived_pos"
             path: None,
         };
         let result = replace.manipulate_corpus(&mut g, tempdir()?.path(), step_id, None);
+        g.calculate_all_statistics().unwrap();
         assert_eq!(result.is_ok(), true, "Probing merge result {:?}", &result);
         let mut e_g = expected_output_for_move(on_disk)?;
         // corpus nodes

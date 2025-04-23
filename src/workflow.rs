@@ -10,10 +10,11 @@ use regex::Regex;
 use serde_derive::Deserialize;
 
 use crate::{
-    error::AnnattoError, error::Result, progress::ProgressReporter, ExporterStep, ImporterStep,
-    ManipulatorStep, StepID,
+    core::update_graph,
+    error::{AnnattoError, Result},
+    progress::ProgressReporter,
+    ExporterStep, ImporterStep, ManipulatorStep, StepID,
 };
-use log::error;
 use normpath::PathExt;
 use rayon::prelude::*;
 
@@ -206,17 +207,12 @@ impl Workflow {
         };
 
         // Apply super update
-        g.apply_update(&mut combined_updates, |msg| {
-            if let Err(e) = apply_update_reporter.info(msg) {
-                error!("{e}");
-            }
-        })
-        .map_err(|reason| AnnattoError::UpdateGraph(reason.to_string()))?;
-        if let Some(ref tx) = tx {
-            tx.send(crate::workflow::StatusMessage::StepDone {
-                id: apply_update_step_id,
-            })?;
-        }
+        update_graph(
+            &mut g,
+            &mut combined_updates,
+            Some(apply_update_step_id),
+            tx.clone(),
+        )?;
 
         // Execute all manipulators in sequence
         if let Some(ref manipulators) = self.graph_op {

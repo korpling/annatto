@@ -25,15 +25,51 @@ impl Manipulator for Sleep {
         graph.ensure_loaded_all()?;
         Ok(())
     }
+
+    fn requires_statistics(&self) -> bool {
+        false
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use graphannis::{update::GraphUpdate, AnnotationGraph};
+
+    use crate::{
+        core::update_graph_silent,
+        manipulator::{sleep::Sleep, Manipulator},
+        util::example_generator,
+        StepID,
+    };
+
     #[test]
     fn deserialize() {
         let toml_str = "seconds = 10";
         let r: Result<super::Sleep, _> = toml::from_str(toml_str);
         assert!(r.is_ok());
         assert_eq!(r.unwrap().seconds, 10);
+    }
+
+    #[test]
+    fn graph_statistics() {
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let mut u = GraphUpdate::default();
+        example_generator::create_corpus_structure_simple(&mut u);
+        assert!(update_graph_silent(&mut graph, &mut u).is_ok());
+        let module = Sleep { seconds: 0 };
+        assert!(module
+            .validate_graph(
+                &mut graph,
+                StepID {
+                    module_name: "test".to_string(),
+                    path: None
+                },
+                None
+            )
+            .is_ok());
+
+        assert!(graph.global_statistics.is_none());
     }
 }

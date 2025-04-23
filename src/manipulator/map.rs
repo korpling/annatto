@@ -2,10 +2,12 @@ use std::{
     collections::BTreeSet,
     fs,
     path::{Path, PathBuf},
+    sync::mpsc,
 };
 
 use super::Manipulator;
 use crate::{
+    core::{update_graph, update_graph_silent},
     progress::ProgressReporter,
     util::{
         token_helper::{TokenHelper, TOKEN_KEY},
@@ -192,6 +194,10 @@ impl Manipulator for MapAnnos {
 
         Ok(())
     }
+
+    fn requires_statistics(&self) -> bool {
+        true
+    }
 }
 
 fn read_config(path: &Path) -> Result<Mapping, Box<dyn std::error::Error>> {
@@ -335,6 +341,9 @@ impl MapperImpl {
                         ))?;
                     }
                     self.apply_ruleset(graph)?;
+                    if i < n - 1 {
+                        graph.calculate_all_statistics()?;
+                    }
                 }
             }
             RepetitionMode::UntilUnchanged => {
@@ -349,6 +358,7 @@ impl MapperImpl {
                             p.info(&format!("Added {new_update_size} updates because of rules, repeating to apply all rules until no updates are generated."))?;
                         }
                         run_nr += 1;
+                        graph.calculate_all_statistics()?;
                     } else {
                         break;
                     }
@@ -388,13 +398,24 @@ impl MapperImpl {
         }
         let number_of_updates = updates.len()?;
         if number_of_updates > 0 {
-            graph.apply_update(&mut updates, |msg| {
-                if let Some(p) = &self.progress {
-                    if let Err(e) = p.info(&format!("`map` updates: {msg}")) {
-                        log::error!("{e}");
-                    }
-                }
-            })?;
+            let tx_rx = if self.progress.is_some() {
+                Some(mpsc::channel())
+            } else {
+                None
+            };
+            if let Some((sender, _receiver)) = tx_rx {
+                update_graph(
+                    graph,
+                    &mut updates,
+                    Some(StepID {
+                        module_name: "map".to_string(),
+                        path: None,
+                    }),
+                    Some(sender),
+                )?;
+            } else {
+                update_graph_silent(graph, &mut updates)?;
+            }
         }
         Ok(number_of_updates)
     }
@@ -552,6 +573,31 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn graph_statistics() {
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let mut u = GraphUpdate::default();
+        example_generator::create_corpus_structure_simple(&mut u);
+        assert!(update_graph_silent(&mut graph, &mut u).is_ok());
+        let module = MapAnnos {
+            rule_file: PathBuf::from("./any_file.toml"),
+            debug: false,
+        };
+        assert!(module
+            .validate_graph(
+                &mut graph,
+                StepID {
+                    module_name: "test".to_string(),
+                    path: None
+                },
+                None
+            )
+            .is_ok());
+        assert!(graph.global_statistics.is_some());
+    }
 
     #[test]
     fn test_delete() {
@@ -891,9 +937,19 @@ value = "comparison"
             path: None,
         };
         mapper
+            .validate_graph(
+                &mut g,
+                StepID {
+                    module_name: "test".to_string(),
+                    path: None,
+                },
+                None,
+            )
+            .unwrap();
+        mapper
             .manipulate_corpus(&mut g, tmp.path().parent().unwrap(), step_id, None)
             .unwrap();
-
+        g.calculate_all_statistics().unwrap();
         let query = aql::parse(
             "mapper:form=\"comparison\" & \"more\" . \"complicated\" & #1 _l_ #2 & #1 _r_ #3",
             false,
@@ -902,7 +958,7 @@ value = "comparison"
         let result: Vec<_> = aql::execute_query_on_graph(&g, &query, true, None)
             .unwrap()
             .collect();
-        assert_eq!(1, result.len());
+        assert_eq!(1, result.len(), "Results are: {:?}", result);
         assert_eq!(true, result[0].is_ok());
     }
 

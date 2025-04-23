@@ -14,7 +14,7 @@ use ordered_float::OrderedFloat;
 use serde::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
-use crate::progress::ProgressReporter;
+use crate::{core::update_graph_silent, progress::ProgressReporter};
 
 use super::Manipulator;
 
@@ -112,8 +112,12 @@ impl Manipulator for Filltime {
             )?;
             progress.worked(1)?;
         }
-        graph.apply_update(&mut update, |_| {})?;
+        update_graph_silent(graph, &mut update)?;
         Ok(())
+    }
+
+    fn requires_statistics(&self) -> bool {
+        false
     }
 }
 
@@ -363,16 +367,40 @@ fn lr_propagate(
 mod tests {
     use std::path::Path;
 
-    use graphannis::AnnotationGraph;
+    use graphannis::{update::GraphUpdate, AnnotationGraph};
     use insta::assert_snapshot;
 
     use crate::{
+        core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         importer::{conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, Importer},
         manipulator::{time::Filltime, Manipulator},
         test_util::export_to_string,
+        util::example_generator,
         StepID,
     };
+
+    #[test]
+    fn graph_statistics() {
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let mut u = GraphUpdate::default();
+        example_generator::create_corpus_structure_simple(&mut u);
+        assert!(update_graph_silent(&mut graph, &mut u).is_ok());
+        let module = Filltime::default();
+        assert!(module
+            .validate_graph(
+                &mut graph,
+                StepID {
+                    module_name: "test".to_string(),
+                    path: None
+                },
+                None
+            )
+            .is_ok());
+        assert!(graph.global_statistics.is_none());
+    }
 
     #[test]
     fn sparse_to_full_fail() {

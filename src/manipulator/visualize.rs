@@ -369,6 +369,10 @@ impl Manipulator for Visualize {
 
         Ok(())
     }
+
+    fn requires_statistics(&self) -> bool {
+        false
+    }
 }
 
 #[cfg(test)]
@@ -379,9 +383,40 @@ mod tests {
     use insta::assert_snapshot;
     use tempfile::tempdir;
 
-    use crate::{util::example_generator, workflow::execute_from_file};
+    use crate::{
+        core::update_graph_silent, manipulator::Manipulator, util::example_generator,
+        workflow::execute_from_file, StepID,
+    };
 
     use super::Visualize;
+
+    #[test]
+    fn graph_statistics() {
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let mut u = GraphUpdate::default();
+        example_generator::create_corpus_structure_simple(&mut u);
+        assert!(update_graph_silent(&mut graph, &mut u).is_ok());
+        let module = Visualize {
+            limit_tokens: false,
+            token_limit: 0,
+            root: crate::manipulator::visualize::Include::All,
+            output_dot: None,
+            output_svg: None,
+        };
+        assert!(module
+            .validate_graph(
+                &mut graph,
+                StepID {
+                    module_name: "test".to_string(),
+                    path: None
+                },
+                None
+            )
+            .is_ok());
+        assert!(graph.global_statistics.is_none());
+    }
 
     #[test]
     fn dot_single_sentence_limit() {
