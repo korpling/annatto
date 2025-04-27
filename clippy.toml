@@ -1,0 +1,4 @@
+disallowed-methods = [
+    { path = "graphannis_core::graph::Graph::apply_update_keep_statistics", reason = "Prefer annattos wrapper functions `update_graph` or `update_graph_silent` such that annatto controls computation of graph statistics" },
+    { path = "graphannis_core::graph::Graph::apply_update", reason = "Prefer annattos wrapper functions `update_graph` or `update_graph_silent` such that annatto controls computation of graph statistics" }
+]
