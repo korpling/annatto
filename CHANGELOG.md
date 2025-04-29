@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- import `webanno` tsv format. All annotations are imported as node annotations and can be turned into edges with manipulators such as `link`.
+
 ### Changed
 
 - `time` graph op does not by default use a fallback start time, it has to be set using `fallback_start`
