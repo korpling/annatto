@@ -288,11 +288,12 @@ mod tests {
         );
         assert!(u.is_ok(), "Err: {:?}", u.err());
         let mut update = u.unwrap();
-        let g = AnnotationGraph::with_default_graphstorages(false);
+        let g = AnnotationGraph::with_default_graphstorages(true);
         assert!(g.is_ok());
         let mut graph = g.unwrap();
         assert!(update_graph_silent(&mut graph, &mut update).is_ok());
-        let actual = export_to_string(&graph, GraphMLExporter::default());
+        let exporter: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        let actual = export_to_string(&graph, exporter);
         assert!(actual.is_ok());
         assert_snapshot!(actual.unwrap());
     }
