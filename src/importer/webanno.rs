@@ -76,7 +76,7 @@ impl ImportWebAnnoTSV {
     fn process_body(
         data: Pair<Rule>,
         doc_node_name: String,
-        columns: &Vec<Option<AnnoKey>>,
+        columns: &[Option<AnnoKey>],
         update: &mut GraphUpdate,
     ) -> Result<(), anyhow::Error> {
         let mut ordering_node = None;
@@ -90,7 +90,7 @@ impl ImportWebAnnoTSV {
     fn map_sentence(
         sentence: Pair<Rule>,
         doc_node_name: &str,
-        columns: &Vec<Option<AnnoKey>>,
+        columns: &[Option<AnnoKey>],
         update: &mut GraphUpdate,
         mut previous_token: Option<String>,
     ) -> Result<Option<String>, anyhow::Error> {
@@ -150,7 +150,7 @@ impl ImportWebAnnoTSV {
     fn map_token(
         token: Pair<Rule>,
         doc_node_name: &str,
-        columns: &Vec<Option<AnnoKey>>,
+        columns: &[Option<AnnoKey>],
         update: &mut GraphUpdate,
     ) -> Result<String, anyhow::Error> {
         let mut members = token.into_inner();
@@ -209,17 +209,14 @@ impl ImportWebAnnoTSV {
     fn consume_header(data: Pair<Rule>) -> Result<Vec<Option<AnnoKey>>, anyhow::Error> {
         let mut columns = Vec::new();
         for entry in data.into_inner() {
-            match entry.as_rule() {
-                Rule::column => {
-                    columns.extend(
-                        entry
-                            .into_inner()
-                            .last()
-                            .ok_or(anyhow!("No anno spec!"))
-                            .map(Self::map_column_definition)??,
-                    );
-                }
-                _ => {}
+            if matches!(entry.as_rule(), Rule::column) {
+                columns.extend(
+                    entry
+                        .into_inner()
+                        .next_back()
+                        .ok_or(anyhow!("No anno spec!"))
+                        .map(Self::map_column_definition)??,
+                );
             }
         }
         Ok(columns)
