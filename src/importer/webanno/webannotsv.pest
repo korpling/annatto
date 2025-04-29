@@ -1,0 +1,25 @@
+data             =  { SOI ~ header ~ NEWLINE* ~ body ~ EOI }
+header           =  { format ~ column+ ~ NEWLINE }
+format           =  { "#FORMAT=" ~ name_char+ ~ NEWLINE }
+column           =  { (node_annotation | edge_annotation) ~ NEWLINE }
+edge_annotation  =  { "#T_RL=" ~ namespace ~ ("|" ~ anno_name ~ !(NEWLINE))+ ~ "|" ~ column_reference ~ &NEWLINE }
+node_annotation  =  { "#T_SP=" ~ namespace ~ ("|" ~ anno_name)+ ~ &NEWLINE }
+namespace        =  { name_char+ }
+anno_name        =  { name_char+ }
+column_reference =  { name_char+ }
+name_char        = _{ !(NEWLINE | delim | EOI | SOI | "|" | "=") ~ ANY }
+body             =  { sentence+ }
+sentence         =  { sentence_meta+ ~ token+ ~ NEWLINE? }
+sentence_meta    =  { "#" ~ anno_name ~ "=" ~ anno_value ~ NEWLINE }
+token            =  { token_id ~ delim ~ char_span ~ delim ~ form ~ (delim ~ entry?)+ ~ NEWLINE? }
+token_id         =  { ASCII_DIGIT+ ~ "-" ~ ASCII_DIGIT+ }
+char_span        =  { start_index ~ "-" ~ end_index }
+form             = @{ anno_value }
+entry            =  { empty | none | delegate | anno_value }
+start_index      =  { ASCII_DIGIT+ }
+end_index        =  { ASCII_DIGIT+ }
+anno_value       =  { (!(NEWLINE | EOI | SOI | delim) ~ ANY)+ }
+none             = @{ "_" ~ &(delim | NEWLINE | EOI) }
+delegate         = @{ "*" ~ &(delim | NEWLINE | EOI) }
+empty            = @{ "" ~ &(delim | NEWLINE) }
+delim            = _{ "\t" }

@@ -31,7 +31,8 @@ use importer::{
     graphml::GraphMLImporter, meta::AnnotateCorpus, none::CreateEmptyCorpus, opus::ImportOpusLinks,
     ptb::ImportPTB, relannis::ImportRelAnnis, saltxml::ImportSaltXml, table::ImportTable,
     textgrid::ImportTextgrid, toolbox::ImportToolBox, treetagger::ImportTreeTagger,
-    whisper::ImportWhisper, xlsx::ImportSpreadsheet, xml::ImportXML, Importer,
+    webanno::ImportWebAnnoTSV, whisper::ImportWhisper, xlsx::ImportSpreadsheet, xml::ImportXML,
+    Importer,
 };
 use manipulator::{
     check::Check, chunker::Chunk, collapse::Collapse, enumerate::EnumerateMatches,
@@ -176,6 +177,7 @@ pub enum ReadFrom {
     TextGrid(#[serde(default)] ImportTextgrid),
     Toolbox(#[serde(default)] ImportToolBox),
     TreeTagger(#[serde(default)] ImportTreeTagger),
+    Webanno(#[serde(default)] ImportWebAnnoTSV),
     Whisper(#[serde(default)] ImportWhisper),
     Xlsx(#[serde(default)] ImportSpreadsheet),
     Xml(ImportXML),
@@ -208,6 +210,7 @@ impl ReadFrom {
             ReadFrom::Whisper(m) => m,
             ReadFrom::Xlsx(m) => m,
             ReadFrom::Xml(m) => m,
+            ReadFrom::Webanno(m) => m,
         }
     }
 }
@@ -232,6 +235,7 @@ impl ReadFromDiscriminants {
             ReadFromDiscriminants::Whisper => ImportWhisper::DOCS,
             ReadFromDiscriminants::Xlsx => ImportSpreadsheet::DOCS,
             ReadFromDiscriminants::Xml => ImportXML::DOCS,
+            ReadFromDiscriminants::Webanno => ImportWebAnnoTSV::DOCS,
         }
     }
 
@@ -297,6 +301,10 @@ impl ReadFromDiscriminants {
             ReadFromDiscriminants::Whisper => (
                 ImportWhisper::FIELD_NAMES_AS_SLICE,
                 ImportWhisper::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::Webanno => (
+                ImportWebAnnoTSV::FIELD_NAMES_AS_SLICE,
+                ImportWebAnnoTSV::FIELD_DOCS,
             ),
         };
         for (idx, n) in field_names.iter().enumerate() {
