@@ -227,9 +227,9 @@ expression: actual.unwrap()
         </edge>
         <edge id="e48" source="tsv/PosDep#1-1" target="tsv/PosDep#1-2" label="Ordering/annis/">
         </edge>
-        <edge id="e49" source="tsv/PosDep" target="tsv" label="PartOf/annis/">
+        <edge id="e49" source="tsv/PosDep#sentence_line14" target="tsv/PosDep" label="PartOf/annis/">
         </edge>
-        <edge id="e50" source="tsv/PosDep#sentence_line14" target="tsv/PosDep" label="PartOf/annis/">
+        <edge id="e50" source="tsv/PosDep" target="tsv" label="PartOf/annis/">
         </edge>
         <edge id="e51" source="tsv/PosDep#sentence_line7" target="tsv/PosDep" label="PartOf/annis/">
         </edge>
