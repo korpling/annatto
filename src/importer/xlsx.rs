@@ -500,7 +500,7 @@ struct WorkbookMapper<'a> {
     doc_node_name: String,
 }
 
-impl<'a> WorkbookMapper<'a> {
+impl WorkbookMapper<'_> {
     fn import_workbook(self) -> Result<GraphUpdate, AnnattoError> {
         let mut update = GraphUpdate::default();
         let book = umya_spreadsheet::reader::xlsx::read(&self.path)?;
@@ -512,7 +512,7 @@ impl<'a> WorkbookMapper<'a> {
         if let Some(sheet) = sheet_from_address(&book, &self.datasheet, Some(0)) {
             let mapper = DatasheetMapper::new(
                 sheet,
-                &self.column_map,
+                self.column_map,
                 &reverse_col_map,
                 self.fallback.clone(),
                 self.token_annos,
