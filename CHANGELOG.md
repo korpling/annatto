@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- import `xlsx` runs each document in one thread
+
 ## [0.28.0] - 2025-05-02
 
 ### Added
