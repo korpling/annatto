@@ -1,7 +1,7 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
     fmt::Display,
-    path::Path,
+    path::PathBuf,
 };
 
 use anyhow::{anyhow, bail};
@@ -16,6 +16,7 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use percent_encoding::utf8_percent_encode;
+use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 use umya_spreadsheet::Cell;
@@ -71,7 +72,7 @@ pub struct ImportSpreadsheet {
     token_annos: Vec<String>,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(untagged)]
 enum SheetAddress {
     Numeric(usize),
@@ -194,7 +195,7 @@ struct DatasheetMapper<'a> {
     column_map: &'a BTreeMap<String, BTreeSet<String>>,
     reverse_col_map: &'a BTreeMap<String, String>,
     fallback: Option<String>,
-    token_annos: &'a Vec<String>,
+    token_annos: &'a [String],
 }
 
 impl<'a> DatasheetMapper<'a> {
@@ -203,7 +204,7 @@ impl<'a> DatasheetMapper<'a> {
         column_map: &'a BTreeMap<String, BTreeSet<String>>,
         reverse_col_map: &'a BTreeMap<String, String>,
         fallback: Option<String>,
-        token_annos: &'a Vec<String>,
+        token_annos: &'a [String],
     ) -> Result<DatasheetMapper<'a>, anyhow::Error> {
         Ok(DatasheetMapper {
             sheet,
@@ -487,17 +488,22 @@ impl<'a> DatasheetMapper<'a> {
     }
 }
 
-const FILE_EXTENSIONS: [&str; 1] = ["xlsx"];
+struct WorkbookMapper<'a> {
+    progress: &'a ProgressReporter,
+    path: PathBuf,
+    column_map: &'a BTreeMap<String, BTreeSet<String>>,
+    datasheet: Option<SheetAddress>,
+    metasheet: Option<SheetAddress>,
+    metasheet_skip_rows: usize,
+    fallback: Option<String>,
+    token_annos: &'a [String],
+    doc_node_name: String,
+}
 
-impl ImportSpreadsheet {
-    fn import_workbook(
-        &self,
-        update: &mut GraphUpdate,
-        path: &Path,
-        doc_node_name: &str,
-        progress_reporter: &ProgressReporter,
-    ) -> Result<(), AnnattoError> {
-        let book = umya_spreadsheet::reader::xlsx::read(path)?;
+impl<'a> WorkbookMapper<'a> {
+    fn import_workbook(self) -> Result<GraphUpdate, AnnattoError> {
+        let mut update = GraphUpdate::default();
+        let book = umya_spreadsheet::reader::xlsx::read(&self.path)?;
         let reverse_col_map = self
             .column_map
             .iter()
@@ -509,17 +515,21 @@ impl ImportSpreadsheet {
                 &self.column_map,
                 &reverse_col_map,
                 self.fallback.clone(),
-                &self.token_annos,
+                self.token_annos,
             )?;
-            mapper.import_datasheet(doc_node_name, update, progress_reporter)?;
+            mapper.import_datasheet(&self.doc_node_name, &mut update, self.progress)?;
         }
         if let Some(sheet) = sheet_from_address(&book, &self.metasheet, None) {
             let mapper = MetasheetMapper::new(sheet, self.metasheet_skip_rows)?;
-            mapper.import_as_metadata(doc_node_name, update)?;
+            mapper.import_as_metadata(&self.doc_node_name, &mut update)?;
         }
-        Ok(())
+        Ok(update)
     }
 }
+
+const FILE_EXTENSIONS: [&str; 1] = ["xlsx"];
+
+impl ImportSpreadsheet {}
 
 impl Importer for ImportSpreadsheet {
     fn import_corpus(
@@ -538,13 +548,38 @@ impl Importer for ImportSpreadsheet {
         let number_of_files = all_files.len();
         // Each file is a work step
         let reporter = ProgressReporter::new(tx, step_id.clone(), number_of_files)?;
-        all_files.into_iter().try_for_each(|(pb, doc_node_name)| {
-            reporter.info(&format!("Importing {}", pb.to_string_lossy()))?;
-            self.import_workbook(&mut updates, &pb, &doc_node_name, &reporter)?;
-            reporter.worked(1)?;
-            Ok::<(), AnnattoError>(())
-        })?;
-
+        // all_files.into_iter().try_for_each(|(pb, doc_node_name)| {
+        //     reporter.info(&format!("Importing {}", pb.to_string_lossy()))?;
+        //     self.import_workbook(&mut updates, &pb, &doc_node_name, &reporter)?;
+        //     reporter.worked(1)?;
+        //     Ok::<(), AnnattoError>(())
+        // })?;
+        let mapper_vec = all_files
+            .into_iter()
+            .map(|(p, d)| WorkbookMapper {
+                progress: &reporter,
+                path: p.to_path_buf(),
+                column_map: &self.column_map,
+                datasheet: self.datasheet.clone(),
+                metasheet: self.metasheet.clone(),
+                metasheet_skip_rows: self.metasheet_skip_rows,
+                fallback: self.fallback.clone(),
+                token_annos: &self.token_annos,
+                doc_node_name: d.to_string(),
+            })
+            .collect_vec();
+        let mut results = Vec::with_capacity(mapper_vec.len());
+        mapper_vec
+            .into_par_iter()
+            .map(|m| m.import_workbook())
+            .collect_into_vec(&mut results);
+        for result in results {
+            let update = result?;
+            for entry in update.iter()? {
+                let (_, ue) = entry?;
+                updates.add_event(ue)?;
+            }
+        }
         Ok(updates)
     }
 
@@ -555,7 +590,7 @@ impl Importer for ImportSpreadsheet {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::mpsc;
+    use std::{path::Path, sync::mpsc};
 
     use graphannis::{
         corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
@@ -571,6 +606,33 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn multiple() {
+        let path = Path::new("./tests/data/import/xlsx/parallel/");
+        let config = "column_map = { txt = [\"sent\", \"clause\", \"pos\", \"lemma\"] }";
+        let m: Result<ImportSpreadsheet, _> = toml::from_str(config);
+        assert!(m.is_ok(), "Could not deserialize config: {:?}", m.err());
+        let import = m.unwrap();
+        let u = import.import_corpus(
+            path,
+            StepID {
+                module_name: "test_xslx_import".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(u.is_ok(), "Failed to import: {:?}", u.err());
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut u.unwrap(), |_| {}).is_ok());
+        let e: Result<GraphMLExporter, _> = toml::from_str("stable_order = true");
+        assert!(e.is_ok(), "Could not deserialize exporter: {:?}", e.err());
+        let actual = export_to_string(&graph, e.unwrap());
+        assert!(actual.is_ok(), "Could not export: {:?}", actual.err());
+        assert_snapshot!(actual.unwrap());
+    }
 
     #[test]
     fn snapshot_test() {
