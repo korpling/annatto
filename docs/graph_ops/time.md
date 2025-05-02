@@ -13,4 +13,18 @@ action = "time"
 [graph_op.config]
 ```
 
-*No Configuration*
+## Configuration
+
+###  fallback_start
+
+A fallback start time in case it cannot be derived.
+
+Example:
+```toml
+[[graph_op]]
+action = "time"
+
+[graph_op.config]
+fallback_start = 0.0
+```
+
