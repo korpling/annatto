@@ -76,7 +76,7 @@ impl ImportWebAnnoTSV {
     fn process_body(
         data: Pair<Rule>,
         doc_node_name: String,
-        columns: &[Option<AnnoKey>],
+        columns: &[AnnotationGroup],
         update: &mut GraphUpdate,
     ) -> Result<(), anyhow::Error> {
         let mut ordering_node = None;
@@ -90,7 +90,7 @@ impl ImportWebAnnoTSV {
     fn map_sentence(
         sentence: Pair<Rule>,
         doc_node_name: &str,
-        columns: &[Option<AnnoKey>],
+        columns: &[AnnotationGroup],
         update: &mut GraphUpdate,
         mut previous_token: Option<String>,
     ) -> Result<Option<String>, anyhow::Error> {
@@ -150,20 +150,23 @@ impl ImportWebAnnoTSV {
     fn map_token(
         token: Pair<Rule>,
         doc_node_name: &str,
-        columns: &[Option<AnnoKey>],
+        columns: &[AnnotationGroup],
         update: &mut GraphUpdate,
     ) -> Result<String, anyhow::Error> {
-        let mut members = token.into_inner();
-        let id = members.next().ok_or(anyhow!("Token has no id"))?.as_str();
+        let mut token_columns = token.into_inner();
+        let id = token_columns
+            .next()
+            .ok_or(anyhow!("Token has no id"))?
+            .as_str();
         let token_name = format!("{doc_node_name}#{id}");
         update.add_event(UpdateEvent::AddNode {
             node_name: token_name.to_string(),
             node_type: "node".to_string(),
         })?;
-        members
+        token_columns
             .next()
             .ok_or(anyhow!("No character span for token {}", id))?;
-        let form = members
+        let form = token_columns
             .next()
             .ok_or(anyhow!(
                 "No form for token {id} in document {doc_node_name}"
@@ -175,42 +178,132 @@ impl ImportWebAnnoTSV {
             anno_name: "tok".to_string(),
             anno_value: form.to_string(),
         })?;
-        for (anno_key_opt, column_value) in columns.iter().zip(members) {
-            if let Some(key) = anno_key_opt {
-                if !matches!(column_value.as_rule(), Rule::anno_value) {
-                    continue;
+        for anno_group in columns {
+            match anno_group {
+                AnnotationGroup::NodeBare { keys } => {
+                    for key in keys {
+                        let entry = token_columns.next().ok_or(anyhow!(
+                            "Missing column entry {}::{} for token {}",
+                            key.ns,
+                            key.name,
+                            &token_name
+                        ))?;
+                        let value = entry
+                            .into_inner()
+                            .next()
+                            .ok_or(anyhow!("Column entry cannot be resolved"))?;
+                        if matches!(value.as_rule(), Rule::delegate | Rule::none | Rule::empty) {
+                            continue;
+                        }
+                        let anno_value = value.as_str();
+                        update.add_event(UpdateEvent::AddNodeLabel {
+                            node_name: token_name.to_string(),
+                            anno_ns: key.ns.to_string(),
+                            anno_name: key.name.to_string(),
+                            anno_value: anno_value.to_string(),
+                        })?;
+                    }
                 }
-                let value = column_value.as_str().trim();
-                if key.name.is_empty() {
-                    // annotation names are coded in the value as feature string
-                    for single_anno in column_value.as_str().split("|") {
-                        if let Some((k, v)) = single_anno.split_once("=") {
+                AnnotationGroup::NodeParse { ns, size, index } => {
+                    // advance to the relevant index
+                    (0..*index).for_each(|_| {
+                        token_columns.next();
+                    });
+                    let feature_vec = token_columns
+                        .next()
+                        .ok_or(anyhow!(
+                            "Could not reach vector column {ns} for token {}",
+                            &token_name
+                        ))?
+                        .into_inner()
+                        .next()
+                        .ok_or(anyhow!("Could not read column vector values"))?;
+                    if !matches!(feature_vec.as_rule(), Rule::anno_value) {
+                        continue;
+                    }
+                    for entry in feature_vec.as_str().split("\\|") {
+                        if let Some((name, value)) = entry.split_once("=") {
                             update.add_event(UpdateEvent::AddNodeLabel {
                                 node_name: token_name.to_string(),
-                                anno_ns: key.ns.to_string(),
-                                anno_name: k.to_string(),
-                                anno_value: v.to_string(),
+                                anno_ns: ns.to_string(),
+                                anno_name: name.trim().to_string(),
+                                anno_value: value.trim().to_string(),
+                            })?;
+                        } else {
+                            update.add_event(UpdateEvent::AddNodeLabel {
+                                node_name: token_name.to_string(),
+                                anno_ns: ns.to_string(),
+                                anno_name: ns.to_string(),
+                                anno_value: entry.to_string(),
                             })?;
                         }
                     }
-                } else {
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: token_name.to_string(),
-                        anno_ns: key.ns.to_string(),
-                        anno_name: key.name.to_string(),
-                        anno_value: value.to_string(),
+                    // advance to the end of the column group
+                    (*index..*size - 1).for_each(|_| {
+                        token_columns.next();
+                    });
+                }
+                AnnotationGroup::Edge {
+                    layer: edge_name,
+                    keys,
+                } => {
+                    let mut annotations = Vec::with_capacity(keys.len());
+                    for key in keys {
+                        let entry = token_columns
+                            .next()
+                            .ok_or(anyhow!(
+                                "Column for edge annotation {}::{} not available.",
+                                key.ns,
+                                key.name
+                            ))?
+                            .into_inner()
+                            .next()
+                            .ok_or(anyhow!("Could not read column value"))?;
+                        if matches!(entry.as_rule(), Rule::delegate | Rule::none | Rule::empty) {
+                            continue;
+                        }
+                        let value = entry.as_str();
+                        annotations.push((key, value));
+                    }
+                    let source_ref = token_columns
+                        .next()
+                        .ok_or(anyhow!("Edge source id could not be retrieved"))?
+                        .as_str();
+                    let source_name = format!("{doc_node_name}#{source_ref}");
+                    update.add_event(UpdateEvent::AddNode {
+                        node_name: source_name.to_string(),
+                        node_type: "node".to_string(),
+                    })?; // just in case, it will be build at some point anyway
+                    update.add_event(UpdateEvent::AddEdge {
+                        source_node: source_name.to_string(),
+                        target_node: token_name.to_string(),
+                        layer: "".to_string(),
+                        component_type: AnnotationComponentType::Pointing.to_string(),
+                        component_name: edge_name.to_string(),
                     })?;
+                    for (key, value) in annotations {
+                        update.add_event(UpdateEvent::AddEdgeLabel {
+                            source_node: source_name.to_string(),
+                            target_node: token_name.to_string(),
+                            layer: "".to_string(),
+                            component_type: AnnotationComponentType::Pointing.to_string(),
+                            component_name: edge_name.to_string(),
+                            anno_ns: key.ns.to_string(),
+                            anno_name: key.name.to_string(),
+                            anno_value: value.to_string(),
+                        })?;
+                    }
                 }
             }
         }
         Ok(token_name.to_string())
     }
 
-    fn consume_header(data: Pair<Rule>) -> Result<Vec<Option<AnnoKey>>, anyhow::Error> {
+    fn consume_header(data: Pair<Rule>) -> Result<Vec<AnnotationGroup>, anyhow::Error> {
         let mut columns = Vec::new();
         for entry in data.into_inner() {
             if matches!(entry.as_rule(), Rule::column) {
-                columns.extend(
+                columns.push(
                     entry
                         .into_inner()
                         .next_back()
@@ -222,38 +315,65 @@ impl ImportWebAnnoTSV {
         Ok(columns)
     }
 
-    fn map_column_definition(data: Pair<Rule>) -> Result<Vec<Option<AnnoKey>>, anyhow::Error> {
+    fn map_column_definition(data: Pair<Rule>) -> Result<AnnotationGroup, anyhow::Error> {
         let rule = data.as_rule();
         let mut entries = data.into_inner().map(|p| p.as_str()).collect_vec();
-        let (namespace, annotations) = match rule {
-            Rule::edge_annotation | Rule::node_annotation => {
-                // TODO future work -> properly import edge annotations as edge annotations
-                (entries.remove(0).split(".").last(), entries)
+        let first = entries.remove(0);
+        let ns = first.split(".").last().unwrap_or_default();
+        let group = match rule {
+            Rule::edge_annotation => {
+                entries.pop(); // last one is always reference column (containing the governing id)
+                AnnotationGroup::Edge {
+                    layer: ns.to_string(),
+                    keys: entries
+                        .into_iter()
+                        .map(|s| AnnoKey {
+                            ns: ns.into(),
+                            name: s.into(),
+                        })
+                        .collect_vec(),
+                }
+            }
+            Rule::node_annotation => {
+                if let Some(index) = entries.iter().position(|s| s == &"value") {
+                    AnnotationGroup::NodeParse {
+                        ns: ns.to_string(),
+                        size: entries.len(),
+                        index,
+                    }
+                } else {
+                    AnnotationGroup::NodeBare {
+                        keys: entries
+                            .into_iter()
+                            .map(|s| AnnoKey {
+                                ns: ns.into(),
+                                name: s.into(),
+                            })
+                            .collect_vec(),
+                    }
+                }
             }
             _ => {
                 bail!("Illegal mapping rule.")
             }
         };
-        let column_keys = if let Some(index) = annotations.iter().position(|s| *s == "value") {
-            let mut v = vec![None; annotations.len()];
-            v[index] = Some(AnnoKey {
-                ns: namespace.unwrap_or_default().into(),
-                name: "".into(),
-            });
-            v
-        } else {
-            annotations
-                .into_iter()
-                .map(|s| {
-                    Some(AnnoKey {
-                        ns: namespace.unwrap_or_default().into(),
-                        name: s.into(),
-                    })
-                })
-                .collect_vec()
-        };
-        Ok(column_keys)
+        Ok(group)
     }
+}
+
+enum AnnotationGroup {
+    NodeBare {
+        keys: Vec<AnnoKey>,
+    },
+    NodeParse {
+        ns: String,
+        size: usize,
+        index: usize,
+    },
+    Edge {
+        layer: String,
+        keys: Vec<AnnoKey>,
+    },
 }
 
 #[derive(Parser)]

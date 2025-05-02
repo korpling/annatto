@@ -6,134 +6,171 @@ expression: actual.unwrap()
 <?xml version="1.0" encoding="UTF-8"?>
 <graphml>
     <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>
-    <key id="k1" for="node" attr.name="Text" attr.type="string"/>
-    <key id="k2" for="node" attr.name="annis::doc" attr.type="string"/>
-    <key id="k3" for="node" attr.name="annis::node_type" attr.type="string"/>
-    <key id="k4" for="node" attr.name="annis::tok" attr.type="string"/>
+    <key id="k1" for="node" attr.name="NamedEntity::NamedEntity" attr.type="string"/>
+    <key id="k2" for="node" attr.name="POS::PosValue" attr.type="string"/>
+    <key id="k3" for="node" attr.name="Text" attr.type="string"/>
+    <key id="k4" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k5" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k6" for="node" attr.name="annis::tok" attr.type="string"/>
+    <key id="k7" for="node" attr.name="Dependency::DependencyType" attr.type="string"/>
     <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
         <data key="k0"><![CDATA[
 # configure visualizations here
 ]]></data>
         <node id="tsv">
-            <data key="k3">corpus</data>
+            <data key="k5">corpus</data>
         </node>
         <node id="tsv/PosDep">
-            <data key="k2">PosDep</data>
-            <data key="k3">corpus</data>
+            <data key="k4">PosDep</data>
+            <data key="k5">corpus</data>
         </node>
         <node id="tsv/PosDep#sentence_line7">
-            <data key="k1">Ms. Haag plays Elianti .</data>
-            <data key="k3">node</data>
+            <data key="k3">Ms. Haag plays Elianti .</data>
+            <data key="k5">node</data>
         </node>
         <node id="tsv/PosDep#1-1">
-            <data key="k3">node</data>
-            <data key="k4">Ms.</data>
-        </node>
-        <node id="tsv/PosDep#1-2">
-            <data key="k3">node</data>
-            <data key="k4">Haag</data>
+            <data key="k1">PER[1]</data>
+            <data key="k2">NNP</data>
+            <data key="k5">node</data>
+            <data key="k6">Ms.</data>
         </node>
         <node id="tsv/PosDep#1-3">
-            <data key="k3">node</data>
-            <data key="k4">plays</data>
+            <data key="k2">VBD</data>
+            <data key="k5">node</data>
+            <data key="k6">plays</data>
+        </node>
+        <node id="tsv/PosDep#1-2">
+            <data key="k1">PER[1]</data>
+            <data key="k2">NNP</data>
+            <data key="k5">node</data>
+            <data key="k6">Haag</data>
+        </node>
+        <node id="tsv/PosDep#_">
+            <data key="k5">node</data>
         </node>
         <node id="tsv/PosDep#1-4">
-            <data key="k3">node</data>
-            <data key="k4">Elianti</data>
+            <data key="k1">OTH</data>
+            <data key="k2">NNP</data>
+            <data key="k5">node</data>
+            <data key="k6">Elianti</data>
         </node>
         <node id="tsv/PosDep#1-5">
-            <data key="k3">node</data>
-            <data key="k4">.</data>
+            <data key="k2">.</data>
+            <data key="k5">node</data>
+            <data key="k6">.</data>
         </node>
         <node id="tsv/PosDep#sentence_line14">
-            <data key="k1">Rolls-Royce Motor Cars Inc. said it expects its U.S. sales to remain steady at about 1,200 cars in 1990 .</data>
-            <data key="k3">node</data>
+            <data key="k3">Rolls-Royce Motor Cars Inc. said it expects its U.S. sales to remain steady at about 1,200 cars in 1990 .</data>
+            <data key="k5">node</data>
         </node>
         <node id="tsv/PosDep#2-1">
-            <data key="k3">node</data>
-            <data key="k4">Rolls-Royce</data>
-        </node>
-        <node id="tsv/PosDep#2-2">
-            <data key="k3">node</data>
-            <data key="k4">Motor</data>
+            <data key="k1">ORG[3]</data>
+            <data key="k2">NNP</data>
+            <data key="k5">node</data>
+            <data key="k6">Rolls-Royce</data>
         </node>
         <node id="tsv/PosDep#2-3">
-            <data key="k3">node</data>
-            <data key="k4">Cars</data>
+            <data key="k2">NNPS</data>
+            <data key="k5">node</data>
+            <data key="k6">Cars</data>
         </node>
-        <node id="tsv/PosDep#2-4">
-            <data key="k3">node</data>
-            <data key="k4">Inc.</data>
+        <node id="tsv/PosDep#2-2">
+            <data key="k1">ORG[3]</data>
+            <data key="k2">NNP</data>
+            <data key="k5">node</data>
+            <data key="k6">Motor</data>
         </node>
         <node id="tsv/PosDep#2-5">
-            <data key="k3">node</data>
-            <data key="k4">said</data>
+            <data key="k2">VBD</data>
+            <data key="k5">node</data>
+            <data key="k6">said</data>
+        </node>
+        <node id="tsv/PosDep#2-4">
+            <data key="k2">NNP</data>
+            <data key="k5">node</data>
+            <data key="k6">Inc.</data>
         </node>
         <node id="tsv/PosDep#2-6">
-            <data key="k3">node</data>
-            <data key="k4">it</data>
+            <data key="k2">PRP</data>
+            <data key="k5">node</data>
+            <data key="k6">it</data>
         </node>
         <node id="tsv/PosDep#2-7">
-            <data key="k3">node</data>
-            <data key="k4">expects</data>
+            <data key="k2">VBZ</data>
+            <data key="k5">node</data>
+            <data key="k6">expects</data>
         </node>
         <node id="tsv/PosDep#2-8">
-            <data key="k3">node</data>
-            <data key="k4">its</data>
-        </node>
-        <node id="tsv/PosDep#2-9">
-            <data key="k3">node</data>
-            <data key="k4">U.S.</data>
+            <data key="k2">PRP$</data>
+            <data key="k5">node</data>
+            <data key="k6">its</data>
         </node>
         <node id="tsv/PosDep#2-10">
-            <data key="k3">node</data>
-            <data key="k4">sales</data>
+            <data key="k2">NNS</data>
+            <data key="k5">node</data>
+            <data key="k6">sales</data>
+        </node>
+        <node id="tsv/PosDep#2-9">
+            <data key="k1">LOC</data>
+            <data key="k2">NNP</data>
+            <data key="k5">node</data>
+            <data key="k6">U.S.</data>
         </node>
         <node id="tsv/PosDep#2-11">
-            <data key="k3">node</data>
-            <data key="k4">to</data>
+            <data key="k2">TO</data>
+            <data key="k5">node</data>
+            <data key="k6">to</data>
         </node>
         <node id="tsv/PosDep#2-12">
-            <data key="k3">node</data>
-            <data key="k4">remain</data>
+            <data key="k2">VB</data>
+            <data key="k5">node</data>
+            <data key="k6">remain</data>
         </node>
         <node id="tsv/PosDep#2-13">
-            <data key="k3">node</data>
-            <data key="k4">steady</data>
+            <data key="k2">JJ</data>
+            <data key="k5">node</data>
+            <data key="k6">steady</data>
         </node>
         <node id="tsv/PosDep#2-14">
-            <data key="k3">node</data>
-            <data key="k4">at</data>
+            <data key="k2">IN</data>
+            <data key="k5">node</data>
+            <data key="k6">at</data>
         </node>
         <node id="tsv/PosDep#2-15">
-            <data key="k3">node</data>
-            <data key="k4">about</data>
+            <data key="k2">IN</data>
+            <data key="k5">node</data>
+            <data key="k6">about</data>
         </node>
         <node id="tsv/PosDep#2-16">
-            <data key="k3">node</data>
-            <data key="k4">1,200</data>
+            <data key="k2">CD</data>
+            <data key="k5">node</data>
+            <data key="k6">1,200</data>
         </node>
         <node id="tsv/PosDep#2-17">
-            <data key="k3">node</data>
-            <data key="k4">cars</data>
+            <data key="k2">NNS</data>
+            <data key="k5">node</data>
+            <data key="k6">cars</data>
         </node>
         <node id="tsv/PosDep#2-18">
-            <data key="k3">node</data>
-            <data key="k4">in</data>
+            <data key="k2">IN</data>
+            <data key="k5">node</data>
+            <data key="k6">in</data>
         </node>
         <node id="tsv/PosDep#2-19">
-            <data key="k3">node</data>
-            <data key="k4">1990</data>
+            <data key="k2">CD</data>
+            <data key="k5">node</data>
+            <data key="k6">1990</data>
         </node>
         <node id="tsv/PosDep#2-20">
-            <data key="k3">node</data>
-            <data key="k4">.</data>
+            <data key="k2">.</data>
+            <data key="k5">node</data>
+            <data key="k6">.</data>
         </node>
         <edge id="e0" source="tsv/PosDep#sentence_line7" target="tsv/PosDep#1-1" label="Coverage/annis/">
         </edge>
-        <edge id="e1" source="tsv/PosDep#sentence_line7" target="tsv/PosDep#1-2" label="Coverage/annis/">
+        <edge id="e1" source="tsv/PosDep#sentence_line7" target="tsv/PosDep#1-3" label="Coverage/annis/">
         </edge>
-        <edge id="e2" source="tsv/PosDep#sentence_line7" target="tsv/PosDep#1-3" label="Coverage/annis/">
+        <edge id="e2" source="tsv/PosDep#sentence_line7" target="tsv/PosDep#1-2" label="Coverage/annis/">
         </edge>
         <edge id="e3" source="tsv/PosDep#sentence_line7" target="tsv/PosDep#1-4" label="Coverage/annis/">
         </edge>
@@ -141,13 +178,13 @@ expression: actual.unwrap()
         </edge>
         <edge id="e5" source="tsv/PosDep#sentence_line14" target="tsv/PosDep#2-1" label="Coverage/annis/">
         </edge>
-        <edge id="e6" source="tsv/PosDep#sentence_line14" target="tsv/PosDep#2-2" label="Coverage/annis/">
+        <edge id="e6" source="tsv/PosDep#sentence_line14" target="tsv/PosDep#2-3" label="Coverage/annis/">
         </edge>
-        <edge id="e7" source="tsv/PosDep#sentence_line14" target="tsv/PosDep#2-3" label="Coverage/annis/">
+        <edge id="e7" source="tsv/PosDep#sentence_line14" target="tsv/PosDep#2-2" label="Coverage/annis/">
         </edge>
-        <edge id="e8" source="tsv/PosDep#sentence_line14" target="tsv/PosDep#2-4" label="Coverage/annis/">
+        <edge id="e8" source="tsv/PosDep#sentence_line14" target="tsv/PosDep#2-5" label="Coverage/annis/">
         </edge>
-        <edge id="e9" source="tsv/PosDep#sentence_line14" target="tsv/PosDep#2-5" label="Coverage/annis/">
+        <edge id="e9" source="tsv/PosDep#sentence_line14" target="tsv/PosDep#2-4" label="Coverage/annis/">
         </edge>
         <edge id="e10" source="tsv/PosDep#sentence_line14" target="tsv/PosDep#2-6" label="Coverage/annis/">
         </edge>
@@ -155,9 +192,9 @@ expression: actual.unwrap()
         </edge>
         <edge id="e12" source="tsv/PosDep#sentence_line14" target="tsv/PosDep#2-8" label="Coverage/annis/">
         </edge>
-        <edge id="e13" source="tsv/PosDep#sentence_line14" target="tsv/PosDep#2-9" label="Coverage/annis/">
+        <edge id="e13" source="tsv/PosDep#sentence_line14" target="tsv/PosDep#2-10" label="Coverage/annis/">
         </edge>
-        <edge id="e14" source="tsv/PosDep#sentence_line14" target="tsv/PosDep#2-10" label="Coverage/annis/">
+        <edge id="e14" source="tsv/PosDep#sentence_line14" target="tsv/PosDep#2-9" label="Coverage/annis/">
         </edge>
         <edge id="e15" source="tsv/PosDep#sentence_line14" target="tsv/PosDep#2-11" label="Coverage/annis/">
         </edge>
@@ -179,59 +216,128 @@ expression: actual.unwrap()
         </edge>
         <edge id="e24" source="tsv/PosDep#sentence_line14" target="tsv/PosDep#2-20" label="Coverage/annis/">
         </edge>
-        <edge id="e25" source="tsv/PosDep#1-1" target="tsv/PosDep#1-2" label="Ordering/annis/">
+        <edge id="e25" source="tsv/PosDep#1-3" target="tsv/PosDep#1-1" label="Pointing//Dependency">
+            <data key="k7">SUBJ</data>
         </edge>
-        <edge id="e26" source="tsv/PosDep#1-2" target="tsv/PosDep#1-3" label="Ordering/annis/">
+        <edge id="e26" source="tsv/PosDep#1-3" target="tsv/PosDep#1-2" label="Pointing//Dependency">
+            <data key="k7">SBJ</data>
         </edge>
-        <edge id="e27" source="tsv/PosDep#1-3" target="tsv/PosDep#1-4" label="Ordering/annis/">
+        <edge id="e27" source="tsv/PosDep#1-3" target="tsv/PosDep#1-4" label="Pointing//Dependency">
+            <data key="k7">OBJ</data>
         </edge>
-        <edge id="e28" source="tsv/PosDep#1-4" target="tsv/PosDep#1-5" label="Ordering/annis/">
+        <edge id="e28" source="tsv/PosDep#_" target="tsv/PosDep#1-3" label="Pointing//Dependency">
+            <data key="k7">ROOT</data>
         </edge>
-        <edge id="e29" source="tsv/PosDep#1-5" target="tsv/PosDep#2-1" label="Ordering/annis/">
+        <edge id="e29" source="tsv/PosDep#_" target="tsv/PosDep#1-5" label="Pointing//Dependency">
         </edge>
-        <edge id="e30" source="tsv/PosDep#2-1" target="tsv/PosDep#2-2" label="Ordering/annis/">
+        <edge id="e30" source="tsv/PosDep#_" target="tsv/PosDep#2-11" label="Pointing//Dependency">
         </edge>
-        <edge id="e31" source="tsv/PosDep#2-2" target="tsv/PosDep#2-3" label="Ordering/annis/">
+        <edge id="e31" source="tsv/PosDep#_" target="tsv/PosDep#2-18" label="Pointing//Dependency">
         </edge>
-        <edge id="e32" source="tsv/PosDep#2-3" target="tsv/PosDep#2-4" label="Ordering/annis/">
+        <edge id="e32" source="tsv/PosDep#2-3" target="tsv/PosDep#2-1" label="Pointing//Dependency">
+            <data key="k7">NAME</data>
         </edge>
-        <edge id="e33" source="tsv/PosDep#2-4" target="tsv/PosDep#2-5" label="Ordering/annis/">
+        <edge id="e33" source="tsv/PosDep#2-3" target="tsv/PosDep#2-2" label="Pointing//Dependency">
+            <data key="k7">NAME</data>
         </edge>
-        <edge id="e34" source="tsv/PosDep#2-5" target="tsv/PosDep#2-6" label="Ordering/annis/">
+        <edge id="e34" source="tsv/PosDep#2-3" target="tsv/PosDep#2-4" label="Pointing//Dependency">
+            <data key="k7">POSTHON</data>
         </edge>
-        <edge id="e35" source="tsv/PosDep#2-6" target="tsv/PosDep#2-7" label="Ordering/annis/">
+        <edge id="e35" source="tsv/PosDep#2-5" target="tsv/PosDep#2-3" label="Pointing//Dependency">
+            <data key="k7">SBJ</data>
         </edge>
-        <edge id="e36" source="tsv/PosDep#2-7" target="tsv/PosDep#2-8" label="Ordering/annis/">
+        <edge id="e36" source="tsv/PosDep#2-5" target="tsv/PosDep#2-7" label="Pointing//Dependency">
+            <data key="k7">OBJ</data>
         </edge>
-        <edge id="e37" source="tsv/PosDep#2-8" target="tsv/PosDep#2-9" label="Ordering/annis/">
+        <edge id="e37" source="tsv/PosDep#2-5" target="tsv/PosDep#2-20" label="Pointing//Dependency">
+            <data key="k7">P</data>
         </edge>
-        <edge id="e38" source="tsv/PosDep#2-9" target="tsv/PosDep#2-10" label="Ordering/annis/">
+        <edge id="e38" source="tsv/PosDep#2-7" target="tsv/PosDep#2-6" label="Pointing//Dependency">
+            <data key="k7">SBJ</data>
         </edge>
-        <edge id="e39" source="tsv/PosDep#2-10" target="tsv/PosDep#2-11" label="Ordering/annis/">
+        <edge id="e39" source="tsv/PosDep#2-7" target="tsv/PosDep#2-10" label="Pointing//Dependency">
+            <data key="k7">OBJ</data>
         </edge>
-        <edge id="e40" source="tsv/PosDep#2-11" target="tsv/PosDep#2-12" label="Ordering/annis/">
+        <edge id="e40" source="tsv/PosDep#2-10" target="tsv/PosDep#2-8" label="Pointing//Dependency">
+            <data key="k7">NMOD</data>
         </edge>
-        <edge id="e41" source="tsv/PosDep#2-12" target="tsv/PosDep#2-13" label="Ordering/annis/">
+        <edge id="e41" source="tsv/PosDep#2-10" target="tsv/PosDep#2-9" label="Pointing//Dependency">
+            <data key="k7">NMOD</data>
         </edge>
-        <edge id="e42" source="tsv/PosDep#2-13" target="tsv/PosDep#2-14" label="Ordering/annis/">
+        <edge id="e42" source="tsv/PosDep#2-11" target="tsv/PosDep#2-12" label="Pointing//Dependency">
+            <data key="k7">IM</data>
         </edge>
-        <edge id="e43" source="tsv/PosDep#2-14" target="tsv/PosDep#2-15" label="Ordering/annis/">
+        <edge id="e43" source="tsv/PosDep#2-12" target="tsv/PosDep#2-13" label="Pointing//Dependency">
+            <data key="k7">PRD</data>
         </edge>
-        <edge id="e44" source="tsv/PosDep#2-15" target="tsv/PosDep#2-16" label="Ordering/annis/">
+        <edge id="e44" source="tsv/PosDep#2-13" target="tsv/PosDep#2-14" label="Pointing//Dependency">
+            <data key="k7">LOC</data>
         </edge>
-        <edge id="e45" source="tsv/PosDep#2-16" target="tsv/PosDep#2-17" label="Ordering/annis/">
+        <edge id="e45" source="tsv/PosDep#2-14" target="tsv/PosDep#2-17" label="Pointing//Dependency">
+            <data key="k7">PMOD</data>
         </edge>
-        <edge id="e46" source="tsv/PosDep#2-17" target="tsv/PosDep#2-18" label="Ordering/annis/">
+        <edge id="e46" source="tsv/PosDep#2-16" target="tsv/PosDep#2-15" label="Pointing//Dependency">
+            <data key="k7">DEP</data>
         </edge>
-        <edge id="e47" source="tsv/PosDep#2-18" target="tsv/PosDep#2-19" label="Ordering/annis/">
+        <edge id="e47" source="tsv/PosDep#2-17" target="tsv/PosDep#2-16" label="Pointing//Dependency">
+            <data key="k7">NMOD</data>
         </edge>
-        <edge id="e48" source="tsv/PosDep#2-19" target="tsv/PosDep#2-20" label="Ordering/annis/">
+        <edge id="e48" source="tsv/PosDep#2-18" target="tsv/PosDep#2-19" label="Pointing//Dependency">
+            <data key="k7">PMOD</data>
         </edge>
-        <edge id="e49" source="tsv/PosDep" target="tsv" label="PartOf/annis/">
+        <edge id="e49" source="tsv/PosDep#1-1" target="tsv/PosDep#1-2" label="Ordering/annis/">
         </edge>
-        <edge id="e50" source="tsv/PosDep#sentence_line7" target="tsv/PosDep" label="PartOf/annis/">
+        <edge id="e50" source="tsv/PosDep#1-3" target="tsv/PosDep#1-4" label="Ordering/annis/">
         </edge>
-        <edge id="e51" source="tsv/PosDep#sentence_line14" target="tsv/PosDep" label="PartOf/annis/">
+        <edge id="e51" source="tsv/PosDep#1-2" target="tsv/PosDep#1-3" label="Ordering/annis/">
+        </edge>
+        <edge id="e52" source="tsv/PosDep#1-4" target="tsv/PosDep#1-5" label="Ordering/annis/">
+        </edge>
+        <edge id="e53" source="tsv/PosDep#1-5" target="tsv/PosDep#2-1" label="Ordering/annis/">
+        </edge>
+        <edge id="e54" source="tsv/PosDep#2-1" target="tsv/PosDep#2-2" label="Ordering/annis/">
+        </edge>
+        <edge id="e55" source="tsv/PosDep#2-3" target="tsv/PosDep#2-4" label="Ordering/annis/">
+        </edge>
+        <edge id="e56" source="tsv/PosDep#2-2" target="tsv/PosDep#2-3" label="Ordering/annis/">
+        </edge>
+        <edge id="e57" source="tsv/PosDep#2-5" target="tsv/PosDep#2-6" label="Ordering/annis/">
+        </edge>
+        <edge id="e58" source="tsv/PosDep#2-4" target="tsv/PosDep#2-5" label="Ordering/annis/">
+        </edge>
+        <edge id="e59" source="tsv/PosDep#2-6" target="tsv/PosDep#2-7" label="Ordering/annis/">
+        </edge>
+        <edge id="e60" source="tsv/PosDep#2-7" target="tsv/PosDep#2-8" label="Ordering/annis/">
+        </edge>
+        <edge id="e61" source="tsv/PosDep#2-8" target="tsv/PosDep#2-9" label="Ordering/annis/">
+        </edge>
+        <edge id="e62" source="tsv/PosDep#2-10" target="tsv/PosDep#2-11" label="Ordering/annis/">
+        </edge>
+        <edge id="e63" source="tsv/PosDep#2-9" target="tsv/PosDep#2-10" label="Ordering/annis/">
+        </edge>
+        <edge id="e64" source="tsv/PosDep#2-11" target="tsv/PosDep#2-12" label="Ordering/annis/">
+        </edge>
+        <edge id="e65" source="tsv/PosDep#2-12" target="tsv/PosDep#2-13" label="Ordering/annis/">
+        </edge>
+        <edge id="e66" source="tsv/PosDep#2-13" target="tsv/PosDep#2-14" label="Ordering/annis/">
+        </edge>
+        <edge id="e67" source="tsv/PosDep#2-14" target="tsv/PosDep#2-15" label="Ordering/annis/">
+        </edge>
+        <edge id="e68" source="tsv/PosDep#2-15" target="tsv/PosDep#2-16" label="Ordering/annis/">
+        </edge>
+        <edge id="e69" source="tsv/PosDep#2-16" target="tsv/PosDep#2-17" label="Ordering/annis/">
+        </edge>
+        <edge id="e70" source="tsv/PosDep#2-17" target="tsv/PosDep#2-18" label="Ordering/annis/">
+        </edge>
+        <edge id="e71" source="tsv/PosDep#2-18" target="tsv/PosDep#2-19" label="Ordering/annis/">
+        </edge>
+        <edge id="e72" source="tsv/PosDep#2-19" target="tsv/PosDep#2-20" label="Ordering/annis/">
+        </edge>
+        <edge id="e73" source="tsv/PosDep" target="tsv" label="PartOf/annis/">
+        </edge>
+        <edge id="e74" source="tsv/PosDep#sentence_line7" target="tsv/PosDep" label="PartOf/annis/">
+        </edge>
+        <edge id="e75" source="tsv/PosDep#sentence_line14" target="tsv/PosDep" label="PartOf/annis/">
         </edge>
     </graph>
 </graphml>
