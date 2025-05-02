@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- import `webanno` tsv format. All annotations are imported as node annotations and can be turned into edges with manipulators such as `link`.
+- Add import `webanno` tsv format
 
 ### Changed
 
