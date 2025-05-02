@@ -180,7 +180,7 @@ impl ImportWebAnnoTSV {
         })?;
         for anno_group in columns {
             match anno_group {
-                AnnotationGroup::ForNodeBare { keys } => {
+                AnnotationGroup::NodeBare { keys } => {
                     for key in keys {
                         let entry = token_columns.next().ok_or(anyhow!(
                             "Missing column entry {}::{} for token {}",
@@ -204,7 +204,7 @@ impl ImportWebAnnoTSV {
                         })?;
                     }
                 }
-                AnnotationGroup::ForNodeParse { ns, size, index } => {
+                AnnotationGroup::NodeParse { ns, size, index } => {
                     // advance to the relevant index
                     (0..*index).for_each(|_| {
                         token_columns.next();
@@ -243,7 +243,7 @@ impl ImportWebAnnoTSV {
                         token_columns.next();
                     });
                 }
-                AnnotationGroup::ForEdge {
+                AnnotationGroup::Edge {
                     layer: edge_name,
                     keys,
                 } => {
@@ -323,7 +323,7 @@ impl ImportWebAnnoTSV {
         let group = match rule {
             Rule::edge_annotation => {
                 entries.pop(); // last one is always reference column (containing the governing id)
-                AnnotationGroup::ForEdge {
+                AnnotationGroup::Edge {
                     layer: ns.to_string(),
                     keys: entries
                         .into_iter()
@@ -336,13 +336,13 @@ impl ImportWebAnnoTSV {
             }
             Rule::node_annotation => {
                 if let Some(index) = entries.iter().position(|s| s == &"value") {
-                    AnnotationGroup::ForNodeParse {
+                    AnnotationGroup::NodeParse {
                         ns: ns.to_string(),
                         size: entries.len(),
-                        index: index,
+                        index,
                     }
                 } else {
-                    AnnotationGroup::ForNodeBare {
+                    AnnotationGroup::NodeBare {
                         keys: entries
                             .into_iter()
                             .map(|s| AnnoKey {
@@ -362,15 +362,15 @@ impl ImportWebAnnoTSV {
 }
 
 enum AnnotationGroup {
-    ForNodeBare {
+    NodeBare {
         keys: Vec<AnnoKey>,
     },
-    ForNodeParse {
+    NodeParse {
         ns: String,
         size: usize,
         index: usize,
     },
-    ForEdge {
+    Edge {
         layer: String,
         keys: Vec<AnnoKey>,
     },
