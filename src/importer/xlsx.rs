@@ -523,6 +523,7 @@ impl WorkbookMapper<'_> {
             let mapper = MetasheetMapper::new(sheet, self.metasheet_skip_rows)?;
             mapper.import_as_metadata(&self.doc_node_name, &mut update)?;
         }
+        self.progress.worked(1)?;
         Ok(update)
     }
 }
@@ -548,12 +549,6 @@ impl Importer for ImportSpreadsheet {
         let number_of_files = all_files.len();
         // Each file is a work step
         let reporter = ProgressReporter::new(tx, step_id.clone(), number_of_files)?;
-        // all_files.into_iter().try_for_each(|(pb, doc_node_name)| {
-        //     reporter.info(&format!("Importing {}", pb.to_string_lossy()))?;
-        //     self.import_workbook(&mut updates, &pb, &doc_node_name, &reporter)?;
-        //     reporter.worked(1)?;
-        //     Ok::<(), AnnattoError>(())
-        // })?;
         let mapper_vec = all_files
             .into_iter()
             .map(|(p, d)| WorkbookMapper {
@@ -601,7 +596,9 @@ mod tests {
     use tempfile::tempdir;
 
     use crate::{
-        exporter::graphml::GraphMLExporter, test_util::export_to_string, workflow::Workflow,
+        exporter::graphml::GraphMLExporter,
+        test_util::export_to_string,
+        workflow::{StatusMessage, Workflow},
         ImporterStep, ReadFrom,
     };
 
@@ -614,13 +611,14 @@ mod tests {
         let m: Result<ImportSpreadsheet, _> = toml::from_str(config);
         assert!(m.is_ok(), "Could not deserialize config: {:?}", m.err());
         let import = m.unwrap();
+        let (sender, receiver) = mpsc::channel();
         let u = import.import_corpus(
             path,
             StepID {
                 module_name: "test_xslx_import".to_string(),
                 path: None,
             },
-            None,
+            Some(sender),
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
         let g = AnnotationGraph::with_default_graphstorages(true);
@@ -632,6 +630,16 @@ mod tests {
         let actual = export_to_string(&graph, e.unwrap());
         assert!(actual.is_ok(), "Could not export: {:?}", actual.err());
         assert_snapshot!(actual.unwrap());
+        let progress_report = receiver.into_iter().find(|s| {
+            matches!(
+                s,
+                StatusMessage::Progress {
+                    finished_work: 4,
+                    ..
+                }
+            )
+        });
+        assert!(progress_report.is_some());
     }
 
     #[test]
