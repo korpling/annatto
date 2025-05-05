@@ -16,7 +16,6 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use percent_encoding::utf8_percent_encode;
-use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 use umya_spreadsheet::Cell;
@@ -501,8 +500,7 @@ struct WorkbookMapper<'a> {
 }
 
 impl WorkbookMapper<'_> {
-    fn import_workbook(self) -> Result<GraphUpdate, AnnattoError> {
-        let mut update = GraphUpdate::default();
+    fn import_workbook(self, update: &mut GraphUpdate) -> Result<(), AnnattoError> {
         let book = umya_spreadsheet::reader::xlsx::read(&self.path)?;
         let reverse_col_map = self
             .column_map
@@ -517,14 +515,14 @@ impl WorkbookMapper<'_> {
                 self.fallback.clone(),
                 self.token_annos,
             )?;
-            mapper.import_datasheet(&self.doc_node_name, &mut update, self.progress)?;
+            mapper.import_datasheet(&self.doc_node_name, update, self.progress)?;
         }
         if let Some(sheet) = sheet_from_address(&book, &self.metasheet, None) {
             let mapper = MetasheetMapper::new(sheet, self.metasheet_skip_rows)?;
-            mapper.import_as_metadata(&self.doc_node_name, &mut update)?;
+            mapper.import_as_metadata(&self.doc_node_name, update)?;
         }
         self.progress.worked(1)?;
-        Ok(update)
+        Ok(())
     }
 }
 
@@ -539,10 +537,10 @@ impl Importer for ImportSpreadsheet {
         step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut updates = GraphUpdate::default();
+        let mut update = GraphUpdate::default();
 
         let all_files = util::graphupdate::import_corpus_graph_from_files(
-            &mut updates,
+            &mut update,
             input_path,
             self.file_extensions(),
         )?;
@@ -563,19 +561,10 @@ impl Importer for ImportSpreadsheet {
                 doc_node_name: d.to_string(),
             })
             .collect_vec();
-        let mut results = Vec::with_capacity(mapper_vec.len());
         mapper_vec
-            .into_par_iter()
-            .map(|m| m.import_workbook())
-            .collect_into_vec(&mut results);
-        for result in results {
-            let update = result?;
-            for entry in update.iter()? {
-                let (_, ue) = entry?;
-                updates.add_event(ue)?;
-            }
-        }
-        Ok(updates)
+            .into_iter()
+            .try_for_each(|m| m.import_workbook(&mut update))?;
+        Ok(update)
     }
 
     fn file_extensions(&self) -> &[&str] {
