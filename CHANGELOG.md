@@ -5,6 +5,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- graph_op `map`: mappings can now additionally be defined inline together with or instead of separate mapping file
+
+### Changed
+
+- graph_op `map`: rules are defined providing an anno key (via `anno`) like all other modules, `ns` and `name` will not work anymore
+
 ## [0.29.3] - 2025-05-05
 
 ### Fixed
