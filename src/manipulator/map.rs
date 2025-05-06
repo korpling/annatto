@@ -8,6 +8,7 @@ use std::{
 use super::Manipulator;
 use crate::{
     core::{update_graph, update_graph_silent},
+    deserialize::deserialize_anno_key,
     progress::ProgressReporter,
     util::{
         token_helper::{TokenHelper, TOKEN_KEY},
@@ -18,7 +19,7 @@ use crate::{
 use anyhow::{anyhow, Context};
 use documented::{Documented, DocumentedFields};
 use graphannis::{
-    graph::{EdgeContainer, Match},
+    graph::{AnnoKey, EdgeContainer, Match},
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
     AnnotationGraph,
@@ -40,8 +41,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// [[rules]]
 /// query = "clean _o_ pos_lang=/(APPR)?ART/ _=_ lemma!=/[Dd](ie|as|er|ies)?/"
 /// target = 1
-/// ns = ""
-/// name = "indef"
+/// anno = "indef"
 /// value = ""
 /// ```
 ///
@@ -51,8 +51,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// [[rules]]
 /// query = "tok=/more/ . tok"
 /// target = [1,2]
-/// ns = "mapper"
-/// name = "form"
+/// anno = "mapper::form"
 /// value = "comparison"
 /// ```
 ///
@@ -62,8 +61,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// [[rules]]
 /// query = "tok=\"complicated\""
 /// target = 1
-/// ns = ""
-/// name = "newtok"
+/// anno = "newtok"
 /// value = {copy = 1}
 /// ```
 ///
@@ -75,8 +73,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// [[rules]]
 /// query = "tok=\"complicated\""
 /// target = 1
-/// ns = ""
-/// name = "newtok"
+/// anno = "newtok"
 /// value = {target = 1, replacements = [["cat", "dog"]]}
 /// ```
 /// This would add a new annotation value "complidoged" to any token with the value "complicated".
@@ -89,8 +86,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// [[rules]]
 /// query = "tok=\"New York\""
 /// target = 1
-/// ns = ""
-/// name = "abbr"
+/// anno = "abbr"
 /// value = {target = 1, replacements = [["([A-Z])[a-z]+ ([A-Z])[a-z]+", "${1}${2}"]]}
 /// ```
 /// This example would add an annotation with the value "NY".
@@ -130,16 +126,38 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// [[rules]]
 /// query = "norm"
 /// target = 1
-/// ns = ""
-/// name = "normalisation"
+/// anno = "normalisation"
 /// value = { copy = 1 }
 /// delete = [1]
 /// ```
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
 #[serde(deny_unknown_fields)]
 pub struct MapAnnos {
+    #[serde(default)]
     /// The path of the TOML file containing an array of mapping rules.
-    rule_file: PathBuf,
+    /// Use rule files when you want to apply a lot of rules to not blow
+    /// up the main configuration file.
+    rule_file: Option<PathBuf>,
+    /// This mechanism can be used to provide rules inline instead of in a
+    /// separate file. Also, both mechanisms can be combined.
+    ///
+    /// Example:
+    /// ```toml
+    /// [[graph_op]]
+    /// action = "map"
+    ///
+    /// [graph_op.config.mapping]  # this part is optional and can be dropped for default values
+    /// repetition = "UntilUnchanged"
+    ///
+    /// [[graph_op.config.mapping.rules]]
+    /// query = "norm"
+    /// target = 1
+    /// anno = "default_ns::normalisation"
+    /// value = { copy = 1 }
+    /// delete = [1]
+    /// ```
+    #[serde(default)]
+    mapping: Option<Mapping>,
     /// If you wish for detailled output about the match count of each rule,
     /// set this to `true`. Default is `false`, so no output.
     ///
@@ -165,33 +183,56 @@ impl Manipulator for MapAnnos {
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let progress = ProgressReporter::new_unknown_total_work(tx.clone(), step_id.clone())?;
-
-        let read_from_path = {
-            let p = Path::new(&self.rule_file).to_path_buf();
-            if p.is_relative() {
-                workflow_directory.join(p)
-            } else {
-                p
-            }
+        let config_from_file = if let Some(path) = &self.rule_file {
+            let read_from_path = {
+                let p = path.as_path().to_path_buf();
+                if p.is_relative() {
+                    workflow_directory.join(p)
+                } else {
+                    p
+                }
+            };
+            Some(read_config(read_from_path.as_path())?)
+        } else {
+            None
         };
-        let config = read_config(read_from_path.as_path())?;
-
         progress.info("Ensure all graph storages are loaded.")?;
         graph.ensure_loaded_all()?;
+        if self.mapping.is_none() && self.rule_file.is_none() {
+            progress.warn("Neither a rule file was provided nor are there any inline mapping definitions. This step will thus not modify the annotation graph.")?;
+        }
 
-        let mut map_impl = MapperImpl {
-            config,
-            added_spans: 0,
-            progress: {
-                if self.debug {
-                    Some(progress)
-                } else {
-                    None
-                }
-            },
-        };
-        map_impl.run(graph)?;
-
+        if let Some(config) = config_from_file {
+            progress.info("Starting application of rules from rule file ...")?;
+            let mut map_impl = MapperImpl {
+                config,
+                added_spans: 0,
+                progress: {
+                    if self.debug {
+                        Some(progress)
+                    } else {
+                        None
+                    }
+                },
+            };
+            map_impl.run(graph)?;
+        }
+        if let Some(inline_config) = &self.mapping {
+            let inline_progress = ProgressReporter::new_unknown_total_work(tx, step_id)?;
+            inline_progress.info("Starting application of inline rules ...")?;
+            let mut map_impl = MapperImpl {
+                config: inline_config.clone(),
+                added_spans: 0,
+                progress: {
+                    if self.debug {
+                        Some(inline_progress)
+                    } else {
+                        None
+                    }
+                },
+            };
+            map_impl.run(graph)?;
+        }
         Ok(())
     }
 
@@ -206,7 +247,7 @@ fn read_config(path: &Path) -> Result<Mapping, Box<dyn std::error::Error>> {
     Ok(m)
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 enum RepetitionMode {
     /// Repeat applying the rules n times.
     Fixed { n: usize },
@@ -220,7 +261,7 @@ impl Default for RepetitionMode {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 struct Mapping {
     rules: Vec<Rule>,
     #[serde(default)]
@@ -294,8 +335,8 @@ enum Value {
 struct Rule {
     query: String,
     target: TargetRef,
-    ns: String,
-    name: String,
+    #[serde(deserialize_with = "deserialize_anno_key")]
+    anno: AnnoKey,
     value: Value,
     #[serde(default)]
     delete: Vec<usize>,
@@ -434,8 +475,8 @@ impl MapperImpl {
                 .context("Missing node name for matched node")?;
             update.add_event(UpdateEvent::AddNodeLabel {
                 node_name: match_node_name.to_string(),
-                anno_ns: rule.ns.to_string(),
-                anno_name: rule.name.to_string(),
+                anno_ns: rule.anno.ns.to_string(),
+                anno_name: rule.anno.name.to_string(),
                 anno_value: rule.resolve_value(graph, match_group)?,
             })?;
         }
@@ -484,8 +525,8 @@ impl MapperImpl {
             })?;
             update.add_event(UpdateEvent::AddNodeLabel {
                 node_name: new_node_name.clone(),
-                anno_ns: rule.ns.to_string(),
-                anno_name: rule.name.to_string(),
+                anno_ns: rule.anno.ns.to_string(),
+                anno_name: rule.anno.name.to_string(),
                 anno_value: rule.resolve_value(graph, match_group)?,
             })?;
 
@@ -583,7 +624,8 @@ mod tests {
         example_generator::create_corpus_structure_simple(&mut u);
         assert!(update_graph_silent(&mut graph, &mut u).is_ok());
         let module = MapAnnos {
-            rule_file: PathBuf::from("./any_file.toml"),
+            rule_file: Some(PathBuf::from("./any_file.toml")),
+            mapping: None,
             debug: false,
         };
         assert!(module
@@ -600,6 +642,50 @@ mod tests {
     }
 
     #[test]
+    fn inline_rules() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
+        let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let config = r#"
+        [[mapping.rules]]
+        query = "tok"
+        target = 1
+        anno = "test_ns::test"
+        value = {copy = 1}
+        "#;
+
+        let m: Result<MapAnnos, _> = toml::from_str(config);
+        assert!(m.is_ok(), "Error deserializing mapper: {:?}", m.err());
+        let mapper = m.unwrap();
+        assert!(mapper
+            .manipulate_corpus(
+                &mut g,
+                Path::new("./"),
+                StepID {
+                    module_name: "test_map_inline".to_string(),
+                    path: None,
+                },
+                None,
+            )
+            .is_ok());
+
+        let tok_match = g
+            .get_node_annos()
+            .exact_anno_search(Some("annis"), "tok", ValueSearch::Some("complicated"))
+            .next()
+            .unwrap()
+            .unwrap();
+
+        let resolved = mapper.mapping.unwrap().rules[0]
+            .resolve_value(&g, &vec![tok_match])
+            .unwrap();
+        assert_eq!("complicated", resolved);
+    }
+
+    #[test]
     fn test_delete() {
         let mut updates = GraphUpdate::new();
         example_generator::create_corpus_structure_simple(&mut updates);
@@ -610,8 +696,10 @@ mod tests {
         let map_with_deletion = Rule {
             query: "b".to_string(),
             target: super::TargetRef::Node(1),
-            ns: "".to_string(),
-            name: "c".to_string(),
+            anno: AnnoKey {
+                name: "c".into(),
+                ns: "".into(),
+            },
             value: Value::Copy {
                 copy: TargetRef::Node(1),
             },
@@ -646,8 +734,10 @@ mod tests {
         let fixed_value = Rule {
             query: "tok".to_string(),
             target: super::TargetRef::Node(1),
-            ns: "test_ns".to_string(),
-            name: "test".to_string(),
+            anno: AnnoKey {
+                ns: "test_ns".into(),
+                name: "test".into(),
+            },
             value: Value::Fixed("myvalue".to_string()),
             delete: vec![],
         };
@@ -668,8 +758,7 @@ mod tests {
         [[rules]]
         query = "tok"
         target = 1
-        ns = "test_ns"
-        name = "test"
+        anno = "test_ns::test"
         value = {copy = 1}
         "#;
 
@@ -697,8 +786,10 @@ mod tests {
         let fixed_value = Rule {
             query: "tok".to_string(),
             target: super::TargetRef::Node(1),
-            ns: "test_ns".to_string(),
-            name: "test".to_string(),
+            anno: AnnoKey {
+                name: "test".into(),
+                ns: "test_ns".into(),
+            },
             value: Value::Replace {
                 target: TargetRef::Node(1),
                 replacements: vec![("cat".to_string(), "dog".to_string())],
@@ -728,8 +819,10 @@ mod tests {
         let fixed_value = Rule {
             query: "tok".to_string(),
             target: super::TargetRef::Node(1),
-            ns: "test_ns".to_string(),
-            name: "test".to_string(),
+            anno: AnnoKey {
+                name: "test".into(),
+                ns: "test_ns".into(),
+            },
             value: Value::Replace {
                 target: TargetRef::Node(1),
                 replacements: vec![("cat.*".to_string(), "$0$0".to_string())],
@@ -754,8 +847,7 @@ mod tests {
 [[rules]]
 query = "tok=\"New York\""
 target = 1
-ns = ""
-name = "abbr"
+anno = "abbr"
 
 [rules.value]
 target = 1
@@ -783,8 +875,7 @@ replacements = [["([A-Z])[a-z]+ ([A-Z])[a-z]+", "${1}${2}"]]
 [[rules]]
 query = "tok"
 target = 1
-ns = "test"
-name = "clean"
+anno = "test::clean"
 
 [rules.value]
 target = 1
@@ -830,8 +921,7 @@ repetition = {Fixed = {n = 3}}
 [[rules]]
 query = "tok"
 target = 1
-ns = "annis"
-name = "tok"
+anno = "annis::tok"
 
 [rules.value]
 target = 1
@@ -846,7 +936,8 @@ replacements = [
 
         std::fs::write(tmp.path(), config).unwrap();
         let mapper = MapAnnos {
-            rule_file: tmp.path().to_path_buf(),
+            rule_file: Some(tmp.path().to_path_buf()),
+            mapping: None,
             debug: true,
         };
         let step_id = StepID {
@@ -875,8 +966,7 @@ repetition = "UntilUnchanged"
 [[rules]]
 query = 'tok!="X"'
 target = 1
-ns = "annis"
-name = "tok"
+anno = "annis::tok"
 
 [rules.value]
 target = 1
@@ -890,7 +980,8 @@ replacements = [
 
         std::fs::write(tmp.path(), config).unwrap();
         let mapper = MapAnnos {
-            rule_file: tmp.path().to_path_buf(),
+            rule_file: Some(tmp.path().to_path_buf()),
+            mapping: None,
             debug: true,
         };
         let step_id = StepID {
@@ -922,14 +1013,14 @@ replacements = [
 [[rules]]
 query = "tok=/more/ . tok"
 target = [1,2]
-ns = "mapper"
-name = "form"
+anno = "mapper::form"
 value = "comparison"
         "#;
         let tmp = NamedTempFile::new().unwrap();
         std::fs::write(tmp.path(), config).unwrap();
         let mapper = MapAnnos {
-            rule_file: tmp.path().to_path_buf(),
+            rule_file: Some(tmp.path().to_path_buf()),
+            mapping: None,
             debug: true,
         };
         let step_id = StepID {
@@ -979,35 +1070,32 @@ value = "comparison"
 [[rules]]
 query = "tok=/I/"
 target = 1
-ns = ""
-name = "pos"
+anno = "pos"
 value = "PRON"
 
 [[rules]]
 query = "tok=/am/"
 target = 1
-ns = ""
-name = "pos"
+anno = "pos"
 value = "VERB"
 
 [[rules]]
 query = "tok=/in/"
 target = 1
-ns = ""
-name = "pos"
+anno = "pos"
 value = "ADP"
 
 [[rules]]
 query = "tok=/New York/"
 target = 1
-ns = ""
-name = "pos"
+anno = "pos"
 value = "PROPN"
         "#;
         let tmp = NamedTempFile::new().unwrap();
         std::fs::write(tmp.path(), config).unwrap();
         let mapper = MapAnnos {
-            rule_file: tmp.path().to_path_buf(),
+            rule_file: Some(tmp.path().to_path_buf()),
+            mapping: None,
             debug: true,
         };
         let mut g = source_graph(on_disk)?;
