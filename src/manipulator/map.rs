@@ -262,6 +262,7 @@ impl Default for RepetitionMode {
 }
 
 #[derive(Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 struct Mapping {
     rules: Vec<Rule>,
     #[serde(default)]
@@ -332,6 +333,7 @@ enum Value {
 }
 
 #[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Rule {
     query: String,
     target: TargetRef,

@@ -20,7 +20,7 @@ use super::Importer;
 
 /// Import WebAnno TSV format.
 #[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct ImportWebAnnoTSV {}
 
 const FILE_EXTENSIONS: [&str; 2] = ["tsv", "csv"];
