@@ -1,0 +1,100 @@
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0 
+xmax = 13 
+tiers? <exists> 
+size = 2 
+item []: 
+    item [1]:
+        class = "IntervalTier" 
+        name = "A" 
+        xmin = 0 
+        xmax = 13 
+        intervals: size = 14 
+        intervals [1]:
+            xmin = 0 
+            xmax = 2.544621344337699 
+            text = "" 
+        intervals [2]:
+            xmin = 2.544621344337699 
+            xmax = 3.2746009558139915 
+            text = "Is" 
+        intervals [3]:
+            xmin = 3.2746009558139915 
+            xmax = 3.949038640330131 
+            text = "this" 
+        intervals [4]:
+            xmin = 3.949038640330131 
+            xmax = 5.131288228481951 
+            text = "example" 
+        intervals [5]:
+            xmin = 5.131288228481951 
+            xmax = 5.575623644163173 
+            text = "more" 
+        intervals [6]:
+            xmin = 5.575623644163173 
+            xmax = 6.32147237762808 
+            text = "complicated" 
+        intervals [7]:
+            xmin = 6.32147237762808 
+            xmax = 7.138732160041755 
+            text = "than" 
+        intervals [8]:
+            xmin = 7.138732160041755 
+            xmax = 8.320981748193576 
+            text = "it" 
+        intervals [9]:
+            xmin = 8.320981748193576 
+            xmax = 9.122372408618636 
+            text = "appears" 
+        intervals [10]:
+            xmin = 9.122372408618636 
+            xmax = 10.042781483958308 
+            text = "to" 
+        intervals [11]:
+            xmin = 10.042781483958308 
+            xmax = 11.074274413218287 
+            text = "be" 
+        intervals [12]:
+            xmin = 11.074274413218287 
+            xmax = 12.296196806341646 
+            text = "" 
+        intervals [13]:
+            xmin = 12.296196806341646 
+            xmax = 12.851616075943172 
+            text = "okay" 
+        intervals [14]:
+            xmin = 12.851616075943172 
+            xmax = 13 
+            text = "" 
+    item [2]:
+        class = "IntervalTier" 
+        name = "B" 
+        xmin = 0 
+        xmax = 13 
+        intervals: size = 6 
+        intervals [1]:
+            xmin = 0 
+            xmax = 0.5371774127778955 
+            text = "What's" 
+        intervals [2]:
+            xmin = 0.5371774127778955 
+            xmax = 1.2988952682314179 
+            text = "bothering" 
+        intervals [3]:
+            xmin = 1.2988952682314179 
+            xmax = 2.2034352215824757 
+            text = "you" 
+        intervals [4]:
+            xmin = 2.2034352215824757 
+            xmax = 10.86797582736629 
+            text = "" 
+        intervals [5]:
+            xmin = 10.86797582736629 
+            xmax = 12.946830807874862 
+            text = "No" 
+        intervals [6]:
+            xmin = 12.946830807874862 
+            xmax = 13 
+            text = "" 
