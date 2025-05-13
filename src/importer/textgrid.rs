@@ -311,7 +311,7 @@ impl DocumentMapper<'_> {
                 } => {
                     for i in intervals {
                         if !i.text.trim().is_empty() {
-                            let (start, end) = best_matching_start_end(i, &parent_tier_intervals);
+                            let (start, end) = best_matching_start_end(i, &parent_tier_intervals).ok_or(anyhow!("{}: Could not determine token interval for value \"{}\" from {} to {} on tier {tier_name}", self.doc_path, i.text, i.xmin, i.xmax))?;
 
                             let span_id =
                                 self.add_span(u, name, &i.text, start, end, time_to_id)?;
@@ -461,7 +461,7 @@ impl Importer for ImportTextgrid {
 fn best_matching_start_end(
     orig_interval: &Interval,
     parent_tier_intervals: &Option<Vec<Interval>>,
-) -> (f64, f64) {
+) -> Option<(f64, f64)> {
     let mut start = orig_interval.xmin;
     let mut end = orig_interval.xmax;
     if let Some(parent_tier_intervals) = &parent_tier_intervals {
@@ -470,15 +470,18 @@ fn best_matching_start_end(
                 OrderedFloat(interval.xmin)
             })
         {
-            let upper_candidate = &parent_tier_intervals[insertion_idx];
-            start = upper_candidate.xmin;
-            if let Some(lower_candidate) = &parent_tier_intervals.get(insertion_idx - 1) {
-                // Decide based on which candidate is nearer
-                if (orig_interval.xmin - lower_candidate.xmin).abs()
-                    < (orig_interval.xmin - upper_candidate.xmin).abs()
-                {
-                    start = lower_candidate.xmin;
+            if let Some(upper_candidate) = parent_tier_intervals.get(insertion_idx) {
+                start = upper_candidate.xmin;
+                if let Some(lower_candidate) = parent_tier_intervals.get(insertion_idx - 1) {
+                    // Decide based on which candidate is nearer
+                    if (orig_interval.xmin - lower_candidate.xmin).abs()
+                        < (orig_interval.xmin - upper_candidate.xmin).abs()
+                    {
+                        start = lower_candidate.xmin;
+                    }
                 }
+            } else {
+                return None;
             }
         }
         if let Err(insertion_idx) = parent_tier_intervals
@@ -486,19 +489,22 @@ fn best_matching_start_end(
                 OrderedFloat(interval.xmax)
             })
         {
-            let upper_candidate = &parent_tier_intervals[insertion_idx];
-            end = upper_candidate.xmax;
-            if let Some(lower_candidate) = &parent_tier_intervals.get(insertion_idx - 1) {
-                // Decide based on which candidate is nearer
-                if (orig_interval.xmax - lower_candidate.xmax).abs()
-                    < (orig_interval.xmax - upper_candidate.xmax).abs()
-                {
-                    end = lower_candidate.xmax;
+            if let Some(upper_candidate) = parent_tier_intervals.get(insertion_idx) {
+                end = upper_candidate.xmax;
+                if let Some(lower_candidate) = parent_tier_intervals.get(insertion_idx - 1) {
+                    // Decide based on which candidate is nearer
+                    if (orig_interval.xmax - lower_candidate.xmax).abs()
+                        < (orig_interval.xmax - upper_candidate.xmax).abs()
+                    {
+                        end = lower_candidate.xmax;
+                    }
                 }
+            } else {
+                return None;
             }
         }
     }
-    (start, end)
+    Some((start, end))
 }
 
 #[cfg(test)]
