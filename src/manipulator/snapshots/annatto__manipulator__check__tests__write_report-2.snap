@@ -1,0 +1,5 @@
+---
+source: src/manipulator/check.rs
+expression: log_message
+---
+Appending check log to existing file <tmp-dir>/annatto_test_report_out.txt ...
