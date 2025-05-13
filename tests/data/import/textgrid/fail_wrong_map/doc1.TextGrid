@@ -11,7 +11,7 @@ item []:
         name = "A" 
         xmin = 0 
         xmax = 13 
-        intervals: size = 14 
+        intervals: size = 16 
         intervals [1]:
             xmin = 0 
             xmax = 2.544621344337699 
@@ -58,14 +58,22 @@ item []:
             text = "be" 
         intervals [12]:
             xmin = 11.074274413218287 
-            xmax = 12.296196806341646 
+            xmax = 11.653497365802735 
             text = "" 
         intervals [13]:
-            xmin = 12.296196806341646 
-            xmax = 12.851616075943172 
+            xmin = 11.653497365802735 
+            xmax = 12.320000489324569 
             text = "okay" 
         intervals [14]:
-            xmin = 12.851616075943172 
+            xmin = 12.320000489324569 
+            xmax = 12.613579246113947 
+            text = "" 
+        intervals [15]:
+            xmin = 12.613579246113947 
+            xmax = 12.843681514948864 
+            text = "and?" 
+        intervals [16]:
+            xmin = 12.843681514948864 
             xmax = 13 
             text = "" 
     item [2]:
@@ -92,9 +100,9 @@ item []:
             text = "" 
         intervals [5]:
             xmin = 10.86797582736629 
-            xmax = 12.946830807874862 
+            xmax = 11.518609828899509 
             text = "No" 
         intervals [6]:
-            xmin = 12.946830807874862 
+            xmin = 11.518609828899509 
             xmax = 13 
             text = "" 

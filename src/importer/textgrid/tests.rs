@@ -120,7 +120,7 @@ fn misaligned_lemma_annotation() {
 #[test]
 fn fail_wrong_map() {
     let mut tg = BTreeMap::new();
-    tg.insert("A".to_string(), vec!["B".to_string()].into_iter().collect());
+    tg.insert("B".to_string(), vec!["A".to_string()].into_iter().collect());
     assert!(ImportTextgrid {
         tier_groups: Some(tg),
         skip_timeline_generation: false,
