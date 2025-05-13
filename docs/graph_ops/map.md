@@ -12,8 +12,7 @@ the annotation should be added to. The annotation itself is defined by the
 [[rules]]
 query = "clean _o_ pos_lang=/(APPR)?ART/ _=_ lemma!=/[Dd](ie|as|er|ies)?/"
 target = 1
-ns = ""
-name = "indef"
+anno = "indef"
 value = ""
 ```
 
@@ -23,8 +22,7 @@ covers the same token as the referenced nodes of the match.
 [[rules]]
 query = "tok=/more/ . tok"
 target = [1,2]
-ns = "mapper"
-name = "form"
+anno = "mapper::form"
 value = "comparison"
 ```
 
@@ -34,8 +32,7 @@ from the matched nodes copy the value.
 [[rules]]
 query = "tok=\"complicated\""
 target = 1
-ns = ""
-name = "newtok"
+anno = "newtok"
 value = {copy = 1}
 ```
 
@@ -47,8 +44,7 @@ search string and the right part the replacement string.
 [[rules]]
 query = "tok=\"complicated\""
 target = 1
-ns = ""
-name = "newtok"
+anno = "newtok"
 value = {target = 1, replacements = [["cat", "dog"]]}
 ```
 This would add a new annotation value "complidoged" to any token with the value "complicated".
@@ -61,8 +57,7 @@ group).
 [[rules]]
 query = "tok=\"New York\""
 target = 1
-ns = ""
-name = "abbr"
+anno = "abbr"
 value = {target = 1, replacements = [["([A-Z])[a-z]+ ([A-Z])[a-z]+", "${1}${2}"]]}
 ```
 This example would add an annotation with the value "NY".
@@ -102,8 +97,7 @@ at the same node and then deletes the "norm" annotation:
 [[rules]]
 query = "norm"
 target = 1
-ns = ""
-name = "normalisation"
+anno = "normalisation"
 value = { copy = 1 }
 delete = [1]
 ```
@@ -113,6 +107,29 @@ delete = [1]
 ###  rule_file
 
 The path of the TOML file containing an array of mapping rules.
+Use rule files when you want to apply a lot of rules to not blow
+up the main configuration file.
+
+###  mapping
+
+This mechanism can be used to provide rules inline instead of in a
+separate file. Also, both mechanisms can be combined.
+
+Example:
+```toml
+[[graph_op]]
+action = "map"
+
+[graph_op.config.mapping]  # this part is optional and can be dropped for default values
+repetition = "UntilUnchanged"
+
+[[graph_op.config.mapping.rules]]
+query = "norm"
+target = 1
+anno = "default_ns::normalisation"
+value = { copy = 1 }
+delete = [1]
+```
 
 ###  debug
 
