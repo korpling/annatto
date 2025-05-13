@@ -91,6 +91,7 @@ impl Manipulator for Check {
                         .write(true)
                         .append(true)
                         .open(target_path)?;
+                    f.write_all("\n\n".as_bytes())?;
                     f.write_all(msg.as_bytes())?;
                     f.flush()?;
                 } else {
@@ -803,6 +804,8 @@ mod tests {
         assert!(another_check
             .manipulate_corpus(&mut graph, tmp_dir.path(), step_id, None)
             .is_ok());
+        let log_contents = fs::read_to_string(report_path);
+        assert_snapshot!(log_contents.unwrap());
     }
 
     #[test]
