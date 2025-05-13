@@ -87,10 +87,7 @@ impl Manipulator for Check {
                             target_path.to_string_lossy()
                         )))?;
                     }
-                    let mut f = fs::OpenOptions::new()
-                        .write(true)
-                        .append(true)
-                        .open(target_path)?;
+                    let mut f = fs::OpenOptions::new().append(true).open(target_path)?;
                     f.write_all("\n\n".as_bytes())?;
                     f.write_all(msg.as_bytes())?;
                     f.flush()?;
