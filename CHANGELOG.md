@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - graph_op `map`, import `webanno`: deny unknown fields in deserialization
+- import `textgrid` goes not panic with wrong tier configuration, but provides a proper error message
 
 ## [0.29.3] - 2025-05-05
 
