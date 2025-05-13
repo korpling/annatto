@@ -2,6 +2,7 @@ use std::{
     collections::{btree_map::Entry, BTreeMap},
     fmt::Display,
     fs,
+    io::Write,
     path::{Path, PathBuf},
     sync::mpsc,
 };
@@ -79,7 +80,22 @@ impl Manipulator for Check {
                 } else {
                     workflow_directory.join(path)
                 };
-                fs::write(target_path, msg)?;
+                if target_path.exists() {
+                    if let Some(sender) = &tx {
+                        sender.send(StatusMessage::Info(format!(
+                            "Appending check log to existing file {} ...",
+                            target_path.to_string_lossy()
+                        )))?;
+                    }
+                    let mut f = fs::OpenOptions::new()
+                        .write(true)
+                        .append(true)
+                        .open(target_path)?;
+                    f.write_all(msg.as_bytes())?;
+                    f.flush()?;
+                } else {
+                    fs::write(target_path, msg)?;
+                }
             }
         }
         let failed_checks = r
@@ -771,10 +787,22 @@ mod tests {
             module_name: "check".to_string(),
             path: None,
         };
-        assert!(check
+        let run = check.manipulate_corpus(&mut graph, tmp_dir.path(), step_id.clone(), None);
+        assert!(run.is_ok(), "Error writing report: {:?}", run.err());
+        assert!(report_path.exists());
+        let another_check = Check {
+            policy: FailurePolicy::Fail,
+            tests: vec![Test::QueryTest {
+                query: "tok".to_string(),
+                expected: QueryResult::Numeric(4),
+                description: "Correct number of tokens".to_string(),
+            }],
+            report: None,
+            save: Some(report_path.clone()),
+        };
+        assert!(another_check
             .manipulate_corpus(&mut graph, tmp_dir.path(), step_id, None)
             .is_ok());
-        assert!(report_path.exists());
     }
 
     #[test]
