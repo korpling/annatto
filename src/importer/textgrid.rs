@@ -311,7 +311,7 @@ impl DocumentMapper<'_> {
                 } => {
                     for i in intervals {
                         if !i.text.trim().is_empty() {
-                            let (start, end) = best_matching_start_end(i, &parent_tier_intervals).ok_or(anyhow!("Could not determine token interval for value \"{}\" from {} to {} in {}", i.text, i.xmin, i.xmax, self.doc_path))?;
+                            let (start, end) = best_matching_start_end(i, &parent_tier_intervals).ok_or(anyhow!("{}: Could not determine token interval for value \"{}\" from {} to {} on tier {tier_name}", self.doc_path, i.text, i.xmin, i.xmax))?;
 
                             let span_id =
                                 self.add_span(u, name, &i.text, start, end, time_to_id)?;
