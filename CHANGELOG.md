@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `check` appends its output to existing files instead of overwriting the contents when `save` is used to store the test log
+
 ## [0.30.0] - 2025-05-13
 
 ### Added
