@@ -479,6 +479,7 @@ mod tests {
     };
     use graphannis_core::graph::ANNIS_NS;
     use insta::assert_snapshot;
+    use itertools::Itertools;
     use tempfile::tempdir;
     use toml;
 
@@ -798,11 +799,24 @@ mod tests {
             report: None,
             save: Some(report_path.clone()),
         };
+        let (sender, receiver) = mpsc::channel();
         assert!(another_check
-            .manipulate_corpus(&mut graph, tmp_dir.path(), step_id, None)
+            .manipulate_corpus(&mut graph, tmp_dir.path(), step_id, Some(sender))
             .is_ok());
         let log_contents = fs::read_to_string(report_path);
         assert_snapshot!(log_contents.unwrap());
+        let mut log_message = receiver
+            .into_iter()
+            .map(|m| match m {
+                StatusMessage::Info(msg) => msg.to_string(),
+                _ => "".to_string(),
+            })
+            .join("\n");
+        log_message.replace_range(
+            log_message.find("/").unwrap_or_default()..log_message.rfind("/").unwrap_or_default(),
+            "<tmp-dir>",
+        );
+        assert_snapshot!(log_message);
     }
 
     #[test]
