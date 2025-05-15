@@ -11,7 +11,7 @@ use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use pest::{iterators::Pair, Parser};
 use pest_derive::Parser;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files};
@@ -19,8 +19,8 @@ use crate::{progress::ProgressReporter, util::graphupdate::import_corpus_graph_f
 use super::Importer;
 
 /// Import WebAnno TSV format.
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImportWebAnnoTSV {}
 
 const FILE_EXTENSIONS: [&str; 2] = ["tsv", "csv"];
@@ -393,6 +393,18 @@ mod tests {
     };
 
     use super::ImportWebAnnoTSV;
+
+    #[test]
+    fn serialize() {
+        let module = ImportWebAnnoTSV::default();
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn default() {

@@ -7,7 +7,7 @@ use graphannis::{
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::graph::ANNIS_NS;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files};
@@ -25,8 +25,8 @@ use super::Importer;
 /// [import.config]
 /// skip_tokens = true
 /// ```
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImportWhisper {
     /// With this attribute the tokenization in the output will not be imported,
     /// instead the full text of each segment will serve as a token.
@@ -315,6 +315,30 @@ mod tests {
     };
 
     use super::ImportWhisper;
+
+    #[test]
+    fn serialize() {
+        let module = ImportWhisper::default();
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn serialize_custom() {
+        let module = ImportWhisper { skip_tokens: true };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn segments_only() {

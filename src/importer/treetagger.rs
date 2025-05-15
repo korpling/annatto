@@ -15,6 +15,7 @@ use graphannis::{
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use pest::{iterators::Pairs, Parser};
 use pest_derive::Parser;
+use serde::Serialize;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
@@ -311,7 +312,7 @@ impl<'a> DocumentMapper<'a> {
     }
 }
 
-#[derive(Default, Deserialize, Debug, Clone, Copy)]
+#[derive(Default, Deserialize, Debug, Clone, Copy, Serialize)]
 pub enum AttributeDecoding {
     #[default]
     Entitites,
@@ -332,8 +333,8 @@ pub enum AttributeDecoding {
 ///
 /// This imports the second and third column of your treetagger files
 /// as `custom_pos` and `custom_lemma`.
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImportTreeTagger {
     /// Provide annotation names for the columns of the files. If you want the first column to be `annis::tok`,
     /// use "tok" without the namespace (default).

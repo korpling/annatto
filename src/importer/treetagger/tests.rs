@@ -26,6 +26,34 @@ display_name = "grid"
 "#;
 
 #[test]
+fn serialize() {
+    let module = ImportTreeTagger::default();
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
+fn serialize_custom() {
+    let module = ImportTreeTagger {
+        column_names: vec!["a".to_string(), "b".to_string(), "c".to_string()],
+        file_encoding: Some("latin-1".to_string()),
+        attribute_decoding: AttributeDecoding::Entitites,
+    };
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
 fn simple_token() {
     let actual = import_as_graphml_string(
         ImportTreeTagger::default(),

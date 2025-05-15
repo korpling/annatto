@@ -28,11 +28,11 @@ use graphviz_rust::{
 };
 use itertools::Itertools;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, collections::HashSet, path::PathBuf};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
-#[derive(Default, Deserialize)]
+#[derive(Default, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case", untagged)]
 pub(crate) enum Include {
     All,
@@ -57,7 +57,7 @@ pub(crate) enum Include {
 /// limit_tokens = true
 /// token_limit = 10
 /// ```
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Visualize {
     /// Configure whether to limit the number of tokens visualized. If `true`,

@@ -1,11 +1,11 @@
 use documented::{Documented, DocumentedFields};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Manipulator;
 
 /// This operation pauses the conversion process. As a regular user, you usually do not need to use this feature.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Sleep {
     /// Time to sleep in seconds.

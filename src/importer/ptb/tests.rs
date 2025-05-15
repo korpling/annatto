@@ -38,6 +38,32 @@ visibility = "hidden"
 "#;
 
 #[test]
+fn serialize() {
+    let module = ImportPTB::default();
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
+fn serialize_custom() {
+    let module = ImportPTB {
+        edge_delimiter: Some("-".to_string()),
+    };
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
 fn single_sentence() {
     let actual = import_as_graphml_string(
         ImportPTB::default(),

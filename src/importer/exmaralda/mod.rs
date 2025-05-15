@@ -6,6 +6,7 @@ use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use normpath::PathExt;
 use ordered_float::OrderedFloat;
+use serde::Serialize;
 use serde_derive::Deserialize;
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -27,8 +28,8 @@ use documented::{Documented, DocumentedFields};
 
 /// Import [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
 /// (`.exb`) files.
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImportEXMARaLDA {}
 
 const FILE_EXTENSIONS: [&str; 2] = ["exb", "xml"];

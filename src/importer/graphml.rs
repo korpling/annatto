@@ -9,6 +9,7 @@ use quick_xml::{
     events::{attributes::Attributes, Event},
     Reader,
 };
+use serde::Serialize;
 use serde_derive::Deserialize;
 use std::{
     collections::{BTreeMap, HashMap},
@@ -27,8 +28,8 @@ use crate::{
 /// Imports files in the [GraphML](http://graphml.graphdrawing.org/) file which
 /// have to conform to the
 /// [graphANNIS data model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct GraphMLImporter {}
 
 fn add_node(

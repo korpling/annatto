@@ -4,11 +4,45 @@ use graphannis::{graph::AnnoKey, update::GraphUpdate};
 use insta::assert_snapshot;
 
 use crate::{
-    importer::conllu::default_comment_key, test_util::import_as_graphml_string, ImporterStep,
-    ReadFrom, StepID,
+    importer::conllu::{default_comment_key, MultiTokMode},
+    test_util::import_as_graphml_string,
+    ImporterStep, ReadFrom, StepID,
 };
 
 use super::ImportCoNLLU;
+
+#[test]
+fn serialize() {
+    let module = ImportCoNLLU::default();
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
+fn serialize_custom() {
+    let module = ImportCoNLLU {
+        comment_anno: AnnoKey {
+            name: "metadata".into(),
+            ns: "default_ns".into(),
+        },
+        multi_tok: MultiTokMode::With(AnnoKey {
+            name: "norm".into(),
+            ns: "norm".into(),
+        }),
+    };
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
 
 #[test]
 fn test_conll_fail_invalid() {

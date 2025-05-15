@@ -16,6 +16,7 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use percent_encoding::utf8_percent_encode;
+use serde::Serialize;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 use umya_spreadsheet::Cell;
@@ -28,8 +29,8 @@ use documented::{Documented, DocumentedFields};
 
 /// Imports Excel Spreadsheets where each line is a token, the other columns are
 /// spans and merged cells can be used for spans that cover more than one token.
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImportSpreadsheet {
     /// Maps token columns to annotation columns. If there is more than one
     /// token column, it is assumed that the corpus has multiple segmentations.
@@ -71,7 +72,7 @@ pub struct ImportSpreadsheet {
     token_annos: Vec<String>,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(untagged)]
 enum SheetAddress {
     Numeric(usize),
@@ -592,6 +593,50 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn serialize() {
+        let module = ImportSpreadsheet::default();
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn serialize_custom() {
+        let module = ImportSpreadsheet {
+            column_map: vec![
+                (
+                    "dipl".to_string(),
+                    vec!["sentence".to_string()].into_iter().collect(),
+                ),
+                (
+                    "norm".to_string(),
+                    vec!["pos".to_string(), "lemma".to_string()]
+                        .into_iter()
+                        .collect(),
+                ),
+            ]
+            .into_iter()
+            .collect(),
+            datasheet: Some(SheetAddress::Name("data".to_string())),
+            metasheet: Some(SheetAddress::Numeric(2)),
+            fallback: Some("dipl".to_string()),
+            metasheet_skip_rows: 1,
+            token_annos: vec!["pos".to_string(), "lemma".to_string()],
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn multiple() {

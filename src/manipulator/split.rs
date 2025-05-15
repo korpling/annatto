@@ -7,25 +7,22 @@ use graphannis::{
 };
 use graphannis_core::{annostorage::ValueSearch, graph::NODE_NAME_KEY};
 use itertools::Itertools;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
-use crate::{
-    core::update_graph, deserialize::deserialize_anno_key, error::Result,
-    progress::ProgressReporter,
-};
+use crate::{core::update_graph, error::Result, progress::ProgressReporter};
 
 use super::Manipulator;
 
 /// This operation splits conflated annotation values into individual annotations.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct SplitValues {
     /// This is the delimiter between the parts of the conflated annotation in the input graph
     #[serde(default = "default_delimiter")]
     delimiter: String,
     /// The annotation that holds the conflated values.
-    #[serde(deserialize_with = "deserialize_anno_key")]
+    #[serde(with = "crate::estarde::anno_key")]
     anno: AnnoKey,
     /// This maps a target annotation name to a list of potential values to be found in the split parts.
     #[serde(default)]
@@ -35,16 +32,16 @@ pub struct SplitValues {
     delete: bool,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(untagged)]
 enum Layer {
     ByIndex {
         index: usize,
-        #[serde(deserialize_with = "deserialize_anno_key")]
+        #[serde(with = "crate::estarde::anno_key")]
         key: AnnoKey,
     },
     ByValues {
-        #[serde(deserialize_with = "deserialize_anno_key")]
+        #[serde(with = "crate::estarde::anno_key")]
         key: AnnoKey,
         #[serde(default)]
         values: Vec<String>,

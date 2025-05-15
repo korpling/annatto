@@ -4,6 +4,45 @@ use super::*;
 use insta::assert_snapshot;
 
 #[test]
+fn serialize() {
+    let module = ImportTextgrid::default();
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
+fn serialize_custom() {
+    let module = ImportTextgrid {
+        audio_extension: Some("mp3".to_string()),
+        tier_groups: Some(
+            vec![(
+                "tok".to_string(),
+                vec!["pos".to_string(), "stress".to_string()]
+                    .into_iter()
+                    .collect(),
+            )]
+            .into_iter()
+            .collect(),
+        ),
+        skip_timeline_generation: true,
+        skip_audio: false,
+        skip_time_annotations: true,
+    };
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
 fn single_speaker() {
     let mut tg = BTreeMap::new();
     tg.insert(

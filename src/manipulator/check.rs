@@ -12,6 +12,7 @@ use documented::{Documented, DocumentedFields};
 use graphannis::{aql, AnnotationGraph};
 use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE};
 use itertools::Itertools;
+use serde::Serialize;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 use tabled::{Table, Tabled};
@@ -24,7 +25,7 @@ use crate::{
 
 /// Runs AQL queries on the corpus and checks for constraints on the result.
 /// Can fail the workflow when one of the checks fail
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Check {
     /// The tests to run on the current graph.
@@ -39,7 +40,7 @@ pub struct Check {
     save: Option<PathBuf>,
 }
 
-#[derive(Default, Deserialize)]
+#[derive(Default, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 enum FailurePolicy {
     Warn,
@@ -47,7 +48,7 @@ enum FailurePolicy {
     Fail,
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, Serialize)]
 #[serde(rename_all = "snake_case")]
 enum ReportLevel {
     #[default] // default report level is required for save option
@@ -389,7 +390,7 @@ impl From<&Test> for Vec<AQLTest> {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(untagged)]
 enum Test {
     QueryTest {
@@ -458,7 +459,7 @@ struct TestTableEntry {
     details: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(untagged)]
 enum QueryResult {
     Numeric(usize),

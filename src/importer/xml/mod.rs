@@ -5,6 +5,7 @@ use graphannis::{
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::graph::ANNIS_NS;
+use serde::Serialize;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 use xml::{EventReader, ParserConfig};
@@ -20,7 +21,7 @@ use documented::{Documented, DocumentedFields};
 use super::Importer;
 
 /// Generic importer for XML files.
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ImportXML {
     /// For specfic tag names, the covered text can be retrieved from

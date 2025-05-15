@@ -7,6 +7,18 @@ use insta::assert_snapshot;
 use pretty_assertions::assert_eq;
 
 #[test]
+fn serialize() {
+    let module = ImportRelAnnis::default();
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
 fn import_salt_sample_relannis() {
     let corpus_path = Path::new("tests/data/import/relannis/SaltSampleCorpus/");
     let actual = import_as_graphml_string_2(

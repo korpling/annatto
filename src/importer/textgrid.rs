@@ -19,6 +19,7 @@ use graphannis::update::{GraphUpdate, UpdateEvent};
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
+use serde::Serialize;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 const FILE_ENDINGS: [&str; 3] = ["textgrid", "TextGrid", "textGrid"];
@@ -28,8 +29,8 @@ const FILE_ENDINGS: [&str; 3] = ["textgrid", "TextGrid", "textGrid"];
 /// See the [Praat
 /// Documentation](https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html)
 /// for more information on the format itself.
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImportTextgrid {
     /// A mapping from segments to tiers, that refer to these segments.
     tier_groups: Option<BTreeMap<String, BTreeSet<String>>>,

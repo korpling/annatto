@@ -8,7 +8,6 @@ use std::{
 use super::Manipulator;
 use crate::{
     core::{update_graph, update_graph_silent},
-    deserialize::deserialize_anno_key,
     progress::ProgressReporter,
     util::{
         token_helper::{TokenHelper, TOKEN_KEY},
@@ -26,6 +25,7 @@ use graphannis::{
 };
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS, NODE_NAME_KEY, NODE_TYPE_KEY};
 use regex::Regex;
+use serde::Serialize;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
@@ -130,7 +130,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// value = { copy = 1 }
 /// delete = [1]
 /// ```
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct MapAnnos {
     #[serde(default)]
@@ -247,7 +247,7 @@ fn read_config(path: &Path) -> Result<Mapping, Box<dyn std::error::Error>> {
     Ok(m)
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Serialize)]
 enum RepetitionMode {
     /// Repeat applying the rules n times.
     Fixed { n: usize },
@@ -261,7 +261,7 @@ impl Default for RepetitionMode {
     }
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Serialize)]
 #[serde(deny_unknown_fields)]
 struct Mapping {
     rules: Vec<Rule>,
@@ -269,7 +269,7 @@ struct Mapping {
     repetition: RepetitionMode,
 }
 
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug, Serialize)]
 #[serde(untagged)]
 enum TargetRef {
     Node(usize),
@@ -311,7 +311,7 @@ impl TargetRef {
     }
 }
 
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug, Serialize)]
 #[serde(untagged)]
 enum Value {
     Fixed(String),
@@ -332,12 +332,12 @@ enum Value {
     },
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct Rule {
     query: String,
     target: TargetRef,
-    #[serde(deserialize_with = "deserialize_anno_key")]
+    #[serde(with = "crate::estarde::anno_key")]
     anno: AnnoKey,
     value: Value,
     #[serde(default)]

@@ -6,6 +6,7 @@ use graphannis::{
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::graph::ANNIS_NS;
+use serde::Serialize;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 use xml::{EventReader, ParserConfig};
@@ -20,8 +21,8 @@ use super::Importer;
 
 /// Add alignment edges for parallel corpora from the XML format used by the
 /// [OPUS](https://opus.nlpl.eu/) corpora.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImportOpusLinks {
     /// The component name of the edges for the default direction.
     default_name: String,

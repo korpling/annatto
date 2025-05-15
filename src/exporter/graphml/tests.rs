@@ -8,6 +8,35 @@ use tempfile::TempDir;
 use crate::importer::{exmaralda::ImportEXMARaLDA, Importer};
 
 #[test]
+fn serialize() {
+    let module = GraphMLExporter::default();
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
+fn serialize_custom() {
+    let module = GraphMLExporter {
+        add_vis: Some("# just add this random comment, alright?".to_string()),
+        guess_vis: true,
+        stable_order: true,
+        zip: true,
+    };
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
 fn export_as_zip_with_files() {
     let step_id = StepID {
         module_name: "export_graphml".to_string(),

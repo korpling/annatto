@@ -1,7 +1,7 @@
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 
 pub(crate) mod core;
-pub mod deserialize;
+pub mod estarde;
 pub mod error;
 pub mod exporter;
 pub mod importer;
