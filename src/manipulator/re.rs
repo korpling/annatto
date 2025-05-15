@@ -31,14 +31,16 @@ use crate::{
 use documented::{Documented, DocumentedFields};
 
 /// Manipulate annotations, like deleting or renaming them.
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Revise {
     /// A map of nodes to rename, usually useful for corpus nodes. If the target name exists,
     /// the operation will fail with an error. If the target name is empty, the node will be
     /// deleted.
+    #[serde(default)]
     node_names: BTreeMap<String, String>,
     /// a list of names of nodes to be removed
+    #[serde(default)]
     remove_nodes: Vec<String>,
     /// Remove nodes that match a query result. The `query` defines the aql search query and
     /// `remove` is a list of indices (starting at 1) that defines which nodes from the query are actually
@@ -73,12 +75,16 @@ pub struct Revise {
     #[serde(default)]
     remove_match: Vec<RemoveMatch>,
     /// also move annotations to other host nodes determined by namespace
+    #[serde(default)]
     move_node_annos: bool,
     /// rename node annotation
+    #[serde(default)]
     node_annos: Vec<KeyMapping>,
     /// rename edge annotations
+    #[serde(default)]
     edge_annos: Vec<KeyMapping>,
     /// rename or erase namespaces
+    #[serde(default)]
     namespaces: BTreeMap<String, String>,
     /// rename or erase components. Specify a list of entries `from` and `to` keys, where the `to` key is optional
     /// and can be dropped to remove the component.
@@ -92,8 +98,10 @@ pub struct Revise {
     /// [[graph_op.config.components]]  # this component will be deleted
     /// from = { ctype = "Ordering", layer = "annis", "custom" }
     /// ```
+    #[serde(default)]
     components: Vec<ComponentMapping>,
     /// The given node names and all ingoing paths (incl. nodes) in PartOf/annis/ will be removed
+    #[serde(default)]
     remove_subgraph: Vec<String>,
 }
 
@@ -855,7 +863,17 @@ mod tests {
         let mut u = GraphUpdate::default();
         example_generator::create_corpus_structure_simple(&mut u);
         assert!(update_graph_silent(&mut graph, &mut u).is_ok());
-        let module = Revise::default();
+        let module = Revise {
+            components: vec![],
+            node_names: BTreeMap::default(),
+            remove_nodes: vec![],
+            edge_annos: vec![],
+            remove_match: vec![],
+            move_node_annos: false,
+            node_annos: vec![],
+            namespaces: BTreeMap::default(),
+            remove_subgraph: vec![],
+        };
         assert!(module
             .validate_graph(
                 &mut graph,
@@ -2382,7 +2400,14 @@ from = "deprel"
         assert!(tmp.is_ok());
         let manipulation = Revise {
             remove_subgraph: vec!["root/b".to_string()],
-            ..Default::default()
+            components: vec![],
+            node_names: BTreeMap::default(),
+            remove_nodes: vec![],
+            edge_annos: vec![],
+            remove_match: vec![],
+            move_node_annos: false,
+            node_annos: vec![],
+            namespaces: BTreeMap::default(),
         }
         .manipulate_corpus(
             &mut graph,
@@ -2413,7 +2438,14 @@ from = "deprel"
             .collect();
         let manipulation = Revise {
             node_names,
-            ..Default::default()
+            components: vec![],
+            remove_nodes: vec![],
+            edge_annos: vec![],
+            remove_match: vec![],
+            move_node_annos: false,
+            node_annos: vec![],
+            namespaces: BTreeMap::default(),
+            remove_subgraph: vec![],
         }
         .manipulate_corpus(
             &mut graph,
@@ -2444,7 +2476,14 @@ from = "deprel"
             .collect();
         let manipulation = Revise {
             node_names,
-            ..Default::default()
+            components: vec![],
+            remove_nodes: vec![],
+            edge_annos: vec![],
+            remove_match: vec![],
+            move_node_annos: false,
+            node_annos: vec![],
+            namespaces: BTreeMap::default(),
+            remove_subgraph: vec![],
         }
         .manipulate_corpus(
             &mut graph,
@@ -2471,7 +2510,14 @@ from = "deprel"
             .collect();
         let manipulation = Revise {
             node_names,
-            ..Default::default()
+            components: vec![],
+            remove_nodes: vec![],
+            edge_annos: vec![],
+            remove_match: vec![],
+            move_node_annos: false,
+            node_annos: vec![],
+            namespaces: BTreeMap::default(),
+            remove_subgraph: vec![],
         }
         .manipulate_corpus(
             &mut graph,

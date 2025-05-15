@@ -32,6 +32,7 @@ use super::Exporter;
 #[serde(deny_unknown_fields)]
 pub struct ExportXlsx {
     /// If `true`, include the annotation namespace in the column header.
+    #[serde(default)]
     include_namespace: bool,
     /// Specify the order of the exported columns as array of annotation keys.
     ///
