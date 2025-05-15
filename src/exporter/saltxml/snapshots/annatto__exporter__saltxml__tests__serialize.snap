@@ -1,0 +1,5 @@
+---
+source: src/exporter/saltxml/tests.rs
+expression: serialization.unwrap()
+---
+

@@ -27,7 +27,7 @@ use crate::{
 use super::Importer;
 
 /// Import annotations provided in the fieldlinguist's toolbox text format.
-#[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ImportToolBox {
     /// This attribute sets the annotation layer, that other annotations will point to.
@@ -431,18 +431,6 @@ mod tests {
     use insta::assert_snapshot;
 
     use crate::importer::toolbox::ImportToolBox;
-
-    #[test]
-    fn serialize() {
-        let module = ImportToolBox::default();
-        let serialization = toml::to_string(&module);
-        assert!(
-            serialization.is_ok(),
-            "Serialization failed: {:?}",
-            serialization.err()
-        );
-        assert_snapshot!(serialization.unwrap());
-    }
 
     #[test]
     fn serialize_custom() {

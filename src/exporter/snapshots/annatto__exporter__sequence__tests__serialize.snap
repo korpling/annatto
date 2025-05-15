@@ -1,0 +1,13 @@
+---
+source: src/exporter/sequence.rs
+expression: serialization.unwrap()
+---
+horizontal = false
+fileby = "annis::doc"
+group_component_type = "Coverage"
+anno = "annis::tok"
+
+[component]
+ctype = "Ordering"
+layer = "annis"
+name = ""

@@ -1,0 +1,5 @@
+---
+source: src/importer/saltxml/tests.rs
+expression: serialization.unwrap()
+---
+missing_anno_ns_from_layer = true

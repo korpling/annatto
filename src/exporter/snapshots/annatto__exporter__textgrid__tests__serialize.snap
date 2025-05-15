@@ -1,0 +1,10 @@
+---
+source: src/exporter/textgrid.rs
+expression: serialization.unwrap()
+---
+file_key = "annis::doc"
+time_key = "annis::time"
+point_tiers = []
+remove_ns = false
+tier_order = []
+ignore_others = false

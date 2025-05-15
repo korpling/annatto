@@ -1,0 +1,13 @@
+---
+source: src/exporter/table.rs
+expression: serialization.unwrap()
+---
+doc_anno = "annis::doc"
+delimiter = "\t"
+no_value = ""
+ingoing = []
+outgoing = []
+id_column = true
+column_names = []
+skip_header = false
+skip_token = false

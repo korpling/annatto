@@ -1,0 +1,6 @@
+---
+source: src/importer/conllu/tests.rs
+expression: serialization.unwrap()
+---
+comment_anno = "default_ns::metadata"
+multi_tok = "norm::norm"

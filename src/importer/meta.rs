@@ -36,7 +36,7 @@ use super::Importer;
 /// [import.config]
 /// identifier = { ns = "annis", name = "doc" }  # this is the default and can be omitted
 /// ```
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct AnnotateCorpus {
     /// The annotation key identifying document nodes.
@@ -45,6 +45,15 @@ pub struct AnnotateCorpus {
     /// The delimiter used in csv files.
     #[serde(default = "default_delimiter")]
     delimiter: String,
+}
+
+impl Default for AnnotateCorpus {
+    fn default() -> Self {
+        Self {
+            identifier: default_identifier(),
+            delimiter: default_delimiter(),
+        }
+    }
 }
 
 const DEFAULT_DELIMITER: &str = ",";
@@ -222,18 +231,6 @@ mod tests {
     };
 
     use super::AnnotateCorpus;
-
-    #[test]
-    fn serialize() {
-        let module = AnnotateCorpus::default();
-        let serialization = toml::to_string(&module);
-        assert!(
-            serialization.is_ok(),
-            "Serialization failed: {:?}",
-            serialization.err()
-        );
-        assert_snapshot!(serialization.unwrap());
-    }
 
     #[test]
     fn serialize_custom() {

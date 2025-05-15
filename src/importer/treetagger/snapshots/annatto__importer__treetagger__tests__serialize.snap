@@ -1,0 +1,6 @@
+---
+source: src/importer/treetagger/tests.rs
+expression: serialization.unwrap()
+---
+column_names = []
+attribute_decoding = "Entitites"

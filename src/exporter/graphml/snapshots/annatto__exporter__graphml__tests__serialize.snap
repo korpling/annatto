@@ -1,0 +1,7 @@
+---
+source: src/exporter/graphml/tests.rs
+expression: serialization.unwrap()
+---
+guess_vis = false
+stable_order = false
+zip = false

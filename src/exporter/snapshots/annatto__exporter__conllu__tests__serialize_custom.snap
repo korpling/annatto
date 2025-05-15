@@ -1,0 +1,29 @@
+---
+source: src/exporter/conllu.rs
+expression: serialization.unwrap()
+---
+doc = "default_ns::document"
+groupby = "default_ns::sentence"
+form = "norm::norm"
+lemma = "norm::lemma"
+upos = "norm::pos"
+xpos = "norm::pos_lang"
+features = ["norm::Tense"]
+dependency_anno = "default_ns::func"
+enhanced_annos = ["norm::role"]
+misc = ["norm::author", "annis::tok-whitespace-after"]
+
+[ordering]
+ctype = "Ordering"
+layer = "annis"
+name = "norm"
+
+[dependency_component]
+ctype = "Pointing"
+layer = ""
+name = "dep"
+
+[[enhanced_components]]
+ctype = "Pointing"
+layer = ""
+name = "semantics"

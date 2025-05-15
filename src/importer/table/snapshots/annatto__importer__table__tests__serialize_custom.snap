@@ -1,0 +1,15 @@
+---
+source: src/importer/table/tests.rs
+expression: serialization.unwrap()
+---
+column_names = ["a", "b", "c"]
+delimiter = ","
+quote_char = "'"
+
+[empty_line_group]
+anno = "default_ns::sentence"
+
+[empty_line_group.component]
+ctype = "Coverage"
+layer = "annis"
+name = ""

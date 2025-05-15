@@ -1,0 +1,7 @@
+---
+source: src/exporter/meta.rs
+expression: serialization.unwrap()
+---
+name_key = "default_ns::document"
+only = ["default_ns::author", "default_ns::date"]
+write_ns = true

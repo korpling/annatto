@@ -1,0 +1,5 @@
+---
+source: src/importer/none/mod.rs
+expression: serialization.unwrap()
+---
+

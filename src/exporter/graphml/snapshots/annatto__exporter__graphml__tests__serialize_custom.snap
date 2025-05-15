@@ -1,0 +1,8 @@
+---
+source: src/exporter/graphml/tests.rs
+expression: serialization.unwrap()
+---
+add_vis = "# just add this random comment, alright?"
+guess_vis = true
+stable_order = true
+zip = true

@@ -1,0 +1,6 @@
+---
+source: src/importer/table/tests.rs
+expression: serialization.unwrap()
+---
+column_names = []
+delimiter = "\t"

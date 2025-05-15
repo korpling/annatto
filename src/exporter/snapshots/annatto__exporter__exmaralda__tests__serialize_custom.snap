@@ -1,0 +1,7 @@
+---
+source: src/exporter/exmaralda.rs
+expression: serialization.unwrap()
+---
+copy_media = true
+doc_anno = "annis::not_doc"
+tier_order = ["dipl::dipl", "norm::norm"]

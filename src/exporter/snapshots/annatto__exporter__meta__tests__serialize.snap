@@ -1,0 +1,7 @@
+---
+source: src/exporter/meta.rs
+expression: serialization.unwrap()
+---
+name_key = "annis::doc"
+only = []
+write_ns = false
