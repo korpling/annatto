@@ -1,6 +1,6 @@
 ---
 source: src/workflow.rs
-expression: written_workflow
+expression: "Regex::new(r#\"[0-9]+\\.[0-9]+\\.[0-9]+\"#).unwrap().replace(&written_workflow,\n\"<VERSION>\")"
 ---
 [[import]]
 format = "xlsx"
@@ -132,5 +132,5 @@ stable_order = false
 zip = false
 
 [footer]
-annatto_version = "0.30.0"
+annatto_version = "<VERSION>"
 success = false
