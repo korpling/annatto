@@ -5,9 +5,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- import `treetagger` allows to configure annotation namespaces for all columns
+
 ### Changed
 
 - `check` appends its output to existing files instead of overwriting the contents when `save` is used to store the test log
+- import `treetagger` allows to use "annis::tok" for the first column as well
+- import `treetagger`: `attribute_decoding` values are now lowercase (`entities`, `none`)
+- import `xlsx`: `column_map` has no default value anymore and needs to be set
 
 ## [0.30.0] - 2025-05-13
 
