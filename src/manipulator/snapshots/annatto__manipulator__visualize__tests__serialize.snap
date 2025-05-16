@@ -1,0 +1,7 @@
+---
+source: src/manipulator/visualize.rs
+expression: serialization.unwrap()
+---
+limit_tokens = true
+token_limit = 10
+root = "first_document"

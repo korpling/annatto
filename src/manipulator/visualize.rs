@@ -33,7 +33,7 @@ use std::{borrow::Cow, collections::HashSet, path::PathBuf};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 #[derive(Default, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case", untagged)]
+#[serde(rename_all = "snake_case")]
 pub(crate) enum Include {
     All,
     #[default]

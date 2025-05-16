@@ -1,0 +1,9 @@
+---
+source: src/manipulator/visualize.rs
+expression: serialization.unwrap()
+---
+limit_tokens = true
+token_limit = 1000
+root = "all"
+output_dot = "anywhere/out/there.dot"
+output_svg = "somewhere/else/maybe.svg"
