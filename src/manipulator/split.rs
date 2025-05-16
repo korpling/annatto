@@ -54,17 +54,6 @@ fn default_delimiter() -> String {
     DEFAULT_DELIMITER.to_string()
 }
 
-impl Default for SplitValues {
-    fn default() -> Self {
-        Self {
-            delimiter: default_delimiter(),
-            anno: Default::default(),
-            layers: Default::default(),
-            delete: Default::default(),
-        }
-    }
-}
-
 impl Manipulator for SplitValues {
     fn manipulate_corpus(
         &self,
@@ -184,18 +173,6 @@ mod tests {
         util::example_generator,
         StepID,
     };
-
-    #[test]
-    fn serialize() {
-        let module = SplitValues::default();
-        let serialization = toml::to_string(&module);
-        assert!(
-            serialization.is_ok(),
-            "Serialization failed: {:?}",
-            serialization.err()
-        );
-        assert_snapshot!(serialization.unwrap());
-    }
 
     #[test]
     fn serialize_custom() {
