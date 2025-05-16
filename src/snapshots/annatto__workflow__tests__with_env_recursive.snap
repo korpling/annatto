@@ -1,0 +1,15 @@
+---
+source: src/workflow.rs
+expression: read_result.unwrap()
+---
+[[import]]
+path = "."
+format = "none"
+
+[import.config]
+
+[[graph_op]]
+action = "check"
+
+[graph_op.config]
+tests = []
