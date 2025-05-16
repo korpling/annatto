@@ -3,4 +3,4 @@ source: src/importer/treetagger/tests.rs
 expression: serialization.unwrap()
 ---
 column_names = ["annis::tok", "default_ns::pos", "default_ns::lemma"]
-attribute_decoding = true
+attribute_decoding = "entities"

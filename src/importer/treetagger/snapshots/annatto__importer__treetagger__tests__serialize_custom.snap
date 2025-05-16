@@ -4,4 +4,4 @@ expression: serialization.unwrap()
 ---
 column_names = ["a", "b", "c"]
 file_encoding = "latin-1"
-attribute_decoding = false
+attribute_decoding = "none"

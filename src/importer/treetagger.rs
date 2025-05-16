@@ -30,7 +30,7 @@ pub struct TreeTaggerParser;
 
 struct MapperParams {
     column_names: Vec<AnnoKey>,
-    attribute_decoding: bool,
+    attribute_decoding: AttributeDecoding,
 }
 
 #[derive(Debug)]
@@ -212,10 +212,11 @@ impl<'a> DocumentMapper<'a> {
         // All tag attributes must be tuples of attribute IDs and string values
         while let (Some(attr_id), Some(string_value)) = (start_tag.next(), start_tag.next()) {
             if attr_id.as_rule() == Rule::attr_id && string_value.as_rule() == Rule::string_value {
-                let unescaped_string = if self.params.attribute_decoding {
-                    quick_xml::escape::unescape(string_value.as_str())?
-                } else {
-                    string_value.as_str().into()
+                let unescaped_string = match self.params.attribute_decoding {
+                    AttributeDecoding::Entities => {
+                        quick_xml::escape::unescape(string_value.as_str())?
+                    }
+                    AttributeDecoding::None => string_value.as_str().into(),
                 };
 
                 result.insert(attr_id.as_str().to_string(), unescaped_string.to_string());
@@ -344,11 +345,11 @@ pub struct ImportTreeTagger {
     file_encoding: Option<String>,
     /// Whether or not attributes should be decoded as entities (true, default) or read as bare string (false).
     #[serde(default = "default_attribute_decoding")]
-    attribute_decoding: bool,
+    attribute_decoding: AttributeDecoding,
 }
 
-fn default_attribute_decoding() -> bool {
-    true
+fn default_attribute_decoding() -> AttributeDecoding {
+    AttributeDecoding::Entities
 }
 
 fn default_column_names() -> Vec<AnnoKey> {
@@ -376,6 +377,14 @@ impl Default for ImportTreeTagger {
             attribute_decoding: default_attribute_decoding(),
         }
     }
+}
+
+#[derive(Default, Deserialize, Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum AttributeDecoding {
+    #[default]
+    Entities,
+    None,
 }
 
 impl Importer for ImportTreeTagger {
