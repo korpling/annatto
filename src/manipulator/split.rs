@@ -54,17 +54,6 @@ fn default_delimiter() -> String {
     DEFAULT_DELIMITER.to_string()
 }
 
-impl Default for SplitValues {
-    fn default() -> Self {
-        Self {
-            delimiter: default_delimiter(),
-            anno: Default::default(),
-            layers: Default::default(),
-            delete: Default::default(),
-        }
-    }
-}
-
 impl Manipulator for SplitValues {
     fn manipulate_corpus(
         &self,
@@ -177,13 +166,52 @@ mod tests {
         exporter::graphml::GraphMLExporter,
         importer::{treetagger::ImportTreeTagger, Importer},
         manipulator::{
-            split::{default_delimiter, SplitValues},
+            split::{default_delimiter, Layer, SplitValues},
             Manipulator,
         },
         test_util::export_to_string,
         util::example_generator,
         StepID,
     };
+
+    #[test]
+    fn serialize_custom() {
+        let module = SplitValues {
+            anno: AnnoKey {
+                name: "rftag".into(),
+                ns: "ud".into(),
+            },
+            delimiter: ".".to_string(),
+            layers: vec![
+                Layer::ByIndex {
+                    index: 1,
+                    key: AnnoKey {
+                        name: "feature1".into(),
+                        ns: "rf".into(),
+                    },
+                },
+                Layer::ByValues {
+                    key: AnnoKey {
+                        name: "Tense".into(),
+                        ns: "rf".into(),
+                    },
+                    values: vec![
+                        "past".to_string(),
+                        "present".to_string(),
+                        "future".to_string(),
+                    ],
+                },
+            ],
+            delete: true,
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn graph_statistics() {

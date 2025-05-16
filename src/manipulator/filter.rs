@@ -155,6 +155,21 @@ mod tests {
     };
 
     #[test]
+    fn serialize_custom() {
+        let module = FilterNodes {
+            query: "tok _=_ pos=/NOUN|PROPN/".to_string(),
+            inverse: true,
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
     fn graph_statistics() {
         let g = AnnotationGraph::with_default_graphstorages(false);
         assert!(g.is_ok());

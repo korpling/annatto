@@ -33,6 +33,7 @@ impl Manipulator for NoOp {
 #[cfg(test)]
 mod tests {
     use graphannis::{update::GraphUpdate, AnnotationGraph};
+    use insta::assert_snapshot;
 
     use crate::{
         core::update_graph_silent,
@@ -40,6 +41,18 @@ mod tests {
         util::example_generator,
         StepID,
     };
+
+    #[test]
+    fn serialize() {
+        let module = NoOp::default();
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn graph_statistics() {

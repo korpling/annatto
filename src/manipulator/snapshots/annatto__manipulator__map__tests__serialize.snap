@@ -1,0 +1,5 @@
+---
+source: src/manipulator/map.rs
+expression: serialization.unwrap()
+---
+debug = false

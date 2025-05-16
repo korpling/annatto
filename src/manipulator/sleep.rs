@@ -34,6 +34,7 @@ impl Manipulator for Sleep {
 #[cfg(test)]
 mod tests {
     use graphannis::{update::GraphUpdate, AnnotationGraph};
+    use insta::assert_snapshot;
 
     use crate::{
         core::update_graph_silent,
@@ -41,6 +42,32 @@ mod tests {
         util::example_generator,
         StepID,
     };
+
+    #[test]
+    fn serialize() {
+        let module = Sleep::default();
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn serialize_custom() {
+        let module = Sleep {
+            seconds: 1000000000,
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn deserialize() {

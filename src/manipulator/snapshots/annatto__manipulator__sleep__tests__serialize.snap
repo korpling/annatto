@@ -1,0 +1,5 @@
+---
+source: src/manipulator/sleep.rs
+expression: serialization.unwrap()
+---
+seconds = 0

@@ -1,0 +1,17 @@
+---
+source: src/manipulator/check.rs
+expression: serialization.unwrap()
+---
+report = "list"
+policy = "warn"
+save = "this/is/a/non-existing/path.log"
+
+[[tests]]
+query = "tok @* doc=/largest-doc/"
+expected = [1, inf]
+description = "I expect a lot of tokens"
+
+[[tests]]
+
+[tests.layers]
+Reflexive = ["yes", "no"]

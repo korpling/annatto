@@ -33,7 +33,7 @@ use std::{borrow::Cow, collections::HashSet, path::PathBuf};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 #[derive(Default, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case", untagged)]
+#[serde(rename_all = "snake_case")]
 pub(crate) enum Include {
     All,
     #[default]
@@ -389,7 +389,7 @@ impl Manipulator for Visualize {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
 
     use graphannis::{update::GraphUpdate, AnnotationGraph};
     use insta::assert_snapshot;
@@ -401,6 +401,36 @@ mod tests {
     };
 
     use super::Visualize;
+
+    #[test]
+    fn serialize() {
+        let module = Visualize::default();
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn serialize_custom() {
+        let module = Visualize {
+            limit_tokens: true,
+            token_limit: 1000,
+            root: crate::manipulator::visualize::Include::All,
+            output_dot: Some(PathBuf::from("anywhere/out/there.dot")),
+            output_svg: Some(PathBuf::from("somewhere/else/maybe.svg")),
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn graph_statistics() {

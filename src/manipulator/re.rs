@@ -835,7 +835,7 @@ mod tests {
     use crate::importer::exmaralda::ImportEXMARaLDA;
     use crate::importer::graphml::GraphMLImporter;
     use crate::importer::Importer;
-    use crate::manipulator::re::{ComponentMapping, KeyMapping, Revise};
+    use crate::manipulator::re::{ComponentMapping, KeyMapping, RemoveTarget, Revise};
     use crate::manipulator::Manipulator;
     use crate::progress::ProgressReporter;
     use crate::test_util::export_to_string;
@@ -854,6 +854,79 @@ mod tests {
     use tempfile::{tempdir, tempfile};
 
     use super::{revise_components, RemoveMatch};
+
+    #[test]
+    fn serialize() {
+        let module = Revise::default();
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn serialize_custom() {
+        let module = Revise {
+            components: vec![ComponentMapping {
+                from: AnnotationComponent::new(
+                    AnnotationComponentType::Coverage,
+                    "old".into(),
+                    "".into(),
+                ),
+                to: Some(AnnotationComponent::new(
+                    AnnotationComponentType::Dominance,
+                    "new".into(),
+                    "".into(),
+                )),
+            }],
+            node_names: vec![("old_name".to_string(), "new_name".to_string())]
+                .into_iter()
+                .collect(),
+            remove_nodes: vec!["obsolete".to_string(), "even_more_obsolete".to_string()],
+            remove_match: vec![RemoveMatch {
+                query: "pos=/invalid/".to_string(),
+                remove: vec![RemoveTarget::Node(1)],
+            }],
+            move_node_annos: true,
+            node_annos: vec![KeyMapping {
+                from: AnnoKey {
+                    name: "name".into(),
+                    ns: "old".into(),
+                },
+                to: Some(AnnoKey {
+                    name: "NAME".into(),
+                    ns: "new".into(),
+                }),
+            }],
+            edge_annos: vec![KeyMapping {
+                from: AnnoKey {
+                    name: "edge_name".into(),
+                    ns: "old".into(),
+                },
+                to: Some(AnnoKey {
+                    name: "EDGE_NAME".into(),
+                    ns: "new".into(),
+                }),
+            }],
+            namespaces: vec![
+                ("old_ns".to_string(), "new_ns".to_string()),
+                ("".to_string(), "default_ns".to_string()),
+            ]
+            .into_iter()
+            .collect(),
+            remove_subgraph: vec!["subcorpus".to_string()],
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn graph_statistics() {

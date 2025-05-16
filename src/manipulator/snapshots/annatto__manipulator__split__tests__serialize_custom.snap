@@ -1,0 +1,15 @@
+---
+source: src/manipulator/split.rs
+expression: serialization.unwrap()
+---
+delimiter = "."
+anno = "ud::rftag"
+delete = true
+
+[[layers]]
+index = 1
+key = "rf::feature1"
+
+[[layers]]
+key = "rf::Tense"
+values = ["past", "present", "future"]

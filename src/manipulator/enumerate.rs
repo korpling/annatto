@@ -298,6 +298,40 @@ mod tests {
     use super::EnumerateMatches;
 
     #[test]
+    fn serialize() {
+        let module = EnumerateMatches::default();
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn serialize_custom() {
+        let module = EnumerateMatches {
+            queries: vec!["norm _=_ pos @* doc".to_string()],
+            by: vec![3],
+            target: 1,
+            label: AnnoKey {
+                name: "id".into(),
+                ns: "stats".into(),
+            },
+            value: Some(1),
+            start: 1,
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
     fn graph_statistics() {
         let g = AnnotationGraph::with_default_graphstorages(false);
         assert!(g.is_ok());

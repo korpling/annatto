@@ -1,0 +1,38 @@
+---
+source: src/manipulator/re.rs
+expression: serialization.unwrap()
+---
+remove_nodes = ["obsolete", "even_more_obsolete"]
+move_node_annos = true
+remove_subgraph = ["subcorpus"]
+
+[node_names]
+old_name = "new_name"
+
+[[remove_match]]
+query = "pos=/invalid/"
+remove = [1]
+
+[[node_annos]]
+from = "old::name"
+to = "new::NAME"
+
+[[edge_annos]]
+from = "old::edge_name"
+to = "new::EDGE_NAME"
+
+[namespaces]
+"" = "default_ns"
+old_ns = "new_ns"
+
+[[components]]
+
+[components.from]
+ctype = "Coverage"
+layer = "old"
+name = ""
+
+[components.to]
+ctype = "Dominance"
+layer = "new"
+name = ""

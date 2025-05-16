@@ -465,6 +465,7 @@ mod tests {
     };
     use graphannis_core::graph::ANNIS_NS;
 
+    use insta::assert_snapshot;
     use serde_derive::Deserialize;
 
     use crate::{
@@ -475,6 +476,25 @@ mod tests {
     };
 
     use super::{Collapse, HYPERNODE_NAME_STEM};
+
+    #[test]
+    fn serialize_custom() {
+        let module = Collapse {
+            component: AnnotationComponent::new(
+                AnnotationComponentType::Dominance,
+                "".into(),
+                "syntax".into(),
+            ),
+            disjoint: true,
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn graph_statistics() {

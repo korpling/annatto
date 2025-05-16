@@ -1,0 +1,10 @@
+---
+source: src/manipulator/collapse.rs
+expression: serialization.unwrap()
+---
+disjoint = true
+
+[component]
+ctype = "Dominance"
+layer = ""
+name = "syntax"

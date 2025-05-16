@@ -1,0 +1,5 @@
+---
+source: src/manipulator/no_op.rs
+expression: serialization.unwrap()
+---
+

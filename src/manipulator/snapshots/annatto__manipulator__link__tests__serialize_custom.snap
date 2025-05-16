@@ -1,0 +1,18 @@
+---
+source: src/manipulator/link.rs
+expression: serialization.unwrap()
+---
+source_query = "node @* doc=/1/"
+source_node = 1
+source_value = [1]
+source_to_edge = []
+target_query = "node @* doc=/2/"
+target_node = 1
+target_value = [1]
+target_to_edge = []
+value_sep = "#"
+
+[component]
+ctype = "Pointing"
+layer = ""
+name = "link"
