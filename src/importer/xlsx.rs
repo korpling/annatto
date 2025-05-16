@@ -29,7 +29,7 @@ use documented::{Documented, DocumentedFields};
 
 /// Imports Excel Spreadsheets where each line is a token, the other columns are
 /// spans and merged cells can be used for spans that cover more than one token.
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ImportSpreadsheet {
     /// Maps token columns to annotation columns. If there is more than one
@@ -57,12 +57,15 @@ pub struct ImportSpreadsheet {
     /// column_map = {"dipl" = [], "norm" = ["pos", "lemma"]}
     /// fallback = "dipl"
     /// ```
+    #[serde(default)]
     fallback: Option<String>,
     /// Optional value of the Excel sheet that contains the data. If not given,
     /// the first sheet is used.
+    #[serde(default)]
     datasheet: Option<SheetAddress>,
     /// Optional value of the Excel sheet that contains the metadata table. If
-    /// no metadata is imported.    
+    /// no metadata is imported.
+    #[serde(default)]
     metasheet: Option<SheetAddress>,
     /// Skip the first given rows in the meta data sheet.
     #[serde(default)]
@@ -595,18 +598,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn serialize() {
-        let module = ImportSpreadsheet::default();
-        let serialization = toml::to_string(&module);
-        assert!(
-            serialization.is_ok(),
-            "Serialization failed: {:?}",
-            serialization.err()
-        );
-        assert_snapshot!(serialization.unwrap());
-    }
-
-    #[test]
     fn serialize_custom() {
         let module = ImportSpreadsheet {
             column_map: vec![
@@ -1118,6 +1109,10 @@ format = "xlsx"
 [import.config]
 datasheet = 2
 metasheet = "meta"
+
+[import.config.column_map]
+text = ["pos", "lemma"]
+edition = ["chapter"]
 
         "#,
         )
