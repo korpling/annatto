@@ -481,7 +481,9 @@ mod tests {
             ww.err()
         );
         let written_workflow = ww.unwrap();
-        assert_snapshot!(written_workflow);
+        assert_snapshot!(Regex::new(r#"[0-9]+\.[0-9]+\.[0-9]+"#)
+            .unwrap()
+            .replace(&written_workflow, "<VERSION>"));
         let deserialize: std::result::Result<Workflow, _> = toml::from_str(&written_workflow);
         assert!(
             deserialize.is_ok(),
