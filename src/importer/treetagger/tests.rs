@@ -2,10 +2,7 @@ use std::path::Path;
 
 use insta::assert_snapshot;
 
-use crate::{
-    importer::treetagger::{AttributeDecoding, ImportTreeTagger},
-    test_util::import_as_graphml_string,
-};
+use crate::{importer::treetagger::ImportTreeTagger, test_util::import_as_graphml_string};
 
 const TT_DEFAULT_VIS_CONFIG: &str = r#"
 [context]
@@ -39,11 +36,7 @@ fn serialize() {
 
 #[test]
 fn serialize_custom() {
-    let module = ImportTreeTagger {
-        column_names: vec!["a".to_string(), "b".to_string(), "c".to_string()],
-        file_encoding: Some("latin-1".to_string()),
-        attribute_decoding: AttributeDecoding::Entitites,
-    };
+    let module: ImportTreeTagger = toml::from_str("column_names = [\"a\", \"b\", \"c\"]\nfile_encoding = \"latin-1\"\nattribute_decoding = false").unwrap();
     let serialization = toml::to_string(&module);
     assert!(
         serialization.is_ok(),
@@ -82,7 +75,7 @@ fn encoding_latin() {
 #[test]
 fn disable_attribute_encoding() {
     let mut importer = ImportTreeTagger::default();
-    importer.attribute_decoding = AttributeDecoding::Entitites;
+    importer.attribute_decoding = true;
     let should_fail = import_as_graphml_string(
         importer,
         Path::new("tests/data/import/treetagger/unescaped_attribute/"),
@@ -91,7 +84,7 @@ fn disable_attribute_encoding() {
     assert!(should_fail.is_err());
 
     let mut importer = ImportTreeTagger::default();
-    importer.attribute_decoding = AttributeDecoding::None;
+    importer.attribute_decoding = false;
     let actual = import_as_graphml_string(
         importer,
         Path::new("tests/data/import/treetagger/unescaped_attribute/"),
