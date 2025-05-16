@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- when running with `--env` also variables contained in variable values are resolved (cycle safe)
+
 ## [0.31.0] - 2025-05-16
 
 ### Added
