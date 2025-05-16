@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.31.0] - 2025-05-16
+
 ### Added
 
 - import `treetagger` allows to configure annotation namespaces for all columns
