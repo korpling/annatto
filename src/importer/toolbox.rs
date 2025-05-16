@@ -14,7 +14,7 @@ use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use pest::{iterators::Pair, Parser};
 use pest_derive::Parser;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
@@ -27,8 +27,8 @@ use crate::{
 use super::Importer;
 
 /// Import annotations provided in the fieldlinguist's toolbox text format.
-#[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImportToolBox {
     /// This attribute sets the annotation layer, that other annotations will point to.
     /// This needs to be set to avoid an invalid model.
@@ -431,6 +431,23 @@ mod tests {
     use insta::assert_snapshot;
 
     use crate::importer::toolbox::ImportToolBox;
+
+    #[test]
+    fn serialize_custom() {
+        let module = ImportToolBox {
+            span: vec!["sentence".to_string(), "clause".to_string()]
+                .into_iter()
+                .collect(),
+            target: "tx".to_string(),
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn core_functionality() {

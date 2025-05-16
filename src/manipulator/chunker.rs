@@ -2,8 +2,7 @@ use std::collections::BTreeMap;
 
 use super::Manipulator;
 use crate::{
-    core::update_graph_silent, deserialize::deserialize_anno_key, progress::ProgressReporter,
-    util::token_helper::TokenHelper, StepID,
+    core::update_graph_silent, progress::ProgressReporter, util::token_helper::TokenHelper, StepID,
 };
 use documented::{Documented, DocumentedFields};
 use graphannis::{
@@ -20,7 +19,7 @@ use graphannis_core::{
     graph::{ANNIS_NS, NODE_NAME_KEY},
     types::NodeID,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 use text_splitter::TextSplitter;
 
@@ -29,17 +28,14 @@ use text_splitter::TextSplitter;
 /// Uses the [text-splitter](https://crates.io/crates/text-splitter) crate which
 /// uses sentence markers and the given maximum number of characters per chunk
 /// to segment the text into chunks.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Chunk {
     /// Maximum chunk length.
-    #[serde(default)]
+    #[serde(default = "default_max_characters")]
     max_characters: usize,
     /// Annotation key used to annotate chunks with a value.
-    #[serde(
-        default = "default_anno_key",
-        deserialize_with = "deserialize_anno_key"
-    )]
+    #[serde(default = "default_anno_key", with = "crate::estarde::anno_key")]
     anno_key: AnnoKey,
     /// Used annotation value.
     #[serde(default)]
@@ -60,13 +56,17 @@ fn default_chunk_name() -> String {
     "chunk".to_string()
 }
 
+fn default_max_characters() -> usize {
+    100
+}
+
 impl Default for Chunk {
     fn default() -> Self {
         Self {
-            max_characters: 100,
+            max_characters: default_max_characters(),
             anno_key: default_anno_key(),
-            anno_value: "".into(),
-            segmentation: None,
+            anno_value: Default::default(),
+            segmentation: Default::default(),
         }
     }
 }

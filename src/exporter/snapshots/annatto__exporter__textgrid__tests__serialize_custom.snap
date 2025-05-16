@@ -1,0 +1,10 @@
+---
+source: src/exporter/textgrid.rs
+expression: serialization.unwrap()
+---
+file_key = "default_ns::file"
+time_key = "textgrid::interval"
+point_tiers = ["default_ns::accent"]
+remove_ns = true
+tier_order = ["default_ns::syllable", "default_ns::accent"]
+ignore_others = true

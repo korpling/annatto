@@ -9,12 +9,15 @@ use documented::{Documented, DocumentedFields};
 use encoding_rs::Encoding;
 use encoding_rs_io::DecodeReaderBytesBuilder;
 use graphannis::{
+    graph::AnnoKey,
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
+use itertools::Itertools;
 use pest::{iterators::Pairs, Parser};
 use pest_derive::Parser;
+use serde::Serialize;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
@@ -25,23 +28,8 @@ const FILE_ENDINGS: [&str; 5] = ["treetagger", "tab", "tt", "txt", "xml"];
 #[grammar = "importer/treetagger/treetagger.pest"]
 pub struct TreeTaggerParser;
 
-enum Column {
-    Token,
-    Anno(String),
-}
-
-impl From<String> for Column {
-    fn from(value: String) -> Self {
-        if value == "tok" {
-            Self::Token
-        } else {
-            Self::Anno(value)
-        }
-    }
-}
-
 struct MapperParams {
-    column_names: Vec<Column>,
+    column_names: Vec<AnnoKey>,
     attribute_decoding: AttributeDecoding,
 }
 
@@ -164,26 +152,30 @@ impl<'a> DocumentMapper<'a> {
         self.number_of_token += 1;
         self.last_token_id = Some(tok_id.clone());
 
-        for column_def in &self.params.column_names {
+        for column_key in &self.params.column_names {
             if let Some(column_value) = token_line.next() {
                 if column_value.as_rule() == Rule::column_value {
-                    match column_def {
-                        Column::Token => {
-                            u.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: tok_id.to_string(),
-                                anno_ns: ANNIS_NS.to_string(),
-                                anno_name: "tok".to_string(),
-                                anno_value: column_value.as_str().to_string(),
-                            })?;
-                        }
-                        Column::Anno(anno_name) => {
-                            u.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: tok_id.to_string(),
-                                anno_ns: DEFAULT_NS.to_string(),
-                                anno_name: anno_name.clone(),
-                                anno_value: column_value.as_str().to_string(),
-                            })?;
-                        }
+                    if column_key.name.as_str() == "tok"
+                        && (column_key.ns.is_empty() || column_key.ns.as_str() == ANNIS_NS)
+                    {
+                        u.add_event(UpdateEvent::AddNodeLabel {
+                            node_name: tok_id.to_string(),
+                            anno_ns: ANNIS_NS.to_string(),
+                            anno_name: "tok".to_string(),
+                            anno_value: column_value.as_str().to_string(),
+                        })?;
+                    } else {
+                        let ns = if column_key.ns.is_empty() {
+                            DEFAULT_NS
+                        } else {
+                            column_key.ns.as_str()
+                        };
+                        u.add_event(UpdateEvent::AddNodeLabel {
+                            node_name: tok_id.to_string(),
+                            anno_ns: ns.to_string(),
+                            anno_name: column_key.name.to_string(),
+                            anno_value: column_value.as_str().to_string(),
+                        })?;
                     }
                 }
             }
@@ -221,7 +213,7 @@ impl<'a> DocumentMapper<'a> {
         while let (Some(attr_id), Some(string_value)) = (start_tag.next(), start_tag.next()) {
             if attr_id.as_rule() == Rule::attr_id && string_value.as_rule() == Rule::string_value {
                 let unescaped_string = match self.params.attribute_decoding {
-                    AttributeDecoding::Entitites => {
+                    AttributeDecoding::Entities => {
                         quick_xml::escape::unescape(string_value.as_str())?
                     }
                     AttributeDecoding::None => string_value.as_str().into(),
@@ -311,13 +303,6 @@ impl<'a> DocumentMapper<'a> {
     }
 }
 
-#[derive(Default, Deserialize, Debug, Clone, Copy)]
-pub enum AttributeDecoding {
-    #[default]
-    Entitites,
-    None,
-}
-
 /// Importer for the file format used by the TreeTagger.
 ///
 /// Example:
@@ -332,16 +317,74 @@ pub enum AttributeDecoding {
 ///
 /// This imports the second and third column of your treetagger files
 /// as `custom_pos` and `custom_lemma`.
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
-#[serde(default, deny_unknown_fields)]
+///
+/// You can use namespaces in some or all of the columns. The default
+/// namespace for the first column if "tok" is provided is "annis".
+/// For the following columns the namespace defaults to "default_ns" if
+/// nothing is provided. If the first column is not "tok" or "annis::tok", "default_ns"
+/// will also be the namespace if none is specified.
+///
+/// Example:
+/// ```toml
+/// [import.config]
+/// column_names = ["tok", "norm::custom_pos", "norm::custom_lemma"]
+/// ```
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImportTreeTagger {
     /// Provide annotation names for the columns of the files. If you want the first column to be `annis::tok`,
-    /// use "tok" without the namespace (default).
-    column_names: Vec<String>,
+    /// you can use "tok" or "annis::tok". For all following columns, if you do not provide a namespace, "default_ns"
+    /// will be used automatically.
+    #[serde(
+        default = "default_column_names",
+        with = "crate::estarde::anno_key::in_sequence"
+    )]
+    column_names: Vec<AnnoKey>,
     /// The encoding to use when for the input files. Defaults to UTF-8.
+    #[serde(default)]
     file_encoding: Option<String>,
-    /// Options are `None` (default) and `Entities`.
+    /// Whether or not attributes should be decoded as entities (true, default) or read as bare string (false).
+    #[serde(default = "default_attribute_decoding")]
     attribute_decoding: AttributeDecoding,
+}
+
+fn default_attribute_decoding() -> AttributeDecoding {
+    AttributeDecoding::Entities
+}
+
+fn default_column_names() -> Vec<AnnoKey> {
+    vec![
+        AnnoKey {
+            ns: ANNIS_NS.into(),
+            name: "tok".into(),
+        },
+        AnnoKey {
+            name: "pos".into(),
+            ns: DEFAULT_NS.into(),
+        },
+        AnnoKey {
+            name: "lemma".into(),
+            ns: DEFAULT_NS.into(),
+        },
+    ]
+}
+
+impl Default for ImportTreeTagger {
+    fn default() -> Self {
+        Self {
+            column_names: default_column_names(),
+            file_encoding: Default::default(),
+            attribute_decoding: default_attribute_decoding(),
+        }
+    }
+}
+
+#[derive(Default, Deserialize, Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum AttributeDecoding {
+    #[default]
+    Entities,
+    None,
 }
 
 impl Importer for ImportTreeTagger {
@@ -357,20 +400,10 @@ impl Importer for ImportTreeTagger {
 
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
 
-        let mut params = MapperParams {
-            column_names: self
-                .column_names
-                .iter()
-                .map(|c| Column::from(c.clone()))
-                .collect(),
+        let params = MapperParams {
+            column_names: self.column_names.iter().cloned().collect_vec(),
             attribute_decoding: self.attribute_decoding,
         };
-        // Set a default column configuration when nothing configured
-        if params.column_names.is_empty() {
-            params.column_names.push(Column::Token);
-            params.column_names.push(Column::Anno("pos".into()));
-            params.column_names.push(Column::Anno("lemma".into()));
-        }
 
         let decoder_builder = if let Some(encoding) = &self.file_encoding {
             DecodeReaderBytesBuilder::new()

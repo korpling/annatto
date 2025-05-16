@@ -1,0 +1,22 @@
+---
+source: src/exporter/table.rs
+expression: serialization.unwrap()
+---
+doc_anno = "not_annis::not_doc"
+delimiter = ";"
+quote_char = '"'
+no_value = "NA"
+id_column = true
+column_names = ["text", "lemma", "pos"]
+skip_header = false
+skip_token = false
+
+[[ingoing]]
+ctype = "Coverage"
+layer = "annis"
+name = ""
+
+[[outgoing]]
+ctype = "Pointing"
+layer = ""
+name = "reference"

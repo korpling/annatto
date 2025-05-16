@@ -9,7 +9,7 @@ use graphannis::{
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::core::update_graph;
@@ -29,7 +29,7 @@ use super::Manipulator;
 /// query = "pos=/NOUN/"
 /// inverse = true
 /// ```
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct FilterNodes {
     /// The AQL query to use to identify all relevant nodes.

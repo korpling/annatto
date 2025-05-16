@@ -1,0 +1,6 @@
+---
+source: src/exporter/xlsx.rs
+expression: serialization.unwrap()
+---
+include_namespace = true
+annotation_order = ["text::text", "edition::edition"]

@@ -1,0 +1,14 @@
+---
+source: src/exporter/sequence.rs
+expression: serialization.unwrap()
+---
+horizontal = true
+fileby = "org::file_data"
+groupby = "dipl::sentence"
+group_component_type = "Coverage"
+anno = "norm::norm"
+
+[component]
+ctype = "Coverage"
+layer = "annis"
+name = ""

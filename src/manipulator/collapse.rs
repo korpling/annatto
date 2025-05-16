@@ -12,6 +12,7 @@ use graphannis_core::{
     types::Edge,
 };
 use itertools::Itertools;
+use serde::Serialize;
 use serde_derive::Deserialize;
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -20,8 +21,8 @@ use std::{
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
-    core::update_graph_silent, deserialize::deserialize_annotation_component, error::AnnattoError,
-    progress::ProgressReporter, workflow::StatusSender, StepID,
+    core::update_graph_silent, error::AnnattoError, progress::ProgressReporter,
+    workflow::StatusSender, StepID,
 };
 
 use super::Manipulator;
@@ -32,11 +33,11 @@ use super::Manipulator;
 /// edge to a single node. This could be done by keeping one of the nodes or by
 /// creating a third one. Then all all edges, annotations, etc. are moved to the
 /// node of choice, the other node(s) is/are deleted.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Collapse {
     /// The component type within which to find the edges to collapse.
-    #[serde(deserialize_with = "deserialize_annotation_component")]
+    #[serde(with = "crate::estarde::annotation_component")]
     component: AnnotationComponent,
     /// If you know that any two edges in the defined component are always pairwise disjoint, set this attribute to true to save computation time.
     #[serde(default)]

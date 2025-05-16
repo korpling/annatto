@@ -1,0 +1,94 @@
+[[import]]
+format = "xlsx"
+path = "xlsx/"
+
+[import.config]
+[import.config.column_map]
+edition = ["chapter", "line", "line_m", "page", "subchapter", "verse"]
+text = ["text", "lemma", "writer", "Glosse", "clause", "rhyme", "lang", "inflection", "document", "posLemma", "inflectionClassLemma", "inflectionClass", "pos", "register", "translation" ]
+"ahd::AHD" = []
+"lat::LAT" = []
+map = []
+
+[[graph_op]]  # split enumerated map-values
+action = "split"
+
+[graph_op.config]
+delimiter = ","
+anno = "map"
+delete = true
+
+[[graph_op.config.layers]]
+index = 1
+key = "a::map"
+
+[[graph_op.config.layers]]
+index = 2
+key = "b::map"
+
+[[graph_op.config.layers]]  # let's assume there are not more than three
+index = 3
+key = "c::map"
+
+[[graph_op]]  # add row annotations derived from empty tokens
+action = "split"
+
+[graph_op.config]
+delimiter = "#row"
+anno = "annis::node_name"
+
+[[graph_op.config.layers]]
+index = 2
+key = "row"
+
+[[graph_op]]  # remove row annotations for ahd and lat file
+action = "revise"
+
+[[graph_op.config.remove_match]]
+query = "row _ident_ node_name=/.+\\/(ohg|lat)\\/.+/"
+remove = [{ node = 1, anno = "row" }]
+
+[[graph_op]]  # fill `map` annotations, where there are none (most of the cases)
+action = "map"
+
+[[graph_op.config.mapping.rules]]
+query = "ahd:AHD _l_ row !_l_ map?"
+target = 1
+anno = "a::map"
+value = { copy = 2 }
+
+[[graph_op.config.mapping.rules]]
+query = "ahd:AHD _r_ row !_r_ map?"
+target = 1
+anno = "b::map"
+value = { copy = 2 }
+
+[[graph_op]]
+action = "enumerate"
+
+[graph_op.config]
+queries = ["ahd:AHD @* doc", "lat:LAT @* doc", "text @* doc @* node_name=/.*ohg/", "text @* doc @* node_name=/.*lat/"]
+by = [2]
+target = 1
+label = { ns = "prealign", name = "id" }
+value = 2
+start = 1
+
+[[graph_op]]
+action = "check"
+
+[graph_op.config]
+report = "list"
+policy = "fail"
+save = "check.log"
+
+[[graph_op.config.tests]]
+query = "prealign:id _ident_ ahd:AHD"
+expected = [1, inf]
+description = "There are align ids for AHD"
+
+[[export]]
+format = "graphml"
+path = "$NOT_SO_RANDOM_VARIABLE"
+
+[export.config]

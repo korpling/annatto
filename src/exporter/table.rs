@@ -19,19 +19,15 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use linked_hash_set::LinkedHashSet;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Exporter;
 
-use crate::{
-    deserialize::{deserialize_anno_key, deserialize_annotation_component_seq},
-    progress::ProgressReporter,
-    util::token_helper::TOKEN_KEY,
-};
+use crate::{progress::ProgressReporter, util::token_helper::TOKEN_KEY};
 
 /// This module exports all ordered nodes and nodes connected by coverage edges of any name into a table.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExportTable {
     /// The provided annotation key defines which nodes within the part-of component define a document. All nodes holding said annotation
@@ -45,10 +41,7 @@ pub struct ExportTable {
     /// ```
     ///
     /// The default is `annis::doc`.
-    #[serde(
-        deserialize_with = "deserialize_anno_key",
-        default = "default_doc_anno"
-    )]
+    #[serde(default = "default_doc_anno", with = "crate::estarde::anno_key")]
     doc_anno: AnnoKey,
     /// The provided character defines the column delimiter. The default value is tab.
     ///
@@ -87,7 +80,7 @@ pub struct ExportTable {
     /// [export.config]
     /// ingoing = [{ ctype = "Pointing", layer = "", ns = "dep"}]
     /// ```
-    #[serde(default, deserialize_with = "deserialize_annotation_component_seq")]
+    #[serde(default, with = "crate::estarde::annotation_component::in_sequence")]
     ingoing: Vec<AnnotationComponent>,
     /// By listing annotation components, the ingoing edges of that component and their annotations
     /// will be exported as well. Multiple outgoing edges will be separated by a ";". Each exported
@@ -98,7 +91,7 @@ pub struct ExportTable {
     /// [export.config]
     /// outgoing = [{ ctype = "Pointing", layer = "", ns = "reference"}]
     /// ```
-    #[serde(default, deserialize_with = "deserialize_annotation_component_seq")]
+    #[serde(default, with = "crate::estarde::annotation_component::in_sequence")]
     outgoing: Vec<AnnotationComponent>,
     /// If `true` (the default), always output a column with the ID of the node.
     #[serde(default = "default_id_column")]
@@ -123,14 +116,14 @@ impl Default for ExportTable {
         Self {
             doc_anno: default_doc_anno(),
             delimiter: default_delimiter(),
-            quote_char: None,
-            no_value: String::default(),
-            ingoing: vec![],
-            outgoing: vec![],
+            quote_char: Default::default(),
+            no_value: Default::default(),
+            ingoing: Default::default(),
+            outgoing: Default::default(),
             id_column: default_id_column(),
-            column_names: Vec::default(),
-            skip_header: false,
-            skip_token: false,
+            column_names: Default::default(),
+            skip_header: Default::default(),
+            skip_token: Default::default(),
         }
     }
 }
@@ -496,9 +489,11 @@ mod tests {
     use std::path::Path;
 
     use graphannis::{
+        graph::AnnoKey,
         model::{AnnotationComponent, AnnotationComponentType},
         AnnotationGraph,
     };
+    use graphannis_core::graph::ANNIS_NS;
     use insta::assert_snapshot;
 
     use crate::{
@@ -507,6 +502,52 @@ mod tests {
         test_util::export_to_string,
         StepID,
     };
+
+    #[test]
+    fn serialize() {
+        let module = ExportTable::default();
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn serialize_custom() {
+        let module = ExportTable {
+            column_names: vec!["text".to_string(), "lemma".to_string(), "pos".to_string()],
+            doc_anno: AnnoKey {
+                ns: "not_annis".into(),
+                name: "not_doc".into(),
+            },
+            delimiter: ';',
+            quote_char: Some('"'),
+            no_value: "NA".to_string(),
+            ingoing: vec![AnnotationComponent::new(
+                AnnotationComponentType::Coverage,
+                ANNIS_NS.into(),
+                "".into(),
+            )],
+            outgoing: vec![AnnotationComponent::new(
+                AnnotationComponentType::Pointing,
+                "".into(),
+                "reference".into(),
+            )],
+            id_column: true,
+            skip_header: false,
+            skip_token: false,
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn core() {

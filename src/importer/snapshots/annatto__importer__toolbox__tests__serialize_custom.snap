@@ -1,0 +1,6 @@
+---
+source: src/importer/toolbox.rs
+expression: serialization.unwrap()
+---
+target = "tx"
+span = ["clause", "sentence"]

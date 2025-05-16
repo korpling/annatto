@@ -11,6 +11,39 @@ use crate::{
 use super::ImportCoNLLU;
 
 #[test]
+fn serialize() {
+    let module = ImportCoNLLU::default();
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
+fn serialize_custom() {
+    let module = ImportCoNLLU {
+        comment_anno: AnnoKey {
+            name: "metadata".into(),
+            ns: "default_ns".into(),
+        },
+        multi_tok: Some(AnnoKey {
+            name: "norm".into(),
+            ns: "norm".into(),
+        }),
+    };
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
 fn test_conll_fail_invalid() {
     let import = ReadFrom::CoNLLU(ImportCoNLLU::default());
     let import_path = Path::new("tests/data/import/conll/invalid");
@@ -109,7 +142,7 @@ fn custom_comments() {
 fn multi_token() {
     let actual = import_as_graphml_string(
         ImportCoNLLU {
-            multi_tok: super::MultiTokMode::With(AnnoKey {
+            multi_tok: Some(AnnoKey {
                 name: "norm".into(),
                 ns: "default_ns".into(),
             }),
@@ -155,7 +188,7 @@ fn deser_multi() {
     let mprt: Result<ImportCoNLLU, _> = toml::from_str(toml_str);
     assert!(mprt.is_ok(), "Error when deserializing: {:?}", mprt.err());
     let import = mprt.unwrap();
-    assert!(matches!(import.multi_tok, super::MultiTokMode::With { .. },));
+    assert!(import.multi_tok.is_some());
 }
 
 #[test]

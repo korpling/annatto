@@ -7,13 +7,10 @@ use graphannis::{
 };
 use graphannis_core::{annostorage::ValueSearch, graph::ANNIS_NS};
 use itertools::Itertools;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
-use crate::{
-    deserialize::{deserialize_anno_key, deserialize_anno_key_seq},
-    progress::ProgressReporter,
-};
+use crate::progress::ProgressReporter;
 
 use super::Exporter;
 
@@ -41,7 +38,7 @@ use super::Exporter;
 ///
 /// [export.config]
 /// ```
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExportMeta {
     /// This key determines the value of the file name and which nodes are being exported into a single file,
@@ -53,10 +50,7 @@ pub struct ExportMeta {
     /// [export.config]
     /// name_key = "my_unique_file_name_key"
     /// ```
-    #[serde(
-        default = "default_name_key",
-        deserialize_with = "deserialize_anno_key"
-    )]
+    #[serde(default = "default_name_key", with = "crate::estarde::anno_key")]
     name_key: AnnoKey,
     /// This option allows to restrict the exported annotation keys. Also, adding keys with namespace "annis"
     /// here is allowed, as annotation keys having that namespace are ignored in the default setting.
@@ -66,7 +60,7 @@ pub struct ExportMeta {
     /// [export.config]
     /// only = ["annis::doc", "annis::node_name", "annis::node_type", "date"]
     /// ```
-    #[serde(default, deserialize_with = "deserialize_anno_key_seq")]
+    #[serde(default, with = "crate::estarde::anno_key::in_sequence")]
     only: Vec<AnnoKey>,
     /// By setting this to true, the namespaces will be exported as well. By default, this option is false.
     ///
@@ -84,8 +78,8 @@ impl Default for ExportMeta {
     fn default() -> Self {
         Self {
             name_key: default_name_key(),
-            only: vec![],
-            write_ns: false,
+            only: Default::default(),
+            write_ns: Default::default(),
         }
     }
 }
@@ -172,7 +166,7 @@ impl ExportMeta {
 mod tests {
     use std::{fs, path::Path};
 
-    use graphannis::AnnotationGraph;
+    use graphannis::{graph::AnnoKey, AnnotationGraph};
     use insta::assert_snapshot;
 
     use crate::{
@@ -181,6 +175,46 @@ mod tests {
     };
 
     use super::ExportMeta;
+
+    #[test]
+    fn serialize() {
+        let module = ExportMeta::default();
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn serialize_custom() {
+        let module = ExportMeta {
+            name_key: AnnoKey {
+                ns: "default_ns".into(),
+                name: "document".into(),
+            },
+            only: vec![
+                AnnoKey {
+                    ns: "default_ns".into(),
+                    name: "author".into(),
+                },
+                AnnoKey {
+                    ns: "default_ns".into(),
+                    name: "date".into(),
+                },
+            ],
+            write_ns: true,
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     fn test(snapshot_name: &str, workflow_path: &Path) {
         let toml_str = fs::read_to_string(workflow_path);

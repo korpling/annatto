@@ -1,8 +1,8 @@
 //! Created edges between nodes based on their annotation value.
 use super::Manipulator;
 use crate::{
-    core::update_graph_silent, deserialize::deserialize_annotation_component, error::AnnattoError,
-    progress::ProgressReporter, workflow::StatusSender, StepID,
+    core::update_graph_silent, error::AnnattoError, progress::ProgressReporter,
+    workflow::StatusSender, StepID,
 };
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
@@ -15,6 +15,7 @@ use graphannis::{
 };
 use graphannis_core::{graph::NODE_NAME_KEY, types::AnnoKey};
 use itertools::Itertools;
+use serde::Serialize;
 use serde_derive::Deserialize;
 use std::{collections::BTreeMap, ops::Deref};
 use struct_field_names_as_array::FieldNamesAsSlice;
@@ -74,7 +75,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// as `target_to_edge` is configured to copy annotation "1", which is `func` in the
 /// example query, to the edge.
 ///
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct LinkNodes {
     /// The AQL query to find all source node annotations. Source and target nodes are then paired by equal value for their query match.
@@ -96,7 +97,7 @@ pub struct LinkNodes {
     #[serde(default)]
     target_to_edge: Vec<usize>,
     /// The edge component to be built.
-    #[serde(deserialize_with = "deserialize_annotation_component")]
+    #[serde(with = "crate::estarde::annotation_component")]
     component: AnnotationComponent,
     /// In case of multiple `source_values` or `target_values` this delimiter (default empty string) will be used for value concatenation.
     #[serde(default)]

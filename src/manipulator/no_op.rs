@@ -1,3 +1,4 @@
+use serde::Serialize;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
@@ -9,7 +10,7 @@ use super::Manipulator;
 /// A graph operation that does nothing.
 /// The purpose of this graph operation is to allow to omit a `format` field in
 /// the `[[graph_op]]` configuration of the workflow file.
-#[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct NoOp {}
 

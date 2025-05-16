@@ -14,6 +14,18 @@ use crate::{
 };
 
 #[test]
+fn serialize() {
+    let module = ExportSaltXml::default();
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
 fn export_corpus_structure() {
     let mut updates = GraphUpdate::new();
     example_generator::create_corpus_structure_two_documents(&mut updates);

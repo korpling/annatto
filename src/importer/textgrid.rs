@@ -19,6 +19,7 @@ use graphannis::update::{GraphUpdate, UpdateEvent};
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
+use serde::Serialize;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 const FILE_ENDINGS: [&str; 3] = ["textgrid", "TextGrid", "textGrid"];
@@ -28,19 +29,40 @@ const FILE_ENDINGS: [&str; 3] = ["textgrid", "TextGrid", "textGrid"];
 /// See the [Praat
 /// Documentation](https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html)
 /// for more information on the format itself.
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImportTextgrid {
     /// A mapping from segments to tiers, that refer to these segments.
+    #[serde(default)]
     tier_groups: Option<BTreeMap<String, BTreeSet<String>>>,
     /// If true, no timeline will be generated.
+    #[serde(default)]
     skip_timeline_generation: bool,
     /// If true, no audio file will be linked in the graph.
+    #[serde(default)]
     skip_audio: bool,
     /// If true, no time annotations will be created.
+    #[serde(default)]
     skip_time_annotations: bool,
     /// Provide an optional audio extension.
-    audio_extension: Option<String>,
+    #[serde(default = "default_extension")]
+    audio_extension: String,
+}
+
+impl Default for ImportTextgrid {
+    fn default() -> Self {
+        Self {
+            tier_groups: Default::default(),
+            skip_timeline_generation: Default::default(),
+            skip_audio: Default::default(),
+            skip_time_annotations: Default::default(),
+            audio_extension: default_extension(),
+        }
+    }
+}
+
+fn default_extension() -> String {
+    "wav".to_string()
 }
 
 struct MapperParams<'a> {
@@ -410,10 +432,7 @@ impl Importer for ImportTextgrid {
             skip_timeline_generation: self.skip_timeline_generation,
             skip_audio: self.skip_audio,
             skip_time_annotations: self.skip_time_annotations,
-            audio_extension: self
-                .audio_extension
-                .as_ref()
-                .map_or("wav", |ext| ext.as_str()),
+            audio_extension: self.audio_extension.as_str(),
         };
 
         let documents = import_corpus_graph_from_files(&mut u, input_path, self.file_extensions())?;

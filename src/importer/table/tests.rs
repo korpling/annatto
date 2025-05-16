@@ -1,8 +1,55 @@
 use std::path::Path;
 
+use graphannis::{
+    graph::AnnoKey,
+    model::{AnnotationComponent, AnnotationComponentType},
+};
+use graphannis_core::graph::ANNIS_NS;
 use insta::assert_snapshot;
 
-use crate::{importer::table::ImportTable, test_util::import_as_graphml_string};
+use crate::{
+    importer::table::{EmptyLineGroup, ImportTable},
+    test_util::import_as_graphml_string,
+};
+
+#[test]
+fn serialize() {
+    let module = ImportTable::default();
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
+fn serialize_custom() {
+    let module = ImportTable {
+        column_names: vec!["a".to_string(), "b".to_string(), "c".to_string()],
+        delimiter: ',',
+        quote_char: Some('\''),
+        empty_line_group: Some(EmptyLineGroup {
+            anno: AnnoKey {
+                ns: "default_ns".into(),
+                name: "sentence".into(),
+            },
+            component: Some(AnnotationComponent::new(
+                AnnotationComponentType::Coverage,
+                ANNIS_NS.into(),
+                "".into(),
+            )),
+        }),
+    };
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
 
 #[test]
 fn table_default_config() {

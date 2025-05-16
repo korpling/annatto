@@ -8,14 +8,16 @@ use graphannis::{
 };
 use graphannis_core::graph::ANNIS_NS;
 use normpath::PathExt;
+use serde::Serialize;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 /// Add file nodes for all files in the imported directory.
-#[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct CreateFileNodes {
     /// The name of the corpus root node.
+    #[serde(default)]
     corpus_name: Option<String>,
 }
 
@@ -88,11 +90,38 @@ mod tests {
         AnnotationGraph,
     };
     use graphannis_core::graph::ANNIS_NS;
+    use insta::assert_snapshot;
     use itertools::Itertools;
 
     use crate::ImporterStep;
 
     use super::CreateFileNodes;
+
+    #[test]
+    fn serialize() {
+        let module = CreateFileNodes::default();
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn serialize_custom() {
+        let module = CreateFileNodes {
+            corpus_name: Some("BeMaTaC".to_string()),
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn test_file_nodes_in_mem() {

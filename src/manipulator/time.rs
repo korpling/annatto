@@ -11,7 +11,7 @@ use graphannis::{
 use graphannis_core::graph::{storage::union::UnionEdgeContainer, ANNIS_NS, NODE_NAME_KEY};
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{core::update_graph_silent, progress::ProgressReporter};
@@ -30,7 +30,7 @@ use super::Manipulator;
 ///
 /// [graph_op.config]
 /// ```
-#[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Filltime {
     /// A fallback start time in case it cannot be derived.

@@ -8,13 +8,10 @@ use graphannis::{
 };
 use graphannis_core::{annostorage::ValueSearch, dfs::CycleSafeDFS, graph::ANNIS_NS};
 use itertools::Itertools;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
-    deserialize::{
-        deserialize_anno_key, deserialize_anno_key_opt, deserialize_annotation_component,
-    },
     error::{AnnattoError, Result},
     progress::ProgressReporter,
     StepID,
@@ -23,8 +20,8 @@ use crate::{
 use super::Exporter;
 
 /// This exports a node sequence as horizontal or vertical text.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
-#[serde(deny_unknown_fields, default)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ExportSequence {
     /// Choose horizontal mode if you want one group (e. g. sentence) per line,
     /// choose false if you prefer one element per line.
@@ -32,22 +29,15 @@ pub struct ExportSequence {
     #[serde(default)]
     horizontal: bool,
     /// The annotation key that determines which nodes in the graph bunble a document in the part of component.
-    #[serde(
-        default = "default_fileby_key",
-        deserialize_with = "deserialize_anno_key"
-    )]
+    #[serde(default = "default_fileby_key", with = "crate::estarde::anno_key")]
     fileby: AnnoKey,
     /// The optional annotation key, that groups the sequence elements.
-    #[serde(default, deserialize_with = "deserialize_anno_key_opt")]
+    #[serde(default, with = "crate::estarde::anno_key::as_option")]
     groupby: Option<AnnoKey>,
     /// the group component type can be optionally provided to define which edges to follow
     /// to find the nodes holding the groupby anno key. The default value is `Coverage`.
     #[serde(default = "default_groupby_ctype")]
     group_component_type: Option<AnnotationComponentType>,
-    #[serde(
-        default = "default_component",
-        deserialize_with = "deserialize_annotation_component"
-    )]
     /// This configures the edge component that contains the sequences that you wish to export.    
     /// The default value ctype is `Ordering`, the default layer is `annis`, and the default
     /// name is empty.
@@ -56,9 +46,13 @@ pub struct ExportSequence {
     /// [export.config]
     /// component = { ctype = "Pointing", layer = "", name = "coreference" }
     /// ```
+    #[serde(
+        default = "default_component",
+        with = "crate::estarde::annotation_component"
+    )]
     component: AnnotationComponent,
     /// The annotation key that determines the values in the exported sequence (annis::tok by default).
-    #[serde(default = "default_anno", deserialize_with = "deserialize_anno_key")]
+    #[serde(default = "default_anno", with = "crate::estarde::anno_key")]
     anno: AnnoKey,
 }
 
@@ -331,7 +325,7 @@ mod tests {
         model::{AnnotationComponent, AnnotationComponentType},
         AnnotationGraph,
     };
-    use graphannis_core::graph::DEFAULT_NS;
+    use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
     use insta::assert_snapshot;
 
     use crate::{
@@ -341,6 +335,50 @@ mod tests {
     };
 
     use super::ExportSequence;
+
+    #[test]
+    fn serialize() {
+        let module = ExportSequence::default();
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn serialize_custom() {
+        let module = ExportSequence {
+            anno: AnnoKey {
+                name: "norm".into(),
+                ns: "norm".into(),
+            },
+            component: AnnotationComponent::new(
+                AnnotationComponentType::Coverage,
+                ANNIS_NS.into(),
+                "".into(),
+            ),
+            horizontal: true,
+            fileby: AnnoKey {
+                name: "file_data".into(),
+                ns: "org".into(),
+            },
+            groupby: Some(AnnoKey {
+                ns: "dipl".into(),
+                name: "sentence".into(),
+            }),
+            group_component_type: Some(AnnotationComponentType::Coverage),
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn vertical() {

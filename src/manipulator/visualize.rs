@@ -28,11 +28,11 @@ use graphviz_rust::{
 };
 use itertools::Itertools;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, collections::HashSet, path::PathBuf};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
-#[derive(Default, Deserialize)]
+#[derive(Default, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case", untagged)]
 pub(crate) enum Include {
     All,
@@ -57,7 +57,7 @@ pub(crate) enum Include {
 /// limit_tokens = true
 /// token_limit = 10
 /// ```
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Visualize {
     /// Configure whether to limit the number of tokens visualized. If `true`,
@@ -124,6 +124,18 @@ fn default_limit_tokens() -> bool {
 
 fn default_token_limit() -> usize {
     10
+}
+
+impl Default for Visualize {
+    fn default() -> Self {
+        Self {
+            limit_tokens: default_limit_tokens(),
+            token_limit: default_token_limit(),
+            root: Default::default(),
+            output_dot: Default::default(),
+            output_svg: Default::default(),
+        }
+    }
 }
 
 impl Visualize {
@@ -427,7 +439,7 @@ mod tests {
             &workflow_file,
         )
         .unwrap();
-        execute_from_file(&workflow_file, true, false, None).unwrap();
+        execute_from_file(&workflow_file, true, false, None, None).unwrap();
         let result_dot = std::fs::read_to_string(workflow_dir.path().join("test.dot")).unwrap();
         assert_snapshot!(result_dot);
     }
@@ -441,7 +453,7 @@ mod tests {
             &workflow_file,
         )
         .unwrap();
-        execute_from_file(&workflow_file, true, false, None).unwrap();
+        execute_from_file(&workflow_file, true, false, None, None).unwrap();
         let result_dot = std::fs::read_to_string(workflow_dir.path().join("test.dot")).unwrap();
         assert_snapshot!(result_dot);
     }

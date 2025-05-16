@@ -26,6 +26,30 @@ display_name = "grid"
 "#;
 
 #[test]
+fn serialize() {
+    let module = ImportTreeTagger::default();
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
+fn serialize_custom() {
+    let module: ImportTreeTagger = toml::from_str("column_names = [\"a\", \"b\", \"c\"]\nfile_encoding = \"latin-1\"\nattribute_decoding = \"none\"").unwrap();
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
 fn simple_token() {
     let actual = import_as_graphml_string(
         ImportTreeTagger::default(),
@@ -54,7 +78,7 @@ fn encoding_latin() {
 #[test]
 fn disable_attribute_encoding() {
     let mut importer = ImportTreeTagger::default();
-    importer.attribute_decoding = AttributeDecoding::Entitites;
+    importer.attribute_decoding = AttributeDecoding::Entities;
     let should_fail = import_as_graphml_string(
         importer,
         Path::new("tests/data/import/treetagger/unescaped_attribute/"),
@@ -62,7 +86,7 @@ fn disable_attribute_encoding() {
     );
     assert!(should_fail.is_err());
 
-    let mut importer = ImportTreeTagger::default();
+    let mut importer: ImportTreeTagger = ImportTreeTagger::default();
     importer.attribute_decoding = AttributeDecoding::None;
     let actual = import_as_graphml_string(
         importer,

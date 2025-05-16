@@ -1,0 +1,18 @@
+---
+source: src/exporter/conllu.rs
+expression: serialization.unwrap()
+---
+doc = "annis::doc"
+form = "annis::tok"
+lemma = "lemma"
+upos = "upos"
+xpos = "xpos"
+features = []
+enhanced_components = []
+enhanced_annos = []
+misc = []
+
+[ordering]
+ctype = "Ordering"
+layer = "annis"
+name = ""

@@ -1,0 +1,7 @@
+---
+source: src/importer/xml/tests.rs
+expression: serialization.unwrap()
+---
+closing_default = ""
+
+[text_from_attribute]

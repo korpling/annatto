@@ -13,12 +13,11 @@ use graphannis_core::{
 };
 use linked_hash_map::LinkedHashMap;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 use umya_spreadsheet::{helper::coordinate::string_from_column_index, Worksheet};
 
 use crate::{
-    deserialize::deserialize_anno_key_seq,
     progress::ProgressReporter,
     util::token_helper::{TokenHelper, TOKEN_KEY},
 };
@@ -29,10 +28,11 @@ use super::Exporter;
 
 /// Exports Excel Spreadsheets where each line is a token, the other columns are
 /// spans and merged cells can be used for spans that cover more than one token.
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ExportXlsx {
     /// If `true`, include the annotation namespace in the column header.
+    #[serde(default)]
     include_namespace: bool,
     /// Specify the order of the exported columns as array of annotation keys.
     ///
@@ -44,7 +44,7 @@ pub struct ExportXlsx {
     /// ```
     ///
     /// Has no effect if the vector is empty.
-    #[serde(default, deserialize_with = "deserialize_anno_key_seq")]
+    #[serde(default, with = "crate::estarde::anno_key::in_sequence")]
     annotation_order: Vec<AnnoKey>,
 }
 
@@ -400,6 +400,7 @@ impl Exporter for ExportXlsx {
 mod tests {
     use std::path::Path;
 
+    use insta::assert_snapshot;
     use tempfile::TempDir;
 
     use crate::{
@@ -408,6 +409,42 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn serialize() {
+        let module = ExportXlsx::default();
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn serialize_custom() {
+        let module = ExportXlsx {
+            annotation_order: vec![
+                AnnoKey {
+                    ns: "text".into(),
+                    name: "text".into(),
+                },
+                AnnoKey {
+                    ns: "edition".into(),
+                    name: "edition".into(),
+                },
+            ],
+            include_namespace: true,
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn with_segmentation() {

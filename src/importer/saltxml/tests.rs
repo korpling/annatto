@@ -6,6 +6,18 @@ use super::*;
 use crate::test_util;
 
 #[test]
+fn serialize() {
+    let module = ImportSaltXml::default();
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
 fn read_salt_sample_corpus() {
     let importer = ImportSaltXml::default();
     let actual = test_util::import_as_graphml_string(

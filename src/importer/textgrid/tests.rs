@@ -4,6 +4,45 @@ use super::*;
 use insta::assert_snapshot;
 
 #[test]
+fn serialize() {
+    let module = ImportTextgrid::default();
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
+fn serialize_custom() {
+    let module = ImportTextgrid {
+        audio_extension: "mp3".to_string(),
+        tier_groups: Some(
+            vec![(
+                "tok".to_string(),
+                vec!["pos".to_string(), "stress".to_string()]
+                    .into_iter()
+                    .collect(),
+            )]
+            .into_iter()
+            .collect(),
+        ),
+        skip_timeline_generation: true,
+        skip_audio: false,
+        skip_time_annotations: true,
+    };
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
 fn single_speaker() {
     let mut tg = BTreeMap::new();
     tg.insert(
@@ -22,7 +61,7 @@ fn single_speaker() {
             skip_timeline_generation: true,
             skip_audio: false,
             skip_time_annotations: false,
-            audio_extension: None,
+            ..Default::default()
         },
         Path::new("tests/data/import/textgrid/singleSpeaker"),
         None,
@@ -47,7 +86,7 @@ fn empty_intervals() {
             skip_timeline_generation: true,
             skip_audio: false,
             skip_time_annotations: false,
-            audio_extension: None,
+            ..Default::default()
         },
         Path::new("tests/data/import/textgrid/emptyIntervals"),
         None,
@@ -77,7 +116,7 @@ fn two_speakers() {
             skip_timeline_generation: false,
             skip_audio: false,
             skip_time_annotations: false,
-            audio_extension: None,
+            ..Default::default()
         },
         Path::new("tests/data/import/textgrid/twoSpeakers"),
         None,
@@ -107,7 +146,7 @@ fn misaligned_lemma_annotation() {
             skip_timeline_generation: false,
             skip_audio: false,
             skip_time_annotations: false,
-            audio_extension: None,
+            ..Default::default()
         },
         Path::new("tests/data/import/textgrid/misalignedLemma"),
         None,
@@ -126,7 +165,7 @@ fn fail_wrong_map() {
         skip_timeline_generation: false,
         skip_audio: false,
         skip_time_annotations: false,
-        audio_extension: None,
+        ..Default::default()
     }
     .import_corpus(
         Path::new("tests/data/import/textgrid/fail_wrong_map"),

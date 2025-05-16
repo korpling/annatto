@@ -4,9 +4,11 @@ use std::{
     sync::mpsc::Sender,
 };
 
+use anyhow::anyhow;
 use graphannis::{update::GraphUpdate, AnnotationGraph};
 
 use regex::Regex;
+use serde::Serialize;
 use serde_derive::Deserialize;
 
 use crate::{
@@ -45,12 +47,35 @@ pub enum StatusMessage {
 /// First , all importers are executed in parallel. Then their output are appended to create a single annotation graph.
 /// The manipulators are executed in their defined sequence and can change the annotation graph.
 /// Last, all exporters are called with the now read-only annotation graph in parallel.
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Workflow {
     import: Vec<ImporterStep>,
     graph_op: Option<Vec<ManipulatorStep>>,
     export: Option<Vec<ExporterStep>>,
+    #[serde(default)]
+    footer: Metadata,
+}
+
+#[derive(Deserialize, Serialize)]
+struct Metadata {
+    #[serde(default = "metadata_default_version")]
+    annatto_version: String,
+    #[serde(default)]
+    success: bool,
+}
+
+impl Default for Metadata {
+    fn default() -> Self {
+        Self {
+            annatto_version: metadata_default_version(),
+            success: Default::default(),
+        }
+    }
+}
+
+fn metadata_default_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
 }
 
 use std::convert::TryFrom;
@@ -122,15 +147,20 @@ pub fn execute_from_file(
     read_env: bool,
     in_memory: bool,
     tx: Option<Sender<StatusMessage>>,
+    save_workflow: Option<PathBuf>,
 ) -> Result<()> {
-    let wf = Workflow::try_from((workflow_file.to_path_buf(), read_env))?;
+    let mut wf = Workflow::try_from((workflow_file.to_path_buf(), read_env))?;
     let parent_dir = if let Some(directory) = workflow_file.parent() {
         directory
     } else {
         Path::new("")
     };
-    wf.execute(tx, parent_dir, in_memory)?;
-    Ok(())
+    let result = wf.execute(tx, parent_dir, in_memory);
+    if let Some(save_path) = save_workflow {
+        wf.footer.success = result.is_ok();
+        wf.save(save_path)?;
+    }
+    result
 }
 
 pub type StatusSender = Sender<StatusMessage>;
@@ -339,10 +369,24 @@ impl Workflow {
         }
         Ok(())
     }
+
+    fn save(&self, path: PathBuf) -> Result<()> {
+        let wf_string = toml::to_string(&self).map_err(|_| {
+            AnnattoError::Anyhow(anyhow!(
+                "Could not serialize workflow after run. The workflow run was {}successful",
+                if self.footer.success { "NOT " } else { "" }
+            ))
+        })?;
+        fs::write(path, wf_string).map_err(AnnattoError::IO)
+    }
 }
 
 #[cfg(test)]
 mod tests {
+
+    use std::env;
+
+    use insta::assert_snapshot;
 
     use super::*;
 
@@ -353,6 +397,7 @@ mod tests {
             Path::new("./tests/data/import/empty/empty.toml"),
             false,
             false,
+            None,
             None,
         )
         .unwrap();
@@ -391,6 +436,7 @@ mod tests {
             false,
             false,
             None,
+            None,
         )
         .unwrap();
     }
@@ -406,7 +452,41 @@ mod tests {
             true,
             false,
             None,
+            None,
         )
         .unwrap();
+    }
+
+    #[test]
+    fn serialize_workflow() {
+        let ts = fs::read_to_string("tests/data/workflow/complex.toml");
+        assert!(ts.is_ok());
+        env::set_var(
+            "NOT_SO_RANDOM_VARIABLE",
+            "export/to/this/path/if/you/can/if/not/no/worries",
+        );
+        let mut clean_str = String::new();
+        assert!(parse_variables(ts.unwrap(), &mut clean_str).is_ok());
+        let wf: std::result::Result<Workflow, _> = toml::from_str(&clean_str);
+        assert!(wf.is_ok(), "Could not deserialize workflow: {:?}", wf.err());
+        let workflow = wf.unwrap();
+        let of = tempfile::NamedTempFile::new();
+        assert!(of.is_ok());
+        let outfile = of.unwrap();
+        assert!(workflow.save(outfile.path().to_path_buf()).is_ok());
+        let ww = fs::read_to_string(outfile);
+        assert!(
+            ww.is_ok(),
+            "Could not read written workflow file: {:?}",
+            ww.err()
+        );
+        let written_workflow = ww.unwrap();
+        assert_snapshot!(written_workflow);
+        let deserialize: std::result::Result<Workflow, _> = toml::from_str(&written_workflow);
+        assert!(
+            deserialize.is_ok(),
+            "Could not deserialize workflow that was written by annatto: {:?}",
+            deserialize.err()
+        );
     }
 }

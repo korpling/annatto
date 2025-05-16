@@ -24,19 +24,20 @@ use pest::{
     Parser,
 };
 use pest_derive::Parser;
+use serde::Serialize;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Importer;
 use crate::{
-    deserialize::deserialize_anno_key, error::AnnattoError, progress::ProgressReporter,
+    error::AnnattoError, progress::ProgressReporter,
     util::graphupdate::import_corpus_graph_from_files, workflow::StatusSender, StepID,
 };
 
 /// Import files in the [CONLL-U format](https://universaldependencies.org/format.html)
 /// from the Universal Dependencies project.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImportCoNLLU {
     /// This key defines the annotation name and namespace for sentence comments, sometimes referred to as metadata in the CoNLL-X universe.
     /// Example:
@@ -47,21 +48,18 @@ pub struct ImportCoNLLU {
     ///
     /// The field defaults to `{ ns = "conll", name = "comment" }`.
     ///
-    #[serde(
-        default = "default_comment_key",
-        deserialize_with = "deserialize_anno_key"
-    )]
+    #[serde(default = "default_comment_key", with = "crate::estarde::anno_key")]
     comment_anno: AnnoKey,
     /// For importing multi-tokens, a mode can be set. By default, multi-tokens are skipped.
-    #[serde(default)]
-    multi_tok: MultiTokMode,
+    #[serde(default, with = "crate::estarde::anno_key::as_option")]
+    multi_tok: Option<AnnoKey>,
 }
 
 impl Default for ImportCoNLLU {
     fn default() -> Self {
         Self {
             comment_anno: default_comment_key(),
-            multi_tok: MultiTokMode::Skip,
+            multi_tok: Default::default(),
         }
     }
 }
@@ -71,14 +69,6 @@ fn default_comment_key() -> AnnoKey {
         name: "comment".into(),
         ns: "conll".into(),
     }
-}
-
-#[derive(Default, Deserialize)]
-#[serde(untagged)]
-enum MultiTokMode {
-    #[default]
-    Skip,
-    With(#[serde(deserialize_with = "deserialize_anno_key")] AnnoKey),
 }
 
 const FILE_EXTENSIONS: [&str; 2] = ["conll", "conllu"];
@@ -405,7 +395,7 @@ impl ImportCoNLLU {
                         anno_name: "tok".to_string(),
                         anno_value: member.as_str().to_string(),
                     })?;
-                    if let MultiTokMode::With(anno) = &self.multi_tok {
+                    if let Some(anno) = &self.multi_tok {
                         let (span_name, text_value) = if let Some((start, end, value)) = multi_token
                         {
                             (

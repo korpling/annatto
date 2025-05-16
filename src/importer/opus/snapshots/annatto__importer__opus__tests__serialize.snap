@@ -1,0 +1,7 @@
+---
+source: src/importer/opus/tests.rs
+expression: serialization.unwrap()
+---
+default_name = "align"
+default_type = "Pointing"
+reverse_type = "Pointing"

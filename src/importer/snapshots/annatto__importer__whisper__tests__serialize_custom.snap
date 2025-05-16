@@ -1,0 +1,5 @@
+---
+source: src/importer/whisper.rs
+expression: serialization.unwrap()
+---
+skip_tokens = true

@@ -9,21 +9,19 @@ use graphannis::{
 };
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
+use serde::Serialize;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 use tempfile::tempdir;
 
-use crate::{
-    core::update_graph_silent, deserialize::deserialize_anno_key, error::AnnattoError,
-    progress::ProgressReporter, StepID,
-};
+use crate::{core::update_graph_silent, error::AnnattoError, progress::ProgressReporter, StepID};
 
 use super::Manipulator;
 
 /// Adds a node label to all matched nodes for set of queries with the number of
 /// the match as value.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct EnumerateMatches {
     /// A list of queries to find the nodes that are to be enumerated.
     queries: Vec<String>,
@@ -59,11 +57,13 @@ pub struct EnumerateMatches {
     /// [graph_op.config]
     /// label = "order::i"
     /// ```
-    #[serde(default = "default_label", deserialize_with = "deserialize_anno_key")]
+    #[serde(default = "default_label", with = "crate::estarde::anno_key")]
     label: AnnoKey,
     /// An optional 1-based index pointing to the annotation node in the query that holds a prefix value that will be added to the numeric annotation.
+    #[serde(default)]
     value: Option<usize>,
     /// This can be used to offset the numeric values in the annotations.
+    #[serde(default)]
     start: usize,
 }
 

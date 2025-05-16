@@ -18,19 +18,13 @@ use graphannis_core::{
     graph::{ANNIS_NS, NODE_NAME_KEY},
 };
 use itertools::Itertools;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Exporter;
 
-use crate::deserialize::{
-    deserialize_anno_key, deserialize_anno_key_opt, deserialize_anno_key_seq,
-    deserialize_annotation_component, deserialize_annotation_component_opt,
-    deserialize_annotation_component_seq,
-};
-
 /// This module exports a graph in CoNLL-U format.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExportCoNLLU {
     /// This key is used to determine nodes that whose part-of subgraph constitutes a document, i. e. the entire input for a file.
@@ -41,10 +35,7 @@ pub struct ExportCoNLLU {
     /// [export.config]
     /// doc = "annis::doc"
     /// ```
-    #[serde(
-        deserialize_with = "deserialize_anno_key",
-        default = "default_doc_anno"
-    )]
+    #[serde(with = "crate::estarde::anno_key", default = "default_doc_anno")]
     doc: AnnoKey,
     /// This optional annotation key is used to identify annotation spans, that constitute a sentence. Default is no export of sentence blocks.
     ///
@@ -53,7 +44,7 @@ pub struct ExportCoNLLU {
     /// [export.config]
     /// groupby = "norm::sentence"
     /// ```
-    #[serde(deserialize_with = "deserialize_anno_key_opt", default)]
+    #[serde(with = "crate::estarde::anno_key::as_option", default)]
     groupby: Option<AnnoKey>,
     /// The nodes connected by this annotation component are used as nodes defining a line in a CoNLL-U file. Usually you want to use an ordering.
     /// Default is `{ ctype = "Ordering", layer = "annis", name = "" }`.
@@ -64,9 +55,10 @@ pub struct ExportCoNLLU {
     /// ordering = { ctype = "Ordering", layer = "annis", name = "norm" }
     /// ```
     #[serde(
-        deserialize_with = "deserialize_annotation_component",
+        //deserialize_with = "deserialize_annotation_component",
         default = "default_ordering"
     )]
+    #[serde(with = "crate::estarde::annotation_component")]
     ordering: AnnotationComponent,
     /// This annotation key is used to write the form column.
     /// Default is `{ ns = "annis", name = "tok" }`.
@@ -76,10 +68,7 @@ pub struct ExportCoNLLU {
     /// [export.config]
     /// form = { ns = "norm", name = "norm" }
     /// ```
-    #[serde(
-        deserialize_with = "deserialize_anno_key",
-        default = "default_form_key"
-    )]
+    #[serde(with = "crate::estarde::anno_key", default = "default_form_key")]
     form: AnnoKey,
     /// This annotation key is used to write the lemma column.
     /// Default is `{ ns = "", name = "tok" }`.
@@ -89,10 +78,7 @@ pub struct ExportCoNLLU {
     /// [export.config]
     /// lemma = { ns = "norm", name = "lemma" }
     /// ```
-    #[serde(
-        deserialize_with = "deserialize_anno_key",
-        default = "default_lemma_key"
-    )]
+    #[serde(with = "crate::estarde::anno_key", default = "default_lemma_key")]
     lemma: AnnoKey,
     /// This annotation key is used to write the upos column.
     /// Default is `{ ns = "", name = "upos" }`.
@@ -102,10 +88,7 @@ pub struct ExportCoNLLU {
     /// [export.config]
     /// upos = { ns = "norm", name = "pos" }
     /// ```
-    #[serde(
-        deserialize_with = "deserialize_anno_key",
-        default = "default_upos_key"
-    )]
+    #[serde(with = "crate::estarde::anno_key", default = "default_upos_key")]
     upos: AnnoKey,
     /// This annotation key is used to write the xpos column.
     /// Default is `{ ns = "", name = "xpos" }`.
@@ -115,10 +98,7 @@ pub struct ExportCoNLLU {
     /// [export.config]
     /// upos = { ns = "norm", name = "pos_spec" }
     /// ```
-    #[serde(
-        deserialize_with = "deserialize_anno_key",
-        default = "default_xpos_key"
-    )]
+    #[serde(with = "crate::estarde::anno_key", default = "default_xpos_key")]
     xpos: AnnoKey,
     /// This list of annotation keys will be represented in the feature column.
     /// Default is the empty list.
@@ -128,7 +108,7 @@ pub struct ExportCoNLLU {
     /// [export.config]
     /// features = ["Animacy", "Tense", "VerbClass"]
     /// ```
-    #[serde(deserialize_with = "deserialize_anno_key_seq", default)]
+    #[serde(with = "crate::estarde::anno_key::in_sequence", default)]
     features: Vec<AnnoKey>,
     /// The nodes connected by this annotation component are used to export dependencies.
     /// Default is none, so nothing will be exported.
@@ -138,7 +118,7 @@ pub struct ExportCoNLLU {
     /// [export.config]
     /// dependency_component = { ctype = "Pointing", layer = "", name = "dependencies" }
     /// ```
-    #[serde(deserialize_with = "deserialize_annotation_component_opt", default)]
+    #[serde(with = "crate::estarde::annotation_component::as_option", default)]
     dependency_component: Option<AnnotationComponent>, // this is an option, because by default no edges are exported, as dependency anotations are not usually given and exporting conll usually serves actually parsing the data
     /// This annotation key is used to write the dependency relation, which will be looked for on the dependency edges.
     /// Default is none, so nothing will be exported.
@@ -148,7 +128,7 @@ pub struct ExportCoNLLU {
     /// [export.config]
     /// dependency_anno = { ns = "", name = "deprel" }
     /// ```
-    #[serde(deserialize_with = "deserialize_anno_key_opt", default)]
+    #[serde(with = "crate::estarde::anno_key::as_option", default)]
     dependency_anno: Option<AnnoKey>, // same reason for option as in component field
     /// The listed components will be used to export enhanced dependencies. More than
     /// one component can be listed.
@@ -159,7 +139,7 @@ pub struct ExportCoNLLU {
     /// [export.config]
     /// enhanced_components = [{ ctype = "Pointing", layer = "", name = "dependencies" }]
     /// ```
-    #[serde(deserialize_with = "deserialize_annotation_component_seq", default)]
+    #[serde(with = "crate::estarde::annotation_component::in_sequence", default)]
     enhanced_components: Vec<AnnotationComponent>,
     /// This list of annotation keys defines the annotation keys, that correspond to the
     /// edge labels in the component listed in `enhanced_components`. The i-th element of
@@ -170,7 +150,7 @@ pub struct ExportCoNLLU {
     /// [export.config]
     /// enhanced_annos = ["func"]
     /// ```
-    #[serde(deserialize_with = "deserialize_anno_key_seq", default)]
+    #[serde(with = "crate::estarde::anno_key::in_sequence", default)]
     enhanced_annos: Vec<AnnoKey>,
     /// This list of annotation keys will be represented in the misc column.
     /// Default is the empty list.
@@ -180,8 +160,28 @@ pub struct ExportCoNLLU {
     /// [export.config]
     /// misc = ["NoSpaceAfter", "Referent"]
     /// ```
-    #[serde(deserialize_with = "deserialize_anno_key_seq", default)]
+    #[serde(with = "crate::estarde::anno_key::in_sequence", default)]
     misc: Vec<AnnoKey>,
+}
+
+impl Default for ExportCoNLLU {
+    fn default() -> Self {
+        Self {
+            doc: default_doc_anno(),
+            groupby: Default::default(),
+            ordering: default_ordering(),
+            form: default_form_key(),
+            lemma: default_lemma_key(),
+            upos: default_upos_key(),
+            xpos: default_xpos_key(),
+            features: vec![],
+            dependency_component: Default::default(),
+            dependency_anno: Default::default(),
+            enhanced_components: Default::default(),
+            enhanced_annos: Default::default(),
+            misc: Default::default(),
+        }
+    }
 }
 
 fn default_doc_anno() -> AnnoKey {
@@ -224,26 +224,6 @@ fn default_upos_key() -> AnnoKey {
     AnnoKey {
         name: "upos".into(),
         ns: "".into(),
-    }
-}
-
-impl Default for ExportCoNLLU {
-    fn default() -> Self {
-        Self {
-            doc: default_doc_anno(),
-            groupby: None,
-            ordering: default_ordering(),
-            form: default_form_key(),
-            lemma: default_lemma_key(),
-            upos: default_upos_key(),
-            xpos: default_xpos_key(),
-            features: vec![],
-            dependency_component: None,
-            dependency_anno: None,
-            enhanced_components: vec![],
-            enhanced_annos: vec![],
-            misc: vec![],
-        }
     }
 }
 
@@ -554,7 +534,7 @@ mod tests {
 
     use graphannis::{
         graph::AnnoKey,
-        model::AnnotationComponentType,
+        model::{AnnotationComponent, AnnotationComponentType},
         update::{GraphUpdate, UpdateEvent},
         AnnotationGraph,
     };
@@ -567,6 +547,92 @@ mod tests {
         test_util::export_to_string,
         StepID,
     };
+
+    #[test]
+    fn serialize() {
+        let module = ExportCoNLLU::default();
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn serialize_custom() {
+        let module = ExportCoNLLU {
+            dependency_anno: Some(AnnoKey {
+                name: "func".into(),
+                ns: "default_ns".into(),
+            }),
+            doc: AnnoKey {
+                name: "document".into(),
+                ns: "default_ns".into(),
+            },
+            groupby: Some(AnnoKey {
+                ns: "default_ns".into(),
+                name: "sentence".into(),
+            }),
+            ordering: AnnotationComponent::new(
+                AnnotationComponentType::Ordering,
+                ANNIS_NS.into(),
+                "norm".into(),
+            ),
+            form: AnnoKey {
+                name: "norm".into(),
+                ns: "norm".into(),
+            },
+            lemma: AnnoKey {
+                name: "lemma".into(),
+                ns: "norm".into(),
+            },
+            upos: AnnoKey {
+                name: "pos".into(),
+                ns: "norm".into(),
+            },
+            xpos: AnnoKey {
+                name: "pos_lang".into(),
+                ns: "norm".into(),
+            },
+            features: vec![AnnoKey {
+                ns: "norm".into(),
+                name: "Tense".into(),
+            }],
+            dependency_component: Some(AnnotationComponent::new(
+                AnnotationComponentType::Pointing,
+                "".into(),
+                "dep".into(),
+            )),
+            enhanced_components: vec![AnnotationComponent::new(
+                AnnotationComponentType::Pointing,
+                "".into(),
+                "semantics".into(),
+            )],
+            enhanced_annos: vec![AnnoKey {
+                ns: "norm".into(),
+                name: "role".into(),
+            }],
+            misc: vec![
+                AnnoKey {
+                    ns: "norm".into(),
+                    name: "author".into(),
+                },
+                AnnoKey {
+                    ns: ANNIS_NS.into(),
+                    name: "tok-whitespace-after".into(),
+                },
+            ],
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn conll_to_conll() {

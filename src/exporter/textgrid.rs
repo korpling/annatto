@@ -10,13 +10,10 @@ use graphannis::{
 use graphannis_core::{annostorage::ValueSearch, graph::ANNIS_NS, util::join_qname};
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
-use crate::{
-    deserialize::{deserialize_anno_key, deserialize_anno_key_seq},
-    progress::ProgressReporter,
-};
+use crate::progress::ProgressReporter;
 
 use super::Exporter;
 
@@ -33,7 +30,7 @@ use super::Exporter;
 /// remove_ns = true
 ///
 /// ```
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExportTextGrid {
     /// This anno key determines which nodes in the part of subgraph bundle all contents for a file.
@@ -42,10 +39,7 @@ pub struct ExportTextGrid {
     /// [export.config]
     /// file_key = { ns = "annis", name = "doc" }  # this is the default and can be omitted
     /// ``````
-    #[serde(
-        default = "default_file_key",
-        deserialize_with = "deserialize_anno_key"
-    )]
+    #[serde(default = "default_file_key", with = "crate::estarde::anno_key")]
     file_key: AnnoKey,
     /// This anno key is used to determine the time values.
     /// Example:
@@ -53,10 +47,7 @@ pub struct ExportTextGrid {
     /// [export.config]
     /// time_key = { ns = "annis", key = "time" }  # this is the default and can be omitted
     /// ```
-    #[serde(
-        default = "default_time_key",
-        deserialize_with = "deserialize_anno_key"
-    )]
+    #[serde(default = "default_time_key", with = "crate::estarde::anno_key")]
     time_key: AnnoKey,
     /// The annotation keys provided here will be exported as point tiers. The ones that are not mentioned will be exported as interval tiers.
     /// Example:
@@ -67,7 +58,7 @@ pub struct ExportTextGrid {
     ///   {ns = "phonetics", name = "boundary_tone"}
     /// ]
     /// ```
-    #[serde(default, deserialize_with = "deserialize_anno_key_seq")]
+    #[serde(default, with = "crate::estarde::anno_key::in_sequence")]
     point_tiers: Vec<AnnoKey>,
     /// This attribute configures whether or not to keep the namespace in tier names. If `true`, the namespace will not be exported.
     /// Only set this to `true` if you know that an unqualified annotation name is not used for more than one annotation layer.
@@ -92,7 +83,7 @@ pub struct ExportTextGrid {
     /// ]
     /// ignore_others = true
     /// ```
-    #[serde(default, deserialize_with = "deserialize_anno_key_seq")]
+    #[serde(default, with = "crate::estarde::anno_key::in_sequence")]
     tier_order: Vec<AnnoKey>,
     /// Set this attribute to `true` to ignore all annotations whose key is not mentioned in attribute `tier_order` or `point_tiers`.
     /// Example:
@@ -108,6 +99,19 @@ pub struct ExportTextGrid {
     /// ```
     #[serde(default)]
     ignore_others: bool,
+}
+
+impl Default for ExportTextGrid {
+    fn default() -> Self {
+        Self {
+            file_key: default_file_key(),
+            time_key: default_time_key(),
+            point_tiers: Default::default(),
+            remove_ns: Default::default(),
+            tier_order: Default::default(),
+            ignore_others: Default::default(),
+        }
+    }
 }
 
 fn default_file_key() -> AnnoKey {
@@ -514,7 +518,6 @@ mod tests {
     use ordered_float::OrderedFloat;
 
     use crate::{
-        exporter::textgrid::{default_file_key, default_time_key},
         importer::{exmaralda::ImportEXMARaLDA, textgrid::ImportTextgrid, Importer},
         test_util::export_to_string,
         StepID,
@@ -522,18 +525,53 @@ mod tests {
 
     use super::{parse_time_tuple, ExportTextGrid};
 
-    // we only need this implementation for test purposes (shorter code)
-    impl Default for ExportTextGrid {
-        fn default() -> Self {
-            Self {
-                file_key: default_file_key(),
-                time_key: default_time_key(),
-                point_tiers: Vec::default(),
-                remove_ns: bool::default(),
-                tier_order: Vec::default(),
-                ignore_others: bool::default(),
-            }
-        }
+    #[test]
+    fn serialize() {
+        let module = ExportTextGrid::default();
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn serialize_custom() {
+        let module = ExportTextGrid {
+            file_key: AnnoKey {
+                name: "file".into(),
+                ns: "default_ns".into(),
+            },
+            ignore_others: true,
+            time_key: AnnoKey {
+                name: "interval".into(),
+                ns: "textgrid".into(),
+            },
+            point_tiers: vec![AnnoKey {
+                ns: "default_ns".into(),
+                name: "accent".into(),
+            }],
+            remove_ns: true,
+            tier_order: vec![
+                AnnoKey {
+                    ns: "default_ns".into(),
+                    name: "syllable".into(),
+                },
+                AnnoKey {
+                    ns: "default_ns".into(),
+                    name: "accent".into(),
+                },
+            ],
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
     }
 
     #[test]

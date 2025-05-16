@@ -1,0 +1,13 @@
+---
+source: src/importer/xlsx.rs
+expression: serialization.unwrap()
+---
+fallback = "dipl"
+datasheet = "data"
+metasheet = 2
+metasheet_skip_rows = 1
+token_annos = ["pos", "lemma"]
+
+[column_map]
+dipl = ["sentence"]
+norm = ["lemma", "pos"]

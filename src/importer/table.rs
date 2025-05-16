@@ -13,6 +13,7 @@ use graphannis::{
 };
 use graphannis_core::{graph::ANNIS_NS, util::split_qname};
 
+use serde::Serialize;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
@@ -21,22 +22,21 @@ use crate::{
     progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files, StepID,
 };
 
-use crate::deserialize::{deserialize_anno_key, deserialize_annotation_component_opt};
-
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct EmptyLineGroup {
-    #[serde(deserialize_with = "deserialize_anno_key")]
+    #[serde(with = "crate::estarde::anno_key")]
     anno: AnnoKey,
-    #[serde(deserialize_with = "deserialize_annotation_component_opt", default)]
+    #[serde(default, with = "crate::estarde::annotation_component::as_option")]
     component: Option<AnnotationComponent>,
 }
 
 /// Import CSV files with token and token annotations.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImportTable {
     /// If not empty, skip the first row and use this list as the fully qualified annotation name for each column.
+    #[serde(default)]
     column_names: Vec<String>,
     /// The provided character defines the column delimiter. The default value is tab.
     ///
@@ -85,10 +85,10 @@ fn default_delimiter() -> char {
 impl Default for ImportTable {
     fn default() -> Self {
         Self {
-            column_names: Vec::new(),
-            quote_char: None,
+            column_names: Default::default(),
+            quote_char: Default::default(),
             delimiter: default_delimiter(),
-            empty_line_group: None,
+            empty_line_group: Default::default(),
         }
     }
 }

@@ -1,0 +1,6 @@
+---
+source: src/importer/meta.rs
+expression: serialization.unwrap()
+---
+identifier = "meta::id"
+delimiter = "\t"

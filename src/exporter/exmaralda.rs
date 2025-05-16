@@ -9,12 +9,8 @@ use std::{
 };
 
 use crate::{
-    deserialize::{deserialize_anno_key, deserialize_anno_key_seq},
-    error::AnnattoError,
-    importer::exmaralda::LANGUAGE_SEP,
-    progress::ProgressReporter,
-    util::Traverse,
-    StepID,
+    error::AnnattoError, importer::exmaralda::LANGUAGE_SEP, progress::ProgressReporter,
+    util::Traverse, StepID,
 };
 use documented::{Documented, DocumentedFields};
 use graphannis::{
@@ -33,6 +29,7 @@ use quick_xml::{
     events::{BytesDecl, BytesEnd, BytesStart, BytesText, Event},
     Writer,
 };
+use serde::Serialize;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
@@ -51,7 +48,7 @@ use super::Exporter;
 /// [export.config]
 /// copy_media = false
 /// ```
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExportExmaralda {
     /// If `true`, copy linked media files to the output location.
@@ -73,7 +70,7 @@ pub struct ExportExmaralda {
     /// doc_anno = { ns = "annis", name = "node_name" }
     /// ```
     /// This defaults to `{ ns = "annis", name = "doc" }`.
-    #[serde(default = "default_doc_key", deserialize_with = "deserialize_anno_key")]
+    #[serde(default = "default_doc_key", with = "crate::estarde::anno_key")]
     doc_anno: AnnoKey,
     /// If there is a desired order in which the annotations should be displayed in EXMARaLDA,
     /// it can be set here by providing a list. Not specifying a namespace will not be interpreted
@@ -85,7 +82,7 @@ pub struct ExportExmaralda {
     /// [export.config]
     /// tier_order = ["norm::norm", "dipl::dipl", "annotator"]
     /// ```
-    #[serde(default, deserialize_with = "deserialize_anno_key_seq")]
+    #[serde(default, with = "crate::estarde::anno_key::in_sequence")]
     tier_order: Vec<AnnoKey>,
 }
 
@@ -94,7 +91,7 @@ impl Default for ExportExmaralda {
         Self {
             copy_media: Default::default(),
             doc_anno: default_doc_key(),
-            tier_order: vec![],
+            tier_order: Default::default(),
         }
     }
 }
@@ -722,7 +719,7 @@ mod tests {
         path::{Path, PathBuf},
     };
 
-    use graphannis::AnnotationGraph;
+    use graphannis::{graph::AnnoKey, AnnotationGraph};
     use insta::assert_snapshot;
     use tempfile::TempDir;
 
@@ -732,6 +729,46 @@ mod tests {
         test_util::{export_to_string, export_to_string_in_directory},
         ImporterStep, ReadFrom,
     };
+
+    #[test]
+    fn serialize() {
+        let module = ExportExmaralda::default();
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn serialize_custom() {
+        let module = ExportExmaralda {
+            copy_media: true,
+            doc_anno: AnnoKey {
+                ns: "annis".into(),
+                name: "not_doc".into(),
+            },
+            tier_order: vec![
+                AnnoKey {
+                    ns: "dipl".into(),
+                    name: "dipl".into(),
+                },
+                AnnoKey {
+                    ns: "norm".into(),
+                    name: "norm".into(),
+                },
+            ],
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn test_exmaralda_export() {

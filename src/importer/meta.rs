@@ -15,12 +15,11 @@ use graphannis_core::{
     graph::ANNIS_NS,
     util::{join_qname, split_qname},
 };
+use serde::Serialize;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
-use crate::{
-    deserialize::deserialize_anno_key, progress::ProgressReporter, util::get_all_files, StepID,
-};
+use crate::{progress::ProgressReporter, util::get_all_files, StepID};
 
 use super::Importer;
 
@@ -37,18 +36,24 @@ use super::Importer;
 /// [import.config]
 /// identifier = { ns = "annis", name = "doc" }  # this is the default and can be omitted
 /// ```
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct AnnotateCorpus {
     /// The annotation key identifying document nodes.
-    #[serde(
-        default = "default_identifier",
-        deserialize_with = "deserialize_anno_key"
-    )]
+    #[serde(default = "default_identifier", with = "crate::estarde::anno_key")]
     identifier: AnnoKey,
     /// The delimiter used in csv files.
     #[serde(default = "default_delimiter")]
     delimiter: String,
+}
+
+impl Default for AnnotateCorpus {
+    fn default() -> Self {
+        Self {
+            identifier: default_identifier(),
+            delimiter: default_delimiter(),
+        }
+    }
 }
 
 const DEFAULT_DELIMITER: &str = ",";
@@ -211,6 +216,7 @@ mod tests {
 
     use graphannis::{
         corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
+        graph::AnnoKey,
         model::AnnotationComponentType,
         update::{GraphUpdate, UpdateEvent},
         AnnotationGraph, CorpusStorage,
@@ -225,6 +231,24 @@ mod tests {
     };
 
     use super::AnnotateCorpus;
+
+    #[test]
+    fn serialize_custom() {
+        let module = AnnotateCorpus {
+            delimiter: "\t".to_string(),
+            identifier: AnnoKey {
+                ns: "meta".into(),
+                name: "id".into(),
+            },
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn from_csv() {

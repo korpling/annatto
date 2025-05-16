@@ -16,6 +16,18 @@ use crate::{
 use super::ImportEXMARaLDA;
 
 #[test]
+fn serialize() {
+    let module = ImportEXMARaLDA::default();
+    let serialization = toml::to_string(&module);
+    assert!(
+        serialization.is_ok(),
+        "Serialization failed: {:?}",
+        serialization.err()
+    );
+    assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
 fn timeline_fail() {
     let import = crate::ReadFrom::EXMARaLDA(ImportEXMARaLDA::default());
     let import_path = "./tests/data/import/exmaralda/fail-corrupt_timeline/import/";

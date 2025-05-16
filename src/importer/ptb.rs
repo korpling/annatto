@@ -11,6 +11,7 @@ use pest::{
     Parser,
 };
 use pest_derive::Parser;
+use serde::Serialize;
 use serde_derive::Deserialize;
 use std::{io::Read, path::Path};
 use struct_field_names_as_array::FieldNamesAsSlice;
@@ -288,14 +289,15 @@ impl DocumentMapper {
 }
 
 /// Importer the Penn Treebank Bracketed Text format (PTB)
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImportPTB {
     /// Some variants encode a function of the node after the node category,
     /// such as "NP-subj", which means this nominal phrase node has the function
     /// of the subject. If "-" is provided as `edge_delimiter`, the node
     /// will carry a category "NP", whereas the ingoing edge will have a
     /// function label "subj".
+    #[serde(default)]
     edge_delimiter: Option<String>,
 }
 
