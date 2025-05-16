@@ -165,7 +165,7 @@ pub fn execute_from_file(
 
 pub type StatusSender = Sender<StatusMessage>;
 
-impl<'a> Workflow {
+impl Workflow {
     pub fn execute(
         &self,
         tx: Option<StatusSender>,
@@ -377,7 +377,7 @@ impl<'a> Workflow {
                 if self.footer.success { "NOT " } else { "" }
             ))
         })?;
-        fs::write(path, wf_string).map_err(|e| AnnattoError::IO(e))
+        fs::write(path, wf_string).map_err(AnnattoError::IO)
     }
 }
 

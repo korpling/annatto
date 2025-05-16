@@ -34,8 +34,8 @@ pub(crate) fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<
     Ok(multi_key.into_inner())
 }
 
-pub(crate) fn serialize<'a, S: Serializer>(
-    value: &'a AnnoKey,
+pub(crate) fn serialize<S: Serializer>(
+    value: &AnnoKey,
     serializer: S,
 ) -> Result<S::Ok, S::Error> {
     let serializable = join_qname(&value.ns, &value.name);
@@ -58,8 +58,8 @@ pub(crate) mod as_option {
         Ok(multi_key.map(|mk| mk.into_inner()))
     }
 
-    pub fn serialize<'a, S: Serializer>(
-        value: &'a Option<AnnoKey>,
+    pub fn serialize<S: Serializer>(
+        value: &Option<AnnoKey>,
         serializer: S,
     ) -> Result<S::Ok, S::Error> {
         if let Some(key) = value {

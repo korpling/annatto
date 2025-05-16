@@ -401,7 +401,7 @@ impl Importer for ImportTreeTagger {
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
 
         let params = MapperParams {
-            column_names: self.column_names.iter().map(|c| c.clone()).collect_vec(),
+            column_names: self.column_names.iter().cloned().collect_vec(),
             attribute_decoding: self.attribute_decoding,
         };
 

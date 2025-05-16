@@ -38,8 +38,8 @@ pub fn deserialize<'de, D: Deserializer<'de>>(
     Ok(dc.into_inner())
 }
 
-pub fn serialize<'a, S: Serializer>(
-    value: &'a AnnotationComponent,
+pub fn serialize<S: Serializer>(
+    value: &AnnotationComponent,
     serializer: S,
 ) -> Result<S::Ok, S::Error> {
     let serializable = SerdeComponent::from(value);
@@ -61,8 +61,8 @@ pub(crate) mod as_option {
         Ok(dc_opt.map(|d| d.into_inner()))
     }
 
-    pub fn serialize<'a, S: Serializer>(
-        value: &'a Option<AnnotationComponent>,
+    pub fn serialize<S: Serializer>(
+        value: &Option<AnnotationComponent>,
         serializer: S,
     ) -> Result<S::Ok, S::Error> {
         if let Some(component) = value {
@@ -99,10 +99,7 @@ pub(crate) mod in_sequence {
         value: T,
         serializer: S,
     ) -> Result<S::Ok, S::Error> {
-        let anno_component_vec = value
-            .into_iter()
-            .map(|ac| SerdeComponent::from(ac))
-            .collect_vec();
+        let anno_component_vec = value.into_iter().map(SerdeComponent::from).collect_vec();
         anno_component_vec.serialize(serializer)
     }
 }
