@@ -371,7 +371,7 @@ impl<'a> Workflow {
     }
 
     fn save(&self, path: PathBuf) -> Result<()> {
-        let wf_string = toml::to_string_pretty(&self).map_err(|_| {
+        let wf_string = toml::to_string(&self).map_err(|_| {
             AnnattoError::Anyhow(anyhow!(
                 "Could not serialize workflow after run. The workflow run was {}successful",
                 if self.footer.success { "NOT " } else { "" }

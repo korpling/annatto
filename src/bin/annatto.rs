@@ -41,8 +41,7 @@ enum Cli {
         #[clap(long, env = "ANNATTO_IN_MEMORY", default_value = "false")]
         in_memory: bool,
         /// If a file name is provided the workflow is exported again. All environmental variables will be resolved first.
-        /// You can use this feature for debugging an instance of a dynamic workflow when environmental variable values
-        /// do not persist. **If the provided path exists, the file will be overwritten**.
+        /// If the provided path exists, the file will be overwritten.
         #[clap(long)]
         save: Option<PathBuf>,
     },

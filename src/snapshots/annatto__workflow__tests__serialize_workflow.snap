@@ -12,33 +12,10 @@ token_annos = []
 
 [import.config.column_map]
 "ahd::AHD" = []
-edition = [
-    "chapter",
-    "line",
-    "line_m",
-    "page",
-    "subchapter",
-    "verse",
-]
+edition = ["chapter", "line", "line_m", "page", "subchapter", "verse"]
 "lat::LAT" = []
 map = []
-text = [
-    "Glosse",
-    "clause",
-    "document",
-    "inflection",
-    "inflectionClass",
-    "inflectionClassLemma",
-    "lang",
-    "lemma",
-    "pos",
-    "posLemma",
-    "register",
-    "rhyme",
-    "text",
-    "translation",
-    "writer",
-]
+text = ["Glosse", "clause", "document", "inflection", "inflectionClass", "inflectionClassLemma", "lang", "lemma", "pos", "posLemma", "register", "rhyme", "text", "translation", "writer"]
 
 [[graph_op]]
 action = "split"
@@ -125,12 +102,7 @@ n = 1
 action = "enumerate"
 
 [graph_op.config]
-queries = [
-    "ahd:AHD @* doc",
-    "lat:LAT @* doc",
-    "text @* doc @* node_name=/.*ohg/",
-    "text @* doc @* node_name=/.*lat/",
-]
+queries = ["ahd:AHD @* doc", "lat:LAT @* doc", "text @* doc @* node_name=/.*ohg/", "text @* doc @* node_name=/.*lat/"]
 target = 1
 by = [2]
 label = "prealign::id"
@@ -147,10 +119,7 @@ save = "check.log"
 
 [[graph_op.config.tests]]
 query = "prealign:id _ident_ ahd:AHD"
-expected = [
-    1,
-    inf,
-]
+expected = [1, inf]
 description = "There are align ids for AHD"
 
 [[export]]
