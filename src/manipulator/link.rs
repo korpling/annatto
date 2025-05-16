@@ -1,8 +1,8 @@
 //! Created edges between nodes based on their annotation value.
 use super::Manipulator;
 use crate::{
-    core::update_graph_silent, error::AnnattoError,
-    progress::ProgressReporter, workflow::StatusSender, StepID,
+    core::update_graph_silent, error::AnnattoError, progress::ProgressReporter,
+    workflow::StatusSender, StepID,
 };
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
