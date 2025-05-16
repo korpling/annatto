@@ -618,6 +618,46 @@ mod tests {
     use super::*;
 
     #[test]
+    fn serialize() {
+        let module = MapAnnos::default();
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn serialize_custom() {
+        let module = MapAnnos {
+            rule_file: Some(PathBuf::from("external/file.toml")),
+            mapping: Some(Mapping {
+                rules: vec![Rule {
+                    query: "pos=/NN/".to_string(),
+                    target: TargetRef::Span(vec![1]),
+                    anno: AnnoKey {
+                        name: "upos".into(),
+                        ns: "ud".into(),
+                    },
+                    value: Value::Fixed("NOUN".to_string()),
+                    delete: vec![1],
+                }],
+                repetition: RepetitionMode::UntilUnchanged,
+            }),
+            debug: true,
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
     fn graph_statistics() {
         let g = AnnotationGraph::with_default_graphstorages(false);
         assert!(g.is_ok());

@@ -1,0 +1,6 @@
+---
+source: src/manipulator/filter.rs
+expression: serialization.unwrap()
+---
+query = "tok _=_ pos=/NOUN|PROPN/"
+inverse = true

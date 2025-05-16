@@ -1,0 +1,9 @@
+---
+source: src/manipulator/enumerate.rs
+expression: serialization.unwrap()
+---
+queries = ["node"]
+target = 1
+by = []
+label = "i"
+start = 0

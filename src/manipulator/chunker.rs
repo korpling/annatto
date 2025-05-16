@@ -197,6 +197,7 @@ mod tests {
         AnnotationGraph,
     };
     use graphannis_core::graph::ANNIS_NS;
+    use insta::assert_snapshot;
 
     use crate::{
         core::update_graph_silent,
@@ -207,6 +208,38 @@ mod tests {
 
     use super::Chunk;
     use pretty_assertions::assert_eq;
+
+    #[test]
+    fn serialize() {
+        let module = Chunk::default();
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn serialize_custom() {
+        let module = Chunk {
+            anno_key: AnnoKey {
+                name: "chunk".into(),
+                ns: "default_ns".into(),
+            },
+            max_characters: 999,
+            anno_value: "chunky span".to_string(),
+            segmentation: Some("segmentation_name".to_string()),
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn graph_statistics() {

@@ -298,6 +298,33 @@ mod tests {
     };
 
     #[test]
+    fn serialize_custom() {
+        let module = LinkNodes {
+            source_query: "node @* doc=/1/".to_string(),
+            source_node: 1,
+            source_value: vec![1],
+            source_to_edge: vec![],
+            target_query: "node @* doc=/2/".to_string(),
+            target_node: 1,
+            target_value: vec![1],
+            target_to_edge: vec![],
+            component: AnnotationComponent::new(
+                AnnotationComponentType::Pointing,
+                "".into(),
+                "link".into(),
+            ),
+            value_sep: "#".to_string(),
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
     fn graph_statistics() {
         let g = AnnotationGraph::with_default_graphstorages(false);
         assert!(g.is_ok());

@@ -1,0 +1,16 @@
+---
+source: src/manipulator/map.rs
+expression: serialization.unwrap()
+---
+rule_file = "external/file.toml"
+debug = true
+
+[mapping]
+repetition = "UntilUnchanged"
+
+[[mapping.rules]]
+query = "pos=/NN/"
+target = [1]
+anno = "ud::upos"
+value = "NOUN"
+delete = [1]

@@ -1,0 +1,7 @@
+---
+source: src/manipulator/chunker.rs
+expression: serialization.unwrap()
+---
+max_characters = 100
+anno_key = "chunk"
+anno_value = ""

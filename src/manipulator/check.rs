@@ -472,7 +472,12 @@ enum QueryResult {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeMap, fs, path::Path, sync::mpsc};
+    use std::{
+        collections::BTreeMap,
+        fs,
+        path::{Path, PathBuf},
+        sync::mpsc,
+    };
 
     use graphannis::{
         model::AnnotationComponentType,
@@ -497,6 +502,40 @@ mod tests {
     };
 
     use super::{Check, Test};
+
+    #[test]
+    fn serialize_custom() {
+        let module = Check {
+            policy: FailurePolicy::Warn,
+            tests: vec![
+                Test::QueryTest {
+                    query: "tok @* doc=/largest-doc/".to_string(),
+                    expected: QueryResult::SemiOpenInterval(1, f64::INFINITY),
+                    description: "I expect a lot of tokens".to_string(),
+                },
+                Test::LayerTest {
+                    layers: vec![(
+                        "Reflexive".to_string(),
+                        vec!["yes".to_string(), "no".to_string()]
+                            .into_iter()
+                            .collect(),
+                    )]
+                    .into_iter()
+                    .collect(),
+                    edge: None,
+                },
+            ],
+            report: Some(ReportLevel::List),
+            save: Some(PathBuf::from("this/is/a/non-existing/path.log")),
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn graph_statistics() {

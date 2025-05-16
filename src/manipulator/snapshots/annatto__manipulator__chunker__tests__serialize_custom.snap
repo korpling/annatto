@@ -1,0 +1,8 @@
+---
+source: src/manipulator/chunker.rs
+expression: serialization.unwrap()
+---
+max_characters = 999
+anno_key = "default_ns::chunk"
+anno_value = "chunky span"
+segmentation = "segmentation_name"
