@@ -115,6 +115,7 @@ fn parse_variables(
             // value might contain variables again, parse
             let mut value_buf = String::new();
             parse_variables(value, &mut value_buf, visited)?;
+            visited.remove(var_name);
             for c in value_buf.chars() {
                 buf.push(c);
             }
@@ -135,7 +136,7 @@ fn read_workflow(path: PathBuf, read_env: bool) -> Result<String> {
     let toml_content = fs::read_to_string(path.as_path())?;
     if read_env {
         let mut buf = String::new();
-        parse_variables(toml_content, &mut buf, &mut BTreeSet::default())?;
+        parse_variables(toml_content, &mut buf, &mut Default::default())?;
         Ok(buf)
     } else {
         Ok(toml_content)
@@ -454,6 +455,26 @@ mod tests {
         std::env::set_var(k3, "check");
         let read_result = read_workflow(
             Path::new("./tests/data/import/empty/empty_with_vars_rec.toml").to_path_buf(),
+            true,
+        );
+        assert!(
+            read_result.is_ok(),
+            "Failed to read variable workflow with error {:?}",
+            read_result.err()
+        );
+        assert_snapshot!(read_result.unwrap());
+    }
+
+    #[test]
+    fn with_env_repetition() {
+        let k1 = "TEST_VAR_FORMAT_NAME_REP";
+        let k2 = "TEST_VAR_GRAPH_OP_NAME_REP";
+        let k3 = "TEST_VAR_WAIT_FOR_IT_REP";
+        std::env::set_var(k1, "none");
+        std::env::set_var(k2, "$TEST_VAR_WAIT_FOR_IT_REP");
+        std::env::set_var(k3, "check");
+        let read_result = read_workflow(
+            Path::new("./tests/data/import/empty/empty_with_vars_rep.toml").to_path_buf(),
             true,
         );
         assert!(
