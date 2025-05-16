@@ -1,0 +1,25 @@
+---
+source: tests/cli.rs
+expression: workflow_str
+---
+[[import]]
+format = "conllu"
+path = "../import/conll/valid/"
+
+[import.config]
+comment_anno = "conll::comment"
+
+[[graph_op]]
+action = "check"
+
+[graph_op.config]
+policy = "fail"
+
+[[graph_op.config.tests]]
+query = "node ->dep node"
+expected = [1, inf]
+description = "Expecting dependency edges"
+
+[footer]
+annatto_version = "0.30.0"
+success = true

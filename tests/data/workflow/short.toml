@@ -1,0 +1,13 @@
+[[import]]
+format = "conllu"
+path = "../import/conll/valid/"
+
+[import.config]
+
+[[graph_op]]
+action = "check"
+
+[[graph_op.config.tests]]
+query = "node ->dep node"
+expected = [1, inf]
+description = "Expecting dependency edges"

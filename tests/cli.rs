@@ -1,7 +1,7 @@
 use assert_cmd::Command;
 use insta::assert_snapshot;
-use std::path::PathBuf;
-use tempfile::tempdir;
+use std::{fs, path::PathBuf};
+use tempfile::{tempdir, TempDir};
 
 #[test]
 fn show_help() {
@@ -237,4 +237,21 @@ fn write_documentation() {
     assert_eq!(true, output_dir.path().join("importers").is_dir());
     assert_eq!(true, output_dir.path().join("exporters").is_dir());
     assert_eq!(true, output_dir.path().join("graph_ops").is_dir());
+}
+
+#[test]
+fn run_and_serialize() {
+    let mut cmd = Command::cargo_bin("annatto").unwrap();
+    let tmp_dir = TempDir::new().unwrap();
+    let output_file = tmp_dir.path().join("exported_workflow.toml");
+    let output = cmd
+        .arg("run")
+        .arg("tests/data/workflow/short.toml")
+        .arg("--save")
+        .arg(format!("{}", output_file.to_string_lossy()).as_str())
+        .output();
+    assert!(output.is_ok());
+    assert!(output_file.exists());
+    let workflow_str = fs::read_to_string(output_file.as_path()).unwrap();
+    assert_snapshot!(workflow_str);
 }
