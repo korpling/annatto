@@ -34,10 +34,7 @@ pub(crate) fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<
     Ok(multi_key.into_inner())
 }
 
-pub(crate) fn serialize<S: Serializer>(
-    value: &AnnoKey,
-    serializer: S,
-) -> Result<S::Ok, S::Error> {
+pub(crate) fn serialize<S: Serializer>(value: &AnnoKey, serializer: S) -> Result<S::Ok, S::Error> {
     let serializable = join_qname(&value.ns, &value.name);
     serializable.serialize(serializer)
 }
