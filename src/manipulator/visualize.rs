@@ -126,6 +126,18 @@ fn default_token_limit() -> usize {
     10
 }
 
+impl Default for Visualize {
+    fn default() -> Self {
+        Self {
+            limit_tokens: default_limit_tokens(),
+            token_limit: default_token_limit(),
+            root: Default::default(),
+            output_dot: Default::default(),
+            output_svg: Default::default(),
+        }
+    }
+}
+
 impl Visualize {
     fn create_graph(&self, graph: &AnnotationGraph) -> Result<Graph> {
         let mut output = Graph::DiGraph {
@@ -427,7 +439,7 @@ mod tests {
             &workflow_file,
         )
         .unwrap();
-        execute_from_file(&workflow_file, true, false, None).unwrap();
+        execute_from_file(&workflow_file, true, false, None, None).unwrap();
         let result_dot = std::fs::read_to_string(workflow_dir.path().join("test.dot")).unwrap();
         assert_snapshot!(result_dot);
     }
@@ -441,7 +453,7 @@ mod tests {
             &workflow_file,
         )
         .unwrap();
-        execute_from_file(&workflow_file, true, false, None).unwrap();
+        execute_from_file(&workflow_file, true, false, None, None).unwrap();
         let result_dot = std::fs::read_to_string(workflow_dir.path().join("test.dot")).unwrap();
         assert_snapshot!(result_dot);
     }

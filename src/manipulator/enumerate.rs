@@ -60,8 +60,10 @@ pub struct EnumerateMatches {
     #[serde(default = "default_label", with = "crate::estarde::anno_key")]
     label: AnnoKey,
     /// An optional 1-based index pointing to the annotation node in the query that holds a prefix value that will be added to the numeric annotation.
+    #[serde(default)]
     value: Option<usize>,
     /// This can be used to offset the numeric values in the annotations.
+    #[serde(default)]
     start: usize,
 }
 

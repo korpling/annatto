@@ -17,6 +17,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 #[serde(deny_unknown_fields)]
 pub struct CreateFileNodes {
     /// The name of the corpus root node.
+    #[serde(default)]
     corpus_name: Option<String>,
 }
 

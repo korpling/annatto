@@ -297,6 +297,7 @@ pub struct ImportPTB {
     /// of the subject. If "-" is provided as `edge_delimiter`, the node
     /// will carry a category "NP", whereas the ingoing edge will have a
     /// function label "subj".
+    #[serde(default)]
     edge_delimiter: Option<String>,
 }
 

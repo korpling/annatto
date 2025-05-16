@@ -4,9 +4,8 @@ use graphannis::{graph::AnnoKey, update::GraphUpdate};
 use insta::assert_snapshot;
 
 use crate::{
-    importer::conllu::{default_comment_key, MultiTokMode},
-    test_util::import_as_graphml_string,
-    ImporterStep, ReadFrom, StepID,
+    importer::conllu::default_comment_key, test_util::import_as_graphml_string, ImporterStep,
+    ReadFrom, StepID,
 };
 
 use super::ImportCoNLLU;
@@ -30,7 +29,7 @@ fn serialize_custom() {
             name: "metadata".into(),
             ns: "default_ns".into(),
         },
-        multi_tok: MultiTokMode::With(AnnoKey {
+        multi_tok: Some(AnnoKey {
             name: "norm".into(),
             ns: "norm".into(),
         }),
@@ -143,7 +142,7 @@ fn custom_comments() {
 fn multi_token() {
     let actual = import_as_graphml_string(
         ImportCoNLLU {
-            multi_tok: super::MultiTokMode::With(AnnoKey {
+            multi_tok: Some(AnnoKey {
                 name: "norm".into(),
                 ns: "default_ns".into(),
             }),
@@ -189,7 +188,7 @@ fn deser_multi() {
     let mprt: Result<ImportCoNLLU, _> = toml::from_str(toml_str);
     assert!(mprt.is_ok(), "Error when deserializing: {:?}", mprt.err());
     let import = mprt.unwrap();
-    assert!(matches!(import.multi_tok, super::MultiTokMode::With { .. },));
+    assert!(import.multi_tok.is_some());
 }
 
 #[test]

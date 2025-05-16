@@ -1,8 +1,8 @@
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 
 pub(crate) mod core;
-pub mod estarde;
 pub mod error;
+pub mod estarde;
 pub mod exporter;
 pub mod importer;
 pub mod manipulator;
@@ -39,6 +39,7 @@ use manipulator::{
     filter::FilterNodes, link::LinkNodes, map::MapAnnos, no_op::NoOp, re::Revise, sleep::Sleep,
     split::SplitValues, time::Filltime, visualize::Visualize, Manipulator,
 };
+use serde::Serialize;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 use strum::{AsRefStr, EnumDiscriminants, EnumIter};
@@ -51,7 +52,7 @@ pub struct ModuleConfiguration {
     pub description: String,
 }
 
-#[derive(Deserialize, EnumDiscriminants, AsRefStr)]
+#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize)]
 #[strum(serialize_all = "lowercase")]
 #[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
@@ -158,7 +159,7 @@ impl WriteAsDiscriminants {
     }
 }
 
-#[derive(Deserialize, EnumDiscriminants, AsRefStr)]
+#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize)]
 #[strum(serialize_all = "lowercase")]
 #[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
@@ -324,7 +325,7 @@ impl ReadFromDiscriminants {
     }
 }
 
-#[derive(Deserialize, EnumDiscriminants, AsRefStr)]
+#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize)]
 #[strum(serialize_all = "lowercase")]
 #[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "action", rename_all = "lowercase", content = "config")]
@@ -483,7 +484,7 @@ impl Display for StepID {
 /// Represents a single step in a conversion pipeline.
 pub trait Step {}
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ImporterStep {
     #[serde(flatten)]
@@ -505,7 +506,7 @@ impl ImporterStep {
 
 impl Step for ImporterStep {}
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExporterStep {
     #[serde(flatten)]
@@ -528,7 +529,7 @@ impl ExporterStep {
 
 impl Step for ExporterStep {}
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ManipulatorStep {
     #[serde(flatten)]

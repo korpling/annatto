@@ -101,6 +101,19 @@ pub struct ExportTextGrid {
     ignore_others: bool,
 }
 
+impl Default for ExportTextGrid {
+    fn default() -> Self {
+        Self {
+            file_key: default_file_key(),
+            time_key: default_time_key(),
+            point_tiers: Default::default(),
+            remove_ns: Default::default(),
+            tier_order: Default::default(),
+            ignore_others: Default::default(),
+        }
+    }
+}
+
 fn default_file_key() -> AnnoKey {
     AnnoKey {
         name: "doc".into(),
@@ -505,7 +518,6 @@ mod tests {
     use ordered_float::OrderedFloat;
 
     use crate::{
-        exporter::textgrid::{default_file_key, default_time_key},
         importer::{exmaralda::ImportEXMARaLDA, textgrid::ImportTextgrid, Importer},
         test_util::export_to_string,
         StepID,
@@ -560,20 +572,6 @@ mod tests {
             serialization.err()
         );
         assert_snapshot!(serialization.unwrap());
-    }
-
-    // we only need this implementation for test purposes (shorter code)
-    impl Default for ExportTextGrid {
-        fn default() -> Self {
-            Self {
-                file_key: default_file_key(),
-                time_key: default_time_key(),
-                point_tiers: Vec::default(),
-                remove_ns: bool::default(),
-                tier_order: Vec::default(),
-                ignore_others: bool::default(),
-            }
-        }
     }
 
     #[test]

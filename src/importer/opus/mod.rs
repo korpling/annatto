@@ -25,22 +25,34 @@ use super::Importer;
 #[serde(deny_unknown_fields)]
 pub struct ImportOpusLinks {
     /// The component name of the edges for the default direction.
+    #[serde(default = "default_align_name")]
     default_name: String,
     /// The component type of the edges for the default direction.
+    #[serde(default = "default_component_type")]
     default_type: AnnotationComponentType,
     /// The component name of the edges for the reverse direction.
+    #[serde(default)]
     reverse_name: Option<String>,
     /// The component type of the edges for the reverse direction.
+    #[serde(default = "default_component_type")]
     reverse_type: AnnotationComponentType,
+}
+
+fn default_align_name() -> String {
+    "align".to_string()
+}
+
+fn default_component_type() -> AnnotationComponentType {
+    AnnotationComponentType::Pointing
 }
 
 impl Default for ImportOpusLinks {
     fn default() -> Self {
         Self {
-            default_name: "align".to_string(),
-            default_type: AnnotationComponentType::Pointing,
-            reverse_name: None,
-            reverse_type: AnnotationComponentType::Pointing,
+            default_name: default_align_name(),
+            default_type: default_component_type(),
+            reverse_name: Default::default(),
+            reverse_type: default_component_type(),
         }
     }
 }

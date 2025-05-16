@@ -5,3 +5,4 @@ expression: serialization.unwrap()
 skip_timeline_generation = false
 skip_audio = false
 skip_time_annotations = false
+audio_extension = "wav"

@@ -29,8 +29,9 @@ use crate::{
 #[serde(deny_unknown_fields)]
 pub struct Check {
     /// The tests to run on the current graph.
-    tests: Vec<Test>,
+    tests: Vec<Test>, // does not default as a check without any tests makes no sense, also there is no default test with a default expected result, at least not a reasonable one
     /// Optional level of report. No value means no printed report. Values are `list` or `verbose`.
+    #[serde(default)]
     report: Option<ReportLevel>, // default is None, not default report level
     /// This policy if the process interrupts on a test failure (`fail`) or throws a warning (`warn`).
     #[serde(default)]

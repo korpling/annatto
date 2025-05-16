@@ -32,7 +32,7 @@ use text_splitter::TextSplitter;
 #[serde(deny_unknown_fields)]
 pub struct Chunk {
     /// Maximum chunk length.
-    #[serde(default)]
+    #[serde(default = "default_max_characters")]
     max_characters: usize,
     /// Annotation key used to annotate chunks with a value.
     #[serde(default = "default_anno_key", with = "crate::estarde::anno_key")]
@@ -56,13 +56,17 @@ fn default_chunk_name() -> String {
     "chunk".to_string()
 }
 
+fn default_max_characters() -> usize {
+    100
+}
+
 impl Default for Chunk {
     fn default() -> Self {
         Self {
-            max_characters: 100,
+            max_characters: default_max_characters(),
             anno_key: default_anno_key(),
-            anno_value: "".into(),
-            segmentation: None,
+            anno_value: Default::default(),
+            segmentation: Default::default(),
         }
     }
 }

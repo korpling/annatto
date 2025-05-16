@@ -38,10 +38,6 @@ pub struct ExportSequence {
     /// to find the nodes holding the groupby anno key. The default value is `Coverage`.
     #[serde(default = "default_groupby_ctype")]
     group_component_type: Option<AnnotationComponentType>,
-    #[serde(
-        default = "default_component",
-        with = "crate::estarde::annotation_component"
-    )]
     /// This configures the edge component that contains the sequences that you wish to export.    
     /// The default value ctype is `Ordering`, the default layer is `annis`, and the default
     /// name is empty.
@@ -50,6 +46,10 @@ pub struct ExportSequence {
     /// [export.config]
     /// component = { ctype = "Pointing", layer = "", name = "coreference" }
     /// ```
+    #[serde(
+        default = "default_component",
+        with = "crate::estarde::annotation_component"
+    )]
     component: AnnotationComponent,
     /// The annotation key that determines the values in the exported sequence (annis::tok by default).
     #[serde(default = "default_anno", with = "crate::estarde::anno_key")]

@@ -78,8 +78,8 @@ impl Default for ExportMeta {
     fn default() -> Self {
         Self {
             name_key: default_name_key(),
-            only: vec![],
-            write_ns: false,
+            only: Default::default(),
+            write_ns: Default::default(),
         }
     }
 }

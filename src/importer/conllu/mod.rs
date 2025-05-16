@@ -51,15 +51,15 @@ pub struct ImportCoNLLU {
     #[serde(default = "default_comment_key", with = "crate::estarde::anno_key")]
     comment_anno: AnnoKey,
     /// For importing multi-tokens, a mode can be set. By default, multi-tokens are skipped.
-    #[serde(default)]
-    multi_tok: MultiTokMode,
+    #[serde(default, with = "crate::estarde::anno_key::as_option")]
+    multi_tok: Option<AnnoKey>,
 }
 
 impl Default for ImportCoNLLU {
     fn default() -> Self {
         Self {
             comment_anno: default_comment_key(),
-            multi_tok: MultiTokMode::Skip,
+            multi_tok: Default::default(),
         }
     }
 }
@@ -69,14 +69,6 @@ fn default_comment_key() -> AnnoKey {
         name: "comment".into(),
         ns: "conll".into(),
     }
-}
-
-#[derive(Default, Deserialize, Serialize)]
-#[serde(untagged)]
-enum MultiTokMode {
-    #[default]
-    Skip,
-    With(#[serde(with = "crate::estarde::anno_key")] AnnoKey),
 }
 
 const FILE_EXTENSIONS: [&str; 2] = ["conll", "conllu"];
@@ -403,7 +395,7 @@ impl ImportCoNLLU {
                         anno_name: "tok".to_string(),
                         anno_value: member.as_str().to_string(),
                     })?;
-                    if let MultiTokMode::With(anno) = &self.multi_tok {
+                    if let Some(anno) = &self.multi_tok {
                         let (span_name, text_value) = if let Some((start, end, value)) = multi_token
                         {
                             (

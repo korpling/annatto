@@ -18,7 +18,7 @@ fn serialize() {
 #[test]
 fn serialize_custom() {
     let module = ImportTextgrid {
-        audio_extension: Some("mp3".to_string()),
+        audio_extension: "mp3".to_string(),
         tier_groups: Some(
             vec![(
                 "tok".to_string(),
@@ -61,7 +61,7 @@ fn single_speaker() {
             skip_timeline_generation: true,
             skip_audio: false,
             skip_time_annotations: false,
-            audio_extension: None,
+            ..Default::default()
         },
         Path::new("tests/data/import/textgrid/singleSpeaker"),
         None,
@@ -86,7 +86,7 @@ fn empty_intervals() {
             skip_timeline_generation: true,
             skip_audio: false,
             skip_time_annotations: false,
-            audio_extension: None,
+            ..Default::default()
         },
         Path::new("tests/data/import/textgrid/emptyIntervals"),
         None,
@@ -116,7 +116,7 @@ fn two_speakers() {
             skip_timeline_generation: false,
             skip_audio: false,
             skip_time_annotations: false,
-            audio_extension: None,
+            ..Default::default()
         },
         Path::new("tests/data/import/textgrid/twoSpeakers"),
         None,
@@ -146,7 +146,7 @@ fn misaligned_lemma_annotation() {
             skip_timeline_generation: false,
             skip_audio: false,
             skip_time_annotations: false,
-            audio_extension: None,
+            ..Default::default()
         },
         Path::new("tests/data/import/textgrid/misalignedLemma"),
         None,
@@ -165,7 +165,7 @@ fn fail_wrong_map() {
         skip_timeline_generation: false,
         skip_audio: false,
         skip_time_annotations: false,
-        audio_extension: None,
+        ..Default::default()
     }
     .import_corpus(
         Path::new("tests/data/import/textgrid/fail_wrong_map"),

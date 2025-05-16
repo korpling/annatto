@@ -91,7 +91,7 @@ impl Default for ExportExmaralda {
         Self {
             copy_media: Default::default(),
             doc_anno: default_doc_key(),
-            tier_order: vec![],
+            tier_order: Default::default(),
         }
     }
 }

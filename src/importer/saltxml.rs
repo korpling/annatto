@@ -18,15 +18,20 @@ pub struct ImportSaltXml {
     /// if none is given. This is consistent with how the ANNIS tree visualizer
     /// handles annotations without any namespace. If `false`, use the
     /// `default_ns` namespace as fallback.
+    #[serde(default = "default_missing_anno_ns_from_layer")]
     missing_anno_ns_from_layer: bool,
 }
 
 impl Default for ImportSaltXml {
     fn default() -> Self {
         Self {
-            missing_anno_ns_from_layer: true,
+            missing_anno_ns_from_layer: default_missing_anno_ns_from_layer(),
         }
     }
+}
+
+fn default_missing_anno_ns_from_layer() -> bool {
+    true
 }
 
 impl Importer for ImportSaltXml {

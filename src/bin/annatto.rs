@@ -40,6 +40,11 @@ enum Cli {
         /// by setting the environment variable `ANNATTO_IN_MEMORY` to `true`.
         #[clap(long, env = "ANNATTO_IN_MEMORY", default_value = "false")]
         in_memory: bool,
+        /// If a file name is provided the workflow is exported again. All environmental variables will be resolved first.
+        /// You can use this feature for debugging an instance of a dynamic workflow when environmental variable values
+        /// do not persist. **If the provided path exists, the file will be overwritten**.
+        #[clap(long)]
+        save: Option<PathBuf>,
     },
     /// Only check if a workflow file can be loaded. Invalid workflow files will lead to a non-zero exit code.
     Validate {
@@ -103,7 +108,8 @@ pub fn main() -> anyhow::Result<()> {
             workflow_file,
             env,
             in_memory,
-        } => convert(workflow_file, env, in_memory)?,
+            save,
+        } => convert(workflow_file, env, in_memory, save)?,
         Cli::Validate { workflow_file } => {
             Workflow::try_from((workflow_file, false))?;
         }
@@ -117,10 +123,15 @@ pub fn main() -> anyhow::Result<()> {
 }
 
 /// Execute the conversion in the background and show the status to the user
-fn convert(workflow_file: PathBuf, read_env: bool, in_memory: bool) -> Result<(), AnnattoError> {
+fn convert(
+    workflow_file: PathBuf,
+    read_env: bool,
+    in_memory: bool,
+    save: Option<PathBuf>,
+) -> Result<(), AnnattoError> {
     let (tx, rx) = mpsc::channel();
     let result = thread::spawn(move || {
-        execute_from_file(&workflow_file, read_env, in_memory, Some(tx.clone()))
+        execute_from_file(&workflow_file, read_env, in_memory, Some(tx.clone()), save)
     });
 
     let mut all_bars: HashMap<StepID, ProgressBar> = HashMap::new();

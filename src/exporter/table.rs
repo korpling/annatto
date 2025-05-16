@@ -116,14 +116,14 @@ impl Default for ExportTable {
         Self {
             doc_anno: default_doc_anno(),
             delimiter: default_delimiter(),
-            quote_char: None,
-            no_value: String::default(),
-            ingoing: vec![],
-            outgoing: vec![],
+            quote_char: Default::default(),
+            no_value: Default::default(),
+            ingoing: Default::default(),
+            outgoing: Default::default(),
             id_column: default_id_column(),
-            column_names: Vec::default(),
-            skip_header: false,
-            skip_token: false,
+            column_names: Default::default(),
+            skip_header: Default::default(),
+            skip_token: Default::default(),
         }
     }
 }

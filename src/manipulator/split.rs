@@ -54,6 +54,17 @@ fn default_delimiter() -> String {
     DEFAULT_DELIMITER.to_string()
 }
 
+impl Default for SplitValues {
+    fn default() -> Self {
+        Self {
+            delimiter: default_delimiter(),
+            anno: Default::default(),
+            layers: Default::default(),
+            delete: Default::default(),
+        }
+    }
+}
+
 impl Manipulator for SplitValues {
     fn manipulate_corpus(
         &self,

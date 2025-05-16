@@ -164,6 +164,26 @@ pub struct ExportCoNLLU {
     misc: Vec<AnnoKey>,
 }
 
+impl Default for ExportCoNLLU {
+    fn default() -> Self {
+        Self {
+            doc: default_doc_anno(),
+            groupby: Default::default(),
+            ordering: default_ordering(),
+            form: default_form_key(),
+            lemma: default_lemma_key(),
+            upos: default_upos_key(),
+            xpos: default_xpos_key(),
+            features: vec![],
+            dependency_component: Default::default(),
+            dependency_anno: Default::default(),
+            enhanced_components: Default::default(),
+            enhanced_annos: Default::default(),
+            misc: Default::default(),
+        }
+    }
+}
+
 fn default_doc_anno() -> AnnoKey {
     AnnoKey {
         name: "doc".into(),
@@ -204,26 +224,6 @@ fn default_upos_key() -> AnnoKey {
     AnnoKey {
         name: "upos".into(),
         ns: "".into(),
-    }
-}
-
-impl Default for ExportCoNLLU {
-    fn default() -> Self {
-        Self {
-            doc: default_doc_anno(),
-            groupby: None,
-            ordering: default_ordering(),
-            form: default_form_key(),
-            lemma: default_lemma_key(),
-            upos: default_upos_key(),
-            xpos: default_xpos_key(),
-            features: vec![],
-            dependency_component: None,
-            dependency_anno: None,
-            enhanced_components: vec![],
-            enhanced_annos: vec![],
-            misc: vec![],
-        }
     }
 }
 

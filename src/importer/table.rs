@@ -85,10 +85,10 @@ fn default_delimiter() -> char {
 impl Default for ImportTable {
     fn default() -> Self {
         Self {
-            column_names: Vec::new(),
-            quote_char: None,
+            column_names: Default::default(),
+            quote_char: Default::default(),
             delimiter: default_delimiter(),
-            empty_line_group: None,
+            empty_line_group: Default::default(),
         }
     }
 }

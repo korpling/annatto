@@ -1,0 +1,167 @@
+---
+source: src/workflow.rs
+expression: written_workflow
+---
+[[import]]
+format = "xlsx"
+path = "xlsx/"
+
+[import.config]
+metasheet_skip_rows = 0
+token_annos = []
+
+[import.config.column_map]
+"ahd::AHD" = []
+edition = [
+    "chapter",
+    "line",
+    "line_m",
+    "page",
+    "subchapter",
+    "verse",
+]
+"lat::LAT" = []
+map = []
+text = [
+    "Glosse",
+    "clause",
+    "document",
+    "inflection",
+    "inflectionClass",
+    "inflectionClassLemma",
+    "lang",
+    "lemma",
+    "pos",
+    "posLemma",
+    "register",
+    "rhyme",
+    "text",
+    "translation",
+    "writer",
+]
+
+[[graph_op]]
+action = "split"
+
+[graph_op.config]
+delimiter = ","
+anno = "map"
+delete = true
+
+[[graph_op.config.layers]]
+index = 1
+key = "a::map"
+
+[[graph_op.config.layers]]
+index = 2
+key = "b::map"
+
+[[graph_op.config.layers]]
+index = 3
+key = "c::map"
+
+[[graph_op]]
+action = "split"
+
+[graph_op.config]
+delimiter = "#row"
+anno = "annis::node_name"
+delete = false
+
+[[graph_op.config.layers]]
+index = 2
+key = "row"
+
+[[graph_op]]
+action = "revise"
+
+[graph_op.config]
+remove_nodes = []
+move_node_annos = false
+node_annos = []
+edge_annos = []
+components = []
+remove_subgraph = []
+
+[graph_op.config.node_names]
+
+[[graph_op.config.remove_match]]
+query = 'row _ident_ node_name=/.+\/(ohg|lat)\/.+/'
+
+[[graph_op.config.remove_match.remove]]
+node = 1
+anno = "row"
+
+[graph_op.config.namespaces]
+
+[[graph_op]]
+action = "map"
+
+[graph_op.config]
+debug = false
+
+[[graph_op.config.mapping.rules]]
+query = "ahd:AHD _l_ row !_l_ map?"
+target = 1
+anno = "a::map"
+delete = []
+
+[graph_op.config.mapping.rules.value]
+copy = 2
+
+[[graph_op.config.mapping.rules]]
+query = "ahd:AHD _r_ row !_r_ map?"
+target = 1
+anno = "b::map"
+delete = []
+
+[graph_op.config.mapping.rules.value]
+copy = 2
+
+[graph_op.config.mapping.repetition.Fixed]
+n = 1
+
+[[graph_op]]
+action = "enumerate"
+
+[graph_op.config]
+queries = [
+    "ahd:AHD @* doc",
+    "lat:LAT @* doc",
+    "text @* doc @* node_name=/.*ohg/",
+    "text @* doc @* node_name=/.*lat/",
+]
+target = 1
+by = [2]
+label = "prealign::id"
+value = 2
+start = 1
+
+[[graph_op]]
+action = "check"
+
+[graph_op.config]
+report = "list"
+policy = "fail"
+save = "check.log"
+
+[[graph_op.config.tests]]
+query = "prealign:id _ident_ ahd:AHD"
+expected = [
+    1,
+    inf,
+]
+description = "There are align ids for AHD"
+
+[[export]]
+format = "graphml"
+path = "export/to/this/path/if/you/can/if/not/no/worries"
+
+[export.config]
+guess_vis = false
+stable_order = false
+zip = false
+
+[footer]
+annatto_version = "0.30.0"
+success = false

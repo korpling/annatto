@@ -346,6 +346,7 @@ fn parse_relannis_workflow() {
         true,
         false,
         None,
+        None,
     );
     // This should fail, because the input directory does not exist
     assert_eq!(true, r.is_err());
