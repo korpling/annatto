@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeSet,
     fs,
     path::{Path, PathBuf},
     sync::mpsc::Sender,
@@ -90,7 +91,11 @@ fn contained_variables(workflow: &'_ str) -> Result<Vec<(i32, &'_ str)>> {
     Ok(variables)
 }
 
-fn parse_variables(workflow: String, buf: &mut String) -> Result<()> {
+fn parse_variables(
+    workflow: String,
+    buf: &mut String,
+    visited: &mut BTreeSet<String>,
+) -> Result<()> {
     let vars = contained_variables(&workflow)?;
     let content = workflow.as_bytes();
     let mut p = 0;
@@ -99,11 +104,22 @@ fn parse_variables(workflow: String, buf: &mut String) -> Result<()> {
             buf.push(content[ci as usize] as char);
         }
         p = start_index + var.len() as i32;
-        if let Ok(value) = std::env::var(&var[1..]) {
-            for c in value.chars() {
+        let var_name = &var[1..];
+        if visited.contains(var_name) {
+            return Err(AnnattoError::Anyhow(anyhow!(
+                "Workflow contains a cycle of variables, observed {var_name} for the second time."
+            )));
+        }
+        visited.insert(var_name.to_string());
+        if let Ok(value) = std::env::var(var_name) {
+            // value might contain variables again, parse
+            let mut value_buf = String::new();
+            parse_variables(value, &mut value_buf, visited)?;
+            for c in value_buf.chars() {
                 buf.push(c);
             }
         } else {
+            // variable value could not be resolved, do not step into, just copy
             for ci in start_index..start_index + var.len() as i32 {
                 buf.push(content[ci as usize] as char);
             }
@@ -119,7 +135,7 @@ fn read_workflow(path: PathBuf, read_env: bool) -> Result<String> {
     let toml_content = fs::read_to_string(path.as_path())?;
     if read_env {
         let mut buf = String::new();
-        parse_variables(toml_content, &mut buf)?;
+        parse_variables(toml_content, &mut buf, &mut BTreeSet::default())?;
         Ok(buf)
     } else {
         Ok(toml_content)
@@ -429,6 +445,41 @@ mod tests {
     }
 
     #[test]
+    fn with_env_recursive() {
+        let k1 = "TEST_VAR_FORMAT_NAME_REC";
+        let k2 = "TEST_VAR_GRAPH_OP_NAME_REC";
+        let k3 = "TEST_VAR_WAIT_FOR_IT_REC";
+        std::env::set_var(k1, "none");
+        std::env::set_var(k2, "$TEST_VAR_WAIT_FOR_IT_REC");
+        std::env::set_var(k3, "check");
+        let read_result = read_workflow(
+            Path::new("./tests/data/import/empty/empty_with_vars_rec.toml").to_path_buf(),
+            true,
+        );
+        assert!(
+            read_result.is_ok(),
+            "Failed to read variable workflow with error {:?}",
+            read_result.err()
+        );
+        assert_snapshot!(read_result.unwrap());
+    }
+
+    #[test]
+    fn with_env_var_cycle() {
+        let k1 = "TEST_VAR_FORMAT_NAME_CYC";
+        let k2 = "TEST_VAR_GRAPH_OP_NAME_CYC";
+        let k3 = "TEST_VAR_WAIT_FOR_IT_CYC";
+        std::env::set_var(k1, "$TEST_VAR_GRAPH_OP_NAME_CYC");
+        std::env::set_var(k2, "$TEST_VAR_WAIT_FOR_IT_CYC");
+        std::env::set_var(k3, "$TEST_VAR_FORMAT_NAME_CYC");
+        let read_result = read_workflow(
+            Path::new("./tests/data/import/empty/empty_with_vars_cyc.toml").to_path_buf(),
+            true,
+        );
+        assert!(read_result.is_err());
+    }
+
+    #[test]
     fn multiple_importers() {
         // The workflow contains a check for the number of corpora
         execute_from_file(
@@ -466,7 +517,7 @@ mod tests {
             "export/to/this/path/if/you/can/if/not/no/worries",
         );
         let mut clean_str = String::new();
-        assert!(parse_variables(ts.unwrap(), &mut clean_str).is_ok());
+        assert!(parse_variables(ts.unwrap(), &mut clean_str, &mut BTreeSet::default()).is_ok());
         let wf: std::result::Result<Workflow, _> = toml::from_str(&clean_str);
         assert!(wf.is_ok(), "Could not deserialize workflow: {:?}", wf.err());
         let workflow = wf.unwrap();

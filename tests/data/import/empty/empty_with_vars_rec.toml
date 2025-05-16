@@ -1,0 +1,11 @@
+[[import]]
+path = "."
+format = "$TEST_VAR_FORMAT_NAME_REC"
+
+[import.config]
+
+[[graph_op]]
+action = "$TEST_VAR_GRAPH_OP_NAME_REC"
+
+[graph_op.config]
+tests = []
