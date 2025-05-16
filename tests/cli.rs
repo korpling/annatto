@@ -1,5 +1,6 @@
 use assert_cmd::Command;
 use insta::assert_snapshot;
+use regex::Regex;
 use std::{fs, path::PathBuf};
 use tempfile::{tempdir, TempDir};
 
@@ -253,5 +254,7 @@ fn run_and_serialize() {
     assert!(output.is_ok());
     assert!(output_file.exists());
     let workflow_str = fs::read_to_string(output_file.as_path()).unwrap();
-    assert_snapshot!(workflow_str);
+    assert_snapshot!(Regex::new(r#"[0-9]+\.[0-9]+\.[0-9]+"#)
+        .unwrap()
+        .replace(&workflow_str, "<VERSION>"));
 }
