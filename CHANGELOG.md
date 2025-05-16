@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - import `treetagger` allows to configure annotation namespaces for all columns
+- adding `--save <path>` as annatto command saves the workflow to the given path with resolved runtime variables and a footer
 
 ### Changed
 
