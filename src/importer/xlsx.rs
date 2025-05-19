@@ -29,7 +29,7 @@ use documented::{Documented, DocumentedFields};
 
 /// Imports Excel Spreadsheets where each line is a token, the other columns are
 /// spans and merged cells can be used for spans that cover more than one token.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ImportSpreadsheet {
     /// Maps token columns to annotation columns. If there is more than one
@@ -44,6 +44,7 @@ pub struct ImportSpreadsheet {
     /// ```
     /// The column "sentence" must be always be aligned with the "dipl" token
     /// and "pos", "lemma" and "seg" are aligned with the "norm" token.
+    #[serde(default)]
     column_map: BTreeMap<String, BTreeSet<String>>,
     /// If given, the name of the token column to be used when there is no
     /// explicit mapping given in the `column_map` parameter for this annotation
@@ -596,6 +597,18 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn serialize() {
+        let module = ImportSpreadsheet::default();
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn serialize_custom() {
