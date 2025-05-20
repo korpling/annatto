@@ -64,12 +64,21 @@ fn add_subcorpora(
         for entry in files_in_directory {
             let entry_type = entry.file_type()?;
             let entry_path = entry.path();
-            let subcorpus_name = entry_path
-                .file_stem()
-                .map(|f| f.to_os_string())
-                .unwrap_or_else(|| entry.file_name())
-                .to_string_lossy()
-                .to_string();
+            let subcorpus_name = if entry_path.is_dir() {
+                entry_path
+                    .file_name() // do not strip extension!
+                    .map(|f| f.to_os_string())
+                    .unwrap_or_else(|| entry.file_name())
+                    .to_string_lossy()
+                    .to_string()
+            } else {
+                entry_path
+                    .file_stem() // strip extension
+                    .map(|f| f.to_os_string())
+                    .unwrap_or_else(|| entry.file_name())
+                    .to_string_lossy()
+                    .to_string()
+            };
             let node_name = format!("{}/{}", parent_corpus, subcorpus_name);
             let add_node = if entry_type.is_file() {
                 if let Some(actual_ending) = entry.path().extension() {
@@ -386,12 +395,12 @@ mod tests {
     fn node_names_from_paths() {
         let paths = vec![
             "Sophisticated_Corpus_v1.9",
-            "Sophisticated_Corpus_v1.9/lang1",
-            "Sophisticated_Corpus_v1.9/lang2",
-            "Sophisticated_Corpus_v1.9/lang1/doc1.fancyExtension",
-            "Sophisticated_Corpus_v1.9/lang1/doc2.fancyExtension",
-            "Sophisticated_Corpus_v1.9/lang2/doc1.fancyExtension",
-            "Sophisticated_Corpus_v1.9/lang2/doc2.fancyExtension",
+            "Sophisticated_Corpus_v1.9/lang1.1",
+            "Sophisticated_Corpus_v1.9/lang2.1",
+            "Sophisticated_Corpus_v1.9/lang1.1/doc1.fancyExtension",
+            "Sophisticated_Corpus_v1.9/lang1.1/doc2.fancyExtension",
+            "Sophisticated_Corpus_v1.9/lang2.1/doc1.fancyExtension",
+            "Sophisticated_Corpus_v1.9/lang2.1/doc2.fancyExtension",
         ];
         let tmp_dir = TempDir::new().unwrap();
         assert!(fs::create_dir_all(tmp_dir.path().join(paths[1])).is_ok());
