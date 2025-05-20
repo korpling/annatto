@@ -64,12 +64,21 @@ fn add_subcorpora(
         for entry in files_in_directory {
             let entry_type = entry.file_type()?;
             let entry_path = entry.path();
-            let subcorpus_name = entry_path
-                .file_stem()
-                .map(|f| f.to_os_string())
-                .unwrap_or_else(|| entry.file_name())
-                .to_string_lossy()
-                .to_string();
+            let subcorpus_name = if entry_path.is_dir() {
+                entry_path
+                    .file_name() // do not strip extension!
+                    .map(|f| f.to_os_string())
+                    .unwrap_or_else(|| entry.file_name())
+                    .to_string_lossy()
+                    .to_string()
+            } else {
+                entry_path
+                    .file_stem() // strip extension
+                    .map(|f| f.to_os_string())
+                    .unwrap_or_else(|| entry.file_name())
+                    .to_string_lossy()
+                    .to_string()
+            };
             let node_name = format!("{}/{}", parent_corpus, subcorpus_name);
             let add_node = if entry_type.is_file() {
                 if let Some(actual_ending) = entry.path().extension() {
@@ -116,11 +125,19 @@ fn add_subcorpora(
 
 pub fn root_corpus_from_path(root_path: &Path) -> Result<String> {
     let norm_path = root_path.normalize()?;
-    let root_name = norm_path
-        .file_stem()
-        .unwrap_or_else(|| OsStr::new("root-corpus"))
-        .to_string_lossy();
-
+    let root_name = if norm_path.is_file() {
+        // remove extension
+        norm_path
+            .file_stem()
+            .unwrap_or_else(|| OsStr::new("root-corpus"))
+            .to_string_lossy()
+    } else {
+        // keep trailing sequences starting with a "." (e. g. version digits)
+        norm_path
+            .file_name()
+            .unwrap_or_else(|| OsStr::new("root-corpus"))
+            .to_string_lossy()
+    };
     Ok(root_name.to_string())
 }
 
@@ -342,10 +359,12 @@ pub fn map_annotations<S: AsRef<str>>(
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::{fs, path::Path};
 
     use graphannis::update::GraphUpdate;
-    use insta::assert_debug_snapshot;
+    use insta::{assert_debug_snapshot, assert_snapshot};
+    use itertools::Itertools;
+    use tempfile::TempDir;
 
     use super::import_corpus_graph_from_files;
 
@@ -370,5 +389,43 @@ mod tests {
         let created_updates = created_updates.unwrap();
 
         assert_debug_snapshot!(created_updates);
+    }
+
+    #[test]
+    fn node_names_from_paths() {
+        let paths = vec![
+            "Sophisticated_Corpus_v1.9",
+            "Sophisticated_Corpus_v1.9/lang1.1",
+            "Sophisticated_Corpus_v1.9/lang2.1",
+            "Sophisticated_Corpus_v1.9/lang1.1/doc1.fancyExtension",
+            "Sophisticated_Corpus_v1.9/lang1.1/doc2.fancyExtension",
+            "Sophisticated_Corpus_v1.9/lang2.1/doc1.fancyExtension",
+            "Sophisticated_Corpus_v1.9/lang2.1/doc2.fancyExtension",
+        ];
+        let tmp_dir = TempDir::new().unwrap();
+        assert!(fs::create_dir_all(tmp_dir.path().join(paths[1])).is_ok());
+        assert!(fs::create_dir_all(tmp_dir.path().join(paths[2])).is_ok());
+        paths[3..].iter().for_each(|p| {
+            assert!(
+                fs::write(tmp_dir.path().join(p), "".as_bytes()).is_ok(),
+                "Error creating: {}",
+                p
+            )
+        });
+        let root_path = tmp_dir.path().join(paths[0]);
+        let mut update = GraphUpdate::default();
+        assert!(
+            import_corpus_graph_from_files(&mut update, &root_path, &["fancyExtension"]).is_ok()
+        );
+        assert_snapshot!(update
+            .iter()
+            .unwrap()
+            .flatten()
+            .map(|(_, ue)| match ue {
+                graphannis::update::UpdateEvent::AddNode { node_name, .. } => node_name.to_string(),
+                _ => "".to_string(),
+            })
+            .filter(|s| !s.is_empty())
+            .join("\n"));
     }
 }

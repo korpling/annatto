@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - import `xlsx`: empty column map to be valid 
+- all imports: corpus node names keep trailing sequences starting with a dot if derived from a path, extensions are only stripped off file names
 
 ## [0.31.0] - 2025-05-16
 

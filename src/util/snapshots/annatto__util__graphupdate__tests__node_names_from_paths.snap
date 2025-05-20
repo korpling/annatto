@@ -1,0 +1,11 @@
+---
+source: src/util/graphupdate.rs
+expression: "update.iter().unwrap().flatten().map(|(_, ue)| match ue\n{\n    graphannis::update::UpdateEvent::AddNode { node_name, .. } =>\n    node_name.to_string(), _ => \"\".to_string(),\n}).filter(|s| !s.is_empty()).join(\"\\n\")"
+---
+Sophisticated_Corpus_v1.9
+Sophisticated_Corpus_v1.9/lang1.1
+Sophisticated_Corpus_v1.9/lang1.1/doc1
+Sophisticated_Corpus_v1.9/lang1.1/doc2
+Sophisticated_Corpus_v1.9/lang2.1
+Sophisticated_Corpus_v1.9/lang2.1/doc1
+Sophisticated_Corpus_v1.9/lang2.1/doc2
