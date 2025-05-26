@@ -19,6 +19,7 @@ use std::{
 #[derive(Clone)]
 pub struct TokenHelper<'a> {
     node_annos: &'a dyn NodeAnnotationStorage,
+    left_edges: Arc<dyn GraphStorage>,
     cov_edges: Vec<Arc<dyn GraphStorage>>,
     ordering_gs: BTreeMap<String, Arc<dyn GraphStorage>>,
     part_of_gs: Arc<dyn GraphStorage>,
@@ -74,8 +75,13 @@ impl<'a> TokenHelper<'a> {
             .get_graphstorage(&part_of_component)
             .ok_or_else(|| anyhow!("Missing PartOf component"))?;
 
+        let left_edges = graph
+            .get_graphstorage(&COMPONENT_LEFT)
+            .ok_or_else(|| GraphAnnisCoreError::MissingComponent(COMPONENT_LEFT.to_string()))?;
+
         Ok(TokenHelper {
             node_annos: graph.get_node_annos(),
+            left_edges,
             cov_edges,
             ordering_gs,
             part_of_gs,
@@ -201,6 +207,18 @@ impl<'a> TokenHelper<'a> {
         }
 
         Ok(result)
+    }
+
+    pub fn left_token_for(&self, n: NodeID) -> Result<Option<NodeID>> {
+        if self.is_token(n)? {
+            Ok(Some(n))
+        } else {
+            let mut out = self.left_edges.get_outgoing_edges(n);
+            match out.next() {
+                Some(out) => Ok(Some(out?)),
+                None => Ok(None),
+            }
+        }
     }
 }
 

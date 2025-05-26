@@ -26,6 +26,7 @@ use std::{
 #[cfg(test)]
 pub(crate) mod example_generator;
 pub(crate) mod graphupdate;
+pub(crate) mod sort_matches;
 pub(crate) mod token_helper;
 
 /// Get all files with a given extension in a directory.
