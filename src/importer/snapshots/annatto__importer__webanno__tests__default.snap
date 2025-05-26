@@ -10,161 +10,189 @@ expression: actual.unwrap()
     <key id="k2" for="node" attr.name="POS::PosValue" attr.type="string"/>
     <key id="k3" for="node" attr.name="Text" attr.type="string"/>
     <key id="k4" for="node" attr.name="annis::doc" attr.type="string"/>
-    <key id="k5" for="node" attr.name="annis::node_type" attr.type="string"/>
-    <key id="k6" for="node" attr.name="annis::tok" attr.type="string"/>
-    <key id="k7" for="node" attr.name="Dependency::DependencyType" attr.type="string"/>
+    <key id="k5" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k6" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k7" for="node" attr.name="annis::tok" attr.type="string"/>
+    <key id="k8" for="node" attr.name="Dependency::DependencyType" attr.type="string"/>
     <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
         <data key="k0"><![CDATA[
 # configure visualizations here
 ]]></data>
         <node id="tsv">
-            <data key="k5">corpus</data>
+            <data key="k6">corpus</data>
         </node>
         <node id="tsv/PosDep">
             <data key="k4">PosDep</data>
-            <data key="k5">corpus</data>
+            <data key="k6">corpus</data>
         </node>
         <node id="tsv/PosDep#sentence_line7">
             <data key="k3">Ms. Haag plays Elianti .</data>
-            <data key="k5">node</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
         </node>
         <node id="tsv/PosDep#1-1">
             <data key="k1">PER[1]</data>
             <data key="k2">NNP</data>
-            <data key="k5">node</data>
-            <data key="k6">Ms.</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">Ms.</data>
         </node>
         <node id="tsv/PosDep#1-3">
             <data key="k2">VBD</data>
-            <data key="k5">node</data>
-            <data key="k6">plays</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">plays</data>
         </node>
         <node id="tsv/PosDep#1-2">
             <data key="k1">PER[1]</data>
             <data key="k2">NNP</data>
-            <data key="k5">node</data>
-            <data key="k6">Haag</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">Haag</data>
         </node>
         <node id="tsv/PosDep#_">
-            <data key="k5">node</data>
+            <data key="k6">node</data>
         </node>
         <node id="tsv/PosDep#1-4">
             <data key="k1">OTH</data>
             <data key="k2">NNP</data>
-            <data key="k5">node</data>
-            <data key="k6">Elianti</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">Elianti</data>
         </node>
         <node id="tsv/PosDep#1-5">
             <data key="k2">.</data>
-            <data key="k5">node</data>
-            <data key="k6">.</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">.</data>
         </node>
         <node id="tsv/PosDep#sentence_line14">
             <data key="k3">Rolls-Royce Motor Cars Inc. said it expects its U.S. sales to remain steady at about 1,200 cars in 1990 .</data>
-            <data key="k5">node</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
         </node>
         <node id="tsv/PosDep#2-1">
             <data key="k1">ORG[3]</data>
             <data key="k2">NNP</data>
-            <data key="k5">node</data>
-            <data key="k6">Rolls-Royce</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">Rolls-Royce</data>
         </node>
         <node id="tsv/PosDep#2-3">
             <data key="k2">NNPS</data>
-            <data key="k5">node</data>
-            <data key="k6">Cars</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">Cars</data>
         </node>
         <node id="tsv/PosDep#2-2">
             <data key="k1">ORG[3]</data>
             <data key="k2">NNP</data>
-            <data key="k5">node</data>
-            <data key="k6">Motor</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">Motor</data>
         </node>
         <node id="tsv/PosDep#2-5">
             <data key="k2">VBD</data>
-            <data key="k5">node</data>
-            <data key="k6">said</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">said</data>
         </node>
         <node id="tsv/PosDep#2-4">
             <data key="k2">NNP</data>
-            <data key="k5">node</data>
-            <data key="k6">Inc.</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">Inc.</data>
         </node>
         <node id="tsv/PosDep#2-6">
             <data key="k2">PRP</data>
-            <data key="k5">node</data>
-            <data key="k6">it</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">it</data>
         </node>
         <node id="tsv/PosDep#2-7">
             <data key="k2">VBZ</data>
-            <data key="k5">node</data>
-            <data key="k6">expects</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">expects</data>
         </node>
         <node id="tsv/PosDep#2-8">
             <data key="k2">PRP$</data>
-            <data key="k5">node</data>
-            <data key="k6">its</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">its</data>
         </node>
         <node id="tsv/PosDep#2-10">
             <data key="k2">NNS</data>
-            <data key="k5">node</data>
-            <data key="k6">sales</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">sales</data>
         </node>
         <node id="tsv/PosDep#2-9">
             <data key="k1">LOC</data>
             <data key="k2">NNP</data>
-            <data key="k5">node</data>
-            <data key="k6">U.S.</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">U.S.</data>
         </node>
         <node id="tsv/PosDep#2-11">
             <data key="k2">TO</data>
-            <data key="k5">node</data>
-            <data key="k6">to</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">to</data>
         </node>
         <node id="tsv/PosDep#2-12">
             <data key="k2">VB</data>
-            <data key="k5">node</data>
-            <data key="k6">remain</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">remain</data>
         </node>
         <node id="tsv/PosDep#2-13">
             <data key="k2">JJ</data>
-            <data key="k5">node</data>
-            <data key="k6">steady</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">steady</data>
         </node>
         <node id="tsv/PosDep#2-14">
             <data key="k2">IN</data>
-            <data key="k5">node</data>
-            <data key="k6">at</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">at</data>
         </node>
         <node id="tsv/PosDep#2-15">
             <data key="k2">IN</data>
-            <data key="k5">node</data>
-            <data key="k6">about</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">about</data>
         </node>
         <node id="tsv/PosDep#2-16">
             <data key="k2">CD</data>
-            <data key="k5">node</data>
-            <data key="k6">1,200</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">1,200</data>
         </node>
         <node id="tsv/PosDep#2-17">
             <data key="k2">NNS</data>
-            <data key="k5">node</data>
-            <data key="k6">cars</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">cars</data>
         </node>
         <node id="tsv/PosDep#2-18">
             <data key="k2">IN</data>
-            <data key="k5">node</data>
-            <data key="k6">in</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">in</data>
         </node>
         <node id="tsv/PosDep#2-19">
             <data key="k2">CD</data>
-            <data key="k5">node</data>
-            <data key="k6">1990</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">1990</data>
         </node>
         <node id="tsv/PosDep#2-20">
             <data key="k2">.</data>
-            <data key="k5">node</data>
-            <data key="k6">.</data>
+            <data key="k5">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k7">.</data>
         </node>
         <edge id="e0" source="tsv/PosDep#sentence_line7" target="tsv/PosDep#1-1" label="Coverage/annis/">
         </edge>
@@ -217,16 +245,16 @@ expression: actual.unwrap()
         <edge id="e24" source="tsv/PosDep#sentence_line14" target="tsv/PosDep#2-20" label="Coverage/annis/">
         </edge>
         <edge id="e25" source="tsv/PosDep#1-3" target="tsv/PosDep#1-1" label="Pointing//Dependency">
-            <data key="k7">SUBJ</data>
+            <data key="k8">SUBJ</data>
         </edge>
         <edge id="e26" source="tsv/PosDep#1-3" target="tsv/PosDep#1-2" label="Pointing//Dependency">
-            <data key="k7">SBJ</data>
+            <data key="k8">SBJ</data>
         </edge>
         <edge id="e27" source="tsv/PosDep#1-3" target="tsv/PosDep#1-4" label="Pointing//Dependency">
-            <data key="k7">OBJ</data>
+            <data key="k8">OBJ</data>
         </edge>
         <edge id="e28" source="tsv/PosDep#_" target="tsv/PosDep#1-3" label="Pointing//Dependency">
-            <data key="k7">ROOT</data>
+            <data key="k8">ROOT</data>
         </edge>
         <edge id="e29" source="tsv/PosDep#_" target="tsv/PosDep#1-5" label="Pointing//Dependency">
         </edge>
@@ -235,55 +263,55 @@ expression: actual.unwrap()
         <edge id="e31" source="tsv/PosDep#_" target="tsv/PosDep#2-18" label="Pointing//Dependency">
         </edge>
         <edge id="e32" source="tsv/PosDep#2-3" target="tsv/PosDep#2-1" label="Pointing//Dependency">
-            <data key="k7">NAME</data>
+            <data key="k8">NAME</data>
         </edge>
         <edge id="e33" source="tsv/PosDep#2-3" target="tsv/PosDep#2-2" label="Pointing//Dependency">
-            <data key="k7">NAME</data>
+            <data key="k8">NAME</data>
         </edge>
         <edge id="e34" source="tsv/PosDep#2-3" target="tsv/PosDep#2-4" label="Pointing//Dependency">
-            <data key="k7">POSTHON</data>
+            <data key="k8">POSTHON</data>
         </edge>
         <edge id="e35" source="tsv/PosDep#2-5" target="tsv/PosDep#2-3" label="Pointing//Dependency">
-            <data key="k7">SBJ</data>
+            <data key="k8">SBJ</data>
         </edge>
         <edge id="e36" source="tsv/PosDep#2-5" target="tsv/PosDep#2-7" label="Pointing//Dependency">
-            <data key="k7">OBJ</data>
+            <data key="k8">OBJ</data>
         </edge>
         <edge id="e37" source="tsv/PosDep#2-5" target="tsv/PosDep#2-20" label="Pointing//Dependency">
-            <data key="k7">P</data>
+            <data key="k8">P</data>
         </edge>
         <edge id="e38" source="tsv/PosDep#2-7" target="tsv/PosDep#2-6" label="Pointing//Dependency">
-            <data key="k7">SBJ</data>
+            <data key="k8">SBJ</data>
         </edge>
         <edge id="e39" source="tsv/PosDep#2-7" target="tsv/PosDep#2-10" label="Pointing//Dependency">
-            <data key="k7">OBJ</data>
+            <data key="k8">OBJ</data>
         </edge>
         <edge id="e40" source="tsv/PosDep#2-10" target="tsv/PosDep#2-8" label="Pointing//Dependency">
-            <data key="k7">NMOD</data>
+            <data key="k8">NMOD</data>
         </edge>
         <edge id="e41" source="tsv/PosDep#2-10" target="tsv/PosDep#2-9" label="Pointing//Dependency">
-            <data key="k7">NMOD</data>
+            <data key="k8">NMOD</data>
         </edge>
         <edge id="e42" source="tsv/PosDep#2-11" target="tsv/PosDep#2-12" label="Pointing//Dependency">
-            <data key="k7">IM</data>
+            <data key="k8">IM</data>
         </edge>
         <edge id="e43" source="tsv/PosDep#2-12" target="tsv/PosDep#2-13" label="Pointing//Dependency">
-            <data key="k7">PRD</data>
+            <data key="k8">PRD</data>
         </edge>
         <edge id="e44" source="tsv/PosDep#2-13" target="tsv/PosDep#2-14" label="Pointing//Dependency">
-            <data key="k7">LOC</data>
+            <data key="k8">LOC</data>
         </edge>
         <edge id="e45" source="tsv/PosDep#2-14" target="tsv/PosDep#2-17" label="Pointing//Dependency">
-            <data key="k7">PMOD</data>
+            <data key="k8">PMOD</data>
         </edge>
         <edge id="e46" source="tsv/PosDep#2-16" target="tsv/PosDep#2-15" label="Pointing//Dependency">
-            <data key="k7">DEP</data>
+            <data key="k8">DEP</data>
         </edge>
         <edge id="e47" source="tsv/PosDep#2-17" target="tsv/PosDep#2-16" label="Pointing//Dependency">
-            <data key="k7">NMOD</data>
+            <data key="k8">NMOD</data>
         </edge>
         <edge id="e48" source="tsv/PosDep#2-18" target="tsv/PosDep#2-19" label="Pointing//Dependency">
-            <data key="k7">PMOD</data>
+            <data key="k8">PMOD</data>
         </edge>
         <edge id="e49" source="tsv/PosDep#1-1" target="tsv/PosDep#1-2" label="Ordering/annis/">
         </edge>

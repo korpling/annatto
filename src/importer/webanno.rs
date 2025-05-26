@@ -106,6 +106,12 @@ impl ImportWebAnnoTSV {
             component_type: AnnotationComponentType::PartOf.to_string(),
             component_name: "".to_string(),
         })?;
+        update.add_event(UpdateEvent::AddNodeLabel {
+            node_name: sentence_node_name.to_string(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "layer".to_string(),
+            anno_value: "default_layer".to_string(),
+        })?;
         for member in sentence.into_inner() {
             match member.as_rule() {
                 Rule::sentence_meta => {
@@ -177,6 +183,12 @@ impl ImportWebAnnoTSV {
             anno_ns: ANNIS_NS.to_string(),
             anno_name: "tok".to_string(),
             anno_value: form.to_string(),
+        })?;
+        update.add_event(UpdateEvent::AddNodeLabel {
+            node_name: token_name.to_string(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "layer".to_string(),
+            anno_value: "default_layer".to_string(),
         })?;
         for anno_group in columns {
             match anno_group {

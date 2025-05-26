@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - when running with `--env` also variables contained in variable values are resolved (cycle safe)
+- import `webanno` adds `annis::layer` annotations
 
 ### Fixed
 
