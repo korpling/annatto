@@ -501,6 +501,15 @@ mod tests {
     }
 
     #[test]
+    fn invalid_variable_name() {
+        let k = "ß";
+        std::env::set_var(k, "any_value");
+        let r = contained_variables("this text contains an invalid variable with name $ß");
+        assert!(r.is_ok());
+        assert_eq!(0, r.unwrap().len());
+    }
+
+    #[test]
     fn multiple_importers() {
         // The workflow contains a check for the number of corpora
         execute_from_file(
