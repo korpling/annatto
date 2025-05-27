@@ -83,7 +83,7 @@ use std::convert::TryFrom;
 use toml;
 
 fn contained_variables(workflow: &'_ str) -> Result<Vec<(i32, &'_ str)>> {
-    let pattern = Regex::new("[$][^\\s\\-/\"'.;,?!]+")?;
+    let pattern = Regex::new(r#"[$][A-Za-z_0-9]+"#)?;
     let mut variables = Vec::new();
     for m in pattern.find_iter(workflow) {
         variables.push((m.start() as i32, m.as_str()))
