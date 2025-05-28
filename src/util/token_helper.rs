@@ -224,12 +224,14 @@ impl<'a> TokenHelper<'a> {
 
 #[cfg(test)]
 mod tests {
+    use std::{io::BufReader, path::Path};
+
     use graphannis::{
         model::AnnotationComponentType,
         update::{GraphUpdate, UpdateEvent},
         AnnotationGraph,
     };
-    use graphannis_core::graph::ANNIS_NS;
+    use graphannis_core::graph::{serialization::graphml, ANNIS_NS};
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
 
@@ -374,5 +376,40 @@ mod tests {
             .collect_vec();
 
         assert_eq!(vec!["This", "more", "complicated",], ordered_token_ids);
+    }
+
+    #[test]
+    fn left_token_for_example_graph() {
+        let input_file = std::fs::File::open(Path::new(
+            "tests/data/import/graphml/single_sentence.graphml",
+        ))
+        .unwrap();
+        let input_file = BufReader::new(input_file);
+        let (graph, _) =
+            graphml::import::<AnnotationComponentType, _, _>(input_file, false, |_| {}).unwrap();
+
+        let tok_helper = TokenHelper::new(&graph).unwrap();
+
+        let first_tok_id = graph
+            .get_node_annos()
+            .get_node_id_from_name("single_sentence/zossen#t1")
+            .unwrap()
+            .unwrap();
+
+        // The token should be its own left token
+        assert_eq!(
+            first_tok_id,
+            tok_helper.left_token_for(first_tok_id).unwrap().unwrap()
+        );
+
+        let root_node_id = graph
+            .get_node_annos()
+            .get_node_id_from_name("single_sentence/zossen#n1")
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            first_tok_id,
+            tok_helper.left_token_for(root_node_id).unwrap().unwrap()
+        );
     }
 }
