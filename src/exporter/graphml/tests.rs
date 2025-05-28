@@ -5,7 +5,12 @@ use graphannis::AnnotationGraph;
 use insta::assert_snapshot;
 use tempfile::TempDir;
 
-use crate::importer::{exmaralda::ImportEXMARaLDA, Importer};
+use crate::{
+    core::update_graph_silent,
+    importer::{
+        exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes, xlsx::ImportSpreadsheet, Importer,
+    },
+};
 
 #[test]
 fn serialize() {
@@ -110,4 +115,47 @@ fn export_graphml_with_vis() {
     let result_file_path = output_path.path().join("exmaralda.graphml");
     let graphml = std::fs::read_to_string(result_file_path).unwrap();
     assert_snapshot!(graphml);
+}
+
+#[test]
+fn zip_with_linked_files() {
+    let g = AnnotationGraph::with_default_graphstorages(false);
+    assert!(g.is_ok());
+    let mut graph = g.unwrap();
+    let u1 = ImportSpreadsheet::default().import_corpus(
+        Path::new("tests/data/export/graphml/linked-files/src/data"),
+        StepID {
+            module_name: "test_import".to_string(),
+            path: None,
+        },
+        None,
+    );
+    assert!(u1.is_ok());
+    let file_linker: Result<CreateFileNodes, _> = toml::from_str("corpus_name = \"data\"");
+    assert!(file_linker.is_ok());
+    let u2 = file_linker.unwrap().import_corpus(
+        Path::new("tests/data/export/graphml/linked-files/target/data"),
+        StepID {
+            module_name: "link_files".to_string(),
+            path: None,
+        },
+        None,
+    );
+    assert!(u2.is_ok());
+    assert!(update_graph_silent(&mut graph, &mut u1.unwrap()).is_ok());
+    assert!(update_graph_silent(&mut graph, &mut u2.unwrap()).is_ok());
+    let export = GraphMLExporter {
+        zip: true,
+        ..Default::default()
+    }
+    .export_corpus(
+        &graph,
+        Path::new("tests/data/export/graphml/linked-files/target/"),
+        StepID {
+            module_name: "test_export".to_string(),
+            path: None,
+        },
+        None,
+    );
+    assert!(export.is_ok(), "Error exporting: {:?}", export.err());
 }
