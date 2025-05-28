@@ -257,7 +257,7 @@ impl Manipulator for EnumerateMatches {
 }
 
 fn anno_key_for_match(entry: &Match) -> Arc<AnnoKey> {
-    let anno_key = if entry.anno_key.eq(&NODE_TYPE_KEY) || entry.anno_key.eq(&NODE_NAME_KEY) {
+    let anno_key = if entry.anno_key.eq(&NODE_TYPE_KEY) {
         // Replace the generic search key with the token value
         TOKEN_KEY.clone()
     } else {
