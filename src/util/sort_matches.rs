@@ -177,6 +177,11 @@ fn compare_document_path(p1: &str, p2: &str) -> std::cmp::Ordering {
 #[cfg(test)]
 mod tests {
 
+    use std::{io::BufReader, path::Path};
+
+    use graphannis::model::{AnnotationComponent, AnnotationComponentType};
+    use graphannis_core::graph::{serialization::graphml, ANNIS_NS, NODE_TYPE_KEY};
+
     use super::*;
 
     #[test]
@@ -184,5 +189,83 @@ mod tests {
         let p1 = "tiger2/tiger2/tiger_release_dec05_110";
         let p2 = "tiger2/tiger2/tiger_release_dec05_1_1";
         assert_eq!(std::cmp::Ordering::Less, compare_document_path(p1, p2));
+    }
+
+    #[test]
+    fn compare_match_for_example_graph() {
+        let input_file = std::fs::File::open(Path::new(
+            "tests/data/import/graphml/single_sentence.graphml",
+        ))
+        .unwrap();
+        let input_file = BufReader::new(input_file);
+        let (graph, _) =
+            graphml::import::<AnnotationComponentType, _, _>(input_file, false, |_| {}).unwrap();
+
+        let gs_order = graph
+            .get_graphstorage(&AnnotationComponent::new(
+                AnnotationComponentType::Ordering,
+                ANNIS_NS.into(),
+                "".into(),
+            ))
+            .unwrap();
+        let token_helper = TokenHelper::new(&graph).unwrap();
+
+        let t3_id = graph
+            .get_node_annos()
+            .get_node_id_from_name("single_sentence/zossen#t3")
+            .unwrap()
+            .unwrap();
+        let t5_id = graph
+            .get_node_annos()
+            .get_node_id_from_name("single_sentence/zossen#t5")
+            .unwrap()
+            .unwrap();
+
+        let mut sort_cache = SortCache::new(gs_order);
+
+        // Test same node should be equal
+        let match_t3 = Match {
+            node: t3_id,
+            anno_key: NODE_TYPE_KEY.clone(),
+        };
+        assert_eq!(
+            Ordering::Equal,
+            sort_cache
+                .compare_match_by_text_pos(
+                    &match_t3,
+                    &match_t3,
+                    graph.get_node_annos(),
+                    &token_helper
+                )
+                .unwrap()
+        );
+
+        // t5 comes after
+        let match_t5 = Match {
+            node: t5_id,
+            anno_key: NODE_TYPE_KEY.clone(),
+        };
+        assert_eq!(
+            Ordering::Less,
+            sort_cache
+                .compare_match_by_text_pos(
+                    &match_t3,
+                    &match_t5,
+                    graph.get_node_annos(),
+                    &token_helper
+                )
+                .unwrap()
+        );
+        assert_eq!(
+            Ordering::Greater,
+            sort_cache
+                .compare_match_by_text_pos(
+                    &match_t5,
+                    &match_t3,
+                    graph.get_node_annos(),
+                    &token_helper
+                )
+                .unwrap()
+        );
     }
 }
