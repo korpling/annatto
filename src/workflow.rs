@@ -83,7 +83,7 @@ use std::convert::TryFrom;
 use toml;
 
 fn contained_variables(workflow: &'_ str) -> Result<Vec<(i32, &'_ str)>> {
-    let pattern = Regex::new("[$][^\\s\\-/\"'.;,?!]+")?;
+    let pattern = Regex::new(r#"[$][A-Za-z_0-9]+"#)?;
     let mut variables = Vec::new();
     for m in pattern.find_iter(workflow) {
         variables.push((m.start() as i32, m.as_str()))
@@ -498,6 +498,15 @@ mod tests {
             true,
         );
         assert!(read_result.is_err());
+    }
+
+    #[test]
+    fn invalid_variable_name() {
+        let k = "ß";
+        std::env::set_var(k, "any_value");
+        let r = contained_variables("this text contains an invalid variable with name $ß");
+        assert!(r.is_ok());
+        assert_eq!(0, r.unwrap().len());
     }
 
     #[test]

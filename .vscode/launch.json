@@ -7,7 +7,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'annatto'",
+            "name": "Debug 'annatto' (in mem, env)",
             "cargo": {
                 "args": [
                     "build",
@@ -21,6 +21,8 @@
             },
             "args": [
                 "run",
+                "--in-memory",
+                "--env",
                 "${input:workflow_file}"
             ],
             "cwd": "${workspaceFolder}"
