@@ -1,9 +1,10 @@
 use super::*;
-use std::path::Path;
+use std::{fs, path::Path};
 
 use graphannis::AnnotationGraph;
 use insta::assert_snapshot;
 use tempfile::TempDir;
+use zip::ZipArchive;
 
 use crate::{
     core::update_graph_silent,
@@ -158,4 +159,12 @@ fn zip_with_linked_files() {
         None,
     );
     assert!(export.is_ok(), "Error exporting: {:?}", export.err());
+    let zip_path = Path::new("tests/data/export/graphml/linked-files/target/data");
+    assert!(zip_path.exists());
+    let zf = fs::File::open(zip_path);
+    assert!(zf.is_ok());
+    let a = ZipArchive::new(zf.unwrap());
+    assert!(a.is_ok());
+    let archive = a.unwrap();
+    assert_snapshot!(archive.file_names().join("\n"));
 }
