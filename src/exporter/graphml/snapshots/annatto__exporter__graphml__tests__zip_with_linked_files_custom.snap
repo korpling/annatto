@@ -1,0 +1,7 @@
+---
+source: src/exporter/graphml/tests.rs
+expression: "archive.file_names().sorted().join(\"\\n\")"
+---
+data.graphml
+tests/data/export/graphml/linked-files/config_files/data/document_browser.json
+tests/data/export/graphml/linked-files/config_files/data/second_file.json
