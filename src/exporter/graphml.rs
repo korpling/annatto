@@ -57,7 +57,30 @@ pub struct GraphMLExporter {
     /// only accepts ZIP files.
     #[serde(default)]
     zip: bool,
+    /// This path is used to help the exporter to resolve the path to physical copies of the linked files.
+    /// As these are attempted to be resolved from the annatto runtime path, which can fail when the files
+    /// are stored in subdirectory of depth higher than one or in an ancestral path. This attribute is only
+    /// relevant, when the workflow contains a previous import step for linking files in the graph.
     ///
+    /// Example:
+    /// ```toml
+    /// ...
+    ///
+    /// [[import]]
+    /// format = "path"
+    /// path = "configuration/visualizations/"
+    ///
+    /// ...
+    ///
+    /// [[export]]
+    /// format = "graphml"
+    /// path = "export/to/this/directory"
+    ///
+    /// [export.config]
+    /// zip = true
+    /// zip_copy_from = "configuration/"
+    ///
+    /// ```
     #[serde(default)]
     zip_copy_from: Option<PathBuf>, // we use an option here as a default path with value "" is irritating (serialization)
 }
@@ -600,7 +623,11 @@ impl Exporter for GraphMLExporter {
             // unpacked, the paths are still valid regardless of whether they
             // existed in the first place on the target system.
             for file_path in self.get_linked_files(graph)? {
-                let original_path = self.zip_copy_from.clone().unwrap_or_default().join(file_path?);
+                let original_path = self
+                    .zip_copy_from
+                    .clone()
+                    .unwrap_or_default()
+                    .join(file_path?);
 
                 if original_path.is_relative() {
                     zip_file.start_file(original_path.to_string_lossy(), zip_options)?;
