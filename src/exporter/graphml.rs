@@ -57,6 +57,9 @@ pub struct GraphMLExporter {
     /// only accepts ZIP files.
     #[serde(default)]
     zip: bool,
+    ///
+    #[serde(default)]
+    zip_copy_from: Option<PathBuf>, // we use an option here as a default path with value "" is irritating (serialization)
 }
 
 const DEFAULT_VIS_STR: &str = "# configure visualizations here";
@@ -596,8 +599,8 @@ impl Exporter for GraphMLExporter {
             // used, we can store them in the ZIP file itself and the when
             // unpacked, the paths are still valid regardless of whether they
             // existed in the first place on the target system.
-            for file in self.get_linked_files(graph)? {
-                let original_path = file?;
+            for file_path in self.get_linked_files(graph)? {
+                let original_path = self.zip_copy_from.clone().unwrap_or_default().join(file_path?);
 
                 if original_path.is_relative() {
                     zip_file.start_file(original_path.to_string_lossy(), zip_options)?;
