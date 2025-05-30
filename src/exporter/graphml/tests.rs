@@ -169,4 +169,5 @@ fn zip_with_linked_files_custom() {
     assert!(a.is_ok());
     let archive = a.unwrap();
     assert_snapshot!(archive.file_names().sorted().join("\n"));
+    assert!(fs::remove_file(zip_path).is_ok());
 }
