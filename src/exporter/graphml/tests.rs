@@ -1,11 +1,17 @@
 use super::*;
-use std::path::Path;
+use std::{fs, path::Path};
 
 use graphannis::AnnotationGraph;
 use insta::assert_snapshot;
 use tempfile::TempDir;
+use zip::ZipArchive;
 
-use crate::importer::{exmaralda::ImportEXMARaLDA, Importer};
+use crate::{
+    core::update_graph_silent,
+    importer::{
+        exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes, xlsx::ImportSpreadsheet, Importer,
+    },
+};
 
 #[test]
 fn serialize() {
@@ -26,6 +32,7 @@ fn serialize_custom() {
         guess_vis: true,
         stable_order: true,
         zip: true,
+        zip_copy_from: Some("copy/path/".into()),
     };
     let serialization = toml::to_string(&module);
     assert!(
@@ -110,4 +117,57 @@ fn export_graphml_with_vis() {
     let result_file_path = output_path.path().join("exmaralda.graphml");
     let graphml = std::fs::read_to_string(result_file_path).unwrap();
     assert_snapshot!(graphml);
+}
+
+#[test]
+fn zip_with_linked_files_custom() {
+    let g = AnnotationGraph::with_default_graphstorages(false);
+    assert!(g.is_ok());
+    let mut graph = g.unwrap();
+    let u1 = ImportSpreadsheet::default().import_corpus(
+        Path::new("tests/data/export/graphml/linked-files/src/data"),
+        StepID {
+            module_name: "test_import".to_string(),
+            path: None,
+        },
+        None,
+    );
+    assert!(u1.is_ok());
+    let file_linker: Result<CreateFileNodes, _> = toml::from_str("corpus_name = \"data\"");
+    assert!(file_linker.is_ok());
+    let u2 = file_linker.unwrap().import_corpus(
+        Path::new("tests/data/export/graphml/linked-files/config_files/data"),
+        StepID {
+            module_name: "link_files".to_string(),
+            path: None,
+        },
+        None,
+    );
+    assert!(u2.is_ok(), "Error linking files: {:?}", u2.err());
+    assert!(update_graph_silent(&mut graph, &mut u1.unwrap()).is_ok());
+    assert!(update_graph_silent(&mut graph, &mut u2.unwrap()).is_ok());
+    let export = GraphMLExporter {
+        zip: true,
+        zip_copy_from: Some("tests/data/export/graphml/linked-files/config_files/".into()),
+        ..Default::default()
+    }
+    .export_corpus(
+        &graph,
+        Path::new("tests/data/export/graphml/linked-files/target/"),
+        StepID {
+            module_name: "test_export".to_string(),
+            path: None,
+        },
+        None,
+    );
+    assert!(export.is_ok(), "Error exporting: {:?}", export.err());
+    let zip_path = Path::new("tests/data/export/graphml/linked-files/target/data.zip");
+    assert!(zip_path.exists());
+    let zf = fs::File::open(zip_path);
+    assert!(zf.is_ok());
+    let a = ZipArchive::new(zf.unwrap());
+    assert!(a.is_ok());
+    let archive = a.unwrap();
+    assert_snapshot!(archive.file_names().sorted().join("\n"));
+    assert!(fs::remove_file(zip_path).is_ok());
 }

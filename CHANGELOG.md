@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- export `graphml` can be provided with a path correction for linked files (`zip_copy_from`), that is used when zipping, for cases when the path to the original linked files cannot be resolved from the runtime path
+
 ### Changed
 
 - environmental variable names are restricted to sequences of alphanumeric characters
