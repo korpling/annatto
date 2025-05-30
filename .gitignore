@@ -4,4 +4,3 @@
 *.log
 py/__pycache__
 lcov.info
-tests/data/export/graphml/linked-files/target/data.zip
