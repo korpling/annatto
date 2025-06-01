@@ -53,6 +53,7 @@ tempfile = "3"
 termimad = "0.30"
 text-splitter = "0.6.3"
 thiserror = "1.0"
+tokenizations = "0.4.2"
 toml = "0.8.0"
 tracing-subscriber = {version = "0.3", features = ["env-filter"]}
 umya-spreadsheet = "2.2.2"
