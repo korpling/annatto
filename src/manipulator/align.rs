@@ -90,7 +90,7 @@ impl Manipulator for AlignNodes {
         let data = self.identify(graph)?;
         let progress = ProgressReporter::new(tx, step_id, data.len() - 1)?;
         let aligner = match self.method {
-            AlignmentMethod::SES => SESAligner {
+            AlignmentMethod::Ses => SESAligner {
                 graph,
                 component: self.component.clone(),
                 progress,
@@ -119,7 +119,7 @@ struct NodeGroup {
 #[serde(rename_all = "lowercase")]
 enum AlignmentMethod {
     #[default]
-    SES,
+    Ses,
 }
 
 type ValueNodeMap = BTreeMap<String, Vec<(NodeID, String)>>;
