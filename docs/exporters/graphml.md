@@ -33,3 +33,30 @@ e.g. audio files) are included if they have been referenced by a
 storage size. It also improves the IMPORT in the ANNIS frontend, which
 only accepts ZIP files.
 
+###  zip_copy_from
+
+This path is used to help the exporter to resolve the path to physical copies of the linked files.
+As these are attempted to be resolved from the annatto runtime path, which can fail when the files
+are stored in subdirectory of depth higher than one or in an ancestral path. This attribute is only
+relevant, when the workflow contains a previous import step for linking files in the graph.
+
+Example:
+```toml
+...
+
+[[import]]
+format = "path"
+path = "configuration/visualizations/"
+
+...
+
+[[export]]
+format = "graphml"
+path = "export/to/this/directory"
+
+[export.config]
+zip = true
+zip_copy_from = "configuration/"
+
+```
+
