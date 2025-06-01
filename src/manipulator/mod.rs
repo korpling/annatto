@@ -1,4 +1,5 @@
 //! Graph operation modules change the imported corpus data.
+pub mod align;
 pub mod check;
 pub mod chunker;
 pub mod collapse;

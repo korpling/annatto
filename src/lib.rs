@@ -35,9 +35,10 @@ use importer::{
     Importer,
 };
 use manipulator::{
-    check::Check, chunker::Chunk, collapse::Collapse, enumerate::EnumerateMatches,
-    filter::FilterNodes, link::LinkNodes, map::MapAnnos, no_op::NoOp, re::Revise, sleep::Sleep,
-    split::SplitValues, time::Filltime, visualize::Visualize, Manipulator,
+    align::AlignNodes, check::Check, chunker::Chunk, collapse::Collapse,
+    enumerate::EnumerateMatches, filter::FilterNodes, link::LinkNodes, map::MapAnnos, no_op::NoOp,
+    re::Revise, sleep::Sleep, split::SplitValues, time::Filltime, visualize::Visualize,
+    Manipulator,
 };
 use serde::Serialize;
 use serde_derive::Deserialize;
@@ -330,6 +331,7 @@ impl ReadFromDiscriminants {
 #[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "action", rename_all = "lowercase", content = "config")]
 pub enum GraphOp {
+    Align(AlignNodes),  // no default
     Check(Check),       // no default, has a (required) path attribute
     Collapse(Collapse), // no default, there is no such thing as a default component
     Filter(FilterNodes),
@@ -368,6 +370,7 @@ impl GraphOp {
             GraphOp::Filter(m) => m,
             GraphOp::Time(m) => m,
             GraphOp::Sleep(m) => m,
+            GraphOp::Align(m) => m,
         }
     }
 }
@@ -388,6 +391,7 @@ impl GraphOpDiscriminants {
             GraphOpDiscriminants::Filter => FilterNodes::DOCS,
             GraphOpDiscriminants::Time => Filltime::DOCS,
             GraphOpDiscriminants::Sleep => Sleep::DOCS,
+            GraphOpDiscriminants::Align => AlignNodes::DOCS,
         }
     }
 
@@ -418,6 +422,9 @@ impl GraphOpDiscriminants {
             }
             GraphOpDiscriminants::Time => (Filltime::FIELD_NAMES_AS_SLICE, Filltime::FIELD_DOCS),
             GraphOpDiscriminants::Sleep => (Sleep::FIELD_NAMES_AS_SLICE, Sleep::FIELD_DOCS),
+            GraphOpDiscriminants::Align => {
+                (AlignNodes::FIELD_NAMES_AS_SLICE, AlignNodes::FIELD_DOCS)
+            }
         };
         for (idx, n) in field_names.iter().enumerate() {
             if idx < field_docs.len() {
