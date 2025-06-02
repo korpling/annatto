@@ -169,6 +169,13 @@ impl ImportWebAnnoTSV {
             node_name: token_name.to_string(),
             node_type: "node".to_string(),
         })?;
+        update.add_event(UpdateEvent::AddEdge {
+            source_node: token_name.to_string(),
+            target_node: doc_node_name.to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })?;
         token_columns
             .next()
             .ok_or(anyhow!("No character span for token {}", id))?;
