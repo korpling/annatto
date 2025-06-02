@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.33.1] - 2025-06-02
+
 ### Fixed
 
 - import `webanno`: create part of-edges for tokens
