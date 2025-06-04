@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- import `toolbox`: allow for coding of reduplication and read file completely
+
 ## [0.33.1] - 2025-06-02
 
 ### Fixed
