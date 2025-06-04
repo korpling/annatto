@@ -15,3 +15,10 @@
 \PoS  ADV      AUX      PRON  NOUN     VERB     .
 \syl  da -mit  las -sen sich  sa -chen tes -ten -
 \mrph damit    lass -en sich  sachen   test -en -
+
+\comment Hier noch eins mit Reduplikation
+
+\ref Testsatz 3
+\tx mana       Galwạ atties     .
+\std mano-maną galvą  atties     $
+\mrph -/a.sg.f.  a.sg.   3.ft.      $

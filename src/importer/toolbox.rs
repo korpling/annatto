@@ -197,6 +197,9 @@ impl ImportToolBox {
                 }
                 Rule::anno_field => {
                     layer_name.push_str(pair.as_str().trim());
+                    if &layer_name == "ref" {
+                        "".to_string();
+                    }
                 }
                 Rule::proc_field => return Ok((end_id, None)), // TODO make configurable, for now internal markers ("\_...") are not processed
                 _ => {}
@@ -265,7 +268,7 @@ impl ImportToolBox {
                                 timeline_id += 1;
                             }
                             _ => {
-                                // with_dashes OR default
+                                // with_dashes OR default OR redub
                                 let (node_index, target_index) = (
                                     (timeline_id, 0_u8, anno_name.to_string()),
                                     if use_tokens {
