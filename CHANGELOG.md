@@ -5,6 +5,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- import `toolbox` creates annis::tok and annis::layer annotations for coverage terminals
+- import `toolbox` creates PartOf edges for coverage terminals
+
 ## [0.33.2] - 2025-06-04
 
 ### Fixed
