@@ -363,6 +363,25 @@ impl ImportToolBox {
                                 node_name: target_name.to_string(),
                                 node_type: "node".to_string(),
                             })?;
+                            update.add_event(UpdateEvent::AddNodeLabel {
+                                node_name: target_name.to_string(),
+                                anno_ns: ANNIS_NS.to_string(),
+                                anno_name: "tok".to_string(),
+                                anno_value: " ".to_string(),
+                            })?;
+                            update.add_event(UpdateEvent::AddNodeLabel {
+                                node_name: target_name.to_string(),
+                                anno_ns: ANNIS_NS.to_string(),
+                                anno_name: "layer".to_string(),
+                                anno_value: "default_layer".to_string(),
+                            })?;
+                            update.add_event(UpdateEvent::AddEdge {
+                                source_node: target_name.to_string(),
+                                target_node: doc_node_name.to_string(),
+                                layer: ANNIS_NS.to_string(),
+                                component_type: AnnotationComponentType::PartOf.to_string(),
+                                component_name: "".to_string(),
+                            })?;
                             let mut v = BTreeSet::default();
                             v.insert((target, target_name.to_string()));
                             e.insert(v);
@@ -374,6 +393,25 @@ impl ImportToolBox {
                                 update.add_event(UpdateEvent::AddNode {
                                     node_name: target_name.to_string(),
                                     node_type: "node".to_string(),
+                                })?;
+                                update.add_event(UpdateEvent::AddNodeLabel {
+                                    node_name: target_name.to_string(),
+                                    anno_ns: ANNIS_NS.to_string(),
+                                    anno_name: "tok".to_string(),
+                                    anno_value: " ".to_string(),
+                                })?;
+                                update.add_event(UpdateEvent::AddNodeLabel {
+                                    node_name: target_name.to_string(),
+                                    anno_ns: ANNIS_NS.to_string(),
+                                    anno_name: "layer".to_string(),
+                                    anno_value: "default_layer".to_string(),
+                                })?;
+                                update.add_event(UpdateEvent::AddEdge {
+                                    source_node: target_name.to_string(),
+                                    target_node: doc_node_name.to_string(),
+                                    layer: ANNIS_NS.to_string(),
+                                    component_type: AnnotationComponentType::PartOf.to_string(),
+                                    component_name: "".to_string(),
                                 })?;
                                 v.insert(k);
                             }
