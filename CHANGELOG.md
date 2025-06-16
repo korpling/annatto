@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- allow to reuse existing node names in `collapse` rather than generating traceable names via attribute `keep_name`
+
 ## [0.33.3] - 2025-06-06
 
 ### Fixed
