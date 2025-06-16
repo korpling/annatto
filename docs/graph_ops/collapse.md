@@ -17,3 +17,7 @@ The component type within which to find the edges to collapse.
 
 If you know that any two edges in the defined component are always pairwise disjoint, set this attribute to true to save computation time.
 
+###  keep_name
+
+if true, the node name of the edge terminals defines the node name of nodes resulting from collapsed hyperedges
+
