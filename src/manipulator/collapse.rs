@@ -190,7 +190,7 @@ impl Collapse {
                         .get_node_annos()
                         .get_value_for_item(m, &NODE_NAME_KEY)?
                     {
-                        if self.keep_name && &node_name == &trace_name {
+                        if self.keep_name && node_name == trace_name {
                             continue;
                         }
                         update.add_event(UpdateEvent::DeleteNode {
@@ -342,7 +342,7 @@ impl Collapse {
         } else {
             return Err(anyhow!("Original node has no name. This is a severe error that originates somewhere in the graph model.").into());
         };
-        if to_node == &from_node_name {
+        if to_node == from_node_name {
             return Ok(());
         }
         update.add_event(UpdateEvent::DeleteNode {
