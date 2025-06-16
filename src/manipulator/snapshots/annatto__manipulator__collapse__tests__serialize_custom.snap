@@ -3,6 +3,7 @@ source: src/manipulator/collapse.rs
 expression: serialization.unwrap()
 ---
 disjoint = true
+keep_name = false
 
 [component]
 ctype = "Dominance"

@@ -42,6 +42,9 @@ pub struct Collapse {
     /// If you know that any two edges in the defined component are always pairwise disjoint, set this attribute to true to save computation time.
     #[serde(default)]
     disjoint: bool, // performance boost -> if you know all edges are already disjoint, an expensive step can be skipped
+    /// if true, the node name of the edge terminals defines the node name of nodes resulting from collapsed hyperedges
+    #[serde(default)]
+    keep_name: bool,
 }
 
 impl Manipulator for Collapse {
@@ -108,7 +111,7 @@ impl Collapse {
         let mut update = GraphUpdate::default();
         let component = &self.component;
         if let Some(component_storage) = graph.get_graphstorage(component) {
-            let hyperedges = self.collect_hyperedges(component_storage, step_id, tx.clone())?;
+            let hyperedges = self.collect_hyperedges(&component_storage, step_id, tx.clone())?;
             let mut hypernode_map = BTreeMap::new();
             let offset = graph
                 .get_node_annos()
@@ -156,7 +159,27 @@ impl Collapse {
                         (v.join("_"), vec![])
                     })
                     .unwrap_or_default();
-                let trace_name = format!("{HYPERNODE_NAME_STEM}{id}_{hypernode_name}");
+                let trace_name = if self.keep_name {
+                    // if keep name is true, the first terminal node is picked and its name is used
+                    if let Some(name_giving_node) = hyperedge.iter().find(|n| {
+                        !component_storage
+                            .has_outgoing_edges(**n)
+                            .unwrap_or_default()
+                    }) {
+                        graph
+                            .get_node_annos()
+                            .get_value_for_item(name_giving_node, &NODE_NAME_KEY)?
+                            .ok_or(anyhow!("Could not determine name for resulting node."))?
+                            .to_string()
+                    } else {
+                        return Err(anyhow!(
+                            "Could not determine node to provide name for collapsed hypernode"
+                        )
+                        .into());
+                    }
+                } else {
+                    format!("{HYPERNODE_NAME_STEM}{id}_{hypernode_name}")
+                };
                 update.add_event(UpdateEvent::AddNode {
                     node_name: trace_name.to_string(),
                     node_type: "node".to_string(),
@@ -167,6 +190,9 @@ impl Collapse {
                         .get_node_annos()
                         .get_value_for_item(m, &NODE_NAME_KEY)?
                     {
+                        if self.keep_name && &node_name == &trace_name {
+                            continue;
+                        }
                         update.add_event(UpdateEvent::DeleteNode {
                             node_name: node_name.to_string(),
                         })?;
@@ -207,7 +233,7 @@ impl Collapse {
 
     fn collect_hyperedges(
         &self,
-        component_storage: Arc<dyn GraphStorage>,
+        component_storage: &Arc<dyn GraphStorage>,
         step_id: &StepID,
         tx: Option<StatusSender>,
     ) -> Result<Vec<BTreeSet<u64>>, Box<dyn std::error::Error>> {
@@ -271,7 +297,7 @@ impl Collapse {
         update: &mut GraphUpdate,
         skip_edges: &mut BTreeSet<EdgeUId>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let random_node = if let Some(n) = hyperedge.iter().last() {
+        let random_node = if let Some(n) = hyperedge.iter().next_back() {
             n
         } else {
             return Err(Box::new(AnnattoError::Manipulator {
@@ -316,6 +342,9 @@ impl Collapse {
         } else {
             return Err(anyhow!("Original node has no name. This is a severe error that originates somewhere in the graph model.").into());
         };
+        if to_node == &from_node_name {
+            return Ok(());
+        }
         update.add_event(UpdateEvent::DeleteNode {
             node_name: from_node_name.to_string(),
         })?;
@@ -470,7 +499,9 @@ mod tests {
 
     use crate::{
         core::update_graph_silent,
+        exporter::graphml::GraphMLExporter,
         manipulator::{check::Check, Manipulator},
+        test_util::export_to_string,
         util::example_generator,
         StepID,
     };
@@ -486,6 +517,7 @@ mod tests {
                 "syntax".into(),
             ),
             disjoint: true,
+            keep_name: false,
         };
         let serialization = toml::to_string(&module);
         assert!(
@@ -511,6 +543,7 @@ mod tests {
                 "".into(),
             ),
             disjoint: false,
+            keep_name: false,
         };
         assert!(module
             .validate_graph(
@@ -545,29 +578,45 @@ mod tests {
 
     #[test]
     fn test_collapse_in_mem() {
-        let r = test(false, false);
+        let r = test(false, false, false);
         assert!(r.is_ok(), "Test in mem failed: {:?}", r.err());
     }
 
     #[test]
     fn test_collapse_on_disk() {
-        let r = test(true, false);
+        let r = test(true, false, false);
         assert!(r.is_ok(), "Test in mem failed: {:?}", r.err());
     }
 
     #[test]
     fn test_collapse_disjoint_in_mem() {
-        let r = test(false, true);
+        let r = test(false, true, false);
         assert!(r.is_ok(), "Test in mem failed: {:?}", r.err());
     }
 
     #[test]
     fn test_collapse_disjoint_on_disk() {
-        let r = test(true, true);
+        let r = test(true, true, false);
         assert!(r.is_ok(), "Test in mem failed: {:?}", r.err());
     }
 
-    fn test(on_disk: bool, disjoint: bool) -> Result<(), Box<dyn std::error::Error>> {
+    #[test]
+    fn test_collapse_disjoint_keep_name_in_mem() {
+        let r = test(false, true, true);
+        assert!(r.is_ok(), "Test in mem failed: {:?}", r.err());
+    }
+
+    #[test]
+    fn test_collapse_disjoint_keep_name_on_disk() {
+        let r = test(true, true, true);
+        assert!(r.is_ok(), "Test in mem failed: {:?}", r.err());
+    }
+
+    fn test(
+        on_disk: bool,
+        disjoint: bool,
+        keep_name: bool,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let g_ = input_graph(on_disk, disjoint);
         assert!(g_.is_ok());
         let mut g = g_.unwrap();
@@ -578,6 +627,7 @@ mod tests {
                 "align".into(),
             ),
             disjoint,
+            keep_name,
         };
         let step_id = StepID {
             module_name: "collapse".to_string(),
@@ -589,11 +639,29 @@ mod tests {
             collapse.manipulate_corpus(&mut g, Path::new("./"), step_id.clone(), Some(msg_sender));
         assert!(application.is_ok(), "not Ok: {:?}", application.err());
         assert!(msg_receiver.into_iter().count() > 0);
+        let export_gml: Result<GraphMLExporter, _> = toml::from_str("stable_order = true");
+        assert!(export_gml.is_ok());
+        let gml = export_to_string(&g, export_gml.unwrap());
+        assert!(gml.is_ok());
+        if keep_name {
+            assert_snapshot!(
+                format!(
+                    "collapse_{}{}",
+                    if on_disk { "on_disk" } else { "in_mem" },
+                    if disjoint { "_disjoint" } else { "" }
+                ),
+                gml.unwrap()
+            );
+        }
         let eg = target_graph(on_disk, disjoint);
         assert!(eg.is_ok());
         let mut expected_g = eg.unwrap();
         let toml_str_r = if disjoint {
-            fs::read_to_string("tests/data/graph_op/collapse/test_check_disjoint.toml")
+            if keep_name {
+                fs::read_to_string("tests/data/graph_op/collapse/test_check_disjoint_keep.toml")
+            } else {
+                fs::read_to_string("tests/data/graph_op/collapse/test_check_disjoint.toml")
+            }
         } else {
             fs::read_to_string("tests/data/graph_op/collapse/test_check.toml")
         };
