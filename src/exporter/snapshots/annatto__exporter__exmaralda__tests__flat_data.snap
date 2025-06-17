@@ -1,0 +1,100 @@
+---
+source: src/exporter/exmaralda.rs
+expression: actual.unwrap()
+---
+---- zossen.exb:
+<?xml version="1.0" encoding="UTF-8"?>
+<basic-transcription>
+  <head>
+    <meta-information>
+      <project-name/>
+      <transcription-name/>
+      <ud-meta-information/>
+      <comment/>
+      <transcription-convention/>
+    </meta-information>
+    <speakertable>
+      <speaker id="">
+        <abbreviation></abbreviation>
+        <sex value="u"/>
+        <languages-used/>
+        <l1/>
+        <l2/>
+        <ud-speaker-information>
+          <ud-information attribute-name="lang">deu</ud-information>
+        </ud-speaker-information>
+        <comment/>
+      </speaker>
+      <speaker id="default_ns">
+        <abbreviation>default_ns</abbreviation>
+        <sex value="u"/>
+        <languages-used/>
+        <l1/>
+        <l2/>
+        <ud-speaker-information/>
+        <comment/>
+      </speaker>
+    </speakertable>
+  </head>
+  <basic-body>
+    <common-timeline>
+      <tli id="T0" time="0"/>
+      <tli id="T1" time="1"/>
+      <tli id="T2" time="2"/>
+      <tli id="T3" time="3"/>
+      <tli id="T4" time="4"/>
+      <tli id="T5" time="5"/>
+      <tli id="T6" time="6"/>
+      <tli id="T7" time="7"/>
+    </common-timeline>
+    <tier speaker="" category="highlighted" type="a" id="TIER1" display-name="[highlighted]">
+      <event start="T2" end="T4">highlighted</event>
+    </tier>
+    <tier speaker="" category="lb" type="a" id="TIER5" display-name="[lb]">
+      <event start="T0" end="T3">lb</event>
+      <event start="T3" end="T8">lb</event>
+    </tier>
+    <tier speaker="" category="lb_comment" type="a" id="TIER6" display-name="[lb_comment]">
+      <event start="T0" end="T3">There are several &quot;unreadable&quot; characters in that line.</event>
+    </tier>
+    <tier speaker="default_ns" category="lemma" type="a" id="TIER7" display-name="default_ns[lemma]">
+      <event start="T0" end="T1">der</event>
+      <event start="T1" end="T2">Jugendliche</event>
+      <event start="T2" end="T3">in</event>
+      <event start="T3" end="T4">Zossen</event>
+      <event start="T4" end="T5">wollen</event>
+      <event start="T5" end="T6">ein</event>
+      <event start="T6" end="T7">Musikcafé</event>
+      <event start="T7" end="T8">.</event>
+    </tier>
+    <tier speaker="default_ns" category="pos" type="a" id="TIER10" display-name="default_ns[pos]">
+      <event start="T0" end="T1">ART</event>
+      <event start="T1" end="T2">NN</event>
+      <event start="T2" end="T3">APPR</event>
+      <event start="T3" end="T4">NE</event>
+      <event start="T4" end="T5">VMFIN</event>
+      <event start="T5" end="T6">ART</event>
+      <event start="T6" end="T7">NN</event>
+      <event start="T7" end="T8">$.</event>
+    </tier>
+    <tier speaker="" category="s" type="a" id="TIER11" display-name="[s]">
+      <event start="T0" end="T8">s</event>
+    </tier>
+    <tier speaker="" category="s_complexity" type="a" id="TIER12" display-name="[s_complexity]">
+      <event start="T0" end="T8">low</event>
+    </tier>
+    <tier speaker="" category="s_n" type="a" id="TIER13" display-name="[s_n]">
+      <event start="T0" end="T8">1</event>
+    </tier>
+    <tier speaker="" category="tok" type="t" id="TIER14" display-name="annis[tok]">
+      <event start="T0" end="T1">Die</event>
+      <event start="T1" end="T2">Jugendlichen</event>
+      <event start="T2" end="T3">in</event>
+      <event start="T3" end="T4">Zossen</event>
+      <event start="T4" end="T5">wollen</event>
+      <event start="T5" end="T6">ein</event>
+      <event start="T6" end="T7">Musikcafé</event>
+      <event start="T7" end="T8">.</event>
+    </tier>
+  </basic-body>
+</basic-transcription>
