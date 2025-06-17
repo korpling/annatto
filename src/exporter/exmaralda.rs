@@ -359,7 +359,7 @@ impl Exporter for ExportExmaralda {
                 })
                 .enumerate()
             {
-                if anno_key.ns == ANNIS_NS {
+                if anno_key.ns == ANNIS_NS && anno_key.name != "tok" {
                     continue;
                 }
                 let lookup = (
@@ -387,7 +387,12 @@ impl Exporter for ExportExmaralda {
                         }
                     });
                     let tier_type = if let Some((node_id, _)) = entries.last() {
-                        if ordering_data.contains(node_id) {
+                        if (&anno_key.ns == ANNIS_NS && &anno_key.name == "tok")
+                            || ordering_data
+                                .get(node_id)
+                                .and_then(|o_name| Some(o_name == &anno_key.name))
+                                .unwrap_or_default()
+                        {
                             "t"
                         } else {
                             "a"
@@ -399,7 +404,14 @@ impl Exporter for ExportExmaralda {
                         format!("{}[{}]", anno_key.ns.as_str(), anno_key.name.as_str());
                     let tier_id = format!("TIER{i}");
                     let tier_attributes = [
-                        ("speaker", anno_key.ns.as_str()),
+                        (
+                            "speaker",
+                            if anno_key.ns == ANNIS_NS {
+                                ""
+                            } else {
+                                anno_key.ns.as_str()
+                            },
+                        ),
                         ("category", anno_key.name.as_str()),
                         ("type", tier_type),
                         ("id", tier_id.as_str()),
@@ -440,7 +452,7 @@ type NodeData = (TimeData, TimeData, TimelineData, AnnoData);
 type TimeData = BTreeMap<(u64, u64), String>;
 type AnnoData = BTreeMap<(u64, (String, String)), Vec<(u64, String)>>;
 type TimelineData = BTreeMap<(u64, String), OrderedFloat<f32>>;
-type OrderingData = BTreeSet<u64>; // node ids in this set are member of an ordering (relevant to determine tier type)
+type OrderingData = BTreeMap<u64, String>; // node ids in this set are member of an ordering (relevant to determine tier type)
 type AudioData = BTreeMap<u64, Vec<PathBuf>>; // maps document nodes to linked files
 type EdgeData = (OrderingData, AudioData);
 
@@ -586,12 +598,16 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                                 .into_iter()
                                 .for_each(|a| {
                                     // collect annotations
-                                    let anno_k =
-                                        (doc_node, (a.key.ns.to_string(), a.key.name.to_string()));
-                                    if let Some(data) = anno_data.get_mut(&anno_k) {
-                                        data.push((*n, a.val.to_string()));
-                                    } else {
-                                        anno_data.insert(anno_k, vec![(*n, a.val.to_string())]);
+                                    if &a.key.ns != ANNIS_NS {
+                                        let anno_k = (
+                                            doc_node,
+                                            (a.key.ns.to_string(), a.key.name.to_string()),
+                                        );
+                                        if let Some(data) = anno_data.get_mut(&anno_k) {
+                                            data.push((*n, a.val.to_string()));
+                                        } else {
+                                            anno_data.insert(anno_k, vec![(*n, a.val.to_string())]);
+                                        }
                                     }
                                 });
                             // check for interval annotations
@@ -612,6 +628,28 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                                 }
                             }
                             processed_nodes.insert(*n);
+                        }
+                    }
+                    if let Some(tok_value) = graph.get_node_annos().get_value_for_item(
+                        &timeline_token,
+                        &AnnoKey {
+                            name: "tok".into(),
+                            ns: ANNIS_NS.into(),
+                        },
+                    )? {
+                        if !tok_value.trim().is_empty() {
+                            let k = (doc_node, (ANNIS_NS.to_string(), "tok".to_string()));
+                            let v = (timeline_token, tok_value.to_string());
+                            match anno_data.entry(k) {
+                                std::collections::btree_map::Entry::Vacant(vacant_entry) => {
+                                    vacant_entry.insert(vec![v]);
+                                }
+                                std::collections::btree_map::Entry::Occupied(
+                                    mut occupied_entry,
+                                ) => {
+                                    occupied_entry.get_mut().push(v);
+                                }
+                            };
                         }
                     }
                 }
@@ -652,7 +690,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                     continue;
                 }
                 if let Some(storage) = graph.get_graphstorage(&ordering) {
-                    storages.push(storage);
+                    storages.push((storage, ordering.name.to_string()));
                 }
             }
             // (this might be a rather expensive approach to) mark nodes as members of an ordering
@@ -669,9 +707,9 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                     false
                 }
             }) {
-                for storage in &storages {
+                for (storage, o_name) in &storages {
                     if storage.has_outgoing_edges(node_id)? || storage.has_ingoing_edges(node_id)? {
-                        ordering_data.insert(node_id);
+                        ordering_data.insert(node_id, o_name.to_string());
                         break;
                     }
                 }
@@ -725,9 +763,9 @@ mod tests {
 
     use crate::{
         exporter::exmaralda::ExportExmaralda,
-        importer::exmaralda::ImportEXMARaLDA,
+        importer::{exmaralda::ImportEXMARaLDA, treetagger::ImportTreeTagger, Importer},
         test_util::{export_to_string, export_to_string_in_directory},
-        ImporterStep, ReadFrom,
+        ImporterStep, ReadFrom, StepID,
     };
 
     #[test]
@@ -768,6 +806,32 @@ mod tests {
             serialization.err()
         );
         assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn flat_data() {
+        let m: Result<ImportTreeTagger, _> = toml::from_str("attribute_decoding = \"entities\"");
+        assert!(m.is_ok());
+        let import = m.unwrap();
+        let u = import.import_corpus(
+            Path::new("tests/data/import/treetagger/single_sentence/zossen.tt"),
+            StepID {
+                module_name: "test_import".into(),
+                path: None,
+            },
+            None,
+        );
+        assert!(u.is_ok());
+        let mut update = u.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update, |_| {}).is_ok());
+        let exporter: Result<ExportExmaralda, _> = toml::from_str("");
+        assert!(exporter.is_ok());
+        let actual = export_to_string(&graph, exporter.unwrap());
+        assert!(actual.is_ok());
+        assert_snapshot!(actual.unwrap());
     }
 
     #[test]
