@@ -97,7 +97,7 @@ impl Manipulator for Check {
                         sender.send(StatusMessage::Info(format!(
                             "{} check log to file {} ...",
                             if self.overwrite {
-                                "Writing "
+                                "Writing"
                             } else {
                                 "Appending"
                             },
@@ -894,7 +894,7 @@ mod tests {
             log_message.find("/").unwrap_or_default()..log_message.rfind("/").unwrap_or_default(),
             "<tmp-dir>",
         );
-        assert_snapshot!(log_message);
+        assert_snapshot!("log_message_append", log_message);
     }
 
     #[test]
@@ -954,7 +954,7 @@ mod tests {
             log_message.find("/").unwrap_or_default()..log_message.rfind("/").unwrap_or_default(),
             "<tmp-dir>",
         );
-        assert_snapshot!(log_message);
+        assert_snapshot!("log_message_overwrite", log_message);
     }
 
     #[test]

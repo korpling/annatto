@@ -1,0 +1,5 @@
+---
+source: src/manipulator/check.rs
+expression: log_message
+---
+Writing check log to file <tmp-dir>/annatto_test_report_out_overwrite.txt ...
