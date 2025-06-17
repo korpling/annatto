@@ -14,6 +14,7 @@ action = "check"
 
 [graph_op.config]
 policy = "fail"
+overwrite = false
 
 [[graph_op.config.tests]]
 query = "node ->dep node"
