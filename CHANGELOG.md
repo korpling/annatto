@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- export `exmaralda`: Tier type `t` is only given to annotation names matching the respective ordering name or to `annis::tok` annotations
+
 ## [0.34.0] - 2025-06-16
 
 ### Added
