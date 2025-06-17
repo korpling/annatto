@@ -116,6 +116,7 @@ action = "check"
 report = "list"
 policy = "fail"
 save = "check.log"
+overwrite = false
 
 [[graph_op.config.tests]]
 query = "prealign:id _ident_ ahd:AHD"

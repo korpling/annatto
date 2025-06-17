@@ -21,3 +21,8 @@ This policy if the process interrupts on a test failure (`fail`) or throws a war
 
 Provide a path to a file containing the test report. The verbosity is defined by the report attribute.
 
+###  overwrite
+
+If a path is provided to option `save`, the file is appended to by default. If you prefer to overwrite,
+set this attribute to `true`.
+
