@@ -387,10 +387,10 @@ impl Exporter for ExportExmaralda {
                         }
                     });
                     let tier_type = if let Some((node_id, _)) = entries.last() {
-                        if (&anno_key.ns == ANNIS_NS && &anno_key.name == "tok")
+                        if (anno_key.ns == ANNIS_NS && &anno_key.name == "tok")
                             || ordering_data
                                 .get(node_id)
-                                .and_then(|o_name| Some(o_name == &anno_key.name))
+                                .map(|o_name| o_name == &anno_key.name)
                                 .unwrap_or_default()
                         {
                             "t"
@@ -598,7 +598,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                                 .into_iter()
                                 .for_each(|a| {
                                     // collect annotations
-                                    if &a.key.ns != ANNIS_NS {
+                                    if a.key.ns != ANNIS_NS {
                                         let anno_k = (
                                             doc_node,
                                             (a.key.ns.to_string(), a.key.name.to_string()),
