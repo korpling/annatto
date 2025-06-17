@@ -477,7 +477,7 @@ impl Display for TestResult {
             TestResult::ProcessingError { error } => format!(
                 "{}invalid: {}{}",
                 ansi_term::Color::Purple.prefix(),
-                error.to_string(),
+                error,
                 ansi_term::Color::Purple.suffix()
             ),
         };
