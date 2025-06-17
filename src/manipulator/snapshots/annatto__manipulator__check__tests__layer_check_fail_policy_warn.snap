@@ -1,6 +1,6 @@
 ---
 source: src/manipulator/check.rs
-expression: run.err().unwrap()
+expression: run.err().unwrap().to_string()
 ---
 Checks failed:
 Check layer `cat` for invalid values.

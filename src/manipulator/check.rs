@@ -7,9 +7,8 @@ use std::{
     sync::mpsc,
 };
 
-use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
-use graphannis::{aql, AnnotationGraph};
+use graphannis::{aql, errors::GraphAnnisError, AnnotationGraph};
 use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE};
 use itertools::Itertools;
 use serde::Serialize;
@@ -39,6 +38,10 @@ pub struct Check {
     /// Provide a path to a file containing the test report. The verbosity is defined by the report attribute.
     #[serde(default)]
     save: Option<PathBuf>,
+    /// If a path is provided to option `save`, the file is appended to by default. If you prefer to overwrite,
+    /// set this attribute to `true`.
+    #[serde(default)]
+    overwrite: bool,
 }
 
 #[derive(Default, Deserialize, Serialize)]
@@ -82,19 +85,36 @@ impl Manipulator for Check {
                 } else {
                     workflow_directory.join(path)
                 };
+                let color_free = msg
+                    .replace(&ansi_term::Color::Red.prefix().to_string(), "")
+                    .replace(&ansi_term::Color::Red.suffix().to_string(), "")
+                    .replace(&ansi_term::Color::Green.prefix().to_string(), "")
+                    .replace(&ansi_term::Color::Green.suffix().to_string(), "")
+                    .replace(&ansi_term::Color::Purple.prefix().to_string(), "")
+                    .replace(&ansi_term::Color::Purple.suffix().to_string(), "");
                 if target_path.exists() {
                     if let Some(sender) = &tx {
                         sender.send(StatusMessage::Info(format!(
-                            "Appending check log to existing file {} ...",
+                            "{} check log to file {} ...",
+                            if self.overwrite {
+                                "Writing "
+                            } else {
+                                "Appending"
+                            },
                             target_path.to_string_lossy()
                         )))?;
                     }
-                    let mut f = fs::OpenOptions::new().append(true).open(target_path)?;
+                    let mut f = if self.overwrite {
+                        fs::remove_file(target_path.as_path())?;
+                        fs::File::create(target_path)?
+                    } else {
+                        fs::OpenOptions::new().append(true).open(target_path)?
+                    };
                     f.write_all("\n\n".as_bytes())?;
-                    f.write_all(msg.as_bytes())?;
+                    f.write_all(color_free.as_bytes())?;
                     f.flush()?;
                 } else {
-                    fs::write(target_path, msg)?;
+                    fs::write(target_path, color_free)?;
                 }
             }
         }
@@ -135,7 +155,7 @@ impl Check {
             ReportLevel::List => TestTableEntry {
                 description: description.to_string(),
                 result: result.to_string(),
-                details: "".to_string(),
+                appendix: None,
             },
             ReportLevel::Verbose => {
                 let verbose_desc = match result {
@@ -144,15 +164,20 @@ impl Check {
                     }
                     _ => description.to_string(),
                 };
-                let verbose_details = match result {
-                    TestResult::Passed => "".to_string(),
-                    TestResult::Failed { is: matches, .. } => matches.join("\n"),
-                    TestResult::ProcessingError { error } => error.to_string(),
+                let appendix = match result {
+                    TestResult::Passed => None,
+                    TestResult::Failed { is, .. } => {
+                        let mut v = Vec::with_capacity(is.len() + 1);
+                        v.push(format!("Matches for query of test `{}`:", description));
+                        v.extend(is.iter().map(|ms| ms.to_string()));
+                        Some(v.join("\n"))
+                    }
+                    TestResult::ProcessingError { error } => Some(error.to_string()),
                 };
                 TestTableEntry {
                     description: verbose_desc,
                     result: result.to_string(),
-                    details: verbose_details,
+                    appendix,
                 }
             }
         }
@@ -163,7 +188,23 @@ impl Check {
             .iter()
             .map(|r| Check::result_to_table_entry(&r.0, &r.1, level))
             .collect_vec();
-        Table::new(table_data).to_string()
+        let mut output = String::default();
+        let mut table_buffer = Vec::new();
+        for entry in table_data {
+            table_buffer.push(entry);
+            let appendix = &table_buffer[table_buffer.len() - 1].appendix;
+            if let Some(bottom_details) = appendix {
+                output.push_str(&Table::new(&table_buffer).to_string());
+                output.push('\n');
+                output.push_str(bottom_details);
+                output.push_str("\n\n");
+                table_buffer = Vec::default();
+            }
+        }
+        if !table_buffer.is_empty() {
+            output.push_str(&Table::new(&table_buffer).to_string());
+        }
+        output
     }
 
     fn print_report(
@@ -210,16 +251,14 @@ impl Check {
                     QueryResult::Numeric(n_exp) => (&n == n_exp, QueryResult::Numeric(*n_exp)),
                     QueryResult::Query(alt_query) => {
                         let alt_result = Check::run_query(g, &alt_query[..]);
-                        if let Ok(alt_matches) = alt_result {
-                            (
+                        match alt_result {
+                            Ok(alt_matches) => (
                                 alt_matches.len() == n,
                                 QueryResult::Numeric(alt_matches.len()),
-                            )
-                        } else {
-                            return TestResult::ProcessingError {
-                                error: anyhow!("Could not compute expected result from query")
-                                    .into(),
-                            };
+                            ),
+                            Err(err) => {
+                                return TestResult::ProcessingError { error: err };
+                            }
                         }
                     }
                     QueryResult::ClosedInterval(lower, upper) => (
@@ -244,14 +283,13 @@ impl Check {
                                 let eg = AnnotationGraph::with_default_graphstorages(false);
                                 match eg {
                                     Err(err) => {
-                                        return TestResult::ProcessingError {
-                                            error: Box::new(err),
-                                        };
+                                        return TestResult::ProcessingError { error: err.into() };
                                     }
                                     Ok(mut external_g) => {
-                                        if let Err(e) = external_g.open(&db_dir.join(corpus_name)) {
+                                        if let Err(err) = external_g.open(&db_dir.join(corpus_name))
+                                        {
                                             return TestResult::ProcessingError {
-                                                error: Box::new(e),
+                                                error: err.into(),
                                             };
                                         }
                                         e.insert(external_g)
@@ -260,19 +298,15 @@ impl Check {
                             }
                             Entry::Occupied(e) => e.into_mut(),
                         };
-                        if external_g.ensure_loaded_all().is_err() {
-                            return TestResult::ProcessingError {
-                                error: anyhow!("Could not load corpus entirely.").into(),
-                            };
+                        if let Err(err) = external_g.ensure_loaded_all() {
+                            return TestResult::ProcessingError { error: err.into() };
                         }
                         let e_n = Check::run_query(external_g, query);
-                        if let Ok(v) = e_n {
-                            (v.len() == n, QueryResult::Numeric(v.len()))
-                        } else {
-                            return TestResult::ProcessingError {
-                                error: anyhow!("Could not compute expected result from query on external corpus")
-                                    .into(),
-                            };
+                        match e_n {
+                            Ok(v) => (v.len() == n, QueryResult::Numeric(v.len())),
+                            Err(err) => {
+                                return TestResult::ProcessingError { error: err };
+                            }
                         }
                     }
                 };
@@ -290,10 +324,7 @@ impl Check {
         }
     }
 
-    fn run_query(
-        g: &AnnotationGraph,
-        query_s: &str,
-    ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    fn run_query(g: &AnnotationGraph, query_s: &str) -> Result<Vec<String>, GraphAnnisError> {
         let parsed_query = aql::parse(query_s, false)?;
         let it = aql::execute_query_on_graph(g, &parsed_query, true, None)?;
         let mut result = Vec::with_capacity(it.size_hint().0);
@@ -413,7 +444,7 @@ enum TestResult {
         is: Vec<String>,
     },
     ProcessingError {
-        error: Box<dyn std::error::Error>,
+        error: GraphAnnisError,
     },
 }
 
@@ -421,7 +452,7 @@ impl Display for TestResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
             TestResult::Passed => format!(
-                "{}+{}",
+                "{}passed{}",
                 ansi_term::Color::Green.prefix(),
                 ansi_term::Color::Green.suffix()
             ),
@@ -443,9 +474,10 @@ impl Display for TestResult {
                     ansi_term::Color::Red.suffix()
                 )
             }
-            TestResult::ProcessingError { .. } => format!(
-                "{}(bad){}",
+            TestResult::ProcessingError { error } => format!(
+                "{}invalid: {}{}",
                 ansi_term::Color::Purple.prefix(),
+                error.to_string(),
                 ansi_term::Color::Purple.suffix()
             ),
         };
@@ -457,7 +489,8 @@ impl Display for TestResult {
 struct TestTableEntry {
     description: String,
     result: String,
-    details: String,
+    #[tabled(skip)]
+    appendix: Option<String>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -527,6 +560,7 @@ mod tests {
             ],
             report: Some(ReportLevel::List),
             save: Some(PathBuf::from("this/is/a/non-existing/path.log")),
+            overwrite: false,
         };
         let serialization = toml::to_string(&module);
         assert!(
@@ -550,6 +584,7 @@ mod tests {
             report: None,
             policy: FailurePolicy::Warn,
             save: None,
+            overwrite: false,
         };
         assert!(check
             .validate_graph(
@@ -803,7 +838,7 @@ mod tests {
     }
 
     #[test]
-    fn test_write_report() {
+    fn test_append_report() {
         let g = input_graph(false, "corpus");
         assert!(g.is_ok());
         let mut graph = g.unwrap();
@@ -815,12 +850,13 @@ mod tests {
         let tmp = tempdir();
         assert!(tmp.is_ok());
         let tmp_dir = tmp.unwrap();
-        let report_path = tmp_dir.path().join("annatto_test_report_out.txt");
+        let report_path = tmp_dir.path().join("annatto_test_report_out_append.txt");
         let check = Check {
             policy: FailurePolicy::Fail,
             tests,
             report: Some(ReportLevel::List),
             save: Some(report_path.clone()),
+            overwrite: false,
         };
 
         let step_id = StepID {
@@ -839,11 +875,12 @@ mod tests {
             }],
             report: None,
             save: Some(report_path.clone()),
+            overwrite: false,
         };
         let (sender, receiver) = mpsc::channel();
-        assert!(another_check
-            .manipulate_corpus(&mut graph, tmp_dir.path(), step_id, Some(sender))
-            .is_ok());
+        let application =
+            another_check.manipulate_corpus(&mut graph, tmp_dir.path(), step_id, Some(sender));
+        assert!(application.is_ok(), "Error: {:?}", application.err());
         let log_contents = fs::read_to_string(report_path);
         assert_snapshot!(log_contents.unwrap());
         let mut log_message = receiver
@@ -858,6 +895,125 @@ mod tests {
             "<tmp-dir>",
         );
         assert_snapshot!(log_message);
+    }
+
+    #[test]
+    fn test_overwrite_report() {
+        let g = input_graph(false, "corpus");
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let tests = vec![Test::QueryTest {
+            query: "tok".to_string(),
+            expected: QueryResult::Numeric(4),
+            description: "Correct number of tokens".to_string(),
+        }];
+        let tmp = tempdir();
+        assert!(tmp.is_ok());
+        let tmp_dir = tmp.unwrap();
+        let report_path = tmp_dir.path().join("annatto_test_report_out_overwrite.txt");
+        let check = Check {
+            policy: FailurePolicy::Fail,
+            tests,
+            report: Some(ReportLevel::List),
+            save: Some(report_path.clone()),
+            overwrite: true,
+        };
+
+        let step_id = StepID {
+            module_name: "check".to_string(),
+            path: None,
+        };
+        let run = check.manipulate_corpus(&mut graph, tmp_dir.path(), step_id.clone(), None);
+        assert!(run.is_ok(), "Error writing report: {:?}", run.err());
+        assert!(report_path.exists());
+        let another_check = Check {
+            policy: FailurePolicy::Fail,
+            tests: vec![Test::QueryTest {
+                query: "tok".to_string(),
+                expected: QueryResult::Numeric(4),
+                description: "Correct number of tokens".to_string(),
+            }],
+            report: None,
+            save: Some(report_path.clone()),
+            overwrite: true,
+        };
+        let (sender, receiver) = mpsc::channel();
+        let application =
+            another_check.manipulate_corpus(&mut graph, tmp_dir.path(), step_id, Some(sender));
+        assert!(application.is_ok(), "Error: {:?}", application.err());
+        let log_contents = fs::read_to_string(report_path);
+        assert_snapshot!(log_contents.unwrap());
+        let mut log_message = receiver
+            .into_iter()
+            .map(|m| match m {
+                StatusMessage::Info(msg) => msg.to_string(),
+                _ => "".to_string(),
+            })
+            .join("\n");
+        log_message.replace_range(
+            log_message.find("/").unwrap_or_default()..log_message.rfind("/").unwrap_or_default(),
+            "<tmp-dir>",
+        );
+        assert_snapshot!(log_message);
+    }
+
+    #[test]
+    fn test_write_report_verbose() {
+        let g = input_graph(true, "corpus");
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let tests = vec![
+            Test::QueryTest {
+                query: "tok".to_string(),
+                expected: QueryResult::Numeric(4),
+                description: "Correct number of tokens is 4".to_string(),
+            },
+            Test::QueryTest {
+                query: "tok".to_string(),
+                expected: QueryResult::Numeric(2),
+                description: "Correct number of tokens is 2".to_string(),
+            },
+            Test::QueryTest {
+                query: "tok".to_string(),
+                expected: QueryResult::Numeric(3),
+                description: "Correct number of tokens is 3".to_string(),
+            },
+            Test::QueryTest {
+                query: "tok".to_string(),
+                expected: QueryResult::Numeric(1),
+                description: "Correct number of tokens is 1".to_string(),
+            },
+            Test::LayerTest {
+                layers: vec![(
+                    "pos".to_string(),
+                    vec!["DET".to_string(), "NOUN".to_string()],
+                )]
+                .into_iter()
+                .collect(),
+                edge: None,
+            },
+        ];
+        let tmp = tempdir();
+        assert!(tmp.is_ok());
+        let tmp_dir = tmp.unwrap();
+        let report_path = tmp_dir.path().join("annatto_test_report_out_verbose.txt");
+        let check = Check {
+            policy: FailurePolicy::Warn,
+            tests,
+            report: Some(ReportLevel::Verbose),
+            save: Some(report_path.clone()),
+            overwrite: false,
+        };
+
+        let step_id = StepID {
+            module_name: "check_verbose".to_string(),
+            path: None,
+        };
+        let run = check.manipulate_corpus(&mut graph, tmp_dir.path(), step_id.clone(), None);
+        assert!(run.is_ok(), "Error writing report: {:?}", run.err());
+        assert!(report_path.exists());
+        let log_contents = fs::read_to_string(report_path);
+        assert_snapshot!(log_contents.unwrap());
     }
 
     #[test]
@@ -895,6 +1051,7 @@ mod tests {
             ],
             report: None,
             save: None,
+            overwrite: false,
         };
         let result = check.run_tests(&mut graph);
         assert!(result.is_ok(), "{:?}", result.err());

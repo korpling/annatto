@@ -1,0 +1,53 @@
+---
+source: src/manipulator/check.rs
+expression: log_contents.unwrap()
+---
++-------------------------------+--------+
+| description                   | result |
++-------------------------------+--------+
+| Correct number of tokens is 4 | passed |
++-------------------------------+--------+
+| Correct number of tokens is 2 | 2 ≠ 4  |
+| tok                           |        |
++-------------------------------+--------+
+Matches for query of test `Correct number of tokens is 2`:
+corpus/doc#t1
+corpus/doc#t2
+corpus/doc#t3
+corpus/doc#t4
+
++-------------------------------+--------+
+| description                   | result |
++-------------------------------+--------+
+| Correct number of tokens is 3 | 3 ≠ 4  |
+| tok                           |        |
++-------------------------------+--------+
+Matches for query of test `Correct number of tokens is 3`:
+corpus/doc#t1
+corpus/doc#t2
+corpus/doc#t3
+corpus/doc#t4
+
++-------------------------------+--------+
+| description                   | result |
++-------------------------------+--------+
+| Correct number of tokens is 1 | 1 ≠ 4  |
+| tok                           |        |
++-------------------------------+--------+
+Matches for query of test `Correct number of tokens is 1`:
+corpus/doc#t1
+corpus/doc#t2
+corpus/doc#t3
+corpus/doc#t4
+
++---------------------------------------+--------+
+| description                           | result |
++---------------------------------------+--------+
+| Layer `pos` exists                    | passed |
++---------------------------------------+--------+
+| Check layer `pos` for invalid values. | 0 ≠ 2  |
+| pos!=/DET|NOUN/                       |        |
++---------------------------------------+--------+
+Matches for query of test `Check layer `pos` for invalid values.`:
+pos::corpus/doc#t1
+pos::corpus/doc#t2

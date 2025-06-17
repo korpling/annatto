@@ -1,0 +1,9 @@
+---
+source: src/manipulator/check.rs
+expression: log_contents.unwrap()
+---
++--------------------------+--------+
+| description              | result |
++--------------------------+--------+
+| Correct number of tokens | passed |
++--------------------------+--------+
