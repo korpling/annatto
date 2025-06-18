@@ -755,12 +755,12 @@ mod tests {
                     expected: QueryResult::ClosedLQueryInterval("doc".to_string(), 400),
                     description: "Plausible distribution of sentence annotations.".to_string(),
                 },
-                Test::QueryTest { 
+                Test::QueryTest {
                     query: "doc _ident_ author=/William Shakespeare/".to_string(), 
                     expected: QueryResult::ClosedRQueryInterval(1, "doc".to_string()), 
                     description: "At least one document in the corpus was written by Shakespeare, hopefully all of them!".to_string() 
                 },
-                Test::QueryTest { 
+                Test::QueryTest {
                     query: "lemma=/hello/".to_string(), 
                     expected: QueryResult::SemiOpenQueryInterval("doc".to_string(), f64::INFINITY), 
                     description: "There are at least as many hellos as there are documents.".to_string()
@@ -859,10 +859,11 @@ mod tests {
             fs::read_to_string("./tests/data/graph_op/check/serialized_check.toml")?;
         let mut check: Check = toml::from_str(serialized_data.as_str())?;
         let tmp_report_dir = tempdir()?;
-        let report_path = if on_disk { // only test on disk
-            Some(tmp_report_dir.as_ref().join("test_check_report.txt")) 
-        } else { 
-            None 
+        let report_path = if on_disk {
+            // only test on disk
+            Some(tmp_report_dir.as_ref().join("test_check_report.txt"))
+        } else {
+            None
         };
         check.save = report_path;
         let mut g = input_graph(on_disk, "corpus")?;
