@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `check`: test log file given in `save` can be overwritten (default is append) by setting `overwrite` to `true`
 - `check`: Tables in verbose mode now look prettier
 - `check`: Saved tables do not contain color codes
+- `check`: beyond purely numeric intervals, interval boundaries can now be specified by queries as well (entirely or partially)
+- `check`: richer documentation
 
 ## [0.34.0] - 2025-06-16
 

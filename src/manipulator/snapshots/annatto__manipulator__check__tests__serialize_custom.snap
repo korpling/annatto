@@ -13,6 +13,26 @@ expected = [1, inf]
 description = "I expect a lot of tokens"
 
 [[tests]]
+query = "pos"
+expected = ["norm", "tok"]
+description = "Plausible number of pos annotations."
+
+[[tests]]
+query = "sentence"
+expected = ["doc", 400]
+description = "Plausible distribution of sentence annotations."
+
+[[tests]]
+query = "doc _ident_ author=/William Shakespeare/"
+expected = [1, "doc"]
+description = "At least one document in the corpus was written by Shakespeare, hopefully all of them!"
+
+[[tests]]
+query = "lemma=/hello/"
+expected = ["doc", inf]
+description = "There are at least as many hellos as there are documents."
+
+[[tests]]
 
 [tests.layers]
 Reflexive = ["yes", "no"]

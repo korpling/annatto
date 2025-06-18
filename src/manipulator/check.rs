@@ -7,9 +7,13 @@ use std::{
     sync::mpsc,
 };
 
+use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
 use graphannis::{aql, errors::GraphAnnisError, AnnotationGraph};
-use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE};
+use graphannis_core::{
+    errors::GraphAnnisCoreError,
+    graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE},
+};
 use itertools::Itertools;
 use serde::Serialize;
 use serde_derive::Deserialize;
@@ -23,7 +27,120 @@ use crate::{
 };
 
 /// Runs AQL queries on the corpus and checks for constraints on the result.
-/// Can fail the workflow when one of the checks fail
+/// Can fail the workflow when one of the checks fail.
+///
+/// There are several ways to configure tests. The default test type is defined
+/// by a query, that is run on the current corpus graph, an expected result, and
+/// a description to ensure meaningful output. E. g.:
+///
+/// ```toml
+/// [[graph_op.config.tests]]
+/// query = "lemma=/stone/ _=_ pos=/VERB/"
+/// expected = 0
+/// description = "No stone is labeled as a verb."
+/// ```
+///
+/// The expected value can be given in one of the following ways:
+///
+/// + exact numeric value (s. example above)
+/// + closed numeric interval
+///
+/// ```toml
+/// [[graph_op.config.tests]]
+/// query = "lemma=/stone/"
+/// expected = [0, 20]
+/// description = "The lemma stone occurs at most and 20 times in the corpus"
+/// ```
+///
+/// + numeric interval with an open right boundary:
+///
+/// ```toml
+/// [[graph_op.config.tests]]
+/// query = "lemma=/stone/"
+/// expected = [1, inf]
+/// description = "The lemma stone occurs at least once."
+/// ```
+///
+/// + a query that should have the same amount of results:
+///
+/// ```toml
+/// [[graph_op.config.tests]]
+/// query = "lemma=/stone/"
+/// expected = "pos=/NOUN/"
+/// description = "There are as many lemmas `stone` as there are nouns."
+/// ```
+///
+/// + an interval defined by numbers and/or queries:
+///
+/// ```toml
+/// [[graph_op.config.tests]]
+/// query = "lemma=/stone/"
+/// expected = [1, "pos=/NOUN/"]
+/// description = "There is at least one mention of a stone, but not more than there are nouns."
+/// ```
+///
+/// ```toml
+/// [[graph_op.config.tests]]
+/// query = "lemma=/stone/"
+/// expected = ["sentence", inf]
+/// description = "There are at least as many lemmas `stone` as there are sentences."
+/// ```
+///
+/// ```toml
+/// [[graph_op.config.tests]]
+/// query = "lemma=/stone/"
+/// expected = ["sentence", "tok"]
+/// description = "There are at least as many lemmas `stone` as there are sentences, at most as there are tokens."
+/// ```
+///
+/// + or a query on a corpus loaded from an external GraphANNIS data base:
+///
+/// ```toml
+/// [[graph_op.config.tests]]
+/// query = "lemma=/stone/"
+/// expected = ["~/.annis/v4", "SameCorpus_vOlderVersion", "lemma=/stone/"]
+/// description = "The frequency of lemma `stone` is stable between the current graph and the previous version."
+/// ```
+///
+/// There is also a second test type, that can be used to check closed class annotation layers' annotation values:
+///
+/// ```toml
+/// [graph_op.config.tests.layers]
+/// number = ["sg", "pl"]
+/// person = ["1", "2", "3"]
+/// voice = ["active", "passive"]
+/// ```
+///
+/// For each defined layer two tests are derived, an existence test of the annotation
+/// layer and a test, that no other value has been used. So the entry for `number`
+/// above is equivalent to the following tests, that are derived internally:
+///
+/// ```toml
+/// [[graph_op.config.tests]]
+/// query = "number"
+/// expected = [1, inf]
+/// description = "Layer `number` exists."
+///
+/// [[graph_op.config.tests]]
+/// query = "number!=/sg|pl/"
+/// expected = 0
+/// description = "Check layer `number` for invalid values."
+/// ```
+///
+/// A layer test can also be applied to edge annotations. Assume there are
+/// pointing relations in the tested corpus for annotating reference and
+/// an edge annotation `ref_type` can take values "a" and "k". The edge
+/// name is `ref`. If in GraphANNIS you want to query such relations, one
+/// would use a query such as `node ->ref[ref_type="k"] node`. For testing
+/// `ref_type` with a layer test, you would use a configuration like this:
+///
+/// ```toml
+/// [[graph_op.config.tests]]
+/// edge = "->ref"
+/// [graph.config.tests.layers]
+/// ref_type = ["a", "k"]
+/// ```
+///
 #[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Check {
@@ -169,7 +286,7 @@ impl Check {
                     TestResult::Failed { is, .. } => {
                         let mut v = Vec::with_capacity(is.len() + 1);
                         v.push(format!("Matches for query of test `{}`:", description));
-                        v.extend(is.iter().map(|ms| ms.to_string()));
+                        v.extend(is.iter().map(|ms| ms.to_string()).sorted_unstable());
                         Some(v.join("\n"))
                     }
                     TestResult::ProcessingError { error } => Some(error.to_string()),
@@ -309,6 +426,67 @@ impl Check {
                             }
                         }
                     }
+                    QueryResult::ClosedLQueryInterval(query, upper) => {
+                        let lower = Check::run_query(g, query);
+                        match lower {
+                            Ok(v) => (
+                                v.len().le(&n) && upper.ge(&n),
+                                QueryResult::ClosedInterval(v.len(), *upper),
+                            ),
+                            Err(error) => return TestResult::ProcessingError { error },
+                        }
+                    }
+                    QueryResult::ClosedRQueryInterval(lower, query) => {
+                        let upper = Check::run_query(g, query);
+                        match upper {
+                            Ok(v) => (
+                                lower.le(&n) && v.len().ge(&n),
+                                QueryResult::ClosedInterval(*lower, v.len()),
+                            ),
+                            Err(error) => return TestResult::ProcessingError { error },
+                        }
+                    }
+                    QueryResult::ClosedQueryInterval(query_l, query_r) => {
+                        let lower = Check::run_query(g, query_l);
+                        let upper = Check::run_query(g, query_r);
+                        if let (Ok(l), Ok(u)) = (&lower, &upper) {
+                            (
+                                l.len().le(&n) && u.len().ge(&n),
+                                QueryResult::ClosedInterval(l.len(), u.len()),
+                            )
+                        } else if let Err(error) = lower {
+                            return TestResult::ProcessingError { error };
+                        } else {
+                            return TestResult::ProcessingError {
+                                error: upper.err().unwrap_or(
+                                    GraphAnnisCoreError::Other(
+                                        anyhow!(
+                                            "Something went wrong determining the upper bound."
+                                        )
+                                        .into(),
+                                    )
+                                    .into(),
+                                ),
+                            };
+                        }
+                    }
+                    QueryResult::SemiOpenQueryInterval(query, upper) => {
+                        let lower = Check::run_query(g, query);
+                        match lower {
+                            Ok(v) => {
+                                let l = v.len();
+                                (
+                                    l.le(&n) && (!upper.is_normal() || upper.ge(&(n as f64))),
+                                    if upper.is_normal() {
+                                        QueryResult::ClosedInterval(l, *upper as usize)
+                                    } else {
+                                        QueryResult::SemiOpenInterval(l, *upper)
+                                    },
+                                )
+                            }
+                            Err(error) => return TestResult::ProcessingError { error },
+                        }
+                    }
                 };
                 if passes {
                     TestResult::Passed
@@ -384,6 +562,18 @@ impl From<&Test> for Vec<AQLTest> {
                     QueryResult::SemiOpenInterval(a, b) => QueryResult::SemiOpenInterval(*a, *b),
                     QueryResult::CorpusQuery(db, c, q) => {
                         QueryResult::CorpusQuery(db.to_path_buf(), c.to_string(), q.to_string())
+                    }
+                    QueryResult::ClosedLQueryInterval(q, n) => {
+                        QueryResult::ClosedLQueryInterval(q.to_string(), *n)
+                    }
+                    QueryResult::ClosedRQueryInterval(n, q) => {
+                        QueryResult::ClosedRQueryInterval(*n, q.to_string())
+                    }
+                    QueryResult::ClosedQueryInterval(ql, qr) => {
+                        QueryResult::ClosedQueryInterval(ql.to_string(), qr.to_string())
+                    }
+                    QueryResult::SemiOpenQueryInterval(q, b) => {
+                        QueryResult::SemiOpenQueryInterval(q.to_string(), *b)
                     }
                 },
                 description: description.to_string(),
@@ -499,17 +689,23 @@ enum QueryResult {
     Numeric(usize),
     Query(String),
     ClosedInterval(usize, usize),
+    ClosedLQueryInterval(String, usize),
+    ClosedRQueryInterval(usize, String),
+    ClosedQueryInterval(String, String),
     SemiOpenInterval(usize, f64),
+    SemiOpenQueryInterval(String, f64),
     CorpusQuery(PathBuf, String, String), // db_dir, corpus name, query
 }
 
 #[cfg(test)]
 mod tests {
+    use core::f64;
     use std::{
         collections::BTreeMap,
         fs,
         path::{Path, PathBuf},
         sync::mpsc,
+        usize,
     };
 
     use graphannis::{
@@ -545,6 +741,29 @@ mod tests {
                     query: "tok @* doc=/largest-doc/".to_string(),
                     expected: QueryResult::SemiOpenInterval(1, f64::INFINITY),
                     description: "I expect a lot of tokens".to_string(),
+                },
+                Test::QueryTest {
+                    query: "pos".to_string(),
+                    expected: QueryResult::ClosedQueryInterval(
+                        "norm".to_string(),
+                        "tok".to_string(),
+                    ),
+                    description: "Plausible number of pos annotations.".to_string(),
+                },
+                Test::QueryTest {
+                    query: "sentence".to_string(),
+                    expected: QueryResult::ClosedLQueryInterval("doc".to_string(), 400),
+                    description: "Plausible distribution of sentence annotations.".to_string(),
+                },
+                Test::QueryTest {
+                    query: "doc _ident_ author=/William Shakespeare/".to_string(), 
+                    expected: QueryResult::ClosedRQueryInterval(1, "doc".to_string()), 
+                    description: "At least one document in the corpus was written by Shakespeare, hopefully all of them!".to_string() 
+                },
+                Test::QueryTest {
+                    query: "lemma=/hello/".to_string(), 
+                    expected: QueryResult::SemiOpenQueryInterval("doc".to_string(), f64::INFINITY), 
+                    description: "There are at least as many hellos as there are documents.".to_string()
                 },
                 Test::LayerTest {
                     layers: vec![(
@@ -607,7 +826,7 @@ mod tests {
 
     #[test]
     fn test_check_in_mem() {
-        let r = test(true);
+        let r = test(false);
         assert!(r.is_ok(), "Error when testing in memory: {:?}", r.err());
     }
 
@@ -638,7 +857,15 @@ mod tests {
     fn test(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
         let serialized_data =
             fs::read_to_string("./tests/data/graph_op/check/serialized_check.toml")?;
-        let check: Check = toml::from_str(serialized_data.as_str())?;
+        let mut check: Check = toml::from_str(serialized_data.as_str())?;
+        let tmp_report_dir = tempdir()?;
+        let report_path = if on_disk {
+            // only test on disk
+            Some(tmp_report_dir.as_ref().join("test_check_report.txt"))
+        } else {
+            None
+        };
+        check.save = report_path;
         let mut g = input_graph(on_disk, "corpus")?;
 
         let step_id = StepID {
@@ -651,6 +878,10 @@ mod tests {
         assert!(check.report.is_some()); // if deserialization worked properly, `check` should be set to report
         assert!(matches!(check.report.as_ref().unwrap(), &ReportLevel::List));
         assert!(receiver.iter().count() > 0); // there should be a status report
+        if let Some(path) = &check.save {
+            let written_report = fs::read_to_string(path)?;
+            assert_snapshot!(written_report);
+        }
         Ok(())
     }
 
