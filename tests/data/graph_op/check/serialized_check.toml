@@ -1,5 +1,3 @@
-# please note: This is NOT a workflow fragment, this is a serialization of `check`.
-# In an annatto workflow the structure will vary due to flattenings and re-arrangments of data.
 report = "list"
 
 [[tests]]
@@ -31,3 +29,23 @@ description = "There is between one and one sentence (closed interval type, boun
 query = "tok"
 expected = ["tests/data/graph_op/check/external_db", "corpus", "tok"]
 description = "Test with external corpus graph"
+
+[[tests]]
+query = "tok"
+expected = ["sentence", inf]
+description = "There are least as many tokens as there are sentences"
+
+[[tests]]
+query = "tok"
+expected = ["sentence", "annis:node_type=/node/"]
+description = "There are least as many tokens as there are sentences and at most as there are nodes of type `node`"
+
+[[tests]]
+query = "tok"
+expected = [1, "annis:node_type=/node/"]
+description = "There is least one token and at most as many as there are nodes of type `node`"
+
+[[tests]]
+query = "tok"
+expected = ["sentence", 777]
+description = "The number of tokens is at least the number of sentences and at most 777."
