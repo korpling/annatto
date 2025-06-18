@@ -286,7 +286,7 @@ impl Check {
                     TestResult::Failed { is, .. } => {
                         let mut v = Vec::with_capacity(is.len() + 1);
                         v.push(format!("Matches for query of test `{}`:", description));
-                        v.extend(is.iter().map(|ms| ms.to_string()));
+                        v.extend(is.iter().map(|ms| ms.to_string()).sorted_unstable());
                         Some(v.join("\n"))
                     }
                     TestResult::ProcessingError { error } => Some(error.to_string()),
