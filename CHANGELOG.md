@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- remove internal dependency on open ssl, as git remote features are not required and complicate build
+
 ## [0.35.0] - 2025-06-20
 
 ### Added
