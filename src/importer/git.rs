@@ -49,13 +49,7 @@ impl Importer for ImportGitMetadata {
         if !critical_status.is_empty() {
             let paths = critical_status
                 .iter()
-                .filter_map(|e| {
-                    if let Some(p) = e.path() {
-                        Some(format!("{}\t{:?}", p, e.status()))
-                    } else {
-                        None
-                    }
-                })
+                .filter_map(|e| e.path().map(|p| format!("{}\t{:?}", p, e.status())))
                 .join("\n");
 
             return Err(anyhow!(
