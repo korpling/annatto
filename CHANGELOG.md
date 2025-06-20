@@ -9,10 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - export `exmaralda`: Tier type `t` is only given to annotation names matching the respective ordering name or to `annis::tok` annotations
 - `check`: test log file given in `save` can be overwritten (default is append) by setting `overwrite` to `true`
-- `check`: Tables in verbose mode now look prettier
-- `check`: Saved tables do not contain color codes
 - `check`: beyond purely numeric intervals, interval boundaries can now be specified by queries as well (entirely or partially)
 - `check`: richer documentation
+- add `git` import to incorporate git metadata
+
+### Changed
+
+- `check`: Tables in verbose mode now look prettier
+- `check`: Saved tables do not contain color codes
 
 ## [0.34.0] - 2025-06-16
 
