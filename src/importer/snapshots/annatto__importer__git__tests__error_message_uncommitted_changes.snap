@@ -1,0 +1,6 @@
+---
+source: src/importer/git.rs
+expression: u.err().unwrap().to_string()
+---
+The repository sub directory has uncommitted changes and/or untracked files:
+data/doc.csv	Status(WT_NEW)

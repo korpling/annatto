@@ -47,6 +47,8 @@ use strum::{AsRefStr, EnumDiscriminants, EnumIter};
 use tabled::Tabled;
 use workflow::StatusSender;
 
+use crate::importer::git::ImportGitMetadata;
+
 #[derive(Tabled)]
 pub struct ModuleConfiguration {
     pub name: String,
@@ -167,6 +169,7 @@ impl WriteAsDiscriminants {
 pub enum ReadFrom {
     CoNLLU(#[serde(default)] ImportCoNLLU),
     EXMARaLDA(#[serde(default)] ImportEXMARaLDA),
+    Git(ImportGitMetadata),
     GraphML(#[serde(default)] GraphMLImporter),
     Meta(#[serde(default)] AnnotateCorpus),
     None(#[serde(default)] CreateEmptyCorpus),
@@ -213,6 +216,7 @@ impl ReadFrom {
             ReadFrom::Xlsx(m) => m,
             ReadFrom::Xml(m) => m,
             ReadFrom::Webanno(m) => m,
+            ReadFrom::Git(m) => m,
         }
     }
 }
@@ -238,6 +242,7 @@ impl ReadFromDiscriminants {
             ReadFromDiscriminants::Xlsx => ImportSpreadsheet::DOCS,
             ReadFromDiscriminants::Xml => ImportXML::DOCS,
             ReadFromDiscriminants::Webanno => ImportWebAnnoTSV::DOCS,
+            ReadFromDiscriminants::Git => ImportGitMetadata::DOCS,
         }
     }
 
@@ -307,6 +312,10 @@ impl ReadFromDiscriminants {
             ReadFromDiscriminants::Webanno => (
                 ImportWebAnnoTSV::FIELD_NAMES_AS_SLICE,
                 ImportWebAnnoTSV::FIELD_DOCS,
+            ),
+            ReadFromDiscriminants::Git => (
+                ImportGitMetadata::FIELD_NAMES_AS_SLICE,
+                ImportGitMetadata::FIELD_DOCS,
             ),
         };
         for (idx, n) in field_names.iter().enumerate() {
