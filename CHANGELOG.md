@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.35.2] - 2025-06-23
+
 ### Fixed
 
 - import `webanno` properly handles empty column entries and subsequent filled columns

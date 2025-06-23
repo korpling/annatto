@@ -65,7 +65,7 @@ To show information about modules for the given format or graph operation use
 annatto info <name>
 ```
 
-The documentation for the modules are also included [here](https://github.com/korpling/annatto/blob/v0.35.1/docs/README.md).
+The documentation for the modules are also included [here](https://github.com/korpling/annatto/blob/v0.35.2/docs/README.md).
 
 ## Creating a workflow file
 
