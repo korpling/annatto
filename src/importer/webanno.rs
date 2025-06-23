@@ -237,6 +237,10 @@ impl ImportWebAnnoTSV {
                         .into_inner()
                         .next()
                         .ok_or(anyhow!("Could not read column vector values"))?;
+                    // advance to the end of the column group
+                    (*index..*size - 1).for_each(|_| {
+                        token_columns.next();
+                    });
                     if !matches!(feature_vec.as_rule(), Rule::anno_value) {
                         continue;
                     }
@@ -257,10 +261,6 @@ impl ImportWebAnnoTSV {
                             })?;
                         }
                     }
-                    // advance to the end of the column group
-                    (*index..*size - 1).for_each(|_| {
-                        token_columns.next();
-                    });
                 }
                 AnnotationGroup::Edge {
                     layer: edge_name,
@@ -428,6 +428,30 @@ mod tests {
     #[test]
     fn default() {
         let import_path = Path::new("tests/data/import/webanno/tsv/");
+        let importer: ImportWebAnnoTSV = toml::from_str("").unwrap();
+        let u = importer.import_corpus(
+            import_path,
+            crate::StepID {
+                module_name: "test_webanno".to_string(),
+                path: Some(import_path.to_path_buf()),
+            },
+            None,
+        );
+        assert!(u.is_ok(), "Err: {:?}", u.err());
+        let mut update = u.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(update_graph_silent(&mut graph, &mut update).is_ok());
+        let exporter: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        let actual = export_to_string(&graph, exporter);
+        assert!(actual.is_ok());
+        assert_snapshot!(actual.unwrap());
+    }
+
+    #[test]
+    fn empty_columns() {
+        let import_path = Path::new("tests/data/import/webanno/tsv_empty_cols/");
         let importer: ImportWebAnnoTSV = toml::from_str("").unwrap();
         let u = importer.import_corpus(
             import_path,
