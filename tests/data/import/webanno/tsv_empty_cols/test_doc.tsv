@@ -1,0 +1,13 @@
+#FORMAT=WebAnno TSV 3.3
+#T_SP=de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.morph.MorphologicalFeatures|animacy|aspect|case|definiteness|degree|gender|mood|negative|numType|number|person|possessive|pronType|reflex|tense|transitivity|value|verbForm|voice
+#T_SP=de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.POS|PosValue|coarseValue
+#T_SP=de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Lemma|value
+#T_SP=webanno.custom.ObjectFeatures|Animacy|Antecedent|Ellipsis|Number|OBJForm|Person|RefDistance|Reference
+#T_SP=webanno.custom.Transitivity|Complex|Transitivity
+#T_RL=de.tudarmstadt.ukp.dkpro.core.api.syntax.type.dependency.Dependency|DependencyType|flavor|BT_de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.POS
+
+#Text=aber ich habe auch
+3-1	81-85	aber	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	KON	CCONJ	aber	_	_	_	_	_	_	_	_	_	_	cc	basic	3-3	
+3-2	86-89	ich	*	*	Nom	*	*	*	*	*	*	Sing	1	*	Prs	*	*	*	Case=Nom\|Number=Sing\|Person=1\|PronType=Prs	*	*	PPER	PRON	ich	_	_	_	_	_	_	_	_	_	_	nsubj	basic	3-3	
+3-3	90-94	habe	*	*	*	*	*	*	Ind	*	*	Sing	1	*	*	*	Pres	*	Mood=Ind\|Number=Sing\|Person=1\|Tense=Pres\|VerbForm=Fin\|HeadType=Frag	Fin	*	VAFIN	AUX	haben	_	_	_	_	_	_	_	_	_	_	root:frag	basic	3-3	
+3-4	95-99	auch	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	_	ADV	ADV	auch	_	_	_	_	_	_	_	_	_	_	advmod	basic	3-3	
