@@ -1,0 +1,15 @@
+report = "list"
+policy = "fail"
+
+[[tests]]
+query = "tok"
+expected =  0
+description = "I demand 0 tokens!"
+policy = "warn"
+
+[[tests]]
+optional = false
+[tests.layers]
+pos_wrong_name = [ "PRON", "VERB", "DET", "NOUN" ]
+cat_wrong_name = [ "DP", "IP", "CP" ]
+sentence_wrong_name = [ "1" ]

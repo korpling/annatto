@@ -29,6 +29,36 @@ use crate::{
 /// Runs AQL queries on the corpus and checks for constraints on the result.
 /// Can fail the workflow when one of the checks fail.
 ///
+/// There are four general attributes to control this modules behaviour:
+///
+/// `policy`: Values are either `warn` or `fail`. The former will only output
+/// a warning, while the latter will stop the conversion process after the
+/// check module has completed all tests. The default policy is `fail`.
+///
+/// `report`: If set to `list`, the results will be printed to as a table, if
+/// set to `verbose`, each failed test will be followed by a short appendix
+/// listing all matches to help you debug your data. If nothing is set, no report
+/// will be shown.
+///
+/// `save`: If you provide a file path (the file can exist already), the report
+/// is additionally saved to disk.
+///
+/// `overwrite`: If set to `true`, an existing log file will be overwritten. If set
+/// to `false`, an existing log file will be appended to. Default is `false`.
+///
+/// Example:
+///
+/// ```toml
+/// [[graph_op]]
+/// action = "check"
+///
+/// [graph_op.config]
+/// report = "list"
+/// save = "report.log"
+/// overwrite = false
+/// policy = "warn"
+/// ```
+///
 /// There are several ways to configure tests. The default test type is defined
 /// by a query, that is run on the current corpus graph, an expected result, and
 /// a description to ensure meaningful output. E. g.:
@@ -38,6 +68,20 @@ use crate::{
 /// query = "lemma=/stone/ _=_ pos=/VERB/"
 /// expected = 0
 /// description = "No stone is labeled as a verb."
+/// ```
+/// A test can be given its own failure policy. This only makes sense if your global
+/// failure policy is `fail` and you do not want a specific test to cause a failure.
+/// A `warn` will always outrank a fail, i. e. whenever the global policy is `warn`,
+/// an individual test's policy `fail` will have no effect.
+///
+/// Example:
+///
+/// ```toml
+/// [[graph_op.config.tests]]
+/// query = "lemma=/stone/ _=_ pos=/VERB/"
+/// expected = 0
+/// description = "No stone is labeled as a verb."
+/// policy = "warn"
 /// ```
 ///
 /// The expected value can be given in one of the following ways:
@@ -105,6 +149,7 @@ use crate::{
 /// There is also a second test type, that can be used to check closed class annotation layers' annotation values:
 ///
 /// ```toml
+/// [[graph_op.config.tests]]
 /// [graph_op.config.tests.layers]
 /// number = ["sg", "pl"]
 /// person = ["1", "2", "3"]
@@ -125,6 +170,18 @@ use crate::{
 /// query = "number!=/sg|pl/"
 /// expected = 0
 /// description = "Check layer `number` for invalid values."
+/// ```
+///
+/// A layer test can be defined as optional, i. e. the existence check is
+/// allowed to fail, but not the value check (unless the global policy is `warn`):
+///
+/// ```toml
+/// [[graph_op.config.tests]]
+/// optional = true
+/// [graph_op.config.tests.layers]
+/// number = ["sg", "pl"]
+/// person = ["1", "2", "3"]
+/// voice = ["active", "passive"]
 /// ```
 ///
 /// A layer test can also be applied to edge annotations. Assume there are
@@ -161,7 +218,7 @@ pub struct Check {
     overwrite: bool,
 }
 
-#[derive(Default, Deserialize, Serialize)]
+#[derive(Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 enum FailurePolicy {
     Warn,
@@ -185,15 +242,15 @@ impl Manipulator for Check {
         _step_id: StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let r = self.run_tests(graph)?;
+        let (r, policies) = self.run_tests(graph)?;
         if let (Some(level), Some(sender)) = (&self.report, &tx) {
-            self.print_report(level, &r[..], sender)?;
+            self.print_report(level, &r, sender)?;
         }
         if let Some(path) = &self.save {
             let (sender, receiver) = mpsc::channel();
             self.print_report(
                 self.report.as_ref().unwrap_or(&ReportLevel::default()),
-                &r[..],
+                &r,
                 &sender,
             )?;
             if let Some(StatusMessage::Info(msg)) = receiver.into_iter().next() {
@@ -236,21 +293,31 @@ impl Manipulator for Check {
             }
         }
         let failed_checks = r
-            .into_iter()
+            .iter()
             .filter(|(_, r)| !matches!(r, TestResult::Passed))
-            .map(|(d, _)| d)
+            .map(|(d, _)| d.to_string())
             .collect_vec();
         if !failed_checks.is_empty() {
-            let msg = match self.policy {
-                FailurePolicy::Warn => StatusMessage::Warning(format!(
+            let global_demands_fail = matches!(&self.policy, FailurePolicy::Fail);
+            let critical = r.iter().zip(policies).any(|((_, tr), tp)| {
+                if !matches!(tr, TestResult::Passed) {
+                    if let Some(fp) = &tp {
+                        matches!(fp, FailurePolicy::Fail) && global_demands_fail
+                    } else {
+                        tp.is_none() && global_demands_fail
+                    }
+                } else {
+                    false
+                }
+            });
+            if critical {
+                return Err(AnnattoError::ChecksFailed { failed_checks }.into());
+            }
+            if let Some(sender) = &tx {
+                let msg = StatusMessage::Warning(format!(
                     "One or more checks failed:\n{}",
                     failed_checks.join("\n")
-                )),
-                FailurePolicy::Fail => {
-                    return Err(AnnattoError::ChecksFailed { failed_checks }.into());
-                }
-            };
-            if let Some(sender) = &tx {
+                ));
                 sender.send(msg)?;
             }
         }
@@ -261,6 +328,9 @@ impl Manipulator for Check {
         true
     }
 }
+
+type NamedResults = Vec<(String, TestResult)>;
+type Policies = Vec<Option<FailurePolicy>>;
 
 impl Check {
     fn result_to_table_entry(
@@ -284,10 +354,14 @@ impl Check {
                 let appendix = match result {
                     TestResult::Passed => None,
                     TestResult::Failed { is, .. } => {
-                        let mut v = Vec::with_capacity(is.len() + 1);
-                        v.push(format!("Matches for query of test `{}`:", description));
-                        v.extend(is.iter().map(|ms| ms.to_string()).sorted_unstable());
-                        Some(v.join("\n"))
+                        if is.is_empty() {
+                            None // an empty appendix is useless (and not particularly pretty)
+                        } else {
+                            let mut v = Vec::with_capacity(is.len() + 1);
+                            v.push(format!("Matches for query of test `{}`:", description));
+                            v.extend(is.iter().map(|ms| ms.to_string()).sorted_unstable());
+                            Some(v.join("\n"))
+                        }
                     }
                     TestResult::ProcessingError { error } => Some(error.to_string()),
                 };
@@ -338,8 +412,9 @@ impl Check {
     fn run_tests(
         &self,
         graph: &mut AnnotationGraph,
-    ) -> Result<Vec<(String, TestResult)>, Box<dyn std::error::Error>> {
+    ) -> Result<(NamedResults, Policies), Box<dyn std::error::Error>> {
         let mut results = Vec::with_capacity(self.tests.len());
+        let mut policies = Vec::with_capacity(self.tests.len());
         let mut graph_cache = BTreeMap::default();
         for test in &self.tests {
             let aql_tests: Vec<AQLTest> = test.into();
@@ -348,9 +423,10 @@ impl Check {
                     aql_test.description.to_string(),
                     Check::run_test(graph, &aql_test, &mut graph_cache),
                 ));
+                policies.push(aql_test.policy);
             }
         }
-        Ok(results)
+        Ok((results, policies))
     }
 
     fn run_test(
@@ -358,7 +434,7 @@ impl Check {
         test: &AQLTest,
         graph_cache: &mut BTreeMap<String, AnnotationGraph>,
     ) -> TestResult {
-        let query_s = &test.query[..];
+        let query_s = test.query.as_str();
         let expected_result = &test.expected;
         let result = Check::run_query(g, query_s);
         match result {
@@ -544,6 +620,7 @@ struct AQLTest {
     query: String,
     expected: QueryResult,
     description: String,
+    policy: Option<FailurePolicy>, // is option such that the global policy is used when None is given which would not work for the default policy
 }
 
 impl From<&Test> for Vec<AQLTest> {
@@ -553,6 +630,7 @@ impl From<&Test> for Vec<AQLTest> {
                 query,
                 expected,
                 description,
+                policy,
             } => vec![AQLTest {
                 query: query.to_string(),
                 expected: match expected {
@@ -577,10 +655,12 @@ impl From<&Test> for Vec<AQLTest> {
                     }
                 },
                 description: description.to_string(),
+                policy: (*policy).clone(),
             }],
             Test::LayerTest {
                 layers,
                 edge: target,
+                optional,
             } => {
                 let mut tests = Vec::new();
                 for (anno_qname, list_of_values) in layers {
@@ -594,16 +674,23 @@ impl From<&Test> for Vec<AQLTest> {
                     } else {
                         (inner_query_frag, anno_qname.to_string())
                     };
+                    let existence_policy = if *optional {
+                        Some(FailurePolicy::Warn)
+                    } else {
+                        Some(FailurePolicy::Fail)
+                    };
                     tests.push(AQLTest {
                         // each layer needs to be tested for existence as well to be able to properly interpret a 0-result for the joint test
                         query: exist_query,
                         expected: QueryResult::SemiOpenInterval(1, f64::INFINITY),
                         description: format!("Layer `{anno_qname}` exists"),
+                        policy: existence_policy, // a demand for warn here ranks higher than the global demand for fail
                     });
                     tests.push(AQLTest {
                         query: value_query,
                         expected: QueryResult::Numeric(0),
                         description: format!("Check layer `{anno_qname}` for invalid values."),
+                        policy: None, // here the global policy is decisive, i. e. a local warn cannot outrank the global demand for fail
                     })
                 }
                 tests
@@ -613,16 +700,21 @@ impl From<&Test> for Vec<AQLTest> {
 }
 
 #[derive(Deserialize, Serialize)]
-#[serde(untagged)]
+#[serde(untagged, deny_unknown_fields)]
 enum Test {
     QueryTest {
         query: String,
         expected: QueryResult,
         description: String,
+        #[serde(default)]
+        policy: Option<FailurePolicy>, // is option, such that the global policy can override the local
     },
     LayerTest {
         layers: BTreeMap<String, Vec<String>>,
+        #[serde(default)]
         edge: Option<String>,
+        #[serde(default)]
+        optional: bool,
     },
 }
 
@@ -741,6 +833,7 @@ mod tests {
                     query: "tok @* doc=/largest-doc/".to_string(),
                     expected: QueryResult::SemiOpenInterval(1, f64::INFINITY),
                     description: "I expect a lot of tokens".to_string(),
+                    policy: None
                 },
                 Test::QueryTest {
                     query: "pos".to_string(),
@@ -749,21 +842,25 @@ mod tests {
                         "tok".to_string(),
                     ),
                     description: "Plausible number of pos annotations.".to_string(),
+                    policy: None
                 },
                 Test::QueryTest {
                     query: "sentence".to_string(),
                     expected: QueryResult::ClosedLQueryInterval("doc".to_string(), 400),
                     description: "Plausible distribution of sentence annotations.".to_string(),
+                    policy: None
                 },
                 Test::QueryTest {
-                    query: "doc _ident_ author=/William Shakespeare/".to_string(), 
-                    expected: QueryResult::ClosedRQueryInterval(1, "doc".to_string()), 
-                    description: "At least one document in the corpus was written by Shakespeare, hopefully all of them!".to_string() 
+                    query: "doc _ident_ author=/William Shakespeare/".to_string(),
+                    expected: QueryResult::ClosedRQueryInterval(1, "doc".to_string()),
+                    description: "At least one document in the corpus was written by Shakespeare, hopefully all of them!".to_string(),
+                    policy: None
                 },
                 Test::QueryTest {
-                    query: "lemma=/hello/".to_string(), 
-                    expected: QueryResult::SemiOpenQueryInterval("doc".to_string(), f64::INFINITY), 
-                    description: "There are at least as many hellos as there are documents.".to_string()
+                    query: "lemma=/hello/".to_string(),
+                    expected: QueryResult::SemiOpenQueryInterval("doc".to_string(), f64::INFINITY),
+                    description: "There are at least as many hellos as there are documents.".to_string(),
+                    policy: None
                 },
                 Test::LayerTest {
                     layers: vec![(
@@ -775,6 +872,7 @@ mod tests {
                     .into_iter()
                     .collect(),
                     edge: None,
+                    optional: true
                 },
             ],
             report: Some(ReportLevel::List),
@@ -885,6 +983,44 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn test_policy_hierarchy() {
+        let serialized_data =
+            fs::read_to_string("./tests/data/graph_op/check/competing_policies.toml").unwrap();
+        let check: Check = toml::from_str(serialized_data.as_str()).unwrap();
+        let mut g = input_graph(true, "corpus").unwrap();
+        assert!(check
+            .manipulate_corpus(
+                &mut g,
+                Path::new("./"),
+                StepID {
+                    module_name: "test_check_policies".to_string(),
+                    path: None
+                },
+                None
+            )
+            .is_ok());
+    }
+
+    #[test]
+    fn test_policy_hierarchy_fail() {
+        let serialized_data =
+            fs::read_to_string("./tests/data/graph_op/check/competing_policies_fail.toml").unwrap();
+        let check: Check = toml::from_str(serialized_data.as_str()).unwrap();
+        let mut g = input_graph(true, "corpus").unwrap();
+        let run = check.manipulate_corpus(
+            &mut g,
+            Path::new("./"),
+            StepID {
+                module_name: "test_check_policies".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(run.is_err());
+        assert_snapshot!(run.err().unwrap());
+    }
+
     fn test_failing_checks(
         on_disk: bool,
         with_nodes: bool,
@@ -915,7 +1051,7 @@ mod tests {
             assert!(matches!(check.report.as_ref().unwrap(), ReportLevel::List));
         }
 
-        let r = check.run_tests(&mut g)?;
+        let (r, _) = check.run_tests(&mut g)?;
         assert!(
             r.iter()
                 .map(|(_, tr)| match tr {
@@ -966,7 +1102,7 @@ mod tests {
         let toml_path = "./tests/data/graph_op/check/serialized_layer_check.toml";
         let s = fs::read_to_string(toml_path)?;
         let check: Check = toml::from_str(s.as_str())?;
-        let results = check.run_tests(&mut g)?;
+        let (results, _) = check.run_tests(&mut g)?;
         let all_pass = results
             .iter()
             .all(|(_, tr)| matches!(tr, TestResult::Passed));
@@ -983,7 +1119,7 @@ mod tests {
         let toml_path = "./tests/data/graph_op/check/serialized_layer_check_failing.toml";
         let s = fs::read_to_string(toml_path)?;
         let check: Check = toml::from_str(s.as_str())?;
-        let results = check.run_tests(&mut g)?;
+        let (results, _) = check.run_tests(&mut g)?;
         let failing = results
             .iter()
             .filter(|(_, tr)| matches!(tr, TestResult::Failed { .. }))
@@ -1064,7 +1200,12 @@ mod tests {
             "layer3".to_string(),
             vec!["v1".to_string(), "v2".to_string(), "v3".to_string()],
         );
-        let aql_tests: Vec<AQLTest> = (&Test::LayerTest { layers, edge: None }).into();
+        let aql_tests: Vec<AQLTest> = (&Test::LayerTest {
+            layers,
+            edge: None,
+            optional: false,
+        })
+            .into();
         assert_eq!(aql_tests.len(), 6);
     }
 
@@ -1077,6 +1218,7 @@ mod tests {
             query: "tok".to_string(),
             expected: QueryResult::Numeric(4),
             description: "Correct number of tokens".to_string(),
+            policy: None,
         }];
         let tmp = tempdir();
         assert!(tmp.is_ok());
@@ -1103,6 +1245,7 @@ mod tests {
                 query: "tok".to_string(),
                 expected: QueryResult::Numeric(4),
                 description: "Correct number of tokens".to_string(),
+                policy: None,
             }],
             report: None,
             save: Some(report_path.clone()),
@@ -1137,6 +1280,7 @@ mod tests {
             query: "tok".to_string(),
             expected: QueryResult::Numeric(4),
             description: "Correct number of tokens".to_string(),
+            policy: None,
         }];
         let tmp = tempdir();
         assert!(tmp.is_ok());
@@ -1163,6 +1307,7 @@ mod tests {
                 query: "tok".to_string(),
                 expected: QueryResult::Numeric(4),
                 description: "Correct number of tokens".to_string(),
+                policy: None,
             }],
             report: None,
             save: Some(report_path.clone()),
@@ -1198,21 +1343,25 @@ mod tests {
                 query: "tok".to_string(),
                 expected: QueryResult::Numeric(4),
                 description: "Correct number of tokens is 4".to_string(),
+                policy: None,
             },
             Test::QueryTest {
                 query: "tok".to_string(),
                 expected: QueryResult::Numeric(2),
                 description: "Correct number of tokens is 2".to_string(),
+                policy: None,
             },
             Test::QueryTest {
                 query: "tok".to_string(),
                 expected: QueryResult::Numeric(3),
                 description: "Correct number of tokens is 3".to_string(),
+                policy: None,
             },
             Test::QueryTest {
                 query: "tok".to_string(),
                 expected: QueryResult::Numeric(1),
                 description: "Correct number of tokens is 1".to_string(),
+                policy: None,
             },
             Test::LayerTest {
                 layers: vec![(
@@ -1222,6 +1371,7 @@ mod tests {
                 .into_iter()
                 .collect(),
                 edge: None,
+                optional: false,
             },
         ];
         let tmp = tempdir();
@@ -1260,6 +1410,7 @@ mod tests {
                     query: query.to_string(),
                     expected: QueryResult::Numeric(1),
                     description: "Control test to make sure the query actually works".to_string(),
+                    policy: None,
                 },
                 Test::QueryTest {
                     description: "Query sequence.".to_string(),
@@ -1269,6 +1420,7 @@ mod tests {
                         "corpus".to_string(),
                         query.to_string(),
                     ),
+                    policy: None,
                 },
                 Test::QueryTest {
                     description: "Query nodes.".to_string(),
@@ -1278,6 +1430,7 @@ mod tests {
                         "corpus".to_string(),
                         "node".to_string(),
                     ),
+                    policy: None,
                 },
             ],
             report: None,

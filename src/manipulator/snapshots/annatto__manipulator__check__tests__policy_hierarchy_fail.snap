@@ -1,0 +1,9 @@
+---
+source: src/manipulator/check.rs
+expression: run.err().unwrap()
+---
+Checks failed:
+I demand 0 tokens!
+Layer `cat_wrong_name` exists
+Layer `pos_wrong_name` exists
+Layer `sentence_wrong_name` exists
