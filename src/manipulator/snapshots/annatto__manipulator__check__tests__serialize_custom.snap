@@ -33,6 +33,7 @@ expected = ["doc", inf]
 description = "There are at least as many hellos as there are documents."
 
 [[tests]]
+optional = true
 
 [tests.layers]
 Reflexive = ["yes", "no"]

@@ -1,0 +1,36 @@
+report = "list"
+policy = "fail"
+
+[[tests]]
+query = "tok"
+expected =  0
+description = "I demand 0 tokens!"
+policy = "warn"
+
+[[tests]]
+query = "pos"
+expected = "tok"
+description = "There has to be the same number of pos annotations and tokens"
+
+[[tests]]
+optional = true
+[tests.layers]
+pos_wrong_name = [ "PRON", "VERB", "DET", "NOUN" ]
+cat_wrong_name = [ "DP", "IP", "CP" ]
+sentence_wrong_name = [ "1" ]
+
+[[tests]]
+layers = { pos = [ "PRON", "VERB", "DET", "NOUN" ], cat = [ "DP", "IP", "CP" ], sentence = [ "1" ] }
+
+[[tests]]
+layers = { deprel = [ "nsubj", "cop", "det" ] }
+edge = "->dep"
+
+[[tests]]
+layers = { func = ["head"] }
+edge = ">"
+
+[[tests]]
+query = "sentence"
+expected = 1
+description = "There is exactly one sentence."
