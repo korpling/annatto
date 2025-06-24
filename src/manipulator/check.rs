@@ -29,6 +29,36 @@ use crate::{
 /// Runs AQL queries on the corpus and checks for constraints on the result.
 /// Can fail the workflow when one of the checks fail.
 ///
+/// There are four general attributes to control this modules behaviour:
+///
+/// `policy`: Values are either `warn` or `fail`. The former will only output
+/// a warning, while the latter will stop the conversion process after the
+/// check module has completed all tests. The default policy is `fail`.
+///
+/// `report`: If set to `list`, the results will be printed to as a table, if
+/// set to `verbose`, each failed test will be followed by a short appendix
+/// listing all matches to help you debug your data. If nothing is set, no report
+/// will be shown.
+///
+/// `save`: If you provide a file path (the file can exist already), the report
+/// is additionally saved to disk.
+///
+/// `overwrite`: If set to `true`, an existing log file will be overwritten. If set
+/// to `false`, an existing log file will be appended to. Default is `false`.
+///
+/// Example:
+///
+/// ```toml
+/// [[graph_op]]
+/// action = "check"
+///
+/// [graph_op.config]
+/// report = "list"
+/// save = "report.log"
+/// overwrite = false
+/// policy = "warn"
+/// ```
+///
 /// There are several ways to configure tests. The default test type is defined
 /// by a query, that is run on the current corpus graph, an expected result, and
 /// a description to ensure meaningful output. E. g.:
@@ -38,6 +68,20 @@ use crate::{
 /// query = "lemma=/stone/ _=_ pos=/VERB/"
 /// expected = 0
 /// description = "No stone is labeled as a verb."
+/// ```
+/// A test can be given its own failure policy. This only makes sense if your global
+/// failure policy is `fail` and you do not want a specific test to cause a failure.
+/// A `warn` will always outrank a fail, i. e. whenever the global policy is `warn`,
+/// an individual test's policy `fail` will have no effect.
+///
+/// Example:
+///
+/// ```toml
+/// [[graph_op.config.tests]]
+/// query = "lemma=/stone/ _=_ pos=/VERB/"
+/// expected = 0
+/// description = "No stone is labeled as a verb."
+/// policy = "warn"
 /// ```
 ///
 /// The expected value can be given in one of the following ways:
@@ -126,6 +170,18 @@ use crate::{
 /// query = "number!=/sg|pl/"
 /// expected = 0
 /// description = "Check layer `number` for invalid values."
+/// ```
+///
+/// A layer test can be defined as optional, i. e. the existence check is
+/// allowed to fail, but not the value check (unless the global policy is `warn`):
+///
+/// ```toml
+/// [[graph_op.config.tests]]
+/// optional = true
+/// [graph_op.config.tests.layers]
+/// number = ["sg", "pl"]
+/// person = ["1", "2", "3"]
+/// voice = ["active", "passive"]
 /// ```
 ///
 /// A layer test can also be applied to edge annotations. Assume there are
