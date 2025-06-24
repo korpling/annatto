@@ -105,6 +105,7 @@ use crate::{
 /// There is also a second test type, that can be used to check closed class annotation layers' annotation values:
 ///
 /// ```toml
+/// [[graph_op.config.tests]]
 /// [graph_op.config.tests.layers]
 /// number = ["sg", "pl"]
 /// person = ["1", "2", "3"]
