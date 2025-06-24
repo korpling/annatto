@@ -5,6 +5,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `check`: query tests can have their individual `policy` to avoid failing
+- `check`: layers defined in layer tests can be set as `optional`, which applies to all given layers in the test
+
+### Changed
+
+- `check`: If `report` is set to `verbose`, the appendix will not be printed whenever its empty
+
+### Fixed
+
+- `check` deserialization denies unknown fields for tests as well
+
 ## [0.35.2] - 2025-06-23
 
 ### Fixed
