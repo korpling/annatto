@@ -329,6 +329,9 @@ impl Manipulator for Check {
     }
 }
 
+type NamedResults = Vec<(String, TestResult)>;
+type Policies = Vec<Option<FailurePolicy>>;
+
 impl Check {
     fn result_to_table_entry(
         description: &String,
@@ -409,8 +412,7 @@ impl Check {
     fn run_tests(
         &self,
         graph: &mut AnnotationGraph,
-    ) -> Result<(Vec<(String, TestResult)>, Vec<Option<FailurePolicy>>), Box<dyn std::error::Error>>
-    {
+    ) -> Result<(NamedResults, Policies), Box<dyn std::error::Error>> {
         let mut results = Vec::with_capacity(self.tests.len());
         let mut policies = Vec::with_capacity(self.tests.len());
         let mut graph_cache = BTreeMap::default();
