@@ -1,7 +1,7 @@
 use annatto::{
-    error::AnnattoError,
-    workflow::{execute_from_file, StatusMessage, Workflow},
     GraphOpDiscriminants, ModuleConfiguration, ReadFromDiscriminants, StepID, WriteAsDiscriminants,
+    error::AnnattoError,
+    workflow::{StatusMessage, Workflow, execute_from_file},
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
@@ -13,8 +13,8 @@ use std::{
 };
 use strum::IntoEnumIterator;
 use tabled::{
-    settings::{object::Segment, themes::ColumnNames, Modify, Width},
     Table,
+    settings::{Modify, Width, object::Segment, themes::ColumnNames},
 };
 use tracing_subscriber::filter::EnvFilter;
 
@@ -271,7 +271,9 @@ fn list_modules() {
 
     println!("{table}\n");
 
-    print_markdown("Use `annatto info <name>` to get more information about one of the formats or graph operations.\n\n");
+    print_markdown(
+        "Use `annatto info <name>` to get more information about one of the formats or graph operations.\n\n",
+    );
 }
 
 fn module_info(name: &str) {
@@ -289,7 +291,9 @@ fn module_info(name: &str) {
         && matching_exporters.is_empty()
         && matching_graph_ops.is_empty()
     {
-        println!("No module with name {name} found. Run the `annotto list` command to get a list of all modules.")
+        println!(
+            "No module with name {name} found. Run the `annotto list` command to get a list of all modules."
+        )
     }
 
     if !matching_importers.is_empty() {
@@ -346,7 +350,7 @@ fn print_module_fields(mut fields: Vec<ModuleConfiguration>) {
         } else {
             table.with(tabled::settings::Style::markdown());
         }
-        println!("{}\n", table);
+        println!("{table}\n");
     }
 }
 

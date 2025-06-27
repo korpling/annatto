@@ -317,8 +317,7 @@ fn revise_component(
                     } else {
                         progress_reporter.warn(
                             format!(
-                                "Could not retrieve target node for source node in component {}",
-                                source_component
+                                "Could not retrieve target node for source node in component {source_component}"                                
                             )
                             .as_str(),
                         )?;
@@ -327,8 +326,7 @@ fn revise_component(
             } else {
                 progress_reporter.warn(
                     format!(
-                        "Could not obtain node from source nodes in component {}.",
-                        source_component
+                        "Could not obtain node from source nodes in component {source_component}."
                     )
                     .as_str(),
                 )?;
@@ -336,11 +334,7 @@ fn revise_component(
         }
     } else {
         progress_reporter.warn(
-            format!(
-                "Component {} does not exist and will not be mapped",
-                source_component
-            )
-            .as_str(),
+            format!("Component {source_component} does not exist and will not be mapped").as_str(),
         )?;
     }
     Ok(())

@@ -192,8 +192,7 @@ impl Exporter for ExportExmaralda {
                         } else {
                             return Err(Box::new(AnnattoError::Export {
                                 reason: format!(
-                                    "Could not derive relative path to media file {:?}",
-                                    ref_path
+                                    "Could not derive relative path to media file {ref_path:?}",
                                 ),
                                 exporter: step_id.module_name.clone(),
                                 path: doc_path.to_path_buf(),

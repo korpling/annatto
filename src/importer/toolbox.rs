@@ -77,7 +77,7 @@ impl ImportToolBox {
         let data = fs::read_to_string(path)?;
         let mut pairs =
             ToolboxParser::parse(Rule::data, &data).map_err(|e| AnnattoError::Import {
-                reason: format!("Failed to parse: {}", e),
+                reason: format!("Failed to parse: {e}"),
                 importer: step_id.module_name.clone(),
                 path: path.to_path_buf(),
             })?;

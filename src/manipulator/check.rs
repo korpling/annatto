@@ -358,7 +358,7 @@ impl Check {
                             None // an empty appendix is useless (and not particularly pretty)
                         } else {
                             let mut v = Vec::with_capacity(is.len() + 1);
-                            v.push(format!("Matches for query of test `{}`:", description));
+                            v.push(format!("Matches for query of test `{description}`:"));
                             v.extend(is.iter().map(|ms| ms.to_string()).sorted_unstable());
                             Some(v.join("\n"))
                         }

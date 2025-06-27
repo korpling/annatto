@@ -2,9 +2,9 @@ use std::{ffi::OsStr, io::BufWriter};
 
 use anyhow::{Context, Error};
 use graphannis::{
+    AnnotationGraph,
     graph::{Edge, NodeID},
     model::AnnotationComponentType,
-    AnnotationGraph,
 };
 use graphannis_core::{
     annostorage::ValueSearch,
@@ -100,7 +100,7 @@ impl SaltCorpusStructureMapper {
                         let partof_gs = graph
                             .get_graphstorage_as_ref(&partof_component)
                             .with_context(|| {
-                                format!("Missing graph storage for component {}", partof_component)
+                                format!("Missing graph storage for component {partof_component}")
                             })?;
                         for source in corpus_nodes.iter() {
                             let source = source.node;

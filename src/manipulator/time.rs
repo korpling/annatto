@@ -162,7 +162,7 @@ impl Filltime {
                         node_name: node_name.to_string(),
                         anno_ns: time_key.ns.to_string(),
                         anno_name: time_key.name.to_string(),
-                        anno_value: format!("{:.16}-{:.16}", start_time, end_time),
+                        anno_value: format!("{start_time:.16}-{end_time:.16}"),
                     })?;
                 }
             } else {

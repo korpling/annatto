@@ -543,7 +543,7 @@ fn parse_corpus_tab(
                 .or_insert(1);
             if *existing_count > 1 {
                 let old_name = name.clone();
-                name = format!("{}_duplicated_document_name_{}", name, existing_count);
+                name = format!("{name}_duplicated_document_name_{existing_count}");
                 progress.warn(&format!(
                     "duplicated document name \"{old_name}\" detected: will be renamed to \"{name}\""
                 ))?;
@@ -987,8 +987,7 @@ fn add_white_space_token_labels(
         }
     }
     progress.info(&format!(
-        "added {} non-tokenized primary text segments as white-space labels to the existing tokens",
-        added_whitespace_label_count
+        "added {added_whitespace_label_count} non-tokenized primary text segments as white-space labels to the existing tokens"
     ))?;
 
     Ok(())

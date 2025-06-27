@@ -168,7 +168,7 @@ impl ExportXlsx {
             }
         }
 
-        let output_path = output_path.join(format!("{}.xlsx", doc_name));
+        let output_path = output_path.join(format!("{doc_name}.xlsx"));
         umya_spreadsheet::writer::xlsx::write(&book, output_path)?;
 
         Ok(())
@@ -342,7 +342,7 @@ impl ExportXlsx {
                             .set_value_string(span_val);
                         let last_cell =
                             format!("{}{}", string_from_column_index(column_index), last);
-                        worksheet.add_merge_cells(format!("{}:{}", first_cell, last_cell));
+                        worksheet.add_merge_cells(format!("{first_cell}:{last_cell}"));
                     }
                 }
             }

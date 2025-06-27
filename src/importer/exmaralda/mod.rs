@@ -366,8 +366,7 @@ impl ImportEXMARaLDA {
                             } else {
                                 // send "Failed", but continue to collect potential further errors in the file
                                 let msg = format!(
-                                    "Could not determine start id of currently processed event `{}`. Event will be skipped. Import will fail.",
-                                    text
+                                    "Could not determine start id of currently processed event `{text}`. Event will be skipped. Import will fail."
                                 );
                                 let err = AnnattoError::Import {
                                     reason: msg,
@@ -383,8 +382,7 @@ impl ImportEXMARaLDA {
                             } else {
                                 // send "Failed", but continue to collect potential further errors in the file
                                 let msg = format!(
-                                    "Could not determine end id of currently processed event `{}`. Event will be skipped. Import will fail.",
-                                    text
+                                    "Could not determine end id of currently processed event `{text}`. Event will be skipped. Import will fail."
                                 );
                                 let err = AnnattoError::Import {
                                     reason: msg,
@@ -442,8 +440,7 @@ impl ImportEXMARaLDA {
                                 continue;
                             };
                             let node_name = format!(
-                                "{}#{}_{}_{}-{}",
-                                doc_node_name, tier_type, speaker_id, start_id, end_id
+                                "{doc_node_name}#{tier_type}_{speaker_id}_{start_id}-{end_id}"
                             ); // this is not a unique id as not intended to be
                             if !already_defined.contains(&node_name) {
                                 update.add_event(UpdateEvent::AddNode {
@@ -491,7 +488,7 @@ impl ImportEXMARaLDA {
                                         node_name: node_name.to_string(),
                                         anno_ns: ANNIS_NS.to_string(),
                                         anno_name: "time".to_string(),
-                                        anno_value: format!("{}-{}", start_time, end_time),
+                                        anno_value: format!("{start_time}-{end_time}"),
                                     })?;
                                     already_defined.insert(node_name.to_string());
                                 }

@@ -1,11 +1,11 @@
 use crate::{
-    error::{AnnattoError, Result},
     StepID,
+    error::{AnnattoError, Result},
 };
 use graphannis::{
+    AnnotationGraph,
     graph::{EdgeContainer, GraphStorage},
     model::{AnnotationComponent, AnnotationComponentType},
-    AnnotationGraph,
 };
 
 use anyhow::Context;
@@ -202,12 +202,7 @@ impl<'a> CorpusGraphHelper<'a> {
         ancestor: NodeID,
     ) -> Box<dyn Iterator<Item = std::result::Result<u64, GraphAnnisCoreError>> + 'a> {
         if self.all_partof_gs.len() == 1 {
-            let it = self.all_partof_gs[0].find_connected_inverse(
-                ancestor,
-                1,
-                std::ops::Bound::Unbounded,
-            );
-            it
+            self.all_partof_gs[0].find_connected_inverse(ancestor, 1, std::ops::Bound::Unbounded)
         } else {
             let it =
                 CycleSafeDFS::new_inverse(self, ancestor, 1, usize::MAX).map_ok(|step| step.node);

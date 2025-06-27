@@ -404,7 +404,7 @@ impl<'a> DatasheetMapper<'a> {
         let mut base_tokens = Vec::with_capacity(self.max_row as usize);
         for i in 2..=self.max_row as usize {
             // keep spreadsheet row indices in token names for easier debugging
-            let tok_id = format!("{doc_node_name}#row{}", i);
+            let tok_id = format!("{doc_node_name}#row{i}");
             update.add_event(UpdateEvent::AddNode {
                 node_name: tok_id.to_string(),
                 node_type: "node".to_string(),
@@ -475,11 +475,8 @@ impl<'a> DatasheetMapper<'a> {
                         );
                     } else {
                         progress.warn(
-                            format!(
-                                "Merged cell with multiple columns will be ignored: {:?}",
-                                rng
-                            )
-                            .as_str(),
+                            format!("Merged cell with multiple columns will be ignored: {rng:?}")
+                                .as_str(),
                         )?;
                         continue;
                     }
