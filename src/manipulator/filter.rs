@@ -110,20 +110,17 @@ impl Manipulator for FilterNodes {
             // delete non-matching nodes of type "node" (excluding real tokens)
             let max_id = node_annos.get_largest_item()?.unwrap_or(NodeID::MAX);
             for n in 0..max_id {
-                if let Some(node_type) = node_annos.get_value_for_item(&n, &NODE_TYPE_KEY)? {
-                    if !matching_nodes.contains(&n)
-                        && !terminals.contains(&n)
-                        && &*node_type == "node"
-                    {
-                        if let Some(node_name) =
-                            node_annos.get_value_for_item(&n, &NODE_NAME_KEY)?
-                        {
-                            update.add_event(UpdateEvent::DeleteNode {
-                                node_name: node_name.to_string(),
-                            })?;
-                        } else {
-                            return Err(anyhow!("Node has no name. This is invalid.").into());
-                        }
+                if let Some(node_type) = node_annos.get_value_for_item(&n, &NODE_TYPE_KEY)?
+                    && !matching_nodes.contains(&n)
+                    && !terminals.contains(&n)
+                    && &*node_type == "node"
+                {
+                    if let Some(node_name) = node_annos.get_value_for_item(&n, &NODE_NAME_KEY)? {
+                        update.add_event(UpdateEvent::DeleteNode {
+                            node_name: node_name.to_string(),
+                        })?;
+                    } else {
+                        return Err(anyhow!("Node has no name. This is invalid.").into());
                     }
                 }
             }
@@ -141,17 +138,17 @@ impl Manipulator for FilterNodes {
 mod tests {
     use std::{fs, path::Path};
 
-    use graphannis::{update::GraphUpdate, AnnotationGraph};
+    use graphannis::{AnnotationGraph, update::GraphUpdate};
     use insta::assert_snapshot;
 
     use crate::{
+        StepID,
         core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
-        importer::{exmaralda::ImportEXMARaLDA, Importer},
-        manipulator::{filter::FilterNodes, Manipulator},
+        importer::{Importer, exmaralda::ImportEXMARaLDA},
+        manipulator::{Manipulator, filter::FilterNodes},
         test_util::export_to_string,
         util::example_generator,
-        StepID,
     };
 
     #[test]
@@ -181,16 +178,18 @@ mod tests {
             query: "node".to_string(),
             inverse: false,
         };
-        assert!(module
-            .validate_graph(
-                &mut graph,
-                StepID {
-                    module_name: "test".to_string(),
-                    path: None
-                },
-                None
-            )
-            .is_ok());
+        assert!(
+            module
+                .validate_graph(
+                    &mut graph,
+                    StepID {
+                        module_name: "test".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
         assert!(graph.global_statistics.is_some());
     }
 
@@ -215,17 +214,19 @@ mod tests {
             query: "pos=/PRON/".to_string(),
             inverse: false,
         };
-        assert!(manipulation
-            .manipulate_corpus(
-                &mut graph,
-                Path::new("./"),
-                StepID {
-                    module_name: "test_filter".to_string(),
-                    path: None
-                },
-                None
-            )
-            .is_ok());
+        assert!(
+            manipulation
+                .manipulate_corpus(
+                    &mut graph,
+                    Path::new("./"),
+                    StepID {
+                        module_name: "test_filter".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
         let export = export_to_string(&graph, GraphMLExporter::default());
         assert!(export.is_ok(), "error: {:?}", export.err());
         assert_snapshot!(export.unwrap());
@@ -252,17 +253,19 @@ mod tests {
             query: "pos=/PRON/".to_string(),
             inverse: true,
         };
-        assert!(manipulation
-            .manipulate_corpus(
-                &mut graph,
-                Path::new("./"),
-                StepID {
-                    module_name: "test_filter".to_string(),
-                    path: None
-                },
-                None
-            )
-            .is_ok());
+        assert!(
+            manipulation
+                .manipulate_corpus(
+                    &mut graph,
+                    Path::new("./"),
+                    StepID {
+                        module_name: "test_filter".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
         let export = export_to_string(&graph, GraphMLExporter::default());
         assert!(export.is_ok(), "error: {:?}", export.err());
         assert_snapshot!(export.unwrap());

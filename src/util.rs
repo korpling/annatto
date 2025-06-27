@@ -166,10 +166,9 @@ impl<'a> CorpusGraphHelper<'a> {
             let ingoing = ingoing?;
             if let Some(ingoing_node_type) =
                 node_annos.get_value_for_item(&ingoing, &NODE_TYPE_KEY)?
+                && ingoing_node_type == "corpus"
             {
-                if ingoing_node_type == "corpus" {
-                    return Ok(false);
-                }
+                return Ok(false);
             }
         }
         Ok(true)

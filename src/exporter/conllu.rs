@@ -9,9 +9,9 @@ use std::{
 use anyhow::{anyhow, bail};
 use documented::{Documented, DocumentedFields};
 use graphannis::{
+    AnnotationGraph,
     graph::{AnnoKey, Edge, NodeID},
     model::{AnnotationComponent, AnnotationComponentType},
-    AnnotationGraph,
 };
 use graphannis_core::{
     annostorage::ValueSearch,
@@ -310,7 +310,9 @@ impl ExportCoNLLU {
         for node in ordered_nodes {
             let (data, group_node, dependency_data) =
                 self.node_data(graph, anno_keys.clone(), node)?;
-            if let (Some(gn), Some(gn_)) = (last_group, group_node) {
+            if let Some(gn) = last_group
+                && let Some(gn_) = group_node
+            {
                 if gn != gn_ {
                     writer.write_all("\n".as_bytes())?;
                     last_group = group_node;
@@ -465,10 +467,11 @@ impl ExportCoNLLU {
             bail!("Number of dependency components does not match number of label names.");
         }
         for node in connected_nodes {
-            if let (None, Some(k)) = (group_node, &self.groupby) {
-                if node_annos.has_value_for_item(&node, k)? {
-                    group_node = Some(node);
-                }
+            if let None = group_node
+                && let Some(k) = &self.groupby
+                && node_annos.has_value_for_item(&node, k)?
+            {
+                group_node = Some(node);
             }
             if !remaining_keys.is_empty() {
                 let mut pop = BTreeSet::new();
@@ -533,19 +536,19 @@ mod tests {
     use std::{fs, path::Path};
 
     use graphannis::{
+        AnnotationGraph,
         graph::AnnoKey,
         model::{AnnotationComponent, AnnotationComponentType},
         update::{GraphUpdate, UpdateEvent},
-        AnnotationGraph,
     };
     use graphannis_core::graph::ANNIS_NS;
     use insta::assert_snapshot;
 
     use crate::{
-        exporter::conllu::ExportCoNLLU,
-        importer::{conllu::ImportCoNLLU, Importer},
-        test_util::export_to_string,
         StepID,
+        exporter::conllu::ExportCoNLLU,
+        importer::{Importer, conllu::ImportCoNLLU},
+        test_util::export_to_string,
     };
 
     #[test]
@@ -666,20 +669,22 @@ mod tests {
     #[test]
     fn groupless_tokens() {
         let mut u = GraphUpdate::default();
-        assert!(u
-            .add_event(UpdateEvent::AddNode {
+        assert!(
+            u.add_event(UpdateEvent::AddNode {
                 node_name: "corpus".to_string(),
                 node_type: "corpus".to_string()
             })
-            .is_ok());
-        assert!(u
-            .add_event(UpdateEvent::AddNodeLabel {
+            .is_ok()
+        );
+        assert!(
+            u.add_event(UpdateEvent::AddNodeLabel {
                 node_name: "corpus".to_string(),
                 anno_ns: ANNIS_NS.to_string(),
                 anno_name: "doc".to_string(),
                 anno_value: "corpus".to_string()
             })
-            .is_ok());
+            .is_ok()
+        );
         let mut i = 0;
         for (sentence, span) in [
             (vec!["This", "is", "a", "test", "."], Some("s1")),
@@ -688,29 +693,32 @@ mod tests {
         ] {
             let span_node = if let Some(span_value) = span {
                 let span_name = format!("corpus#{span_value}");
-                assert!(u
-                    .add_event(UpdateEvent::AddNode {
+                assert!(
+                    u.add_event(UpdateEvent::AddNode {
                         node_name: span_name.to_string(),
                         node_type: "node".to_string(),
                     })
-                    .is_ok());
-                assert!(u
-                    .add_event(UpdateEvent::AddEdge {
+                    .is_ok()
+                );
+                assert!(
+                    u.add_event(UpdateEvent::AddEdge {
                         source_node: span_name.to_string(),
                         target_node: "corpus".to_string(),
                         layer: ANNIS_NS.to_string(),
                         component_type: AnnotationComponentType::PartOf.to_string(),
                         component_name: "".to_string()
                     })
-                    .is_ok());
-                assert!(u
-                    .add_event(UpdateEvent::AddNodeLabel {
+                    .is_ok()
+                );
+                assert!(
+                    u.add_event(UpdateEvent::AddNodeLabel {
                         node_name: span_name.to_string(),
                         anno_ns: "".to_string(),
                         anno_name: "sentence".to_string(),
                         anno_value: span_value.to_string()
                     })
-                    .is_ok());
+                    .is_ok()
+                );
                 Some(span_name)
             } else {
                 None
@@ -718,50 +726,55 @@ mod tests {
             for token in sentence {
                 i += 1;
                 let token_name = format!("corpus#t{}", i + 1);
-                assert!(u
-                    .add_event(UpdateEvent::AddNode {
+                assert!(
+                    u.add_event(UpdateEvent::AddNode {
                         node_name: token_name.to_string(),
                         node_type: "node".to_string(),
                     })
-                    .is_ok());
-                assert!(u
-                    .add_event(UpdateEvent::AddNodeLabel {
+                    .is_ok()
+                );
+                assert!(
+                    u.add_event(UpdateEvent::AddNodeLabel {
                         node_name: token_name.to_string(),
                         anno_ns: ANNIS_NS.to_string(),
                         anno_name: "tok".to_string(),
                         anno_value: token.to_string()
                     })
-                    .is_ok());
-                assert!(u
-                    .add_event(UpdateEvent::AddEdge {
+                    .is_ok()
+                );
+                assert!(
+                    u.add_event(UpdateEvent::AddEdge {
                         source_node: token_name.to_string(),
                         target_node: "corpus".to_string(),
                         layer: ANNIS_NS.to_string(),
                         component_type: AnnotationComponentType::PartOf.to_string(),
                         component_name: "".to_string()
                     })
-                    .is_ok());
+                    .is_ok()
+                );
                 if i > 0 {
-                    assert!(u
-                        .add_event(UpdateEvent::AddEdge {
+                    assert!(
+                        u.add_event(UpdateEvent::AddEdge {
                             source_node: format!("corpus#t{i}"),
                             target_node: token_name.to_string(),
                             layer: ANNIS_NS.to_string(),
                             component_type: AnnotationComponentType::Ordering.to_string(),
                             component_name: "".to_string()
                         })
-                        .is_ok());
+                        .is_ok()
+                    );
                 }
                 if let Some(span_name) = &span_node {
-                    assert!(u
-                        .add_event(UpdateEvent::AddEdge {
+                    assert!(
+                        u.add_event(UpdateEvent::AddEdge {
                             source_node: span_name.to_string(),
                             target_node: token_name.to_string(),
                             layer: ANNIS_NS.to_string(),
                             component_type: AnnotationComponentType::Coverage.to_string(),
                             component_name: "".to_string()
                         })
-                        .is_ok());
+                        .is_ok()
+                    );
                 }
             }
         }

@@ -1,5 +1,5 @@
 use std::{
-    collections::{btree_map::Entry, BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, btree_map::Entry},
     fs,
     path::Path,
 };
@@ -12,16 +12,16 @@ use graphannis::{
 };
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
-use pest::{iterators::Pair, Parser};
+use pest::{Parser, iterators::Pair};
 use pest_derive::Parser;
 use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
+    StepID,
     error::{AnnattoError, Result},
     progress::ProgressReporter,
     util::graphupdate::import_corpus_graph_from_files,
-    StepID,
 };
 
 use super::Importer;
@@ -84,18 +84,18 @@ impl ImportToolBox {
         let next_pair = pairs.next();
         let mut start_id = 1;
         let mut ordering = BTreeMap::default();
-        if let Some(pair) = next_pair {
-            if pair.as_rule() == Rule::data {
-                for annotation_block in pair.into_inner() {
-                    if annotation_block.as_rule() == Rule::block {
-                        start_id = self.map_annotation_block(
-                            update,
-                            doc_node_name,
-                            annotation_block,
-                            start_id,
-                            &mut ordering,
-                        )?;
-                    }
+        if let Some(pair) = next_pair
+            && pair.as_rule() == Rule::data
+        {
+            for annotation_block in pair.into_inner() {
+                if annotation_block.as_rule() == Rule::block {
+                    start_id = self.map_annotation_block(
+                        update,
+                        doc_node_name,
+                        annotation_block,
+                        start_id,
+                        &mut ordering,
+                    )?;
                 }
             }
         }

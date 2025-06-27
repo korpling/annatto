@@ -2,7 +2,7 @@ use assert_cmd::Command;
 use insta::assert_snapshot;
 use regex::Regex;
 use std::{fs, path::PathBuf};
-use tempfile::{tempdir, TempDir};
+use tempfile::{TempDir, tempdir};
 
 #[test]
 fn show_help() {
@@ -40,9 +40,10 @@ fn run_empty_conversion() {
 fn convert_to_itself() {
     // Create temporary folder for test output
     let tmp_out = tempfile::tempdir().unwrap();
-
-    std::env::set_var("TEST_OUTPUT", tmp_out.path().to_string_lossy().as_ref());
-
+    // safety: This is the test module.
+    unsafe {
+        std::env::set_var("TEST_OUTPUT", tmp_out.path().to_string_lossy().as_ref());
+    }
     let mut cmd = Command::cargo_bin("annatto").unwrap();
 
     cmd.arg("run")
@@ -254,7 +255,9 @@ fn run_and_serialize() {
     assert!(output.is_ok());
     assert!(output_file.exists());
     let workflow_str = fs::read_to_string(output_file.as_path()).unwrap();
-    assert_snapshot!(Regex::new(r#"[0-9]+\.[0-9]+\.[0-9]+"#)
-        .unwrap()
-        .replace(&workflow_str, "<VERSION>"));
+    assert_snapshot!(
+        Regex::new(r#"[0-9]+\.[0-9]+\.[0-9]+"#)
+            .unwrap()
+            .replace(&workflow_str, "<VERSION>")
+    );
 }

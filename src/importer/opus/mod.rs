@@ -210,18 +210,18 @@ impl ImportOpusLinks {
                             }
                         }
                         "link" => {
-                            if let Some(attr_val) = attribute_map.get("xtargets") {
-                                if let Some((source, target)) = attr_val.split_once(';') {
-                                    for single_source in source.split(' ') {
-                                        for single_target in target.split(' ') {
-                                            self.link(
-                                                update,
-                                                source_doc_node_id.as_str(),
-                                                target_doc_node_id.as_str(),
-                                                single_source,
-                                                single_target,
-                                            )?;
-                                        }
+                            if let Some(attr_val) = attribute_map.get("xtargets")
+                                && let Some((source, target)) = attr_val.split_once(';')
+                            {
+                                for single_source in source.split(' ') {
+                                    for single_target in target.split(' ') {
+                                        self.link(
+                                            update,
+                                            source_doc_node_id.as_str(),
+                                            target_doc_node_id.as_str(),
+                                            single_source,
+                                            single_target,
+                                        )?;
                                     }
                                 }
                             }

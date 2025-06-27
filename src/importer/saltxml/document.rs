@@ -5,7 +5,7 @@ use std::{
     path::Path,
 };
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
@@ -17,7 +17,7 @@ use roxmltree::Node;
 use url::Url;
 
 use super::{
-    get_annotations, get_element_id, get_feature_by_qname, resolve_element, SaltObject, SaltType,
+    SaltObject, SaltType, get_annotations, get_element_id, get_feature_by_qname, resolve_element,
 };
 
 #[derive(Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Debug)]
@@ -454,15 +454,15 @@ impl<'input> DocumentMapper<'_, 'input> {
             .unwrap_or_else(|| fallback_component_name.to_string());
 
         let mut component_layer = DEFAULT_NS.to_string();
-        if let Some(layers_attribute) = rel.attribute("layers") {
-            if let Some(first_layer) = layers_attribute.split(' ').next() {
-                let layer_node = resolve_element(first_layer, "layers", &self.layers)
-                    .context("Could not resolve layer")?;
-                if let Some(SaltObject::Text(layer_name)) =
-                    get_feature_by_qname(&layer_node, "salt", "SNAME")
-                {
-                    component_layer = layer_name;
-                }
+        if let Some(layers_attribute) = rel.attribute("layers")
+            && let Some(first_layer) = layers_attribute.split(' ').next()
+        {
+            let layer_node = resolve_element(first_layer, "layers", &self.layers)
+                .context("Could not resolve layer")?;
+            if let Some(SaltObject::Text(layer_name)) =
+                get_feature_by_qname(&layer_node, "salt", "SNAME")
+            {
+                component_layer = layer_name;
             }
         }
 
@@ -561,11 +561,11 @@ impl<'input> DocumentMapper<'_, 'input> {
         let mut previous_token: Option<(TextProperty, String)> = None;
         let mut sorted_text_rels = sorted_text_rels.into_iter().peekable();
         while let Some((text_prop, text_rel)) = sorted_text_rels.next() {
-            if let Some(p) = &previous_token {
+            if let Some(p) = &previous_token
+                && p.0.segmentation != text_prop.segmentation
+            {
                 // If the segmentation changes, there is no previous token
-                if p.0.segmentation != text_prop.segmentation {
-                    previous_token = None;
-                }
+                previous_token = None;
             }
 
             let source_att_val = text_rel.attribute("source").unwrap_or_default();

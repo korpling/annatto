@@ -1,5 +1,5 @@
 use std::{
-    collections::{btree_map::Entry, BTreeMap},
+    collections::{BTreeMap, btree_map::Entry},
     fmt::Display,
     fs,
     io::Write,
@@ -9,7 +9,7 @@ use std::{
 
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
-use graphannis::{aql, errors::GraphAnnisError, AnnotationGraph};
+use graphannis::{AnnotationGraph, aql, errors::GraphAnnisError};
 use graphannis_core::{
     errors::GraphAnnisCoreError,
     graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE},
@@ -21,9 +21,9 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 use tabled::{Table, Tabled};
 
 use crate::{
+    Manipulator, StepID,
     error::AnnattoError,
     workflow::{StatusMessage, StatusSender},
-    Manipulator, StepID,
 };
 
 /// Runs AQL queries on the corpus and checks for constraints on the result.
@@ -304,7 +304,7 @@ impl Manipulator for Check {
                     if let Some(fp) = &tp {
                         matches!(fp, FailurePolicy::Fail) && global_demands_fail
                     } else {
-                        tp.is_none() && global_demands_fail
+                        global_demands_fail
                     }
                 } else {
                     false
@@ -525,7 +525,9 @@ impl Check {
                     QueryResult::ClosedQueryInterval(query_l, query_r) => {
                         let lower = Check::run_query(g, query_l);
                         let upper = Check::run_query(g, query_r);
-                        if let (Ok(l), Ok(u)) = (&lower, &upper) {
+                        if let Ok(l) = &lower
+                            && let Ok(u) = &upper
+                        {
                             (
                                 l.len().le(&n) && u.len().ge(&n),
                                 QueryResult::ClosedInterval(l.len(), u.len()),
@@ -801,9 +803,9 @@ mod tests {
     };
 
     use graphannis::{
+        AnnotationGraph,
         model::AnnotationComponentType,
         update::{GraphUpdate, UpdateEvent},
-        AnnotationGraph,
     };
     use graphannis_core::graph::ANNIS_NS;
     use insta::assert_snapshot;
@@ -812,14 +814,14 @@ mod tests {
     use toml;
 
     use crate::{
+        StepID,
         core::update_graph_silent,
         manipulator::{
-            check::{AQLTest, FailurePolicy, QueryResult, ReportLevel, TestResult},
             Manipulator,
+            check::{AQLTest, FailurePolicy, QueryResult, ReportLevel, TestResult},
         },
         util::example_generator,
         workflow::StatusMessage,
-        StepID,
     };
 
     use super::{Check, Test};
@@ -903,16 +905,18 @@ mod tests {
             save: None,
             overwrite: false,
         };
-        assert!(check
-            .validate_graph(
-                &mut graph,
-                StepID {
-                    module_name: "test".to_string(),
-                    path: None
-                },
-                None
-            )
-            .is_ok());
+        assert!(
+            check
+                .validate_graph(
+                    &mut graph,
+                    StepID {
+                        module_name: "test".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
         assert!(graph.global_statistics.is_some());
     }
 
@@ -989,17 +993,19 @@ mod tests {
             fs::read_to_string("./tests/data/graph_op/check/competing_policies.toml").unwrap();
         let check: Check = toml::from_str(serialized_data.as_str()).unwrap();
         let mut g = input_graph(true, "corpus").unwrap();
-        assert!(check
-            .manipulate_corpus(
-                &mut g,
-                Path::new("./"),
-                StepID {
-                    module_name: "test_check_policies".to_string(),
-                    path: None
-                },
-                None
-            )
-            .is_ok());
+        assert!(
+            check
+                .manipulate_corpus(
+                    &mut g,
+                    Path::new("./"),
+                    StepID {
+                        module_name: "test_check_policies".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
     }
 
     #[test]
@@ -1063,12 +1069,14 @@ mod tests {
                 > 0
         );
         if with_nodes {
-            assert!(r
-                .iter()
-                .any(|(_, tr)| matches!(tr, TestResult::Failed { .. })));
-            assert!(r
-                .iter()
-                .any(|(_, tr)| matches!(tr, TestResult::ProcessingError { .. })));
+            assert!(
+                r.iter()
+                    .any(|(_, tr)| matches!(tr, TestResult::Failed { .. }))
+            );
+            assert!(
+                r.iter()
+                    .any(|(_, tr)| matches!(tr, TestResult::ProcessingError { .. }))
+            );
         }
         Ok(())
     }

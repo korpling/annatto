@@ -3,12 +3,12 @@ use std::{collections::BTreeMap, ops::Bound};
 use anyhow::{anyhow, bail};
 use documented::{Documented, DocumentedFields};
 use graphannis::{
+    AnnotationGraph,
     graph::{AnnoKey, EdgeContainer, NodeID},
     model::{AnnotationComponent, AnnotationComponentType},
     update::{GraphUpdate, UpdateEvent},
-    AnnotationGraph,
 };
-use graphannis_core::graph::{storage::union::UnionEdgeContainer, ANNIS_NS, NODE_NAME_KEY};
+use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, storage::union::UnionEdgeContainer};
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
@@ -89,15 +89,14 @@ impl Manipulator for Filltime {
             if let Some(value) = graph
                 .get_node_annos()
                 .get_value_for_item(&node, &m.anno_key)?
+                && let Some((start_s, end_s)) = value.split_once('-')
             {
-                if let Some((start_s, end_s)) = value.split_once('-') {
-                    if !start_s.is_empty() {
-                        node_to_start.insert(node, start_s.parse::<f64>()?.into());
-                    };
-                    if !end_s.is_empty() {
-                        node_to_end.insert(node, end_s.parse::<f64>()?.into());
-                    };
-                }
+                if !start_s.is_empty() {
+                    node_to_start.insert(node, start_s.parse::<f64>()?.into());
+                };
+                if !end_s.is_empty() {
+                    node_to_end.insert(node, end_s.parse::<f64>()?.into());
+                };
             }
         }
         let progress = ProgressReporter::new(tx, step_id, roots.len())?;
@@ -236,7 +235,9 @@ fn order_interpolate(
     {
         OrderedFloat::from(et)
     } else {
-        bail!("Could not determine start time value to initiate interpolation. Consider setting a fallback value.")
+        bail!(
+            "Could not determine start time value to initiate interpolation. Consider setting a fallback value."
+        )
     };
     let mut untimed_nodes = Vec::new();
     for node in ordered_nodes {
@@ -322,21 +323,18 @@ fn lr_propagate(
                     .find_connected(*host_node, 1, Bound::Included(1))
                     .flatten()
                     .next()
+                    && !start_cache.contains_key(&tok)
                 {
-                    if !start_cache.contains_key(&tok) {
-                        inherited_start.insert(tok, *start_value);
-                    }
+                    inherited_start.insert(tok, *start_value);
                 }
                 if let Some(tok) = r_storage
                     .find_connected(*host_node, 1, Bound::Included(1))
                     .flatten()
                     .next()
+                    && !end_cache.contains_key(&tok)
+                    && let Some(end_value) = end_cache.get(host_node)
                 {
-                    if !end_cache.contains_key(&tok) {
-                        if let Some(end_value) = end_cache.get(host_node) {
-                            inherited_end.insert(tok, *end_value);
-                        }
-                    }
+                    inherited_end.insert(tok, *end_value);
                 }
             } else if coverage_container.has_ingoing_edges(*host_node)? {
                 // a token, i. e. a target node in l/r
@@ -346,10 +344,10 @@ fn lr_propagate(
                     }
                 }
                 for incoming_from in r_storage.get_ingoing_edges(*host_node).flatten() {
-                    if let Some(end_value) = end_cache.get(host_node) {
-                        if !end_cache.contains_key(&incoming_from) {
-                            inherited_end.insert(incoming_from, *end_value);
-                        }
+                    if let Some(end_value) = end_cache.get(host_node)
+                        && !end_cache.contains_key(&incoming_from)
+                    {
+                        inherited_end.insert(incoming_from, *end_value);
                     }
                 }
             }
@@ -367,17 +365,17 @@ fn lr_propagate(
 mod tests {
     use std::path::Path;
 
-    use graphannis::{update::GraphUpdate, AnnotationGraph};
+    use graphannis::{AnnotationGraph, update::GraphUpdate};
     use insta::assert_snapshot;
 
     use crate::{
+        StepID,
         core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
-        importer::{conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, Importer},
-        manipulator::{time::Filltime, Manipulator},
+        importer::{Importer, conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA},
+        manipulator::{Manipulator, time::Filltime},
         test_util::export_to_string,
         util::example_generator,
-        StepID,
     };
 
     #[test]
@@ -415,16 +413,18 @@ mod tests {
         example_generator::create_corpus_structure_simple(&mut u);
         assert!(update_graph_silent(&mut graph, &mut u).is_ok());
         let module = Filltime::default();
-        assert!(module
-            .validate_graph(
-                &mut graph,
-                StepID {
-                    module_name: "test".to_string(),
-                    path: None
-                },
-                None
-            )
-            .is_ok());
+        assert!(
+            module
+                .validate_graph(
+                    &mut graph,
+                    StepID {
+                        module_name: "test".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
         assert!(graph.global_statistics.is_none());
     }
 

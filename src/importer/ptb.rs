@@ -7,8 +7,8 @@ use graphannis::{
 };
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use pest::{
-    iterators::{Pair, Pairs},
     Parser,
+    iterators::{Pair, Pairs},
 };
 use pest_derive::Parser;
 use serde::Serialize;
@@ -17,7 +17,7 @@ use std::{io::Read, path::Path};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
-    progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files, StepID,
+    StepID, progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files,
 };
 
 use super::Importer;
@@ -52,12 +52,12 @@ impl DocumentMapper {
         })?;
 
         // Iterate over all root phrases and map them
-        if let Some(ptb) = ptb.next() {
-            if ptb.as_rule() == Rule::ptb {
-                for root_phrase in ptb.into_inner() {
-                    if root_phrase.as_rule() == Rule::phrase {
-                        self.consume_phrase(root_phrase.into_inner(), None, u)?;
-                    }
+        if let Some(ptb) = ptb.next()
+            && ptb.as_rule() == Rule::ptb
+        {
+            for root_phrase in ptb.into_inner() {
+                if root_phrase.as_rule() == Rule::phrase {
+                    self.consume_phrase(root_phrase.into_inner(), None, u)?;
                 }
             }
         }
@@ -90,29 +90,29 @@ impl DocumentMapper {
                 component_type: AnnotationComponentType::Dominance.to_string(),
                 component_name: "edge".to_string(),
             })?;
-            if let Some(label) = edge_label {
-                if !label.is_empty() {
-                    u.add_event(UpdateEvent::AddEdgeLabel {
-                        source_node: parent_node_name.to_string(),
-                        target_node: target.to_string(),
-                        layer: "syntax".to_string(),
-                        component_type: AnnotationComponentType::Dominance.to_string(),
-                        component_name: "".to_string(),
-                        anno_ns: "syntax".to_string(),
-                        anno_name: "func".to_string(),
-                        anno_value: label.to_string(),
-                    })?;
-                    u.add_event(UpdateEvent::AddEdgeLabel {
-                        source_node: parent_node_name.to_string(),
-                        target_node: target,
-                        layer: "syntax".to_string(),
-                        component_type: AnnotationComponentType::Dominance.to_string(),
-                        component_name: "edge".to_string(),
-                        anno_ns: "syntax".to_string(),
-                        anno_name: "func".to_string(),
-                        anno_value: label.to_string(),
-                    })?;
-                }
+            if let Some(label) = edge_label
+                && !label.is_empty()
+            {
+                u.add_event(UpdateEvent::AddEdgeLabel {
+                    source_node: parent_node_name.to_string(),
+                    target_node: target.to_string(),
+                    layer: "syntax".to_string(),
+                    component_type: AnnotationComponentType::Dominance.to_string(),
+                    component_name: "".to_string(),
+                    anno_ns: "syntax".to_string(),
+                    anno_name: "func".to_string(),
+                    anno_value: label.to_string(),
+                })?;
+                u.add_event(UpdateEvent::AddEdgeLabel {
+                    source_node: parent_node_name.to_string(),
+                    target_node: target,
+                    layer: "syntax".to_string(),
+                    component_type: AnnotationComponentType::Dominance.to_string(),
+                    component_name: "edge".to_string(),
+                    anno_ns: "syntax".to_string(),
+                    anno_name: "func".to_string(),
+                    anno_value: label.to_string(),
+                })?;
             }
         }
         Ok(())

@@ -1,7 +1,7 @@
 use std::{collections::HashMap, io::Read, path::Path};
 
 use crate::{
-    progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files, StepID,
+    StepID, progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files,
 };
 
 use super::Importer;
@@ -15,7 +15,7 @@ use graphannis::{
 };
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use itertools::Itertools;
-use pest::{iterators::Pairs, Parser};
+use pest::{Parser, iterators::Pairs};
 use pest_derive::Parser;
 use serde::Serialize;
 use serde_derive::Deserialize;
@@ -66,11 +66,11 @@ impl<'a> DocumentMapper<'a> {
             component_name: "".to_string(),
         })?;
 
-        if let Some(tt) = tt.next() {
-            if tt.as_rule() == Rule::treetagger {
-                let tt = tt.into_inner();
-                self.map_tt_rule(u, tt)?;
-            }
+        if let Some(tt) = tt.next()
+            && tt.as_rule() == Rule::treetagger
+        {
+            let tt = tt.into_inner();
+            self.map_tt_rule(u, tt)?;
         }
         Ok(())
     }
@@ -153,30 +153,30 @@ impl<'a> DocumentMapper<'a> {
         self.last_token_id = Some(tok_id.clone());
 
         for column_key in &self.params.column_names {
-            if let Some(column_value) = token_line.next() {
-                if column_value.as_rule() == Rule::column_value {
-                    if column_key.name.as_str() == "tok"
-                        && (column_key.ns.is_empty() || column_key.ns.as_str() == ANNIS_NS)
-                    {
-                        u.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: tok_id.to_string(),
-                            anno_ns: ANNIS_NS.to_string(),
-                            anno_name: "tok".to_string(),
-                            anno_value: column_value.as_str().to_string(),
-                        })?;
+            if let Some(column_value) = token_line.next()
+                && column_value.as_rule() == Rule::column_value
+            {
+                if column_key.name.as_str() == "tok"
+                    && (column_key.ns.is_empty() || column_key.ns.as_str() == ANNIS_NS)
+                {
+                    u.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: tok_id.to_string(),
+                        anno_ns: ANNIS_NS.to_string(),
+                        anno_name: "tok".to_string(),
+                        anno_value: column_value.as_str().to_string(),
+                    })?;
+                } else {
+                    let ns = if column_key.ns.is_empty() {
+                        DEFAULT_NS
                     } else {
-                        let ns = if column_key.ns.is_empty() {
-                            DEFAULT_NS
-                        } else {
-                            column_key.ns.as_str()
-                        };
-                        u.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: tok_id.to_string(),
-                            anno_ns: ns.to_string(),
-                            anno_name: column_key.name.to_string(),
-                            anno_value: column_value.as_str().to_string(),
-                        })?;
-                    }
+                        column_key.ns.as_str()
+                    };
+                    u.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: tok_id.to_string(),
+                        anno_ns: ns.to_string(),
+                        anno_name: column_key.name.to_string(),
+                        anno_value: column_value.as_str().to_string(),
+                    })?;
                 }
             }
         }
@@ -189,16 +189,16 @@ impl<'a> DocumentMapper<'a> {
         mut start_tag: Pairs<'a, Rule>,
         was_first_line: bool,
     ) -> anyhow::Result<()> {
-        if let Some(tag_name) = start_tag.next() {
-            if tag_name.as_rule() == Rule::tag_name {
-                let attributes = self.consume_tag_attribute(start_tag)?;
-                self.tag_stack.push(TagStackEntry {
-                    anno_name: tag_name.as_str().to_string(),
-                    covered_token: Vec::new(),
-                    was_first_line,
-                    attributes,
-                });
-            }
+        if let Some(tag_name) = start_tag.next()
+            && tag_name.as_rule() == Rule::tag_name
+        {
+            let attributes = self.consume_tag_attribute(start_tag)?;
+            self.tag_stack.push(TagStackEntry {
+                anno_name: tag_name.as_str().to_string(),
+                covered_token: Vec::new(),
+                was_first_line,
+                attributes,
+            });
         }
 
         Ok(())

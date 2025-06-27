@@ -11,10 +11,10 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 use xml::{EventReader, ParserConfig};
 
 use crate::{
+    StepID,
     error::{AnnattoError, Result},
     progress::ProgressReporter,
     util::graphupdate::import_corpus_graph_from_files,
-    StepID,
 };
 use documented::{Documented, DocumentedFields};
 
@@ -121,50 +121,50 @@ impl ImportXML {
                             anno_name: attr.name.to_string(),
                             anno_value: attr.value.to_string(),
                         })?;
-                        if let Some(target_name) = text_attr_name {
-                            if &attr.name.to_string() == target_name {
-                                let token_text_from_attr = &attr.value;
-                                for t in token_text_from_attr.chars() {
-                                    build_token(
-                                        update,
-                                        &doc_node_name,
-                                        t.to_string(),
-                                        &mut node_counts,
-                                        &node_stack,
-                                    )?;
-                                }
+                        if let Some(target_name) = text_attr_name
+                            && &attr.name.to_string() == target_name
+                        {
+                            let token_text_from_attr = &attr.value;
+                            for t in token_text_from_attr.chars() {
+                                build_token(
+                                    update,
+                                    &doc_node_name,
+                                    t.to_string(),
+                                    &mut node_counts,
+                                    &node_stack,
+                                )?;
                             }
                         }
                     }
                     value_stack.push(String::new());
                 }
                 xml::reader::XmlEvent::EndElement { name } => {
-                    if let Some((node_name, pop_node_type)) = node_stack.last() {
-                        if &name.to_string() == pop_node_type {
-                            if let Some(last_string) = value_stack.pop() {
-                                update.add_event(UpdateEvent::AddNodeLabel {
-                                    node_name: node_name.to_string(),
-                                    anno_ns: GENERIC_NS.to_string(),
-                                    anno_name: name.local_name.to_string(),
-                                    anno_value: last_string.to_string(),
-                                })?;
-                                if let Some(new_last) = value_stack.last_mut() {
-                                    new_last.push_str(&last_string);
-                                }
+                    if let Some((node_name, pop_node_type)) = node_stack.last()
+                        && &name.to_string() == pop_node_type
+                    {
+                        if let Some(last_string) = value_stack.pop() {
+                            update.add_event(UpdateEvent::AddNodeLabel {
+                                node_name: node_name.to_string(),
+                                anno_ns: GENERIC_NS.to_string(),
+                                anno_name: name.local_name.to_string(),
+                                anno_value: last_string.to_string(),
+                            })?;
+                            if let Some(new_last) = value_stack.last_mut() {
+                                new_last.push_str(&last_string);
                             }
-                            if !self.closing_default.is_empty() {
-                                for t in self.closing_default.chars() {
-                                    build_token(
-                                        update,
-                                        &doc_node_name,
-                                        t.to_string(),
-                                        &mut node_counts,
-                                        &node_stack,
-                                    )?;
-                                }
-                            }
-                            node_stack.pop();
                         }
+                        if !self.closing_default.is_empty() {
+                            for t in self.closing_default.chars() {
+                                build_token(
+                                    update,
+                                    &doc_node_name,
+                                    t.to_string(),
+                                    &mut node_counts,
+                                    &node_stack,
+                                )?;
+                            }
+                        }
+                        node_stack.pop();
                     }
                 }
                 xml::reader::XmlEvent::Characters(chars) | xml::reader::XmlEvent::CData(chars) => {

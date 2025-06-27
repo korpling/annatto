@@ -1,8 +1,8 @@
 use std::num::{ParseFloatError, ParseIntError};
 
 use pest::{
-    iterators::{Pair, Pairs},
     Parser,
+    iterators::{Pair, Pairs},
 };
 use pest_derive::Parser;
 use thiserror::Error;
@@ -111,14 +111,13 @@ fn consume_document_items(items: &mut Pairs<Rule>) -> Result<DocumentHeader> {
     let mut number_items = 0;
 
     // Check that this document has a tier
-    if let Some(tier_flag) = items.next() {
-        if tier_flag.as_rule() == Rule::flag && tier_flag.as_str() == "<exists>" {
-            // Get the number of items
-            let size = items.next().ok_or(TextGridError::MissingValue("size"))?;
-            if size.as_rule() == Rule::number {
-                number_items = size.as_str().parse::<u64>()?;
-            }
-        }
+    if let Some(tier_flag) = items.next()
+        && tier_flag.as_rule() == Rule::flag
+        && tier_flag.as_str() == "<exists>"
+        && let Ok(size) = items.next().ok_or(TextGridError::MissingValue("size"))
+        && size.as_rule() == Rule::number
+    {
+        number_items = size.as_str().parse::<u64>()?;
     }
 
     // No tier has been detected

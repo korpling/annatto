@@ -19,7 +19,7 @@ use serde::Serialize;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
-use crate::{progress::ProgressReporter, util::get_all_files, StepID};
+use crate::{StepID, progress::ProgressReporter, util::get_all_files};
 
 use super::Importer;
 
@@ -108,7 +108,9 @@ impl Importer for AnnotateCorpus {
         for file_path in all_files.into_iter().filter(|p| p.is_file()) {
             let parent_opt = &file_path.parent();
             let file_stem_opt = file_path.file_stem();
-            let (parent, file_stem) = if let (Some(p), Some(s)) = (parent_opt, file_stem_opt) {
+            let (parent, file_stem) = if let Some(p) = parent_opt
+                && let Some(s) = file_stem_opt
+            {
                 (p, s)
             } else {
                 progress
@@ -215,19 +217,19 @@ mod tests {
     use std::{fs, io::Write, path::Path};
 
     use graphannis::{
+        AnnotationGraph, CorpusStorage,
         corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
         graph::AnnoKey,
         model::AnnotationComponentType,
         update::{GraphUpdate, UpdateEvent},
-        AnnotationGraph, CorpusStorage,
     };
     use graphannis_core::graph::ANNIS_NS;
     use insta::assert_snapshot;
     use tempfile::tempdir;
 
     use crate::{
-        exporter::graphml::GraphMLExporter, importer::Importer, test_util::export_to_string,
-        ImporterStep, ReadFrom,
+        ImporterStep, ReadFrom, exporter::graphml::GraphMLExporter, importer::Importer,
+        test_util::export_to_string,
     };
 
     use super::AnnotateCorpus;

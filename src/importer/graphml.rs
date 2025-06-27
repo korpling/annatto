@@ -6,8 +6,8 @@ use graphannis::{
 };
 use graphannis_core::{graph::NODE_TYPE_KEY, util::split_qname};
 use quick_xml::{
-    events::{attributes::Attributes, Event},
     Reader,
+    events::{Event, attributes::Attributes},
 };
 use serde::Serialize;
 use serde_derive::Deserialize;
@@ -21,8 +21,8 @@ use std::{
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
-    error::AnnattoError, importer::Importer, progress::ProgressReporter, workflow::StatusSender,
-    StepID,
+    StepID, error::AnnattoError, importer::Importer, progress::ProgressReporter,
+    workflow::StatusSender,
 };
 
 /// Imports files in the [GraphML](http://graphml.graphdrawing.org/) file which
@@ -66,32 +66,31 @@ fn add_edge(
     current_component: &Option<String>,
     data: &mut HashMap<AnnoKey, String>,
 ) -> Result<(), AnnattoError> {
-    if let (Some(source), Some(target), Some(component)) =
-        (current_source_id, current_target_id, current_component)
+    if let Some(source) = current_source_id
+        && let Some(target) = current_target_id
+        && let Some(component) = current_component
+        && let Ok(component) = AnnotationComponent::from_str(component)
     {
-        // Insert graph update for this edge
-        if let Ok(component) = AnnotationComponent::from_str(component) {
-            edge_updates.add_event(UpdateEvent::AddEdge {
+        edge_updates.add_event(UpdateEvent::AddEdge {
+            source_node: source.clone(),
+            target_node: target.clone(),
+            layer: component.layer.to_string(),
+            component_type: component.get_type().to_string(),
+            component_name: component.name.to_string(),
+        })?;
+
+        // Add all remaining data entries as annotations
+        for (key, value) in data.drain() {
+            edge_updates.add_event(UpdateEvent::AddEdgeLabel {
                 source_node: source.clone(),
                 target_node: target.clone(),
                 layer: component.layer.to_string(),
                 component_type: component.get_type().to_string(),
                 component_name: component.name.to_string(),
+                anno_ns: key.ns.to_string(),
+                anno_name: key.name.to_string(),
+                anno_value: value,
             })?;
-
-            // Add all remaining data entries as annotations
-            for (key, value) in data.drain() {
-                edge_updates.add_event(UpdateEvent::AddEdgeLabel {
-                    source_node: source.clone(),
-                    target_node: target.clone(),
-                    layer: component.layer.to_string(),
-                    component_type: component.get_type().to_string(),
-                    component_name: component.name.to_string(),
-                    anno_ns: key.ns.to_string(),
-                    anno_name: key.name.to_string(),
-                    anno_value: value,
-                })?;
-            }
         }
     }
     Ok(())
@@ -125,7 +124,9 @@ fn add_annotation_key(
         }
     }
 
-    if let (Some(id), Some(anno_key)) = (id, anno_key) {
+    if let Some(id) = id
+        && let Some(anno_key) = anno_key
+    {
         keys.insert(id, anno_key);
     }
     Ok(())
@@ -213,21 +214,23 @@ fn read_graphml<R: std::io::BufRead>(
                 }
             }
             Event::Text(t) => {
-                if let Some(current_data_key) = &current_data_key {
-                    if in_graph && level == 4 {
-                        if let Some(anno_key) = keys.get(current_data_key) {
-                            // Copy all data attributes into our own map
-                            data.insert(anno_key.clone(), t.unescape()?.to_string());
-                        }
-                    }
+                if let Some(current_data_key) = &current_data_key
+                    && in_graph
+                    && level == 4
+                    && let Some(anno_key) = keys.get(current_data_key)
+                {
+                    // Copy all data attributes into our own map
+                    data.insert(anno_key.clone(), t.unescape()?.to_string());
                 }
             }
             Event::CData(t) => {
-                if let Some(current_data_key) = &current_data_key {
-                    if in_graph && level == 3 && current_data_key == "k0" {
-                        // This is the configuration content
-                        config = Some(String::from_utf8_lossy(&t).to_string());
-                    }
+                if let Some(current_data_key) = &current_data_key
+                    && in_graph
+                    && level == 3
+                    && current_data_key == "k0"
+                {
+                    // This is the configuration content
+                    config = Some(String::from_utf8_lossy(&t).to_string());
                 }
             }
             Event::End(ref e) => {

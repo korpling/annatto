@@ -23,7 +23,7 @@ use umya_spreadsheet::Cell;
 
 use super::Importer;
 use crate::{
-    error::AnnattoError, importer::NODE_NAME_ENCODE_SET, progress::ProgressReporter, util, StepID,
+    StepID, error::AnnattoError, importer::NODE_NAME_ENCODE_SET, progress::ProgressReporter, util,
 };
 use documented::{Documented, DocumentedFields};
 
@@ -170,21 +170,21 @@ impl<'a> MetasheetMapper<'a> {
                 .into_iter()
                 .map(|c| (*c.get_coordinate().get_col_num(), c))
                 .collect::<BTreeMap<u32, &Cell>>();
-            if let Some(key_cell) = entry_map.get(&1) {
-                if let Some(value_cell) = entry_map.get(&2) {
-                    let kv = key_cell.get_value();
-                    let key = kv.trim();
-                    if !key.is_empty() {
-                        let (ns, name) = split_qname(key);
-                        let vv = value_cell.get_value();
-                        let value = vv.trim();
-                        update.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: doc_node_name.to_string(),
-                            anno_ns: ns.map_or("".to_string(), str::to_string),
-                            anno_name: name.to_string(),
-                            anno_value: value.to_string(),
-                        })?;
-                    }
+            if let Some(key_cell) = entry_map.get(&1)
+                && let Some(value_cell) = entry_map.get(&2)
+            {
+                let kv = key_cell.get_value();
+                let key = kv.trim();
+                if !key.is_empty() {
+                    let (ns, name) = split_qname(key);
+                    let vv = value_cell.get_value();
+                    let value = vv.trim();
+                    update.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: doc_node_name.to_string(),
+                        anno_ns: ns.map_or("".to_string(), str::to_string),
+                        anno_name: name.to_string(),
+                        anno_value: value.to_string(),
+                    })?;
                 }
             }
         }
@@ -453,12 +453,11 @@ impl<'a> DatasheetMapper<'a> {
     ) -> Result<BTreeMap<u32, Vec<(u32, u32)>>, anyhow::Error> {
         let mut cell_map: BTreeMap<u32, Vec<(u32, u32)>> = BTreeMap::default();
         for rng in self.sheet.get_merge_cells() {
-            if let (Some(start_col), Some(end_col), Some(start_row), Some(end_row)) = (
-                rng.get_coordinate_start_col(),
-                rng.get_coordinate_end_col(),
-                rng.get_coordinate_start_row(),
-                rng.get_coordinate_end_row(),
-            ) {
+            if let Some(start_col) = rng.get_coordinate_start_col()
+                && let Some(end_col) = rng.get_coordinate_end_col()
+                && let Some(start_row) = rng.get_coordinate_start_row()
+                && let Some(end_row) = rng.get_coordinate_end_row()
+            {
                 if start_col != end_col {
                     if (*start_col.get_num()..=*end_col.get_num()).any(|c| {
                         if let Some(cell) = self.sheet.get_cell((c, 1)) {
@@ -470,7 +469,10 @@ impl<'a> DatasheetMapper<'a> {
                         // At least one of the affected columns of the multi-column merge cell
                         // is a column to be imported, which is forbidden
                         // (this way the user can still import sheet by omitting dirty columns in the column map)
-                        bail!("A merge cell affects at least one column that is set to be imported: {:?}", rng);
+                        bail!(
+                            "A merge cell affects at least one column that is set to be imported: {:?}",
+                            rng
+                        );
                     } else {
                         progress.warn(
                             format!(
@@ -582,18 +584,18 @@ mod tests {
     use std::{path::Path, sync::mpsc};
 
     use graphannis::{
-        corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
         AnnotationGraph, CorpusStorage,
+        corpusstorage::{QueryLanguage, ResultOrder, SearchQuery},
     };
     use graphannis_core::{annostorage::ValueSearch, types::AnnoKey};
     use insta::assert_snapshot;
     use tempfile::tempdir;
 
     use crate::{
+        ImporterStep, ReadFrom,
         exporter::graphml::GraphMLExporter,
         test_util::export_to_string,
         workflow::{StatusMessage, Workflow},
-        ImporterStep, ReadFrom,
     };
 
     use super::*;

@@ -43,7 +43,6 @@ pub(crate) fn update_graph(
 /// This method applies updates to a graph without re-calculating the statistics.
 /// Additionally, the statistics of the graph are set to `None` to indicate that
 /// the statistics need to be computed if needed.
-#[allow(clippy::disallowed_methods)]
 pub(crate) fn update_graph_silent(
     graph: &mut AnnotationGraph,
     update: &mut GraphUpdate,
