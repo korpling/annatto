@@ -82,7 +82,9 @@ impl SortCache {
                 val
             };
 
-            if let (Some(m1_anno_val), Some(m2_anno_val)) = (m1_anno_val, m2_anno_val) {
+            if let Some(m1_anno_val) = m1_anno_val
+                && let Some(m2_anno_val) = m2_anno_val
+            {
                 let (m1_path, m1_name) = split_path_and_nodename(&m1_anno_val);
                 let (m2_path, m2_name) = split_path_and_nodename(&m2_anno_val);
 
@@ -111,7 +113,9 @@ impl SortCache {
                     result
                 };
 
-                if let (Some(m1_lefttok), Some(m2_lefttok)) = (m1_lefttok, m2_lefttok) {
+                if let Some(m1_lefttok) = m1_lefttok
+                    && let Some(m2_lefttok) = m2_lefttok
+                {
                     let token_are_connected =
                         if let Some(v) = self.is_connected.get(&(m1_lefttok, m2_lefttok)) {
                             *v
@@ -180,7 +184,7 @@ mod tests {
     use std::{io::BufReader, path::Path};
 
     use graphannis::model::{AnnotationComponent, AnnotationComponentType};
-    use graphannis_core::graph::{serialization::graphml, ANNIS_NS, NODE_TYPE_KEY};
+    use graphannis_core::graph::{ANNIS_NS, NODE_TYPE_KEY, serialization::graphml};
 
     use super::*;
 

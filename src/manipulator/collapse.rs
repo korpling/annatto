@@ -1,10 +1,10 @@
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
+    AnnotationGraph,
     graph::GraphStorage,
     model::{AnnotationComponent, AnnotationComponentType},
     update::{GraphUpdate, UpdateEvent},
-    AnnotationGraph,
 };
 use graphannis_core::{
     dfs::CycleSafeDFS,
@@ -21,8 +21,8 @@ use std::{
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
-    core::update_graph_silent, error::AnnattoError, progress::ProgressReporter,
-    workflow::StatusSender, StepID,
+    StepID, core::update_graph_silent, error::AnnattoError, progress::ProgressReporter,
+    workflow::StatusSender,
 };
 
 use super::Manipulator;
@@ -197,7 +197,12 @@ impl Collapse {
                             node_name: node_name.to_string(),
                         })?;
                     } else {
-                        return Err(AnnattoError::Manipulator { reason: format!("Node {m} has no node name or it cannot be retrieved, this can lead to an invalid result."), manipulator: step_id.module_name.to_string() })?;
+                        return Err(AnnattoError::Manipulator {
+                            reason: format!(
+                                "Node {m} has no node name or it cannot be retrieved, this can lead to an invalid result."
+                            ),
+                            manipulator: step_id.module_name.to_string(),
+                        })?;
                     }
                 }
                 progress_create_nodes.worked(1)?;
@@ -488,9 +493,9 @@ mod tests {
     use std::{fs, path::Path, sync::mpsc};
 
     use graphannis::{
+        AnnotationGraph,
         model::{AnnotationComponent, AnnotationComponentType},
         update::{GraphUpdate, UpdateEvent},
-        AnnotationGraph,
     };
     use graphannis_core::graph::ANNIS_NS;
 
@@ -498,12 +503,12 @@ mod tests {
     use serde_derive::Deserialize;
 
     use crate::{
+        StepID,
         core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
-        manipulator::{check::Check, Manipulator},
+        manipulator::{Manipulator, check::Check},
         test_util::export_to_string,
         util::example_generator,
-        StepID,
     };
 
     use super::{Collapse, HYPERNODE_NAME_STEM};
@@ -545,16 +550,18 @@ mod tests {
             disjoint: false,
             keep_name: false,
         };
-        assert!(module
-            .validate_graph(
-                &mut graph,
-                StepID {
-                    module_name: "test".to_string(),
-                    path: None
-                },
-                None
-            )
-            .is_ok());
+        assert!(
+            module
+                .validate_graph(
+                    &mut graph,
+                    StepID {
+                        module_name: "test".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
         assert!(graph.global_statistics.is_none());
     }
 

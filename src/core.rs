@@ -1,7 +1,7 @@
-use graphannis::{update::GraphUpdate, AnnotationGraph};
+use graphannis::{AnnotationGraph, update::GraphUpdate};
 use lazy_static::lazy_static;
 
-use crate::{error::AnnattoError, progress::ProgressReporter, workflow::StatusSender, StepID};
+use crate::{StepID, error::AnnattoError, progress::ProgressReporter, workflow::StatusSender};
 
 lazy_static! {
     static ref FALLBACK_STEP_ID: StepID = {
@@ -43,7 +43,6 @@ pub(crate) fn update_graph(
 /// This method applies updates to a graph without re-calculating the statistics.
 /// Additionally, the statistics of the graph are set to `None` to indicate that
 /// the statistics need to be computed if needed.
-#[allow(clippy::disallowed_methods)]
 pub(crate) fn update_graph_silent(
     graph: &mut AnnotationGraph,
     update: &mut GraphUpdate,
@@ -55,7 +54,7 @@ pub(crate) fn update_graph_silent(
 mod tests {
     use std::sync::mpsc;
 
-    use graphannis::{update::GraphUpdate, AnnotationGraph};
+    use graphannis::{AnnotationGraph, update::GraphUpdate};
     use insta::assert_snapshot;
     use itertools::Itertools;
 

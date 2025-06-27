@@ -9,14 +9,14 @@ use std::{
 };
 
 use crate::{
-    error::AnnattoError, importer::exmaralda::LANGUAGE_SEP, progress::ProgressReporter,
-    util::Traverse, StepID,
+    StepID, error::AnnattoError, importer::exmaralda::LANGUAGE_SEP, progress::ProgressReporter,
+    util::Traverse,
 };
 use documented::{Documented, DocumentedFields};
 use graphannis::{
+    AnnotationGraph,
     graph::GraphStorage,
     model::{AnnotationComponent, AnnotationComponentType},
-    AnnotationGraph,
 };
 use graphannis_core::{
     dfs::CycleSafeDFS,
@@ -26,8 +26,8 @@ use graphannis_core::{
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use quick_xml::{
-    events::{BytesDecl, BytesEnd, BytesStart, BytesText, Event},
     Writer,
+    events::{BytesDecl, BytesEnd, BytesStart, BytesText, Event},
 };
 use serde::Serialize;
 use serde_derive::Deserialize;
@@ -192,8 +192,7 @@ impl Exporter for ExportExmaralda {
                         } else {
                             return Err(Box::new(AnnattoError::Export {
                                 reason: format!(
-                                    "Could not derive relative path to media file {:?}",
-                                    ref_path
+                                    "Could not derive relative path to media file {ref_path:?}",
                                 ),
                                 exporter: step_id.module_name.clone(),
                                 path: doc_path.to_path_buf(),
@@ -386,17 +385,14 @@ impl Exporter for ExportExmaralda {
                             Ordering::Equal // will never happen
                         }
                     });
-                    let tier_type = if let Some((node_id, _)) = entries.last() {
-                        if (anno_key.ns == ANNIS_NS && &anno_key.name == "tok")
+                    let tier_type = if let Some((node_id, _)) = entries.last()
+                        && ((anno_key.ns == ANNIS_NS && &anno_key.name == "tok")
                             || ordering_data
                                 .get(node_id)
                                 .map(|o_name| o_name == &anno_key.name)
-                                .unwrap_or_default()
-                        {
-                            "t"
-                        } else {
-                            "a"
-                        }
+                                .unwrap_or_default())
+                    {
+                        "t"
                     } else {
                         "a"
                     };
@@ -420,10 +416,9 @@ impl Exporter for ExportExmaralda {
                     let tier = BytesStart::new("tier").with_attributes(tier_attributes);
                     writer.write_event(Event::Start(tier))?;
                     for (node_id, anno_value) in sorted_entries {
-                        if let (Some(start), Some(end)) = (
-                            start_data.get(&(*doc_node_id, *node_id)),
-                            end_data.get(&(*doc_node_id, *node_id)),
-                        ) {
+                        if let Some(start) = start_data.get(&(*doc_node_id, *node_id))
+                            && let Some(end) = end_data.get(&(*doc_node_id, *node_id))
+                        {
                             let mut event = BytesStart::new("event");
                             event.push_attribute(("start", start.as_str()));
                             event.push_attribute(("end", end.as_str()));
@@ -613,18 +608,17 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                             // check for interval annotations
                             if let Ok(Some(interval)) =
                                 graph.get_node_annos().get_value_for_item(n, &time_key)
+                                && let Some(tpl) = interval.split_once('-')
                             {
-                                if let Some(tpl) = interval.split_once('-') {
-                                    for time_string in [tpl.0, tpl.1] {
-                                        let time = time_string
+                                for time_string in [tpl.0, tpl.1] {
+                                    let time = time_string
                                             .parse::<OrderedFloat<f32>>()
                                             .map_err(|_| AnnattoError::Export {
                                                 reason: format!("Failed to parse time value {time_string} of interval {interval}"),
                                                 exporter: step_id.module_name.clone(),
                                                 path: Path::new("./").to_path_buf(),
                                             })?;
-                                        time_values.insert(time);
-                                    }
+                                    time_values.insert(time);
                                 }
                             }
                             processed_nodes.insert(*n);
@@ -636,21 +630,18 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                             name: "tok".into(),
                             ns: ANNIS_NS.into(),
                         },
-                    )? {
-                        if !tok_value.trim().is_empty() {
-                            let k = (doc_node, (ANNIS_NS.to_string(), "tok".to_string()));
-                            let v = (timeline_token, tok_value.to_string());
-                            match anno_data.entry(k) {
-                                std::collections::btree_map::Entry::Vacant(vacant_entry) => {
-                                    vacant_entry.insert(vec![v]);
-                                }
-                                std::collections::btree_map::Entry::Occupied(
-                                    mut occupied_entry,
-                                ) => {
-                                    occupied_entry.get_mut().push(v);
-                                }
-                            };
-                        }
+                    )? && !tok_value.trim().is_empty()
+                    {
+                        let k = (doc_node, (ANNIS_NS.to_string(), "tok".to_string()));
+                        let v = (timeline_token, tok_value.to_string());
+                        match anno_data.entry(k) {
+                            std::collections::btree_map::Entry::Vacant(vacant_entry) => {
+                                vacant_entry.insert(vec![v]);
+                            }
+                            std::collections::btree_map::Entry::Occupied(mut occupied_entry) => {
+                                occupied_entry.get_mut().push(v);
+                            }
+                        };
                     }
                 }
                 if !time_values.is_empty() {
@@ -665,19 +656,17 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                     if let Some(node_type_value) = graph
                         .get_node_annos()
                         .get_value_for_item(&source_node_id, &NODE_TYPE_KEY)?
+                        && node_type_value == "file"
+                        && let Some(path_value) = graph.get_node_annos().get_value_for_item(
+                            &source_node_id,
+                            &AnnoKey {
+                                name: "file".into(),
+                                ns: ANNIS_NS.into(),
+                            },
+                        )?
                     {
-                        if node_type_value == "file" {
-                            if let Some(path_value) = graph.get_node_annos().get_value_for_item(
-                                &source_node_id,
-                                &AnnoKey {
-                                    name: "file".into(),
-                                    ns: ANNIS_NS.into(),
-                                },
-                            )? {
-                                let path = Path::new(&*path_value);
-                                media_vec.push(path.to_path_buf());
-                            }
-                        }
+                        let path = Path::new(&*path_value);
+                        media_vec.push(path.to_path_buf());
                     }
                 }
                 audio_data.insert(doc_node, media_vec);
@@ -757,15 +746,15 @@ mod tests {
         path::{Path, PathBuf},
     };
 
-    use graphannis::{graph::AnnoKey, AnnotationGraph};
+    use graphannis::{AnnotationGraph, graph::AnnoKey};
     use insta::assert_snapshot;
     use tempfile::TempDir;
 
     use crate::{
-        exporter::exmaralda::ExportExmaralda,
-        importer::{exmaralda::ImportEXMARaLDA, treetagger::ImportTreeTagger, Importer},
-        test_util::{export_to_string, export_to_string_in_directory},
         ImporterStep, ReadFrom, StepID,
+        exporter::exmaralda::ExportExmaralda,
+        importer::{Importer, exmaralda::ImportEXMARaLDA, treetagger::ImportTreeTagger},
+        test_util::{export_to_string, export_to_string_in_directory},
     };
 
     #[test]

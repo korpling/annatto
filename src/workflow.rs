@@ -6,17 +6,17 @@ use std::{
 };
 
 use anyhow::anyhow;
-use graphannis::{update::GraphUpdate, AnnotationGraph};
+use graphannis::{AnnotationGraph, update::GraphUpdate};
 
 use regex::Regex;
 use serde::Serialize;
 use serde_derive::Deserialize;
 
 use crate::{
+    ExporterStep, ImporterStep, ManipulatorStep, StepID,
     core::update_graph,
     error::{AnnattoError, Result},
     progress::ProgressReporter,
-    ExporterStep, ImporterStep, ManipulatorStep, StepID,
 };
 use normpath::PathExt;
 use rayon::prelude::*;
@@ -424,8 +424,12 @@ mod tests {
     fn with_env() {
         let k1 = "TEST_VAR_FORMAT_NAME";
         let k2 = "TEST_VAR_GRAPH_OP_NAME";
-        std::env::set_var(k1, "none");
-        std::env::set_var(k2, "check");
+        // safety: This is the test module. There is no
+        // environment modification at runtime.
+        unsafe {
+            std::env::set_var(k1, "none");
+            std::env::set_var(k2, "check");
+        }
         let read_result = read_workflow(
             Path::new("./tests/data/import/empty/empty_with_vars.toml").to_path_buf(),
             true,
@@ -450,9 +454,13 @@ mod tests {
         let k1 = "TEST_VAR_FORMAT_NAME_REC";
         let k2 = "TEST_VAR_GRAPH_OP_NAME_REC";
         let k3 = "TEST_VAR_WAIT_FOR_IT_REC";
-        std::env::set_var(k1, "none");
-        std::env::set_var(k2, "$TEST_VAR_WAIT_FOR_IT_REC");
-        std::env::set_var(k3, "check");
+        // safety: This is the test module. There is no
+        // environment modification at runtime.
+        unsafe {
+            std::env::set_var(k1, "none");
+            std::env::set_var(k2, "$TEST_VAR_WAIT_FOR_IT_REC");
+            std::env::set_var(k3, "check");
+        }
         let read_result = read_workflow(
             Path::new("./tests/data/import/empty/empty_with_vars_rec.toml").to_path_buf(),
             true,
@@ -470,9 +478,13 @@ mod tests {
         let k1 = "TEST_VAR_FORMAT_NAME_REP";
         let k2 = "TEST_VAR_GRAPH_OP_NAME_REP";
         let k3 = "TEST_VAR_WAIT_FOR_IT_REP";
-        std::env::set_var(k1, "none");
-        std::env::set_var(k2, "$TEST_VAR_WAIT_FOR_IT_REP");
-        std::env::set_var(k3, "check");
+        // safety: This is the test module. There is no
+        // environment modification at runtime.
+        unsafe {
+            std::env::set_var(k1, "none");
+            std::env::set_var(k2, "$TEST_VAR_WAIT_FOR_IT_REP");
+            std::env::set_var(k3, "check");
+        }
         let read_result = read_workflow(
             Path::new("./tests/data/import/empty/empty_with_vars_rep.toml").to_path_buf(),
             true,
@@ -490,9 +502,13 @@ mod tests {
         let k1 = "TEST_VAR_FORMAT_NAME_CYC";
         let k2 = "TEST_VAR_GRAPH_OP_NAME_CYC";
         let k3 = "TEST_VAR_WAIT_FOR_IT_CYC";
-        std::env::set_var(k1, "$TEST_VAR_GRAPH_OP_NAME_CYC");
-        std::env::set_var(k2, "$TEST_VAR_WAIT_FOR_IT_CYC");
-        std::env::set_var(k3, "$TEST_VAR_FORMAT_NAME_CYC");
+        // safety: This is the test module. There is no
+        // environment modification at runtime.
+        unsafe {
+            std::env::set_var(k1, "$TEST_VAR_GRAPH_OP_NAME_CYC");
+            std::env::set_var(k2, "$TEST_VAR_WAIT_FOR_IT_CYC");
+            std::env::set_var(k3, "$TEST_VAR_FORMAT_NAME_CYC")
+        }
         let read_result = read_workflow(
             Path::new("./tests/data/import/empty/empty_with_vars_cyc.toml").to_path_buf(),
             true,
@@ -503,7 +519,11 @@ mod tests {
     #[test]
     fn invalid_variable_name() {
         let k = "ß";
-        std::env::set_var(k, "any_value");
+        // safety: This is the test module. There is no
+        // environment modification at runtime.
+        unsafe {
+            std::env::set_var(k, "any_value");
+        }
         let r = contained_variables("this text contains an invalid variable with name $ß");
         assert!(r.is_ok());
         assert_eq!(0, r.unwrap().len());
@@ -526,8 +546,11 @@ mod tests {
     /// Test that exporting to an non-existing directory does not fail.
     fn nonexisting_export_dir() {
         let tmp_out = tempfile::tempdir().unwrap();
-        std::env::set_var("TEST_OUTPUT", tmp_out.path().to_string_lossy().as_ref());
-
+        // safety: This is the test module. There is no
+        // environment modification at runtime.
+        unsafe {
+            std::env::set_var("TEST_OUTPUT", tmp_out.path().to_string_lossy().as_ref());
+        }
         execute_from_file(
             Path::new("./tests/workflows/nonexisting_dir.toml"),
             true,
@@ -542,10 +565,14 @@ mod tests {
     fn serialize_workflow() {
         let ts = fs::read_to_string("tests/data/workflow/complex.toml");
         assert!(ts.is_ok());
-        env::set_var(
-            "NOT_SO_RANDOM_VARIABLE",
-            "export/to/this/path/if/you/can/if/not/no/worries",
-        );
+        // safety: This is the test module. There is no
+        // environment modification at runtime.
+        unsafe {
+            env::set_var(
+                "NOT_SO_RANDOM_VARIABLE",
+                "export/to/this/path/if/you/can/if/not/no/worries",
+            );
+        }
         let mut clean_str = String::new();
         assert!(parse_variables(ts.unwrap(), &mut clean_str, &mut BTreeSet::default()).is_ok());
         let wf: std::result::Result<Workflow, _> = toml::from_str(&clean_str);
@@ -562,9 +589,11 @@ mod tests {
             ww.err()
         );
         let written_workflow = ww.unwrap();
-        assert_snapshot!(Regex::new(r#"[0-9]+\.[0-9]+\.[0-9]+"#)
-            .unwrap()
-            .replace(&written_workflow, "<VERSION>"));
+        assert_snapshot!(
+            Regex::new(r#"[0-9]+\.[0-9]+\.[0-9]+"#)
+                .unwrap()
+                .replace(&written_workflow, "<VERSION>")
+        );
         let deserialize: std::result::Result<Workflow, _> = toml::from_str(&written_workflow);
         assert!(
             deserialize.is_ok(),

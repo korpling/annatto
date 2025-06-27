@@ -4,7 +4,7 @@ authors = [
   "Martin Klotz <martin.klotz@hu-berlin.de>",
 ]
 description = "Converts linguistic data formats based on the graphANNIS data model as intermediate representation and can apply consistency tests."
-edition = "2018"
+edition = "2024"
 homepage = "https://github.com/korpling/annatto/"
 license = "Apache-2.0"
 name = "annatto"

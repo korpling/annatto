@@ -1,17 +1,16 @@
 //! Created edges between nodes based on their annotation value.
 use super::Manipulator;
 use crate::{
-    core::update_graph_silent, error::AnnattoError, progress::ProgressReporter,
-    workflow::StatusSender, StepID,
+    StepID, core::update_graph_silent, error::AnnattoError, progress::ProgressReporter,
+    workflow::StatusSender,
 };
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
-    aql,
+    AnnotationGraph, aql,
     graph::NodeID,
     model::AnnotationComponent,
     update::{GraphUpdate, UpdateEvent},
-    AnnotationGraph,
 };
 use graphannis_core::{graph::NODE_NAME_KEY, types::AnnoKey};
 use itertools::Itertools;
@@ -182,10 +181,10 @@ fn gather_link_data(
             let mut value_segments = Vec::new();
             let mut edge_data = Vec::new();
             for edge_index in edge_indices {
-                if let Some((k, n)) = group_of_bundles.get(edge_index - 1) {
-                    if let Some(v) = graph.get_node_annos().get_value_for_item(n, k)? {
-                        edge_data.push(((*k).clone(), v.to_string()));
-                    }
+                if let Some((k, n)) = group_of_bundles.get(edge_index - 1)
+                    && let Some(v) = graph.get_node_annos().get_value_for_item(n, k)?
+                {
+                    edge_data.push(((*k).clone(), v.to_string()));
                 }
             }
             for value_index in value_indices {
@@ -281,20 +280,20 @@ mod tests {
     use std::path::Path;
 
     use graphannis::{
+        AnnotationGraph,
         model::{AnnotationComponent, AnnotationComponentType},
         update::{GraphUpdate, UpdateEvent},
-        AnnotationGraph,
     };
     use graphannis_core::graph::ANNIS_NS;
     use insta::assert_snapshot;
 
     use crate::{
+        StepID,
         core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
-        manipulator::{link::LinkNodes, Manipulator},
+        manipulator::{Manipulator, link::LinkNodes},
         test_util::export_to_string,
         util::example_generator,
-        StepID,
     };
 
     #[test]
@@ -348,16 +347,18 @@ mod tests {
             ),
             value_sep: "".to_string(),
         };
-        assert!(module
-            .validate_graph(
-                &mut graph,
-                StepID {
-                    module_name: "test".to_string(),
-                    path: None
-                },
-                None
-            )
-            .is_ok());
+        assert!(
+            module
+                .validate_graph(
+                    &mut graph,
+                    StepID {
+                        module_name: "test".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
         assert!(graph.global_statistics.is_some());
     }
 

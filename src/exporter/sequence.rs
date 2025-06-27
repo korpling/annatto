@@ -2,9 +2,9 @@ use std::{collections::BTreeMap, fs, io::Write, path::Path, sync::Arc};
 
 use documented::{Documented, DocumentedFields};
 use graphannis::{
+    AnnotationGraph,
     graph::{AnnoKey, GraphStorage},
     model::{AnnotationComponent, AnnotationComponentType},
-    AnnotationGraph,
 };
 use graphannis_core::{annostorage::ValueSearch, dfs::CycleSafeDFS, graph::ANNIS_NS};
 use itertools::Itertools;
@@ -12,9 +12,9 @@ use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
+    StepID,
     error::{AnnattoError, Result},
     progress::ProgressReporter,
-    StepID,
 };
 
 use super::Exporter;
@@ -154,18 +154,18 @@ impl ExportSequence {
         let mut last_group = groups.get(&sequence_start);
         for step in dfs {
             let node = step?.node;
-            if let Some(g) = last_group {
-                if let Some(ng) = groups.get(&node) {
-                    last_group = Some(ng);
-                    if g != ng {
-                        if self.horizontal {
-                            // build and push group
-                            let joint_value = values.join(" ");
-                            blocks.push(joint_value);
-                            values.clear();
-                        } else {
-                            values.push("".to_string()); // inserts empty line to separate groups in output (such as sentences)
-                        }
+            if let Some(g) = last_group
+                && let Some(ng) = groups.get(&node)
+            {
+                last_group = Some(ng);
+                if g != ng {
+                    if self.horizontal {
+                        // build and push group
+                        let joint_value = values.join(" ");
+                        blocks.push(joint_value);
+                        values.clear();
+                    } else {
+                        values.push("".to_string()); // inserts empty line to separate groups in output (such as sentences)
                     }
                 }
             }
@@ -321,16 +321,16 @@ mod tests {
     };
 
     use graphannis::{
+        AnnotationGraph,
         graph::AnnoKey,
         model::{AnnotationComponent, AnnotationComponentType},
-        AnnotationGraph,
     };
     use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
     use insta::assert_snapshot;
 
     use crate::{
         exporter::sequence::{default_anno, default_fileby_key},
-        importer::{xlsx::ImportSpreadsheet, Importer},
+        importer::{Importer, xlsx::ImportSpreadsheet},
         test_util::export_to_string,
     };
 

@@ -1,5 +1,5 @@
 use std::{
-    collections::{btree_map::Entry, BTreeMap},
+    collections::{BTreeMap, btree_map::Entry},
     fmt::Display,
     io::Read,
     path::{Path, PathBuf},
@@ -20,8 +20,8 @@ use graphannis_core::{
 use itertools::Itertools;
 use linked_hash_set::LinkedHashSet;
 use pest::{
-    iterators::{Pair, Pairs},
     Parser,
+    iterators::{Pair, Pairs},
 };
 use pest_derive::Parser;
 use serde::Serialize;
@@ -30,8 +30,8 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Importer;
 use crate::{
-    error::AnnattoError, progress::ProgressReporter,
-    util::graphupdate::import_corpus_graph_from_files, workflow::StatusSender, StepID,
+    StepID, error::AnnattoError, progress::ProgressReporter,
+    util::graphupdate::import_corpus_graph_from_files, workflow::StatusSender,
 };
 
 /// Import files in the [CONLL-U format](https://universaldependencies.org/format.html)
@@ -140,19 +140,19 @@ impl ImportCoNLLU {
         tx: &Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut token_names = Vec::new();
-        if let Some(pair) = conllu.next() {
-            if pair.as_rule() == Rule::conllu {
-                for sentence in pair.into_inner() {
-                    // iterate over sentences
-                    if sentence.as_rule() == Rule::sentence {
-                        token_names.extend(self.map_sentence(
-                            step_id,
-                            update,
-                            document_node_name.as_str(),
-                            sentence,
-                            tx,
-                        )?);
-                    }
+        if let Some(pair) = conllu.next()
+            && pair.as_rule() == Rule::conllu
+        {
+            for sentence in pair.into_inner() {
+                // iterate over sentences
+                if sentence.as_rule() == Rule::sentence {
+                    token_names.extend(self.map_sentence(
+                        step_id,
+                        update,
+                        document_node_name.as_str(),
+                        sentence,
+                        tx,
+                    )?);
                 }
             }
         } else {
@@ -255,7 +255,9 @@ impl ImportCoNLLU {
                             _ => {}
                         }
                     }
-                    if let (Some(fk), Some(fv)) = (name, value) {
+                    if let Some(fk) = name
+                        && let Some(fv) = value
+                    {
                         match s_annos.entry(fk) {
                             Entry::Vacant(e) => {
                                 e.insert(vec![fv]);
@@ -336,8 +338,9 @@ impl ImportCoNLLU {
                             })?;
                         }
                     } else {
-                        let msg =
-                            format!("Failed to build dependency tree: Unknown head id `{head_id}` (line {l})");
+                        let msg = format!(
+                            "Failed to build dependency tree: Unknown head id `{head_id}` (line {l})"
+                        );
                         let err = AnnattoError::Import {
                             reason: msg,
                             importer: step_id.module_name.clone(),
@@ -455,7 +458,9 @@ impl ImportCoNLLU {
                                 } else if feature_rule == Rule::value {
                                     anno_value = Some(name_or_value.as_str().to_string());
                                 }
-                                if let (Some(n), Some(v)) = (&anno_name, &anno_value) {
+                                if let Some(n) = &anno_name
+                                    && let Some(v) = &anno_value
+                                {
                                     update.add_event(UpdateEvent::AddNodeLabel {
                                         node_name: node_name.to_string(),
                                         anno_ns: "".to_string(),
@@ -478,16 +483,18 @@ impl ImportCoNLLU {
                 Rule::enhanced_deps => {
                     for enh_dep in member.into_inner() {
                         let mut inner = enh_dep.into_inner();
-                        if let Some(enh_id) = inner.next() {
-                            let head = enh_id.as_str().trim().parse::<usize>()?;
-                            if let Some(enh_rel) = inner.next() {
-                                let rel = enh_rel.as_str().to_string();
-                                let value = (head, Some(rel));
-                                // this is to avoid the basic dependency to be anywhere else than in the first position, because this position needs to be treated differently
-                                // to avoid cycles in the graph
-                                if !dependencies.contains(&value) {
-                                    dependencies.insert(value);
-                                }
+                        if let Some(enh_id) = inner.next()
+                            && let Some(enh_rel) = inner.next()
+                        {
+                            let head = enh_id.as_str().trim().parse::<usize>().map_err(|_| {
+                                anyhow!("Could not parse enhanced dependency head value")
+                            })?;
+                            let rel = enh_rel.as_str().to_string();
+                            let value = (head, Some(rel));
+                            // this is to avoid the basic dependency to be anywhere else than in the first position, because this position needs to be treated differently
+                            // to avoid cycles in the graph
+                            if !dependencies.contains(&value) {
+                                dependencies.insert(value);
                             }
                         }
                     }

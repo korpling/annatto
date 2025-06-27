@@ -10,9 +10,9 @@ use std::{
 
 use anyhow::{Context, Error};
 use graphannis::{
+    AnnotationGraph,
     graph::{AnnoKey, Edge, GraphStorage, NodeID},
     model::{AnnotationComponent, AnnotationComponentType},
-    AnnotationGraph,
 };
 use graphannis_core::{
     dfs::CycleSafeDFS,
@@ -25,8 +25,8 @@ use crate::{
     importer::saltxml::SaltObject,
     progress::ProgressReporter,
     util::{
-        token_helper::{TokenHelper, TOKEN_KEY},
         CorpusGraphHelper,
+        token_helper::{TOKEN_KEY, TokenHelper},
     },
 };
 
@@ -524,7 +524,9 @@ impl SaltDocumentGraphMapper {
                 let position: i64 = (*position).try_into()?;
                 covered_tli_idx.insert(position);
             }
-            if let (Some(start), Some(end)) = (covered_tli_idx.first(), covered_tli_idx.last()) {
+            if let Some(start) = covered_tli_idx.first()
+                && let Some(end) = covered_tli_idx.last()
+            {
                 let features = vec![
                     (
                         AnnoKey {

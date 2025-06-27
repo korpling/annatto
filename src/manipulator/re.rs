@@ -5,11 +5,10 @@ use std::{
 
 use anyhow::{anyhow, bail};
 use graphannis::{
-    aql,
+    AnnotationGraph, aql,
     graph::{AnnoKey, Edge, Match},
     model::{AnnotationComponent, AnnotationComponentType},
     update::{GraphUpdate, UpdateEvent},
-    AnnotationGraph,
 };
 use graphannis_core::{annostorage::NodeAnnotationStorage, util::split_qname};
 use graphannis_core::{
@@ -23,10 +22,10 @@ use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
+    Manipulator, StepID,
     core::update_graph,
     error::{AnnattoError, StandardErrorResult},
     progress::ProgressReporter,
-    Manipulator, StepID,
 };
 use documented::{Documented, DocumentedFields};
 
@@ -208,10 +207,15 @@ fn remove_by_query(
                             }
                         }
                     } else {
-                        bail!("Could not obtain node name of node {node_id}, thus it could not be deleted.");
+                        bail!(
+                            "Could not obtain node name of node {node_id}, thus it could not be deleted."
+                        );
                     }
                 } else {
-                    bail!("Could not obtain matching node from result, index {index} out of bounds for query {}", match_definition.query.as_str());
+                    bail!(
+                        "Could not obtain matching node from result, index {index} out of bounds for query {}",
+                        match_definition.query.as_str()
+                    );
                 }
             }
         }
@@ -313,8 +317,7 @@ fn revise_component(
                     } else {
                         progress_reporter.warn(
                             format!(
-                                "Could not retrieve target node for source node in component {}",
-                                source_component
+                                "Could not retrieve target node for source node in component {source_component}"                                
                             )
                             .as_str(),
                         )?;
@@ -323,8 +326,7 @@ fn revise_component(
             } else {
                 progress_reporter.warn(
                     format!(
-                        "Could not obtain node from source nodes in component {}.",
-                        source_component
+                        "Could not obtain node from source nodes in component {source_component}."
                     )
                     .as_str(),
                 )?;
@@ -332,11 +334,7 @@ fn revise_component(
         }
     } else {
         progress_reporter.warn(
-            format!(
-                "Component {} does not exist and will not be mapped",
-                source_component
-            )
-            .as_str(),
+            format!("Component {source_component} does not exist and will not be mapped").as_str(),
         )?;
     }
     Ok(())
@@ -502,7 +500,7 @@ fn replace_node_annos(
                 anno_ns: old_key.ns.to_string(),
                 anno_name: old_key.name.to_string(),
             })?;
-            if let Some(ref new_key) = new_key_opt {
+            if let Some(new_key) = new_key_opt {
                 if move_by_ns {
                     place_at_new_target(graph, update, &m, new_key)?;
                 } else if let Some(value) = annos.get_value_for_item(&m.node, old_key)? {
@@ -554,25 +552,25 @@ fn replace_edge_annos(
                         anno_ns: m.anno_key.ns.to_string(),
                         anno_name: old_key.name.to_string(),
                     })?;
-                    if let Some(new_key) = new_key_opt {
-                        if let Some(value) = edge_annos.get_value_for_item(
+                    if let Some(new_key) = new_key_opt
+                        && let Some(value) = edge_annos.get_value_for_item(
                             &Edge {
                                 source: source_node,
                                 target: target_node,
                             },
                             &m.anno_key,
-                        )? {
-                            update.add_event(UpdateEvent::AddEdgeLabel {
-                                source_node: source_node_name.to_string(),
-                                target_node: target_node_name.to_string(),
-                                layer: component.layer.to_string(),
-                                component_type: component.get_type().to_string(),
-                                component_name: component.name.to_string(),
-                                anno_ns: new_key.ns.to_string(),
-                                anno_name: new_key.name.to_string(),
-                                anno_value: value.to_string(),
-                            })?;
-                        }
+                        )?
+                    {
+                        update.add_event(UpdateEvent::AddEdgeLabel {
+                            source_node: source_node_name.to_string(),
+                            target_node: target_node_name.to_string(),
+                            layer: component.layer.to_string(),
+                            component_type: component.get_type().to_string(),
+                            component_name: component.name.to_string(),
+                            anno_ns: new_key.ns.to_string(),
+                            anno_name: new_key.name.to_string(),
+                            anno_value: value.to_string(),
+                        })?;
                     }
                 }
             }
@@ -832,11 +830,11 @@ mod tests {
 
     use crate::core::update_graph_silent;
     use crate::exporter::graphml::GraphMLExporter;
+    use crate::importer::Importer;
     use crate::importer::exmaralda::ImportEXMARaLDA;
     use crate::importer::graphml::GraphMLImporter;
-    use crate::importer::Importer;
-    use crate::manipulator::re::{ComponentMapping, KeyMapping, RemoveTarget, Revise};
     use crate::manipulator::Manipulator;
+    use crate::manipulator::re::{ComponentMapping, KeyMapping, RemoveTarget, Revise};
     use crate::progress::ProgressReporter;
     use crate::test_util::export_to_string;
     use crate::util::example_generator;
@@ -853,7 +851,7 @@ mod tests {
     use itertools::Itertools;
     use tempfile::{tempdir, tempfile};
 
-    use super::{revise_components, RemoveMatch};
+    use super::{RemoveMatch, revise_components};
 
     #[test]
     fn serialize() {
@@ -947,16 +945,18 @@ mod tests {
             namespaces: BTreeMap::default(),
             remove_subgraph: vec![],
         };
-        assert!(module
-            .validate_graph(
-                &mut graph,
-                StepID {
-                    module_name: "test".to_string(),
-                    path: None
-                },
-                None
-            )
-            .is_ok());
+        assert!(
+            module
+                .validate_graph(
+                    &mut graph,
+                    StepID {
+                        module_name: "test".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
         assert!(graph.global_statistics.is_some());
     }
 
@@ -1054,7 +1054,7 @@ mod tests {
             })
             .collect();
         assert_eq!(e_corpus_nodes, g_corpus_nodes); //TODO clarify: Delegate or assertion?
-                                                    // test by components
+        // test by components
         let e_c_list = e_g
             .get_all_components(None, None)
             .into_iter()
@@ -1193,7 +1193,7 @@ to = "dipl::derived_pos"
             })
             .collect();
         assert_eq!(e_corpus_nodes, g_corpus_nodes); //TODO clarify: Delegate or assertion?
-                                                    // test by components
+        // test by components
         let e_c_list = e_g
             .get_all_components(None, None)
             .into_iter()
@@ -1456,7 +1456,7 @@ from = "deprel"
             })
             .collect();
         assert_eq!(e_corpus_nodes, g_corpus_nodes); //TODO clarify: Delegate or assertion?
-                                                    // test by components
+        // test by components
         let e_c_list = e_g
             .get_all_components(None, None)
             .into_iter()

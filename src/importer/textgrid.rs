@@ -5,14 +5,14 @@ use std::path::PathBuf;
 use std::*;
 
 use super::Importer;
+use crate::StepID;
 use crate::models::textgrid::{Interval, TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{
-    add_order_relations, import_corpus_graph_from_files, map_annotations, map_audio_source,
-    map_token, root_corpus_from_path, NodeInfo,
+    NodeInfo, add_order_relations, import_corpus_graph_from_files, map_annotations,
+    map_audio_source, map_token, root_corpus_from_path,
 };
-use crate::StepID;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use documented::{Documented, DocumentedFields};
 use encoding_rs_io::DecodeReaderBytes;
 use graphannis::update::{GraphUpdate, UpdateEvent};
@@ -221,7 +221,9 @@ impl DocumentMapper<'_> {
         // One can only map without a timeline if there is a single token
         // layer explicitily defined by the tier_group property.
         if self.params.tier_groups.len() > 1 {
-            Err(anyhow!("Only one token tier can be defined in tier_groups when mapping without a timeline (map_timeline=false)."))
+            Err(anyhow!(
+                "Only one token tier can be defined in tier_groups when mapping without a timeline (map_timeline=false)."
+            ))
         } else if let Some((token_tier_name, _)) = self.params.tier_groups.iter().next() {
             let mut token_sorted_by_time = BTreeMap::default();
 
@@ -251,8 +253,8 @@ impl DocumentMapper<'_> {
                     &NodeInfo::new(&counter.to_string(), &self.doc_path, &self.text_node_name),
                     None,
                     &token_text,
-                    Some(time_range.0 .0),
-                    Some(time_range.1 .0),
+                    Some(time_range.0.0),
+                    Some(time_range.1.0),
                     true,
                 )?;
 
@@ -265,9 +267,9 @@ impl DocumentMapper<'_> {
 
             Ok(result)
         } else {
-            return Err(
-                anyhow!("Exactly one token tier must be definied in tier_groups when mapping without a timeline (map_timeline=false"),
-            );
+            return Err(anyhow!(
+                "Exactly one token tier must be definied in tier_groups when mapping without a timeline (map_timeline=false"
+            ));
         }
     }
 
@@ -314,13 +316,12 @@ impl DocumentMapper<'_> {
                 if let TextGridItem::Interval {
                     name, intervals, ..
                 } = item
+                    && name == tier_name
                 {
-                    if name == tier_name {
-                        let mut intervals = intervals.clone();
-                        // Make sure the intervals are sorted by their start time
-                        intervals.sort_unstable_by_key(|i| OrderedFloat(i.xmin));
-                        return Some(intervals);
-                    }
+                    let mut intervals = intervals.clone();
+                    // Make sure the intervals are sorted by their start time
+                    intervals.sort_unstable_by_key(|i| OrderedFloat(i.xmin));
+                    return Some(intervals);
                 }
             }
             None

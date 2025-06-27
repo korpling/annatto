@@ -3,9 +3,9 @@ use std::{cmp::Ordering, collections::BTreeMap, fs, io::Write, path::PathBuf};
 use anyhow::{anyhow, bail};
 use documented::{Documented, DocumentedFields};
 use graphannis::{
+    AnnotationGraph,
     graph::{AnnoKey, NodeID},
     model::{AnnotationComponent, AnnotationComponentType},
-    AnnotationGraph,
 };
 use graphannis_core::{annostorage::ValueSearch, graph::ANNIS_NS, util::join_qname};
 use itertools::Itertools;
@@ -289,7 +289,9 @@ impl ExportTextGrid {
             tier_data.into_iter().sorted_by(|a, b| {
                 let ka = &a.0;
                 let kb = &b.0;
-                if let (Some(i), Some(j)) = (index_map.get(ka), index_map.get(kb)) {
+                if let Some(i) = index_map.get(ka)
+                    && let Some(j) = index_map.get(kb)
+                {
                     (*i).cmp(j)
                 } else if !self.tier_order.contains(ka) && !self.tier_order.contains(kb) {
                     (*ka).cmp(kb)
@@ -309,10 +311,10 @@ impl ExportTextGrid {
                 let entry: TierEntry = if is_point_tier {
                     (start, value).into()
                 } else {
-                    if let Some(t) = prev_end {
-                        if t < start {
-                            entries.push((t, start, "".to_string()).into()); // filler entry to leave no gaps
-                        }
+                    if let Some(t) = prev_end
+                        && t < start
+                    {
+                        entries.push((t, start, "".to_string()).into()); // filler entry to leave no gaps
                     }
                     prev_end = Some(end);
                     (start, end, value).into()
@@ -324,10 +326,11 @@ impl ExportTextGrid {
             } else {
                 join_qname(&key.ns, &key.name)
             };
-            if let Some(end_v) = prev_end {
-                if end_v < xmax && !is_point_tier {
-                    entries.push((end_v, xmax, "".to_string()).into())
-                }
+            if let Some(end_v) = prev_end
+                && end_v < xmax
+                && !is_point_tier
+            {
+                entries.push((end_v, xmax, "".to_string()).into())
             }
             textgrid_tiers.push(Tier {
                 name: tier_name,
@@ -513,17 +516,17 @@ impl TextGridWriter {
 mod tests {
     use std::path::Path;
 
-    use graphannis::{graph::AnnoKey, AnnotationGraph};
+    use graphannis::{AnnotationGraph, graph::AnnoKey};
     use insta::assert_snapshot;
     use ordered_float::OrderedFloat;
 
     use crate::{
-        importer::{exmaralda::ImportEXMARaLDA, textgrid::ImportTextgrid, Importer},
-        test_util::export_to_string,
         StepID,
+        importer::{Importer, exmaralda::ImportEXMARaLDA, textgrid::ImportTextgrid},
+        test_util::export_to_string,
     };
 
-    use super::{parse_time_tuple, ExportTextGrid};
+    use super::{ExportTextGrid, parse_time_tuple};
 
     #[test]
     fn serialize() {

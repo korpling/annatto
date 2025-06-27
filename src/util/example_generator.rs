@@ -1,7 +1,7 @@
 use graphannis::model::AnnotationComponentType;
 use graphannis_core::graph::{
-    update::{GraphUpdate, UpdateEvent},
     ANNIS_NS, DEFAULT_NS,
+    update::{GraphUpdate, UpdateEvent},
 };
 
 /// Create update events for the following corpus structure:

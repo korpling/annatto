@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::anyhow;
-use graphannis::{graph::GraphStorage, model::AnnotationComponentType, AnnotationGraph};
+use graphannis::{AnnotationGraph, graph::GraphStorage, model::AnnotationComponentType};
 use graphannis_core::{
     annostorage::{NodeAnnotationStorage, ValueSearch},
     graph::{ANNIS_NS, NODE_TYPE_KEY},
@@ -15,11 +15,11 @@ use linked_hash_map::LinkedHashMap;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
-use umya_spreadsheet::{helper::coordinate::string_from_column_index, Worksheet};
+use umya_spreadsheet::{Worksheet, helper::coordinate::string_from_column_index};
 
 use crate::{
     progress::ProgressReporter,
-    util::token_helper::{TokenHelper, TOKEN_KEY},
+    util::token_helper::{TOKEN_KEY, TokenHelper},
 };
 
 use documented::{Documented, DocumentedFields};
@@ -86,10 +86,10 @@ fn is_span_column(
         if token_helper.is_token(m.node)? {
             return Ok(false);
         }
-        if let Some(node_type) = node_annos.get_value_for_item(&m.node, &NODE_TYPE_KEY)? {
-            if node_type == "node" {
-                has_non_corpus_match = true;
-            }
+        if let Some(node_type) = node_annos.get_value_for_item(&m.node, &NODE_TYPE_KEY)?
+            && node_type == "node"
+        {
+            has_non_corpus_match = true;
         }
     }
     Ok(has_non_corpus_match)
@@ -168,7 +168,7 @@ impl ExportXlsx {
             }
         }
 
-        let output_path = output_path.join(format!("{}.xlsx", doc_name));
+        let output_path = output_path.join(format!("{doc_name}.xlsx"));
         umya_spreadsheet::writer::xlsx::write(&book, output_path)?;
 
         Ok(())
@@ -197,7 +197,9 @@ impl ExportXlsx {
             let a_overwrite = overwritten_position_for_key(a, &position_overwrite);
             let b_overwrite = overwritten_position_for_key(b, &position_overwrite);
 
-            if let (Some(a_overwrite), Some(b_overwrite)) = (a_overwrite, b_overwrite) {
+            if let Some(a_overwrite) = a_overwrite
+                && let Some(b_overwrite) = b_overwrite
+            {
                 // Compare the configured values
                 a_overwrite.cmp(&b_overwrite)
             } else if a_overwrite.is_some() {
@@ -271,13 +273,11 @@ impl ExportXlsx {
 
                 token_to_row.insert(current_token, row_index);
 
-                token = if let Some(ordering_gs) = ordering_gs {
-                    if let Some(next_token) = ordering_gs.get_outgoing_edges(current_token).next() {
-                        let next_token = next_token?;
-                        Some(next_token)
-                    } else {
-                        None
-                    }
+                token = if let Some(ordering_gs) = ordering_gs
+                    && let Some(next_token) = ordering_gs.get_outgoing_edges(current_token).next()
+                {
+                    let next_token = next_token?;
+                    Some(next_token)
                 } else {
                     None
                 };
@@ -332,7 +332,9 @@ impl ExportXlsx {
                     let first_row = spanned_rows.first();
                     let last_row = spanned_rows.last();
 
-                    if let (Some(first), Some(last)) = (first_row, last_row) {
+                    if let Some(first) = first_row
+                        && let Some(last) = last_row
+                    {
                         let first_cell =
                             format!("{}{}", string_from_column_index(column_index), *first);
                         worksheet
@@ -340,7 +342,7 @@ impl ExportXlsx {
                             .set_value_string(span_val);
                         let last_cell =
                             format!("{}{}", string_from_column_index(column_index), last);
-                        worksheet.add_merge_cells(format!("{}:{}", first_cell, last_cell));
+                        worksheet.add_merge_cells(format!("{first_cell}:{last_cell}"));
                     }
                 }
             }
@@ -404,8 +406,8 @@ mod tests {
     use tempfile::TempDir;
 
     use crate::{
-        importer::xlsx::ImportSpreadsheet, test_util::compare_graphs, ExporterStep, ImporterStep,
-        ReadFrom, WriteAs,
+        ExporterStep, ImporterStep, ReadFrom, WriteAs, importer::xlsx::ImportSpreadsheet,
+        test_util::compare_graphs,
     };
 
     use super::*;

@@ -2,8 +2,8 @@ use std::{fs, io::Write, path::PathBuf};
 
 use documented::{Documented, DocumentedFields};
 use graphannis::{
-    graph::{AnnoKey, NodeID},
     AnnotationGraph,
+    graph::{AnnoKey, NodeID},
 };
 use graphannis_core::{annostorage::ValueSearch, graph::ANNIS_NS};
 use itertools::Itertools;
@@ -166,11 +166,11 @@ impl ExportMeta {
 mod tests {
     use std::{fs, path::Path};
 
-    use graphannis::{graph::AnnoKey, AnnotationGraph};
+    use graphannis::{AnnotationGraph, graph::AnnoKey};
     use insta::assert_snapshot;
 
     use crate::{
-        importer::{exmaralda::ImportEXMARaLDA, Importer},
+        importer::{Importer, exmaralda::ImportEXMARaLDA},
         test_util::export_to_string,
     };
 

@@ -1,10 +1,10 @@
 use crate::{
+    StepID,
     error::{AnnattoError, Result},
     exporter::Exporter,
     importer::Importer,
     util::get_all_files,
     workflow::StatusSender,
-    StepID,
 };
 use graphannis::AnnotationGraph;
 
@@ -252,7 +252,9 @@ pub(crate) fn compare_results<T: Ord, E: Into<anyhow::Error>>(
     a: &std::result::Result<T, E>,
     b: &std::result::Result<T, E>,
 ) -> Ordering {
-    if let (Ok(a), Ok(b)) = (a, b) {
+    if let Ok(a) = a
+        && let Ok(b) = b
+    {
         a.cmp(b)
     } else if a.is_err() {
         Ordering::Less

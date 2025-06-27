@@ -1,10 +1,10 @@
-use anyhow::{anyhow, Result};
-use graphannis::{graph::GraphStorage, model::AnnotationComponentType, AnnotationGraph};
+use anyhow::{Result, anyhow};
+use graphannis::{AnnotationGraph, graph::GraphStorage, model::AnnotationComponentType};
 use graphannis_core::{
     annostorage::NodeAnnotationStorage,
     dfs,
     errors::GraphAnnisCoreError,
-    graph::{storage::union::UnionEdgeContainer, ANNIS_NS},
+    graph::{ANNIS_NS, storage::union::UnionEdgeContainer},
     types::{AnnoKey, Component, NodeID},
 };
 
@@ -227,11 +227,11 @@ mod tests {
     use std::{io::BufReader, path::Path};
 
     use graphannis::{
+        AnnotationGraph,
         model::AnnotationComponentType,
         update::{GraphUpdate, UpdateEvent},
-        AnnotationGraph,
     };
-    use graphannis_core::graph::{serialization::graphml, ANNIS_NS};
+    use graphannis_core::graph::{ANNIS_NS, serialization::graphml};
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
 

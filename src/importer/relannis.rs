@@ -1,7 +1,7 @@
 use crate::progress::ProgressReporter;
 
 use super::{Importer, NODE_NAME_ENCODE_SET};
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use documented::{Documented, DocumentedFields};
 use graphannis::model::AnnotationComponentType;
 use graphannis::update::{GraphUpdate, UpdateEvent};
@@ -543,7 +543,7 @@ fn parse_corpus_tab(
                 .or_insert(1);
             if *existing_count > 1 {
                 let old_name = name.clone();
-                name = format!("{}_duplicated_document_name_{}", name, existing_count);
+                name = format!("{name}_duplicated_document_name_{existing_count}");
                 progress.warn(&format!(
                     "duplicated document name \"{old_name}\" detected: will be renamed to \"{name}\""
                 ))?;
@@ -653,31 +653,31 @@ fn calculate_automatic_token_order(
     for token in token_by_index.iter()? {
         let (current_textprop, current_token) = token?;
         // if the last token/text value is valid and we are still in the same text
-        if let (Some(last_token), Some(last_textprop)) = (last_token, last_textprop) {
-            if last_textprop.corpus_id == current_textprop.corpus_id
-                && last_textprop.text_id == current_textprop.text_id
-                && last_textprop.segmentation == current_textprop.segmentation
-            {
-                // we are still in the same text, add ordering between token
-                let ordering_layer = if current_textprop.segmentation.is_empty() {
-                    ANNIS_NS.to_owned()
-                } else {
-                    DEFAULT_NS.to_owned()
-                };
-                updates.add_event(UpdateEvent::AddEdge {
-                    source_node: id_to_node_name
-                        .get(&last_token)?
-                        .ok_or_else(|| anyhow!("node with ID {last_token} not found)"))?
-                        .to_string(),
-                    target_node: id_to_node_name
-                        .get(&current_token)?
-                        .ok_or_else(|| anyhow!("node with ID {current_token} not found)"))?
-                        .to_string(),
-                    layer: ordering_layer,
-                    component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: current_textprop.segmentation.clone(),
-                })?;
-            }
+        if let Some(last_token) = last_token
+            && let Some(last_textprop) = last_textprop
+            && last_textprop.corpus_id == current_textprop.corpus_id
+            && last_textprop.text_id == current_textprop.text_id
+            && last_textprop.segmentation == current_textprop.segmentation
+        {
+            // we are still in the same text, add ordering between token
+            let ordering_layer = if current_textprop.segmentation.is_empty() {
+                ANNIS_NS.to_owned()
+            } else {
+                DEFAULT_NS.to_owned()
+            };
+            updates.add_event(UpdateEvent::AddEdge {
+                source_node: id_to_node_name
+                    .get(&last_token)?
+                    .ok_or_else(|| anyhow!("node with ID {last_token} not found)"))?
+                    .to_string(),
+                target_node: id_to_node_name
+                    .get(&current_token)?
+                    .ok_or_else(|| anyhow!("node with ID {current_token} not found)"))?
+                    .to_string(),
+                layer: ordering_layer,
+                component_type: AnnotationComponentType::Ordering.to_string(),
+                component_name: current_textprop.segmentation.clone(),
+            })?;
         } // end if same text
 
         // update the iterator and other variables
@@ -898,10 +898,10 @@ fn add_white_space_token_labels(
         while let Some(token) = token_iterator.next() {
             let (_, current_token_id) = token?;
             // Get the character borders for this token
-            if let (Some(left_text_pos), Some(right_text_pos)) = (
-                textpos_table.node_to_left_char.get(&current_token_id)?,
-                textpos_table.node_to_right_char.get(&current_token_id)?,
-            ) {
+            if let Some(left_text_pos) = textpos_table.node_to_left_char.get(&current_token_id)?
+                && let Some(right_text_pos) =
+                    textpos_table.node_to_right_char.get(&current_token_id)?
+            {
                 let token_left_char = left_text_pos.val as usize;
                 let token_right_char = right_text_pos.val as usize;
 
@@ -942,12 +942,11 @@ fn add_white_space_token_labels(
                 // Get the token borders of the next token to determine where the whitespace after this token is
                 // The whitespace end position is non-inclusive.
                 let mut whitespace_end_pos = None;
-                if let Some(Ok((_, next_token_id))) = token_iterator.peek() {
-                    if let Some(next_token_left_pos) =
+                if let Some(Ok((_, next_token_id))) = token_iterator.peek()
+                    && let Some(next_token_left_pos) =
                         textpos_table.node_to_left_char.get(next_token_id)?
-                    {
-                        whitespace_end_pos = Some(next_token_left_pos.val as usize);
-                    }
+                {
+                    whitespace_end_pos = Some(next_token_left_pos.val as usize);
                 }
 
                 // Get the covered text which either goes until the next token or until the end of the text if there is none
@@ -988,8 +987,7 @@ fn add_white_space_token_labels(
         }
     }
     progress.info(&format!(
-        "added {} non-tokenized primary text segments as white-space labels to the existing tokens",
-        added_whitespace_label_count
+        "added {added_whitespace_label_count} non-tokenized primary text segments as white-space labels to the existing tokens"
     ))?;
 
     Ok(())
@@ -1084,15 +1082,15 @@ fn load_node_tab(
             })?;
             id_to_node_name.insert(node_nr, node_path.clone())?;
 
-            if let Some(layer) = layer {
-                if !layer.is_empty() {
-                    updates.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_path.clone(),
-                        anno_ns: ANNIS_NS.to_owned(),
-                        anno_name: "layer".to_owned(),
-                        anno_value: layer.to_string(),
-                    })?;
-                }
+            if let Some(layer) = layer
+                && !layer.is_empty()
+            {
+                updates.add_event(UpdateEvent::AddNodeLabel {
+                    node_name: node_path.clone(),
+                    anno_ns: ANNIS_NS.to_owned(),
+                    anno_name: "layer".to_owned(),
+                    anno_value: layer.to_string(),
+                })?;
             }
 
             // Add the raw character offsets so it is possible to extract the text later on
@@ -1298,16 +1296,17 @@ fn load_node_anno_tab(
             // If 'NULL', use an "invalid" string so it can't be found by its value, but only by its annotation name
             let anno_val = &col_val.unwrap_or_else(|| INVALID_STRING.clone());
 
-            if let Some(seg) = missing_seg_span.get(&node_id)? {
+            if let Some(seg) = missing_seg_span.get(&node_id)?
+                && seg.as_str() == col_name.as_str()
+                && has_valid_value
+            {
                 // add all missing span values from the annotation, but don't add NULL values
-                if seg.as_str() == col_name.as_str() && has_valid_value {
-                    updates.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: ANNIS_NS.to_owned(),
-                        anno_name: "tok".to_owned(),
-                        anno_value: anno_val.to_string(),
-                    })?;
-                }
+                updates.add_event(UpdateEvent::AddNodeLabel {
+                    node_name: node_name.to_string(),
+                    anno_ns: ANNIS_NS.to_owned(),
+                    anno_name: "tok".to_owned(),
+                    anno_value: anno_val.to_string(),
+                })?;
             }
 
             updates.add_event(UpdateEvent::AddNodeLabel {
@@ -1441,45 +1440,45 @@ fn load_rank_tab(
 
         if let Some(parent_as_str) = get_field(&line, pos_parent, "parent", &rank_tab_path)? {
             let parent: u32 = parent_as_str.parse()?;
-            if let Some(source) = pre_to_node_id.get(&parent)? {
+            if let Some(source) = pre_to_node_id.get(&parent)?
+                && let Some(c) = component_by_id.get(&component_ref)
+            {
                 // find the responsible edge database by the component ID
-                if let Some(c) = component_by_id.get(&component_ref) {
-                    updates.add_event(UpdateEvent::AddEdge {
-                        source_node: id_to_node_name
-                            .get(&source)?
-                            .ok_or_else(|| anyhow!("node with ID {source} not found"))?
-                            .to_string(),
-                        target_node: id_to_node_name
-                            .get(&target)?
-                            .ok_or_else(|| anyhow!("node with ID {target} not found"))?
-                            .to_string(),
-                        layer: c.layer.clone().into(),
-                        component_type: c.get_type().to_string(),
-                        component_name: c.name.clone().into(),
-                    })?;
+                updates.add_event(UpdateEvent::AddEdge {
+                    source_node: id_to_node_name
+                        .get(&source)?
+                        .ok_or_else(|| anyhow!("node with ID {source} not found"))?
+                        .to_string(),
+                    target_node: id_to_node_name
+                        .get(&target)?
+                        .ok_or_else(|| anyhow!("node with ID {target} not found"))?
+                        .to_string(),
+                    layer: c.layer.clone().into(),
+                    component_type: c.get_type().to_string(),
+                    component_name: c.name.clone().into(),
+                })?;
 
-                    let pre: u32 = get_field_not_null(&line, 0, "pre", &rank_tab_path)?.parse()?;
+                let pre: u32 = get_field_not_null(&line, 0, "pre", &rank_tab_path)?.parse()?;
 
-                    let e = Edge {
-                        source: *source,
-                        target,
-                    };
+                let e = Edge {
+                    source: *source,
+                    target,
+                };
 
-                    if c.get_type() == AnnotationComponentType::Coverage {
-                        load_rank_result
-                            .text_coverage_edges
-                            .insert(e.clone(), true)?;
-                    }
-                    load_rank_result.components_by_pre.insert(pre, c.clone())?;
-                    load_rank_result.edges_by_pre.insert(pre, e)?;
+                if c.get_type() == AnnotationComponentType::Coverage {
+                    load_rank_result
+                        .text_coverage_edges
+                        .insert(e.clone(), true)?;
                 }
+                load_rank_result.components_by_pre.insert(pre, c.clone())?;
+                load_rank_result.edges_by_pre.insert(pre, e)?;
             }
-        } else if let Some(c) = component_by_id.get(&component_ref) {
-            if c.get_type() == AnnotationComponentType::Coverage {
-                load_rank_result
-                    .component_for_parentless_target_node
-                    .insert(target, c.clone())?;
-            }
+        } else if let Some(c) = component_by_id.get(&component_ref)
+            && c.get_type() == AnnotationComponentType::Coverage
+        {
+            load_rank_result
+                .component_for_parentless_target_node
+                .insert(target, c.clone())?;
         }
     }
 
@@ -1523,31 +1522,31 @@ fn load_edge_annotation(
         let line = result?;
 
         let pre = get_field_not_null(&line, 0, "pre", &edge_anno_tab_path)?.parse::<u32>()?;
-        if let Some(c) = rank_result.components_by_pre.get(&pre)? {
-            if let Some(e) = rank_result.edges_by_pre.get(&pre)? {
-                let ns = get_field(&line, 1, "namespace", &edge_anno_tab_path)?.unwrap_or_default();
-                let name = get_field_not_null(&line, 2, "name", &edge_anno_tab_path)?;
-                // If 'NULL', use an "invalid" string so it can't be found by its value, but only by its annotation name
-                let val = get_field(&line, 3, "value", &edge_anno_tab_path)?
-                    .unwrap_or_else(|| INVALID_STRING.clone());
+        if let Some(c) = rank_result.components_by_pre.get(&pre)?
+            && let Some(e) = rank_result.edges_by_pre.get(&pre)?
+        {
+            let ns = get_field(&line, 1, "namespace", &edge_anno_tab_path)?.unwrap_or_default();
+            let name = get_field_not_null(&line, 2, "name", &edge_anno_tab_path)?;
+            // If 'NULL', use an "invalid" string so it can't be found by its value, but only by its annotation name
+            let val = get_field(&line, 3, "value", &edge_anno_tab_path)?
+                .unwrap_or_else(|| INVALID_STRING.clone());
 
-                updates.add_event(UpdateEvent::AddEdgeLabel {
-                    source_node: id_to_node_name
-                        .get(&e.source)?
-                        .ok_or_else(|| anyhow!("node with ID {} not found", e.source))?
-                        .to_string(),
-                    target_node: id_to_node_name
-                        .get(&e.target)?
-                        .ok_or_else(|| anyhow!("node with ID {} not found", e.target))?
-                        .to_string(),
-                    layer: c.layer.clone().into(),
-                    component_type: c.get_type().to_string(),
-                    component_name: c.name.to_string(),
-                    anno_ns: ns.to_string(),
-                    anno_name: name.to_string(),
-                    anno_value: val.to_string(),
-                })?;
-            }
+            updates.add_event(UpdateEvent::AddEdgeLabel {
+                source_node: id_to_node_name
+                    .get(&e.source)?
+                    .ok_or_else(|| anyhow!("node with ID {} not found", e.source))?
+                    .to_string(),
+                target_node: id_to_node_name
+                    .get(&e.target)?
+                    .ok_or_else(|| anyhow!("node with ID {} not found", e.target))?
+                    .to_string(),
+                layer: c.layer.clone().into(),
+                component_type: c.get_type().to_string(),
+                component_name: c.name.to_string(),
+                anno_ns: ns.to_string(),
+                anno_name: name.to_string(),
+                anno_value: val.to_string(),
+            })?;
         }
     }
 

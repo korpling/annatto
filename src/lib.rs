@@ -21,24 +21,22 @@ use std::{
 use documented::{Documented, DocumentedFields};
 use error::Result;
 use exporter::{
-    conllu::ExportCoNLLU, exmaralda::ExportExmaralda, graphml::GraphMLExporter, meta::ExportMeta,
-    saltxml::ExportSaltXml, sequence::ExportSequence, table::ExportTable, textgrid::ExportTextGrid,
-    xlsx::ExportXlsx, Exporter,
+    Exporter, conllu::ExportCoNLLU, exmaralda::ExportExmaralda, graphml::GraphMLExporter,
+    meta::ExportMeta, saltxml::ExportSaltXml, sequence::ExportSequence, table::ExportTable,
+    textgrid::ExportTextGrid, xlsx::ExportXlsx,
 };
 use graphannis::AnnotationGraph;
 use importer::{
-    conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
+    Importer, conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
     graphml::GraphMLImporter, meta::AnnotateCorpus, none::CreateEmptyCorpus, opus::ImportOpusLinks,
     ptb::ImportPTB, relannis::ImportRelAnnis, saltxml::ImportSaltXml, table::ImportTable,
     textgrid::ImportTextgrid, toolbox::ImportToolBox, treetagger::ImportTreeTagger,
     webanno::ImportWebAnnoTSV, whisper::ImportWhisper, xlsx::ImportSpreadsheet, xml::ImportXML,
-    Importer,
 };
 use manipulator::{
-    align::AlignNodes, check::Check, chunker::Chunk, collapse::Collapse,
+    Manipulator, align::AlignNodes, check::Check, chunker::Chunk, collapse::Collapse,
     enumerate::EnumerateMatches, filter::FilterNodes, link::LinkNodes, map::MapAnnos, no_op::NoOp,
     re::Revise, sleep::Sleep, split::SplitValues, time::Filltime, visualize::Visualize,
-    Manipulator,
 };
 use serde::Serialize;
 use serde_derive::Deserialize;

@@ -14,15 +14,15 @@ use std::{
     fs::File,
 };
 use struct_field_names_as_array::FieldNamesAsSlice;
-use xml::{attribute::OwnedAttribute, reader::XmlEvent, EventReader, ParserConfig};
+use xml::{EventReader, ParserConfig, attribute::OwnedAttribute, reader::XmlEvent};
 
 use super::Importer;
 use crate::{
+    StepID,
     error::AnnattoError,
     progress::ProgressReporter,
     util::graphupdate::{import_corpus_graph_from_files, map_audio_source},
     workflow::StatusMessage,
-    StepID,
 };
 use documented::{Documented, DocumentedFields};
 
@@ -149,7 +149,11 @@ impl ImportEXMARaLDA {
                                             )?;
                                         }
                                     } else {
-                                        let msg = format!("Linked file {} could not be found to be linked in document {}", audio_path.as_path().to_string_lossy(), &doc_node_name);
+                                        let msg = format!(
+                                            "Linked file {} could not be found to be linked in document {}",
+                                            audio_path.as_path().to_string_lossy(),
+                                            &doc_node_name
+                                        );
                                         progress.warn(&msg)?;
                                     }
                                 };
@@ -193,23 +197,23 @@ impl ImportEXMARaLDA {
                     let str_tag_name = name.to_string();
                     match str_tag_name.as_str() {
                         "abbreviation" | "l1" | "l2" | "comment" | "languages-used" => {
-                            if let Some(parent) = parent_map.get("speaker") {
-                                if !char_buf.trim().is_empty() {
-                                    let speaker_id = parent["id"].to_string();
-                                    if str_tag_name.as_str() == "abbreviation" {
-                                        // write speaker name to speaker table
-                                        let speaker_name = char_buf.to_string();
-                                        speaker_map.insert(speaker_id.to_string(), speaker_name);
-                                    }
-
-                                    update.add_event(UpdateEvent::AddNodeLabel {
-                                        // speaker table data as document meta annotation
-                                        node_name: doc_node_name.to_string(),
-                                        anno_ns: speaker_id.to_string(),
-                                        anno_name: str_tag_name,
-                                        anno_value: char_buf.to_string(),
-                                    })?;
+                            if let Some(parent) = parent_map.get("speaker")
+                                && !char_buf.trim().is_empty()
+                            {
+                                let speaker_id = parent["id"].to_string();
+                                if str_tag_name.as_str() == "abbreviation" {
+                                    // write speaker name to speaker table
+                                    let speaker_name = char_buf.to_string();
+                                    speaker_map.insert(speaker_id.to_string(), speaker_name);
                                 }
+
+                                update.add_event(UpdateEvent::AddNodeLabel {
+                                    // speaker table data as document meta annotation
+                                    node_name: doc_node_name.to_string(),
+                                    anno_ns: speaker_id.to_string(),
+                                    anno_name: str_tag_name,
+                                    anno_value: char_buf.to_string(),
+                                })?;
                             }
                         }
                         "common-timeline" => {
@@ -287,10 +291,9 @@ impl ImportEXMARaLDA {
                             ordered_tl_nodes
                                 .extend(tlis.iter().map(|e| e.0.to_string()).collect_vec());
                             for i in 1..ordered_tl_nodes.len() {
-                                if let (Some(source), Some(target)) = (
-                                    &timeline.get(&ordered_tl_nodes[i - 1]),
-                                    &timeline.get(&ordered_tl_nodes[i]),
-                                ) {
+                                if let Some(source) = &timeline.get(&ordered_tl_nodes[i - 1])
+                                    && let Some(target) = &timeline.get(&ordered_tl_nodes[i])
+                                {
                                     update.add_event(UpdateEvent::AddEdge {
                                         source_node: source.1.to_string(),
                                         target_node: target.1.to_string(),
@@ -363,8 +366,7 @@ impl ImportEXMARaLDA {
                             } else {
                                 // send "Failed", but continue to collect potential further errors in the file
                                 let msg = format!(
-                                    "Could not determine start id of currently processed event `{}`. Event will be skipped. Import will fail.",
-                                    text
+                                    "Could not determine start id of currently processed event `{text}`. Event will be skipped. Import will fail."
                                 );
                                 let err = AnnattoError::Import {
                                     reason: msg,
@@ -380,9 +382,8 @@ impl ImportEXMARaLDA {
                             } else {
                                 // send "Failed", but continue to collect potential further errors in the file
                                 let msg = format!(
-                                            "Could not determine end id of currently processed event `{}`. Event will be skipped. Import will fail.",
-                                            text
-                                        );
+                                    "Could not determine end id of currently processed event `{text}`. Event will be skipped. Import will fail."
+                                );
                                 let err = AnnattoError::Import {
                                     reason: msg,
                                     importer: step_id.module_name.clone(),
@@ -416,7 +417,9 @@ impl ImportEXMARaLDA {
                                 return Err(err);
                             };
                             if start_i >= end_i {
-                                let err_msg = format!("Start time is bigger than end time for ids: {start_id}--{end_id} ");
+                                let err_msg = format!(
+                                    "Start time is bigger than end time for ids: {start_id}--{end_id} "
+                                );
                                 return Err(AnnattoError::Import {
                                     reason: err_msg,
                                     importer: step_id.module_name.clone(),
@@ -428,14 +431,16 @@ impl ImportEXMARaLDA {
                                 k
                             } else {
                                 if let Some(sender) = tx {
-                                    let msg = format!("Event {}::{}:{}-{} does not cover any tokens and will be skipped.", &speaker_id, &anno_name, &start_id, &end_id);
+                                    let msg = format!(
+                                        "Event {}::{}:{}-{} does not cover any tokens and will be skipped.",
+                                        &speaker_id, &anno_name, &start_id, &end_id
+                                    );
                                     sender.send(StatusMessage::Warning(msg))?;
                                 }
                                 continue;
                             };
                             let node_name = format!(
-                                "{}#{}_{}_{}-{}",
-                                doc_node_name, tier_type, speaker_id, start_id, end_id
+                                "{doc_node_name}#{tier_type}_{speaker_id}_{start_id}-{end_id}"
                             ); // this is not a unique id as not intended to be
                             if !already_defined.contains(&node_name) {
                                 update.add_event(UpdateEvent::AddNode {
@@ -469,21 +474,21 @@ impl ImportEXMARaLDA {
                                 } else {
                                     if let Some(sender) = tx {
                                         let msg = format!(
-                                                "Could not determine end time of event {}::{}:{}-{}. Event will be skipped.",
-                                                &speaker_id, &anno_name, &start_id, &end_id
-                                            );
+                                            "Could not determine end time of event {}::{}:{}-{}. Event will be skipped.",
+                                            &speaker_id, &anno_name, &start_id, &end_id
+                                        );
                                         sender.send(StatusMessage::Info(msg))?;
                                     }
                                     continue;
                                 };
-                                if let (Some((Some(start_time), _)), Some((Some(end_time), _))) =
-                                    (timeline.get(key), node_tpl)
+                                if let Some((Some(start_time), _)) = timeline.get(key)
+                                    && let Some((Some(end_time), _)) = node_tpl
                                 {
                                     update.add_event(UpdateEvent::AddNodeLabel {
                                         node_name: node_name.to_string(),
                                         anno_ns: ANNIS_NS.to_string(),
                                         anno_name: "time".to_string(),
-                                        anno_value: format!("{}-{}", start_time, end_time),
+                                        anno_value: format!("{start_time}-{end_time}"),
                                     })?;
                                     already_defined.insert(node_name.to_string());
                                 }
@@ -552,7 +557,7 @@ impl ImportEXMARaLDA {
                         reason: "Failed parsing EXMARaLDA XML.".to_string(),
                         importer: step_id.module_name.clone(),
                         path: document_path.to_path_buf(),
-                    })
+                    });
                 }
                 _ => continue,
             }

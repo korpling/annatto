@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use anyhow::{anyhow, Ok};
+use anyhow::{Ok, anyhow};
 use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
@@ -9,7 +9,7 @@ use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 
 use super::{
-    get_element_id, get_features, get_meta_annotations, resolve_element, SaltObject, SaltType,
+    SaltObject, SaltType, get_element_id, get_features, get_meta_annotations, resolve_element,
 };
 
 pub(super) struct SaltCorpusStructureMapper {}

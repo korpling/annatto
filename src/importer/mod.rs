@@ -19,7 +19,7 @@ pub mod whisper;
 pub mod xlsx;
 pub mod xml;
 
-use crate::{workflow::StatusSender, StepID};
+use crate::{StepID, workflow::StatusSender};
 use graphannis::update::GraphUpdate;
 use percent_encoding::{AsciiSet, CONTROLS};
 use std::path::Path;

@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use super::Manipulator;
 use crate::{
-    core::update_graph_silent, progress::ProgressReporter, util::token_helper::TokenHelper, StepID,
+    StepID, core::update_graph_silent, progress::ProgressReporter, util::token_helper::TokenHelper,
 };
 use documented::{Documented, DocumentedFields};
 use graphannis::{
@@ -130,7 +130,7 @@ impl Manipulator for Chunk {
                     // Add chunk span annotations
                     for (chunk_offset, chunk_text) in chunks {
                         // Add chunk span annotation node
-                        let node_name = format!("{}#chunkerSpanNode{}", parent, addded_node_index);
+                        let node_name = format!("{parent}#chunkerSpanNode{addded_node_index}");
                         addded_node_index += 1;
 
                         updates.add_event(AddNode {
@@ -191,19 +191,18 @@ mod tests {
     use std::{collections::BTreeSet, path::Path};
 
     use graphannis::{
-        aql,
+        AnnotationGraph, aql,
         graph::AnnoKey,
         update::{GraphUpdate, UpdateEvent},
-        AnnotationGraph,
     };
     use graphannis_core::graph::ANNIS_NS;
     use insta::assert_snapshot;
 
     use crate::{
+        StepID,
         core::update_graph_silent,
         manipulator::Manipulator,
         util::{example_generator, token_helper::TokenHelper},
-        StepID,
     };
 
     use super::Chunk;
@@ -250,16 +249,18 @@ mod tests {
         example_generator::create_corpus_structure_simple(&mut u);
         assert!(update_graph_silent(&mut graph, &mut u).is_ok());
         let module = Chunk::default();
-        assert!(module
-            .validate_graph(
-                &mut graph,
-                StepID {
-                    module_name: "test".to_string(),
-                    path: None
-                },
-                None
-            )
-            .is_ok());
+        assert!(
+            module
+                .validate_graph(
+                    &mut graph,
+                    StepID {
+                        module_name: "test".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
         assert!(graph.global_statistics.is_none());
     }
 

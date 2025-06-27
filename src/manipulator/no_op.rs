@@ -32,14 +32,14 @@ impl Manipulator for NoOp {
 
 #[cfg(test)]
 mod tests {
-    use graphannis::{update::GraphUpdate, AnnotationGraph};
+    use graphannis::{AnnotationGraph, update::GraphUpdate};
     use insta::assert_snapshot;
 
     use crate::{
-        core::update_graph_silent,
-        manipulator::{no_op::NoOp, Manipulator},
-        util::example_generator,
         StepID,
+        core::update_graph_silent,
+        manipulator::{Manipulator, no_op::NoOp},
+        util::example_generator,
     };
 
     #[test]
@@ -63,16 +63,18 @@ mod tests {
         example_generator::create_corpus_structure_simple(&mut u);
         assert!(update_graph_silent(&mut graph, &mut u).is_ok());
         let module = NoOp {};
-        assert!(module
-            .validate_graph(
-                &mut graph,
-                StepID {
-                    module_name: "test".to_string(),
-                    path: None
-                },
-                None
-            )
-            .is_ok());
+        assert!(
+            module
+                .validate_graph(
+                    &mut graph,
+                    StepID {
+                        module_name: "test".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
 
         assert!(graph.global_statistics.is_none());
     }

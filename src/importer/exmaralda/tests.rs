@@ -9,8 +9,8 @@ use insta::assert_snapshot;
 use itertools::Itertools;
 
 use crate::{
-    progress::ProgressReporter, test_util::import_as_graphml_string_2, workflow::StatusMessage,
-    ImporterStep, StepID,
+    ImporterStep, StepID, progress::ProgressReporter, test_util::import_as_graphml_string_2,
+    workflow::StatusMessage,
 };
 
 use super::ImportEXMARaLDA;
@@ -44,16 +44,18 @@ fn timeline_fail() {
     let mut u = GraphUpdate::default();
     let import = ImportEXMARaLDA::default();
     let step_id = StepID::from_importer_step(&import_step);
-    assert!(import
-        .import_document(
-            &step_id,
-            "import/test_doc",
-            Path::new(document_path),
-            &mut u,
-            &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
-            &None,
-        )
-        .is_err());
+    assert!(
+        import
+            .import_document(
+                &step_id,
+                "import/test_doc",
+                Path::new(document_path),
+                &mut u,
+                &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
+                &None,
+            )
+            .is_err()
+    );
 }
 
 #[test]
@@ -73,16 +75,18 @@ fn category_fail() {
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
     let mut u = GraphUpdate::default();
-    assert!(ImportEXMARaLDA::default()
-        .import_document(
-            &step_id,
-            "fail-no_category/test_doc",
-            document_path.as_path(),
-            &mut u,
-            &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
-            &None
-        )
-        .is_err());
+    assert!(
+        ImportEXMARaLDA::default()
+            .import_document(
+                &step_id,
+                "fail-no_category/test_doc",
+                document_path.as_path(),
+                &mut u,
+                &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
+                &None
+            )
+            .is_err()
+    );
 }
 
 #[test]
@@ -107,16 +111,18 @@ fn undefined_speaker_fail() {
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
     let mut u = GraphUpdate::default();
-    assert!(ImportEXMARaLDA::default()
-        .import_document(
-            &step_id,
-            "fail-undefined_speaker/test_doc",
-            document_path.as_path(),
-            &mut u,
-            &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
-            &None
-        )
-        .is_err());
+    assert!(
+        ImportEXMARaLDA::default()
+            .import_document(
+                &step_id,
+                "fail-undefined_speaker/test_doc",
+                document_path.as_path(),
+                &mut u,
+                &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
+                &None
+            )
+            .is_err()
+    );
 }
 
 #[test]
@@ -136,16 +142,18 @@ fn unknown_tli_fail() {
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
     let mut u = GraphUpdate::default();
-    assert!(ImportEXMARaLDA::default()
-        .import_document(
-            &step_id,
-            "fail-unknown_tli/test_doc",
-            document_path.as_path(),
-            &mut u,
-            &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
-            &None
-        )
-        .is_err());
+    assert!(
+        ImportEXMARaLDA::default()
+            .import_document(
+                &step_id,
+                "fail-unknown_tli/test_doc",
+                document_path.as_path(),
+                &mut u,
+                &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
+                &None
+            )
+            .is_err()
+    );
 }
 
 #[test]
@@ -165,16 +173,18 @@ fn bad_timevalue_fail() {
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
     let mut u = GraphUpdate::default();
-    assert!(ImportEXMARaLDA::default()
-        .import_document(
-            &step_id,
-            "fail-bad_timevalue/test_doc",
-            document_path.as_path(),
-            &mut u,
-            &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
-            &None
-        )
-        .is_err());
+    assert!(
+        ImportEXMARaLDA::default()
+            .import_document(
+                &step_id,
+                "fail-bad_timevalue/test_doc",
+                document_path.as_path(),
+                &mut u,
+                &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
+                &None
+            )
+            .is_err()
+    );
 }
 
 #[test]
@@ -209,16 +219,18 @@ fn invalid_fail() {
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = "./tests/data/import/exmaralda/fail-invalid/import/test_doc_invalid.exb";
     let mut u = GraphUpdate::default();
-    assert!(ImportEXMARaLDA::default()
-        .import_document(
-            &step_id,
-            "import/test_doc_invalid",
-            Path::new(document_path),
-            &mut u,
-            &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
-            &None
-        )
-        .is_err());
+    assert!(
+        ImportEXMARaLDA::default()
+            .import_document(
+                &step_id,
+                "import/test_doc_invalid",
+                Path::new(document_path),
+                &mut u,
+                &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
+                &None
+            )
+            .is_err()
+    );
 }
 
 #[test]
