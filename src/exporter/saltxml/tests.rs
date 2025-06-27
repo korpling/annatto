@@ -1,16 +1,16 @@
 use std::path::Path;
 
 use graphannis::{
-    update::{GraphUpdate, UpdateEvent},
     AnnotationGraph,
+    update::{GraphUpdate, UpdateEvent},
 };
 use insta::assert_snapshot;
 use tempfile::TempDir;
 
 use super::*;
 use crate::{
-    importer::saltxml::ImportSaltXml, test_util::compare_graphs, util::example_generator,
-    ExporterStep, ImporterStep, StepID,
+    ExporterStep, ImporterStep, StepID, importer::saltxml::ImportSaltXml,
+    test_util::compare_graphs, util::example_generator,
 };
 
 #[test]

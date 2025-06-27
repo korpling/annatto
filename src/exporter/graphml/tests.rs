@@ -9,7 +9,7 @@ use zip::ZipArchive;
 use crate::{
     core::update_graph_silent,
     importer::{
-        exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes, xlsx::ImportSpreadsheet, Importer,
+        Importer, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes, xlsx::ImportSpreadsheet,
     },
 };
 

@@ -417,15 +417,18 @@ mod tests {
         assert!(
             import_corpus_graph_from_files(&mut update, &root_path, &["fancyExtension"]).is_ok()
         );
-        assert_snapshot!(update
-            .iter()
-            .unwrap()
-            .flatten()
-            .map(|(_, ue)| match ue {
-                graphannis::update::UpdateEvent::AddNode { node_name, .. } => node_name.to_string(),
-                _ => "".to_string(),
-            })
-            .filter(|s| !s.is_empty())
-            .join("\n"));
+        assert_snapshot!(
+            update
+                .iter()
+                .unwrap()
+                .flatten()
+                .map(|(_, ue)| match ue {
+                    graphannis::update::UpdateEvent::AddNode { node_name, .. } =>
+                        node_name.to_string(),
+                    _ => "".to_string(),
+                })
+                .filter(|s| !s.is_empty())
+                .join("\n")
+        );
     }
 }

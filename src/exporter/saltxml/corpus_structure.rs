@@ -2,9 +2,9 @@ use std::{ffi::OsStr, io::BufWriter};
 
 use anyhow::{Context, Error};
 use graphannis::{
+    AnnotationGraph,
     graph::{Edge, NodeID},
     model::AnnotationComponentType,
-    AnnotationGraph,
 };
 use graphannis_core::{
     annostorage::ValueSearch,

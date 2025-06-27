@@ -1,13 +1,12 @@
 use std::collections::BTreeMap;
 
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use documented::{Documented, DocumentedFields};
 use graphannis::{
-    aql,
+    AnnotationGraph, aql,
     graph::NodeID,
     model::{AnnotationComponent, AnnotationComponentType},
     update::{GraphUpdate, UpdateEvent},
-    AnnotationGraph,
 };
 use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY};
 use itertools::Itertools;
@@ -244,20 +243,20 @@ impl<'a> SESAligner<'a> {
 mod tests {
     use std::path::Path;
 
-    use graphannis::{update::GraphUpdate, AnnotationGraph};
+    use graphannis::{AnnotationGraph, update::GraphUpdate};
     use insta::assert_snapshot;
 
     use crate::{
+        StepID,
         core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
-        importer::{treetagger::ImportTreeTagger, Importer},
+        importer::{Importer, treetagger::ImportTreeTagger},
         manipulator::{
-            align::{default_component, AlignNodes, AlignmentMethod, NodeGroup},
             Manipulator,
+            align::{AlignNodes, AlignmentMethod, NodeGroup, default_component},
         },
         test_util::export_to_string,
         util::example_generator,
-        StepID,
     };
 
     #[test]
@@ -311,16 +310,18 @@ mod tests {
             component: default_component(),
             method: AlignmentMethod::default(),
         };
-        assert!(module
-            .validate_graph(
-                &mut graph,
-                StepID {
-                    module_name: "test".to_string(),
-                    path: None
-                },
-                None
-            )
-            .is_ok());
+        assert!(
+            module
+                .validate_graph(
+                    &mut graph,
+                    StepID {
+                        module_name: "test".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
         assert!(graph.global_statistics.is_some());
     }
 
@@ -362,18 +363,20 @@ mod tests {
             "Error deserializing: {:?}",
             graph_op.err()
         );
-        assert!(graph_op
-            .unwrap()
-            .manipulate_corpus(
-                &mut graph,
-                Path::new("./"),
-                crate::StepID {
-                    module_name: "test_align".to_string(),
-                    path: None
-                },
-                None
-            )
-            .is_ok());
+        assert!(
+            graph_op
+                .unwrap()
+                .manipulate_corpus(
+                    &mut graph,
+                    Path::new("./"),
+                    crate::StepID {
+                        module_name: "test_align".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
         let to_graphml = export_to_string(&graph, GraphMLExporter::default());
         assert!(to_graphml.is_ok());
         assert_snapshot!(to_graphml.unwrap());

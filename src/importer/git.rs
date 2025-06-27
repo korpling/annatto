@@ -90,10 +90,10 @@ mod tests {
     use tempfile::tempdir;
 
     use crate::{
-        exporter::graphml::GraphMLExporter,
-        importer::{git::ImportGitMetadata, Importer},
-        test_util::export_to_string,
         StepID,
+        exporter::graphml::GraphMLExporter,
+        importer::{Importer, git::ImportGitMetadata},
+        test_util::export_to_string,
     };
 
     #[test]

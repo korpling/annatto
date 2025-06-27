@@ -158,20 +158,20 @@ impl SplitValues {
 mod tests {
     use std::{fs, path::Path};
 
-    use graphannis::{graph::AnnoKey, update::GraphUpdate, AnnotationGraph};
+    use graphannis::{AnnotationGraph, graph::AnnoKey, update::GraphUpdate};
     use insta::assert_snapshot;
 
     use crate::{
+        StepID,
         core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
-        importer::{treetagger::ImportTreeTagger, Importer},
+        importer::{Importer, treetagger::ImportTreeTagger},
         manipulator::{
-            split::{default_delimiter, Layer, SplitValues},
             Manipulator,
+            split::{Layer, SplitValues, default_delimiter},
         },
         test_util::export_to_string,
         util::example_generator,
-        StepID,
     };
 
     #[test]
@@ -230,16 +230,18 @@ mod tests {
             layers: vec![],
             delete: false,
         };
-        assert!(module
-            .validate_graph(
-                &mut graph,
-                StepID {
-                    module_name: "test".to_string(),
-                    path: None
-                },
-                None
-            )
-            .is_ok());
+        assert!(
+            module
+                .validate_graph(
+                    &mut graph,
+                    StepID {
+                        module_name: "test".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
         assert!(graph.global_statistics.is_none());
     }
 
@@ -272,17 +274,19 @@ mod tests {
             op.err()
         );
         let split_op = op.unwrap();
-        assert!(split_op
-            .manipulate_corpus(
-                &mut graph,
-                Path::new("./"),
-                crate::StepID {
-                    module_name: "split_conflated".to_string(),
-                    path: None
-                },
-                None
-            )
-            .is_ok());
+        assert!(
+            split_op
+                .manipulate_corpus(
+                    &mut graph,
+                    Path::new("./"),
+                    crate::StepID {
+                        module_name: "split_conflated".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
         let gml = export_to_string(&graph, GraphMLExporter::default());
         assert!(gml.is_ok());
         let graphml = gml.unwrap();

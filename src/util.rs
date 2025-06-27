@@ -1,11 +1,11 @@
 use crate::{
-    error::{AnnattoError, Result},
     StepID,
+    error::{AnnattoError, Result},
 };
 use graphannis::{
+    AnnotationGraph,
     graph::{EdgeContainer, GraphStorage},
     model::{AnnotationComponent, AnnotationComponentType},
-    AnnotationGraph,
 };
 
 use anyhow::Context;

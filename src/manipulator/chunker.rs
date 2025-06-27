@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use super::Manipulator;
 use crate::{
-    core::update_graph_silent, progress::ProgressReporter, util::token_helper::TokenHelper, StepID,
+    StepID, core::update_graph_silent, progress::ProgressReporter, util::token_helper::TokenHelper,
 };
 use documented::{Documented, DocumentedFields};
 use graphannis::{
@@ -191,19 +191,18 @@ mod tests {
     use std::{collections::BTreeSet, path::Path};
 
     use graphannis::{
-        aql,
+        AnnotationGraph, aql,
         graph::AnnoKey,
         update::{GraphUpdate, UpdateEvent},
-        AnnotationGraph,
     };
     use graphannis_core::graph::ANNIS_NS;
     use insta::assert_snapshot;
 
     use crate::{
+        StepID,
         core::update_graph_silent,
         manipulator::Manipulator,
         util::{example_generator, token_helper::TokenHelper},
-        StepID,
     };
 
     use super::Chunk;
@@ -250,16 +249,18 @@ mod tests {
         example_generator::create_corpus_structure_simple(&mut u);
         assert!(update_graph_silent(&mut graph, &mut u).is_ok());
         let module = Chunk::default();
-        assert!(module
-            .validate_graph(
-                &mut graph,
-                StepID {
-                    module_name: "test".to_string(),
-                    path: None
-                },
-                None
-            )
-            .is_ok());
+        assert!(
+            module
+                .validate_graph(
+                    &mut graph,
+                    StepID {
+                        module_name: "test".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
         assert!(graph.global_statistics.is_none());
     }
 

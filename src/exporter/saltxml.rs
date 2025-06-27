@@ -12,22 +12,22 @@ use std::{
 use crate::{importer::saltxml::SaltObject, progress::ProgressReporter};
 
 use super::Exporter;
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use bimap::BiBTreeMap;
 use corpus_structure::SaltCorpusStructureMapper;
 use document::SaltDocumentGraphMapper;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
+    AnnotationGraph,
     graph::{AnnoKey, Edge, NodeID},
     model::{AnnotationComponent, AnnotationComponentType},
-    AnnotationGraph,
 };
 use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY};
 
 use lazy_static::lazy_static;
 use quick_xml::{
-    events::{BytesStart, Event},
     Writer,
+    events::{BytesStart, Event},
 };
 use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;

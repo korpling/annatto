@@ -9,7 +9,7 @@ use graphannis::{
 };
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
-use pest::{iterators::Pair, Parser};
+use pest::{Parser, iterators::Pair};
 use pest_derive::Parser;
 use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
