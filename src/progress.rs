@@ -56,7 +56,7 @@ impl ProgressReporter {
         if let Some(ref tx) = state.tx {
             tx.send(StatusMessage::Info(msg.to_string()))?;
         } else {
-            info!("{}", msg);
+            info!("{msg}");
         }
         Ok(())
     }
@@ -66,7 +66,7 @@ impl ProgressReporter {
         if let Some(ref tx) = state.tx {
             tx.send(StatusMessage::Warning(msg.to_string()))?;
         } else {
-            warn!("{}", msg);
+            warn!("{msg}");
         }
         Ok(())
     }
