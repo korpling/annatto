@@ -1,5 +1,5 @@
 use std::{
-    collections::{btree_map::Entry, BTreeMap},
+    collections::{BTreeMap, btree_map::Entry},
     ops::Bound,
     path::Path,
 };
@@ -7,9 +7,9 @@ use std::{
 use anyhow::{anyhow, bail};
 use documented::{Documented, DocumentedFields};
 use graphannis::{
+    AnnotationGraph,
     graph::{AnnoKey, Edge, NodeID},
     model::{AnnotationComponent, AnnotationComponentType},
-    AnnotationGraph,
 };
 use graphannis_core::{
     annostorage::EdgeAnnotationStorage,
@@ -489,18 +489,18 @@ mod tests {
     use std::path::Path;
 
     use graphannis::{
+        AnnotationGraph,
         graph::AnnoKey,
         model::{AnnotationComponent, AnnotationComponentType},
-        AnnotationGraph,
     };
     use graphannis_core::graph::ANNIS_NS;
     use insta::assert_snapshot;
 
     use crate::{
-        exporter::table::ExportTable,
-        importer::{conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, Importer},
-        test_util::export_to_string,
         StepID,
+        exporter::table::ExportTable,
+        importer::{Importer, conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA},
+        test_util::export_to_string,
     };
 
     #[test]

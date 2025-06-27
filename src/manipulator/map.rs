@@ -7,21 +7,21 @@ use std::{
 
 use super::Manipulator;
 use crate::{
+    StepID,
     core::{update_graph, update_graph_silent},
     progress::ProgressReporter,
     util::{
-        token_helper::{TokenHelper, TOKEN_KEY},
         CorpusGraphHelper,
+        token_helper::{TOKEN_KEY, TokenHelper},
     },
-    StepID,
 };
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use documented::{Documented, DocumentedFields};
 use graphannis::{
+    AnnotationGraph,
     graph::{AnnoKey, EdgeContainer, Match},
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
-    AnnotationGraph,
 };
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS, NODE_NAME_KEY, NODE_TYPE_KEY};
 use regex::Regex;
@@ -207,13 +207,7 @@ impl Manipulator for MapAnnos {
             let mut map_impl = MapperImpl {
                 config,
                 added_spans: 0,
-                progress: {
-                    if self.debug {
-                        Some(progress)
-                    } else {
-                        None
-                    }
-                },
+                progress: { if self.debug { Some(progress) } else { None } },
             };
             map_impl.run(graph)?;
         }
@@ -598,10 +592,9 @@ mod tests {
     use std::sync::mpsc;
 
     use graphannis::{
-        aql,
+        AnnotationGraph, aql,
         model::AnnotationComponentType,
         update::{GraphUpdate, UpdateEvent},
-        AnnotationGraph,
     };
     use graphannis_core::{annostorage::ValueSearch, graph::ANNIS_NS};
 
@@ -611,8 +604,8 @@ mod tests {
     use tests::test_util::export_to_string;
 
     use crate::{
-        exporter::graphml::GraphMLExporter, manipulator::Manipulator, test_util,
-        util::example_generator, StepID,
+        StepID, exporter::graphml::GraphMLExporter, manipulator::Manipulator, test_util,
+        util::example_generator,
     };
 
     use super::*;
@@ -670,16 +663,18 @@ mod tests {
             mapping: None,
             debug: false,
         };
-        assert!(module
-            .validate_graph(
-                &mut graph,
-                StepID {
-                    module_name: "test".to_string(),
-                    path: None
-                },
-                None
-            )
-            .is_ok());
+        assert!(
+            module
+                .validate_graph(
+                    &mut graph,
+                    StepID {
+                        module_name: "test".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
         assert!(graph.global_statistics.is_some());
     }
 
@@ -702,17 +697,19 @@ mod tests {
         let m: Result<MapAnnos, _> = toml::from_str(config);
         assert!(m.is_ok(), "Error deserializing mapper: {:?}", m.err());
         let mapper = m.unwrap();
-        assert!(mapper
-            .manipulate_corpus(
-                &mut g,
-                Path::new("./"),
-                StepID {
-                    module_name: "test_map_inline".to_string(),
-                    path: None,
-                },
-                None,
-            )
-            .is_ok());
+        assert!(
+            mapper
+                .manipulate_corpus(
+                    &mut g,
+                    Path::new("./"),
+                    StepID {
+                        module_name: "test_map_inline".to_string(),
+                        path: None,
+                    },
+                    None,
+                )
+                .is_ok()
+        );
 
         let tok_match = g
             .get_node_annos()

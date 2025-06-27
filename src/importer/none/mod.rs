@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use super::Importer;
-use crate::{progress::ProgressReporter, workflow::StatusSender, StepID};
+use crate::{StepID, progress::ProgressReporter, workflow::StatusSender};
 use documented::{Documented, DocumentedFields};
 use graphannis::update::GraphUpdate;
 use serde::Serialize;

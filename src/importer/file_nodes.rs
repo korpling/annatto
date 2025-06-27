@@ -85,9 +85,9 @@ mod tests {
     use std::path::PathBuf;
 
     use graphannis::{
+        AnnotationGraph,
         model::{AnnotationComponent, AnnotationComponentType},
         update::{GraphUpdate, UpdateEvent},
-        AnnotationGraph,
     };
     use graphannis_core::graph::ANNIS_NS;
     use insta::assert_snapshot;

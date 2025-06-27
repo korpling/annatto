@@ -10,7 +10,7 @@ pub(crate) mod table;
 pub mod textgrid;
 pub mod xlsx;
 
-use crate::{workflow::StatusSender, StepID};
+use crate::{StepID, workflow::StatusSender};
 use graphannis::AnnotationGraph;
 use std::path::Path;
 

@@ -1,4 +1,4 @@
-use crate::{error::AnnattoError, workflow::StatusMessage, workflow::StatusSender, StepID};
+use crate::{StepID, error::AnnattoError, workflow::StatusMessage, workflow::StatusSender};
 use log::{info, warn};
 use std::sync::{Arc, Mutex};
 

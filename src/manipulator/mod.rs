@@ -15,8 +15,8 @@ pub mod time;
 pub mod visualize;
 
 use crate::{
-    workflow::{StatusMessage, StatusSender},
     StepID,
+    workflow::{StatusMessage, StatusSender},
 };
 use graphannis::AnnotationGraph;
 use std::path::Path;

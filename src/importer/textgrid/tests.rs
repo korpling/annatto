@@ -160,20 +160,22 @@ fn misaligned_lemma_annotation() {
 fn fail_wrong_map() {
     let mut tg = BTreeMap::new();
     tg.insert("B".to_string(), vec!["A".to_string()].into_iter().collect());
-    assert!(ImportTextgrid {
-        tier_groups: Some(tg),
-        skip_timeline_generation: false,
-        skip_audio: false,
-        skip_time_annotations: false,
-        ..Default::default()
-    }
-    .import_corpus(
-        Path::new("tests/data/import/textgrid/fail_wrong_map"),
-        StepID {
-            module_name: "test_failing_import".to_string(),
-            path: None
-        },
-        None
-    )
-    .is_err());
+    assert!(
+        ImportTextgrid {
+            tier_groups: Some(tg),
+            skip_timeline_generation: false,
+            skip_audio: false,
+            skip_time_annotations: false,
+            ..Default::default()
+        }
+        .import_corpus(
+            Path::new("tests/data/import/textgrid/fail_wrong_map"),
+            StepID {
+                module_name: "test_failing_import".to_string(),
+                path: None
+            },
+            None
+        )
+        .is_err()
+    );
 }

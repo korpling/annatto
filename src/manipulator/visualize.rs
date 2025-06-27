@@ -1,14 +1,14 @@
 use super::Manipulator;
 use crate::{
-    util::{token_helper::TokenHelper, CorpusGraphHelper},
     StepID,
+    util::{CorpusGraphHelper, token_helper::TokenHelper},
 };
 use anyhow::{Context, Result};
 use documented::{Documented, DocumentedFields};
 use graphannis::{
+    AnnotationGraph,
     graph::GraphStorage,
     model::{AnnotationComponent, AnnotationComponentType},
-    AnnotationGraph,
 };
 use graphannis_core::{
     annostorage::ValueSearch,
@@ -17,7 +17,7 @@ use graphannis_core::{
 };
 use graphannis_core::{
     dfs,
-    graph::{storage::union::UnionEdgeContainer, NODE_NAME_KEY},
+    graph::{NODE_NAME_KEY, storage::union::UnionEdgeContainer},
 };
 use graphviz_rust::{
     cmd::Format,
@@ -391,13 +391,13 @@ impl Manipulator for Visualize {
 mod tests {
     use std::path::{Path, PathBuf};
 
-    use graphannis::{update::GraphUpdate, AnnotationGraph};
+    use graphannis::{AnnotationGraph, update::GraphUpdate};
     use insta::assert_snapshot;
     use tempfile::tempdir;
 
     use crate::{
-        core::update_graph_silent, manipulator::Manipulator, util::example_generator,
-        workflow::execute_from_file, StepID,
+        StepID, core::update_graph_silent, manipulator::Manipulator, util::example_generator,
+        workflow::execute_from_file,
     };
 
     use super::Visualize;
@@ -447,16 +447,18 @@ mod tests {
             output_dot: None,
             output_svg: None,
         };
-        assert!(module
-            .validate_graph(
-                &mut graph,
-                StepID {
-                    module_name: "test".to_string(),
-                    path: None
-                },
-                None
-            )
-            .is_ok());
+        assert!(
+            module
+                .validate_graph(
+                    &mut graph,
+                    StepID {
+                        module_name: "test".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
         assert!(graph.global_statistics.is_none());
     }
 

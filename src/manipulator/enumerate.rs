@@ -18,14 +18,14 @@ use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
+    StepID,
     core::update_graph_silent,
     error::AnnattoError,
     progress::ProgressReporter,
     util::{
         sort_matches::SortCache,
-        token_helper::{TokenHelper, TOKEN_KEY},
+        token_helper::{TOKEN_KEY, TokenHelper},
     },
-    StepID,
 };
 
 use super::Manipulator;
@@ -272,21 +272,21 @@ mod tests {
     use std::path::Path;
 
     use graphannis::{
+        AnnotationGraph,
         model::AnnotationComponentType,
         update::{GraphUpdate, UpdateEvent},
-        AnnotationGraph,
     };
     use graphannis_core::{annostorage::ValueSearch, graph::ANNIS_NS, types::AnnoKey};
     use insta::assert_snapshot;
     use itertools::Itertools;
 
     use crate::{
+        StepID,
         core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         manipulator::Manipulator,
         test_util::{compare_results, export_to_string},
         util::example_generator,
-        StepID,
     };
 
     use super::EnumerateMatches;
@@ -334,16 +334,18 @@ mod tests {
         example_generator::create_corpus_structure_simple(&mut u);
         assert!(update_graph_silent(&mut graph, &mut u).is_ok());
         let module = EnumerateMatches::default();
-        assert!(module
-            .validate_graph(
-                &mut graph,
-                StepID {
-                    module_name: "test".to_string(),
-                    path: None
-                },
-                None
-            )
-            .is_ok());
+        assert!(
+            module
+                .validate_graph(
+                    &mut graph,
+                    StepID {
+                        module_name: "test".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
         assert!(graph.global_statistics.is_some());
     }
 
@@ -381,22 +383,24 @@ mod tests {
         assert!(g.is_ok());
         let mut graph = g.unwrap();
         assert!(graph.apply_update(&mut update, |_| {}).is_ok());
-        assert!(EnumerateMatches {
-            queries: vec!["tok @* doc".to_string()],
-            by: vec![2],
-            target: 1,
-            ..Default::default()
-        }
-        .manipulate_corpus(
-            &mut graph,
-            Path::new("./"),
-            StepID {
-                module_name: "test_enumerate".to_string(),
-                path: None
-            },
-            None
-        )
-        .is_ok());
+        assert!(
+            EnumerateMatches {
+                queries: vec!["tok @* doc".to_string()],
+                by: vec![2],
+                target: 1,
+                ..Default::default()
+            }
+            .manipulate_corpus(
+                &mut graph,
+                Path::new("./"),
+                StepID {
+                    module_name: "test_enumerate".to_string(),
+                    path: None
+                },
+                None
+            )
+            .is_ok()
+        );
         let actual = export_to_string(&graph, GraphMLExporter::default());
         assert!(actual.is_ok());
         assert_snapshot!(actual.unwrap());

@@ -19,7 +19,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Importer;
 use crate::{
-    progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files, StepID,
+    StepID, progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files,
 };
 
 #[derive(Deserialize, Serialize)]
