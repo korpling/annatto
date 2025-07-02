@@ -3,7 +3,7 @@
 Runs AQL queries on the corpus and checks for constraints on the result.
 Can fail the workflow when one of the checks fail.
 
-There are four general attributes to control this modules behaviour:
+There are general attributes to control this modules behaviour:
 
 `policy`: Values are either `warn` or `fail`. The former will only output
 a warning, while the latter will stop the conversion process after the
@@ -13,6 +13,8 @@ check module has completed all tests. The default policy is `fail`.
 set to `verbose`, each failed test will be followed by a short appendix
 listing all matches to help you debug your data. If nothing is set, no report
 will be shown.
+
+`failed_only`: If set to true, a report will only contain results of failed tests.
 
 `save`: If you provide a file path (the file can exist already), the report
 is additionally saved to disk.
@@ -182,6 +184,10 @@ The tests to run on the current graph.
 ###  report
 
 Optional level of report. No value means no printed report. Values are `list` or `verbose`.
+
+###  failed_only
+
+By setting this to `true`, only results of failed tests will be listed in the report (only works if a report level is set).
 
 ###  policy
 
