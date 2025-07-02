@@ -114,6 +114,7 @@ action = "check"
 
 [graph_op.config]
 report = "list"
+failed_only = false
 policy = "fail"
 save = "check.log"
 overwrite = false

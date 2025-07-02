@@ -29,7 +29,7 @@ use crate::{
 /// Runs AQL queries on the corpus and checks for constraints on the result.
 /// Can fail the workflow when one of the checks fail.
 ///
-/// There are four general attributes to control this modules behaviour:
+/// There are general attributes to control this modules behaviour:
 ///
 /// `policy`: Values are either `warn` or `fail`. The former will only output
 /// a warning, while the latter will stop the conversion process after the
@@ -39,6 +39,8 @@ use crate::{
 /// set to `verbose`, each failed test will be followed by a short appendix
 /// listing all matches to help you debug your data. If nothing is set, no report
 /// will be shown.
+///
+/// `failed_only`: If set to true, a report will only contain results of failed tests.
 ///
 /// `save`: If you provide a file path (the file can exist already), the report
 /// is additionally saved to disk.
@@ -206,6 +208,9 @@ pub struct Check {
     /// Optional level of report. No value means no printed report. Values are `list` or `verbose`.
     #[serde(default)]
     report: Option<ReportLevel>, // default is None, not default report level
+    /// By setting this to `true`, only results of failed tests will be listed in the report (only works if a report level is set).
+    #[serde(default)]
+    failed_only: bool,
     /// This policy if the process interrupts on a test failure (`fail`) or throws a warning (`warn`).
     #[serde(default)]
     policy: FailurePolicy,
@@ -374,10 +379,20 @@ impl Check {
         }
     }
 
-    fn results_to_table(results: &[(String, TestResult)], level: &ReportLevel) -> String {
+    fn results_to_table(
+        results: &[(String, TestResult)],
+        level: &ReportLevel,
+        failed_only: bool,
+    ) -> String {
         let table_data = results
             .iter()
-            .map(|r| Check::result_to_table_entry(&r.0, &r.1, level))
+            .filter_map(|(d, r)| {
+                if !failed_only || !matches!(r, TestResult::Passed) {
+                    Some(Check::result_to_table_entry(d, r, level))
+                } else {
+                    None
+                }
+            })
             .collect_vec();
         let mut output = String::default();
         let mut table_buffer = Vec::new();
@@ -404,7 +419,7 @@ impl Check {
         results: &[(String, TestResult)],
         sender: &StatusSender,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let table = Check::results_to_table(results, level);
+        let table = Check::results_to_table(results, level, self.failed_only);
         sender.send(StatusMessage::Info(table))?;
         Ok(())
     }
@@ -878,6 +893,7 @@ mod tests {
                 },
             ],
             report: Some(ReportLevel::List),
+            failed_only: true,
             save: Some(PathBuf::from("this/is/a/non-existing/path.log")),
             overwrite: false,
         };
@@ -901,6 +917,7 @@ mod tests {
         let check: Check = Check {
             tests: vec![],
             report: None,
+            failed_only: false,
             policy: FailurePolicy::Warn,
             save: None,
             overwrite: false,
@@ -1115,7 +1132,7 @@ mod tests {
             .iter()
             .all(|(_, tr)| matches!(tr, TestResult::Passed));
         if !all_pass {
-            let table_string = Check::results_to_table(&results, &ReportLevel::Verbose);
+            let table_string = Check::results_to_table(&results, &ReportLevel::Verbose, false);
             println!("{}", table_string);
         }
         assert!(all_pass);
@@ -1137,7 +1154,7 @@ mod tests {
             .filter(|(_, tr)| matches!(tr, TestResult::Passed))
             .count();
         if passing != failing {
-            let table_string = Check::results_to_table(&results, &ReportLevel::Verbose);
+            let table_string = Check::results_to_table(&results, &ReportLevel::Verbose, false);
             println!("{}", table_string);
         }
         assert_eq!(passing, failing);
@@ -1236,6 +1253,7 @@ mod tests {
             policy: FailurePolicy::Fail,
             tests,
             report: Some(ReportLevel::List),
+            failed_only: false,
             save: Some(report_path.clone()),
             overwrite: false,
         };
@@ -1256,6 +1274,7 @@ mod tests {
                 policy: None,
             }],
             report: None,
+            failed_only: false,
             save: Some(report_path.clone()),
             overwrite: false,
         };
@@ -1298,6 +1317,7 @@ mod tests {
             policy: FailurePolicy::Fail,
             tests,
             report: Some(ReportLevel::List),
+            failed_only: false,
             save: Some(report_path.clone()),
             overwrite: true,
         };
@@ -1318,6 +1338,7 @@ mod tests {
                 policy: None,
             }],
             report: None,
+            failed_only: false,
             save: Some(report_path.clone()),
             overwrite: true,
         };
@@ -1390,6 +1411,7 @@ mod tests {
             policy: FailurePolicy::Warn,
             tests,
             report: Some(ReportLevel::Verbose),
+            failed_only: false,
             save: Some(report_path.clone()),
             overwrite: false,
         };
@@ -1442,6 +1464,7 @@ mod tests {
                 },
             ],
             report: None,
+            failed_only: false,
             save: None,
             overwrite: false,
         };
@@ -1454,6 +1477,53 @@ mod tests {
         };
         let manip = check.manipulate_corpus(&mut graph, Path::new("./"), step_id, None);
         assert!(manip.is_ok(), "{:?}", manip.err());
+    }
+
+    #[test]
+    fn failed_only() {
+        let g = input_graph(true, "corpus");
+        let check = Check {
+            failed_only: true,
+            report: Some(ReportLevel::Verbose),
+            tests: vec![
+                Test::QueryTest {
+                    query: "tok".to_string(),
+                    expected: QueryResult::SemiOpenInterval(1, f64::INFINITY),
+                    description: "gimme some tokens, please".to_string(),
+                    policy: None,
+                },
+                Test::QueryTest {
+                    query: "weird_anno_name".to_string(),
+                    expected: QueryResult::Numeric(1),
+                    description: "I want that".to_string(),
+                    policy: None,
+                },
+            ],
+            policy: FailurePolicy::Warn,
+            save: None,
+            overwrite: false,
+        };
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let (tx, rx) = mpsc::channel();
+        let run = check.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            StepID {
+                module_name: "test".to_string(),
+                path: None,
+            },
+            Some(tx),
+        );
+        assert!(run.is_ok(), "Error: {:?}", run.err());
+        let output = rx
+            .into_iter()
+            .map(|m| match m {
+                StatusMessage::Info(msg) => msg,
+                _ => "".to_string(),
+            })
+            .join("\n");
+        assert_snapshot!(output);
     }
 
     fn input_graph(
