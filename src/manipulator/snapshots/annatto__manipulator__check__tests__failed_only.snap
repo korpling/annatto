@@ -1,0 +1,10 @@
+---
+source: src/manipulator/check.rs
+expression: output
+---
++-----------------+--------+
+| description     | result |
++-----------------+--------+
+| I want that     | [31m1 ≠ 0[0m  |
+| weird_anno_name |        |
++-----------------+--------+

@@ -3,6 +3,7 @@ source: src/manipulator/check.rs
 expression: serialization.unwrap()
 ---
 report = "list"
+failed_only = true
 policy = "warn"
 save = "this/is/a/non-existing/path.log"
 overwrite = false

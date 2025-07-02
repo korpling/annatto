@@ -13,6 +13,7 @@ comment_anno = "conll::comment"
 action = "check"
 
 [graph_op.config]
+failed_only = false
 policy = "fail"
 overwrite = false
 
