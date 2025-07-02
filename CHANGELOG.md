@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `check`: attribute `failed_only` restricts the report to failed tests
+
 ## [0.36.0] - 2025-06-27
 
 ### Added
