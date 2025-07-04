@@ -646,11 +646,18 @@ mod tests {
         let save_target = tempdir();
         assert!(save_target.is_ok());
         let save_target = save_target.unwrap();
+        let export_target = tempdir();
+        assert!(export_target.is_ok());
+        let export_target = export_target.unwrap();
         // Safety: Test only.
         unsafe {
             env::set_var(
                 "ANNATTO_TEST_WORKFLOW_LOAD_SAVE_SAVETARGET",
                 save_target.path(),
+            );
+            env::set_var(
+                "ANNATTO_TEST_WORKFLOW_LOAD_SAVE_EXPORTTARGET",
+                export_target.path(),
             );
         }
         let run = execute_from_file(
@@ -661,7 +668,8 @@ mod tests {
             None,
         );
         assert!(run.is_ok(), "Error executing workflow: {:?}", run.err());
-        let gml_path = Path::new("tests/data/init/target/root.graphml");
+        assert!(export_target.path().exists());
+        let gml_path = export_target.path().join("root.graphml");
         assert!(gml_path.exists());
         let actual = fs::read_to_string(gml_path);
         assert!(actual.is_ok());
