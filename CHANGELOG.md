@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `check`: attribute `failed_only` restricts the report to failed tests
+- workflows can now be enriched with an initial `init` table to initialize the annotation graph as non-empty from an existing database
+
+### Changed
+
+- it is now allowed to have zero imports in a workflow
 
 ## [0.36.0] - 2025-06-27
 
