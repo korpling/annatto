@@ -1129,16 +1129,14 @@ edition = ["chapter"]
         "#,
         )
         .unwrap();
-        assert_eq!(workflow.import_steps().len(), 1);
+        let import_steps = workflow.import_steps().unwrap();
+        assert_eq!(import_steps.len(), 1);
         assert_eq!(
-            workflow.import_steps()[0].path.to_string_lossy().as_ref(),
+            import_steps[0].path.to_string_lossy().as_ref(),
             "dummy_path"
         );
-        assert!(matches!(
-            workflow.import_steps()[0].module,
-            ReadFrom::Xlsx(..)
-        ));
-        if let ReadFrom::Xlsx(importer) = &workflow.import_steps()[0].module {
+        assert!(matches!(import_steps[0].module, ReadFrom::Xlsx(..)));
+        if let ReadFrom::Xlsx(importer) = &import_steps[0].module {
             assert_eq!(
                 importer.metasheet,
                 Some(SheetAddress::Name("meta".to_string()))
