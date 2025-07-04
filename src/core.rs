@@ -34,7 +34,8 @@ pub(crate) fn update_graph(
     if let Some(sender) = tx {
         sender.send(crate::workflow::StatusMessage::StepDone { id: step_id })?;
     };
-    if graph.global_statistics.is_some() {
+    if graph.global_statistics.is_some() && !update.is_empty()? {
+        // reset statistics if update was non-empty
         graph.global_statistics = None;
     }
     Ok(())
