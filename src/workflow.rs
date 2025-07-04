@@ -51,11 +51,26 @@ pub enum StatusMessage {
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Workflow {
-    import: Vec<ImporterStep>,
+    #[serde(default)]
+    init: Option<GraphInit>,
+    import: Option<Vec<ImporterStep>>,
     graph_op: Option<Vec<ManipulatorStep>>,
     export: Option<Vec<ExporterStep>>,
     #[serde(default)]
     footer: Metadata,
+}
+
+/// This can be used to initialize the annotation graph non-empty.
+#[derive(Debug, Deserialize, Serialize)]
+struct GraphInit {
+    /// The path to the graphANNIS database.
+    database: PathBuf,
+    /// The corpus name.
+    corpus: String,
+    /// If this is provided, the graph will be saved at the given location
+    /// at the end of the workflow run.
+    #[serde(default)]
+    save: Option<PathBuf>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -197,7 +212,9 @@ impl Workflow {
 
         if let Some(tx) = &tx {
             let mut steps: Vec<StepID> = Vec::default();
-            steps.extend(self.import.iter().map(StepID::from_importer_step));
+            if let Some(importers) = &self.import {
+                steps.extend(importers.iter().map(StepID::from_importer_step));
+            }
             steps.push(apply_update_step_id.clone());
 
             let mut graph_op_position = 1;
@@ -214,13 +231,16 @@ impl Workflow {
         }
 
         // Execute all importers and store their graph updates in parallel
-        let updates: Result<Vec<GraphUpdate>> = self
-            .import
-            .par_iter()
-            .map_with(tx.clone(), |tx, step| {
-                self.execute_single_importer(step, default_workflow_directory, tx.clone())
-            })
-            .collect();
+        let updates: Result<Vec<GraphUpdate>> = if let Some(importers) = &self.import {
+            importers
+                .par_iter()
+                .map_with(tx.clone(), |tx, step| {
+                    self.execute_single_importer(step, default_workflow_directory, tx.clone())
+                })
+                .collect()
+        } else {
+            Ok(vec![])
+        };
         // Create a new empty annotation graph and apply updates
         let apply_update_reporter =
             ProgressReporter::new_unknown_total_work(tx.clone(), apply_update_step_id.clone())?;
@@ -235,6 +255,13 @@ impl Workflow {
         }
         let mut g = AnnotationGraph::with_default_graphstorages(!in_memory)
             .map_err(|e| AnnattoError::CreateGraph(e.to_string()))?;
+        if let Some(init) = &self.init {
+            let mut external_path = init.database.join(&init.corpus);
+            if external_path.is_relative() {
+                external_path = default_workflow_directory.join(external_path);
+            }
+            g.import(&external_path)?;
+        }
 
         // collect all updates in a single update to only have a single atomic
         // call to `apply_update`
@@ -297,11 +324,21 @@ impl Workflow {
             // Check for errors during export
             export_result?;
         }
+        if let Some(init) = &self.init
+            && let Some(save_path) = &init.save
+        {
+            let save_path = if save_path.is_relative() {
+                default_workflow_directory.join(save_path)
+            } else {
+                save_path.to_path_buf()
+            };
+            g.save_to(&save_path)?;
+        }
         Ok(())
     }
 
-    pub fn import_steps(&self) -> &Vec<ImporterStep> {
-        &self.import
+    pub fn import_steps(&self) -> Option<&Vec<ImporterStep>> {
+        self.import.as_ref()
     }
 
     pub fn export_steps(&self) -> Option<&Vec<ExporterStep>> {
@@ -403,7 +440,9 @@ mod tests {
 
     use std::env;
 
-    use insta::assert_snapshot;
+    use insta::{assert_snapshot, with_settings};
+    use itertools::Itertools;
+    use tempfile::tempdir;
 
     use super::*;
 
@@ -600,5 +639,46 @@ mod tests {
             "Could not deserialize workflow that was written by annatto: {:?}",
             deserialize.err()
         );
+    }
+
+    #[test]
+    fn load_and_save() {
+        let save_target = tempdir();
+        assert!(save_target.is_ok());
+        let save_target = save_target.unwrap();
+        // Safety: Test only.
+        unsafe {
+            env::set_var(
+                "ANNATTO_TEST_WORKFLOW_LOAD_SAVE_SAVETARGET",
+                save_target.path(),
+            );
+        }
+        let run = execute_from_file(
+            Path::new("./tests/data/init/workflow.toml"),
+            true,
+            true,
+            None,
+            None,
+        );
+        assert!(run.is_ok(), "Error executing workflow: {:?}", run.err());
+        let gml_path = Path::new("tests/data/init/target/root.graphml");
+        assert!(gml_path.exists());
+        let actual = fs::read_to_string(gml_path);
+        assert!(actual.is_ok());
+        assert_snapshot!(actual.unwrap());
+        let saved_files =
+            glob::glob(format!("{}/**/*", save_target.path().to_string_lossy()).as_str());
+        assert!(saved_files.is_ok());
+        let actual_files = saved_files
+            .unwrap()
+            .into_iter()
+            .flatten()
+            .map(|p| p.to_string_lossy().to_string())
+            .sorted()
+            .collect_vec()
+            .join("\n");
+        with_settings!({filters => vec![(save_target.path().to_string_lossy().to_string().as_str(), "[db_dir]")]}, 
+            { assert_snapshot!("load_save_saved_files", actual_files) });
+        assert!(save_target.path().exists());
     }
 }
