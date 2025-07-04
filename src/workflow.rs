@@ -214,8 +214,8 @@ impl Workflow {
             let mut steps: Vec<StepID> = Vec::default();
             if let Some(importers) = &self.import {
                 steps.extend(importers.iter().map(StepID::from_importer_step));
+                steps.push(apply_update_step_id.clone());
             }
-            steps.push(apply_update_step_id.clone());
 
             let mut graph_op_position = 1;
             if let Some(ref manipulators) = self.graph_op {
@@ -242,17 +242,6 @@ impl Workflow {
             Ok(vec![])
         };
         // Create a new empty annotation graph and apply updates
-        let apply_update_reporter =
-            ProgressReporter::new_unknown_total_work(tx.clone(), apply_update_step_id.clone())?;
-        if in_memory {
-            apply_update_reporter.info(
-                "Creating in-memory annotation graph by applying the updates from the import steps",
-            )?;
-        } else {
-            apply_update_reporter.info(
-                "Creating on-disk annotation graph by applying the updates from the import steps",
-            )?;
-        }
         let mut g = AnnotationGraph::with_default_graphstorages(!in_memory)
             .map_err(|e| AnnattoError::CreateGraph(e.to_string()))?;
         if let Some(init) = &self.init {
@@ -263,31 +252,44 @@ impl Workflow {
             g.import(&external_path)?;
         }
 
-        // collect all updates in a single update to only have a single atomic
-        // call to `apply_update`
-        let mut updates = updates?;
-        let mut combined_updates = if updates.len() == 1 {
-            updates.remove(0)
-        } else {
-            let mut super_update = GraphUpdate::new();
-            for u in updates {
-                for uer in u.iter()? {
-                    let ue = uer?;
-                    let event = ue.1;
-                    super_update.add_event(event)?;
-                }
+        if self.import.is_some() {
+            let apply_update_reporter =
+                ProgressReporter::new_unknown_total_work(tx.clone(), apply_update_step_id.clone())?;
+            if in_memory {
+                apply_update_reporter.info(
+                "Creating in-memory annotation graph by applying the updates from the import steps",
+            )?;
+            } else {
+                apply_update_reporter.info(
+                "Creating on-disk annotation graph by applying the updates from the import steps",
+            )?;
             }
-            super_update
-        };
 
-        // Apply super update
-        update_graph(
-            &mut g,
-            &mut combined_updates,
-            Some(apply_update_step_id),
-            tx.clone(),
-        )?;
+            // collect all updates in a single update to only have a single atomic
+            // call to `apply_update`
+            let mut updates = updates?;
+            let mut combined_updates = if updates.len() == 1 {
+                updates.remove(0)
+            } else {
+                let mut super_update = GraphUpdate::new();
+                for u in updates {
+                    for uer in u.iter()? {
+                        let ue = uer?;
+                        let event = ue.1;
+                        super_update.add_event(event)?;
+                    }
+                }
+                super_update
+            };
 
+            // Apply super update
+            update_graph(
+                &mut g,
+                &mut combined_updates,
+                Some(apply_update_step_id),
+                tx.clone(),
+            )?;
+        }
         // Execute all manipulators in sequence
         if let Some(ref manipulators) = self.graph_op {
             let mut graph_op_position = 1;
@@ -336,6 +338,7 @@ impl Workflow {
                 // compute statistics to avoid doing it after loading
                 g.calculate_all_statistics()?;
             }
+            dbg!(&g.global_statistics);
             g.save_to(&save_path.join(&init.corpus))?;
         }
         Ok(())

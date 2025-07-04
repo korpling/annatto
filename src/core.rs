@@ -23,7 +23,8 @@ pub(crate) fn update_graph(
     tx: Option<StatusSender>,
 ) -> Result<(), anyhow::Error> {
     let step_id = step_id.unwrap_or(FALLBACK_STEP_ID.clone());
-    let progress = ProgressReporter::new(tx.clone(), step_id.clone(), update.len()?)?;
+    let update_size = update.len()?;
+    let progress = ProgressReporter::new(tx.clone(), step_id.clone(), update_size)?;
     graph
         .apply_update_keep_statistics(update, |msg| {
             if let Err(e) = progress.info(msg) {
@@ -34,7 +35,8 @@ pub(crate) fn update_graph(
     if let Some(sender) = tx {
         sender.send(crate::workflow::StatusMessage::StepDone { id: step_id })?;
     };
-    if graph.global_statistics.is_some() {
+    if graph.global_statistics.is_some() && update_size > 0 {
+        // reset statistics if update was non-empty
         graph.global_statistics = None;
     }
     Ok(())
