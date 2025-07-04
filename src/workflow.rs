@@ -332,7 +332,11 @@ impl Workflow {
             } else {
                 save_path.to_path_buf()
             };
-            g.save_to(&save_path)?;
+            if g.global_statistics.is_none() {
+                // compute statistics to avoid doing it after loading
+                g.calculate_all_statistics()?;
+            }
+            g.save_to(&save_path.join(&init.corpus))?;
         }
         Ok(())
     }
