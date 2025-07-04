@@ -1,0 +1,11 @@
+[init]
+database = "v4"
+corpus = "root"
+save = "$ANNATTO_TEST_WORKFLOW_LOAD_SAVE_SAVETARGET"
+
+[[export]]
+format = "graphml"
+path = "$ANNATTO_TEST_WORKFLOW_LOAD_SAVE_EXPORTTARGET"
+
+[export.config]
+stable_order = true
