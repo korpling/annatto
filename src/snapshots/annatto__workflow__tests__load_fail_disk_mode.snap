@@ -1,0 +1,5 @@
+---
+source: src/workflow.rs
+expression: run.err().unwrap().to_string()
+---
+You can only load GraphANNIS in-memory data and must run annatto in memory mode as well. Re-run annatto using `--in-memory`.

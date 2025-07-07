@@ -1,0 +1,5 @@
+---
+source: src/workflow.rs
+expression: run.err().unwrap().to_string()
+---
+Cannot load corpus from given database, as data is a disk-based graph. Currently only in-memory graphs are supported.
