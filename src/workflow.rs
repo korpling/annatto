@@ -245,9 +245,23 @@ impl Workflow {
         let mut g = AnnotationGraph::with_default_graphstorages(!in_memory)
             .map_err(|e| AnnattoError::CreateGraph(e.to_string()))?;
         if let Some(init) = &self.init {
+            if !in_memory {
+                return Err(AnnattoError::Anyhow(anyhow!(
+                    "You can only load GraphANNIS in-memory data and must run annatto in memory mode as well. Re-run annatto using `--in-memory`."
+                )));
+            }
             let mut external_path = init.database.join(&init.corpus);
             if external_path.is_relative() {
                 external_path = default_workflow_directory.join(external_path);
+            }
+            if external_path
+                .join("current")
+                .join(graphannis_core::annostorage::ondisk::SUBFOLDER_NAME)
+                .exists()
+            {
+                return Err(AnnattoError::Anyhow(anyhow!(
+                    "Cannot load corpus from given database, as data is a disk-based graph. Currently only in-memory graphs are supported."
+                )));
             }
             g.import(&external_path)?;
         }
@@ -338,7 +352,6 @@ impl Workflow {
                 // compute statistics to avoid doing it after loading
                 g.calculate_all_statistics()?;
             }
-            dbg!(&g.global_statistics);
             g.save_to(&save_path.join(&init.corpus))?;
         }
         Ok(())
@@ -695,5 +708,31 @@ mod tests {
         with_settings!({filters => vec![(save_target.path().to_string_lossy().to_string().as_str(), "[db_dir]")]}, 
             { assert_snapshot!("load_save_saved_files", actual_files) });
         assert!(save_target.path().exists());
+    }
+
+    #[test]
+    fn load_fail_disk_mode() {
+        let run = execute_from_file(
+            Path::new("./tests/data/init/workflow.toml"),
+            false,
+            false,
+            None,
+            None,
+        );
+        assert!(run.is_err());
+        assert_snapshot!(run.err().unwrap().to_string());
+    }
+
+    #[test]
+    fn load_fail_disk_data() {
+        let run = execute_from_file(
+            Path::new("./tests/data/init/workflow-fail-load.toml"),
+            false,
+            true,
+            None,
+            None,
+        );
+        assert!(run.is_err());
+        assert_snapshot!(run.err().unwrap().to_string());
     }
 }

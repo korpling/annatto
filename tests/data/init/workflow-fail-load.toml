@@ -1,0 +1,3 @@
+[init]
+database = "v4-on-disk"
+corpus = "root"
