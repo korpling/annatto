@@ -534,6 +534,26 @@ const FILE_EXTENSIONS: [&str; 1] = ["xlsx"];
 
 impl ImportSpreadsheet {}
 
+/// This function takes a list of tuples of document paths and their respective node names
+/// and filters all valid documents, but keeps the node names derived for backup data.
+fn invalid_doc_nodes(file_data: &[(PathBuf, String)]) -> BTreeSet<String> {
+    file_data
+        .iter()
+        .filter_map(|(p, d)| {
+            if let Some(file_name) = p.file_name() {
+                let file_name_str = file_name.to_string_lossy();
+                if file_name_str.starts_with("~") || file_name_str.starts_with(".~") {
+                    Some(d.to_string())
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
 impl Importer for ImportSpreadsheet {
     fn import_corpus(
         &self,
@@ -548,26 +568,39 @@ impl Importer for ImportSpreadsheet {
             input_path,
             self.file_extensions(),
         )?;
-        let number_of_files = all_files.len();
+        // figure out which files are backup data and should not be imported
+        let ignore_docs = invalid_doc_nodes(&all_files);
+        // ignore the number of backup files for progress reporting, as these will be skipped
+        let number_of_files = all_files.len() - ignore_docs.len();
         // Each file is a work step
         let reporter = ProgressReporter::new(tx, step_id.clone(), number_of_files)?;
         let mapper_vec = all_files
             .into_iter()
-            .map(|(p, d)| WorkbookMapper {
-                progress: &reporter,
-                path: p.to_path_buf(),
-                column_map: &self.column_map,
-                datasheet: self.datasheet.clone(),
-                metasheet: self.metasheet.clone(),
-                metasheet_skip_rows: self.metasheet_skip_rows,
-                fallback: self.fallback.clone(),
-                token_annos: &self.token_annos,
-                doc_node_name: d.to_string(),
+            .filter_map(|(p, d)| {
+                if ignore_docs.contains(&d) {
+                    None
+                } else {
+                    Some(WorkbookMapper {
+                        progress: &reporter,
+                        path: p.to_path_buf(),
+                        column_map: &self.column_map,
+                        datasheet: self.datasheet.clone(),
+                        metasheet: self.metasheet.clone(),
+                        metasheet_skip_rows: self.metasheet_skip_rows,
+                        fallback: self.fallback.clone(),
+                        token_annos: &self.token_annos,
+                        doc_node_name: d.to_string(),
+                    })
+                }
             })
             .collect_vec();
         mapper_vec
             .into_iter()
             .try_for_each(|m| m.import_workbook(&mut update))?;
+        // delete document nodes that exist for backup files
+        ignore_docs
+            .into_iter()
+            .try_for_each(|node_name| update.add_event(UpdateEvent::DeleteNode { node_name }))?;
         Ok(update)
     }
 
@@ -590,6 +623,7 @@ mod tests {
 
     use crate::{
         ImporterStep, ReadFrom,
+        core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         test_util::export_to_string,
         workflow::{StatusMessage, Workflow},
@@ -1143,5 +1177,57 @@ edition = ["chapter"]
             );
             assert_eq!(importer.datasheet, Some(SheetAddress::Numeric(2)));
         }
+    }
+
+    #[test]
+    fn file_filter() {
+        let mut update = GraphUpdate::default();
+        let files_with_names = util::graphupdate::import_corpus_graph_from_files(
+            &mut update,
+            Path::new("tests/data/import/xlsx/with_backup/xlsx/"),
+            &FILE_EXTENSIONS,
+        );
+        assert!(
+            files_with_names.is_ok(),
+            "Failed: {:?}",
+            files_with_names.err()
+        );
+        let invalids = invalid_doc_nodes(&files_with_names.unwrap())
+            .iter()
+            .sorted()
+            .join("\n");
+        assert_snapshot!(invalids);
+    }
+
+    #[test]
+    fn ignore_back_files() {
+        let definition = r#"
+[column_map]
+dipl = ["sentence", "seg"]
+norm = ["pos", "lemma"]
+        "#;
+        let module: Result<ImportSpreadsheet, _> = toml::from_str(&definition);
+        assert!(module.is_ok());
+        let import = module.unwrap();
+        let u = import.import_corpus(
+            Path::new("tests/data/import/xlsx/with_backup/xlsx/"),
+            StepID {
+                module_name: "test_xlsx".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(u.is_ok(), "Failed to import: {:?}", u.err());
+        let mut update = u.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(update_graph_silent(&mut graph, &mut update).is_ok());
+        let module: Result<GraphMLExporter, _> = toml::from_str("stable_order = true");
+        assert!(module.is_ok());
+        let export = module.unwrap();
+        let actual = export_to_string(&graph, export);
+        assert!(actual.is_ok());
+        assert_snapshot!(actual.unwrap());
     }
 }
