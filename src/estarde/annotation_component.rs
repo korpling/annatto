@@ -8,6 +8,7 @@ use super::IntoInner;
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct SerdeComponent {
+    #[serde(alias = "type")]
     ctype: AnnotationComponentType,
     layer: String,
     name: String,
