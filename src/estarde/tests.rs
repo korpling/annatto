@@ -24,6 +24,22 @@ name = "dependency"
     assert_eq!(c.name.as_str(), "dependency");
 }
 
+#[test]
+fn aliased_component() {
+    let toml_str = r#"
+type = "Pointing"
+layer = "syntax"
+name = "dependency"
+"#;
+    let r: Result<SerdeComponent, _> = toml::from_str(toml_str);
+    assert!(r.is_ok());
+    let dc = r.unwrap();
+    let c = dc.into_inner();
+    assert!(matches!(c.get_type(), AnnotationComponentType::Pointing));
+    assert_eq!(c.layer.as_str(), "syntax");
+    assert_eq!(c.name.as_str(), "dependency");
+}
+
 #[derive(Deserialize)]
 struct KeyOwner {
     #[serde(with = "crate::estarde::anno_key")]
