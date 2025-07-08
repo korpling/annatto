@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - it is now allowed to have zero imports in a workflow
+- import `xlsx`: Backup files are ignored
 
 ## [0.36.0] - 2025-06-27
 
