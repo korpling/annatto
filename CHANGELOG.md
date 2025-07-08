@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `check`: attribute `failed_only` restricts the report to failed tests
 - workflows can now be enriched with an initial `init` table to initialize the annotation graph as non-empty from an existing database (only in-memory)
 - when saving a graph the graph statistics are calculated to have them ready for loading again
+- configuring annotation components can now be done by providing `type` instead of `ctype`, but `ctype` is still valid
 
 ### Changed
 
