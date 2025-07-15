@@ -157,7 +157,8 @@ You cannot mix import, graph operations and export headers. You have to first li
 [[import]]
 path = "conll/ExampleCorpus"
 format = "conllu"
-config = {}
+
+[import.config]
 
 [[graph_op]]
 action = "check"
