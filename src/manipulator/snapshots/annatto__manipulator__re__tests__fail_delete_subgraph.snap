@@ -1,0 +1,5 @@
+---
+source: src/manipulator/re.rs
+expression: manipulation.err().unwrap().to_string()
+---
+Node with name "root/non-existing-node" does not exist, subgraph cannot be identified or removed.
