@@ -145,9 +145,6 @@ fn remove_subgraph(
     update: &mut GraphUpdate,
     from_node: &str,
 ) -> Result<(), anyhow::Error> {
-    update.add_event(UpdateEvent::DeleteNode {
-        node_name: from_node.to_string(),
-    })?;
     if let Some(part_of_storage) = graph.get_graphstorage(&AnnotationComponent::new(
         AnnotationComponentType::PartOf,
         ANNIS_NS.into(),
@@ -156,6 +153,9 @@ fn remove_subgraph(
         let node_annos = graph.get_node_annos();
         let nid = node_annos.get_node_id_from_name(from_node)?;
         if let Some(node_id) = nid {
+            update.add_event(UpdateEvent::DeleteNode {
+                node_name: from_node.to_string(),
+            })?;
             for n in CycleSafeDFS::new_inverse(
                 part_of_storage.as_edgecontainer(),
                 node_id,
@@ -169,6 +169,10 @@ fn remove_subgraph(
                     })?;
                 }
             }
+        } else {
+            return Err(anyhow!(
+                "Node with name \"{from_node}\" does not exist, subgraph cannot be identified or removed."
+            ));
         }
     }
     Ok(())
@@ -2496,6 +2500,37 @@ from = "deprel"
         assert!(gs.is_ok());
         let graphml = gs.unwrap();
         assert_snapshot!(graphml);
+    }
+
+    #[test]
+    fn fail_delete_subgraph() {
+        let g = input_graph(true, false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let tmp = tempdir();
+        assert!(tmp.is_ok());
+        let manipulation = Revise {
+            remove_subgraph: vec!["root/non-existing-node".to_string()],
+            components: vec![],
+            node_names: BTreeMap::default(),
+            remove_nodes: vec![],
+            edge_annos: vec![],
+            remove_match: vec![],
+            move_node_annos: false,
+            node_annos: vec![],
+            namespaces: BTreeMap::default(),
+        }
+        .manipulate_corpus(
+            &mut graph,
+            tmp.unwrap().path(),
+            StepID {
+                module_name: "test_revise".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(manipulation.is_err());
+        assert_snapshot!(manipulation.err().unwrap().to_string());
     }
 
     #[test]
