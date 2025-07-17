@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - it is now allowed to have zero imports in a workflow
 - import `xlsx`: Backup files are ignored
+- `revise`: Attempting to delete a subgraph with an invalid node name (non-existing node) will now lead to a rejection of the update and early cancellation
 
 ## [0.36.0] - 2025-06-27
 
