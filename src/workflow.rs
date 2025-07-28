@@ -48,7 +48,7 @@ pub enum StatusMessage {
 /// First , all importers are executed in parallel. Then their output are appended to create a single annotation graph.
 /// The manipulators are executed in their defined sequence and can change the annotation graph.
 /// Last, all exporters are called with the now read-only annotation graph in parallel.
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Default)]
 #[serde(deny_unknown_fields)]
 pub struct Workflow {
     #[serde(default)]
@@ -71,6 +71,31 @@ pub struct GraphInit {
     /// at the end of the workflow run.
     #[serde(default)]
     save: Option<PathBuf>,
+}
+
+impl GraphInit {
+    /// Create a new init step, that loads the corpus from a subdirectory (given
+    /// by the corpus name) from the given parent database directory.
+    pub fn new<P, S>(database: P, corpus: S) -> Self
+    where
+        P: Into<PathBuf>,
+        S: Into<String>,
+    {
+        Self {
+            database: database.into(),
+            corpus: corpus.into(),
+            save: None,
+        }
+    }
+
+    /// Save the graph at the given location at the end of the workflow run.
+    pub fn with_save_at_end<P>(mut self, path: P) -> Self
+    where
+        P: Into<PathBuf>,
+    {
+        self.save = Some(path.into());
+        self
+    }
 }
 
 #[derive(Deserialize, Serialize)]
@@ -198,18 +223,6 @@ pub fn execute_from_file(
 pub type StatusSender = Sender<StatusMessage>;
 
 impl Workflow {
-    /// Create a new empty workflow.
-    /// Use one of the `with_`builder methods to add importer, exporter and graph operations to it.
-    pub fn new() -> Self {
-        Self {
-            init: None,
-            import: None,
-            graph_op: None,
-            export: None,
-            footer: Metadata::default(),
-        }
-    }
-
     pub fn with_init(mut self, init: GraphInit) -> Self {
         self.init = Some(init);
         self

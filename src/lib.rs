@@ -507,6 +507,17 @@ pub struct ImporterStep {
 }
 
 impl ImporterStep {
+    /// Create a new importer step with the given module and input path.
+    pub fn new<P>(module: ReadFrom, path: P) -> Self
+    where
+        P: Into<PathBuf>,
+    {
+        Self {
+            module,
+            path: path.into(),
+        }
+    }
+
     #[cfg(test)]
     fn execute(
         &self,
@@ -529,6 +540,17 @@ pub struct ExporterStep {
 }
 
 impl ExporterStep {
+    /// Create a new exporter step with the given module and output path.
+    pub fn new<P>(module: WriteAs, path: P) -> Self
+    where
+        P: Into<PathBuf>,
+    {
+        Self {
+            module,
+            path: path.into(),
+        }
+    }
+
     #[cfg(test)]
     fn execute(
         &self,
@@ -552,6 +574,17 @@ pub struct ManipulatorStep {
 }
 
 impl ManipulatorStep {
+    /// Create a new graph operation step with the given module and an optional working directory.
+    pub fn new<P>(module: GraphOp, workflow_directory: Option<P>) -> Self
+    where
+        P: Into<PathBuf>,
+    {
+        Self {
+            module,
+            workflow_directory: workflow_directory.map(|d| d.into()),
+        }
+    }
+
     fn execute(
         &self,
         graph: &mut AnnotationGraph,
