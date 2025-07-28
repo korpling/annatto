@@ -130,7 +130,9 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// value = { copy = 1 }
 /// delete = [1]
 /// ```
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(
+    Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone,
+)]
 #[serde(deny_unknown_fields)]
 pub struct MapAnnos {
     #[serde(default)]

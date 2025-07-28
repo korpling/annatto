@@ -25,7 +25,9 @@ use super::Importer;
 /// [import.config]
 /// skip_tokens = true
 /// ```
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(
+    Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone,
+)]
 #[serde(deny_unknown_fields)]
 pub struct ImportWhisper {
     /// With this attribute the tokenization in the output will not be imported,

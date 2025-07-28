@@ -36,7 +36,7 @@ use crate::{
 
 /// Import files in the [CONLL-U format](https://universaldependencies.org/format.html)
 /// from the Universal Dependencies project.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ImportCoNLLU {
     /// This key defines the annotation name and namespace for sentence comments, sometimes referred to as metadata in the CoNLL-X universe.

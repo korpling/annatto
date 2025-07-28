@@ -29,7 +29,9 @@ use documented::{Documented, DocumentedFields};
 
 /// Imports Excel Spreadsheets where each line is a token, the other columns are
 /// spans and merged cells can be used for spans that cover more than one token.
-#[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(
+    Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone,
+)]
 #[serde(deny_unknown_fields)]
 pub struct ImportSpreadsheet {
     /// Maps token columns to annotation columns. If there is more than one

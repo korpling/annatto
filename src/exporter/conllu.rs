@@ -24,7 +24,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 use super::Exporter;
 
 /// This module exports a graph in CoNLL-U format.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ExportCoNLLU {
     /// This key is used to determine nodes that whose part-of subgraph constitutes a document, i. e. the entire input for a file.

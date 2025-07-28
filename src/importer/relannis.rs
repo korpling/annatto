@@ -31,7 +31,9 @@ lazy_static! {
 }
 
 /// Importer the legacy (rel)ANNIS import format (<http://korpling.github.io/ANNIS/3.7/developer-guide/annisimportformat.html>).
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(
+    Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone,
+)]
 #[serde(deny_unknown_fields)]
 pub struct ImportRelAnnis {}
 

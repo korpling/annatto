@@ -289,7 +289,9 @@ impl DocumentMapper {
 }
 
 /// Importer the Penn Treebank Bracketed Text format (PTB)
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(
+    Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone,
+)]
 #[serde(deny_unknown_fields)]
 pub struct ImportPTB {
     /// Some variants encode a function of the node after the node category,

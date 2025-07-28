@@ -13,7 +13,9 @@ use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 /// Add file nodes for all files in the imported directory.
-#[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(
+    Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone,
+)]
 #[serde(deny_unknown_fields)]
 pub struct CreateFileNodes {
     /// The name of the corpus root node.

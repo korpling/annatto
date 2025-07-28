@@ -30,7 +30,9 @@ use crate::{
 use documented::{Documented, DocumentedFields};
 
 /// Manipulate annotations, like deleting or renaming them.
-#[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(
+    Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone,
+)]
 #[serde(deny_unknown_fields)]
 pub struct Revise {
     /// A map of nodes to rename, usually useful for corpus nodes. If the target name exists,
@@ -104,7 +106,7 @@ pub struct Revise {
     remove_subgraph: Vec<String>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 #[serde(deny_unknown_fields)]
 struct RemoveMatch {
     /// The query to obtain the results.
@@ -113,7 +115,7 @@ struct RemoveMatch {
     remove: Vec<RemoveTarget>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 #[serde(untagged)]
 enum RemoveTarget {
     Node(usize),
@@ -124,7 +126,7 @@ enum RemoveTarget {
     },
 }
 
-#[derive(Deserialize, Debug, PartialEq, Serialize)]
+#[derive(Deserialize, Debug, PartialEq, Serialize, Clone)]
 struct KeyMapping {
     #[serde(with = "crate::estarde::anno_key")]
     from: AnnoKey,
@@ -132,7 +134,7 @@ struct KeyMapping {
     to: Option<AnnoKey>,
 }
 
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Deserialize, Debug, Serialize, Clone)]
 struct ComponentMapping {
     #[serde(with = "crate::estarde::annotation_component")]
     from: AnnotationComponent,
@@ -321,7 +323,7 @@ fn revise_component(
                     } else {
                         progress_reporter.warn(
                             format!(
-                                "Could not retrieve target node for source node in component {source_component}"                                
+                                "Could not retrieve target node for source node in component {source_component}"
                             )
                             .as_str(),
                         )?;
@@ -1138,7 +1140,7 @@ mod tests {
         let mut g = input_graph_for_move(on_disk)?;
         let node_map: KeyMapping = toml::from_str(
             r#"
-from = "norm::pos" 
+from = "norm::pos"
 to = "dipl::derived_pos"
         "#,
         )?;
@@ -1344,7 +1346,7 @@ from = "deprel"
         let mut g = input_graph_for_move(on_disk)?;
         let node_map: KeyMapping = toml::from_str(
             r#"
-from = "norm::pos" 
+from = "norm::pos"
 to = "dipl::derived_pos"
         "#,
         )?;

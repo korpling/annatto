@@ -12,7 +12,7 @@ use crate::importer::Importer;
 
 /// This importer can enrich a corpus with commit metadata. The import path needs
 /// to be the root directory of the local git repository.
-#[derive(Deserialize, Serialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(Deserialize, Serialize, Documented, DocumentedFields, FieldNamesAsSlice, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ImportGitMetadata {
     /// The relative to the data folder that is being imported with another

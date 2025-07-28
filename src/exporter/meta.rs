@@ -38,7 +38,7 @@ use super::Exporter;
 ///
 /// [export.config]
 /// ```
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ExportMeta {
     /// This key determines the value of the file name and which nodes are being exported into a single file,

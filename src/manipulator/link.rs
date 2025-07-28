@@ -74,12 +74,12 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// as `target_to_edge` is configured to copy annotation "1", which is `func` in the
 /// example query, to the edge.
 ///
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct LinkNodes {
     /// The AQL query to find all source node annotations. Source and target nodes are then paired by equal value for their query match.
     source_query: String,
-    /// The 1-based index selecting the value providing node in the AQL source query.    
+    /// The 1-based index selecting the value providing node in the AQL source query.
     source_node: usize,
     /// Contains one or multiple 1-based indexes, from which (in order of mentioning) the value for mapping source and target will be concatenated.
     source_value: Vec<usize>,
@@ -88,7 +88,7 @@ pub struct LinkNodes {
     source_to_edge: Vec<usize>,
     /// The AQL query to find all target node annotations.
     target_query: String,
-    /// The 1-based index selecting the value providing node in the AQL target query.    
+    /// The 1-based index selecting the value providing node in the AQL target query.
     target_node: usize,
     /// Contains one or multiple 1-based indexes, from which (in order of mentioning) the value for mapping source and target will be concatenated.
     target_value: Vec<usize>,

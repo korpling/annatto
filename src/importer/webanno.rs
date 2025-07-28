@@ -19,7 +19,9 @@ use crate::{progress::ProgressReporter, util::graphupdate::import_corpus_graph_f
 use super::Importer;
 
 /// Import WebAnno TSV format.
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(
+    Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone,
+)]
 #[serde(deny_unknown_fields)]
 pub struct ImportWebAnnoTSV {}
 

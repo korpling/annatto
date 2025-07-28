@@ -200,7 +200,7 @@ use crate::{
 /// ref_type = ["a", "k"]
 /// ```
 ///
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Check {
     /// The tests to run on the current graph.
@@ -231,7 +231,7 @@ enum FailurePolicy {
     Fail,
 }
 
-#[derive(Deserialize, Default, Serialize)]
+#[derive(Deserialize, Default, Serialize, Clone)]
 #[serde(rename_all = "snake_case")]
 enum ReportLevel {
     #[default] // default report level is required for save option
@@ -716,7 +716,7 @@ impl From<&Test> for Vec<AQLTest> {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 #[serde(untagged, deny_unknown_fields)]
 enum Test {
     QueryTest {
@@ -792,7 +792,7 @@ struct TestTableEntry {
     appendix: Option<String>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 #[serde(untagged)]
 enum QueryResult {
     Numeric(usize),

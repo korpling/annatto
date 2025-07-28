@@ -20,7 +20,7 @@ use crate::{
 use super::Exporter;
 
 /// This exports a node sequence as horizontal or vertical text.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ExportSequence {
     /// Choose horizontal mode if you want one group (e. g. sentence) per line,
@@ -38,7 +38,7 @@ pub struct ExportSequence {
     /// to find the nodes holding the groupby anno key. The default value is `Coverage`.
     #[serde(default = "default_groupby_ctype")]
     group_component_type: Option<AnnotationComponentType>,
-    /// This configures the edge component that contains the sequences that you wish to export.    
+    /// This configures the edge component that contains the sequences that you wish to export.
     /// The default value ctype is `Ordering`, the default layer is `annis`, and the default
     /// name is empty.
     /// Example:

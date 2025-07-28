@@ -53,7 +53,7 @@ pub struct ModuleConfiguration {
     pub description: String,
 }
 
-#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize)]
+#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize, Clone)]
 #[strum(serialize_all = "lowercase")]
 #[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
@@ -160,7 +160,7 @@ impl WriteAsDiscriminants {
     }
 }
 
-#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize)]
+#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize, Clone)]
 #[strum(serialize_all = "lowercase")]
 #[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
@@ -333,7 +333,7 @@ impl ReadFromDiscriminants {
     }
 }
 
-#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize)]
+#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize, Clone)]
 #[strum(serialize_all = "lowercase")]
 #[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "action", rename_all = "lowercase", content = "config")]

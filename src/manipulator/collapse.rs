@@ -33,7 +33,7 @@ use super::Manipulator;
 /// edge to a single node. This could be done by keeping one of the nodes or by
 /// creating a third one. Then all all edges, annotations, etc. are moved to the
 /// node of choice, the other node(s) is/are deleted.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Collapse {
     /// The component type within which to find the edges to collapse.

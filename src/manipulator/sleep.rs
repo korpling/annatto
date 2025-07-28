@@ -5,7 +5,9 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 use super::Manipulator;
 
 /// This operation pauses the conversion process. As a regular user, you usually do not need to use this feature.
-#[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(
+    Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone,
+)]
 #[serde(deny_unknown_fields)]
 pub struct Sleep {
     /// Time to sleep in seconds.

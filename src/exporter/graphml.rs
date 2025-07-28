@@ -30,7 +30,9 @@ use zip::ZipWriter;
 
 /// Exports files as [GraphML](http://graphml.graphdrawing.org/) files which
 /// conform to the [graphANNIS data model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(
+    Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone,
+)]
 #[serde(deny_unknown_fields)]
 pub struct GraphMLExporter {
     /// If set, add this ANNIS visualization configuration string to the corpus

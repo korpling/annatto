@@ -22,7 +22,7 @@ use crate::{
     StepID, progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files,
 };
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 #[serde(deny_unknown_fields)]
 struct EmptyLineGroup {
     #[serde(with = "crate::estarde::anno_key")]
@@ -32,7 +32,7 @@ struct EmptyLineGroup {
 }
 
 /// Import CSV files with token and token annotations.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ImportTable {
     /// If not empty, skip the first row and use this list as the fully qualified annotation name for each column.

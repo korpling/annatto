@@ -21,7 +21,7 @@ use super::Importer;
 
 /// Add alignment edges for parallel corpora from the XML format used by the
 /// [OPUS](https://opus.nlpl.eu/) corpora.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ImportOpusLinks {
     /// The component name of the edges for the default direction.

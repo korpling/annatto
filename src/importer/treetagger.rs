@@ -329,7 +329,7 @@ impl<'a> DocumentMapper<'a> {
 /// [import.config]
 /// column_names = ["tok", "norm::custom_pos", "norm::custom_lemma"]
 /// ```
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ImportTreeTagger {
     /// Provide annotation names for the columns of the files. If you want the first column to be `annis::tok`,
