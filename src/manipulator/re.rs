@@ -31,7 +31,14 @@ use documented::{Documented, DocumentedFields};
 
 /// Manipulate annotations, like deleting or renaming them.
 #[derive(
-    Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone,
+    Deserialize,
+    Default,
+    Documented,
+    DocumentedFields,
+    FieldNamesAsSlice,
+    Serialize,
+    Clone,
+    PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct Revise {
@@ -106,7 +113,7 @@ pub struct Revise {
     remove_subgraph: Vec<String>,
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 struct RemoveMatch {
     /// The query to obtain the results.
@@ -115,7 +122,7 @@ struct RemoveMatch {
     remove: Vec<RemoveTarget>,
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, PartialEq)]
 #[serde(untagged)]
 enum RemoveTarget {
     Node(usize),
@@ -134,7 +141,7 @@ struct KeyMapping {
     to: Option<AnnoKey>,
 }
 
-#[derive(Deserialize, Debug, Serialize, Clone)]
+#[derive(Deserialize, Debug, Serialize, Clone, PartialEq)]
 struct ComponentMapping {
     #[serde(with = "crate::estarde::annotation_component")]
     from: AnnotationComponent,

@@ -48,7 +48,9 @@ use super::Exporter;
 /// [export.config]
 /// copy_media = false
 /// ```
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone)]
+#[derive(
+    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+)]
 #[serde(deny_unknown_fields)]
 pub struct ExportExmaralda {
     /// If `true`, copy linked media files to the output location.

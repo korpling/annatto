@@ -37,7 +37,14 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// [Salt
 /// model](https://raw.githubusercontent.com/korpling/salt/master/gh-site/doc/salt_modelGuide.pdf).
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Default, Serialize, Clone,
+    Deserialize,
+    Documented,
+    DocumentedFields,
+    FieldNamesAsSlice,
+    Default,
+    Serialize,
+    Clone,
+    PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct ExportSaltXml {}

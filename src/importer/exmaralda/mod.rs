@@ -29,7 +29,14 @@ use documented::{Documented, DocumentedFields};
 /// Import [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
 /// (`.exb`) files.
 #[derive(
-    Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone,
+    Default,
+    Deserialize,
+    Documented,
+    DocumentedFields,
+    FieldNamesAsSlice,
+    Serialize,
+    Clone,
+    PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct ImportEXMARaLDA {}

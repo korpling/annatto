@@ -29,7 +29,14 @@ use crate::{
 /// have to conform to the
 /// [graphANNIS data model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
 #[derive(
-    Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone,
+    Default,
+    Deserialize,
+    Documented,
+    DocumentedFields,
+    FieldNamesAsSlice,
+    Serialize,
+    Clone,
+    PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct GraphMLImporter {}

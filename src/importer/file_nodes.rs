@@ -14,7 +14,14 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 
 /// Add file nodes for all files in the imported directory.
 #[derive(
-    Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone,
+    Deserialize,
+    Default,
+    Documented,
+    DocumentedFields,
+    FieldNamesAsSlice,
+    Serialize,
+    Clone,
+    PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct CreateFileNodes {

@@ -11,7 +11,14 @@ use super::Manipulator;
 /// The purpose of this graph operation is to allow to omit a `format` field in
 /// the `[[graph_op]]` configuration of the workflow file.
 #[derive(
-    Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone,
+    Deserialize,
+    Default,
+    Documented,
+    DocumentedFields,
+    FieldNamesAsSlice,
+    Serialize,
+    Clone,
+    PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct NoOp {}

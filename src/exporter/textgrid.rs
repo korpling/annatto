@@ -30,7 +30,9 @@ use super::Exporter;
 /// remove_ns = true
 ///
 /// ```
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone)]
+#[derive(
+    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+)]
 #[serde(deny_unknown_fields)]
 pub struct ExportTextGrid {
     /// This anno key determines which nodes in the part of subgraph bundle all contents for a file.

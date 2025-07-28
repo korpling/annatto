@@ -200,7 +200,9 @@ use crate::{
 /// ref_type = ["a", "k"]
 /// ```
 ///
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone)]
+#[derive(
+    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+)]
 #[serde(deny_unknown_fields)]
 pub struct Check {
     /// The tests to run on the current graph.
@@ -223,7 +225,7 @@ pub struct Check {
     overwrite: bool,
 }
 
-#[derive(Clone, Default, Deserialize, Serialize)]
+#[derive(Clone, Default, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
 enum FailurePolicy {
     Warn,
@@ -231,7 +233,7 @@ enum FailurePolicy {
     Fail,
 }
 
-#[derive(Deserialize, Default, Serialize, Clone)]
+#[derive(Deserialize, Default, Serialize, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
 enum ReportLevel {
     #[default] // default report level is required for save option
@@ -716,7 +718,7 @@ impl From<&Test> for Vec<AQLTest> {
     }
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, PartialEq)]
 #[serde(untagged, deny_unknown_fields)]
 enum Test {
     QueryTest {
@@ -792,7 +794,7 @@ struct TestTableEntry {
     appendix: Option<String>,
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, PartialEq)]
 #[serde(untagged)]
 enum QueryResult {
     Numeric(usize),

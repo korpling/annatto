@@ -290,7 +290,14 @@ impl DocumentMapper {
 
 /// Importer the Penn Treebank Bracketed Text format (PTB)
 #[derive(
-    Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone,
+    Default,
+    Deserialize,
+    Documented,
+    DocumentedFields,
+    FieldNamesAsSlice,
+    Serialize,
+    Clone,
+    PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct ImportPTB {

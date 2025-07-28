@@ -26,7 +26,14 @@ use super::Importer;
 /// skip_tokens = true
 /// ```
 #[derive(
-    Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone,
+    Default,
+    Deserialize,
+    Documented,
+    DocumentedFields,
+    FieldNamesAsSlice,
+    Serialize,
+    Clone,
+    PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct ImportWhisper {
