@@ -62,7 +62,7 @@ pub struct Workflow {
 
 /// This can be used to initialize the annotation graph non-empty.
 #[derive(Debug, Deserialize, Serialize)]
-struct GraphInit {
+pub struct GraphInit {
     /// The path to the graphANNIS database.
     database: PathBuf,
     /// The corpus name.
@@ -198,6 +198,38 @@ pub fn execute_from_file(
 pub type StatusSender = Sender<StatusMessage>;
 
 impl Workflow {
+    /// Create a new empty workflow.
+    /// Use one of the `with_`builder methods to add importer, exporter and graph operations to it.
+    pub fn new() -> Self {
+        Self {
+            init: None,
+            import: None,
+            graph_op: None,
+            export: None,
+            footer: Metadata::default(),
+        }
+    }
+
+    pub fn with_init(mut self, init: GraphInit) -> Self {
+        self.init = Some(init);
+        self
+    }
+
+    pub fn with_importer_steps(mut self, steps: Vec<ImporterStep>) -> Self {
+        self.import = Some(steps);
+        self
+    }
+
+    pub fn with_exporter_steps(mut self, steps: Vec<ExporterStep>) -> Self {
+        self.export = Some(steps);
+        self
+    }
+
+    pub fn with_graph_ops(mut self, steps: Vec<ManipulatorStep>) -> Self {
+        self.graph_op = Some(steps);
+        self
+    }
+
     pub fn execute(
         &self,
         tx: Option<StatusSender>,
@@ -705,7 +737,7 @@ mod tests {
             .sorted()
             .collect_vec()
             .join("\n");
-        with_settings!({filters => vec![(save_target.path().to_string_lossy().to_string().as_str(), "[db_dir]")]}, 
+        with_settings!({filters => vec![(save_target.path().to_string_lossy().to_string().as_str(), "[db_dir]")]},
             { assert_snapshot!("load_save_saved_files", actual_files) });
         assert!(save_target.path().exists());
     }
