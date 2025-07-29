@@ -130,7 +130,16 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// value = { copy = 1 }
 /// delete = [1]
 /// ```
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(
+    Default,
+    Deserialize,
+    Documented,
+    DocumentedFields,
+    FieldNamesAsSlice,
+    Serialize,
+    Clone,
+    PartialEq,
+)]
 #[serde(deny_unknown_fields)]
 pub struct MapAnnos {
     #[serde(default)]
@@ -241,7 +250,7 @@ fn read_config(path: &Path) -> Result<Mapping, Box<dyn std::error::Error>> {
     Ok(m)
 }
 
-#[derive(Debug, Deserialize, Clone, Serialize)]
+#[derive(Debug, Deserialize, Clone, Serialize, PartialEq)]
 enum RepetitionMode {
     /// Repeat applying the rules n times.
     Fixed { n: usize },
@@ -255,7 +264,7 @@ impl Default for RepetitionMode {
     }
 }
 
-#[derive(Deserialize, Debug, Clone, Serialize)]
+#[derive(Deserialize, Debug, Clone, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 struct Mapping {
     rules: Vec<Rule>,
@@ -263,7 +272,7 @@ struct Mapping {
     repetition: RepetitionMode,
 }
 
-#[derive(Clone, Deserialize, Debug, Serialize)]
+#[derive(Clone, Deserialize, Debug, Serialize, PartialEq)]
 #[serde(untagged)]
 enum TargetRef {
     Node(usize),
@@ -305,7 +314,7 @@ impl TargetRef {
     }
 }
 
-#[derive(Clone, Deserialize, Debug, Serialize)]
+#[derive(Clone, Deserialize, Debug, Serialize, PartialEq)]
 #[serde(untagged)]
 enum Value {
     Fixed(String),
@@ -326,7 +335,7 @@ enum Value {
     },
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 struct Rule {
     query: String,

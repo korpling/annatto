@@ -28,7 +28,9 @@ use text_splitter::TextSplitter;
 /// Uses the [text-splitter](https://crates.io/crates/text-splitter) crate which
 /// uses sentence markers and the given maximum number of characters per chunk
 /// to segment the text into chunks.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(
+    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+)]
 #[serde(deny_unknown_fields)]
 pub struct Chunk {
     /// Maximum chunk length.

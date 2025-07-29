@@ -21,7 +21,16 @@ use documented::{Documented, DocumentedFields};
 use super::Importer;
 
 /// Generic importer for XML files.
-#[derive(Default, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(
+    Default,
+    Deserialize,
+    Documented,
+    DocumentedFields,
+    FieldNamesAsSlice,
+    Serialize,
+    Clone,
+    PartialEq,
+)]
 #[serde(deny_unknown_fields)]
 pub struct ImportXML {
     /// For specfic tag names, the covered text can be retrieved from

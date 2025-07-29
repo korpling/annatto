@@ -48,7 +48,7 @@ pub enum StatusMessage {
 /// First , all importers are executed in parallel. Then their output are appended to create a single annotation graph.
 /// The manipulators are executed in their defined sequence and can change the annotation graph.
 /// Last, all exporters are called with the now read-only annotation graph in parallel.
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Default)]
 #[serde(deny_unknown_fields)]
 pub struct Workflow {
     #[serde(default)]
@@ -62,7 +62,7 @@ pub struct Workflow {
 
 /// This can be used to initialize the annotation graph non-empty.
 #[derive(Debug, Deserialize, Serialize)]
-struct GraphInit {
+pub struct GraphInit {
     /// The path to the graphANNIS database.
     database: PathBuf,
     /// The corpus name.
@@ -71,6 +71,31 @@ struct GraphInit {
     /// at the end of the workflow run.
     #[serde(default)]
     save: Option<PathBuf>,
+}
+
+impl GraphInit {
+    /// Create a new init step, that loads the corpus from a subdirectory (given
+    /// by the corpus name) from the given parent database directory.
+    pub fn new<P, S>(database: P, corpus: S) -> Self
+    where
+        P: Into<PathBuf>,
+        S: Into<String>,
+    {
+        Self {
+            database: database.into(),
+            corpus: corpus.into(),
+            save: None,
+        }
+    }
+
+    /// Save the graph at the given location at the end of the workflow run.
+    pub fn with_save_at_end<P>(mut self, path: P) -> Self
+    where
+        P: Into<PathBuf>,
+    {
+        self.save = Some(path.into());
+        self
+    }
 }
 
 #[derive(Deserialize, Serialize)]
@@ -198,6 +223,26 @@ pub fn execute_from_file(
 pub type StatusSender = Sender<StatusMessage>;
 
 impl Workflow {
+    pub fn with_init(mut self, init: GraphInit) -> Self {
+        self.init = Some(init);
+        self
+    }
+
+    pub fn with_importer_steps(mut self, steps: Vec<ImporterStep>) -> Self {
+        self.import = Some(steps);
+        self
+    }
+
+    pub fn with_exporter_steps(mut self, steps: Vec<ExporterStep>) -> Self {
+        self.export = Some(steps);
+        self
+    }
+
+    pub fn with_graph_ops(mut self, steps: Vec<ManipulatorStep>) -> Self {
+        self.graph_op = Some(steps);
+        self
+    }
+
     pub fn execute(
         &self,
         tx: Option<StatusSender>,
@@ -705,7 +750,7 @@ mod tests {
             .sorted()
             .collect_vec()
             .join("\n");
-        with_settings!({filters => vec![(save_target.path().to_string_lossy().to_string().as_str(), "[db_dir]")]}, 
+        with_settings!({filters => vec![(save_target.path().to_string_lossy().to_string().as_str(), "[db_dir]")]},
             { assert_snapshot!("load_save_saved_files", actual_files) });
         assert!(save_target.path().exists());
     }

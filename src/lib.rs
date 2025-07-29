@@ -53,7 +53,7 @@ pub struct ModuleConfiguration {
     pub description: String,
 }
 
-#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize)]
+#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize, Clone, PartialEq)]
 #[strum(serialize_all = "lowercase")]
 #[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
@@ -160,7 +160,7 @@ impl WriteAsDiscriminants {
     }
 }
 
-#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize)]
+#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize, Clone, PartialEq)]
 #[strum(serialize_all = "lowercase")]
 #[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
@@ -333,7 +333,7 @@ impl ReadFromDiscriminants {
     }
 }
 
-#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize)]
+#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize, Clone, PartialEq)]
 #[strum(serialize_all = "lowercase")]
 #[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "action", rename_all = "lowercase", content = "config")]
@@ -507,6 +507,17 @@ pub struct ImporterStep {
 }
 
 impl ImporterStep {
+    /// Create a new importer step with the given module and input path.
+    pub fn new<P>(module: ReadFrom, path: P) -> Self
+    where
+        P: Into<PathBuf>,
+    {
+        Self {
+            module,
+            path: path.into(),
+        }
+    }
+
     #[cfg(test)]
     fn execute(
         &self,
@@ -529,6 +540,17 @@ pub struct ExporterStep {
 }
 
 impl ExporterStep {
+    /// Create a new exporter step with the given module and output path.
+    pub fn new<P>(module: WriteAs, path: P) -> Self
+    where
+        P: Into<PathBuf>,
+    {
+        Self {
+            module,
+            path: path.into(),
+        }
+    }
+
     #[cfg(test)]
     fn execute(
         &self,
@@ -552,6 +574,17 @@ pub struct ManipulatorStep {
 }
 
 impl ManipulatorStep {
+    /// Create a new graph operation step with the given module and an optional working directory.
+    pub fn new<P>(module: GraphOp, workflow_directory: Option<P>) -> Self
+    where
+        P: Into<PathBuf>,
+    {
+        Self {
+            module,
+            workflow_directory: workflow_directory.map(|d| d.into()),
+        }
+    }
+
     fn execute(
         &self,
         graph: &mut AnnotationGraph,

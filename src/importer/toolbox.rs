@@ -27,7 +27,9 @@ use crate::{
 use super::Importer;
 
 /// Import annotations provided in the fieldlinguist's toolbox text format.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(
+    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+)]
 #[serde(deny_unknown_fields)]
 pub struct ImportToolBox {
     /// This attribute sets the annotation layer, that other annotations will point to.

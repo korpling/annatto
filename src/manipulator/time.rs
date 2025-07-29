@@ -30,7 +30,16 @@ use super::Manipulator;
 ///
 /// [graph_op.config]
 /// ```
-#[derive(Deserialize, Default, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(
+    Deserialize,
+    Default,
+    Documented,
+    DocumentedFields,
+    FieldNamesAsSlice,
+    Serialize,
+    Clone,
+    PartialEq,
+)]
 #[serde(deny_unknown_fields)]
 pub struct Filltime {
     /// A fallback start time in case it cannot be derived.

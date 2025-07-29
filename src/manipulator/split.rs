@@ -15,7 +15,9 @@ use crate::{core::update_graph, error::Result, progress::ProgressReporter};
 use super::Manipulator;
 
 /// This operation splits conflated annotation values into individual annotations.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(
+    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+)]
 #[serde(deny_unknown_fields)]
 pub struct SplitValues {
     /// This is the delimiter between the parts of the conflated annotation in the input graph
@@ -32,7 +34,7 @@ pub struct SplitValues {
     delete: bool,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone, PartialEq)]
 #[serde(untagged)]
 enum Layer {
     ByIndex {

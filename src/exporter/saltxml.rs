@@ -36,7 +36,16 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// (<https://corpus-tools.org/pepper/>). SaltXML is an XMI serialization of the
 /// [Salt
 /// model](https://raw.githubusercontent.com/korpling/salt/master/gh-site/doc/salt_modelGuide.pdf).
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Default, Serialize)]
+#[derive(
+    Deserialize,
+    Documented,
+    DocumentedFields,
+    FieldNamesAsSlice,
+    Default,
+    Serialize,
+    Clone,
+    PartialEq,
+)]
 #[serde(deny_unknown_fields)]
 pub struct ExportSaltXml {}
 

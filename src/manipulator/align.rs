@@ -25,7 +25,9 @@ use crate::{
 use super::Manipulator;
 
 /// Aligns nodes identified by queries with edges in the defined component.
-#[derive(Deserialize, Serialize, Documented, DocumentedFields, FieldNamesAsSlice)]
+#[derive(
+    Deserialize, Serialize, Documented, DocumentedFields, FieldNamesAsSlice, Clone, PartialEq,
+)]
 pub struct AlignNodes {
     /// Define node groups that should be aligned. Neighbouring node groups in the
     /// provided list are aligned, given common nodes can be identified. You can
@@ -107,14 +109,14 @@ impl Manipulator for AlignNodes {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone, PartialEq)]
 struct NodeGroup {
     query: String,
     link: usize,
     groupby: usize,
 }
 
-#[derive(Default, Deserialize, Serialize)]
+#[derive(Default, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
 enum AlignmentMethod {
     #[default]

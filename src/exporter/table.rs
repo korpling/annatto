@@ -27,7 +27,9 @@ use super::Exporter;
 use crate::{progress::ProgressReporter, util::token_helper::TOKEN_KEY};
 
 /// This module exports all ordered nodes and nodes connected by coverage edges of any name into a table.
-#[derive(Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize)]
+#[derive(
+    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+)]
 #[serde(deny_unknown_fields)]
 pub struct ExportTable {
     /// The provided annotation key defines which nodes within the part-of component define a document. All nodes holding said annotation
