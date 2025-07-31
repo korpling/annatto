@@ -1,6 +1,6 @@
-use std::{collections::BTreeSet, sync::Arc};
+use std::{borrow::Cow, collections::BTreeSet, sync::Arc};
 
-use anyhow::Context;
+use anyhow::{Context, anyhow};
 use documented::{Documented, DocumentedFields};
 use graphannis::{
     aql,
@@ -59,6 +59,28 @@ pub struct EnumerateMatches {
     /// The example sorts the results by the value of doc (the rest is kept stable).
     #[serde(default)]
     by: Vec<usize>,
+    /// You can additionally sort results after the default sorting
+    /// of search results by providing a list of nodes by which
+    /// to sort and a definition of their value type.
+    ///
+    /// Example (sorts by token value before enumerating):
+    /// ```toml
+    /// [graph_op.config]
+    /// query = "tok _=_ pos @* doc"
+    /// sort = [1]
+    /// ...
+    /// ```
+    ///
+    /// Example (interpreting a node as numeric in sorting):
+    /// ```toml
+    /// [graph_op.config]
+    /// query = "tok @* page"
+    /// sort = [{ numeric = 2 }]
+    /// ...
+    /// ```
+    ///
+    #[serde(default)]
+    sort: Vec<SortByNode>,
     /// The anno key of the numeric annotation that should be created.
     /// Example:
     /// ```toml
@@ -88,11 +110,41 @@ fn default_label() -> AnnoKey {
     }
 }
 
+#[derive(Deserialize, Clone, PartialEq, Serialize)]
+#[serde(untagged)]
+enum SortByNode {
+    AsString(usize),
+    AsInteger { numeric: usize },
+}
+
+impl<'a> SortByNode {
+    fn query_index(&self) -> usize {
+        match self {
+            SortByNode::AsString(n) => *n,
+            SortByNode::AsInteger { numeric } => *numeric,
+        }
+    }
+
+    fn sortable_value(&self, value: Cow<'a, str>) -> Result<SortValue<'a>, anyhow::Error> {
+        Ok(match self {
+            SortByNode::AsString(_) => SortValue::StringValue(value),
+            SortByNode::AsInteger { .. } => SortValue::NumericValue(value.parse::<usize>()?),
+        })
+    }
+}
+
+#[derive(PartialEq, PartialOrd, Eq, Ord)]
+enum SortValue<'a> {
+    StringValue(Cow<'a, str>),
+    NumericValue(usize),
+}
+
 impl Default for EnumerateMatches {
     fn default() -> Self {
         Self {
             queries: vec!["node".to_string()],
             by: vec![],
+            sort: vec![],
             target: 1,
             label: default_label(),
             value: None,
@@ -140,27 +192,42 @@ impl Manipulator for EnumerateMatches {
                         )
                         .unwrap_or(std::cmp::Ordering::Equal)
                 });
-                // presort, this should be solved more efficiently in a later version
-                if !self.by.is_empty() {
-                    // this is inefficient as values are fetched multiple times (see below in the for-loop), this should be optimized in the future
+                // final sort by by-nodes
+                let mut additional_sort_keys = self
+                    .by
+                    .iter()
+                    .map(|n| SortByNode::AsString(*n))
+                    .collect_vec();
+                additional_sort_keys.extend_from_slice(&self.sort);
+                if !additional_sort_keys.is_empty() {
+                    let mut parse_err_at = None;
                     search_results.sort_by(|a, b| {
-                        let mut values: [Vec<String>; 2] = [Vec::default(), Vec::default()];
+                        let mut values: [Vec<SortValue>; 2] = [Vec::default(), Vec::default()];
                         for (i, data) in [a, b].iter().enumerate() {
-                            for j in &self.by {
-                                if let Some(result_member) = data.get(j - 1) {
+                            for by_node in &additional_sort_keys {
+                                if let Some(result_member) = data.get(by_node.query_index() - 1) {
                                     let anno_key = anno_key_for_match(result_member);
 
                                     if let Ok(Some(v)) = graph
                                         .get_node_annos()
                                         .get_value_for_item(&result_member.node, &anno_key)
                                     {
-                                        values[i].push(v.to_string());
+                                        match by_node.sortable_value(v) {
+                                            Ok(sv) => values[i].push(sv),
+                                            Err(_) => parse_err_at = Some(by_node.query_index()),
+                                        };
                                     }
                                 };
                             }
                         }
                         values[0].cmp(&values[1])
                     });
+                    if let Some(err_index) = parse_err_at {
+                        return Err(anyhow!(
+                            "Could not interpret value of node #{err_index} as a number."
+                        )
+                        .into());
+                    }
                 }
                 let mut offset = 0;
                 let mut i_correction = 0;
@@ -286,7 +353,7 @@ mod tests {
         StepID,
         core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
-        manipulator::Manipulator,
+        manipulator::{Manipulator, enumerate::SortByNode},
         test_util::{compare_results, export_to_string},
         util::example_generator,
     };
@@ -308,8 +375,9 @@ mod tests {
     #[test]
     fn serialize_custom() {
         let module = EnumerateMatches {
-            queries: vec!["norm _=_ pos @* doc".to_string()],
+            queries: vec!["norm _=_ num _=_ pos @* doc".to_string()],
             by: vec![3],
+            sort: vec![SortByNode::AsInteger { numeric: 2 }],
             target: 1,
             label: AnnoKey {
                 name: "id".into(),
@@ -389,6 +457,7 @@ mod tests {
             EnumerateMatches {
                 queries: vec!["tok @* doc".to_string()],
                 by: vec![2],
+                sort: vec![],
                 target: 1,
                 ..Default::default()
             }
@@ -406,6 +475,66 @@ mod tests {
         let actual = export_to_string(&graph, GraphMLExporter::default());
         assert!(actual.is_ok());
         assert_snapshot!(actual.unwrap());
+    }
+
+    #[test]
+    fn sort_numeric() {
+        let g = base_graph(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(
+            EnumerateMatches {
+                queries: vec!["sentiment_n".to_string()],
+                by: vec![],
+                sort: vec![SortByNode::AsInteger { numeric: 1 }],
+                target: 1,
+                ..Default::default()
+            }
+            .manipulate_corpus(
+                &mut graph,
+                Path::new("./"),
+                StepID {
+                    module_name: "test_enumerate".to_string(),
+                    path: None
+                },
+                None
+            )
+            .is_ok()
+        );
+        let actual = export_to_string(&graph, GraphMLExporter::default());
+        assert!(actual.is_ok());
+        assert_snapshot!(actual.unwrap());
+    }
+
+    #[test]
+    fn sort_numeric_fail() {
+        let mut update = GraphUpdate::default();
+        example_generator::create_corpus_structure_two_documents(&mut update);
+        example_generator::create_multiple_segmentations(&mut update, "root/doc1");
+        example_generator::create_tokens(&mut update, Some("root/doc2"));
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut update, |_| {}).is_ok());
+        let enmr = EnumerateMatches {
+            queries: vec!["tok @* doc".to_string()],
+            by: vec![],
+            sort: vec![SortByNode::AsInteger { numeric: 1 }],
+            target: 1,
+            ..Default::default()
+        }
+        .manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            StepID {
+                module_name: "test_enumerate".to_string(),
+                path: None,
+            },
+            None,
+        );
+
+        assert!(enmr.is_err());
+        assert_snapshot!(enmr.err().unwrap().to_string());
     }
 
     fn enumerate_bare(on_disk: bool) -> Result<(), Box<dyn std::error::Error>> {
@@ -428,6 +557,7 @@ mod tests {
             },
             queries: vec!["annis:node_type=\"node\"".to_string()],
             by: vec![],
+            sort: vec![],
             target: 1,
             start: 1,
             value: None,
@@ -491,6 +621,7 @@ mod tests {
             },
             queries: vec!["sentiment".to_string()],
             by: vec![],
+            sort: vec![],
             target: 1,
             start: 1,
             value: Some(1),
@@ -562,6 +693,12 @@ mod tests {
             anno_name: "sentiment".to_string(),
             anno_value: "positive".to_string(),
         })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "corpus/document#t1".to_string(),
+            anno_ns: "".to_string(),
+            anno_name: "sentiment_n".to_string(),
+            anno_value: "10".to_string(),
+        })?;
         u.add_event(UpdateEvent::AddNode {
             node_name: "corpus/document#t2".to_string(),
             node_type: "node".to_string(),
@@ -572,6 +709,12 @@ mod tests {
             anno_name: "sentiment".to_string(),
             anno_value: "negative".to_string(),
         })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "corpus/document#t2".to_string(),
+            anno_ns: "".to_string(),
+            anno_name: "sentiment_n".to_string(),
+            anno_value: "0".to_string(),
+        })?;
         u.add_event(UpdateEvent::AddNode {
             node_name: "corpus/document#t3".to_string(),
             node_type: "node".to_string(),
@@ -581,6 +724,12 @@ mod tests {
             anno_ns: "".to_string(),
             anno_name: "sentiment".to_string(),
             anno_value: "neutral".to_string(),
+        })?;
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "corpus/document#t3".to_string(),
+            anno_ns: "".to_string(),
+            anno_name: "sentiment_n".to_string(),
+            anno_value: "5".to_string(),
         })?;
         u.add_event(UpdateEvent::AddEdge {
             source_node: "corpus/document#t1".to_string(),

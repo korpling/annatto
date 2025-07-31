@@ -1,0 +1,5 @@
+---
+source: src/manipulator/enumerate.rs
+expression: enmr.err().unwrap().to_string()
+---
+Could not interpret value of node #1 as a number.

@@ -6,7 +6,7 @@ expression: actual.unwrap()
 <?xml version="1.0" encoding="UTF-8"?>
 <graphml>
     <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>
-    <key id="k1" for="node" attr.name="count::i" attr.type="string"/>
+    <key id="k1" for="node" attr.name="i" attr.type="string"/>
     <key id="k2" for="node" attr.name="annis::node_type" attr.type="string"/>
     <key id="k3" for="node" attr.name="sentiment" attr.type="string"/>
     <key id="k4" for="node" attr.name="sentiment_n" attr.type="string"/>
@@ -21,19 +21,19 @@ expression: actual.unwrap()
             <data key="k2">corpus</data>
         </node>
         <node id="corpus/document#t1">
-            <data key="k1">positive-1</data>
+            <data key="k1">2</data>
             <data key="k2">node</data>
             <data key="k3">positive</data>
             <data key="k4">10</data>
         </node>
         <node id="corpus/document#t2">
-            <data key="k1">negative-2</data>
+            <data key="k1">0</data>
             <data key="k2">node</data>
             <data key="k3">negative</data>
             <data key="k4">0</data>
         </node>
         <node id="corpus/document#t3">
-            <data key="k1">neutral-3</data>
+            <data key="k1">1</data>
             <data key="k2">node</data>
             <data key="k3">neutral</data>
             <data key="k4">5</data>
