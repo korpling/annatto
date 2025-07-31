@@ -59,8 +59,26 @@ pub struct EnumerateMatches {
     /// The example sorts the results by the value of doc (the rest is kept stable).
     #[serde(default)]
     by: Vec<usize>,
-    /// You can override the default sorting of search results by providing a list of nodes by which
+    /// You can additionally sort results after the default sorting 
+    /// of search results by providing a list of nodes by which
     /// to sort and a definition of their value type.
+    /// 
+    /// Example (sorts by token value before enumerating):
+    /// ```toml
+    /// [graph_op.config]
+    /// query = "tok _=_ pos @* doc"
+    /// sort = [1]
+    /// ...
+    /// ```
+    /// 
+    /// Example (interpreting a node as numeric in sorting):
+    /// ```toml
+    /// [graph_op.config]
+    /// query = "tok @* page"
+    /// sort = [{ numeric = 2 }]
+    /// ...
+    /// ```
+    /// 
     #[serde(default)]
     sort: Vec<SortByNode>,
     /// The anno key of the numeric annotation that should be created.
