@@ -105,6 +105,7 @@ action = "enumerate"
 queries = ["ahd:AHD @* doc", "lat:LAT @* doc", "text @* doc @* node_name=/.*ohg/", "text @* doc @* node_name=/.*lat/"]
 target = 1
 by = [2]
+sort = []
 label = "prealign::id"
 value = 2
 start = 1
