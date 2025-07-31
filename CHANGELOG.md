@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `enumerate`: Enumerate can be sort to additionally sort results before enumerating, node values can be interpreted as numeric if required
+
 ## [0.37.1] - 2025-07-23
 
 ## [0.37.0] - 2025-07-23
