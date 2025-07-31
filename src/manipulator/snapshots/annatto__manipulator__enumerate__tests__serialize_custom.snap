@@ -2,9 +2,12 @@
 source: src/manipulator/enumerate.rs
 expression: serialization.unwrap()
 ---
-queries = ["norm _=_ pos @* doc"]
+queries = ["norm _=_ num _=_ pos @* doc"]
 target = 1
 by = [3]
 label = "stats::id"
 value = 1
 start = 1
+
+[[sort]]
+numeric = 2

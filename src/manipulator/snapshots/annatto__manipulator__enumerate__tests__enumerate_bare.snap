@@ -9,6 +9,7 @@ expression: actual.unwrap()
     <key id="k1" for="node" attr.name="count::i" attr.type="string"/>
     <key id="k2" for="node" attr.name="annis::node_type" attr.type="string"/>
     <key id="k3" for="node" attr.name="sentiment" attr.type="string"/>
+    <key id="k4" for="node" attr.name="sentiment_n" attr.type="string"/>
     <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
         <data key="k0"><![CDATA[
 # configure visualizations here
@@ -23,16 +24,19 @@ expression: actual.unwrap()
             <data key="k1">1</data>
             <data key="k2">node</data>
             <data key="k3">positive</data>
+            <data key="k4">10</data>
         </node>
         <node id="corpus/document#t2">
             <data key="k1">2</data>
             <data key="k2">node</data>
             <data key="k3">negative</data>
+            <data key="k4">0</data>
         </node>
         <node id="corpus/document#t3">
             <data key="k1">3</data>
             <data key="k2">node</data>
             <data key="k3">neutral</data>
+            <data key="k4">5</data>
         </node>
         <edge id="e0" source="corpus/document#t1" target="corpus/document#t2" label="Ordering/annis/">
         </edge>

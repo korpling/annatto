@@ -1,0 +1,5 @@
+---
+source: src/manipulator/enumerate.rs
+expression: enmr.err().unwrap().to_string()
+---
+Could not parse numeric value for query index 2
