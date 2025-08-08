@@ -141,35 +141,32 @@ impl Exporter for ExportTreeTagger {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let _progress = ProgressReporter::new_unknown_total_work(tx.clone(), step_id.clone())?;
 
+        std::fs::create_dir_all(output_path)?;
+
         let base_ordering = AnnotationComponent::new(
             AnnotationComponentType::Ordering,
             ANNIS_NS.into(),
             "".into(),
         );
 
-        let selected_ordering = if let Some(seg) = &self.segmentation {
+        let mut selected_ordering = base_ordering;
+        if let Some(seg) = &self.segmentation {
             let matching_components =
                 graph.get_all_components(Some(AnnotationComponentType::Ordering), Some(seg));
             if matching_components.len() == 1 {
-                matching_components[0].clone()
-            } else if let Some(c) = matching_components.iter().find(|c| c.layer.as_str() == seg) {
-                c.clone()
-            } else if let Some(c) = matching_components
-                .iter()
-                .find(|c| c.layer.as_str() == ANNIS_NS)
-            {
-                c.clone()
-            } else if let Some(c) = matching_components
-                .iter()
-                .find(|c| c.layer.as_str() == DEFAULT_NS)
-            {
-                c.clone()
+                selected_ordering = matching_components[0].clone();
             } else {
-                base_ordering
+                for layer in self.possible_namespace_for_segmentation() {
+                    if let Some(matching) = matching_components
+                        .iter()
+                        .find(|c| c.layer.as_str() == layer)
+                    {
+                        selected_ordering = matching.clone();
+                        break;
+                    }
+                }
             }
-        } else {
-            base_ordering
-        };
+        }
 
         let gs_ordering = graph
             .get_graphstorage(&selected_ordering)
@@ -191,8 +188,8 @@ impl Exporter for ExportTreeTagger {
                 0,
                 NodeID::MAX as usize,
             );
-            for nxt in dfs {
-                let n = nxt?.node;
+            for n in dfs {
+                let n = n?.node;
                 if graph
                     .get_node_annos()
                     .has_value_for_item(&n, &self.doc_anno)
@@ -260,13 +257,27 @@ impl ExportTreeTagger {
         for token in it {
             let token = token?.node;
 
+            let mut matching_token_key = TOKEN_KEY.as_ref().clone();
+            if !node_annos.has_value_for_item(&token, &matching_token_key)?
+                && let Some(seg) = &self.segmentation
+            {
+                matching_token_key.name = seg.into();
+                for ns in self.possible_namespace_for_segmentation() {
+                    matching_token_key.ns = ns.into();
+                    if node_annos.has_value_for_item(&token, &matching_token_key)? {
+                        break;
+                    }
+                }
+            }
+
             if !self.skip_spans {
                 self.write_starting_spans(graph, token, &token_helper, &mut w)?;
             }
 
             let token_val = node_annos
-                .get_value_for_item(&token, &TOKEN_KEY)?
+                .get_value_for_item(&token, &matching_token_key)?
                 .unwrap_or_default();
+
             write!(w, "{token_val}")?;
             for column in &self.column_names {
                 let anno_value = node_annos
@@ -323,11 +334,8 @@ impl ExportTreeTagger {
                 .get_ingoing_edges(left_token)
             {
                 let starting_span = starting_span?;
-                // Ignore segmentation spans
-                if !graph
-                    .get_node_annos()
-                    .has_value_for_item(&starting_span, &TOKEN_KEY)?
-                {
+
+                if !self.is_segmentation_span(starting_span, graph, token_helper)? {
                     let tag = self.tag_name_for_span(graph, starting_span)?;
                     write!(w, "<{tag}")?;
                     for anno in graph
@@ -362,11 +370,7 @@ impl ExportTreeTagger {
                 .get_ingoing_edges(right_token)
             {
                 let ending_span = ending_span?;
-                // Ignore segmentation spans
-                if !graph
-                    .get_node_annos()
-                    .has_value_for_item(&ending_span, &TOKEN_KEY)?
-                {
+                if !self.is_segmentation_span(ending_span, graph, token_helper)? {
                     let tag = self.tag_name_for_span(graph, ending_span)?;
                     writeln!(w, "</{tag}>")?;
                 }
@@ -374,6 +378,28 @@ impl ExportTreeTagger {
         }
 
         Ok(())
+    }
+
+    fn is_segmentation_span(
+        &self,
+        span: NodeID,
+        graph: &AnnotationGraph,
+        token_helper: &TokenHelper,
+    ) -> anyhow::Result<bool> {
+        if graph
+            .get_node_annos()
+            .has_value_for_item(&span, &TOKEN_KEY)?
+        {
+            Ok(true)
+        } else {
+            // Check if it is connected to any ordering component
+            for gs in token_helper.get_gs_ordering().values() {
+                if gs.has_outgoing_edges(span)? || gs.has_ingoing_edges(span)? {
+                    return Ok(true);
+                }
+            }
+            Ok(false)
+        }
     }
 
     fn tag_name_for_span(&self, graph: &AnnotationGraph, span: NodeID) -> anyhow::Result<String> {
@@ -408,6 +434,20 @@ impl ExportTreeTagger {
             }
             SpanName::Fixed(name) => Ok(name.clone()),
         }
+    }
+
+    /// A segmentation annotation and ordering component could have different
+    /// possible namespaces. Return a vector of the ones that need to be checked
+    /// (in order).
+    fn possible_namespace_for_segmentation(&self) -> Vec<String> {
+        let mut result = Vec::new();
+        if let Some(segmentation) = &self.segmentation {
+            result.push(segmentation.clone());
+            result.push(ANNIS_NS.to_string());
+            result.push(DEFAULT_NS.to_string());
+            result.push("".to_string());
+        }
+        result
     }
 }
 

@@ -97,6 +97,10 @@ impl<'a> TokenHelper<'a> {
         &self.cov_edges
     }
 
+    pub fn get_gs_ordering(&self) -> &BTreeMap<String, Arc<dyn GraphStorage>> {
+        &self.ordering_gs
+    }
+
     pub fn get_gs_left_token(&self) -> &dyn GraphStorage {
         self.left_edges.as_ref()
     }

@@ -1,0 +1,11 @@
+---
+source: src/exporter/treetagger/tests.rs
+expression: export.unwrap()
+---
+---- doc1.tt:
+<doc author="&lt;unknown&gt;" year="1984">
+An		
+other		
+example		
+text		
+</doc>
