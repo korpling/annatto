@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `enumerate`: Enumerate can be sort to additionally sort results before enumerating, node values can be interpreted as numeric if required
+- `treetagger` exporter that can output base token, segmentation token and document metadata. Spans are not exported yet.
 
 ## [0.37.1] - 2025-07-23
 
@@ -113,7 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- import `xlsx`: empty column map to be valid 
+- import `xlsx`: empty column map to be valid
 - all imports: corpus node names keep trailing sequences starting with a dot if derived from a path, extensions are only stripped off file names
 
 ### Changed
@@ -285,9 +286,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add new `table` importer for CSV files.
 - Allow to set the order of output columns in `table` export with the parameter
-  `column_names` and to skip the column header with the `skip_header` param. 
+  `column_names` and to skip the column header with the `skip_header` param.
 - `remove_match` option in `revise` now allows to delete the annotation but not
-  the referenced node. 
+  the referenced node.
 
 ### Fixed
 
@@ -295,7 +296,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   exporting the token with the `skip_token` parameter.
 - Fixed `find_connected` calls with `Bound::Included(usize::MAX)`, which can
   lead to invalid results when using the linear graph storage. Replaced with the
-  correct `Bound::Unbounded`. 
+  correct `Bound::Unbounded`.
 
 ## [0.17.0] - 2024-09-27
 

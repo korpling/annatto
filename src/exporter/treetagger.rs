@@ -227,7 +227,7 @@ impl ExportTreeTagger {
                     .unwrap_or_default();
                 write!(w, "\t{anno_value}")?;
             }
-            write!(w, "\n")?;
+            writeln!(w)?;
         }
 
         if let Some(footer) = footer {
