@@ -232,70 +232,70 @@ impl<'a> DocumentMapper<'a> {
         is_last_line: bool,
     ) -> anyhow::Result<()> {
         // Get the tag name and the nearest matching tag from stack
-        if let Some(tag_name) = end_tag.next() {
-            if tag_name.as_rule() == Rule::tag_name {
-                let tag_name = tag_name.as_str();
+        if let Some(tag_name) = end_tag.next()
+            && tag_name.as_rule() == Rule::tag_name
+        {
+            let tag_name = tag_name.as_str();
 
-                if let Some(idx) = self.tag_stack.iter().position(|t| t.anno_name == tag_name) {
-                    let entry = self.tag_stack.remove(idx);
+            if let Some(idx) = self.tag_stack.iter().position(|t| t.anno_name == tag_name) {
+                let entry = self.tag_stack.remove(idx);
 
-                    let is_meta = entry.was_first_line && is_last_line;
+                let is_meta = entry.was_first_line && is_last_line;
 
-                    let node_id = if is_meta {
-                        // This is a meta annotation for the whole document
-                        self.doc_path.clone()
-                    } else {
-                        // Add a node update for the new span
-                        self.number_of_spans += 1;
-                        let span_id = format!("{}#span{}", self.doc_path, self.number_of_spans);
-                        u.add_event(UpdateEvent::AddNode {
-                            node_name: span_id.clone(),
-                            node_type: "node".into(),
-                        })?;
-                        // TODO: support namespaces in span annotation name
-                        u.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: span_id.clone(),
-                            anno_ns: "".into(),
-                            anno_name: tag_name.into(),
-                            anno_value: tag_name.into(),
-                        })?;
+                let node_id = if is_meta {
+                    // This is a meta annotation for the whole document
+                    self.doc_path.clone()
+                } else {
+                    // Add a node update for the new span
+                    self.number_of_spans += 1;
+                    let span_id = format!("{}#span{}", self.doc_path, self.number_of_spans);
+                    u.add_event(UpdateEvent::AddNode {
+                        node_name: span_id.clone(),
+                        node_type: "node".into(),
+                    })?;
+                    // TODO: support namespaces in span annotation name
+                    u.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: span_id.clone(),
+                        anno_ns: "".into(),
+                        anno_name: tag_name.into(),
+                        anno_value: tag_name.into(),
+                    })?;
 
-                        u.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: span_id.clone(),
-                            anno_ns: ANNIS_NS.to_string(),
-                            anno_name: "layer".to_string(),
-                            anno_value: "default_layer".to_string(),
-                        })?;
-                        // Add coverage edges for all covered token
-                        for t in entry.covered_token {
-                            u.add_event(UpdateEvent::AddEdge {
-                                source_node: span_id.clone(),
-                                target_node: t,
-                                layer: ANNIS_NS.into(),
-                                component_type: "Coverage".into(),
-                                component_name: "".into(),
-                            })?;
-                        }
-                        span_id
-                    };
-
-                    // Add all attributes as node annotations
-                    for (anno_name, anno_value) in entry.attributes {
-                        // TODO: allow to configure not to prepend the tag name to the annotation
-
-                        let anno_name = if is_meta {
-                            anno_name
-                        } else {
-                            format!("{tag_name}_{anno_name}")
-                        };
-                        // TODO: support namespaces as annotation names
-                        u.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: node_id.clone(),
-                            anno_ns: "".into(),
-                            anno_name,
-                            anno_value,
+                    u.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: span_id.clone(),
+                        anno_ns: ANNIS_NS.to_string(),
+                        anno_name: "layer".to_string(),
+                        anno_value: "default_layer".to_string(),
+                    })?;
+                    // Add coverage edges for all covered token
+                    for t in entry.covered_token {
+                        u.add_event(UpdateEvent::AddEdge {
+                            source_node: span_id.clone(),
+                            target_node: t,
+                            layer: ANNIS_NS.into(),
+                            component_type: "Coverage".into(),
+                            component_name: "".into(),
                         })?;
                     }
+                    span_id
+                };
+
+                // Add all attributes as node annotations
+                for (anno_name, anno_value) in entry.attributes {
+                    // TODO: allow to configure not to prepend the tag name to the annotation
+
+                    let anno_name = if is_meta {
+                        anno_name
+                    } else {
+                        format!("{tag_name}_{anno_name}")
+                    };
+                    // TODO: support namespaces as annotation names
+                    u.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: node_id.clone(),
+                        anno_ns: "".into(),
+                        anno_name,
+                        anno_value,
+                    })?;
                 }
             }
         }

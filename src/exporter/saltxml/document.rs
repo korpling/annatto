@@ -346,13 +346,12 @@ impl SaltDocumentGraphMapper {
         let corpus_graph_helper = CorpusGraphHelper::new(graph);
 
         let mut timeline_ordering = None;
-        if ordering_components.len() > 1 {
-            if let Some(idx) = ordering_components
+        if ordering_components.len() > 1
+            && let Some(idx) = ordering_components
                 .iter()
                 .position(|c| c.name.is_empty() && c.layer == ANNIS_NS)
-            {
-                timeline_ordering = Some(ordering_components.remove(idx));
-            }
+        {
+            timeline_ordering = Some(ordering_components.remove(idx));
         };
 
         let document_node_name = graph

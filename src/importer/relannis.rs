@@ -850,18 +850,17 @@ fn calculate_automatic_coverage_edges(
                 .textpos_table
                 .token_to_index
                 .contains_key(&n)?
-        {
-            if let Err(e) = add_automatic_cov_edge_for_node(
+            && let Err(e) = add_automatic_cov_edge_for_node(
                 updates,
                 n,
                 load_node_and_corpus_result,
                 load_rank_result,
-            ) {
-                // output a warning but do not fail
-                progress.warn(&format!(
-                    "Adding coverage edges (connects spans with tokens) failed: {e}"
-                ))?;
-            }
+            )
+        {
+            // output a warning but do not fail
+            progress.warn(&format!(
+                "Adding coverage edges (connects spans with tokens) failed: {e}"
+            ))?;
         } // end if not a token
     }
 
