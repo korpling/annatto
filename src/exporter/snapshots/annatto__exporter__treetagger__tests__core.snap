@@ -4,15 +4,15 @@ expression: export.unwrap()
 ---
 ---- doc1.tt:
 <doc author="&lt;unknown&gt;" year="1984">
-Is
-this
-example
-more
-complicated
-than
-it
-appears
-to
-be
-?
+Is	VBZ	be
+this	DT	this
+example	NN	example
+more	RBR	more
+complicated	JJ	complicated
+than	IN	than
+it	PP	it
+appears	VBZ	appear
+to	TO	to
+be	VB	be
+?	SENT	?
 </doc>

@@ -492,3 +492,20 @@ pub fn make_segmentation_span(
         })
         .unwrap();
 }
+
+pub fn add_node_label(
+    update: &mut GraphUpdate,
+    node_name: &str,
+    ns: &str,
+    name: &str,
+    value: &str,
+) {
+    update
+        .add_event(UpdateEvent::AddNodeLabel {
+            node_name: node_name.into(),
+            anno_ns: ns.into(),
+            anno_name: name.into(),
+            anno_value: value.into(),
+        })
+        .unwrap()
+}
