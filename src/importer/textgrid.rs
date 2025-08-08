@@ -193,10 +193,10 @@ impl DocumentMapper<'_> {
                 Some(current_pot.0)
             };
             let mut end = None;
-            if !self.params.skip_time_annotations {
-                if let Some(next_pot) = it.peek() {
-                    end = Some(next_pot.0);
-                }
+            if !self.params.skip_time_annotations
+                && let Some(next_pot) = it.peek()
+            {
+                end = Some(next_pot.0);
             }
             let tli_id = map_token(
                 u,
@@ -233,15 +233,14 @@ impl DocumentMapper<'_> {
                 if let TextGridItem::Interval {
                     name, intervals, ..
                 } = tier
+                    && name == token_tier_name
                 {
-                    if name == token_tier_name {
-                        for i in intervals {
-                            if !i.text.trim().is_empty() {
-                                token_sorted_by_time.insert(
-                                    (OrderedFloat(i.xmin), OrderedFloat(i.xmax)),
-                                    i.text.clone(),
-                                );
-                            }
+                    for i in intervals {
+                        if !i.text.trim().is_empty() {
+                            token_sorted_by_time.insert(
+                                (OrderedFloat(i.xmin), OrderedFloat(i.xmax)),
+                                i.text.clone(),
+                            );
                         }
                     }
                 }
@@ -269,9 +268,9 @@ impl DocumentMapper<'_> {
 
             Ok(result)
         } else {
-            return Err(anyhow!(
+            Err(anyhow!(
                 "Exactly one token tier must be definied in tier_groups when mapping without a timeline (map_timeline=false"
-            ));
+            ))
         }
     }
 
