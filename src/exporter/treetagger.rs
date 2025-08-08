@@ -141,6 +141,8 @@ impl Exporter for ExportTreeTagger {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let _progress = ProgressReporter::new_unknown_total_work(tx.clone(), step_id.clone())?;
 
+        std::fs::create_dir_all(output_path)?;
+
         let base_ordering = AnnotationComponent::new(
             AnnotationComponentType::Ordering,
             ANNIS_NS.into(),
@@ -191,8 +193,8 @@ impl Exporter for ExportTreeTagger {
                 0,
                 NodeID::MAX as usize,
             );
-            for nxt in dfs {
-                let n = nxt?.node;
+            for n in dfs {
+                let n = n?.node;
                 if graph
                     .get_node_annos()
                     .has_value_for_item(&n, &self.doc_anno)
