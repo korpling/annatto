@@ -78,6 +78,8 @@ fn create_test_corpus_base_token() -> AnnotationGraph {
         "evenmore",
         "<unknown-values>",
     );
+    // Span without a label
+    make_span(&mut u, &"root/doc1#span3", &["root/doc1#tok5"], true);
 
     // Add some additional metadata to the document
     add_node_label(&mut u, "root/doc1", "ignored", "author", "<unknown>");
@@ -123,6 +125,18 @@ fn core_no_metadata() {
 
     let mut export_config = ExportTreeTagger::default();
     export_config.skip_meta = true;
+
+    let export = export_to_string(&graph, export_config);
+    assert!(export.is_ok(), "error: {:?}", export.err());
+    assert_snapshot!(export.unwrap());
+}
+
+#[test]
+fn core_no_spans() {
+    let graph = create_test_corpus_base_token();
+
+    let mut export_config = ExportTreeTagger::default();
+    export_config.skip_spans = true;
 
     let export = export_to_string(&graph, export_config);
     assert!(export.is_ok(), "error: {:?}", export.err());

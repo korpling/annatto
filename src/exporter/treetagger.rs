@@ -353,7 +353,7 @@ impl ExportTreeTagger {
             .collect();
         let first_name = keys
             .first()
-            .map(|key| key.name.to_string())
+            .map(|key| quick_xml::escape::escape(&key.name).to_string())
             .unwrap_or_else(|| "span".to_string());
         Ok(first_name)
     }
