@@ -94,7 +94,10 @@ fn create_test_corpus_base_token() -> AnnotationGraph {
     graph
 }
 
-fn create_test_corpus_segmentations(remove_tok_label: bool) -> AnnotationGraph {
+fn create_test_corpus_segmentations(
+    remove_tok_label: bool,
+    add_additional_ordering_edges: bool,
+) -> AnnotationGraph {
     let mut u = GraphUpdate::new();
     example_generator::create_corpus_structure_simple(&mut u);
     example_generator::create_multiple_segmentations(&mut u, "root/doc1");
@@ -113,6 +116,28 @@ fn create_test_corpus_segmentations(remove_tok_label: bool) -> AnnotationGraph {
                 node_name: format!("root/doc1#b{b}").into(),
                 anno_ns: ANNIS_NS.into(),
                 anno_name: "tok".into(),
+            })
+            .unwrap();
+        }
+    }
+    if add_additional_ordering_edges {
+        for a in 1..4 {
+            u.add_event(UpdateEvent::AddEdge {
+                source_node: format!("root/doc1#a{a}").into(),
+                target_node: format!("root/doc1#a{}", a + 1).into(),
+                layer: "LAYER_SHOULD_BE_IGNORED".into(),
+                component_type: AnnotationComponentType::Ordering.to_string(),
+                component_name: "a".into(),
+            })
+            .unwrap();
+        }
+        for b in 1..4 {
+            u.add_event(UpdateEvent::AddEdge {
+                source_node: format!("root/doc1#b{b}").into(),
+                target_node: format!("root/doc1#b{}", b + 1).into(),
+                layer: "LAYER_SHOULD_BE_IGNORED".into(),
+                component_type: AnnotationComponentType::Ordering.to_string(),
+                component_name: "b".into(),
             })
             .unwrap();
         }
@@ -223,7 +248,7 @@ fn tag_name_from_anno_namespace() {
 
 #[test]
 fn segmentation() {
-    let graph = create_test_corpus_segmentations(false);
+    let graph = create_test_corpus_segmentations(false, false);
 
     let mut export_config = ExportTreeTagger::default();
     export_config.segmentation = Some("b".to_string());
@@ -235,7 +260,7 @@ fn segmentation() {
 
 #[test]
 fn segmentation_without_tok_label() {
-    let graph = create_test_corpus_segmentations(true);
+    let graph = create_test_corpus_segmentations(true, true);
 
     let mut export_config = ExportTreeTagger::default();
     export_config.segmentation = Some("b".to_string());
