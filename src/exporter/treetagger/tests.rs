@@ -1,4 +1,4 @@
-use graphannis::update::GraphUpdate;
+use graphannis::update::{GraphUpdate, UpdateEvent};
 use insta::assert_snapshot;
 
 use super::*;
@@ -94,10 +94,29 @@ fn create_test_corpus_base_token() -> AnnotationGraph {
     graph
 }
 
-fn create_test_corpus_segmentations() -> AnnotationGraph {
+fn create_test_corpus_segmentations(remove_tok_label: bool) -> AnnotationGraph {
     let mut u = GraphUpdate::new();
     example_generator::create_corpus_structure_simple(&mut u);
     example_generator::create_multiple_segmentations(&mut u, "root/doc1");
+
+    if remove_tok_label {
+        for a in 1..=4 {
+            u.add_event(UpdateEvent::DeleteNodeLabel {
+                node_name: format!("root/doc1#a{a}").into(),
+                anno_ns: ANNIS_NS.into(),
+                anno_name: "tok".into(),
+            })
+            .unwrap();
+        }
+        for b in 1..=4 {
+            u.add_event(UpdateEvent::DeleteNodeLabel {
+                node_name: format!("root/doc1#b{b}").into(),
+                anno_ns: ANNIS_NS.into(),
+                anno_name: "tok".into(),
+            })
+            .unwrap();
+        }
+    }
 
     // Add some additional metadata to the document
     add_node_label(&mut u, "root/doc1", "ignored", "author", "<unknown>");
@@ -204,7 +223,19 @@ fn tag_name_from_anno_namespace() {
 
 #[test]
 fn segmentation() {
-    let graph = create_test_corpus_segmentations();
+    let graph = create_test_corpus_segmentations(false);
+
+    let mut export_config = ExportTreeTagger::default();
+    export_config.segmentation = Some("b".to_string());
+
+    let export = export_to_string(&graph, export_config);
+    assert!(export.is_ok(), "error: {:?}", export.err());
+    assert_snapshot!(export.unwrap());
+}
+
+#[test]
+fn segmentation_without_tok_label() {
+    let graph = create_test_corpus_segmentations(true);
 
     let mut export_config = ExportTreeTagger::default();
     export_config.segmentation = Some("b".to_string());

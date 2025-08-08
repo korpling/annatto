@@ -257,12 +257,11 @@ impl ExportTreeTagger {
         for token in it {
             let token = token?.node;
 
-            if !self.skip_spans {
-                self.write_starting_spans(graph, token, &token_helper, &mut w)?;
-            }
-
             let mut matching_token_key = TOKEN_KEY.as_ref().clone();
-            if !node_annos.has_value_for_item(&token, &matching_token_key)? {
+            if !node_annos.has_value_for_item(&token, &matching_token_key)?
+                && let Some(seg) = &self.segmentation
+            {
+                matching_token_key.name = seg.into();
                 for ns in self.possible_namespace_for_segmentation() {
                     matching_token_key.ns = ns.into();
                     if node_annos.has_value_for_item(&token, &matching_token_key)? {
@@ -270,6 +269,11 @@ impl ExportTreeTagger {
                     }
                 }
             }
+
+            if !self.skip_spans {
+                self.write_starting_spans(graph, token, &token_helper, &mut w)?;
+            }
+
             let token_val = node_annos
                 .get_value_for_item(&token, &matching_token_key)?
                 .unwrap_or_default();
@@ -330,11 +334,8 @@ impl ExportTreeTagger {
                 .get_ingoing_edges(left_token)
             {
                 let starting_span = starting_span?;
-                // Ignore segmentation spans
-                if !graph
-                    .get_node_annos()
-                    .has_value_for_item(&starting_span, &TOKEN_KEY)?
-                {
+
+                if !self.is_segmentation_span(starting_span, graph, token_helper)? {
                     let tag = self.tag_name_for_span(graph, starting_span)?;
                     write!(w, "<{tag}")?;
                     for anno in graph
@@ -369,11 +370,7 @@ impl ExportTreeTagger {
                 .get_ingoing_edges(right_token)
             {
                 let ending_span = ending_span?;
-                // Ignore segmentation spans
-                if !graph
-                    .get_node_annos()
-                    .has_value_for_item(&ending_span, &TOKEN_KEY)?
-                {
+                if !self.is_segmentation_span(ending_span, graph, token_helper)? {
                     let tag = self.tag_name_for_span(graph, ending_span)?;
                     writeln!(w, "</{tag}>")?;
                 }
@@ -381,6 +378,28 @@ impl ExportTreeTagger {
         }
 
         Ok(())
+    }
+
+    fn is_segmentation_span(
+        &self,
+        span: NodeID,
+        graph: &AnnotationGraph,
+        token_helper: &TokenHelper,
+    ) -> anyhow::Result<bool> {
+        if graph
+            .get_node_annos()
+            .has_value_for_item(&span, &TOKEN_KEY)?
+        {
+            Ok(true)
+        } else {
+            // Check if it is connected to any ordering component
+            for gs in token_helper.get_gs_ordering().values() {
+                if gs.has_outgoing_edges(span)? || gs.has_ingoing_edges(span)? {
+                    return Ok(true);
+                }
+            }
+            Ok(false)
+        }
     }
 
     fn tag_name_for_span(&self, graph: &AnnotationGraph, span: NodeID) -> anyhow::Result<String> {
