@@ -4,7 +4,6 @@ use std::{
     io::{BufWriter, Write},
     path::Path,
     sync::Arc,
-    usize,
 };
 
 use anyhow::anyhow;
@@ -47,6 +46,8 @@ pub struct ExportTreeTagger {
     /// The default is `annis::doc`.
     #[serde(default = "default_doc_anno", with = "crate::estarde::anno_key")]
     doc_anno: AnnoKey,
+    /// Don't output meta data header when set to `true`
+    skip_meta: bool,
 }
 
 fn default_doc_anno() -> AnnoKey {
@@ -61,6 +62,7 @@ impl Default for ExportTreeTagger {
         Self {
             segmentation: None,
             doc_anno: default_doc_anno(),
+            skip_meta: false,
         }
     }
 }
@@ -175,7 +177,7 @@ impl ExportTreeTagger {
         doc_node: NodeID,
         start_node: NodeID,
         gs_ordering: Arc<dyn GraphStorage>,
-    ) -> Result<(), anyhow::Error> {
+    ) -> anyhow::Result<()> {
         let node_annos = graph.get_node_annos();
         let doc_node_name = node_annos
             .get_value_for_item(&doc_node, &self.doc_anno)?
@@ -183,49 +185,111 @@ impl ExportTreeTagger {
         let file_path =
             Path::new(corpus_path).join(format!("{doc_node_name}.{}", self.file_extension()));
         let mut writer = BufWriter::new(File::create(file_path)?);
+
+        let footer = if self.skip_meta {
+            None
+        } else {
+            Some(self.write_metadata_header(graph, doc_node, &mut writer)?)
+        };
+
         let it = dfs::CycleSafeDFS::new(gs_ordering.as_edgecontainer(), start_node, 0, usize::MAX);
         for token in it {
             let token = token?.node;
             let token_val = node_annos
                 .get_value_for_item(&token, &TOKEN_KEY)?
                 .unwrap_or_default();
-            writer.write(token_val.as_bytes())?;
-            writer.write("\n".as_bytes())?;
+            writeln!(writer, "{token_val}")?;
+        }
+
+        if let Some(footer) = footer {
+            writeln!(writer, "{footer}")?;
         }
         Ok(())
+    }
+
+    /// Writes the metadata of this document as line with a span, returns the
+    /// end-tag that needs to be added at the end.
+    fn write_metadata_header<W: Write>(
+        &self,
+        graph: &AnnotationGraph,
+        doc_node: NodeID,
+        mut w: W,
+    ) -> anyhow::Result<String> {
+        write!(w, "<doc")?;
+
+        for anno in graph.get_node_annos().get_annotations_for_item(&doc_node)? {
+            if anno.key.ns != ANNIS_NS {
+                let name = quick_xml::escape::escape(&anno.key.name);
+                let value = quick_xml::escape::escape(&anno.val);
+                write!(w, " {name}=\"{value}\"")?;
+            }
+        }
+        writeln!(w, ">")?;
+
+        Ok("</doc>".to_string())
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use graphannis::update::{GraphUpdate, UpdateEvent};
     use insta::assert_snapshot;
 
     use super::*;
-    use crate::{
-        StepID,
-        importer::{Importer as _, graphml::GraphMLImporter},
-        test_util::export_to_string,
-    };
-    use std::path::Path;
+    use crate::{test_util::export_to_string, util::example_generator};
 
-    #[test]
-    fn core() {
-        let graphml = GraphMLImporter {};
-        let import = graphml.import_corpus(
-            Path::new("tests/data/import/graphml/single_sentence.graphml"),
-            StepID {
-                module_name: "test_import_graphml".to_string(),
-                path: None,
-            },
-            None,
+    fn create_test_corpus_base_token() -> AnnotationGraph {
+        let mut u = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut u);
+        example_generator::create_tokens(&mut u, Some("root/doc1"));
+        example_generator::make_span(
+            &mut u,
+            &format!("root/doc1#span1"),
+            &[&format!("root/doc1#tok0"), &format!("root/doc1#tok1")],
+            true,
         );
-        assert!(import.is_ok());
-        let mut update_import = import.unwrap();
+        // Add some additional metadata
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "root/doc1".into(),
+            anno_ns: "ignored".into(),
+            anno_name: "author".into(),
+            anno_value: "<unknown>".into(),
+        })
+        .unwrap();
+        u.add_event(UpdateEvent::AddNodeLabel {
+            node_name: "root/doc1".into(),
+            anno_ns: "default_ns".into(),
+            anno_name: "year".into(),
+            anno_value: "1984".into(),
+        })
+        .unwrap();
+
         let g = AnnotationGraph::with_default_graphstorages(true);
         assert!(g.is_ok());
         let mut graph = g.unwrap();
-        assert!(graph.apply_update(&mut update_import, |_| {}).is_ok());
-        let export = export_to_string(&graph, ExportTreeTagger::default());
+        assert!(graph.apply_update(&mut u, |_| {}).is_ok());
+        graph
+    }
+
+    #[test]
+    fn core() {
+        let graph = create_test_corpus_base_token();
+
+        let export_config = ExportTreeTagger::default();
+
+        let export = export_to_string(&graph, export_config);
+        assert!(export.is_ok(), "error: {:?}", export.err());
+        assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
+    fn core_no_metadata() {
+        let graph = create_test_corpus_base_token();
+
+        let mut export_config = ExportTreeTagger::default();
+        export_config.skip_meta = true;
+
+        let export = export_to_string(&graph, export_config);
         assert!(export.is_ok(), "error: {:?}", export.err());
         assert_snapshot!(export.unwrap());
     }

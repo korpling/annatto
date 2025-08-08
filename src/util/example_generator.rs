@@ -9,7 +9,7 @@ use graphannis_core::graph::{
 /// ```
 ///     root
 ///       |
-///      docc1
+///     docc1
 /// ```
 pub fn create_corpus_structure_simple(update: &mut GraphUpdate) {
     update
@@ -169,18 +169,18 @@ pub fn create_corpus_structure_two_documents(update: &mut GraphUpdate) {
 /// token objects are attached to it.
 ///
 /// The example tokens are
-/// - Is (`tok1`)
-/// - this (`tok2`)
-/// - example (`tok3`)
-/// - more (`tok4`)
-/// - complicated (`tok5`)
-/// - than (`tok6`)
-/// - it (`tok7`)
-/// - appears (`tok8`)
-/// - to (`tok9`)
-/// - be (`tok10`)
-/// - ? (`tok11`)
-///  
+/// - Is (`tok0`)
+/// - this (`tok1`)
+/// - example (`tok2`)
+/// - more (`tok3`)
+/// - complicated (`tok4`)
+/// - than (`tok5`)
+/// - it (`tok6`)
+/// - appears (`tok7`)
+/// - to (`tok8`)
+/// - be (`tok9`)
+/// - ? (`tok10`)
+///
 pub fn create_tokens(update: &mut GraphUpdate, document_node: Option<&str>) {
     let prefix = if let Some(document_node) = document_node {
         format!("{}#", document_node)
