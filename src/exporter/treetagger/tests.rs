@@ -12,6 +12,8 @@ fn create_test_corpus_base_token() -> AnnotationGraph {
     example_generator::create_corpus_structure_simple(&mut u);
     example_generator::create_tokens(&mut u, Some("root/doc1"));
 
+    add_node_label(&mut u, "root", "", "corpus-name", "root");
+
     // Add POS annotations
     add_node_label(&mut u, "root/doc1#tok0", "default_ns", "pos", "VBZ");
     add_node_label(&mut u, "root/doc1#tok1", "default_ns", "pos", "DT");
@@ -113,6 +115,17 @@ fn core() {
     let graph = create_test_corpus_base_token();
 
     let export_config: ExportTreeTagger = toml::from_str("").unwrap();
+
+    let export = export_to_string(&graph, export_config);
+    assert!(export.is_ok(), "error: {:?}", export.err());
+    assert_snapshot!(export.unwrap());
+}
+
+#[test]
+fn core_different_doc_name() {
+    let graph = create_test_corpus_base_token();
+
+    let export_config: ExportTreeTagger = toml::from_str(r#"doc_anno = "corpus-name""#).unwrap();
 
     let export = export_to_string(&graph, export_config);
     assert!(export.is_ok(), "error: {:?}", export.err());
