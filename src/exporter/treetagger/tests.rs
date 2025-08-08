@@ -112,7 +112,7 @@ fn create_test_corpus_segmentations() -> AnnotationGraph {
 fn core() {
     let graph = create_test_corpus_base_token();
 
-    let export_config = ExportTreeTagger::default();
+    let export_config: ExportTreeTagger = toml::from_str("").unwrap();
 
     let export = export_to_string(&graph, export_config);
     assert!(export.is_ok(), "error: {:?}", export.err());
@@ -123,8 +123,7 @@ fn core() {
 fn core_no_metadata() {
     let graph = create_test_corpus_base_token();
 
-    let mut export_config = ExportTreeTagger::default();
-    export_config.skip_meta = true;
+    let export_config: ExportTreeTagger = toml::from_str(r#"skip_meta = true"#).unwrap();
 
     let export = export_to_string(&graph, export_config);
     assert!(export.is_ok(), "error: {:?}", export.err());
@@ -135,8 +134,55 @@ fn core_no_metadata() {
 fn core_no_spans() {
     let graph = create_test_corpus_base_token();
 
-    let mut export_config = ExportTreeTagger::default();
-    export_config.skip_spans = true;
+    let export_config: ExportTreeTagger = toml::from_str(r#"skip_spans = true"#).unwrap();
+
+    let export = export_to_string(&graph, export_config);
+    assert!(export.is_ok(), "error: {:?}", export.err());
+    assert_snapshot!(export.unwrap());
+}
+
+#[test]
+fn fixed_tag_name() {
+    let graph = create_test_corpus_base_token();
+
+    let export_config: ExportTreeTagger = toml::from_str(
+        r#"
+        span_names = { strategy = "fixed", name = "mytagname"}
+        "#,
+    )
+    .unwrap();
+
+    let export = export_to_string(&graph, export_config);
+    assert!(export.is_ok(), "error: {:?}", export.err());
+    assert_snapshot!(export.unwrap());
+}
+
+#[test]
+fn tag_name_from_anno_name() {
+    let graph = create_test_corpus_base_token();
+
+    let export_config: ExportTreeTagger = toml::from_str(
+        r#"
+        span_names = { strategy = "first_anno_name"}
+        "#,
+    )
+    .unwrap();
+
+    let export = export_to_string(&graph, export_config);
+    assert!(export.is_ok(), "error: {:?}", export.err());
+    assert_snapshot!(export.unwrap());
+}
+
+#[test]
+fn tag_name_from_anno_namespace() {
+    let graph = create_test_corpus_base_token();
+
+    let export_config: ExportTreeTagger = toml::from_str(
+        r#"
+        span_names = { strategy = "first_anno_namespace"}
+        "#,
+    )
+    .unwrap();
 
     let export = export_to_string(&graph, export_config);
     assert!(export.is_ok(), "error: {:?}", export.err());

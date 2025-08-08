@@ -28,6 +28,15 @@ use crate::{
     util::token_helper::{TOKEN_KEY, TokenHelper},
 };
 
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, Default)]
+#[serde(tag = "strategy", content = "name", rename_all = "snake_case")]
+enum SpanName {
+    #[default]
+    FirstAnnoName,
+    FirstAnnoNamespace,
+    Fixed(String),
+}
+
 /// Exporter for the file format used by the TreeTagger.
 #[derive(
     Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
@@ -45,6 +54,27 @@ pub struct ExportTreeTagger {
     /// If given, use this segmentation instead of the token as token column.
     #[serde(default)]
     segmentation: Option<String>,
+    /// Use a strategy to determine the SGML tag names for spans.
+    ///
+    /// Use the *name* of the first annotation (default):
+    /// ```toml
+    /// [export.config]
+    /// span_names = { strategy = "first_anno_name"}
+    /// ```
+    ///
+    /// Use the *namespace* of the first annotation:
+    /// ```toml
+    /// [export.config]
+    /// span_names = { strategy = "first_anno_namespace"}
+    /// ```
+    ///
+    /// Use a *fixed name* for all spans:
+    /// ```toml
+    /// [export.config]
+    /// span_names = { strategy = "fixed", name = "mytagname"}
+    /// ```
+    #[serde(default)]
+    span_names: SpanName,
     /// The provided annotation key defines which nodes within the part-of component define a document. All nodes holding said annotation
     /// will be exported to a file with the name according to the annotation value. Therefore annotation values must not contain path
     /// delimiters.
@@ -59,8 +89,10 @@ pub struct ExportTreeTagger {
     #[serde(default = "default_doc_anno", with = "crate::estarde::anno_key")]
     doc_anno: AnnoKey,
     /// Don't output meta data header when set to `true`
+    #[serde(default)]
     skip_meta: bool,
     /// Don't output SGML tags for span annotations when set to `true`
+    #[serde(default)]
     skip_spans: bool,
 }
 
@@ -92,6 +124,7 @@ impl Default for ExportTreeTagger {
             doc_anno: default_doc_anno(),
             skip_meta: false,
             skip_spans: false,
+            span_names: SpanName::FirstAnnoName,
         }
     }
 }
@@ -344,18 +377,37 @@ impl ExportTreeTagger {
     }
 
     fn tag_name_for_span(&self, graph: &AnnotationGraph, span: NodeID) -> anyhow::Result<String> {
-        let keys: Vec<_> = graph
-            .get_node_annos()
-            .get_all_keys_for_item(&span, None, None)?
-            .into_iter()
-            .filter(|key| key.ns != ANNIS_NS)
-            .sorted()
-            .collect();
-        let first_name = keys
-            .first()
-            .map(|key| quick_xml::escape::escape(&key.name).to_string())
-            .unwrap_or_else(|| "span".to_string());
-        Ok(first_name)
+        match &self.span_names {
+            SpanName::FirstAnnoName => {
+                let keys: Vec<_> = graph
+                    .get_node_annos()
+                    .get_all_keys_for_item(&span, None, None)?
+                    .into_iter()
+                    .filter(|key| key.ns != ANNIS_NS)
+                    .sorted()
+                    .collect();
+                let first_name = keys
+                    .first()
+                    .map(|key| quick_xml::escape::escape(&key.name).to_string())
+                    .unwrap_or_else(|| "span".to_string());
+                Ok(first_name)
+            }
+            SpanName::FirstAnnoNamespace => {
+                let keys: Vec<_> = graph
+                    .get_node_annos()
+                    .get_all_keys_for_item(&span, None, None)?
+                    .into_iter()
+                    .filter(|key| key.ns != ANNIS_NS)
+                    .sorted()
+                    .collect();
+                let first_name = keys
+                    .first()
+                    .map(|key| quick_xml::escape::escape(&key.ns).to_string())
+                    .unwrap_or_else(|| "span".to_string());
+                Ok(first_name)
+            }
+            SpanName::Fixed(name) => Ok(name.clone()),
+        }
     }
 }
 

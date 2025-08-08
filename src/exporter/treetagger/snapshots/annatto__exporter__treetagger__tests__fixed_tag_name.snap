@@ -1,0 +1,24 @@
+---
+source: src/exporter/treetagger/tests.rs
+expression: export.unwrap()
+---
+---- doc1.tt:
+<doc author="&lt;unknown&gt;" year="1984">
+<mytagname something="annotated">
+Is	VBZ	be
+this	DT	this
+<mytagname anotherthing="annotated" evenmore="&lt;unknown-values&gt;">
+example	NN	example
+</mytagname>
+more	RBR	more
+</mytagname>
+complicated	JJ	complicated
+<mytagname>
+than	IN	than
+</mytagname>
+it	PP	it
+appears	VBZ	appear
+to	TO	to
+be	VB	be
+?	SENT	?
+</doc>
