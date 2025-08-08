@@ -45,7 +45,7 @@ use strum::{AsRefStr, EnumDiscriminants, EnumIter};
 use tabled::Tabled;
 use workflow::StatusSender;
 
-use crate::importer::git::ImportGitMetadata;
+use crate::{exporter::treetagger::ExportTreeTagger, importer::git::ImportGitMetadata};
 
 #[derive(Tabled)]
 pub struct ModuleConfiguration {
@@ -66,6 +66,7 @@ pub enum WriteAs {
     Sequence(#[serde(default)] ExportSequence),
     Table(#[serde(default)] ExportTable),
     TextGrid(ExportTextGrid), // do not use default, as all attributes have their individual defaults
+    TreeTagger(#[serde(default)] ExportTreeTagger),
     Xlsx(#[serde(default)] ExportXlsx),
 }
 
@@ -85,6 +86,7 @@ impl WriteAs {
             WriteAs::Sequence(m) => m,
             WriteAs::Table(m) => m,
             WriteAs::TextGrid(m) => m,
+            WriteAs::TreeTagger(m) => m,
             WriteAs::Xlsx(m) => m,
             WriteAs::CoNLLU(m) => &**m,
             WriteAs::Meta(m) => m,
@@ -101,6 +103,7 @@ impl WriteAsDiscriminants {
             WriteAsDiscriminants::Sequence => ExportSequence::DOCS,
             WriteAsDiscriminants::Table => ExportTable::DOCS,
             WriteAsDiscriminants::TextGrid => ExportTextGrid::DOCS,
+            WriteAsDiscriminants::TreeTagger => ExportTreeTagger::DOCS,
             WriteAsDiscriminants::Xlsx => ExportXlsx::DOCS,
             WriteAsDiscriminants::CoNLLU => ExportCoNLLU::DOCS,
             WriteAsDiscriminants::Meta => ExportMeta::DOCS,
@@ -132,6 +135,10 @@ impl WriteAsDiscriminants {
             WriteAsDiscriminants::TextGrid => (
                 ExportTextGrid::FIELD_NAMES_AS_SLICE,
                 ExportTextGrid::FIELD_DOCS,
+            ),
+            WriteAsDiscriminants::TreeTagger => (
+                ExportTreeTagger::FIELD_NAMES_AS_SLICE,
+                ExportTreeTagger::FIELD_DOCS,
             ),
             WriteAsDiscriminants::Xlsx => {
                 (ExportXlsx::FIELD_NAMES_AS_SLICE, ExportXlsx::FIELD_DOCS)
