@@ -1,0 +1,13 @@
+---
+source: src/exporter/treetagger.rs
+expression: export.unwrap()
+---
+---- zossen.tt:
+Die
+Jugendlichen
+in
+Zossen
+wollen
+ein
+Musikcafé
+.

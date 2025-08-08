@@ -3,26 +3,27 @@ use std::{
     fs::File,
     io::{BufWriter, Write},
     path::Path,
+    sync::Arc,
+    usize,
 };
 
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
 use graphannis::{
     AnnotationGraph,
-    graph::{AnnoKey, NodeID},
+    graph::{AnnoKey, GraphStorage, NodeID},
     model::{AnnotationComponent, AnnotationComponentType},
 };
 use graphannis_core::{
-    dfs::CycleSafeDFS,
+    dfs::{self, CycleSafeDFS},
     graph::{ANNIS_NS, DEFAULT_NS, NODE_NAME_KEY},
 };
-use linked_hash_set::LinkedHashSet;
 use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Exporter;
 
-use crate::progress::ProgressReporter;
+use crate::{progress::ProgressReporter, util::token_helper::TOKEN_KEY};
 
 /// Exporter for the file format used by the TreeTagger.
 #[derive(
@@ -154,7 +155,7 @@ impl Exporter for ExportTreeTagger {
         doc_node_to_start
             .into_iter()
             .try_for_each(move |(doc, start)| -> anyhow::Result<()> {
-                self.export_document(graph, output_path, doc, start)?;
+                self.export_document(graph, output_path, doc, start, gs_ordering.clone())?;
                 progress.worked(1)?;
                 Ok(())
             })?;
@@ -173,6 +174,7 @@ impl ExportTreeTagger {
         corpus_path: &Path,
         doc_node: NodeID,
         start_node: NodeID,
+        gs_ordering: Arc<dyn GraphStorage>,
     ) -> Result<(), anyhow::Error> {
         let node_annos = graph.get_node_annos();
         let doc_node_name = node_annos
@@ -181,7 +183,15 @@ impl ExportTreeTagger {
         let file_path =
             Path::new(corpus_path).join(format!("{doc_node_name}.{}", self.file_extension()));
         let mut writer = BufWriter::new(File::create(file_path)?);
-        writer.write("Not implemented yet".as_bytes())?;
+        let it = dfs::CycleSafeDFS::new(gs_ordering.as_edgecontainer(), start_node, 0, usize::MAX);
+        for token in it {
+            let token = token?.node;
+            let token_val = node_annos
+                .get_value_for_item(&token, &TOKEN_KEY)?
+                .unwrap_or_default();
+            writer.write(token_val.as_bytes())?;
+            writer.write("\n".as_bytes())?;
+        }
         Ok(())
     }
 }
@@ -193,18 +203,18 @@ mod tests {
     use super::*;
     use crate::{
         StepID,
-        importer::{Importer as _, exmaralda::ImportEXMARaLDA},
+        importer::{Importer as _, graphml::GraphMLImporter},
         test_util::export_to_string,
     };
     use std::path::Path;
 
     #[test]
     fn core() {
-        let exmaralda = ImportEXMARaLDA {};
-        let import = exmaralda.import_corpus(
-            Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
+        let graphml = GraphMLImporter {};
+        let import = graphml.import_corpus(
+            Path::new("tests/data/import/graphml/single_sentence.graphml"),
             StepID {
-                module_name: "test_import_exb".to_string(),
+                module_name: "test_import_graphml".to_string(),
                 path: None,
             },
             None,
