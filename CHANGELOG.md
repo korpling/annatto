@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `enumerate`: Enumerate can be sort to additionally sort results before enumerating, node values can be interpreted as numeric if required
-- `treetagger` exporter that can output base token, segmentation token and document metadata. Spans are not exported yet.
+- `treetagger` exporter that can output base token, segmentation token and document metadata.
 
 ## [0.37.1] - 2025-07-23
 

@@ -20,6 +20,7 @@ use std::{
 pub struct TokenHelper<'a> {
     node_annos: &'a dyn NodeAnnotationStorage,
     left_edges: Arc<dyn GraphStorage>,
+    right_edges: Arc<dyn GraphStorage>,
     cov_edges: Vec<Arc<dyn GraphStorage>>,
     ordering_gs: BTreeMap<String, Arc<dyn GraphStorage>>,
     part_of_gs: Arc<dyn GraphStorage>,
@@ -78,17 +79,30 @@ impl<'a> TokenHelper<'a> {
         let left_edges = graph
             .get_graphstorage(&COMPONENT_LEFT)
             .ok_or_else(|| GraphAnnisCoreError::MissingComponent(COMPONENT_LEFT.to_string()))?;
+        let right_edges = graph
+            .get_graphstorage(&COMPONENT_RIGHT)
+            .ok_or_else(|| GraphAnnisCoreError::MissingComponent(COMPONENT_RIGHT.to_string()))?;
 
         Ok(TokenHelper {
             node_annos: graph.get_node_annos(),
             left_edges,
+            right_edges,
             cov_edges,
             ordering_gs,
             part_of_gs,
         })
     }
+
     pub fn get_gs_coverage(&self) -> &Vec<Arc<dyn GraphStorage>> {
         &self.cov_edges
+    }
+
+    pub fn get_gs_left_token(&self) -> &dyn GraphStorage {
+        self.left_edges.as_ref()
+    }
+
+    pub fn get_gs_right_token(&self) -> &dyn GraphStorage {
+        self.right_edges.as_ref()
     }
 
     pub fn is_token(&self, id: NodeID) -> anyhow::Result<bool> {
@@ -214,6 +228,18 @@ impl<'a> TokenHelper<'a> {
             Ok(Some(n))
         } else {
             let mut out = self.left_edges.get_outgoing_edges(n);
+            match out.next() {
+                Some(out) => Ok(Some(out?)),
+                None => Ok(None),
+            }
+        }
+    }
+
+    pub fn right_token_for(&self, n: NodeID) -> Result<Option<NodeID>> {
+        if self.is_token(n)? {
+            Ok(Some(n))
+        } else {
+            let mut out = self.right_edges.get_outgoing_edges(n);
             match out.next() {
                 Some(out) => Ok(Some(out?)),
                 None => Ok(None),

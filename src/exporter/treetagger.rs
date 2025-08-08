@@ -17,12 +17,16 @@ use graphannis_core::{
     dfs::{self, CycleSafeDFS},
     graph::{ANNIS_NS, DEFAULT_NS, NODE_NAME_KEY},
 };
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Exporter;
 
-use crate::{progress::ProgressReporter, util::token_helper::TOKEN_KEY};
+use crate::{
+    progress::ProgressReporter,
+    util::token_helper::{TOKEN_KEY, TokenHelper},
+};
 
 /// Exporter for the file format used by the TreeTagger.
 #[derive(
@@ -56,6 +60,8 @@ pub struct ExportTreeTagger {
     doc_anno: AnnoKey,
     /// Don't output meta data header when set to `true`
     skip_meta: bool,
+    /// Don't output SGML tags for span annotations when set to `true`
+    skip_spans: bool,
 }
 
 fn default_doc_anno() -> AnnoKey {
@@ -85,6 +91,7 @@ impl Default for ExportTreeTagger {
             segmentation: None,
             doc_anno: default_doc_anno(),
             skip_meta: false,
+            skip_spans: false,
         }
     }
 }
@@ -200,6 +207,8 @@ impl ExportTreeTagger {
         start_node: NodeID,
         gs_ordering: Arc<dyn GraphStorage>,
     ) -> anyhow::Result<()> {
+        let token_helper = TokenHelper::new(graph)?;
+
         let node_annos = graph.get_node_annos();
         let doc_node_name = node_annos
             .get_value_for_item(&doc_node, &self.doc_anno)?
@@ -217,6 +226,11 @@ impl ExportTreeTagger {
         let it = dfs::CycleSafeDFS::new(gs_ordering.as_edgecontainer(), start_node, 0, usize::MAX);
         for token in it {
             let token = token?.node;
+
+            if !self.skip_spans {
+                self.write_starting_spans(graph, token, &token_helper, &mut w)?;
+            }
+
             let token_val = node_annos
                 .get_value_for_item(&token, &TOKEN_KEY)?
                 .unwrap_or_default();
@@ -228,6 +242,10 @@ impl ExportTreeTagger {
                 write!(w, "\t{anno_value}")?;
             }
             writeln!(w)?;
+
+            if !self.skip_spans {
+                self.write_ending_spans(graph, token, &token_helper, &mut w)?;
+            }
         }
 
         if let Some(footer) = footer {
@@ -257,120 +275,89 @@ impl ExportTreeTagger {
 
         Ok("</doc>".to_string())
     }
+
+    /// Finds all spans that start at the given token and write their annotation values out.
+    fn write_starting_spans<W: Write>(
+        &self,
+        graph: &AnnotationGraph,
+        token: NodeID,
+        token_helper: &TokenHelper,
+        mut w: W,
+    ) -> anyhow::Result<()> {
+        if let Some(left_token) = token_helper.left_token_for(token)? {
+            for starting_span in token_helper
+                .get_gs_left_token()
+                .get_ingoing_edges(left_token)
+            {
+                let starting_span = starting_span?;
+                // Ignore segmentation spans
+                if !graph
+                    .get_node_annos()
+                    .has_value_for_item(&starting_span, &TOKEN_KEY)?
+                {
+                    let tag = self.tag_name_for_span(graph, starting_span)?;
+                    write!(w, "<{tag}")?;
+                    for anno in graph
+                        .get_node_annos()
+                        .get_annotations_for_item(&starting_span)?
+                    {
+                        if anno.key.ns != ANNIS_NS {
+                            let name = quick_xml::escape::escape(&anno.key.name);
+                            let value = quick_xml::escape::escape(&anno.val);
+                            write!(w, " {name}=\"{value}\"")?;
+                        }
+                    }
+                    writeln!(w, ">")?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Finds all spans that end at the given token and write their annotation values out.
+    fn write_ending_spans<W: Write>(
+        &self,
+        graph: &AnnotationGraph,
+        token: NodeID,
+        token_helper: &TokenHelper,
+        mut w: W,
+    ) -> anyhow::Result<()> {
+        if let Some(right_token) = token_helper.right_token_for(token)? {
+            for ending_span in token_helper
+                .get_gs_right_token()
+                .get_ingoing_edges(right_token)
+            {
+                let ending_span = ending_span?;
+                // Ignore segmentation spans
+                if !graph
+                    .get_node_annos()
+                    .has_value_for_item(&ending_span, &TOKEN_KEY)?
+                {
+                    let tag = self.tag_name_for_span(graph, ending_span)?;
+                    writeln!(w, "</{tag}>")?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn tag_name_for_span(&self, graph: &AnnotationGraph, span: NodeID) -> anyhow::Result<String> {
+        let keys: Vec<_> = graph
+            .get_node_annos()
+            .get_all_keys_for_item(&span, None, None)?
+            .into_iter()
+            .filter(|key| key.ns != ANNIS_NS)
+            .sorted()
+            .collect();
+        let first_name = keys
+            .first()
+            .map(|key| key.name.to_string())
+            .unwrap_or_else(|| "span".to_string());
+        Ok(first_name)
+    }
 }
 
 #[cfg(test)]
-mod tests {
-    use graphannis::update::GraphUpdate;
-    use insta::assert_snapshot;
-
-    use super::*;
-    use crate::{
-        test_util::export_to_string,
-        util::example_generator::{self, add_node_label, make_span},
-    };
-
-    fn create_test_corpus_base_token() -> AnnotationGraph {
-        let mut u = GraphUpdate::new();
-        example_generator::create_corpus_structure_simple(&mut u);
-        example_generator::create_tokens(&mut u, Some("root/doc1"));
-        make_span(
-            &mut u,
-            &format!("root/doc1#span1"),
-            &[&format!("root/doc1#tok0"), &format!("root/doc1#tok1")],
-            true,
-        );
-        // Add POS annotations
-        add_node_label(&mut u, "root/doc1#tok0", "default_ns", "pos", "VBZ");
-        add_node_label(&mut u, "root/doc1#tok1", "default_ns", "pos", "DT");
-        add_node_label(&mut u, "root/doc1#tok2", "default_ns", "pos", "NN");
-        add_node_label(&mut u, "root/doc1#tok3", "default_ns", "pos", "RBR");
-        add_node_label(&mut u, "root/doc1#tok4", "default_ns", "pos", "JJ");
-        add_node_label(&mut u, "root/doc1#tok5", "default_ns", "pos", "IN");
-        add_node_label(&mut u, "root/doc1#tok6", "default_ns", "pos", "PP");
-        add_node_label(&mut u, "root/doc1#tok7", "default_ns", "pos", "VBZ");
-        add_node_label(&mut u, "root/doc1#tok8", "default_ns", "pos", "TO");
-        add_node_label(&mut u, "root/doc1#tok9", "default_ns", "pos", "VB");
-        add_node_label(&mut u, "root/doc1#tok10", "default_ns", "pos", "SENT");
-
-        // Add lemma annotations
-        add_node_label(&mut u, "root/doc1#tok0", "default_ns", "lemma", "be");
-        add_node_label(&mut u, "root/doc1#tok1", "default_ns", "lemma", "this");
-        add_node_label(&mut u, "root/doc1#tok2", "default_ns", "lemma", "example");
-        add_node_label(&mut u, "root/doc1#tok3", "default_ns", "lemma", "more");
-        add_node_label(
-            &mut u,
-            "root/doc1#tok4",
-            "default_ns",
-            "lemma",
-            "complicated",
-        );
-        add_node_label(&mut u, "root/doc1#tok5", "default_ns", "lemma", "than");
-        add_node_label(&mut u, "root/doc1#tok6", "default_ns", "lemma", "it");
-        add_node_label(&mut u, "root/doc1#tok7", "default_ns", "lemma", "appear");
-        add_node_label(&mut u, "root/doc1#tok8", "default_ns", "lemma", "to");
-        add_node_label(&mut u, "root/doc1#tok9", "default_ns", "lemma", "be");
-        add_node_label(&mut u, "root/doc1#tok10", "default_ns", "lemma", "?");
-
-        // Add some additional metadata to the document
-        add_node_label(&mut u, "root/doc1", "ignored", "author", "<unknown>");
-        add_node_label(&mut u, "root/doc1", "default_ns", "year", "1984");
-
-        let g = AnnotationGraph::with_default_graphstorages(true);
-        assert!(g.is_ok());
-        let mut graph = g.unwrap();
-        assert!(graph.apply_update(&mut u, |_| {}).is_ok());
-        graph
-    }
-
-    fn create_test_corpus_segmentations() -> AnnotationGraph {
-        let mut u = GraphUpdate::new();
-        example_generator::create_corpus_structure_simple(&mut u);
-        example_generator::create_multiple_segmentations(&mut u, "root/doc1");
-
-        // Add some additional metadata to the document
-        add_node_label(&mut u, "root/doc1", "ignored", "author", "<unknown>");
-        add_node_label(&mut u, "root/doc1", "default_ns", "year", "1984");
-
-        let g = AnnotationGraph::with_default_graphstorages(true);
-        assert!(g.is_ok());
-        let mut graph = g.unwrap();
-        assert!(graph.apply_update(&mut u, |_| {}).is_ok());
-        graph
-    }
-
-    #[test]
-    fn core() {
-        let graph = create_test_corpus_base_token();
-
-        let export_config = ExportTreeTagger::default();
-
-        let export = export_to_string(&graph, export_config);
-        assert!(export.is_ok(), "error: {:?}", export.err());
-        assert_snapshot!(export.unwrap());
-    }
-
-    #[test]
-    fn core_no_metadata() {
-        let graph = create_test_corpus_base_token();
-
-        let mut export_config = ExportTreeTagger::default();
-        export_config.skip_meta = true;
-
-        let export = export_to_string(&graph, export_config);
-        assert!(export.is_ok(), "error: {:?}", export.err());
-        assert_snapshot!(export.unwrap());
-    }
-
-    #[test]
-    fn segmentation() {
-        let graph = create_test_corpus_segmentations();
-
-        let mut export_config = ExportTreeTagger::default();
-        export_config.segmentation = Some("b".to_string());
-
-        let export = export_to_string(&graph, export_config);
-        assert!(export.is_ok(), "error: {:?}", export.err());
-        assert_snapshot!(export.unwrap());
-    }
-}
+mod tests;
