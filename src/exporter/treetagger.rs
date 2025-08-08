@@ -323,6 +323,22 @@ mod tests {
         graph
     }
 
+    fn create_test_corpus_segmentations() -> AnnotationGraph {
+        let mut u = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut u);
+        example_generator::create_multiple_segmentations(&mut u, "root/doc1");
+
+        // Add some additional metadata to the document
+        add_node_label(&mut u, "root/doc1", "ignored", "author", "<unknown>");
+        add_node_label(&mut u, "root/doc1", "default_ns", "year", "1984");
+
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut u, |_| {}).is_ok());
+        graph
+    }
+
     #[test]
     fn core() {
         let graph = create_test_corpus_base_token();
@@ -340,6 +356,18 @@ mod tests {
 
         let mut export_config = ExportTreeTagger::default();
         export_config.skip_meta = true;
+
+        let export = export_to_string(&graph, export_config);
+        assert!(export.is_ok(), "error: {:?}", export.err());
+        assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
+    fn segmentation() {
+        let graph = create_test_corpus_segmentations();
+
+        let mut export_config = ExportTreeTagger::default();
+        export_config.segmentation = Some("b".to_string());
 
         let export = export_to_string(&graph, export_config);
         assert!(export.is_ok(), "error: {:?}", export.err());

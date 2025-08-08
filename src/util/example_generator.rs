@@ -234,7 +234,8 @@ pub fn create_tokens(update: &mut GraphUpdate, document_node: Option<&str>) {
 /// b: [An] [other] [example   ] [text]
 /// ```
 ///
-/// The timeline items have the name `tli1`, `tli2`, ..., `tli5`.
+/// The timeline items have the names `tli1`, `tli2`, ..., `tli5` and the
+/// segmentation token have the names `a1`, `b1`, `a2`, ...
 pub(crate) fn create_multiple_segmentations(update: &mut GraphUpdate, document_node: &str) {
     let prefix = format!("{}#", document_node);
 
