@@ -359,7 +359,8 @@ impl Collapse {
             for key in node_annos.get_all_keys_for_item(from_node, None, None)? {
                 // only transfer `annis::` annotations for terminal nodes of the component and never transfer the node name key
                 if (key.ns.as_str() != ANNIS_NS
-                    || !component_storage.has_outgoing_edges(*from_node)? && key != *NODE_NAME_KEY)
+                    || !component_storage.has_outgoing_edges(*from_node)?)
+                    && key != *NODE_NAME_KEY
                     && let Some(anno_value) =
                         node_annos.get_value_for_item(from_node, key.as_ref())?
                 {

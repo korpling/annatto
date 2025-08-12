@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `enumerate`: Enumerate can be sort to additionally sort results before enumerating, node values can be interpreted as numeric if required
 - `treetagger` exporter that can output base token, segmentation token and document metadata.
 
+### Changed
+
+- `init` section is now `load` with fields `database` and corpus, saving the graph in its native format is done in a separate `save` section
+  with a single target path. The section appears after the `export` and before the `footer` section.
+
 ## [0.37.1] - 2025-07-23
 
 ## [0.37.0] - 2025-07-23
