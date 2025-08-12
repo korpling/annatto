@@ -8,6 +8,7 @@ pub mod saltxml;
 pub mod sequence;
 pub(crate) mod table;
 pub mod textgrid;
+pub mod treetagger;
 pub mod xlsx;
 
 use crate::{StepID, workflow::StatusSender};

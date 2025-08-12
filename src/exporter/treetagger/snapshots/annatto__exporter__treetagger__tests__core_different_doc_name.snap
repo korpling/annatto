@@ -1,0 +1,24 @@
+---
+source: src/exporter/treetagger/tests.rs
+expression: export.unwrap()
+---
+---- root.tt:
+<doc corpus-name="root">
+<something something="annotated">
+Is	VBZ	be
+this	DT	this
+<anotherthing anotherthing="annotated" evenmore="&lt;unknown-values&gt;">
+example	NN	example
+</something>
+more	RBR	more
+</anotherthing>
+complicated	JJ	complicated
+<span>
+than	IN	than
+</span>
+it	PP	it
+appears	VBZ	appear
+to	TO	to
+be	VB	be
+?	SENT	?
+</doc>
