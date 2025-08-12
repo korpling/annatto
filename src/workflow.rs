@@ -6,8 +6,13 @@ use std::{
 };
 
 use anyhow::anyhow;
-use graphannis::{AnnotationGraph, update::GraphUpdate};
+use graphannis::{
+    AnnotationGraph,
+    model::{AnnotationComponent, AnnotationComponentType},
+    update::GraphUpdate,
+};
 
+use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY};
 use regex::Regex;
 use serde::Serialize;
 use serde_derive::Deserialize;
@@ -52,28 +57,33 @@ pub enum StatusMessage {
 #[serde(deny_unknown_fields)]
 pub struct Workflow {
     #[serde(default)]
-    init: Option<GraphInit>,
+    load: Option<LoadGraph>,
     import: Option<Vec<ImporterStep>>,
     graph_op: Option<Vec<ManipulatorStep>>,
     export: Option<Vec<ExporterStep>>,
+    save: Option<SaveGraph>,
     #[serde(default)]
     footer: Metadata,
 }
 
 /// This can be used to initialize the annotation graph non-empty.
 #[derive(Debug, Deserialize, Serialize)]
-pub struct GraphInit {
+pub struct LoadGraph {
     /// The path to the graphANNIS database.
     database: PathBuf,
     /// The corpus name.
     corpus: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SaveGraph {
     /// If this is provided, the graph will be saved at the given location
     /// at the end of the workflow run.
     #[serde(default)]
-    save: Option<PathBuf>,
+    target: Option<PathBuf>,
 }
 
-impl GraphInit {
+impl LoadGraph {
     /// Create a new init step, that loads the corpus from a subdirectory (given
     /// by the corpus name) from the given parent database directory.
     pub fn new<P, S>(database: P, corpus: S) -> Self
@@ -84,16 +94,17 @@ impl GraphInit {
         Self {
             database: database.into(),
             corpus: corpus.into(),
-            save: None,
         }
     }
+}
 
+impl SaveGraph {
     /// Save the graph at the given location at the end of the workflow run.
     pub fn with_save_at_end<P>(mut self, path: P) -> Self
     where
         P: Into<PathBuf>,
     {
-        self.save = Some(path.into());
+        self.target = Some(path.into());
         self
     }
 }
@@ -223,8 +234,8 @@ pub fn execute_from_file(
 pub type StatusSender = Sender<StatusMessage>;
 
 impl Workflow {
-    pub fn with_init(mut self, init: GraphInit) -> Self {
-        self.init = Some(init);
+    pub fn with_init(mut self, init: LoadGraph) -> Self {
+        self.load = Some(init);
         self
     }
 
@@ -289,7 +300,7 @@ impl Workflow {
         // Create a new empty annotation graph and apply updates
         let mut g = AnnotationGraph::with_default_graphstorages(!in_memory)
             .map_err(|e| AnnattoError::CreateGraph(e.to_string()))?;
-        if let Some(init) = &self.init {
+        if let Some(init) = &self.load {
             if !in_memory {
                 return Err(AnnattoError::Anyhow(anyhow!(
                     "You can only load GraphANNIS in-memory data and must run annatto in memory mode as well. Re-run annatto using `--in-memory`."
@@ -385,8 +396,8 @@ impl Workflow {
             // Check for errors during export
             export_result?;
         }
-        if let Some(init) = &self.init
-            && let Some(save_path) = &init.save
+        if let Some(after) = &self.save
+            && let Some(save_path) = &after.target
         {
             let save_path = if save_path.is_relative() {
                 default_workflow_directory.join(save_path)
@@ -397,7 +408,27 @@ impl Workflow {
                 // compute statistics to avoid doing it after loading
                 g.calculate_all_statistics()?;
             }
-            g.save_to(&save_path.join(&init.corpus))?;
+            let extended_save_path = {
+                let part_of_c = AnnotationComponent::new(
+                    AnnotationComponentType::PartOf,
+                    ANNIS_NS.into(),
+                    "".into(),
+                );
+                if let Some(storage) = g.get_graphstorage(&part_of_c)
+                    && let Some(Ok(random_start_node)) = storage.source_nodes().next()
+                    && let Some(Ok(root_node)) = storage
+                        .find_connected(random_start_node, 0, std::ops::Bound::Unbounded)
+                        .last()
+                    && let Some(root_name) = g
+                        .get_node_annos()
+                        .get_value_for_item(&root_node, &NODE_NAME_KEY)?
+                {
+                    save_path.join(root_name.to_string())
+                } else {
+                    save_path
+                }
+            };
+            g.save_to(&extended_save_path)?;
         }
         Ok(())
     }
