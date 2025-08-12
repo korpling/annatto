@@ -259,11 +259,11 @@ impl Manipulator for EnumerateMatches {
                                         .get_value_for_item(&internal_id, &coord_anno_key)?
                                         .unwrap_or_default()
                                         .to_string();
-                                    if let Some(previous_value) = by_values.get(bi) {
-                                        if &next_value != previous_value {
-                                            // reset count
-                                            reset_count = true;
-                                        }
+                                    if let Some(previous_value) = by_values.get(bi)
+                                        && &next_value != previous_value
+                                    {
+                                        // reset count
+                                        reset_count = true;
                                     }
                                     by_values.insert(bi, next_value);
                                 }

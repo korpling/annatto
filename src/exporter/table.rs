@@ -399,7 +399,7 @@ impl ExportTable {
         &self,
         graph: &AnnotationGraph,
         node: NodeID,
-    ) -> Result<(Vec<SingleEdgeData>, Vec<SingleEdgeData>), anyhow::Error> {
+    ) -> Result<(Vec<SingleEdgeData<'_>>, Vec<SingleEdgeData<'_>>), anyhow::Error> {
         let mut sources: Vec<SingleEdgeData> = Vec::new();
         let mut targets: Vec<SingleEdgeData> = Vec::new();
         for component in &self.ingoing {
