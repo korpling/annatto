@@ -2773,4 +2773,33 @@ remove = [{node=1, anno="default_ns::pos"}]
         assert!(actual.is_ok());
         assert_snapshot!(actual.unwrap());
     }
+
+    #[test]
+    fn delete_edge_anno_by_rename() {
+        let g = input_graph(true, false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let m = toml::from_str::<Revise>("edge_annos = [{from = 'deprel'}]");
+        assert!(m.is_ok(), "Could not deserialize module: {:?}", m.err());
+        let module = m.unwrap();
+        assert!(
+            module
+                .manipulate_corpus(
+                    &mut graph,
+                    Path::new("./"),
+                    StepID {
+                        module_name: "test_revise".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
+        let actual = export_to_string(
+            &graph,
+            toml::from_str::<GraphMLExporter>("stable_order = true").unwrap(),
+        );
+        assert!(actual.is_ok());
+        assert_snapshot!(actual.unwrap());
+    }
 }
