@@ -389,7 +389,7 @@ impl Workflow {
         if let Some(ref exporters) = self.export {
             let export_result: Result<Vec<_>> = exporters
                 .par_iter()
-                .map_with(tx, |tx, step| {
+                .map_with(tx.clone(), |tx, step| {
                     self.execute_single_exporter(&g, step, default_workflow_directory, tx.clone())
                 })
                 .collect();
@@ -399,36 +399,41 @@ impl Workflow {
         if let Some(after) = &self.save
             && let Some(save_path) = &after.target
         {
-            let save_path = if save_path.is_relative() {
-                default_workflow_directory.join(save_path)
+            if !in_memory && let Some(sender) = &tx {
+                let msg = StatusMessage::Warning("Graph cannot be saved when annatto is run in disk mode. Re-run with `--in-memory` for saving the graph.".to_string());
+                sender.send(msg)?;
             } else {
-                save_path.to_path_buf()
-            };
-            if g.global_statistics.is_none() {
-                // compute statistics to avoid doing it after loading
-                g.calculate_all_statistics()?;
-            }
-            let extended_save_path = {
-                let part_of_c = AnnotationComponent::new(
-                    AnnotationComponentType::PartOf,
-                    ANNIS_NS.into(),
-                    "".into(),
-                );
-                if let Some(storage) = g.get_graphstorage(&part_of_c)
-                    && let Some(Ok(random_start_node)) = storage.source_nodes().next()
-                    && let Some(Ok(root_node)) = storage
-                        .find_connected(random_start_node, 0, std::ops::Bound::Unbounded)
-                        .last()
-                    && let Some(root_name) = g
-                        .get_node_annos()
-                        .get_value_for_item(&root_node, &NODE_NAME_KEY)?
-                {
-                    save_path.join(root_name.to_string())
+                let save_path = if save_path.is_relative() {
+                    default_workflow_directory.join(save_path)
                 } else {
-                    save_path
+                    save_path.to_path_buf()
+                };
+                if g.global_statistics.is_none() {
+                    // compute statistics to avoid doing it after loading
+                    g.calculate_all_statistics()?;
                 }
-            };
-            g.save_to(&extended_save_path)?;
+                let extended_save_path = {
+                    let part_of_c = AnnotationComponent::new(
+                        AnnotationComponentType::PartOf,
+                        ANNIS_NS.into(),
+                        "".into(),
+                    );
+                    if let Some(storage) = g.get_graphstorage(&part_of_c)
+                        && let Some(Ok(random_start_node)) = storage.source_nodes().next()
+                        && let Some(Ok(root_node)) = storage
+                            .find_connected(random_start_node, 0, std::ops::Bound::Unbounded)
+                            .last()
+                        && let Some(root_name) = g
+                            .get_node_annos()
+                            .get_value_for_item(&root_node, &NODE_NAME_KEY)?
+                    {
+                        save_path.join(root_name.to_string())
+                    } else {
+                        save_path
+                    }
+                };
+                g.save_to(&extended_save_path)?;
+            }
         }
         Ok(())
     }
