@@ -73,6 +73,9 @@ pub struct LoadGraph {
     database: PathBuf,
     /// The corpus name.
     corpus: String,
+    /// Optimize components for writing before moving on.
+    #[serde(default)]
+    optimize: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -81,12 +84,19 @@ pub struct SaveGraph {
     /// at the end of the workflow run.
     #[serde(default)]
     target: Option<PathBuf>,
+    /// Optimize components for reading before saving.
+    #[serde(default = "default_save_optimize")]
+    optimize: bool,
+}
+
+fn default_save_optimize() -> bool {
+    true
 }
 
 impl LoadGraph {
     /// Create a new init step, that loads the corpus from a subdirectory (given
     /// by the corpus name) from the given parent database directory.
-    pub fn new<P, S>(database: P, corpus: S) -> Self
+    pub fn new<P, S>(database: P, corpus: S, optimize: bool) -> Self
     where
         P: Into<PathBuf>,
         S: Into<String>,
@@ -94,6 +104,7 @@ impl LoadGraph {
         Self {
             database: database.into(),
             corpus: corpus.into(),
+            optimize,
         }
     }
 }
@@ -320,6 +331,11 @@ impl Workflow {
                 )));
             }
             g.import(&external_path)?;
+            if init.optimize {
+                for c in g.get_all_components(None, None) {
+                    g.get_or_create_writable(&c)?;
+                }
+            }
         }
 
         if self.import.is_some() {
@@ -411,6 +427,9 @@ impl Workflow {
                 if g.global_statistics.is_none() {
                     // compute statistics to avoid doing it after loading
                     g.calculate_all_statistics()?;
+                }
+                if after.optimize {
+                    g.optimize_impl(false)?;
                 }
                 let extended_save_path = {
                     let part_of_c = AnnotationComponent::new(

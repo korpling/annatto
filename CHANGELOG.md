@@ -5,6 +5,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `load`: graph storage implementations can be optimised for writing after loading graph and before proceeding (default is no optimization)
+- `save`: graph storage implementations can be optimised for reading before saving graph (default is optimization)
+
 ## [0.38.0] - 2025-08-13
 
 ### Added
