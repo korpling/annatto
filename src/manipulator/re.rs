@@ -573,7 +573,7 @@ fn replace_edge_annos(
                                 source: source_node,
                                 target: target_node,
                             },
-                            &old_key,
+                            old_key,
                         )?
                     {
                         update.add_event(UpdateEvent::AddEdgeLabel {
