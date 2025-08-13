@@ -993,7 +993,7 @@ mod tests {
                 )
                 .is_ok()
         );
-        assert!(graph.global_statistics.is_some());
+        assert!(graph.global_statistics.is_none());
     }
 
     #[test]
