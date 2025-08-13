@@ -23,13 +23,15 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
     Manipulator, StepID,
-    core::update_graph,
+    core::update_graph_silent,
     error::{AnnattoError, StandardErrorResult},
     progress::ProgressReporter,
 };
 use documented::{Documented, DocumentedFields};
 
-/// Manipulate annotations, like deleting or renaming them.
+/// Manipulate annotations, like deleting or renaming them. If you set up different types of
+/// modifications, be aware that the graph is updated between them, so each modification is
+/// applied to a different graph.
 #[derive(
     Deserialize,
     Default,
@@ -562,7 +564,7 @@ fn replace_edge_annos(
                         layer: component.layer.to_string(),
                         component_type: component.get_type().to_string(),
                         component_name: component.name.to_string(),
-                        anno_ns: m.anno_key.ns.to_string(),
+                        anno_ns: old_key.ns.to_string(),
                         anno_name: old_key.name.to_string(),
                     })?;
                     if let Some(new_key) = new_key_opt
@@ -571,7 +573,7 @@ fn replace_edge_annos(
                                 source: source_node,
                                 target: target_node,
                             },
-                            &m.anno_key,
+                            old_key,
                         )?
                     {
                         update.add_event(UpdateEvent::AddEdgeLabel {
@@ -788,19 +790,31 @@ impl Manipulator for Revise {
         let mut update = GraphUpdate::default();
         for (old_name, new_name) in &self.node_names {
             rename_nodes(graph, &mut update, old_name, new_name, &step_id)?;
+            update_graph_silent(graph, &mut update)?;
+            update = GraphUpdate::default();
         }
         let move_by_ns = self.move_node_annos;
         if !self.remove_nodes.is_empty() {
             remove_nodes(&mut update, &self.remove_nodes)?;
+            update_graph_silent(graph, &mut update)?;
+            update = GraphUpdate::default();
         }
         if !self.remove_match.is_empty() {
+            // update the statistics once if they are outdated.
+            self.validate_graph(graph, step_id.clone(), tx.clone())?;
             remove_by_query(graph, &self.remove_match, &mut update)?;
+            update_graph_silent(graph, &mut update)?;
+            update = GraphUpdate::default();
         }
         if !self.node_annos.is_empty() {
             replace_node_annos(graph, &mut update, &self.node_annos, move_by_ns)?;
+            update_graph_silent(graph, &mut update)?;
+            update = GraphUpdate::default();
         }
         if !self.edge_annos.is_empty() {
             replace_edge_annos(graph, &mut update, &self.edge_annos)?;
+            update_graph_silent(graph, &mut update)?;
+            update = GraphUpdate::default();
         }
         if !self.namespaces.is_empty() {
             let namespaces = read_replace_property_value(&self.namespaces)?;
@@ -816,22 +830,31 @@ impl Manipulator for Revise {
                 })
                 .collect_vec();
             replace_namespaces(graph, &mut update, replacements)?;
+            update_graph_silent(graph, &mut update)?;
+            update = GraphUpdate::default();
         }
         if !self.components.is_empty() {
             revise_components(graph, &self.components, &mut update, &progress_reporter)?;
+            update_graph_silent(graph, &mut update)?;
+            update = GraphUpdate::default();
         }
         if !self.remove_subgraph.is_empty() {
             for node_name in &self.remove_subgraph {
                 remove_subgraph(graph, &mut update, node_name)?;
+                update_graph_silent(graph, &mut update)?;
+                update = GraphUpdate::default();
             }
         }
-        update_graph(graph, &mut update, Some(step_id), tx)?;
 
         Ok(())
     }
 
     fn requires_statistics(&self) -> bool {
-        true
+        // NOTE: This is actually a lie, but for most operations statistics are not required.
+        // Therefore, computing graph statistics is delegated to the individual manipulation.
+        // Also, the graph might change multiple times within `revise`, so apriori statistics
+        // are likely to be useless and their computation wasteful.
+        false
     }
 }
 
@@ -970,7 +993,7 @@ mod tests {
                 )
                 .is_ok()
         );
-        assert!(graph.global_statistics.is_some());
+        assert!(graph.global_statistics.is_none());
     }
 
     #[test]
@@ -2743,5 +2766,63 @@ remove = [{node=1, anno="default_ns::pos"}]
         let export = export_to_string(&graph, GraphMLExporter::default());
         assert!(export.is_ok());
         assert_snapshot!(export.unwrap());
+    }
+
+    #[test]
+    fn rename_edge_annos() {
+        let g = input_graph(true, false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let m = toml::from_str::<Revise>("edge_annos = [{from = 'deprel', to = 'func'}]");
+        assert!(m.is_ok(), "Could not deserialize module: {:?}", m.err());
+        let module = m.unwrap();
+        assert!(
+            module
+                .manipulate_corpus(
+                    &mut graph,
+                    Path::new("./"),
+                    StepID {
+                        module_name: "test_revise".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
+        let actual = export_to_string(
+            &graph,
+            toml::from_str::<GraphMLExporter>("stable_order = true").unwrap(),
+        );
+        assert!(actual.is_ok());
+        assert_snapshot!(actual.unwrap());
+    }
+
+    #[test]
+    fn delete_edge_anno_by_rename() {
+        let g = input_graph(true, false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let m = toml::from_str::<Revise>("edge_annos = [{from = 'deprel'}]");
+        assert!(m.is_ok(), "Could not deserialize module: {:?}", m.err());
+        let module = m.unwrap();
+        assert!(
+            module
+                .manipulate_corpus(
+                    &mut graph,
+                    Path::new("./"),
+                    StepID {
+                        module_name: "test_revise".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
+        let actual = export_to_string(
+            &graph,
+            toml::from_str::<GraphMLExporter>("stable_order = true").unwrap(),
+        );
+        assert!(actual.is_ok());
+        assert_snapshot!(actual.unwrap());
     }
 }
