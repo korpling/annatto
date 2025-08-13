@@ -29,7 +29,9 @@ use crate::{
 };
 use documented::{Documented, DocumentedFields};
 
-/// Manipulate annotations, like deleting or renaming them.
+/// Manipulate annotations, like deleting or renaming them. If you set up different types of
+/// modifications, be aware that the graph is updated between them, so each modification is
+/// applied to a different graph.
 #[derive(
     Deserialize,
     Default,
