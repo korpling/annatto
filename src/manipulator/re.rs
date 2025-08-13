@@ -23,7 +23,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
     Manipulator, StepID,
-    core::{update_graph, update_graph_silent},
+    core::update_graph_silent,
     error::{AnnattoError, StandardErrorResult},
     progress::ProgressReporter,
 };
