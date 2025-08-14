@@ -342,9 +342,8 @@ impl ReadFromDiscriminants {
     }
 }
 
-#[derive(Facet, Deserialize, EnumDiscriminants, AsRefStr, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, AsRefStr, Serialize, Clone, PartialEq)]
 #[strum(serialize_all = "lowercase")]
-#[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "action", rename_all = "lowercase", content = "config")]
 #[repr(u16)]
 pub enum GraphOp {
@@ -389,74 +388,6 @@ impl GraphOp {
             GraphOp::Sleep(m) => m,
             GraphOp::Align(m) => m,
         }
-    }
-}
-
-impl GraphOpDiscriminants {
-    pub fn module_doc(&self) -> &str {
-        match self {
-            GraphOpDiscriminants::Check => Check::DOCS,
-            GraphOpDiscriminants::Collapse => Collapse::DOCS,
-            GraphOpDiscriminants::Visualize => Visualize::DOCS,
-            GraphOpDiscriminants::Enumerate => EnumerateMatches::DOCS,
-            GraphOpDiscriminants::Link => LinkNodes::DOCS,
-            GraphOpDiscriminants::Map => MapAnnos::DOCS,
-            GraphOpDiscriminants::Revise => Revise::DOCS,
-            GraphOpDiscriminants::Chunk => Chunk::DOCS,
-            GraphOpDiscriminants::None => NoOp::DOCS,
-            GraphOpDiscriminants::Split => SplitValues::DOCS,
-            GraphOpDiscriminants::Filter => FilterNodes::DOCS,
-            GraphOpDiscriminants::Time => Filltime::DOCS,
-            GraphOpDiscriminants::Sleep => Sleep::DOCS,
-            GraphOpDiscriminants::Align => AlignNodes::DOCS,
-        }
-    }
-
-    pub fn module_configs(&self) -> Vec<ModuleConfiguration> {
-        let mut result = Vec::new();
-        let (field_names, field_docs) = match self {
-            GraphOpDiscriminants::Check => (Check::FIELD_NAMES_AS_SLICE, Check::FIELD_DOCS),
-            GraphOpDiscriminants::Collapse => {
-                (Collapse::FIELD_NAMES_AS_SLICE, Collapse::FIELD_DOCS)
-            }
-            GraphOpDiscriminants::Visualize => {
-                (Visualize::FIELD_NAMES_AS_SLICE, Visualize::FIELD_DOCS)
-            }
-            GraphOpDiscriminants::Enumerate => (
-                EnumerateMatches::FIELD_NAMES_AS_SLICE,
-                EnumerateMatches::FIELD_DOCS,
-            ),
-            GraphOpDiscriminants::Link => (LinkNodes::FIELD_NAMES_AS_SLICE, LinkNodes::FIELD_DOCS),
-            GraphOpDiscriminants::Map => (MapAnnos::FIELD_NAMES_AS_SLICE, MapAnnos::FIELD_DOCS),
-            GraphOpDiscriminants::Revise => (Revise::FIELD_NAMES_AS_SLICE, Revise::FIELD_DOCS),
-            GraphOpDiscriminants::Chunk => (Chunk::FIELD_NAMES_AS_SLICE, Chunk::FIELD_DOCS),
-            GraphOpDiscriminants::None => (NoOp::FIELD_NAMES_AS_SLICE, NoOp::FIELD_DOCS),
-            GraphOpDiscriminants::Split => {
-                (SplitValues::FIELD_NAMES_AS_SLICE, SplitValues::FIELD_DOCS)
-            }
-            GraphOpDiscriminants::Filter => {
-                (FilterNodes::FIELD_NAMES_AS_SLICE, FilterNodes::FIELD_DOCS)
-            }
-            GraphOpDiscriminants::Time => (Filltime::FIELD_NAMES_AS_SLICE, Filltime::FIELD_DOCS),
-            GraphOpDiscriminants::Sleep => (Sleep::FIELD_NAMES_AS_SLICE, Sleep::FIELD_DOCS),
-            GraphOpDiscriminants::Align => {
-                (AlignNodes::FIELD_NAMES_AS_SLICE, AlignNodes::FIELD_DOCS)
-            }
-        };
-        for (idx, n) in field_names.iter().enumerate() {
-            if idx < field_docs.len() {
-                result.push(ModuleConfiguration {
-                    name: n.to_string(),
-                    description: field_docs[idx].to_string(),
-                });
-            } else {
-                result.push(ModuleConfiguration {
-                    name: n.to_string(),
-                    description: String::default(),
-                });
-            }
-        }
-        result
     }
 }
 

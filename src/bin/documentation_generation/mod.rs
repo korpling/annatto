@@ -1,15 +1,17 @@
 use std::{fs::File, io::Write, path::Path};
 
-use annatto::{
-    GraphOpDiscriminants, ModuleConfiguration, ReadFromDiscriminants, WriteAsDiscriminants,
-};
+use annatto::{GraphOp, ModuleConfiguration, ReadFromDiscriminants, WriteAsDiscriminants};
+use anyhow::Context;
+use facet::{Facet, Field, Variant};
+use facet_reflect::peek_enum_variants;
 use itertools::Itertools;
 use strum::IntoEnumIterator;
 
 pub(crate) fn create(output_directory: &Path) -> anyhow::Result<()> {
     let importers = ReadFromDiscriminants::iter().collect_vec();
     let exporters = WriteAsDiscriminants::iter().collect_vec();
-    let graph_ops = GraphOpDiscriminants::iter().collect_vec();
+    let graph_ops =
+        peek_enum_variants(GraphOp::SHAPE).context("Graph operations must be an enum")?;
 
     // Create an index file with a list of all the modules
     write_module_list_table(output_directory, &importers, &exporters, &graph_ops)?;
@@ -26,7 +28,7 @@ fn write_module_list_table(
     output_directory: &Path,
     importers: &[ReadFromDiscriminants],
     exporters: &[WriteAsDiscriminants],
-    graph_ops: &[GraphOpDiscriminants],
+    graph_ops: &[Variant],
 ) -> anyhow::Result<()> {
     let mut table_builder = tabled::builder::Builder::new();
     table_builder.push_record(vec!["Type", "Modules"]);
@@ -60,7 +62,7 @@ fn write_module_list_table(
         graph_ops
             .iter()
             .map(|m| {
-                let module_name = m.as_ref().to_string();
+                let module_name = m.name.to_lowercase();
                 format!("[{module_name}](graph_ops/{module_name}.md)")
             })
             .join(", "),
@@ -116,22 +118,45 @@ fn write_exporter_files(
 
     Ok(())
 }
-fn write_graph_op_files(
-    graph_ops: &[GraphOpDiscriminants],
-    output_directory: &Path,
-) -> anyhow::Result<()> {
+fn write_graph_op_files(graph_ops: &[Variant], output_directory: &Path) -> anyhow::Result<()> {
     let graph_ops_directory = output_directory.join("graph_ops");
     std::fs::create_dir_all(&graph_ops_directory)?;
 
     for m in graph_ops {
-        let module_name = m.as_ref().to_string();
+        let module_name = m.name.to_lowercase();
         let path = graph_ops_directory.join(format!("{module_name}.md"));
         let mut output = File::create(path)?;
         writeln!(output, "# {module_name} (graph_operation)")?;
         writeln!(output)?;
-        writeln!(output, "{}", m.module_doc())?;
+        writeln!(output, "{}", m.doc.join("\n"))?;
         writeln!(output)?;
-        write_module_fields(output, &m.module_configs())?;
+        write_module_struct(output, &m.data.fields)?;
+    }
+
+    Ok(())
+}
+
+fn write_module_struct<W>(mut output: W, fields: &[Field]) -> anyhow::Result<()>
+where
+    W: Write,
+{
+    if fields.is_empty() {
+        writeln!(output, "*No Configuration*")?;
+    } else {
+        writeln!(output, "## Configuration")?;
+        writeln!(output)?;
+
+        for f in fields {
+            writeln!(output, "###  {}", f.name)?;
+            writeln!(output)?;
+
+            if f.doc.is_empty() {
+                writeln!(output, "*No description*")?;
+            } else {
+                writeln!(output, "{}", f.doc.join("\n"))?;
+            }
+            writeln!(output)?;
+        }
     }
 
     Ok(())

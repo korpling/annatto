@@ -1,8 +1,10 @@
 use annatto::{
-    GraphOpDiscriminants, ModuleConfiguration, ReadFromDiscriminants, StepID, WriteAsDiscriminants,
+    GraphOp, ModuleConfiguration, ReadFromDiscriminants, StepID, WriteAsDiscriminants,
     error::AnnattoError,
     workflow::{StatusMessage, Workflow, execute_from_file},
 };
+use facet::Facet;
+use facet_reflect::peek_enum_variants;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
 use clap::Parser;
@@ -255,8 +257,10 @@ fn list_modules() {
 
     let graph_op_row = vec![
         "Graph operations".to_string(),
-        GraphOpDiscriminants::iter()
-            .map(|m| m.as_ref().to_string())
+        peek_enum_variants(GraphOp::SHAPE)
+            .unwrap_or_default()
+            .iter()
+            .map(|v| v.name.to_lowercase())
             .join(", "),
     ];
     table_builder.push_record(graph_op_row);
@@ -283,8 +287,11 @@ fn module_info(name: &str) {
     let matching_exporters: Vec<_> = WriteAsDiscriminants::iter()
         .filter(|m| m.as_ref() == name.to_lowercase())
         .collect();
-    let matching_graph_ops: Vec<_> = GraphOpDiscriminants::iter()
-        .filter(|m| m.as_ref() == name.to_lowercase())
+
+    let matching_graph_ops: Vec<_> = peek_enum_variants(GraphOp::SHAPE)
+        .unwrap_or_default()
+        .iter()
+        .filter(|m| m.name.to_lowercase() == name.to_lowercase())
         .collect();
 
     if matching_importers.is_empty()
@@ -317,12 +324,21 @@ fn module_info(name: &str) {
     if !matching_graph_ops.is_empty() {
         print_markdown("# Graph operations\n\n");
         for m in matching_graph_ops {
-            let module_doc = m.module_doc();
+            let module_doc = m.doc.join("\n");
             print_markdown(&format!(
                 "## {} (graph operation)\n\n{module_doc}\n\n",
-                m.as_ref()
+                m.name.to_lowercase()
             ));
-            print_module_fields(m.module_configs());
+            let fields = m
+                .data
+                .fields
+                .iter()
+                .map(|f| ModuleConfiguration {
+                    name: f.name.to_lowercase(),
+                    description: f.doc.join("\""),
+                })
+                .collect();
+            print_module_fields(fields);
         }
     }
 }
