@@ -13,6 +13,7 @@ use crate::{
     util::Traverse,
 };
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph,
     graph::GraphStorage,
@@ -49,7 +50,7 @@ use super::Exporter;
 /// copy_media = false
 /// ```
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct ExportExmaralda {

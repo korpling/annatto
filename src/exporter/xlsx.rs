@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::anyhow;
+use facet::Facet;
 use graphannis::{AnnotationGraph, graph::GraphStorage, model::AnnotationComponentType};
 use graphannis_core::{
     annostorage::{NodeAnnotationStorage, ValueSearch},
@@ -29,6 +30,7 @@ use super::Exporter;
 /// Exports Excel Spreadsheets where each line is a token, the other columns are
 /// spans and merged cells can be used for spans that cover more than one token.
 #[derive(
+    Facet,
     Default,
     Deserialize,
     Documented,

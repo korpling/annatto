@@ -1,6 +1,7 @@
 use std::{collections::BTreeMap, fs, io::Write, path::Path, sync::Arc};
 
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph,
     graph::{AnnoKey, GraphStorage},
@@ -21,7 +22,7 @@ use super::Exporter;
 
 /// This exports a node sequence as horizontal or vertical text.
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct ExportSequence {

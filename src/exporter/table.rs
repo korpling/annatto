@@ -6,6 +6,7 @@ use std::{
 
 use anyhow::{anyhow, bail};
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph,
     graph::{AnnoKey, Edge, NodeID},
@@ -28,7 +29,7 @@ use crate::{progress::ProgressReporter, util::token_helper::TOKEN_KEY};
 
 /// This module exports all ordered nodes and nodes connected by coverage edges of any name into a table.
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct ExportTable {

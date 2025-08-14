@@ -17,6 +17,7 @@ use bimap::BiBTreeMap;
 use corpus_structure::SaltCorpusStructureMapper;
 use document::SaltDocumentGraphMapper;
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph,
     graph::{AnnoKey, Edge, NodeID},
@@ -37,6 +38,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// [Salt
 /// model](https://raw.githubusercontent.com/korpling/salt/master/gh-site/doc/salt_modelGuide.pdf).
 #[derive(
+    Facet,
     Deserialize,
     Documented,
     DocumentedFields,

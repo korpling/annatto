@@ -8,6 +8,7 @@ use std::{
 
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph,
     graph::{AnnoKey, GraphStorage, NodeID},
@@ -28,7 +29,8 @@ use crate::{
     util::token_helper::{TOKEN_KEY, TokenHelper},
 };
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, Default)]
+#[derive(Facet, Clone, Debug, Deserialize, PartialEq, Serialize, Default)]
+#[repr(u8)]
 #[serde(tag = "strategy", content = "name", rename_all = "snake_case")]
 enum SpanName {
     #[default]
@@ -39,7 +41,7 @@ enum SpanName {
 
 /// Exporter for the file format used by the TreeTagger.
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct ExportTreeTagger {

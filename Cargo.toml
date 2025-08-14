@@ -1,7 +1,7 @@
 [package]
 authors = [
-  "Thomas Krause <thomas.krause@hu-berlin.de>",
-  "Martin Klotz <martin.klotz@hu-berlin.de>",
+    "Thomas Krause <thomas.krause@hu-berlin.de>",
+    "Martin Klotz <martin.klotz@hu-berlin.de>",
 ]
 description = "Converts linguistic data formats based on the graphANNIS data model as intermediate representation and can apply consistency tests."
 edition = "2024"
@@ -15,16 +15,18 @@ version = "0.38.0"
 ansi_term = "0.12"
 anyhow = "1.0"
 bimap = "0.6.3"
-clap = {version = "4.0", features = ["derive", "env"]}
+clap = { version = "4.0", features = ["derive", "env"] }
 console = "0.15"
 csv = "1.3"
 documented = "0.9.1"
 encoding_rs = "0.8"
 encoding_rs_io = "0.1.7"
+facet = "0.28.0"
+facet-reflect = "0.28.0"
 git2 = { version = "0.20.2", default-features = false }
 glob = "0.3"
-graphannis = "3.8.1"
-graphannis-core = "3.8.1"
+graphannis = "3.8.3"
+graphannis-core = "3.8.3"
 graphviz-rust = "0.9.0"
 indicatif = "0.17"
 itertools = "0.12"
@@ -35,7 +37,7 @@ log = "0.4"
 lru = "0.14.0"
 nonzero = "0.2.0"
 normpath = "1.1"
-ordered-float = {version = "4.1", default-features = false}
+ordered-float = { version = "4.1", default-features = false }
 pathdiff = "0.2"
 percent-encoding = "2.3.1"
 pest = "2.7.14"
@@ -48,15 +50,15 @@ serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0.138"
 struct-field-names-as-array = "0.3.0"
-strum = {version = "0.26.2", features = ["derive"]}
-tabled = {version = "0.15", features = ["ansi"]}
+strum = { version = "0.26.2", features = ["derive"] }
+tabled = { version = "0.15", features = ["ansi"] }
 tempfile = "3"
 termimad = "0.30"
 text-splitter = "0.6.3"
 thiserror = "1.0"
 tokenizations = "0.4.2"
 toml = "0.8.0"
-tracing-subscriber = {version = "0.3", features = ["env-filter"]}
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 umya-spreadsheet = "2.2.2"
 url = "2.5.2"
 xml-rs = "0.8"
@@ -64,8 +66,12 @@ zip = "0.6.6"
 
 [dev-dependencies]
 assert_cmd = "2.0.11"
-insta = {version = "1.26.0", features = ["toml", "filters"]}
+insta = { version = "1.26.0", features = ["toml", "filters"] }
 pretty_assertions = "1.3"
+
+[patch.crates-io]
+graphannis = { git = "https://github.com/korpling/graphANNIS.git", branch = "add-facet" }
+graphannis-core = { git = "https://github.com/korpling/graphANNIS.git", branch = "add-facet" }
 
 # Compile some of the dependencies in release mode if when we are ourself in
 # "dev" mode (like building debug binaries or running tests)
@@ -94,7 +100,12 @@ ci = "github"
 # The installers to generate for each app
 installers = []
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]
+targets = [
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+    "x86_64-unknown-linux-gnu",
+    "x86_64-pc-windows-msvc",
+]
 # The preferred dist version to use in CI (Cargo.toml SemVer syntax)
 cargo-dist-version = "0.28.2"
 # Which actions to run on pull requests

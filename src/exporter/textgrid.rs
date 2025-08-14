@@ -2,6 +2,7 @@ use std::{cmp::Ordering, collections::BTreeMap, fs, io::Write, path::PathBuf};
 
 use anyhow::{anyhow, bail};
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph,
     graph::{AnnoKey, NodeID},
@@ -31,7 +32,7 @@ use super::Exporter;
 ///
 /// ```
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct ExportTextGrid {

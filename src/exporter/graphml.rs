@@ -12,6 +12,7 @@ use crate::{
     workflow::StatusSender,
 };
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::AnnotationGraph;
 use graphannis::{
     graph::AnnoKey,
@@ -31,6 +32,7 @@ use zip::ZipWriter;
 /// Exports files as [GraphML](http://graphml.graphdrawing.org/) files which
 /// conform to the [graphANNIS data model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
 #[derive(
+    Facet,
     Default,
     Deserialize,
     Documented,

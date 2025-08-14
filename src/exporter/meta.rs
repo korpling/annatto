@@ -1,6 +1,7 @@
 use std::{fs, io::Write, path::PathBuf};
 
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph,
     graph::{AnnoKey, NodeID},
@@ -39,7 +40,7 @@ use super::Exporter;
 /// [export.config]
 /// ```
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct ExportMeta {
