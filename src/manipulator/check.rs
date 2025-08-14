@@ -9,6 +9,7 @@ use std::{
 
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{AnnotationGraph, aql, errors::GraphAnnisError};
 use graphannis_core::{
     errors::GraphAnnisCoreError,
@@ -201,7 +202,7 @@ use crate::{
 /// ```
 ///
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct Check {
@@ -225,16 +226,18 @@ pub struct Check {
     overwrite: bool,
 }
 
-#[derive(Clone, Default, Deserialize, Serialize, PartialEq)]
+#[derive(Facet, Clone, Default, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
+#[repr(u8)]
 enum FailurePolicy {
     Warn,
     #[default]
     Fail,
 }
 
-#[derive(Deserialize, Default, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, Default, Serialize, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
+#[repr(u8)]
 enum ReportLevel {
     #[default] // default report level is required for save option
     List,
@@ -718,8 +721,9 @@ impl From<&Test> for Vec<AQLTest> {
     }
 }
 
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(untagged, deny_unknown_fields)]
+#[repr(u8)]
 enum Test {
     QueryTest {
         query: String,
@@ -794,8 +798,9 @@ struct TestTableEntry {
     appendix: Option<String>,
 }
 
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(untagged)]
+#[repr(u8)]
 enum QueryResult {
     Numeric(usize),
     Query(String),

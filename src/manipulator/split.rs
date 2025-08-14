@@ -1,6 +1,7 @@
 use std::{collections::BTreeMap, ops::Not};
 
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
     update::{GraphUpdate, UpdateEvent},
@@ -16,7 +17,7 @@ use super::Manipulator;
 
 /// This operation splits conflated annotation values into individual annotations.
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct SplitValues {
@@ -34,8 +35,9 @@ pub struct SplitValues {
     delete: bool,
 }
 
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(untagged)]
+#[repr(u8)]
 enum Layer {
     ByIndex {
         index: usize,

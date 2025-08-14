@@ -1,3 +1,4 @@
+use facet::Facet;
 use serde::Serialize;
 use serde_derive::Deserialize;
 use struct_field_names_as_array::FieldNamesAsSlice;
@@ -11,6 +12,7 @@ use super::Manipulator;
 /// The purpose of this graph operation is to allow to omit a `format` field in
 /// the `[[graph_op]]` configuration of the workflow file.
 #[derive(
+    Facet,
     Deserialize,
     Default,
     Documented,

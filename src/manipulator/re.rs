@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::{anyhow, bail};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph, aql,
     graph::{AnnoKey, Edge, Match},
@@ -33,6 +34,7 @@ use documented::{Documented, DocumentedFields};
 /// modifications, be aware that the graph is updated between them, so each modification is
 /// applied to a different graph.
 #[derive(
+    Facet,
     Deserialize,
     Default,
     Documented,
@@ -115,7 +117,7 @@ pub struct Revise {
     remove_subgraph: Vec<String>,
 }
 
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 struct RemoveMatch {
     /// The query to obtain the results.
@@ -124,8 +126,9 @@ struct RemoveMatch {
     remove: Vec<RemoveTarget>,
 }
 
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(untagged)]
+#[repr(u8)]
 enum RemoveTarget {
     Node(usize),
     Annotation {
@@ -135,7 +138,7 @@ enum RemoveTarget {
     },
 }
 
-#[derive(Deserialize, Debug, PartialEq, Serialize, Clone)]
+#[derive(Facet, Deserialize, Debug, PartialEq, Serialize, Clone)]
 struct KeyMapping {
     #[serde(with = "crate::estarde::anno_key")]
     from: AnnoKey,
@@ -143,7 +146,7 @@ struct KeyMapping {
     to: Option<AnnoKey>,
 }
 
-#[derive(Deserialize, Debug, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, Debug, Serialize, Clone, PartialEq)]
 struct ComponentMapping {
     #[serde(with = "crate::estarde::annotation_component")]
     from: AnnotationComponent,

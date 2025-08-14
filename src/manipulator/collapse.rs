@@ -1,5 +1,6 @@
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph,
     graph::GraphStorage,
@@ -34,7 +35,7 @@ use super::Manipulator;
 /// creating a third one. Then all all edges, annotations, etc. are moved to the
 /// node of choice, the other node(s) is/are deleted.
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct Collapse {

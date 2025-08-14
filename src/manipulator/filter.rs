@@ -2,6 +2,7 @@ use std::collections::BTreeSet;
 
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     aql,
     graph::NodeID,
@@ -30,7 +31,7 @@ use super::Manipulator;
 /// inverse = true
 /// ```
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct FilterNodes {

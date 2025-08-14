@@ -2,6 +2,7 @@ use std::{borrow::Cow, collections::BTreeSet, sync::Arc};
 
 use anyhow::{Context, anyhow};
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     aql,
     graph::{AnnoKey, Component, Match},
@@ -33,7 +34,7 @@ use super::Manipulator;
 /// Adds a node label to all matched nodes for set of queries with the number of
 /// the match as value.
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct EnumerateMatches {
@@ -110,8 +111,9 @@ fn default_label() -> AnnoKey {
     }
 }
 
-#[derive(Deserialize, Clone, PartialEq, Serialize)]
+#[derive(Facet, Deserialize, Clone, PartialEq, Serialize)]
 #[serde(untagged)]
+#[repr(u8)]
 enum SortByNode {
     AsString(usize),
     AsInteger { numeric: usize },

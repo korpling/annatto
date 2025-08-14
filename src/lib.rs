@@ -342,10 +342,11 @@ impl ReadFromDiscriminants {
     }
 }
 
-#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, EnumDiscriminants, AsRefStr, Serialize, Clone, PartialEq)]
 #[strum(serialize_all = "lowercase")]
 #[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "action", rename_all = "lowercase", content = "config")]
+#[repr(u16)]
 pub enum GraphOp {
     Align(AlignNodes),  // no default
     Check(Check),       // no default, has a (required) path attribute

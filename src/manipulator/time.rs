@@ -2,6 +2,7 @@ use std::{collections::BTreeMap, ops::Bound};
 
 use anyhow::{anyhow, bail};
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph,
     graph::{AnnoKey, EdgeContainer, NodeID},
@@ -31,6 +32,7 @@ use super::Manipulator;
 /// [graph_op.config]
 /// ```
 #[derive(
+    Facet,
     Deserialize,
     Default,
     Documented,

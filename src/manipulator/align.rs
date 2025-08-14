@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use anyhow::{Context, anyhow};
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph, aql,
     graph::NodeID,
@@ -26,7 +27,7 @@ use super::Manipulator;
 
 /// Aligns nodes identified by queries with edges in the defined component.
 #[derive(
-    Deserialize, Serialize, Documented, DocumentedFields, FieldNamesAsSlice, Clone, PartialEq,
+    Facet, Deserialize, Serialize, Documented, DocumentedFields, FieldNamesAsSlice, Clone, PartialEq,
 )]
 pub struct AlignNodes {
     /// Define node groups that should be aligned. Neighbouring node groups in the
@@ -109,15 +110,16 @@ impl Manipulator for AlignNodes {
     }
 }
 
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 struct NodeGroup {
     query: String,
     link: usize,
     groupby: usize,
 }
 
-#[derive(Default, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Facet, Default, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
+#[repr(u8)]
 enum AlignmentMethod {
     #[default]
     Ses,

@@ -5,6 +5,7 @@ use crate::{
     StepID, progress::ProgressReporter, util::token_helper::TokenHelper, util::update_graph_silent,
 };
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
     model::AnnotationComponentType,
@@ -29,7 +30,7 @@ use text_splitter::TextSplitter;
 /// uses sentence markers and the given maximum number of characters per chunk
 /// to segment the text into chunks.
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct Chunk {

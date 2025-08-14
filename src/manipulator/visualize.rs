@@ -5,6 +5,7 @@ use crate::{
 };
 use anyhow::{Context, Result};
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph,
     graph::GraphStorage,
@@ -32,8 +33,9 @@ use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, collections::HashSet, path::PathBuf};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
-#[derive(Default, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Facet, Default, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
+#[repr(u8)]
 pub(crate) enum Include {
     All,
     #[default]
@@ -58,7 +60,7 @@ pub(crate) enum Include {
 /// token_limit = 10
 /// ```
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct Visualize {

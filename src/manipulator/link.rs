@@ -6,6 +6,7 @@ use crate::{
 };
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph, aql,
     graph::NodeID,
@@ -75,7 +76,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// example query, to the edge.
 ///
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct LinkNodes {

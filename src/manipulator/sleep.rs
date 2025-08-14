@@ -1,4 +1,5 @@
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
@@ -6,6 +7,7 @@ use super::Manipulator;
 
 /// This operation pauses the conversion process. As a regular user, you usually do not need to use this feature.
 #[derive(
+    Facet,
     Deserialize,
     Default,
     Documented,
