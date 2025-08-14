@@ -14,7 +14,7 @@ use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
-use crate::{core::update_graph_silent, progress::ProgressReporter};
+use crate::{progress::ProgressReporter, util::update_graph_silent};
 
 use super::Manipulator;
 
@@ -379,12 +379,12 @@ mod tests {
 
     use crate::{
         StepID,
-        core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         importer::{Importer, conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA},
         manipulator::{Manipulator, time::Filltime},
         test_util::export_to_string,
         util::example_generator,
+        util::update_graph_silent,
     };
 
     #[test]

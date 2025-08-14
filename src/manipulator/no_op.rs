@@ -46,9 +46,9 @@ mod tests {
 
     use crate::{
         StepID,
-        core::update_graph_silent,
         manipulator::{Manipulator, no_op::NoOp},
         util::example_generator,
+        util::update_graph_silent,
     };
 
     #[test]

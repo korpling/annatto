@@ -1,6 +1,5 @@
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 
-pub(crate) mod core;
 pub mod error;
 pub mod estarde;
 pub mod exporter;
@@ -25,6 +24,7 @@ use exporter::{
     meta::ExportMeta, saltxml::ExportSaltXml, sequence::ExportSequence, table::ExportTable,
     textgrid::ExportTextGrid, xlsx::ExportXlsx,
 };
+use facet::Facet;
 use graphannis::AnnotationGraph;
 use importer::{
     Importer, conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
@@ -53,7 +53,8 @@ pub struct ModuleConfiguration {
     pub description: String,
 }
 
-#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, EnumDiscriminants, AsRefStr, Serialize, Clone, PartialEq)]
+#[repr(u16)]
 #[strum(serialize_all = "lowercase")]
 #[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]

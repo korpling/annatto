@@ -1,7 +1,7 @@
 //! Created edges between nodes based on their annotation value.
 use super::Manipulator;
 use crate::{
-    StepID, core::update_graph_silent, error::AnnattoError, progress::ProgressReporter,
+    StepID, error::AnnattoError, progress::ProgressReporter, util::update_graph_silent,
     workflow::StatusSender,
 };
 use anyhow::anyhow;
@@ -291,11 +291,11 @@ mod tests {
 
     use crate::{
         StepID,
-        core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         manipulator::{Manipulator, link::LinkNodes},
         test_util::export_to_string,
         util::example_generator,
+        util::update_graph_silent,
     };
 
     #[test]

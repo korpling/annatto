@@ -19,9 +19,9 @@ use serde_derive::Deserialize;
 
 use crate::{
     ExporterStep, ImporterStep, ManipulatorStep, StepID,
-    core::update_graph,
     error::{AnnattoError, Result},
     progress::ProgressReporter,
+    util::update_graph,
 };
 use normpath::PathExt;
 use rayon::prelude::*;

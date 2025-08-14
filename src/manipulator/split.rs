@@ -10,7 +10,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
-use crate::{core::update_graph, error::Result, progress::ProgressReporter};
+use crate::{error::Result, progress::ProgressReporter, util::update_graph};
 
 use super::Manipulator;
 
@@ -165,7 +165,6 @@ mod tests {
 
     use crate::{
         StepID,
-        core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         importer::{Importer, treetagger::ImportTreeTagger},
         manipulator::{
@@ -174,6 +173,7 @@ mod tests {
         },
         test_util::export_to_string,
         util::example_generator,
+        util::update_graph_silent,
     };
 
     #[test]

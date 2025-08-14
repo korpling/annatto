@@ -8,12 +8,12 @@ use std::{
 use super::Manipulator;
 use crate::{
     StepID,
-    core::{update_graph, update_graph_silent},
     progress::ProgressReporter,
     util::{
         CorpusGraphHelper,
         token_helper::{TOKEN_KEY, TokenHelper},
     },
+    util::{update_graph, update_graph_silent},
 };
 use anyhow::{Context, anyhow};
 use documented::{Documented, DocumentedFields};

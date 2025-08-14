@@ -19,9 +19,9 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
     StepID,
-    core::update_graph_silent,
     error::AnnattoError,
     progress::ProgressReporter,
+    util::update_graph_silent,
     util::{
         sort_matches::SortCache,
         token_helper::{TOKEN_KEY, TokenHelper},
@@ -351,11 +351,11 @@ mod tests {
 
     use crate::{
         StepID,
-        core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         manipulator::{Manipulator, enumerate::SortByNode},
         test_util::{compare_results, export_to_string},
         util::example_generator,
+        util::update_graph_silent,
     };
 
     use super::EnumerateMatches;

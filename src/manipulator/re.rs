@@ -23,9 +23,9 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
     Manipulator, StepID,
-    core::update_graph_silent,
     error::{AnnattoError, StandardErrorResult},
     progress::ProgressReporter,
+    util::update_graph_silent,
 };
 use documented::{Documented, DocumentedFields};
 
@@ -864,7 +864,6 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use crate::core::update_graph_silent;
     use crate::exporter::graphml::GraphMLExporter;
     use crate::importer::Importer;
     use crate::importer::exmaralda::ImportEXMARaLDA;
@@ -874,6 +873,7 @@ mod tests {
     use crate::progress::ProgressReporter;
     use crate::test_util::export_to_string;
     use crate::util::example_generator;
+    use crate::util::update_graph_silent;
     use crate::{Result, StepID};
 
     use graphannis::corpusstorage::{QueryLanguage, ResultOrder, SearchQuery};

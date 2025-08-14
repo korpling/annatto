@@ -21,7 +21,7 @@ use std::{
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
-    StepID, core::update_graph_silent, error::AnnattoError, progress::ProgressReporter,
+    StepID, error::AnnattoError, progress::ProgressReporter, util::update_graph_silent,
     workflow::StatusSender,
 };
 
@@ -505,11 +505,11 @@ mod tests {
 
     use crate::{
         StepID,
-        core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         manipulator::{Manipulator, check::Check},
         test_util::export_to_string,
         util::example_generator,
+        util::update_graph_silent,
     };
 
     use super::{Collapse, HYPERNODE_NAME_STEM};

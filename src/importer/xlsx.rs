@@ -632,9 +632,9 @@ mod tests {
 
     use crate::{
         ImporterStep, ReadFrom,
-        core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         test_util::export_to_string,
+        util::update_graph_silent,
         workflow::{StatusMessage, Workflow},
     };
 

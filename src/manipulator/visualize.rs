@@ -398,7 +398,7 @@ mod tests {
     use tempfile::tempdir;
 
     use crate::{
-        StepID, core::update_graph_silent, manipulator::Manipulator, util::example_generator,
+        StepID, manipulator::Manipulator, util::example_generator, util::update_graph_silent,
         workflow::execute_from_file,
     };
 

@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use super::Manipulator;
 use crate::{
-    StepID, core::update_graph_silent, progress::ProgressReporter, util::token_helper::TokenHelper,
+    StepID, progress::ProgressReporter, util::token_helper::TokenHelper, util::update_graph_silent,
 };
 use documented::{Documented, DocumentedFields};
 use graphannis::{
@@ -202,8 +202,8 @@ mod tests {
 
     use crate::{
         StepID,
-        core::update_graph_silent,
         manipulator::Manipulator,
+        util::update_graph_silent,
         util::{example_generator, token_helper::TokenHelper},
     };
 

@@ -14,8 +14,8 @@ use serde::{Deserialize, Serialize};
 use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
-    core::update_graph_silent,
     progress::ProgressReporter,
+    util::update_graph_silent,
     util::{
         sort_matches::SortCache,
         token_helper::{self, TokenHelper},
@@ -250,7 +250,6 @@ mod tests {
 
     use crate::{
         StepID,
-        core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         importer::{Importer, treetagger::ImportTreeTagger},
         manipulator::{
@@ -259,6 +258,7 @@ mod tests {
         },
         test_util::export_to_string,
         util::example_generator,
+        util::update_graph_silent,
     };
 
     #[test]
