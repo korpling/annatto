@@ -1,6 +1,7 @@
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
 use encoding_rs_io::DecodeReaderBytes;
+use facet::Facet;
 use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
@@ -290,6 +291,7 @@ impl DocumentMapper {
 
 /// Importer the Penn Treebank Bracketed Text format (PTB)
 #[derive(
+    Facet,
     Default,
     Deserialize,
     Documented,

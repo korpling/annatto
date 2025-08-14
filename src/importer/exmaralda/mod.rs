@@ -1,3 +1,4 @@
+use facet::Facet;
 use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
@@ -29,6 +30,7 @@ use documented::{Documented, DocumentedFields};
 /// Import [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
 /// (`.exb`) files.
 #[derive(
+    Facet,
     Default,
     Deserialize,
     Documented,

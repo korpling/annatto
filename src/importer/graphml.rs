@@ -1,4 +1,5 @@
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
     model::AnnotationComponent,
@@ -29,6 +30,7 @@ use crate::{
 /// have to conform to the
 /// [graphANNIS data model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
 #[derive(
+    Facet,
     Default,
     Deserialize,
     Documented,

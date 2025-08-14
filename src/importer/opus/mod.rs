@@ -1,6 +1,7 @@
 use std::{collections::BTreeMap, fs::File, path::Path};
 
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
@@ -22,7 +23,7 @@ use super::Importer;
 /// Add alignment edges for parallel corpora from the XML format used by the
 /// [OPUS](https://opus.nlpl.eu/) corpora.
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct ImportOpusLinks {

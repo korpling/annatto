@@ -2,6 +2,7 @@ use std::{collections::BTreeMap, fs, path::Path};
 
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
@@ -26,6 +27,7 @@ use super::Importer;
 /// skip_tokens = true
 /// ```
 #[derive(
+    Facet,
     Default,
     Deserialize,
     Documented,

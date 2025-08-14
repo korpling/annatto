@@ -6,6 +6,7 @@ use std::{
 
 use csv::Reader;
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
     model::{AnnotationComponent, AnnotationComponentType},
@@ -22,7 +23,7 @@ use crate::{
     StepID, progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files,
 };
 
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 struct EmptyLineGroup {
     #[serde(with = "crate::estarde::anno_key")]
@@ -33,7 +34,7 @@ struct EmptyLineGroup {
 
 /// Import CSV files with token and token annotations.
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct ImportTable {

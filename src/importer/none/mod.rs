@@ -3,6 +3,7 @@ use std::path::Path;
 use super::Importer;
 use crate::{StepID, progress::ProgressReporter, workflow::StatusSender};
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::update::GraphUpdate;
 use serde::Serialize;
 use serde_derive::Deserialize;
@@ -10,6 +11,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 
 /// A special importer that imports nothing.
 #[derive(
+    Facet,
     Default,
     Deserialize,
     Documented,

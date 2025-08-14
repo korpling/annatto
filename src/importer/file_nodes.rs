@@ -2,6 +2,7 @@ use crate::error::AnnattoError;
 
 use super::Importer;
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
@@ -14,6 +15,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 
 /// Add file nodes for all files in the imported directory.
 #[derive(
+    Facet,
     Deserialize,
     Default,
     Documented,

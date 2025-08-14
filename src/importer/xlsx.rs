@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::{anyhow, bail};
+use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
     model::AnnotationComponentType,
@@ -30,6 +31,7 @@ use documented::{Documented, DocumentedFields};
 /// Imports Excel Spreadsheets where each line is a token, the other columns are
 /// spans and merged cells can be used for spans that cover more than one token.
 #[derive(
+    Facet,
     Deserialize,
     Default,
     Documented,
@@ -85,7 +87,8 @@ pub struct ImportSpreadsheet {
     token_annos: Vec<String>,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Facet, Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[repr(u8)]
 #[serde(untagged)]
 enum SheetAddress {
     Numeric(usize),

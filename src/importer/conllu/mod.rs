@@ -8,6 +8,7 @@ use std::{
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
 use encoding_rs_io::DecodeReaderBytes;
+use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
     model::AnnotationComponentType,
@@ -37,7 +38,7 @@ use crate::{
 /// Import files in the [CONLL-U format](https://universaldependencies.org/format.html)
 /// from the Universal Dependencies project.
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct ImportCoNLLU {

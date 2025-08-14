@@ -1,5 +1,6 @@
 use std::{collections::BTreeMap, fs::File, path::Path};
 
+use facet::Facet;
 use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
@@ -22,6 +23,7 @@ use super::Importer;
 
 /// Generic importer for XML files.
 #[derive(
+    Facet,
     Default,
     Deserialize,
     Documented,

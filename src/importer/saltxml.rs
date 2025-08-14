@@ -1,5 +1,6 @@
 use document::DocumentMapper;
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::update::GraphUpdate;
 use roxmltree::Node;
 use serde::{Deserialize, Serialize};
@@ -12,7 +13,7 @@ use super::Importer;
 /// Imports the SaltXML format used by Pepper (<https://corpus-tools.org/pepper/>).
 /// SaltXML is an XMI serialization of the [Salt model](https://raw.githubusercontent.com/korpling/salt/master/gh-site/doc/salt_modelGuide.pdf).
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct ImportSaltXml {

@@ -168,10 +168,11 @@ impl WriteAsDiscriminants {
     }
 }
 
-#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, EnumDiscriminants, AsRefStr, Serialize, Clone, PartialEq)]
 #[strum(serialize_all = "lowercase")]
 #[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
+#[repr(u16)]
 pub enum ReadFrom {
     CoNLLU(#[serde(default)] ImportCoNLLU),
     EXMARaLDA(#[serde(default)] ImportEXMARaLDA),

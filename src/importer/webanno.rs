@@ -2,6 +2,7 @@ use std::{fs, path::Path};
 
 use anyhow::{anyhow, bail};
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
     model::AnnotationComponentType,
@@ -20,6 +21,7 @@ use super::Importer;
 
 /// Import WebAnno TSV format.
 #[derive(
+    Facet,
     Default,
     Deserialize,
     Documented,

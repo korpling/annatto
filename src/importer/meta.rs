@@ -6,6 +6,7 @@ use std::{
 
 use anyhow::anyhow;
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
     model::AnnotationComponentType,
@@ -37,7 +38,7 @@ use super::Importer;
 /// identifier = { ns = "annis", name = "doc" }  # this is the default and can be omitted
 /// ```
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct AnnotateCorpus {

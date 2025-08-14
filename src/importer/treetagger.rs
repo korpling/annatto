@@ -8,6 +8,7 @@ use super::Importer;
 use documented::{Documented, DocumentedFields};
 use encoding_rs::Encoding;
 use encoding_rs_io::DecodeReaderBytesBuilder;
+use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
     model::AnnotationComponentType,
@@ -330,7 +331,7 @@ impl<'a> DocumentMapper<'a> {
 /// column_names = ["tok", "norm::custom_pos", "norm::custom_lemma"]
 /// ```
 #[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
+    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
 )]
 #[serde(deny_unknown_fields)]
 pub struct ImportTreeTagger {
@@ -381,8 +382,9 @@ impl Default for ImportTreeTagger {
     }
 }
 
-#[derive(Default, Deserialize, Debug, Clone, Copy, Serialize, PartialEq)]
+#[derive(Facet, Default, Deserialize, Debug, Clone, Copy, Serialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
+#[repr(u8)]
 pub enum AttributeDecoding {
     #[default]
     Entities,

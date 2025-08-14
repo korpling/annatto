@@ -3,6 +3,7 @@ use crate::progress::ProgressReporter;
 use super::{Importer, NODE_NAME_ENCODE_SET};
 use anyhow::{Result, anyhow};
 use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::model::AnnotationComponentType;
 use graphannis::update::{GraphUpdate, UpdateEvent};
 use percent_encoding::utf8_percent_encode;
@@ -32,6 +33,7 @@ lazy_static! {
 
 /// Importer the legacy (rel)ANNIS import format (<http://korpling.github.io/ANNIS/3.7/developer-guide/annisimportformat.html>).
 #[derive(
+    Facet,
     Default,
     Deserialize,
     Documented,
