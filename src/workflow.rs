@@ -13,6 +13,7 @@ use graphannis::{
 };
 
 use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY};
+use itertools::Itertools;
 use regex::Regex;
 use serde::Serialize;
 use serde_derive::Deserialize;
@@ -75,28 +76,48 @@ pub struct LoadGraph {
     corpus: String,
     /// Optimize components for writing before moving on.
     #[serde(default)]
-    optimize: bool,
+    optimize: Option<OptimizationTarget>,
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum OptimizationTarget {
+    All,
+    #[serde(untagged)]
+    TypeList(Vec<AnnotationComponentType>),
+}
+
+impl OptimizationTarget {
+    fn as_component_vec_from_graph(&self, graph: &AnnotationGraph) -> Vec<AnnotationComponent> {
+        match self {
+            OptimizationTarget::TypeList(ctypes) => ctypes
+                .iter()
+                .flat_map(|ct| graph.get_all_components(Some(ct.clone()), None))
+                .collect_vec(),
+            OptimizationTarget::All => graph.get_all_components(None, None),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SaveGraph {
-    /// If this is provided, the graph will be saved at the given location
+    /// The graph will be saved at the given location
     /// at the end of the workflow run.
     #[serde(default)]
-    target: Option<PathBuf>,
+    target: PathBuf,
     /// Optimize components for reading before saving.
     #[serde(default = "default_save_optimize")]
-    optimize: bool,
+    optimize: Option<OptimizationTarget>,
 }
 
-fn default_save_optimize() -> bool {
-    true
+fn default_save_optimize() -> Option<OptimizationTarget> {
+    Some(OptimizationTarget::All)
 }
 
 impl LoadGraph {
     /// Create a new init step, that loads the corpus from a subdirectory (given
     /// by the corpus name) from the given parent database directory.
-    pub fn new<P, S>(database: P, corpus: S, optimize: bool) -> Self
+    pub fn new<P, S>(database: P, corpus: S, optimize: Option<OptimizationTarget>) -> Self
     where
         P: Into<PathBuf>,
         S: Into<String>,
@@ -115,7 +136,7 @@ impl SaveGraph {
     where
         P: Into<PathBuf>,
     {
-        self.target = Some(path.into());
+        self.target = path.into();
         self
     }
 }
@@ -276,9 +297,20 @@ impl Workflow {
             module_name: "create_annotation_graph".to_string(),
             path: None,
         };
+        let load_graph_step_id = StepID {
+            module_name: "load_graph".to_string(),
+            path: self.load.as_ref().map(|l| l.database.to_path_buf()),
+        };
+        let save_graph_step_id = StepID {
+            module_name: "save_graph".to_string(),
+            path: self.save.as_ref().map(|s| s.target.to_path_buf()),
+        };
 
         if let Some(tx) = &tx {
             let mut steps: Vec<StepID> = Vec::default();
+            if self.load.is_some() {
+                steps.push(load_graph_step_id.clone());
+            }
             if let Some(importers) = &self.import {
                 steps.extend(importers.iter().map(StepID::from_importer_step));
                 steps.push(apply_update_step_id.clone());
@@ -293,6 +325,9 @@ impl Workflow {
             }
             if let Some(ref exporters) = self.export {
                 steps.extend(exporters.iter().map(StepID::from_exporter_step));
+            }
+            if self.save.is_some() {
+                steps.push(save_graph_step_id.clone());
             }
             tx.send(StatusMessage::StepsCreated(steps))?;
         }
@@ -330,11 +365,17 @@ impl Workflow {
                     "Cannot load corpus from given database, as data is a disk-based graph. Currently only in-memory graphs are supported."
                 )));
             }
+            let opt_target_vec = match &init.optimize {
+                Some(ot) => ot.as_component_vec_from_graph(&g),
+                None => vec![],
+            };
+            let load_progress =
+                ProgressReporter::new(tx.clone(), load_graph_step_id, opt_target_vec.len() + 1)?;
             g.import(&external_path)?;
-            if init.optimize {
-                for c in g.get_all_components(None, None) {
-                    g.get_or_create_writable(&c)?;
-                }
+            load_progress.worked(1)?;
+            for c in opt_target_vec {
+                g.get_or_create_writable(&c)?;
+                load_progress.worked(1)?;
             }
         }
 
@@ -412,12 +453,12 @@ impl Workflow {
             // Check for errors during export
             export_result?;
         }
-        if let Some(after) = &self.save
-            && let Some(save_path) = &after.target
-        {
-            if !in_memory && let Some(sender) = &tx {
-                let msg = StatusMessage::Warning("Graph cannot be saved when annatto is run in disk mode. Re-run with `--in-memory` for saving the graph.".to_string());
-                sender.send(msg)?;
+        if let Some(after) = &self.save {
+            let save_path = &after.target;
+            let save_progress = ProgressReporter::new(tx.clone(), save_graph_step_id, 3)?;
+            if !in_memory {
+                save_progress.warn("Graph cannot be saved when annatto is run in disk mode. Re-run with `--in-memory` for saving the graph.")?;
+                save_progress.worked(3)?;
             } else {
                 let save_path = if save_path.is_relative() {
                     default_workflow_directory.join(save_path)
@@ -426,11 +467,21 @@ impl Workflow {
                 };
                 if g.global_statistics.is_none() {
                     // compute statistics to avoid doing it after loading
+                    // theoretically this does not need to be done when full optimization
+                    // is performed afterwards, but we better do not rely on that
                     g.calculate_all_statistics()?;
                 }
-                if after.optimize {
-                    g.optimize_impl(false)?;
+                save_progress.worked(1)?;
+                if let Some(opt_target) = &after.optimize {
+                    if matches!(opt_target, OptimizationTarget::All) {
+                        g.optimize_impl(false)?;
+                    } else {
+                        for c in opt_target.as_component_vec_from_graph(&g) {
+                            g.optimize_gs_impl(&c)?;
+                        }
+                    }
                 }
+                save_progress.worked(1)?;
                 let extended_save_path = {
                     let part_of_c = AnnotationComponent::new(
                         AnnotationComponentType::PartOf,
@@ -452,6 +503,7 @@ impl Workflow {
                     }
                 };
                 g.save_to(&extended_save_path)?;
+                save_progress.worked(1)?;
             }
         }
         Ok(())
@@ -558,7 +610,7 @@ impl Workflow {
 #[cfg(test)]
 mod tests {
 
-    use std::env;
+    use std::{env, sync::mpsc};
 
     use insta::{assert_snapshot, with_settings};
     use itertools::Itertools;
@@ -780,11 +832,12 @@ mod tests {
                 export_target.path(),
             );
         }
+        let (sender, receiver) = mpsc::channel();
         let run = execute_from_file(
             Path::new("./tests/data/init/workflow.toml"),
             true,
             true,
-            None,
+            Some(sender),
             None,
         );
         assert!(run.is_ok(), "Error executing workflow: {:?}", run.err());
@@ -808,6 +861,30 @@ mod tests {
         with_settings!({filters => vec![(save_target.path().to_string_lossy().to_string().as_str(), "[db_dir]")]},
             { assert_snapshot!("load_save_saved_files", actual_files) });
         assert!(save_target.path().exists());
+        with_settings!({filters => vec![(&*save_target.path().to_string_lossy(), "[db_dir]"), (&*export_target.path().to_string_lossy(), "[export_path]")]},
+            {assert_snapshot!(
+            "save_and_load_progress",
+            receiver
+                .into_iter()
+                .map(|m| match m {
+                    StatusMessage::StepsCreated(step_ids) => step_ids
+                        .iter()
+                        .map(|id| id.module_name.to_string())
+                        .join("\n"),
+                    StatusMessage::Info(msg) => msg,
+                    StatusMessage::Warning(wrn) => wrn,
+                    StatusMessage::Progress {
+                        id,
+                        total_work,
+                        finished_work,
+                    } => format!(
+                        "Step `{id}` did {finished_work}/{}",
+                        total_work.unwrap_or_default()
+                    ),
+                    StatusMessage::StepDone { id } => id.module_name,
+                })
+                .join("\n")
+        )});
     }
 
     #[test]
@@ -834,5 +911,23 @@ mod tests {
         );
         assert!(run.is_err());
         assert_snapshot!(run.err().unwrap().to_string());
+    }
+
+    #[test]
+    fn deser_optimization_target() {
+        #[derive(Deserialize)]
+        struct Container {
+            value: OptimizationTarget,
+        }
+
+        let t: std::result::Result<Container, _> = toml::from_str("value = \"all\"");
+        assert!(t.is_ok(), "Err: {:?}", t.err().unwrap());
+        assert!(matches!(t.unwrap().value, OptimizationTarget::All));
+        let t: std::result::Result<Container, _> = toml::from_str("value = [\"PartOf\"]");
+        assert!(t.is_ok(), "Err: {:?}", t.err().unwrap());
+        assert!(matches!(
+            t.unwrap().value,
+            OptimizationTarget::TypeList { .. }
+        ));
     }
 }

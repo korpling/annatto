@@ -1,0 +1,19 @@
+---
+source: src/workflow.rs
+expression: "receiver.into_iter().map(|m| match m\n{\n    StatusMessage::StepsCreated(step_ids) =>\n    step_ids.iter().map(|id| id.module_name.to_string()).join(\"\\n\"),\n    StatusMessage::Info(msg) => msg, StatusMessage::Warning(wrn) => wrn,\n    StatusMessage::Progress { id, total_work, finished_work, } =>\n    format!(\"Step `{id}` did {finished_work}/{}\",\n    total_work.unwrap_or_default()), StatusMessage::StepDone { id } =>\n    id.module_name,\n}).join(\"\\n\")"
+---
+load_graph
+export_graphml
+save_graph
+Step `load_graph (v4)` did 0/1
+Step `load_graph (v4)` did 1/1
+Step `export_graphml ([export_path])` did 0/0
+Starting export to [export_path]/root.graphml
+exporting all available annotation keys
+exporting nodes
+exporting edges
+export_graphml
+Step `save_graph ([db_dir])` did 0/3
+Step `save_graph ([db_dir])` did 1/3
+Step `save_graph ([db_dir])` did 2/3
+Step `save_graph ([db_dir])` did 3/3

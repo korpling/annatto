@@ -239,7 +239,7 @@ fn remove_by_query(
 }
 
 fn revise_components(
-    graph: &AnnotationGraph,
+    graph: &mut AnnotationGraph,
     component_config: &Vec<ComponentMapping>,
     update: &mut GraphUpdate,
     progress_reporter: &ProgressReporter,
@@ -271,12 +271,18 @@ fn node_name(
 }
 
 fn revise_component(
-    graph: &AnnotationGraph,
+    graph: &mut AnnotationGraph,
     source_component: &AnnotationComponent,
     target_component: Option<&AnnotationComponent>,
     update: &mut GraphUpdate,
     progress_reporter: &ProgressReporter,
 ) -> Result<(), AnnattoError> {
+    if target_component.is_none() {
+        // for pure deletion delete the component immediately
+        let writable_storage = graph.get_or_create_writable(source_component)?;
+        writable_storage.clear()?;
+        return Ok(());
+    }
     if let Some(source_storage) = graph.get_graphstorage(source_component) {
         let node_annos = graph.get_node_annos();
         let edge_anno_storage = source_storage.get_anno_storage();
@@ -2481,7 +2487,7 @@ from = "deprel"
                 "default_ordering".into(),
             )),
         }];
-        revise_components(&g, &component_config, &mut test_update, &pg)?;
+        revise_components(&mut g, &component_config, &mut test_update, &pg)?;
         let mut ti = test_update.iter()?;
         for e in expected_update.iter()? {
             let (_, ue) = e?;

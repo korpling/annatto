@@ -11,4 +11,4 @@ stable_order = true
 
 [save]
 target = "$ANNATTO_TEST_WORKFLOW_LOAD_SAVE_SAVETARGET"
-optimize = false
+optimize = []

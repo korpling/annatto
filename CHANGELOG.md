@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `load`: graph storage implementations can be optimised for writing after loading graph and before proceeding (default is no optimization)
-- `save`: graph storage implementations can be optimised for reading before saving graph (default is optimization)
+- `load`: graph storage implementations (none, some component types, all) can be optimized for writing after loading the graph and before proceeding (default is no optimization)
+- `save`: graph storage implementations (none, some component types, all) can be optimized for reading before saving the graph (default is total optimization)
+- `load` and `save` report progress
+
+### Changed
+
+- `revise`: Performance for deleting a component is significantly improved by directly clearing its storage
 
 ## [0.38.0] - 2025-08-13
 
