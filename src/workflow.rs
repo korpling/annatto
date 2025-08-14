@@ -292,6 +292,16 @@ impl Workflow {
         default_workflow_directory: &Path,
         in_memory: bool,
     ) -> Result<()> {
+        if let Some(save_config) = &self.save {
+            let save_path = if save_config.target.is_absolute() {
+                save_config.target.to_path_buf()
+            } else {
+                default_workflow_directory.join(&save_config.target)
+            };
+            if save_path.join("db.lock").exists() {
+                return Err(anyhow!("Target database for final saving is locked (see section [save] in your workflow), please stop the running graphANNIS instance or choose another save target.").into());
+            }
+        }
         // Create a vector of all conversion steps and report these as current status
         let apply_update_step_id = StepID {
             module_name: "create_annotation_graph".to_string(),
@@ -904,6 +914,19 @@ mod tests {
     fn load_fail_disk_data() {
         let run = execute_from_file(
             Path::new("./tests/data/init/workflow-fail-load.toml"),
+            false,
+            true,
+            None,
+            None,
+        );
+        assert!(run.is_err());
+        assert_snapshot!(run.err().unwrap().to_string());
+    }
+
+    #[test]
+    fn save_into_locked_db() {
+        let run = execute_from_file(
+            Path::new("./tests/data/init/workflow-locked-db.toml"),
             false,
             true,
             None,
