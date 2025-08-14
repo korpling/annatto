@@ -618,7 +618,7 @@ impl Workflow {
 #[cfg(test)]
 mod tests {
 
-    use std::env;
+    use std::{env, sync::mpsc};
 
     use insta::{assert_snapshot, with_settings};
     use itertools::Itertools;
@@ -840,11 +840,12 @@ mod tests {
                 export_target.path(),
             );
         }
+        let (sender, receiver) = mpsc::channel();
         let run = execute_from_file(
             Path::new("./tests/data/init/workflow.toml"),
             true,
             true,
-            None,
+            Some(sender),
             None,
         );
         assert!(run.is_ok(), "Error executing workflow: {:?}", run.err());
@@ -868,6 +869,30 @@ mod tests {
         with_settings!({filters => vec![(save_target.path().to_string_lossy().to_string().as_str(), "[db_dir]")]},
             { assert_snapshot!("load_save_saved_files", actual_files) });
         assert!(save_target.path().exists());
+        with_settings!({filters => vec![(&*save_target.path().to_string_lossy(), "[db_dir]"), (&*export_target.path().to_string_lossy(), "[export_path]")]},
+            {assert_snapshot!(
+            "save_and_load_progress",
+            receiver
+                .into_iter()
+                .map(|m| match m {
+                    StatusMessage::StepsCreated(step_ids) => step_ids
+                        .iter()
+                        .map(|id| id.module_name.to_string())
+                        .join("\n"),
+                    StatusMessage::Info(msg) => msg,
+                    StatusMessage::Warning(wrn) => wrn,
+                    StatusMessage::Progress {
+                        id,
+                        total_work,
+                        finished_work,
+                    } => format!(
+                        "Step `{id}` did {finished_work}/{}",
+                        total_work.unwrap_or_default()
+                    ),
+                    StatusMessage::StepDone { id } => id.module_name,
+                })
+                .join("\n")
+        )});
     }
 
     #[test]
