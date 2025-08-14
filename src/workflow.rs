@@ -299,19 +299,11 @@ impl Workflow {
         };
         let load_graph_step_id = StepID {
             module_name: "load_graph".to_string(),
-            path: if let Some(load_config) = &self.load {
-                Some(load_config.database.to_path_buf())
-            } else {
-                None
-            },
+            path: self.load.as_ref().map(|l| l.database.to_path_buf()),
         };
         let save_graph_step_id = StepID {
             module_name: "save_graph".to_string(),
-            path: if let Some(save_config) = &self.save {
-                Some(save_config.target.to_path_buf())
-            } else {
-                None
-            },
+            path: self.save.as_ref().map(|s| s.target.to_path_buf()),
         };
 
         if let Some(tx) = &tx {
