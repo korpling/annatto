@@ -512,6 +512,9 @@ impl Workflow {
                         save_path
                     }
                 };
+                if extended_save_path.join("current").exists() {
+                    save_progress.warn("The save target exists. It's recommended to manually delete existing targets before running a workflow that saves. Overwrites usually succeed, but may yield incorrect data.")?;
+                }
                 g.save_to(&extended_save_path)?;
                 save_progress.worked(1)?;
             }
