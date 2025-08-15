@@ -2,7 +2,7 @@ use std::{fs::File, io::Write, path::Path};
 
 use annatto::{GraphOp, ModuleConfiguration, ReadFromDiscriminants, WriteAsDiscriminants};
 use anyhow::Context;
-use facet::{Facet, Field, Variant};
+use facet::{Facet, Field, Type, UserType, Variant};
 use facet_reflect::peek_enum_variants;
 use itertools::Itertools;
 use strum::IntoEnumIterator;
@@ -123,14 +123,26 @@ fn write_graph_op_files(graph_ops: &[Variant], output_directory: &Path) -> anyho
     std::fs::create_dir_all(&graph_ops_directory)?;
 
     for m in graph_ops {
+        // The name of the module is taken from the wrapper enum
         let module_name = m.name.to_lowercase();
-        let path = graph_ops_directory.join(format!("{module_name}.md"));
-        let mut output = File::create(path)?;
-        writeln!(output, "# {module_name} (graph_operation)")?;
-        writeln!(output)?;
-        writeln!(output, "{}", m.doc.join("\n"))?;
-        writeln!(output)?;
-        write_module_struct(output, &m.data.fields)?;
+        // Get the inner type wrapped by the graph operations enum and use
+        // its documentation and fields
+        if let Some(inner_field) = m.data.fields.first().map(|m| m.shape())
+            && let Type::User(module_type) = inner_field.ty
+            && let UserType::Struct(module_impl) = module_type
+        {
+            let path = graph_ops_directory.join(format!("{module_name}.md"));
+            let mut output = File::create(path)?;
+            writeln!(output, "# {module_name} (graph_operation)")?;
+            writeln!(output)?;
+            writeln!(
+                output,
+                "{}",
+                inner_field.doc.iter().map(|d| d.trim()).join("\n")
+            )?;
+            writeln!(output)?;
+            write_module_struct(output, &module_impl.fields)?;
+        }
     }
 
     Ok(())
@@ -153,7 +165,7 @@ where
             if f.doc.is_empty() {
                 writeln!(output, "*No description*")?;
             } else {
-                writeln!(output, "{}", f.doc.join("\n"))?;
+                writeln!(output, "{}", f.doc.iter().map(|d| d.trim()).join("\n"))?;
             }
             writeln!(output)?;
         }

@@ -332,7 +332,7 @@ fn module_info(name: &str) {
                 && let Type::User(module_type) = inner_field.ty
                 && let UserType::Struct(module_impl) = module_type
             {
-                let module_doc = inner_field.doc.join("\n");
+                let module_doc = inner_field.doc.iter().map(|d| d.trim()).join("\n");
                 print_markdown(&format!(
                     "## {module_name} (graph operation)\n\n{module_doc}\n\n"
                 ));
@@ -342,7 +342,7 @@ fn module_info(name: &str) {
                     .iter()
                     .map(|f| ModuleConfiguration {
                         name: f.name.to_lowercase(),
-                        description: f.doc.join("\n"),
+                        description: f.doc.iter().map(|d| d.trim()).join("\n"),
                     })
                     .collect();
                 print_module_fields(fields);
