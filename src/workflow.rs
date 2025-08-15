@@ -131,13 +131,15 @@ impl LoadGraph {
 }
 
 impl SaveGraph {
-    /// Save the graph at the given location at the end of the workflow run.
-    pub fn with_save_at_end<P>(mut self, path: P) -> Self
+    /// Create a new save step, that saves the corpus to a subdirectory
+    pub fn new<P, S>(target: P, optimize: Option<OptimizationTarget>) -> Self
     where
         P: Into<PathBuf>,
     {
-        self.target = path.into();
-        self
+        Self {
+            target: target.into(),
+            optimize,
+        }
     }
 }
 
@@ -266,8 +268,13 @@ pub fn execute_from_file(
 pub type StatusSender = Sender<StatusMessage>;
 
 impl Workflow {
-    pub fn with_init(mut self, init: LoadGraph) -> Self {
-        self.load = Some(init);
+    pub fn with_load(mut self, load: LoadGraph) -> Self {
+        self.load = Some(load);
+        self
+    }
+
+    pub fn with_save(mut self, save: SaveGraph) -> Self {
+        self.save = Some(save);
         self
     }
 
