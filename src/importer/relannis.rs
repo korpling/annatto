@@ -2,13 +2,11 @@ use crate::progress::ProgressReporter;
 
 use super::{Importer, NODE_NAME_ENCODE_SET};
 use anyhow::{Result, anyhow};
-use documented::{Documented, DocumentedFields};
 use facet::Facet;
 use graphannis::model::AnnotationComponentType;
 use graphannis::update::{GraphUpdate, UpdateEvent};
 use percent_encoding::utf8_percent_encode;
 use serde::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use graphannis_core::serializer::KeyVec;
 use graphannis_core::{
@@ -32,17 +30,7 @@ lazy_static! {
 }
 
 /// Importer the legacy (rel)ANNIS import format (<http://korpling.github.io/ANNIS/3.7/developer-guide/annisimportformat.html>).
-#[derive(
-    Facet,
-    Default,
-    Deserialize,
-    Documented,
-    DocumentedFields,
-    FieldNamesAsSlice,
-    Serialize,
-    Clone,
-    PartialEq,
-)]
+#[derive(Facet, Default, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ImportRelAnnis {}
 

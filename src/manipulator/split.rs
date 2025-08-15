@@ -1,6 +1,5 @@
 use std::{collections::BTreeMap, ops::Not};
 
-use documented::{Documented, DocumentedFields};
 use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
@@ -9,16 +8,13 @@ use graphannis::{
 use graphannis_core::{annostorage::ValueSearch, graph::NODE_NAME_KEY};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{error::Result, progress::ProgressReporter, util::update_graph};
 
 use super::Manipulator;
 
 /// This operation splits conflated annotation values into individual annotations.
-#[derive(
-    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct SplitValues {
     /// This is the delimiter between the parts of the conflated annotation in the input graph

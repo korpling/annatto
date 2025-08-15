@@ -8,7 +8,6 @@ use graphannis::{
 use graphannis_core::graph::ANNIS_NS;
 use serde::Serialize;
 use serde_derive::Deserialize;
-use struct_field_names_as_array::FieldNamesAsSlice;
 use xml::{EventReader, ParserConfig};
 
 use crate::{
@@ -17,22 +16,11 @@ use crate::{
     progress::ProgressReporter,
     util::graphupdate::import_corpus_graph_from_files,
 };
-use documented::{Documented, DocumentedFields};
 
 use super::Importer;
 
 /// Generic importer for XML files.
-#[derive(
-    Facet,
-    Default,
-    Deserialize,
-    Documented,
-    DocumentedFields,
-    FieldNamesAsSlice,
-    Serialize,
-    Clone,
-    PartialEq,
-)]
+#[derive(Facet, Default, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ImportXML {
     /// For specfic tag names, the covered text can be retrieved from

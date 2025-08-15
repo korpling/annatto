@@ -12,7 +12,6 @@ use crate::{
     StepID, error::AnnattoError, importer::exmaralda::LANGUAGE_SEP, progress::ProgressReporter,
     util::Traverse,
 };
-use documented::{Documented, DocumentedFields};
 use facet::Facet;
 use graphannis::{
     AnnotationGraph,
@@ -32,7 +31,6 @@ use quick_xml::{
 };
 use serde::Serialize;
 use serde_derive::Deserialize;
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Exporter;
 
@@ -49,9 +47,7 @@ use super::Exporter;
 /// [export.config]
 /// copy_media = false
 /// ```
-#[derive(
-    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ExportExmaralda {
     /// If `true`, copy linked media files to the output location.

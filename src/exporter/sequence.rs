@@ -1,6 +1,5 @@
 use std::{collections::BTreeMap, fs, io::Write, path::Path, sync::Arc};
 
-use documented::{Documented, DocumentedFields};
 use facet::Facet;
 use graphannis::{
     AnnotationGraph,
@@ -10,7 +9,6 @@ use graphannis::{
 use graphannis_core::{annostorage::ValueSearch, dfs::CycleSafeDFS, graph::ANNIS_NS};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
     StepID,
@@ -21,9 +19,7 @@ use crate::{
 use super::Exporter;
 
 /// This exports a node sequence as horizontal or vertical text.
-#[derive(
-    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ExportSequence {
     /// Choose horizontal mode if you want one group (e. g. sentence) per line,

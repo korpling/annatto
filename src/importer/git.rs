@@ -1,21 +1,17 @@
 use std::path::PathBuf;
 
 use anyhow::anyhow;
-use documented::{Documented, DocumentedFields};
 use facet::Facet;
 use git2::{Repository, StatusOptions};
 use graphannis::update::{GraphUpdate, UpdateEvent};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::importer::Importer;
 
 /// This importer can enrich a corpus with commit metadata. The import path needs
 /// to be the root directory of the local git repository.
-#[derive(
-    Facet, Deserialize, Serialize, Documented, DocumentedFields, FieldNamesAsSlice, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ImportGitMetadata {
     /// The relative to the data folder that is being imported with another

@@ -13,7 +13,6 @@ use crate::util::graphupdate::{
     map_audio_source, map_token, root_corpus_from_path,
 };
 use anyhow::{Result, anyhow};
-use documented::{Documented, DocumentedFields};
 use encoding_rs_io::DecodeReaderBytes;
 use facet::Facet;
 use graphannis::update::{GraphUpdate, UpdateEvent};
@@ -22,7 +21,7 @@ use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use serde::Serialize;
 use serde_derive::Deserialize;
-use struct_field_names_as_array::FieldNamesAsSlice;
+
 const FILE_ENDINGS: [&str; 3] = ["textgrid", "TextGrid", "textGrid"];
 
 /// Importer the Praat TextGrid file format.
@@ -30,9 +29,7 @@ const FILE_ENDINGS: [&str; 3] = ["textgrid", "TextGrid", "textGrid"];
 /// See the [Praat
 /// Documentation](https://www.fon.hum.uva.nl/praat/manual/TextGrid_file_formats.html)
 /// for more information on the format itself.
-#[derive(
-    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ImportTextgrid {
     /// A mapping from segments to tiers, that refer to these segments.

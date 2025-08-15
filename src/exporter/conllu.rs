@@ -7,7 +7,6 @@ use std::{
 };
 
 use anyhow::{anyhow, bail};
-use documented::{Documented, DocumentedFields};
 use facet::Facet;
 use graphannis::{
     AnnotationGraph,
@@ -20,14 +19,11 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Exporter;
 
 /// This module exports a graph in CoNLL-U format.
-#[derive(
-    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ExportCoNLLU {
     /// This key is used to determine nodes that whose part-of subgraph constitutes a document, i. e. the entire input for a file.

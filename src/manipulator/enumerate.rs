@@ -1,7 +1,6 @@
 use std::{borrow::Cow, collections::BTreeSet, sync::Arc};
 
 use anyhow::{Context, anyhow};
-use documented::{Documented, DocumentedFields};
 use facet::Facet;
 use graphannis::{
     aql,
@@ -16,7 +15,6 @@ use graphannis_core::{
 use itertools::Itertools;
 use serde::Serialize;
 use serde_derive::Deserialize;
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
     StepID,
@@ -33,9 +31,7 @@ use super::Manipulator;
 
 /// Adds a node label to all matched nodes for set of queries with the number of
 /// the match as value.
-#[derive(
-    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct EnumerateMatches {
     /// A list of queries to find the nodes that are to be enumerated.

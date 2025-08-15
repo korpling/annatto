@@ -1,7 +1,6 @@
 use crate::error::AnnattoError;
 
 use super::Importer;
-use documented::{Documented, DocumentedFields};
 use facet::Facet;
 use graphannis::{
     model::AnnotationComponentType,
@@ -11,20 +10,9 @@ use graphannis_core::graph::ANNIS_NS;
 use normpath::PathExt;
 use serde::Serialize;
 use serde_derive::Deserialize;
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 /// Add file nodes for all files in the imported directory.
-#[derive(
-    Facet,
-    Deserialize,
-    Default,
-    Documented,
-    DocumentedFields,
-    FieldNamesAsSlice,
-    Serialize,
-    Clone,
-    PartialEq,
-)]
+#[derive(Facet, Deserialize, Default, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct CreateFileNodes {
     /// The name of the corpus root node.

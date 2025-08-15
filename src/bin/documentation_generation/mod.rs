@@ -1,20 +1,15 @@
 use std::{fs::File, io::Write, path::Path};
 
-use annatto::{
-    GraphOp, ModuleConfiguration, ReadFromDiscriminants, WriteAsDiscriminants,
-    util::clean_documentation_string,
-};
-use anyhow::Context;
-use facet::{Facet, Field, Type, UserType, Variant};
+use annatto::{GraphOp, ModuleConfiguration, ReadFrom, WriteAs, util::documentation::ModuleInfo};
+
+use facet::{Facet, Variant};
 use facet_reflect::peek_enum_variants;
 use itertools::Itertools;
-use strum::IntoEnumIterator;
 
 pub(crate) fn create(output_directory: &Path) -> anyhow::Result<()> {
-    let importers = ReadFromDiscriminants::iter().collect_vec();
-    let exporters = WriteAsDiscriminants::iter().collect_vec();
-    let graph_ops =
-        peek_enum_variants(GraphOp::SHAPE).context("Graph operations must be an enum")?;
+    let importers = peek_enum_variants(ReadFrom::SHAPE).unwrap_or_default();
+    let exporters = peek_enum_variants(WriteAs::SHAPE).unwrap_or_default();
+    let graph_ops = peek_enum_variants(GraphOp::SHAPE).unwrap_or_default();
 
     // Create an index file with a list of all the modules
     write_module_list_table(output_directory, &importers, &exporters, graph_ops)?;
@@ -29,8 +24,8 @@ pub(crate) fn create(output_directory: &Path) -> anyhow::Result<()> {
 
 fn write_module_list_table(
     output_directory: &Path,
-    importers: &[ReadFromDiscriminants],
-    exporters: &[WriteAsDiscriminants],
+    importers: &[Variant],
+    exporters: &[Variant],
     graph_ops: &[Variant],
 ) -> anyhow::Result<()> {
     let mut table_builder = tabled::builder::Builder::new();
@@ -41,7 +36,7 @@ fn write_module_list_table(
         importers
             .iter()
             .map(|m| {
-                let module_name = m.as_ref().to_string();
+                let module_name = m.name.to_lowercase();
                 format!("[{module_name}](importers/{module_name}.md)")
             })
             .join(", "),
@@ -53,7 +48,7 @@ fn write_module_list_table(
         exporters
             .iter()
             .map(|m| {
-                let module_name = m.as_ref().to_string();
+                let module_name = m.name.to_lowercase();
                 format!("[{module_name}](exporters/{module_name}.md)")
             })
             .join(", "),
@@ -80,43 +75,37 @@ fn write_module_list_table(
     Ok(())
 }
 
-fn write_importer_files(
-    importers: &[ReadFromDiscriminants],
-    output_directory: &Path,
-) -> anyhow::Result<()> {
+fn write_importer_files(importers: &[Variant], output_directory: &Path) -> anyhow::Result<()> {
     let importers_directory = output_directory.join("importers");
     std::fs::create_dir_all(&importers_directory)?;
 
     for m in importers {
-        let module_name = m.as_ref().to_string();
-        let path = importers_directory.join(format!("{module_name}.md"));
+        let ModuleInfo { name, doc, configs } = ModuleInfo::from(m);
+        let path = importers_directory.join(format!("{name}.md"));
         let mut output = File::create(path)?;
-        writeln!(output, "# {module_name} (importer)")?;
+        writeln!(output, "# {name} (importer)")?;
         writeln!(output)?;
-        writeln!(output, "{}", m.module_doc())?;
+        writeln!(output, "{doc}")?;
         writeln!(output)?;
-        write_module_fields(output, &m.module_configs())?;
+        write_module_fields(output, &configs)?;
     }
 
     Ok(())
 }
 
-fn write_exporter_files(
-    exporters: &[WriteAsDiscriminants],
-    output_directory: &Path,
-) -> anyhow::Result<()> {
+fn write_exporter_files(exporters: &[Variant], output_directory: &Path) -> anyhow::Result<()> {
     let exporters_directory = output_directory.join("exporters");
     std::fs::create_dir_all(&exporters_directory)?;
 
     for m in exporters {
-        let module_name = m.as_ref().to_string();
-        let path = exporters_directory.join(format!("{module_name}.md"));
+        let ModuleInfo { name, doc, configs } = ModuleInfo::from(m);
+        let path = exporters_directory.join(format!("{name}.md"));
         let mut output = File::create(path)?;
-        writeln!(output, "# {module_name} (exporter)")?;
+        writeln!(output, "# {name} (exporter)")?;
         writeln!(output)?;
-        writeln!(output, "{}", m.module_doc())?;
+        writeln!(output, "{doc}")?;
         writeln!(output)?;
-        write_module_fields(output, &m.module_configs())?;
+        write_module_fields(output, &configs)?;
     }
 
     Ok(())
@@ -126,48 +115,14 @@ fn write_graph_op_files(graph_ops: &[Variant], output_directory: &Path) -> anyho
     std::fs::create_dir_all(&graph_ops_directory)?;
 
     for m in graph_ops {
-        // The name of the module is taken from the wrapper enum
-        let module_name = m.name.to_lowercase();
-        // Get the inner type wrapped by the graph operations enum and use
-        // its documentation and fields
-        if let Some(inner_field) = m.data.fields.first().map(|m| m.shape())
-            && let Type::User(module_type) = inner_field.ty
-            && let UserType::Struct(module_impl) = module_type
-        {
-            let path = graph_ops_directory.join(format!("{module_name}.md"));
-            let mut output = File::create(path)?;
-            writeln!(output, "# {module_name} (graph_operation)")?;
-            writeln!(output)?;
-            writeln!(output, "{}", clean_documentation_string(inner_field.doc))?;
-            writeln!(output)?;
-            write_module_struct(output, module_impl.fields)?;
-        }
-    }
-
-    Ok(())
-}
-
-fn write_module_struct<W>(mut output: W, fields: &[Field]) -> anyhow::Result<()>
-where
-    W: Write,
-{
-    if fields.is_empty() {
-        writeln!(output, "*No Configuration*")?;
-    } else {
-        writeln!(output, "## Configuration")?;
+        let ModuleInfo { name, doc, configs } = ModuleInfo::from(m);
+        let path = graph_ops_directory.join(format!("{name}.md"));
+        let mut output = File::create(path)?;
+        writeln!(output, "# {name} (graph_operation)")?;
         writeln!(output)?;
-
-        for f in fields {
-            writeln!(output, "###  {}", f.name)?;
-            writeln!(output)?;
-
-            if f.doc.is_empty() {
-                writeln!(output, "*No description*")?;
-            } else {
-                writeln!(output, "{}", clean_documentation_string(f.doc))?;
-            }
-            writeln!(output)?;
-        }
+        writeln!(output, "{doc}")?;
+        writeln!(output)?;
+        write_module_fields(output, &configs)?;
     }
 
     Ok(())

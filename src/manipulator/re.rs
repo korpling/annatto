@@ -20,7 +20,6 @@ use graphannis_core::{
 use itertools::Itertools;
 use serde::Serialize;
 use serde_derive::Deserialize;
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
     Manipulator, StepID,
@@ -28,22 +27,11 @@ use crate::{
     progress::ProgressReporter,
     util::update_graph_silent,
 };
-use documented::{Documented, DocumentedFields};
 
 /// Manipulate annotations, like deleting or renaming them. If you set up different types of
 /// modifications, be aware that the graph is updated between them, so each modification is
 /// applied to a different graph.
-#[derive(
-    Facet,
-    Deserialize,
-    Default,
-    Documented,
-    DocumentedFields,
-    FieldNamesAsSlice,
-    Serialize,
-    Clone,
-    PartialEq,
-)]
+#[derive(Facet, Deserialize, Default, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Revise {
     /// A map of nodes to rename, usually useful for corpus nodes. If the target name exists,

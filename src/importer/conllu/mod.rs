@@ -6,7 +6,6 @@ use std::{
 };
 
 use anyhow::anyhow;
-use documented::{Documented, DocumentedFields};
 use encoding_rs_io::DecodeReaderBytes;
 use facet::Facet;
 use graphannis::{
@@ -27,7 +26,6 @@ use pest::{
 use pest_derive::Parser;
 use serde::Serialize;
 use serde_derive::Deserialize;
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Importer;
 use crate::{
@@ -37,9 +35,7 @@ use crate::{
 
 /// Import files in the [CONLL-U format](https://universaldependencies.org/format.html)
 /// from the Universal Dependencies project.
-#[derive(
-    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ImportCoNLLU {
     /// This key defines the annotation name and namespace for sentence comments, sometimes referred to as metadata in the CoNLL-X universe.

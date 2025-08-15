@@ -5,7 +5,6 @@ use std::{
 };
 
 use csv::Reader;
-use documented::{Documented, DocumentedFields};
 use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
@@ -16,7 +15,6 @@ use graphannis_core::{graph::ANNIS_NS, util::split_qname};
 
 use serde::Serialize;
 use serde_derive::Deserialize;
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Importer;
 use crate::{
@@ -33,9 +31,7 @@ struct EmptyLineGroup {
 }
 
 /// Import CSV files with token and token annotations.
-#[derive(
-    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ImportTable {
     /// If not empty, skip the first row and use this list as the fully qualified annotation name for each column.

@@ -5,7 +5,6 @@ use std::{
 };
 
 use anyhow::anyhow;
-use documented::{Documented, DocumentedFields};
 use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
@@ -18,7 +17,6 @@ use graphannis_core::{
 };
 use serde::Serialize;
 use serde_derive::Deserialize;
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{StepID, progress::ProgressReporter, util::get_all_files};
 
@@ -37,9 +35,7 @@ use super::Importer;
 /// [import.config]
 /// identifier = { ns = "annis", name = "doc" }  # this is the default and can be omitted
 /// ```
-#[derive(
-    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct AnnotateCorpus {
     /// The annotation key identifying document nodes.

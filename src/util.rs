@@ -76,6 +76,7 @@ pub(crate) fn update_graph_silent(
     update_graph(graph, update, None, None)
 }
 
+pub mod documentation;
 #[cfg(test)]
 pub(crate) mod example_generator;
 pub(crate) mod graphupdate;
@@ -296,15 +297,6 @@ impl EdgeContainer for CorpusGraphHelper<'_> {
             .flat_map(move |gs| gs.source_nodes());
         Box::new(it)
     }
-}
-
-/// Gets a clean documentatio string for a [`Shape`].
-/// It removes any whitespace at the start and unescapes backlashes.
-pub fn clean_documentation_string(raw: &[&str]) -> String {
-    raw.iter()
-        .map(|line| line.trim_start())
-        .map(unescape_backslash)
-        .join("\n")
 }
 
 /// Replaces characters that are escaped with a backslash with the actual character.

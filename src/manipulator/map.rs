@@ -16,7 +16,6 @@ use crate::{
     util::{update_graph, update_graph_silent},
 };
 use anyhow::{Context, anyhow};
-use documented::{Documented, DocumentedFields};
 use facet::Facet;
 use graphannis::{
     AnnotationGraph,
@@ -28,7 +27,6 @@ use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS, NODE_NAME_KEY, NODE_TYPE_KEY}
 use regex::Regex;
 use serde::Serialize;
 use serde_derive::Deserialize;
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 /// Creates new or updates annotations based on existing annotation values.
 ///
@@ -131,17 +129,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// value = { copy = 1 }
 /// delete = [1]
 /// ```
-#[derive(
-    Facet,
-    Default,
-    Deserialize,
-    Documented,
-    DocumentedFields,
-    FieldNamesAsSlice,
-    Serialize,
-    Clone,
-    PartialEq,
-)]
+#[derive(Facet, Default, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct MapAnnos {
     #[serde(default)]

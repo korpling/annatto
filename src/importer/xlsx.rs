@@ -19,28 +19,16 @@ use itertools::Itertools;
 use percent_encoding::utf8_percent_encode;
 use serde::Serialize;
 use serde_derive::Deserialize;
-use struct_field_names_as_array::FieldNamesAsSlice;
 use umya_spreadsheet::Cell;
 
 use super::Importer;
 use crate::{
     StepID, error::AnnattoError, importer::NODE_NAME_ENCODE_SET, progress::ProgressReporter, util,
 };
-use documented::{Documented, DocumentedFields};
 
 /// Imports Excel Spreadsheets where each line is a token, the other columns are
 /// spans and merged cells can be used for spans that cover more than one token.
-#[derive(
-    Facet,
-    Deserialize,
-    Default,
-    Documented,
-    DocumentedFields,
-    FieldNamesAsSlice,
-    Serialize,
-    Clone,
-    PartialEq,
-)]
+#[derive(Facet, Deserialize, Default, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ImportSpreadsheet {
     /// Maps token columns to annotation columns. If there is more than one

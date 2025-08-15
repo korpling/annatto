@@ -14,7 +14,6 @@ use std::{
     env,
     fs::File,
 };
-use struct_field_names_as_array::FieldNamesAsSlice;
 use xml::{EventReader, ParserConfig, attribute::OwnedAttribute, reader::XmlEvent};
 
 use super::Importer;
@@ -25,21 +24,10 @@ use crate::{
     util::graphupdate::{import_corpus_graph_from_files, map_audio_source},
     workflow::StatusMessage,
 };
-use documented::{Documented, DocumentedFields};
 
 /// Import [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
 /// (`.exb`) files.
-#[derive(
-    Facet,
-    Default,
-    Deserialize,
-    Documented,
-    DocumentedFields,
-    FieldNamesAsSlice,
-    Serialize,
-    Clone,
-    PartialEq,
-)]
+#[derive(Facet, Default, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ImportEXMARaLDA {}
 

@@ -1,5 +1,4 @@
 use anyhow::anyhow;
-use documented::{Documented, DocumentedFields};
 use encoding_rs_io::DecodeReaderBytes;
 use facet::Facet;
 use graphannis::{
@@ -15,7 +14,6 @@ use pest_derive::Parser;
 use serde::Serialize;
 use serde_derive::Deserialize;
 use std::{io::Read, path::Path};
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
     StepID, progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files,
@@ -290,17 +288,7 @@ impl DocumentMapper {
 }
 
 /// Importer the Penn Treebank Bracketed Text format (PTB)
-#[derive(
-    Facet,
-    Default,
-    Deserialize,
-    Documented,
-    DocumentedFields,
-    FieldNamesAsSlice,
-    Serialize,
-    Clone,
-    PartialEq,
-)]
+#[derive(Facet, Default, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ImportPTB {
     /// Some variants encode a function of the node after the node category,

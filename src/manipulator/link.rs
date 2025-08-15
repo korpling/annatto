@@ -5,7 +5,6 @@ use crate::{
     workflow::StatusSender,
 };
 use anyhow::anyhow;
-use documented::{Documented, DocumentedFields};
 use facet::Facet;
 use graphannis::{
     AnnotationGraph, aql,
@@ -18,7 +17,6 @@ use itertools::Itertools;
 use serde::Serialize;
 use serde_derive::Deserialize;
 use std::{collections::BTreeMap, ops::Deref};
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 /// Link nodes within a graph. Source and target of a link are determined via
 /// queries; type, layer, and name of the link component can be configured.
@@ -75,9 +73,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// as `target_to_edge` is configured to copy annotation "1", which is `func` in the
 /// example query, to the edge.
 ///
-#[derive(
-    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct LinkNodes {
     /// The AQL query to find all source node annotations. Source and target nodes are then paired by equal value for their query match.

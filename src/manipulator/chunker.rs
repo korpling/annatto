@@ -4,7 +4,6 @@ use super::Manipulator;
 use crate::{
     StepID, progress::ProgressReporter, util::token_helper::TokenHelper, util::update_graph_silent,
 };
-use documented::{Documented, DocumentedFields};
 use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
@@ -21,7 +20,6 @@ use graphannis_core::{
     types::NodeID,
 };
 use serde::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 use text_splitter::TextSplitter;
 
 /// Add a span annotation for automatically generated chunks.
@@ -29,9 +27,7 @@ use text_splitter::TextSplitter;
 /// Uses the [text-splitter](https://crates.io/crates/text-splitter) crate which
 /// uses sentence markers and the given maximum number of characters per chunk
 /// to segment the text into chunks.
-#[derive(
-    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Chunk {
     /// Maximum chunk length.

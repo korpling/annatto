@@ -5,7 +5,6 @@ use crate::{
 };
 
 use super::Importer;
-use documented::{Documented, DocumentedFields};
 use encoding_rs::Encoding;
 use encoding_rs_io::DecodeReaderBytesBuilder;
 use facet::Facet;
@@ -20,7 +19,6 @@ use pest::{Parser, iterators::Pairs};
 use pest_derive::Parser;
 use serde::Serialize;
 use serde_derive::Deserialize;
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 const FILE_ENDINGS: [&str; 5] = ["treetagger", "tab", "tt", "txt", "xml"];
 
@@ -330,9 +328,7 @@ impl<'a> DocumentMapper<'a> {
 /// [import.config]
 /// column_names = ["tok", "norm::custom_pos", "norm::custom_lemma"]
 /// ```
-#[derive(
-    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ImportTreeTagger {
     /// Provide annotation names for the columns of the files. If you want the first column to be `annis::tok`,

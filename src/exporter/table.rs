@@ -5,7 +5,6 @@ use std::{
 };
 
 use anyhow::{anyhow, bail};
-use documented::{Documented, DocumentedFields};
 use facet::Facet;
 use graphannis::{
     AnnotationGraph,
@@ -21,16 +20,13 @@ use graphannis_core::{
 use itertools::Itertools;
 use linked_hash_set::LinkedHashSet;
 use serde::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Exporter;
 
 use crate::{progress::ProgressReporter, util::token_helper::TOKEN_KEY};
 
 /// This module exports all ordered nodes and nodes connected by coverage edges of any name into a table.
-#[derive(
-    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ExportTable {
     /// The provided annotation key defines which nodes within the part-of component define a document. All nodes holding said annotation

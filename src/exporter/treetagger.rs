@@ -7,7 +7,6 @@ use std::{
 };
 
 use anyhow::anyhow;
-use documented::{Documented, DocumentedFields};
 use facet::Facet;
 use graphannis::{
     AnnotationGraph,
@@ -20,7 +19,6 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Exporter;
 
@@ -40,9 +38,7 @@ enum SpanName {
 }
 
 /// Exporter for the file format used by the TreeTagger.
-#[derive(
-    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ExportTreeTagger {
     /// Provide the token annotation names that should be exported as columns.

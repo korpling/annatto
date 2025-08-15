@@ -1,7 +1,7 @@
 use annatto::{
-    GraphOp, ModuleConfiguration, ReadFromDiscriminants, StepID, WriteAsDiscriminants,
+    GraphOp, ModuleConfiguration, ReadFrom, StepID, WriteAs,
     error::AnnattoError,
-    util::clean_documentation_string,
+    util::documentation::{self, ModuleInfo},
     workflow::{StatusMessage, Workflow, execute_from_file},
 };
 use facet::{Facet, Type, UserType};
@@ -14,7 +14,6 @@ use lazy_static::lazy_static;
 use std::{
     collections::HashMap, convert::TryFrom, path::PathBuf, sync::mpsc, thread, time::Duration,
 };
-use strum::IntoEnumIterator;
 use tabled::{
     Table,
     settings::{Modify, Width, object::Segment, themes::ColumnNames},
@@ -242,16 +241,20 @@ fn list_modules() {
     table_builder.push_record(vec!["Type", "Modules"]);
     let import_row = vec![
         "Import formats".to_string(),
-        ReadFromDiscriminants::iter()
-            .map(|m| m.as_ref().to_string())
+        peek_enum_variants(ReadFrom::SHAPE)
+            .unwrap_or_default()
+            .iter()
+            .map(|v| v.name.to_lowercase())
             .join(", "),
     ];
     table_builder.push_record(import_row);
 
     let export_row = vec![
         "Export formats".to_string(),
-        WriteAsDiscriminants::iter()
-            .map(|m| m.as_ref().to_string())
+        peek_enum_variants(WriteAs::SHAPE)
+            .unwrap_or_default()
+            .iter()
+            .map(|v| v.name.to_lowercase())
             .join(", "),
     ];
     table_builder.push_record(export_row);
@@ -282,11 +285,15 @@ fn list_modules() {
 }
 
 fn module_info(name: &str) {
-    let matching_importers: Vec<_> = ReadFromDiscriminants::iter()
-        .filter(|m| m.as_ref() == name.to_lowercase())
+    let matching_importers: Vec<_> = peek_enum_variants(ReadFrom::SHAPE)
+        .unwrap_or_default()
+        .iter()
+        .filter(|m| m.name.to_lowercase() == name.to_lowercase())
         .collect();
-    let matching_exporters: Vec<_> = WriteAsDiscriminants::iter()
-        .filter(|m| m.as_ref() == name.to_lowercase())
+    let matching_exporters: Vec<_> = peek_enum_variants(WriteAs::SHAPE)
+        .unwrap_or_default()
+        .iter()
+        .filter(|m| m.name.to_lowercase() == name.to_lowercase())
         .collect();
 
     let matching_graph_ops: Vec<_> = peek_enum_variants(GraphOp::SHAPE)
@@ -307,18 +314,18 @@ fn module_info(name: &str) {
     if !matching_importers.is_empty() {
         print_markdown("# Importers\n\n");
         for m in matching_importers {
-            let module_doc = m.module_doc();
-            print_markdown(&format!("## {} (importer)\n\n{module_doc}\n\n", m.as_ref()));
-            print_module_fields(m.module_configs());
+            let ModuleInfo { name, doc, configs } = documentation::ModuleInfo::from(m);
+            print_markdown(&format!("## {name} (importer)\n\n{doc}\n\n"));
+            print_module_fields(configs);
         }
     }
 
     if !matching_exporters.is_empty() {
         print_markdown("# Exporters\n\n");
         for m in matching_exporters {
-            let module_doc = m.module_doc();
-            print_markdown(&format!("## {} (exporter)\n\n{module_doc}\n\n", m.as_ref()));
-            print_module_fields(m.module_configs());
+            let ModuleInfo { name, doc, configs } = documentation::ModuleInfo::from(m);
+            print_markdown(&format!("## {name} (exporter)\n\n{doc}\n\n"));
+            print_module_fields(configs);
         }
     }
 
@@ -333,7 +340,7 @@ fn module_info(name: &str) {
                 && let Type::User(module_type) = inner_field.ty
                 && let UserType::Struct(module_impl) = module_type
             {
-                let module_doc = clean_documentation_string(inner_field.doc);
+                let module_doc = documentation::clean_string(inner_field.doc);
                 print_markdown(&format!(
                     "## {module_name} (graph operation)\n\n{module_doc}\n\n"
                 ));
@@ -343,7 +350,7 @@ fn module_info(name: &str) {
                     .iter()
                     .map(|f| ModuleConfiguration {
                         name: f.name.to_lowercase(),
-                        description: clean_documentation_string(f.doc),
+                        description: documentation::clean_string(f.doc),
                     })
                     .collect();
                 print_module_fields(fields);

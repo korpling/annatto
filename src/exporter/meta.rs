@@ -1,6 +1,5 @@
 use std::{fs, io::Write, path::PathBuf};
 
-use documented::{Documented, DocumentedFields};
 use facet::Facet;
 use graphannis::{
     AnnotationGraph,
@@ -9,7 +8,6 @@ use graphannis::{
 use graphannis_core::{annostorage::ValueSearch, graph::ANNIS_NS};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::progress::ProgressReporter;
 
@@ -39,9 +37,7 @@ use super::Exporter;
 ///
 /// [export.config]
 /// ```
-#[derive(
-    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ExportMeta {
     /// This key determines the value of the file name and which nodes are being exported into a single file,

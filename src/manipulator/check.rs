@@ -8,7 +8,6 @@ use std::{
 };
 
 use anyhow::anyhow;
-use documented::{Documented, DocumentedFields};
 use facet::Facet;
 use graphannis::{AnnotationGraph, aql, errors::GraphAnnisError};
 use graphannis_core::{
@@ -18,7 +17,6 @@ use graphannis_core::{
 use itertools::Itertools;
 use serde::Serialize;
 use serde_derive::Deserialize;
-use struct_field_names_as_array::FieldNamesAsSlice;
 use tabled::{Table, Tabled};
 
 use crate::{
@@ -201,9 +199,7 @@ use crate::{
 /// ref_type = ["a", "k"]
 /// ```
 ///
-#[derive(
-    Facet, Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Check {
     /// The tests to run on the current graph.
