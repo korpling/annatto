@@ -56,7 +56,7 @@ pub struct ModuleConfiguration {
 #[strum(serialize_all = "lowercase")]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum WriteAs {
-    CoNLLU(#[serde(default)] Box<ExportCoNLLU>),
+    CoNLLU(#[serde(default)] ExportCoNLLU),
     EXMARaLDA(#[serde(default)] ExportExmaralda),
     GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited in the future
     Meta(#[serde(default)] ExportMeta),
@@ -86,7 +86,7 @@ impl WriteAs {
             WriteAs::TextGrid(m) => m,
             WriteAs::TreeTagger(m) => m,
             WriteAs::Xlsx(m) => m,
-            WriteAs::CoNLLU(m) => &**m,
+            WriteAs::CoNLLU(m) => m,
             WriteAs::Meta(m) => m,
         }
     }
