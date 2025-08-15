@@ -1,0 +1,5 @@
+---
+source: src/workflow.rs
+expression: "receiver.into_iter().filter_map(|m| match m\n{\n    StatusMessage::Warning(wrn) => Some(wrn), _ => None,\n}).join(\"\\n\").to_string()"
+---
+The save target exists. It's recommended to manually delete existing targets before running a workflow that saves. Overwrites usually succeed, but may yield incorrect data.

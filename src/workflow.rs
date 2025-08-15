@@ -940,6 +940,41 @@ mod tests {
     }
 
     #[test]
+    fn warn_on_save_target_with_data() {
+        let td = tempdir();
+        assert!(td.is_ok());
+        let tmpdir = td.unwrap();
+        assert!(fs::create_dir(tmpdir.path().join("root")).is_ok());
+        assert!(fs::create_dir(tmpdir.path().join("root").join("current")).is_ok());
+        // SAFETY: this is a test
+        unsafe {
+            std::env::set_var(
+                "TARGET_WITH_EXISTING_DATA",
+                tmpdir.path().to_string_lossy().to_string(),
+            );
+        }
+        let (sender, receiver) = mpsc::channel();
+        let run = execute_from_file(
+            Path::new("./tests/data/init/workflow-overwrite-existing-data.toml"),
+            true,
+            true,
+            Some(sender),
+            None,
+        );
+        assert!(run.is_ok());
+        assert_snapshot!(
+            receiver
+                .into_iter()
+                .filter_map(|m| match m {
+                    StatusMessage::Warning(wrn) => Some(wrn),
+                    _ => None,
+                })
+                .join("\n")
+                .to_string()
+        );
+    }
+
+    #[test]
     fn deser_optimization_target() {
         #[derive(Deserialize)]
         struct Container {
