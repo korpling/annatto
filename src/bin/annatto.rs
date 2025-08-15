@@ -3,7 +3,7 @@ use annatto::{
     error::AnnattoError,
     workflow::{StatusMessage, Workflow, execute_from_file},
 };
-use facet::Facet;
+use facet::{Facet, Type, UserType};
 use facet_reflect::peek_enum_variants;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
@@ -324,21 +324,29 @@ fn module_info(name: &str) {
     if !matching_graph_ops.is_empty() {
         print_markdown("# Graph operations\n\n");
         for m in matching_graph_ops {
-            let module_doc = m.doc.join("\n");
-            print_markdown(&format!(
-                "## {} (graph operation)\n\n{module_doc}\n\n",
-                m.name.to_lowercase()
-            ));
-            let fields = m
-                .data
-                .fields
-                .iter()
-                .map(|f| ModuleConfiguration {
-                    name: f.name.to_lowercase(),
-                    description: f.doc.join("\""),
-                })
-                .collect();
-            print_module_fields(fields);
+            // The name of the module is taken from the wrapper enum
+            let module_name = m.name.to_lowercase();
+            // Get the inner type wrapped by the graph operations enum and use
+            // its documentation and fields
+            if let Some(inner_field) = m.data.fields.first().map(|m| m.shape())
+                && let Type::User(module_type) = inner_field.ty
+                && let UserType::Struct(module_impl) = module_type
+            {
+                let module_doc = inner_field.doc.join("\n");
+                print_markdown(&format!(
+                    "## {module_name} (graph operation)\n\n{module_doc}\n\n"
+                ));
+
+                let fields = module_impl
+                    .fields
+                    .iter()
+                    .map(|f| ModuleConfiguration {
+                        name: f.name.to_lowercase(),
+                        description: f.doc.join("\n"),
+                    })
+                    .collect();
+                print_module_fields(fields);
+            }
         }
     }
 }
