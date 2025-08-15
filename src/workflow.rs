@@ -512,6 +512,9 @@ impl Workflow {
                         save_path
                     }
                 };
+                if extended_save_path.join("current").exists() {
+                    save_progress.warn("The save target exists. It's recommended to manually delete existing targets before running a workflow that saves. Overwrites usually succeed, but may yield incorrect data.")?;
+                }
                 g.save_to(&extended_save_path)?;
                 save_progress.worked(1)?;
             }
@@ -934,6 +937,41 @@ mod tests {
         );
         assert!(run.is_err());
         assert_snapshot!(run.err().unwrap().to_string());
+    }
+
+    #[test]
+    fn warn_on_save_target_with_data() {
+        let td = tempdir();
+        assert!(td.is_ok());
+        let tmpdir = td.unwrap();
+        assert!(fs::create_dir(tmpdir.path().join("root")).is_ok());
+        assert!(fs::create_dir(tmpdir.path().join("root").join("current")).is_ok());
+        // SAFETY: this is a test
+        unsafe {
+            std::env::set_var(
+                "TARGET_WITH_EXISTING_DATA",
+                tmpdir.path().to_string_lossy().to_string(),
+            );
+        }
+        let (sender, receiver) = mpsc::channel();
+        let run = execute_from_file(
+            Path::new("./tests/data/init/workflow-overwrite-existing-data.toml"),
+            true,
+            true,
+            Some(sender),
+            None,
+        );
+        assert!(run.is_ok());
+        assert_snapshot!(
+            receiver
+                .into_iter()
+                .filter_map(|m| match m {
+                    StatusMessage::Warning(wrn) => Some(wrn),
+                    _ => None,
+                })
+                .join("\n")
+                .to_string()
+        );
     }
 
     #[test]

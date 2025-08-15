@@ -1,0 +1,8 @@
+[load]
+database = "v4"
+corpus = "root"
+optimize = []
+
+[save]
+target = "$TARGET_WITH_EXISTING_DATA"
+optimize = []

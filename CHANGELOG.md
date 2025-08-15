@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `save`: graph storage implementations (none, some component types, all) can be optimized for reading before saving the graph (default is total optimization)
 - `load` and `save` report progress
 - `save`: If the target for saving is a database that is currently locked by a running service, the workflow will not be executed to avoid that the running db manager instance overwrites the output on shutdown.
+- `save`: If the derived save target, i. e. {target}/{root corpus name}, contains a directory "current", a warning is raised.
 
 ### Changed
 
