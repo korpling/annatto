@@ -298,6 +298,61 @@ impl EdgeContainer for CorpusGraphHelper<'_> {
     }
 }
 
+/// Gets a clean documentatio string for a [`Shape`].
+/// It removes any whitespace at the start and unescapes backlashes.
+pub fn clean_documentation_string(raw: &[&str]) -> String {
+    raw.iter()
+        .map(|line| line.trim_start())
+        .map(unescape_backslash)
+        .join("\n")
+}
+
+/// Replaces characters that are escaped with a backslash with the actual character.
+pub(crate) fn unescape_backslash(val: &str) -> String {
+    let mut chars = val.chars().peekable();
+    let mut unescaped = String::new();
+
+    loop {
+        match chars.next() {
+            None => break,
+            Some(c) => {
+                let escaped_char = if c == '\\' {
+                    if let Some(escaped_char) = chars.peek() {
+                        let escaped_char = *escaped_char;
+                        match escaped_char {
+                            _ if escaped_char == '\\'
+                                || escaped_char == '"'
+                                || escaped_char == '\''
+                                || escaped_char == '`'
+                                || escaped_char == '$' =>
+                            {
+                                Some(escaped_char)
+                            }
+                            'n' => Some('\n'),
+                            'r' => Some('\r'),
+                            't' => Some('\t'),
+                            _ => None,
+                        }
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+                if let Some(escaped_char) = escaped_char {
+                    unescaped.push(escaped_char);
+                    // skip the escaped character instead of outputting it again
+                    chars.next();
+                } else {
+                    unescaped.push(c);
+                };
+            }
+        }
+    }
+
+    unescaped
+}
+
 #[cfg(test)]
 mod tests {
     use std::sync::mpsc;
@@ -306,7 +361,7 @@ mod tests {
     use insta::assert_snapshot;
     use itertools::Itertools;
 
-    use crate::{util::example_generator, util::update_graph};
+    use crate::util::{example_generator, unescape_backslash, update_graph};
 
     #[test]
     fn is_effective() {
@@ -329,5 +384,13 @@ mod tests {
             .join("\n");
         assert_snapshot!(messages);
         assert!(graph.global_statistics.is_none());
+    }
+
+    #[test]
+    fn test_unescape_backslash() {
+        assert_eq!(unescape_backslash("ab\\$c"), "ab$c");
+        assert_eq!(unescape_backslash("ab\\\\cd\\\\"), "ab\\cd\\",);
+        assert_eq!(unescape_backslash("ab\\'cd\\te"), "ab'cd\te");
+        assert_eq!(unescape_backslash("a\\n"), "a\n");
     }
 }

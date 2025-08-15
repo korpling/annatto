@@ -1,6 +1,9 @@
 use std::{fs::File, io::Write, path::Path};
 
-use annatto::{GraphOp, ModuleConfiguration, ReadFromDiscriminants, WriteAsDiscriminants};
+use annatto::{
+    GraphOp, ModuleConfiguration, ReadFromDiscriminants, WriteAsDiscriminants,
+    util::clean_documentation_string,
+};
 use anyhow::Context;
 use facet::{Facet, Field, Type, UserType, Variant};
 use facet_reflect::peek_enum_variants;
@@ -135,11 +138,7 @@ fn write_graph_op_files(graph_ops: &[Variant], output_directory: &Path) -> anyho
             let mut output = File::create(path)?;
             writeln!(output, "# {module_name} (graph_operation)")?;
             writeln!(output)?;
-            writeln!(
-                output,
-                "{}",
-                inner_field.doc.iter().map(|d| d.trim()).join("\n")
-            )?;
+            writeln!(output, "{}", clean_documentation_string(inner_field.doc))?;
             writeln!(output)?;
             write_module_struct(output, module_impl.fields)?;
         }
@@ -165,7 +164,7 @@ where
             if f.doc.is_empty() {
                 writeln!(output, "*No description*")?;
             } else {
-                writeln!(output, "{}", f.doc.iter().map(|d| d.trim()).join("\n"))?;
+                writeln!(output, "{}", clean_documentation_string(f.doc))?;
             }
             writeln!(output)?;
         }

@@ -9,7 +9,7 @@ pub mod models;
 pub mod progress;
 #[cfg(test)]
 pub(crate) mod test_util;
-pub(crate) mod util;
+pub mod util;
 pub mod workflow;
 
 use std::{

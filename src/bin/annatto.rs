@@ -1,6 +1,7 @@
 use annatto::{
     GraphOp, ModuleConfiguration, ReadFromDiscriminants, StepID, WriteAsDiscriminants,
     error::AnnattoError,
+    util::clean_documentation_string,
     workflow::{StatusMessage, Workflow, execute_from_file},
 };
 use facet::{Facet, Type, UserType};
@@ -332,7 +333,7 @@ fn module_info(name: &str) {
                 && let Type::User(module_type) = inner_field.ty
                 && let UserType::Struct(module_impl) = module_type
             {
-                let module_doc = inner_field.doc.iter().map(|d| d.trim()).join("\n");
+                let module_doc = clean_documentation_string(inner_field.doc);
                 print_markdown(&format!(
                     "## {module_name} (graph operation)\n\n{module_doc}\n\n"
                 ));
@@ -342,7 +343,7 @@ fn module_info(name: &str) {
                     .iter()
                     .map(|f| ModuleConfiguration {
                         name: f.name.to_lowercase(),
-                        description: f.doc.iter().map(|d| d.trim()).join("\n"),
+                        description: clean_documentation_string(f.doc),
                     })
                     .collect();
                 print_module_fields(fields);
