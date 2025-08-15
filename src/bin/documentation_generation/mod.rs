@@ -12,11 +12,11 @@ pub(crate) fn create(output_directory: &Path) -> anyhow::Result<()> {
     let graph_ops = peek_enum_variants(GraphOp::SHAPE).unwrap_or_default();
 
     // Create an index file with a list of all the modules
-    write_module_list_table(output_directory, &importers, &exporters, graph_ops)?;
+    write_module_list_table(output_directory, importers, exporters, graph_ops)?;
 
     // Create a module information for each module of all types
-    write_importer_files(&importers, output_directory)?;
-    write_exporter_files(&exporters, output_directory)?;
+    write_importer_files(importers, output_directory)?;
+    write_exporter_files(exporters, output_directory)?;
     write_graph_op_files(graph_ops, output_directory)?;
 
     Ok(())

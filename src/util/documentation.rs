@@ -74,7 +74,16 @@ impl From<&Variant> for ModuleInfo {
             doc: "".to_string(),
             configs: Vec::new(),
         };
-        if let Some(inner_field) = module.data.fields.first().map(|m| m.shape())
+        let inner_field = module.data.fields.first().map(|m| {
+            let shape = m.shape();
+            if let Some(inner) = shape.inner {
+                // This can be a boxed type
+                inner()
+            } else {
+                shape
+            }
+        });
+        if let Some(inner_field) = inner_field
             && let Type::User(module_type) = inner_field.ty
             && let UserType::Struct(module_impl) = module_type
         {
