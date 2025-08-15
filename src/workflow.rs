@@ -132,7 +132,7 @@ impl LoadGraph {
 
 impl SaveGraph {
     /// Create a new save step, that saves the corpus to a subdirectory
-    pub fn new<P, S>(target: P, optimize: Option<OptimizationTarget>) -> Self
+    pub fn new<P>(target: P, optimize: Option<OptimizationTarget>) -> Self
     where
         P: Into<PathBuf>,
     {
