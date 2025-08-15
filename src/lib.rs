@@ -24,6 +24,7 @@ use exporter::{
     textgrid::ExportTextGrid, xlsx::ExportXlsx,
 };
 use facet::Facet;
+use facet_reflect::Peek;
 use graphannis::AnnotationGraph;
 use importer::{
     Importer, conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
@@ -39,7 +40,6 @@ use manipulator::{
 };
 use serde::Serialize;
 use serde_derive::Deserialize;
-use strum::AsRefStr;
 use tabled::Tabled;
 use workflow::StatusSender;
 
@@ -51,9 +51,8 @@ pub struct ModuleConfiguration {
     pub description: String,
 }
 
-#[derive(Facet, Deserialize, AsRefStr, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[repr(u16)]
-#[strum(serialize_all = "lowercase")]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum WriteAs {
     CoNLLU(#[serde(default)] Box<ExportCoNLLU>),
@@ -90,10 +89,16 @@ impl WriteAs {
             WriteAs::Meta(m) => m,
         }
     }
+
+    /// Gets the external name of this module (in lowercase).
+    pub fn name(&self) -> anyhow::Result<String> {
+        let parent_enum = Peek::new(self).into_enum()?;
+        let variant = parent_enum.active_variant()?;
+        Ok(variant.name.to_lowercase())
+    }
 }
 
-#[derive(Facet, Deserialize, AsRefStr, Serialize, Clone, PartialEq)]
-#[strum(serialize_all = "lowercase")]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
 #[repr(u16)]
 pub enum ReadFrom {
@@ -149,10 +154,16 @@ impl ReadFrom {
             ReadFrom::Git(m) => m,
         }
     }
+
+    /// Gets the external name of this module (in lowercase).
+    pub fn name(&self) -> anyhow::Result<String> {
+        let parent_enum = Peek::new(self).into_enum()?;
+        let variant = parent_enum.active_variant()?;
+        Ok(variant.name.to_lowercase())
+    }
 }
 
-#[derive(Facet, Deserialize, AsRefStr, Serialize, Clone, PartialEq)]
-#[strum(serialize_all = "lowercase")]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(tag = "action", rename_all = "lowercase", content = "config")]
 #[repr(u16)]
 pub enum GraphOp {
@@ -198,6 +209,13 @@ impl GraphOp {
             GraphOp::Align(m) => m,
         }
     }
+
+    /// Gets the external name of this module (in lowercase).
+    pub fn name(&self) -> anyhow::Result<String> {
+        let parent_enum = Peek::new(self).into_enum()?;
+        let variant = parent_enum.active_variant()?;
+        Ok(variant.name.to_lowercase())
+    }
 }
 
 /// Unique ID of a single step in the conversion pipeline.
@@ -212,7 +230,7 @@ pub struct StepID {
 impl StepID {
     pub fn from_importer_step(step: &ImporterStep) -> StepID {
         StepID {
-            module_name: format!("import_{}", step.module.as_ref().to_lowercase()),
+            module_name: format!("import_{}", step.module.name().unwrap_or_default()),
             path: Some(step.path.clone()),
         }
     }
@@ -221,7 +239,7 @@ impl StepID {
         StepID {
             module_name: format!(
                 "{position_in_workflow}_{}",
-                step.module.as_ref().to_lowercase()
+                step.module.name().unwrap_or_default()
             ),
             path: None,
         }
@@ -229,7 +247,7 @@ impl StepID {
 
     pub fn from_exporter_step(step: &ExporterStep) -> StepID {
         StepID {
-            module_name: format!("export_{}", step.module.as_ref().to_lowercase()),
+            module_name: format!("export_{}", step.module.name().unwrap_or_default()),
             path: Some(step.path.clone()),
         }
     }
