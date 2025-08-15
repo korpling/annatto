@@ -14,12 +14,12 @@ pub(crate) fn create(output_directory: &Path) -> anyhow::Result<()> {
         peek_enum_variants(GraphOp::SHAPE).context("Graph operations must be an enum")?;
 
     // Create an index file with a list of all the modules
-    write_module_list_table(output_directory, &importers, &exporters, &graph_ops)?;
+    write_module_list_table(output_directory, &importers, &exporters, graph_ops)?;
 
     // Create a module information for each module of all types
     write_importer_files(&importers, output_directory)?;
     write_exporter_files(&exporters, output_directory)?;
-    write_graph_op_files(&graph_ops, output_directory)?;
+    write_graph_op_files(graph_ops, output_directory)?;
 
     Ok(())
 }
@@ -141,7 +141,7 @@ fn write_graph_op_files(graph_ops: &[Variant], output_directory: &Path) -> anyho
                 inner_field.doc.iter().map(|d| d.trim()).join("\n")
             )?;
             writeln!(output)?;
-            write_module_struct(output, &module_impl.fields)?;
+            write_module_struct(output, module_impl.fields)?;
         }
     }
 

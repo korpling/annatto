@@ -1359,7 +1359,7 @@ fn load_component_tab(
             let layer = get_field(&line, 2, "layer", &component_tab_path)?.unwrap_or_default();
             let name = get_field(&line, 3, "name", &component_tab_path)?.unwrap_or_default();
             let ctype = component_type_from_short_name(&col_type)?;
-            component_by_id.insert(cid, Component::new(ctype, layer.into(), name.into()));
+            component_by_id.insert(cid, Component::new(ctype, layer, name));
         }
     }
     Ok(component_by_id)
@@ -1463,9 +1463,9 @@ fn load_rank_tab(
                         .get(&target)?
                         .ok_or_else(|| anyhow!("node with ID {target} not found"))?
                         .to_string(),
-                    layer: c.layer.clone().into(),
+                    layer: c.layer.clone(),
                     component_type: c.get_type().to_string(),
-                    component_name: c.name.clone().into(),
+                    component_name: c.name.clone(),
                 })?;
 
                 let pre: u32 = get_field_not_null(&line, 0, "pre", &rank_tab_path)?.parse()?;
@@ -1550,7 +1550,7 @@ fn load_edge_annotation(
                     .get(&e.target)?
                     .ok_or_else(|| anyhow!("node with ID {} not found", e.target))?
                     .to_string(),
-                layer: c.layer.clone().into(),
+                layer: c.layer.clone(),
                 component_type: c.get_type().to_string(),
                 component_name: c.name.to_string(),
                 anno_ns: ns.to_string(),
@@ -1594,10 +1594,7 @@ fn load_corpus_annotation(
         let val = get_field(&line, 3, "value", &corpus_anno_tab_path)?
             .unwrap_or_else(|| INVALID_STRING.clone());
 
-        let anno_key = AnnoKey {
-            ns: ns.into(),
-            name: name.into(),
-        };
+        let anno_key = AnnoKey { ns, name };
 
         corpus_id_to_anno.insert((id, anno_key), val.to_string());
     }
@@ -1674,8 +1671,8 @@ fn add_subcorpora(
                 if entry_cid == cid {
                     updates.add_event(UpdateEvent::AddNodeLabel {
                         node_name: corpus_table.toplevel_corpus_name.as_str().into(),
-                        anno_ns: anno_key.ns.clone().into(),
-                        anno_name: anno_key.name.clone().into(),
+                        anno_ns: anno_key.ns.clone(),
+                        anno_name: anno_key.name.clone(),
                         anno_value: val.into(),
                     })?;
                 } else {
@@ -1725,8 +1722,8 @@ fn add_subcorpora(
                 if entry_cid == corpus_id {
                     updates.add_event(UpdateEvent::AddNodeLabel {
                         node_name: subcorpus_full_name.to_string(),
-                        anno_ns: anno_key.ns.clone().into(),
-                        anno_name: anno_key.name.clone().into(),
+                        anno_ns: anno_key.ns.clone(),
+                        anno_name: anno_key.name.clone(),
                         anno_value: val.clone(),
                     })?;
                 } else {

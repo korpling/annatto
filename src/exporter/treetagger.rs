@@ -263,9 +263,9 @@ impl ExportTreeTagger {
             if !node_annos.has_value_for_item(&token, &matching_token_key)?
                 && let Some(seg) = &self.segmentation
             {
-                matching_token_key.name = seg.into();
+                matching_token_key.name = seg.clone();
                 for ns in self.possible_namespace_for_segmentation() {
-                    matching_token_key.ns = ns.into();
+                    matching_token_key.ns = ns;
                     if node_annos.has_value_for_item(&token, &matching_token_key)? {
                         break;
                     }

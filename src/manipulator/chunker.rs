@@ -50,8 +50,8 @@ pub struct Chunk {
 
 fn default_anno_key() -> AnnoKey {
     AnnoKey {
-        name: default_chunk_name().into(),
-        ns: "".into(),
+        name: default_chunk_name(),
+        ns: "".to_string(),
     }
 }
 

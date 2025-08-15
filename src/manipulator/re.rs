@@ -388,7 +388,7 @@ fn place_at_new_target(
     };
     let order_component = AnnotationComponent::new(
         AnnotationComponentType::Ordering,
-        ANNIS_NS.to_string().into(),
+        ANNIS_NS.to_string(),
         target_key.ns.clone(),
     );
     let order_storage = if let Some(strg) = graph.get_graphstorage(&order_component) {

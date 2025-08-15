@@ -190,9 +190,9 @@ impl ImportToolBox {
                         span_anno = Some(Annotation {
                             key: AnnoKey {
                                 ns: "".into(),
-                                name: layer_name.into(),
+                                name: layer_name,
                             },
-                            val: anno_val.into(),
+                            val: anno_val,
                         });
                     }
                     end_id = final_id;

@@ -67,7 +67,7 @@ fn default_anno() -> AnnoKey {
 }
 
 fn default_component() -> AnnotationComponent {
-    AnnotationComponent::new(default_ctype(), default_clayer().into(), "".into())
+    AnnotationComponent::new(default_ctype(), default_clayer(), "".to_string())
 }
 
 const fn default_ctype() -> AnnotationComponentType {

@@ -70,7 +70,7 @@ impl Manipulator for SplitValues {
         let node_annos = graph.get_node_annos();
         let (ns, name) = {
             (
-                self.anno.ns.is_empty().not().then(|| self.anno.ns.as_str()),
+                self.anno.ns.is_empty().not().then_some(self.anno.ns.as_str()),
                 self.anno.name.as_str(),
             )
         };
