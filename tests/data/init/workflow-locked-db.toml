@@ -1,0 +1,3 @@
+[save]
+target = "locked-db"
+optimize = []

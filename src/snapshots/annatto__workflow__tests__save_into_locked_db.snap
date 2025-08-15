@@ -1,0 +1,5 @@
+---
+source: src/workflow.rs
+expression: run.err().unwrap().to_string()
+---
+Target database for final saving is locked (see section [save] in your workflow), please stop the running graphANNIS instance or choose another save target.
