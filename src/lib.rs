@@ -91,7 +91,7 @@ impl WriteAs {
     }
 
     /// Gets the external name of this module (in lowercase).
-    pub fn name(&self) -> anyhow::Result<String> {
+    pub fn name(&self) -> Result<String> {
         let parent_enum = Peek::new(self).into_enum()?;
         let variant = parent_enum.active_variant()?;
         Ok(variant.name.to_lowercase())
@@ -156,7 +156,7 @@ impl ReadFrom {
     }
 
     /// Gets the external name of this module (in lowercase).
-    pub fn name(&self) -> anyhow::Result<String> {
+    pub fn name(&self) -> Result<String> {
         let parent_enum = Peek::new(self).into_enum()?;
         let variant = parent_enum.active_variant()?;
         Ok(variant.name.to_lowercase())
@@ -211,7 +211,7 @@ impl GraphOp {
     }
 
     /// Gets the external name of this module (in lowercase).
-    pub fn name(&self) -> anyhow::Result<String> {
+    pub fn name(&self) -> Result<String> {
         let parent_enum = Peek::new(self).into_enum()?;
         let variant = parent_enum.active_variant()?;
         Ok(variant.name.to_lowercase())
