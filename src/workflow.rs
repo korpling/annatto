@@ -105,6 +105,9 @@ pub struct SaveGraph {
     /// at the end of the workflow run.
     #[serde(default)]
     target: PathBuf,
+    /// If given, use this corpus name instead of getting it from the corpus graph.
+    #[serde(default)]
+    corpus_name: Option<String>,
     /// Optimize components for reading before saving.
     #[serde(default = "default_save_optimize")]
     optimize: Option<OptimizationTarget>,
@@ -138,6 +141,7 @@ impl SaveGraph {
     {
         Self {
             target: target.into(),
+            corpus_name: None,
             optimize,
         }
     }
@@ -499,7 +503,9 @@ impl Workflow {
                     }
                 }
                 save_progress.worked(1)?;
-                let extended_save_path = {
+                let extended_save_path = if let Some(corpus_name) = &after.corpus_name {
+                    save_path.join(corpus_name)
+                } else {
                     let part_of_c = AnnotationComponent::new(
                         AnnotationComponentType::PartOf,
                         ANNIS_NS.into(),
