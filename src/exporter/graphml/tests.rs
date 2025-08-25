@@ -7,10 +7,10 @@ use tempfile::TempDir;
 use zip::ZipArchive;
 
 use crate::{
-    core::update_graph_silent,
     importer::{
         Importer, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes, xlsx::ImportSpreadsheet,
     },
+    util::update_graph_silent,
 };
 
 #[test]

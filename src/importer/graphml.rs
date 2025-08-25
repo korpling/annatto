@@ -1,4 +1,4 @@
-use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
     model::AnnotationComponent,
@@ -18,7 +18,6 @@ use std::{
     path::Path,
     str::FromStr,
 };
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
     StepID, error::AnnattoError, importer::Importer, progress::ProgressReporter,
@@ -28,16 +27,7 @@ use crate::{
 /// Imports files in the [GraphML](http://graphml.graphdrawing.org/) file which
 /// have to conform to the
 /// [graphANNIS data model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
-#[derive(
-    Default,
-    Deserialize,
-    Documented,
-    DocumentedFields,
-    FieldNamesAsSlice,
-    Serialize,
-    Clone,
-    PartialEq,
-)]
+#[derive(Facet, Default, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct GraphMLImporter {}
 

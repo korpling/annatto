@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::{anyhow, bail};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph, aql,
     graph::{AnnoKey, Edge, Match},
@@ -19,29 +20,18 @@ use graphannis_core::{
 use itertools::Itertools;
 use serde::Serialize;
 use serde_derive::Deserialize;
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
     Manipulator, StepID,
-    core::update_graph_silent,
     error::{AnnattoError, StandardErrorResult},
     progress::ProgressReporter,
+    util::update_graph_silent,
 };
-use documented::{Documented, DocumentedFields};
 
 /// Manipulate annotations, like deleting or renaming them. If you set up different types of
 /// modifications, be aware that the graph is updated between them, so each modification is
 /// applied to a different graph.
-#[derive(
-    Deserialize,
-    Default,
-    Documented,
-    DocumentedFields,
-    FieldNamesAsSlice,
-    Serialize,
-    Clone,
-    PartialEq,
-)]
+#[derive(Facet, Deserialize, Default, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Revise {
     /// A map of nodes to rename, usually useful for corpus nodes. If the target name exists,
@@ -115,7 +105,7 @@ pub struct Revise {
     remove_subgraph: Vec<String>,
 }
 
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 struct RemoveMatch {
     /// The query to obtain the results.
@@ -124,8 +114,9 @@ struct RemoveMatch {
     remove: Vec<RemoveTarget>,
 }
 
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(untagged)]
+#[repr(u8)]
 enum RemoveTarget {
     Node(usize),
     Annotation {
@@ -135,7 +126,7 @@ enum RemoveTarget {
     },
 }
 
-#[derive(Deserialize, Debug, PartialEq, Serialize, Clone)]
+#[derive(Facet, Deserialize, Debug, PartialEq, Serialize, Clone)]
 struct KeyMapping {
     #[serde(with = "crate::estarde::anno_key")]
     from: AnnoKey,
@@ -143,7 +134,7 @@ struct KeyMapping {
     to: Option<AnnoKey>,
 }
 
-#[derive(Deserialize, Debug, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, Debug, Serialize, Clone, PartialEq)]
 struct ComponentMapping {
     #[serde(with = "crate::estarde::annotation_component")]
     from: AnnotationComponent,
@@ -391,7 +382,7 @@ fn place_at_new_target(
     };
     let order_component = AnnotationComponent::new(
         AnnotationComponentType::Ordering,
-        ANNIS_NS.to_string().into(),
+        ANNIS_NS.to_string(),
         target_key.ns.clone(),
     );
     let order_storage = if let Some(strg) = graph.get_graphstorage(&order_component) {
@@ -870,7 +861,6 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use crate::core::update_graph_silent;
     use crate::exporter::graphml::GraphMLExporter;
     use crate::importer::Importer;
     use crate::importer::exmaralda::ImportEXMARaLDA;
@@ -880,6 +870,7 @@ mod tests {
     use crate::progress::ProgressReporter;
     use crate::test_util::export_to_string;
     use crate::util::example_generator;
+    use crate::util::update_graph_silent;
     use crate::{Result, StepID};
 
     use graphannis::corpusstorage::{QueryLanguage, ResultOrder, SearchQuery};

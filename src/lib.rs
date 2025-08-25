@@ -1,6 +1,5 @@
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 
-pub(crate) mod core;
 pub mod error;
 pub mod estarde;
 pub mod exporter;
@@ -10,7 +9,7 @@ pub mod models;
 pub mod progress;
 #[cfg(test)]
 pub(crate) mod test_util;
-pub(crate) mod util;
+pub mod util;
 pub mod workflow;
 
 use std::{
@@ -18,13 +17,14 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use documented::{Documented, DocumentedFields};
 use error::Result;
 use exporter::{
     Exporter, conllu::ExportCoNLLU, exmaralda::ExportExmaralda, graphml::GraphMLExporter,
     meta::ExportMeta, saltxml::ExportSaltXml, sequence::ExportSequence, table::ExportTable,
     textgrid::ExportTextGrid, xlsx::ExportXlsx,
 };
+use facet::Facet;
+use facet_reflect::Peek;
 use graphannis::AnnotationGraph;
 use importer::{
     Importer, conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
@@ -40,8 +40,6 @@ use manipulator::{
 };
 use serde::Serialize;
 use serde_derive::Deserialize;
-use struct_field_names_as_array::FieldNamesAsSlice;
-use strum::{AsRefStr, EnumDiscriminants, EnumIter};
 use tabled::Tabled;
 use workflow::StatusSender;
 
@@ -53,9 +51,8 @@ pub struct ModuleConfiguration {
     pub description: String,
 }
 
-#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize, Clone, PartialEq)]
-#[strum(serialize_all = "lowercase")]
-#[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
+#[repr(u16)]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
 pub enum WriteAs {
     CoNLLU(#[serde(default)] Box<ExportCoNLLU>),
@@ -88,89 +85,22 @@ impl WriteAs {
             WriteAs::TextGrid(m) => m,
             WriteAs::TreeTagger(m) => m,
             WriteAs::Xlsx(m) => m,
-            WriteAs::CoNLLU(m) => &**m,
+            WriteAs::CoNLLU(m) => m.as_ref(),
             WriteAs::Meta(m) => m,
         }
     }
-}
 
-impl WriteAsDiscriminants {
-    pub fn module_doc(&self) -> &str {
-        match self {
-            WriteAsDiscriminants::EXMARaLDA => ExportExmaralda::DOCS,
-            WriteAsDiscriminants::GraphML => GraphMLExporter::DOCS,
-            WriteAsDiscriminants::SaltXml => ExportSaltXml::DOCS,
-            WriteAsDiscriminants::Sequence => ExportSequence::DOCS,
-            WriteAsDiscriminants::Table => ExportTable::DOCS,
-            WriteAsDiscriminants::TextGrid => ExportTextGrid::DOCS,
-            WriteAsDiscriminants::TreeTagger => ExportTreeTagger::DOCS,
-            WriteAsDiscriminants::Xlsx => ExportXlsx::DOCS,
-            WriteAsDiscriminants::CoNLLU => ExportCoNLLU::DOCS,
-            WriteAsDiscriminants::Meta => ExportMeta::DOCS,
-        }
-    }
-
-    pub fn module_configs(&self) -> Vec<ModuleConfiguration> {
-        let mut result = Vec::new();
-        let (field_names, field_docs) = match self {
-            WriteAsDiscriminants::EXMARaLDA => (
-                ExportExmaralda::FIELD_NAMES_AS_SLICE,
-                ExportExmaralda::FIELD_DOCS,
-            ),
-            WriteAsDiscriminants::GraphML => (
-                GraphMLExporter::FIELD_NAMES_AS_SLICE,
-                GraphMLExporter::FIELD_DOCS,
-            ),
-            WriteAsDiscriminants::SaltXml => (
-                ExportSaltXml::FIELD_NAMES_AS_SLICE,
-                ExportSaltXml::FIELD_DOCS,
-            ),
-            WriteAsDiscriminants::Sequence => (
-                ExportSequence::FIELD_NAMES_AS_SLICE,
-                ExportSequence::FIELD_DOCS,
-            ),
-            WriteAsDiscriminants::Table => {
-                (ExportTable::FIELD_NAMES_AS_SLICE, ExportTable::FIELD_DOCS)
-            }
-            WriteAsDiscriminants::TextGrid => (
-                ExportTextGrid::FIELD_NAMES_AS_SLICE,
-                ExportTextGrid::FIELD_DOCS,
-            ),
-            WriteAsDiscriminants::TreeTagger => (
-                ExportTreeTagger::FIELD_NAMES_AS_SLICE,
-                ExportTreeTagger::FIELD_DOCS,
-            ),
-            WriteAsDiscriminants::Xlsx => {
-                (ExportXlsx::FIELD_NAMES_AS_SLICE, ExportXlsx::FIELD_DOCS)
-            }
-            WriteAsDiscriminants::CoNLLU => {
-                (ExportCoNLLU::FIELD_NAMES_AS_SLICE, ExportCoNLLU::FIELD_DOCS)
-            }
-            WriteAsDiscriminants::Meta => {
-                (ExportMeta::FIELD_NAMES_AS_SLICE, ExportMeta::FIELD_DOCS)
-            }
-        };
-        for (idx, n) in field_names.iter().enumerate() {
-            if idx < field_docs.len() {
-                result.push(ModuleConfiguration {
-                    name: n.to_string(),
-                    description: field_docs[idx].to_string(),
-                });
-            } else {
-                result.push(ModuleConfiguration {
-                    name: n.to_string(),
-                    description: String::default(),
-                });
-            }
-        }
-        result
+    /// Gets the external name of this module (in lowercase).
+    pub fn name(&self) -> Result<String> {
+        let parent_enum = Peek::new(self).into_enum()?;
+        let variant = parent_enum.active_variant()?;
+        Ok(variant.name.to_lowercase())
     }
 }
 
-#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize, Clone, PartialEq)]
-#[strum(serialize_all = "lowercase")]
-#[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(tag = "format", rename_all = "lowercase", content = "config")]
+#[repr(u16)]
 pub enum ReadFrom {
     CoNLLU(#[serde(default)] ImportCoNLLU),
     EXMARaLDA(#[serde(default)] ImportEXMARaLDA),
@@ -224,126 +154,18 @@ impl ReadFrom {
             ReadFrom::Git(m) => m,
         }
     }
-}
 
-impl ReadFromDiscriminants {
-    pub fn module_doc(&self) -> &str {
-        match self {
-            ReadFromDiscriminants::CoNLLU => ImportCoNLLU::DOCS,
-            ReadFromDiscriminants::EXMARaLDA => ImportEXMARaLDA::DOCS,
-            ReadFromDiscriminants::GraphML => GraphMLImporter::DOCS,
-            ReadFromDiscriminants::Meta => AnnotateCorpus::DOCS,
-            ReadFromDiscriminants::None => CreateEmptyCorpus::DOCS,
-            ReadFromDiscriminants::Opus => ImportOpusLinks::DOCS,
-            ReadFromDiscriminants::Path => CreateFileNodes::DOCS,
-            ReadFromDiscriminants::PTB => ImportPTB::DOCS,
-            ReadFromDiscriminants::RelAnnis => ImportRelAnnis::DOCS,
-            ReadFromDiscriminants::SaltXml => ImportSaltXml::DOCS,
-            ReadFromDiscriminants::Table => ImportTable::DOCS,
-            ReadFromDiscriminants::TextGrid => ImportTextgrid::DOCS,
-            ReadFromDiscriminants::Toolbox => ImportToolBox::DOCS,
-            ReadFromDiscriminants::TreeTagger => ImportTreeTagger::DOCS,
-            ReadFromDiscriminants::Whisper => ImportWhisper::DOCS,
-            ReadFromDiscriminants::Xlsx => ImportSpreadsheet::DOCS,
-            ReadFromDiscriminants::Xml => ImportXML::DOCS,
-            ReadFromDiscriminants::Webanno => ImportWebAnnoTSV::DOCS,
-            ReadFromDiscriminants::Git => ImportGitMetadata::DOCS,
-        }
-    }
-
-    pub fn module_configs(&self) -> Vec<ModuleConfiguration> {
-        let mut result = Vec::new();
-        let (field_names, field_docs) = match self {
-            ReadFromDiscriminants::CoNLLU => {
-                (ImportCoNLLU::FIELD_NAMES_AS_SLICE, ImportCoNLLU::FIELD_DOCS)
-            }
-            ReadFromDiscriminants::EXMARaLDA => (
-                ImportEXMARaLDA::FIELD_NAMES_AS_SLICE,
-                ImportEXMARaLDA::FIELD_DOCS,
-            ),
-            ReadFromDiscriminants::GraphML => (
-                GraphMLImporter::FIELD_NAMES_AS_SLICE,
-                GraphMLImporter::FIELD_DOCS,
-            ),
-            ReadFromDiscriminants::Meta => (
-                AnnotateCorpus::FIELD_NAMES_AS_SLICE,
-                AnnotateCorpus::FIELD_DOCS,
-            ),
-            ReadFromDiscriminants::None => (
-                CreateEmptyCorpus::FIELD_NAMES_AS_SLICE,
-                CreateEmptyCorpus::FIELD_DOCS,
-            ),
-            ReadFromDiscriminants::Opus => (
-                ImportOpusLinks::FIELD_NAMES_AS_SLICE,
-                ImportOpusLinks::FIELD_DOCS,
-            ),
-            ReadFromDiscriminants::Path => (
-                CreateFileNodes::FIELD_NAMES_AS_SLICE,
-                CreateFileNodes::FIELD_DOCS,
-            ),
-            ReadFromDiscriminants::PTB => (ImportPTB::FIELD_NAMES_AS_SLICE, ImportPTB::FIELD_DOCS),
-            ReadFromDiscriminants::TextGrid => (
-                ImportTextgrid::FIELD_NAMES_AS_SLICE,
-                ImportTextgrid::FIELD_DOCS,
-            ),
-            ReadFromDiscriminants::Table => {
-                (ImportTable::FIELD_NAMES_AS_SLICE, ImportTable::FIELD_DOCS)
-            }
-            ReadFromDiscriminants::TreeTagger => (
-                ImportTreeTagger::FIELD_NAMES_AS_SLICE,
-                ImportTreeTagger::FIELD_DOCS,
-            ),
-            ReadFromDiscriminants::Xlsx => (
-                ImportSpreadsheet::FIELD_NAMES_AS_SLICE,
-                ImportSpreadsheet::FIELD_DOCS,
-            ),
-            ReadFromDiscriminants::Xml => (ImportXML::FIELD_NAMES_AS_SLICE, ImportXML::FIELD_DOCS),
-            ReadFromDiscriminants::Toolbox => (
-                ImportToolBox::FIELD_NAMES_AS_SLICE,
-                ImportToolBox::FIELD_DOCS,
-            ),
-            ReadFromDiscriminants::RelAnnis => (
-                ImportRelAnnis::FIELD_NAMES_AS_SLICE,
-                ImportRelAnnis::FIELD_DOCS,
-            ),
-            ReadFromDiscriminants::SaltXml => (
-                ImportSaltXml::FIELD_NAMES_AS_SLICE,
-                ImportSaltXml::FIELD_DOCS,
-            ),
-            ReadFromDiscriminants::Whisper => (
-                ImportWhisper::FIELD_NAMES_AS_SLICE,
-                ImportWhisper::FIELD_DOCS,
-            ),
-            ReadFromDiscriminants::Webanno => (
-                ImportWebAnnoTSV::FIELD_NAMES_AS_SLICE,
-                ImportWebAnnoTSV::FIELD_DOCS,
-            ),
-            ReadFromDiscriminants::Git => (
-                ImportGitMetadata::FIELD_NAMES_AS_SLICE,
-                ImportGitMetadata::FIELD_DOCS,
-            ),
-        };
-        for (idx, n) in field_names.iter().enumerate() {
-            if idx < field_docs.len() {
-                result.push(ModuleConfiguration {
-                    name: n.to_string(),
-                    description: field_docs[idx].to_string(),
-                });
-            } else {
-                result.push(ModuleConfiguration {
-                    name: n.to_string(),
-                    description: String::default(),
-                });
-            }
-        }
-        result
+    /// Gets the external name of this module (in lowercase).
+    pub fn name(&self) -> Result<String> {
+        let parent_enum = Peek::new(self).into_enum()?;
+        let variant = parent_enum.active_variant()?;
+        Ok(variant.name.to_lowercase())
     }
 }
 
-#[derive(Deserialize, EnumDiscriminants, AsRefStr, Serialize, Clone, PartialEq)]
-#[strum(serialize_all = "lowercase")]
-#[strum_discriminants(derive(EnumIter, AsRefStr), strum(serialize_all = "lowercase"))]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(tag = "action", rename_all = "lowercase", content = "config")]
+#[repr(u16)]
 pub enum GraphOp {
     Align(AlignNodes),  // no default
     Check(Check),       // no default, has a (required) path attribute
@@ -387,73 +209,12 @@ impl GraphOp {
             GraphOp::Align(m) => m,
         }
     }
-}
 
-impl GraphOpDiscriminants {
-    pub fn module_doc(&self) -> &str {
-        match self {
-            GraphOpDiscriminants::Check => Check::DOCS,
-            GraphOpDiscriminants::Collapse => Collapse::DOCS,
-            GraphOpDiscriminants::Visualize => Visualize::DOCS,
-            GraphOpDiscriminants::Enumerate => EnumerateMatches::DOCS,
-            GraphOpDiscriminants::Link => LinkNodes::DOCS,
-            GraphOpDiscriminants::Map => MapAnnos::DOCS,
-            GraphOpDiscriminants::Revise => Revise::DOCS,
-            GraphOpDiscriminants::Chunk => Chunk::DOCS,
-            GraphOpDiscriminants::None => NoOp::DOCS,
-            GraphOpDiscriminants::Split => SplitValues::DOCS,
-            GraphOpDiscriminants::Filter => FilterNodes::DOCS,
-            GraphOpDiscriminants::Time => Filltime::DOCS,
-            GraphOpDiscriminants::Sleep => Sleep::DOCS,
-            GraphOpDiscriminants::Align => AlignNodes::DOCS,
-        }
-    }
-
-    pub fn module_configs(&self) -> Vec<ModuleConfiguration> {
-        let mut result = Vec::new();
-        let (field_names, field_docs) = match self {
-            GraphOpDiscriminants::Check => (Check::FIELD_NAMES_AS_SLICE, Check::FIELD_DOCS),
-            GraphOpDiscriminants::Collapse => {
-                (Collapse::FIELD_NAMES_AS_SLICE, Collapse::FIELD_DOCS)
-            }
-            GraphOpDiscriminants::Visualize => {
-                (Visualize::FIELD_NAMES_AS_SLICE, Visualize::FIELD_DOCS)
-            }
-            GraphOpDiscriminants::Enumerate => (
-                EnumerateMatches::FIELD_NAMES_AS_SLICE,
-                EnumerateMatches::FIELD_DOCS,
-            ),
-            GraphOpDiscriminants::Link => (LinkNodes::FIELD_NAMES_AS_SLICE, LinkNodes::FIELD_DOCS),
-            GraphOpDiscriminants::Map => (MapAnnos::FIELD_NAMES_AS_SLICE, MapAnnos::FIELD_DOCS),
-            GraphOpDiscriminants::Revise => (Revise::FIELD_NAMES_AS_SLICE, Revise::FIELD_DOCS),
-            GraphOpDiscriminants::Chunk => (Chunk::FIELD_NAMES_AS_SLICE, Chunk::FIELD_DOCS),
-            GraphOpDiscriminants::None => (NoOp::FIELD_NAMES_AS_SLICE, NoOp::FIELD_DOCS),
-            GraphOpDiscriminants::Split => {
-                (SplitValues::FIELD_NAMES_AS_SLICE, SplitValues::FIELD_DOCS)
-            }
-            GraphOpDiscriminants::Filter => {
-                (FilterNodes::FIELD_NAMES_AS_SLICE, FilterNodes::FIELD_DOCS)
-            }
-            GraphOpDiscriminants::Time => (Filltime::FIELD_NAMES_AS_SLICE, Filltime::FIELD_DOCS),
-            GraphOpDiscriminants::Sleep => (Sleep::FIELD_NAMES_AS_SLICE, Sleep::FIELD_DOCS),
-            GraphOpDiscriminants::Align => {
-                (AlignNodes::FIELD_NAMES_AS_SLICE, AlignNodes::FIELD_DOCS)
-            }
-        };
-        for (idx, n) in field_names.iter().enumerate() {
-            if idx < field_docs.len() {
-                result.push(ModuleConfiguration {
-                    name: n.to_string(),
-                    description: field_docs[idx].to_string(),
-                });
-            } else {
-                result.push(ModuleConfiguration {
-                    name: n.to_string(),
-                    description: String::default(),
-                });
-            }
-        }
-        result
+    /// Gets the external name of this module (in lowercase).
+    pub fn name(&self) -> Result<String> {
+        let parent_enum = Peek::new(self).into_enum()?;
+        let variant = parent_enum.active_variant()?;
+        Ok(variant.name.to_lowercase())
     }
 }
 
@@ -469,7 +230,7 @@ pub struct StepID {
 impl StepID {
     pub fn from_importer_step(step: &ImporterStep) -> StepID {
         StepID {
-            module_name: format!("import_{}", step.module.as_ref().to_lowercase()),
+            module_name: format!("import_{}", step.module.name().unwrap_or_default()),
             path: Some(step.path.clone()),
         }
     }
@@ -478,7 +239,7 @@ impl StepID {
         StepID {
             module_name: format!(
                 "{position_in_workflow}_{}",
-                step.module.as_ref().to_lowercase()
+                step.module.name().unwrap_or_default()
             ),
             path: None,
         }
@@ -486,7 +247,7 @@ impl StepID {
 
     pub fn from_exporter_step(step: &ExporterStep) -> StepID {
         StepID {
-            module_name: format!("export_{}", step.module.as_ref().to_lowercase()),
+            module_name: format!("export_{}", step.module.name().unwrap_or_default()),
             path: Some(step.path.clone()),
         }
     }

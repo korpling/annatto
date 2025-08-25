@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph,
     graph::GraphStorage,
@@ -18,10 +18,9 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     sync::Arc,
 };
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
-    StepID, core::update_graph_silent, error::AnnattoError, progress::ProgressReporter,
+    StepID, error::AnnattoError, progress::ProgressReporter, util::update_graph_silent,
     workflow::StatusSender,
 };
 
@@ -33,9 +32,7 @@ use super::Manipulator;
 /// edge to a single node. This could be done by keeping one of the nodes or by
 /// creating a third one. Then all all edges, annotations, etc. are moved to the
 /// node of choice, the other node(s) is/are deleted.
-#[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Collapse {
     /// The component type within which to find the edges to collapse.
@@ -505,11 +502,11 @@ mod tests {
 
     use crate::{
         StepID,
-        core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         manipulator::{Manipulator, check::Check},
         test_util::export_to_string,
         util::example_generator,
+        util::update_graph_silent,
     };
 
     use super::{Collapse, HYPERNODE_NAME_STEM};

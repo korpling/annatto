@@ -81,6 +81,10 @@ pub enum AnnattoError {
     #[error("Glob pattern caused an error: {0}")]
     GlobError(String),
     #[error(transparent)]
+    Reflection(#[from] facet_reflect::ReflectError),
+    #[error(transparent)]
+    FacetVariantError(#[from] facet_reflect::VariantError),
+    #[error(transparent)]
     Anyhow(#[from] anyhow::Error),
 }
 

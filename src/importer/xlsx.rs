@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::{anyhow, bail};
+use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
     model::AnnotationComponentType,
@@ -18,27 +19,16 @@ use itertools::Itertools;
 use percent_encoding::utf8_percent_encode;
 use serde::Serialize;
 use serde_derive::Deserialize;
-use struct_field_names_as_array::FieldNamesAsSlice;
 use umya_spreadsheet::Cell;
 
 use super::Importer;
 use crate::{
     StepID, error::AnnattoError, importer::NODE_NAME_ENCODE_SET, progress::ProgressReporter, util,
 };
-use documented::{Documented, DocumentedFields};
 
 /// Imports Excel Spreadsheets where each line is a token, the other columns are
 /// spans and merged cells can be used for spans that cover more than one token.
-#[derive(
-    Deserialize,
-    Default,
-    Documented,
-    DocumentedFields,
-    FieldNamesAsSlice,
-    Serialize,
-    Clone,
-    PartialEq,
-)]
+#[derive(Facet, Deserialize, Default, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ImportSpreadsheet {
     /// Maps token columns to annotation columns. If there is more than one
@@ -85,7 +75,8 @@ pub struct ImportSpreadsheet {
     token_annos: Vec<String>,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Facet, Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[repr(u8)]
 #[serde(untagged)]
 enum SheetAddress {
     Numeric(usize),
@@ -632,9 +623,9 @@ mod tests {
 
     use crate::{
         ImporterStep, ReadFrom,
-        core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         test_util::export_to_string,
+        util::update_graph_silent,
         workflow::{StatusMessage, Workflow},
     };
 

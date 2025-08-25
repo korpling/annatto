@@ -4,7 +4,7 @@ use std::{
     path::Path,
 };
 
-use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     graph::{AnnoKey, Annotation},
     model::{AnnotationComponent, AnnotationComponentType},
@@ -15,7 +15,6 @@ use itertools::Itertools;
 use pest::{Parser, iterators::Pair};
 use pest_derive::Parser;
 use serde::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
     StepID,
@@ -27,9 +26,7 @@ use crate::{
 use super::Importer;
 
 /// Import annotations provided in the fieldlinguist's toolbox text format.
-#[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ImportToolBox {
     /// This attribute sets the annotation layer, that other annotations will point to.
@@ -189,9 +186,9 @@ impl ImportToolBox {
                         span_anno = Some(Annotation {
                             key: AnnoKey {
                                 ns: "".into(),
-                                name: layer_name.into(),
+                                name: layer_name,
                             },
-                            val: anno_val.into(),
+                            val: anno_val,
                         });
                     }
                     end_id = final_id;

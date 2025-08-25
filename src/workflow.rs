@@ -20,9 +20,9 @@ use serde_derive::Deserialize;
 
 use crate::{
     ExporterStep, ImporterStep, ManipulatorStep, StepID,
-    core::update_graph,
     error::{AnnattoError, Result},
     progress::ProgressReporter,
+    util::update_graph,
 };
 use normpath::PathExt;
 use rayon::prelude::*;
@@ -105,6 +105,9 @@ pub struct SaveGraph {
     /// at the end of the workflow run.
     #[serde(default)]
     target: PathBuf,
+    /// If given, use this corpus name instead of getting it from the corpus graph.
+    #[serde(default)]
+    corpus_name: Option<String>,
     /// Optimize components for reading before saving.
     #[serde(default = "default_save_optimize")]
     optimize: Option<OptimizationTarget>,
@@ -131,13 +134,21 @@ impl LoadGraph {
 }
 
 impl SaveGraph {
-    /// Save the graph at the given location at the end of the workflow run.
-    pub fn with_save_at_end<P>(mut self, path: P) -> Self
+    /// Create a new save step, that saves the corpus to a subdirectory
+    pub fn new<P, S>(
+        target: P,
+        optimize: Option<OptimizationTarget>,
+        corpus_name: Option<S>,
+    ) -> Self
     where
         P: Into<PathBuf>,
+        S: ToString,
     {
-        self.target = path.into();
-        self
+        Self {
+            target: target.into(),
+            corpus_name: corpus_name.map(|c| c.to_string()),
+            optimize,
+        }
     }
 }
 
@@ -266,8 +277,13 @@ pub fn execute_from_file(
 pub type StatusSender = Sender<StatusMessage>;
 
 impl Workflow {
-    pub fn with_init(mut self, init: LoadGraph) -> Self {
-        self.load = Some(init);
+    pub fn with_load(mut self, load: LoadGraph) -> Self {
+        self.load = Some(load);
+        self
+    }
+
+    pub fn with_save(mut self, save: SaveGraph) -> Self {
+        self.save = Some(save);
         self
     }
 
@@ -492,7 +508,9 @@ impl Workflow {
                     }
                 }
                 save_progress.worked(1)?;
-                let extended_save_path = {
+                let extended_save_path = if let Some(corpus_name) = &after.corpus_name {
+                    save_path.join(corpus_name)
+                } else {
                     let part_of_c = AnnotationComponent::new(
                         AnnotationComponentType::PartOf,
                         ANNIS_NS.into(),
