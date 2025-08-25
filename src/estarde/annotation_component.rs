@@ -18,7 +18,7 @@ impl IntoInner for SerdeComponent {
     type I = AnnotationComponent;
 
     fn into_inner(self) -> Self::I {
-        AnnotationComponent::new(self.ctype, self.layer.into(), self.name.into())
+        AnnotationComponent::new(self.ctype, self.layer, self.name)
     }
 }
 

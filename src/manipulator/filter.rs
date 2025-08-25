@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use anyhow::anyhow;
-use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     aql,
     graph::NodeID,
@@ -10,9 +10,8 @@ use graphannis::{
 };
 use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY};
 use serde::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 
-use crate::core::update_graph;
+use crate::util::update_graph;
 
 use super::Manipulator;
 
@@ -29,9 +28,7 @@ use super::Manipulator;
 /// query = "pos=/NOUN/"
 /// inverse = true
 /// ```
-#[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct FilterNodes {
     /// The AQL query to use to identify all relevant nodes.
@@ -145,12 +142,12 @@ mod tests {
 
     use crate::{
         StepID,
-        core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         importer::{Importer, exmaralda::ImportEXMARaLDA},
         manipulator::{Manipulator, filter::FilterNodes},
         test_util::export_to_string,
         util::example_generator,
+        util::update_graph_silent,
     };
 
     #[test]

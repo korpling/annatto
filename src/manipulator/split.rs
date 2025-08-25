@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, ops::Not};
 
-use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
     update::{GraphUpdate, UpdateEvent},
@@ -8,16 +8,13 @@ use graphannis::{
 use graphannis_core::{annostorage::ValueSearch, graph::NODE_NAME_KEY};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 
-use crate::{core::update_graph, error::Result, progress::ProgressReporter};
+use crate::{error::Result, progress::ProgressReporter, util::update_graph};
 
 use super::Manipulator;
 
 /// This operation splits conflated annotation values into individual annotations.
-#[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct SplitValues {
     /// This is the delimiter between the parts of the conflated annotation in the input graph
@@ -34,8 +31,9 @@ pub struct SplitValues {
     delete: bool,
 }
 
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(untagged)]
+#[repr(u8)]
 enum Layer {
     ByIndex {
         index: usize,
@@ -68,7 +66,11 @@ impl Manipulator for SplitValues {
         let node_annos = graph.get_node_annos();
         let (ns, name) = {
             (
-                self.anno.ns.is_empty().not().then(|| self.anno.ns.as_str()),
+                self.anno
+                    .ns
+                    .is_empty()
+                    .not()
+                    .then_some(self.anno.ns.as_str()),
                 self.anno.name.as_str(),
             )
         };
@@ -165,7 +167,6 @@ mod tests {
 
     use crate::{
         StepID,
-        core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         importer::{Importer, treetagger::ImportTreeTagger},
         manipulator::{
@@ -174,6 +175,7 @@ mod tests {
         },
         test_util::export_to_string,
         util::example_generator,
+        util::update_graph_silent,
     };
 
     #[test]

@@ -1,7 +1,7 @@
 use std::{cmp::Ordering, collections::BTreeMap, fs, io::Write, path::PathBuf};
 
 use anyhow::{anyhow, bail};
-use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph,
     graph::{AnnoKey, NodeID},
@@ -11,7 +11,6 @@ use graphannis_core::{annostorage::ValueSearch, graph::ANNIS_NS, util::join_qnam
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::progress::ProgressReporter;
 
@@ -30,9 +29,7 @@ use super::Exporter;
 /// remove_ns = true
 ///
 /// ```
-#[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ExportTextGrid {
     /// This anno key determines which nodes in the part of subgraph bundle all contents for a file.

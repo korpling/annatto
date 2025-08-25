@@ -7,7 +7,7 @@ use std::{
 };
 
 use anyhow::anyhow;
-use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph,
     graph::{AnnoKey, GraphStorage, NodeID},
@@ -19,7 +19,6 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Exporter;
 
@@ -28,7 +27,8 @@ use crate::{
     util::token_helper::{TOKEN_KEY, TokenHelper},
 };
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, Default)]
+#[derive(Facet, Clone, Debug, Deserialize, PartialEq, Serialize, Default)]
+#[repr(u8)]
 #[serde(tag = "strategy", content = "name", rename_all = "snake_case")]
 enum SpanName {
     #[default]
@@ -38,9 +38,7 @@ enum SpanName {
 }
 
 /// Exporter for the file format used by the TreeTagger.
-#[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ExportTreeTagger {
     /// Provide the token annotation names that should be exported as columns.
@@ -261,9 +259,9 @@ impl ExportTreeTagger {
             if !node_annos.has_value_for_item(&token, &matching_token_key)?
                 && let Some(seg) = &self.segmentation
             {
-                matching_token_key.name = seg.into();
+                matching_token_key.name = seg.clone();
                 for ns in self.possible_namespace_for_segmentation() {
-                    matching_token_key.ns = ns.into();
+                    matching_token_key.ns = ns;
                     if node_annos.has_value_for_item(&token, &matching_token_key)? {
                         break;
                     }

@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use anyhow::{Context, anyhow};
-use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph, aql,
     graph::NodeID,
@@ -11,11 +11,10 @@ use graphannis::{
 use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
-    core::update_graph_silent,
     progress::ProgressReporter,
+    util::update_graph_silent,
     util::{
         sort_matches::SortCache,
         token_helper::{self, TokenHelper},
@@ -25,9 +24,7 @@ use crate::{
 use super::Manipulator;
 
 /// Aligns nodes identified by queries with edges in the defined component.
-#[derive(
-    Deserialize, Serialize, Documented, DocumentedFields, FieldNamesAsSlice, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 pub struct AlignNodes {
     /// Define node groups that should be aligned. Neighbouring node groups in the
     /// provided list are aligned, given common nodes can be identified. You can
@@ -109,15 +106,16 @@ impl Manipulator for AlignNodes {
     }
 }
 
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 struct NodeGroup {
     query: String,
     link: usize,
     groupby: usize,
 }
 
-#[derive(Default, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Facet, Default, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
+#[repr(u8)]
 enum AlignmentMethod {
     #[default]
     Ses,
@@ -250,7 +248,6 @@ mod tests {
 
     use crate::{
         StepID,
-        core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         importer::{Importer, treetagger::ImportTreeTagger},
         manipulator::{
@@ -259,6 +256,7 @@ mod tests {
         },
         test_util::export_to_string,
         util::example_generator,
+        util::update_graph_silent,
     };
 
     #[test]

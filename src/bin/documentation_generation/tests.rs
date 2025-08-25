@@ -1,5 +1,11 @@
 use std::io::BufWriter;
 
+use annatto::{
+    exporter::{graphml::GraphMLExporter, sequence::ExportSequence},
+    importer::{graphml::GraphMLImporter, none::CreateEmptyCorpus},
+    manipulator::{chunker::Chunk, no_op::NoOp},
+};
+use facet_reflect::Peek;
 use insta::assert_snapshot;
 use tempfile::tempdir;
 
@@ -22,14 +28,56 @@ fn empty_module_list_table() {
 fn simple_list_table() {
     let output_dir = tempdir().unwrap();
 
+    let example_importers: Vec<_> = [
+        ReadFrom::GraphML(GraphMLImporter::default()),
+        ReadFrom::None(CreateEmptyCorpus::default()),
+    ]
+    .into_iter()
+    .map(|m| {
+        Peek::new(&m)
+            .into_enum()
+            .unwrap()
+            .active_variant()
+            .unwrap()
+            .clone()
+    })
+    .collect();
+
+    let example_exporters: Vec<_> = [
+        WriteAs::GraphML(GraphMLExporter::default()),
+        WriteAs::Sequence(ExportSequence::default()),
+    ]
+    .into_iter()
+    .map(|m| {
+        Peek::new(&m)
+            .into_enum()
+            .unwrap()
+            .active_variant()
+            .unwrap()
+            .clone()
+    })
+    .collect();
+
+    let example_graph_ops: Vec<_> = [
+        GraphOp::None(NoOp::default()),
+        GraphOp::Chunk(Chunk::default()),
+    ]
+    .into_iter()
+    .map(|m| {
+        Peek::new(&m)
+            .into_enum()
+            .unwrap()
+            .active_variant()
+            .unwrap()
+            .clone()
+    })
+    .collect();
+
     write_module_list_table(
         output_dir.path(),
-        &[ReadFromDiscriminants::GraphML, ReadFromDiscriminants::None],
-        &[
-            WriteAsDiscriminants::GraphML,
-            WriteAsDiscriminants::Sequence,
-        ],
-        &[GraphOpDiscriminants::None, GraphOpDiscriminants::Chunk],
+        &example_importers,
+        &example_exporters,
+        &example_graph_ops,
     )
     .unwrap();
     let actual = std::fs::read_to_string(output_dir.path().join("README.md")).unwrap();
@@ -41,7 +89,19 @@ fn simple_list_table() {
 fn none_importer_file() {
     let output_dir = tempdir().unwrap();
 
-    write_importer_files(&[ReadFromDiscriminants::None], output_dir.path()).unwrap();
+    let example_variants: Vec<_> = [ReadFrom::None(CreateEmptyCorpus::default())]
+        .into_iter()
+        .map(|m| {
+            Peek::new(&m)
+                .into_enum()
+                .unwrap()
+                .active_variant()
+                .unwrap()
+                .clone()
+        })
+        .collect();
+
+    write_importer_files(&example_variants, output_dir.path()).unwrap();
     let actual =
         std::fs::read_to_string(output_dir.path().join("importers").join("none.md")).unwrap();
 
@@ -51,8 +111,19 @@ fn none_importer_file() {
 #[test]
 fn graphml_exporter_file() {
     let output_dir = tempdir().unwrap();
+    let example_variants: Vec<_> = [WriteAs::GraphML(GraphMLExporter::default())]
+        .into_iter()
+        .map(|m| {
+            Peek::new(&m)
+                .into_enum()
+                .unwrap()
+                .active_variant()
+                .unwrap()
+                .clone()
+        })
+        .collect();
 
-    write_exporter_files(&[WriteAsDiscriminants::GraphML], output_dir.path()).unwrap();
+    write_exporter_files(&example_variants, output_dir.path()).unwrap();
     let actual =
         std::fs::read_to_string(output_dir.path().join("exporters").join("graphml.md")).unwrap();
 
@@ -62,8 +133,18 @@ fn graphml_exporter_file() {
 #[test]
 fn none_graph_op_file() {
     let output_dir = tempdir().unwrap();
-
-    write_graph_op_files(&[GraphOpDiscriminants::None], output_dir.path()).unwrap();
+    let example_variants: Vec<_> = [GraphOp::None(NoOp::default())]
+        .into_iter()
+        .map(|m| {
+            Peek::new(&m)
+                .into_enum()
+                .unwrap()
+                .active_variant()
+                .unwrap()
+                .clone()
+        })
+        .collect();
+    write_graph_op_files(&example_variants, output_dir.path()).unwrap();
     let actual =
         std::fs::read_to_string(output_dir.path().join("graph_ops").join("none.md")).unwrap();
 

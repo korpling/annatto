@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::anyhow;
+use facet::Facet;
 use graphannis::{AnnotationGraph, graph::GraphStorage, model::AnnotationComponentType};
 use graphannis_core::{
     annostorage::{NodeAnnotationStorage, ValueSearch},
@@ -14,7 +15,6 @@ use graphannis_core::{
 use linked_hash_map::LinkedHashMap;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 use umya_spreadsheet::{Worksheet, helper::coordinate::string_from_column_index};
 
 use crate::{
@@ -22,22 +22,11 @@ use crate::{
     util::token_helper::{TOKEN_KEY, TokenHelper},
 };
 
-use documented::{Documented, DocumentedFields};
-
 use super::Exporter;
 
 /// Exports Excel Spreadsheets where each line is a token, the other columns are
 /// spans and merged cells can be used for spans that cover more than one token.
-#[derive(
-    Default,
-    Deserialize,
-    Documented,
-    DocumentedFields,
-    FieldNamesAsSlice,
-    Serialize,
-    Clone,
-    PartialEq,
-)]
+#[derive(Facet, Default, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ExportXlsx {
     /// If `true`, include the annotation namespace in the column header.

@@ -11,7 +11,7 @@ use crate::{
     StepID, error::AnnattoError, exporter::Exporter, progress::ProgressReporter,
     workflow::StatusSender,
 };
-use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::AnnotationGraph;
 use graphannis::{
     graph::AnnoKey,
@@ -25,21 +25,11 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use serde_derive::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 use zip::ZipWriter;
 
 /// Exports files as [GraphML](http://graphml.graphdrawing.org/) files which
 /// conform to the [graphANNIS data model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
-#[derive(
-    Default,
-    Deserialize,
-    Documented,
-    DocumentedFields,
-    FieldNamesAsSlice,
-    Serialize,
-    Clone,
-    PartialEq,
-)]
+#[derive(Facet, Default, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct GraphMLExporter {
     /// If set, add this ANNIS visualization configuration string to the corpus

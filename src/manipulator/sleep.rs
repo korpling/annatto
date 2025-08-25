@@ -1,20 +1,10 @@
-use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use serde::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use super::Manipulator;
 
 /// This operation pauses the conversion process. As a regular user, you usually do not need to use this feature.
-#[derive(
-    Deserialize,
-    Default,
-    Documented,
-    DocumentedFields,
-    FieldNamesAsSlice,
-    Serialize,
-    Clone,
-    PartialEq,
-)]
+#[derive(Facet, Deserialize, Default, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Sleep {
     /// Time to sleep in seconds.
@@ -47,9 +37,9 @@ mod tests {
 
     use crate::{
         StepID,
-        core::update_graph_silent,
         manipulator::{Manipulator, sleep::Sleep},
         util::example_generator,
+        util::update_graph_silent,
     };
 
     #[test]

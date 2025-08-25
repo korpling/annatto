@@ -1,7 +1,7 @@
 use std::{fs, path::Path};
 
 use anyhow::{anyhow, bail};
-use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
     model::AnnotationComponentType,
@@ -12,23 +12,13 @@ use itertools::Itertools;
 use pest::{Parser, iterators::Pair};
 use pest_derive::Parser;
 use serde::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files};
 
 use super::Importer;
 
 /// Import WebAnno TSV format.
-#[derive(
-    Default,
-    Deserialize,
-    Documented,
-    DocumentedFields,
-    FieldNamesAsSlice,
-    Serialize,
-    Clone,
-    PartialEq,
-)]
+#[derive(Facet, Default, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ImportWebAnnoTSV {}
 
@@ -416,8 +406,8 @@ mod tests {
     use insta::assert_snapshot;
 
     use crate::{
-        core::update_graph_silent, exporter::graphml::GraphMLExporter, importer::Importer,
-        test_util::export_to_string,
+        exporter::graphml::GraphMLExporter, importer::Importer, test_util::export_to_string,
+        util::update_graph_silent,
     };
 
     use super::ImportWebAnnoTSV;

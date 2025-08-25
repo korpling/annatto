@@ -8,15 +8,15 @@ use std::{
 use super::Manipulator;
 use crate::{
     StepID,
-    core::{update_graph, update_graph_silent},
     progress::ProgressReporter,
     util::{
         CorpusGraphHelper,
         token_helper::{TOKEN_KEY, TokenHelper},
     },
+    util::{update_graph, update_graph_silent},
 };
 use anyhow::{Context, anyhow};
-use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph,
     graph::{AnnoKey, EdgeContainer, Match},
@@ -27,7 +27,6 @@ use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS, NODE_NAME_KEY, NODE_TYPE_KEY}
 use regex::Regex;
 use serde::Serialize;
 use serde_derive::Deserialize;
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 /// Creates new or updates annotations based on existing annotation values.
 ///
@@ -130,16 +129,7 @@ use struct_field_names_as_array::FieldNamesAsSlice;
 /// value = { copy = 1 }
 /// delete = [1]
 /// ```
-#[derive(
-    Default,
-    Deserialize,
-    Documented,
-    DocumentedFields,
-    FieldNamesAsSlice,
-    Serialize,
-    Clone,
-    PartialEq,
-)]
+#[derive(Facet, Default, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct MapAnnos {
     #[serde(default)]
@@ -250,7 +240,8 @@ fn read_config(path: &Path) -> Result<Mapping, Box<dyn std::error::Error>> {
     Ok(m)
 }
 
-#[derive(Debug, Deserialize, Clone, Serialize, PartialEq)]
+#[derive(Facet, Debug, Deserialize, Clone, Serialize, PartialEq)]
+#[repr(u8)]
 enum RepetitionMode {
     /// Repeat applying the rules n times.
     Fixed { n: usize },
@@ -264,7 +255,7 @@ impl Default for RepetitionMode {
     }
 }
 
-#[derive(Deserialize, Debug, Clone, Serialize, PartialEq)]
+#[derive(Facet, Deserialize, Debug, Clone, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 struct Mapping {
     rules: Vec<Rule>,
@@ -272,8 +263,9 @@ struct Mapping {
     repetition: RepetitionMode,
 }
 
-#[derive(Clone, Deserialize, Debug, Serialize, PartialEq)]
+#[derive(Facet, Clone, Deserialize, Debug, Serialize, PartialEq)]
 #[serde(untagged)]
+#[repr(u8)]
 enum TargetRef {
     Node(usize),
     Span(Vec<usize>),
@@ -314,8 +306,9 @@ impl TargetRef {
     }
 }
 
-#[derive(Clone, Deserialize, Debug, Serialize, PartialEq)]
+#[derive(Facet, Clone, Deserialize, Debug, Serialize, PartialEq)]
 #[serde(untagged)]
+#[repr(u8)]
 enum Value {
     Fixed(String),
     Copy {
@@ -335,7 +328,7 @@ enum Value {
     },
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Facet, Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 struct Rule {
     query: String,

@@ -1,14 +1,13 @@
 use std::{collections::BTreeMap, fs, path::Path};
 
 use anyhow::anyhow;
-use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::graph::ANNIS_NS;
 use serde::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files};
 
@@ -25,16 +24,7 @@ use super::Importer;
 /// [import.config]
 /// skip_tokens = true
 /// ```
-#[derive(
-    Default,
-    Deserialize,
-    Documented,
-    DocumentedFields,
-    FieldNamesAsSlice,
-    Serialize,
-    Clone,
-    PartialEq,
-)]
+#[derive(Facet, Default, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ImportWhisper {
     /// With this attribute the tokenization in the output will not be imported,

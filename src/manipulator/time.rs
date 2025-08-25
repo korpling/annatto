@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, ops::Bound};
 
 use anyhow::{anyhow, bail};
-use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph,
     graph::{AnnoKey, EdgeContainer, NodeID},
@@ -12,9 +12,8 @@ use graphannis_core::graph::{ANNIS_NS, NODE_NAME_KEY, storage::union::UnionEdgeC
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
-use struct_field_names_as_array::FieldNamesAsSlice;
 
-use crate::{core::update_graph_silent, progress::ProgressReporter};
+use crate::{progress::ProgressReporter, util::update_graph_silent};
 
 use super::Manipulator;
 
@@ -30,16 +29,7 @@ use super::Manipulator;
 ///
 /// [graph_op.config]
 /// ```
-#[derive(
-    Deserialize,
-    Default,
-    Documented,
-    DocumentedFields,
-    FieldNamesAsSlice,
-    Serialize,
-    Clone,
-    PartialEq,
-)]
+#[derive(Facet, Deserialize, Default, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Filltime {
     /// A fallback start time in case it cannot be derived.
@@ -379,12 +369,12 @@ mod tests {
 
     use crate::{
         StepID,
-        core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         importer::{Importer, conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA},
         manipulator::{Manipulator, time::Filltime},
         test_util::export_to_string,
         util::example_generator,
+        util::update_graph_silent,
     };
 
     #[test]

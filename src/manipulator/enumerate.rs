@@ -1,7 +1,7 @@
 use std::{borrow::Cow, collections::BTreeSet, sync::Arc};
 
 use anyhow::{Context, anyhow};
-use documented::{Documented, DocumentedFields};
+use facet::Facet;
 use graphannis::{
     aql,
     graph::{AnnoKey, Component, Match},
@@ -15,13 +15,12 @@ use graphannis_core::{
 use itertools::Itertools;
 use serde::Serialize;
 use serde_derive::Deserialize;
-use struct_field_names_as_array::FieldNamesAsSlice;
 
 use crate::{
     StepID,
-    core::update_graph_silent,
     error::AnnattoError,
     progress::ProgressReporter,
+    util::update_graph_silent,
     util::{
         sort_matches::SortCache,
         token_helper::{TOKEN_KEY, TokenHelper},
@@ -32,9 +31,7 @@ use super::Manipulator;
 
 /// Adds a node label to all matched nodes for set of queries with the number of
 /// the match as value.
-#[derive(
-    Deserialize, Documented, DocumentedFields, FieldNamesAsSlice, Serialize, Clone, PartialEq,
-)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct EnumerateMatches {
     /// A list of queries to find the nodes that are to be enumerated.
@@ -110,8 +107,9 @@ fn default_label() -> AnnoKey {
     }
 }
 
-#[derive(Deserialize, Clone, PartialEq, Serialize)]
+#[derive(Facet, Deserialize, Clone, PartialEq, Serialize)]
 #[serde(untagged)]
+#[repr(u8)]
 enum SortByNode {
     AsString(usize),
     AsInteger { numeric: usize },
@@ -351,11 +349,11 @@ mod tests {
 
     use crate::{
         StepID,
-        core::update_graph_silent,
         exporter::graphml::GraphMLExporter,
         manipulator::{Manipulator, enumerate::SortByNode},
         test_util::{compare_results, export_to_string},
         util::example_generator,
+        util::update_graph_silent,
     };
 
     use super::EnumerateMatches;
