@@ -210,7 +210,7 @@ impl Exporter for ExportTreeTagger {
             }
         }
         let progress = ProgressReporter::new(tx, step_id, doc_node_to_start.len())?;
-        progress.info(&format!("Exporting {} documents", doc_node_to_start.len()))?;
+        progress.info(format!("Exporting {} documents", doc_node_to_start.len()))?;
         doc_node_to_start
             .into_iter()
             .try_for_each(move |(doc, start)| -> anyhow::Result<()> {

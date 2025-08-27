@@ -374,7 +374,7 @@ impl MapperImpl {
             RepetitionMode::Fixed { n } => {
                 for i in 0..n {
                     if let Some(p) = &self.progress {
-                        p.info(&format!(
+                        p.info(format!(
                             "Applying rule set of `map` module run {}/{n}",
                             i + 1
                         ))?;
@@ -389,12 +389,12 @@ impl MapperImpl {
                 let mut run_nr = 1;
                 loop {
                     if let Some(p) = &self.progress {
-                        p.info(&format!("Applying rule set of `map` module run {run_nr}"))?;
+                        p.info(format!("Applying rule set of `map` module run {run_nr}"))?;
                     }
                     let new_update_size = self.apply_ruleset(graph)?;
                     if new_update_size > 0 {
                         if let Some(p) = &self.progress {
-                            p.info(&format!("Added {new_update_size} updates because of rules, repeating to apply all rules until no updates are generated."))?;
+                            p.info(format!("Added {new_update_size} updates because of rules, repeating to apply all rules until no updates are generated."))?;
                         }
                         run_nr += 1;
                         graph.calculate_all_statistics()?;
@@ -429,7 +429,7 @@ impl MapperImpl {
                 n += 1;
             }
             if let Some(p) = &self.progress {
-                p.info(&format!(
+                p.info(format!(
                     "Rule with query `{}` matched {n} time(s).",
                     &rule.query
                 ))?;

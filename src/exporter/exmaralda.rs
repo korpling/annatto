@@ -148,7 +148,7 @@ impl Exporter for ExportExmaralda {
         };
         let progress = ProgressReporter::new(tx.clone(), step_id.clone(), doc_nodes.len())?;
 
-        progress.info(&format!(
+        progress.info(format!(
             "Starting to convert {} documents.",
             doc_nodes.len()
         ))?;

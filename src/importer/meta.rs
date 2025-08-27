@@ -81,7 +81,7 @@ fn read_annotations(
         if let Some((k, v)) = line.split_once(KV_SEPARATOR) {
             anno_map.insert(k.to_string(), v.to_string());
         } else {
-            progress.warn(&format!(
+            progress.warn(format!(
                 "Could not read data `{}` in file {}",
                 &line,
                 path.display()
