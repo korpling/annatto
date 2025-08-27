@@ -137,7 +137,7 @@ impl Exporter for ExportExmaralda {
             ordering_data,
             media_data,
         } = edge_buffer;
-        let doc_nodes = start_at_tli.iter().map(|((d, _), _)| d).collect_vec();
+        let doc_nodes: LinkedHashSet<_> = start_at_tli.iter().map(|((d, _), _)| d).collect();
         let node_annos = graph.get_node_annos();
         let media_dir_opt = if !media_data.is_empty() & self.copy_media {
             let d = output_path.join(MEDIA_DIR_NAME);
