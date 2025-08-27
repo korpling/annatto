@@ -122,6 +122,8 @@ impl Exporter for ExportExmaralda {
         step_id: crate::StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        let _progress = ProgressReporter::new_unknown_total_work(tx.clone(), step_id.clone())?;
+
         let mut node_buffer = NodeData::default();
         let mut edge_buffer = EdgeData::default();
         self.traverse(&step_id, graph, &mut node_buffer, &mut edge_buffer)?;
@@ -144,7 +146,12 @@ impl Exporter for ExportExmaralda {
         } else {
             None
         };
-        let progress = ProgressReporter::new(tx, step_id.clone(), doc_nodes.len())?;
+        let progress = ProgressReporter::new(tx.clone(), step_id.clone(), doc_nodes.len())?;
+
+        progress.info(&format!(
+            "Starting to convert {} documents.",
+            doc_nodes.len()
+        ))?;
         let extension = self.file_extension();
         for doc_node_id in doc_nodes {
             let doc_name =
@@ -157,6 +164,7 @@ impl Exporter for ExportExmaralda {
                 "{}.{extension}",
                 doc_name.split(['/', '\\']).next_back().unwrap_or(&doc_name) // This always has a last
             ));
+            progress.info(format!("Writing file {}", doc_path.to_string_lossy()))?;
             if let Some(doc_parent) = doc_path.as_path().parent() {
                 fs::create_dir_all(doc_parent)?;
             } else {
