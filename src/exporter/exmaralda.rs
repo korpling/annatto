@@ -24,6 +24,7 @@ use graphannis_core::{
     types::AnnoKey,
 };
 use itertools::Itertools;
+use linked_hash_set::LinkedHashSet;
 use ordered_float::OrderedFloat;
 use quick_xml::{
     Writer,
@@ -121,12 +122,22 @@ impl Exporter for ExportExmaralda {
         step_id: crate::StepID,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        let _progress = ProgressReporter::new_unknown_total_work(tx.clone(), step_id.clone())?;
+
         let mut node_buffer = NodeData::default();
         let mut edge_buffer = EdgeData::default();
         self.traverse(&step_id, graph, &mut node_buffer, &mut edge_buffer)?;
-        let (start_data, end_data, timeline_data, anno_data) = node_buffer;
-        let (ordering_data, media_data) = edge_buffer;
-        let doc_nodes = start_data.iter().map(|((d, _), _)| d).collect_vec();
+        let NodeData {
+            start_at_tli,
+            end_at_tli,
+            tli2time,
+            anno_data,
+        } = node_buffer;
+        let EdgeData {
+            ordering_data,
+            media_data,
+        } = edge_buffer;
+        let doc_nodes: LinkedHashSet<_> = start_at_tli.iter().map(|((d, _), _)| d).collect();
         let node_annos = graph.get_node_annos();
         let media_dir_opt = if !media_data.is_empty() & self.copy_media {
             let d = output_path.join(MEDIA_DIR_NAME);
@@ -135,7 +146,9 @@ impl Exporter for ExportExmaralda {
         } else {
             None
         };
-        let progress = ProgressReporter::new(tx, step_id.clone(), doc_nodes.len())?;
+        let progress = ProgressReporter::new(tx.clone(), step_id.clone(), doc_nodes.len())?;
+
+        progress.info(format!("Exporting {} document(s)", doc_nodes.len()))?;
         let extension = self.file_extension();
         for doc_node_id in doc_nodes {
             let doc_name =
@@ -327,7 +340,7 @@ impl Exporter for ExportExmaralda {
             writer.write_event(Event::Start(BytesStart::new("basic-body")))?;
             writer.write_event(Event::Start(BytesStart::new("common-timeline")))?;
             // write timeline
-            let timeline: BTreeMap<&(u64, String), &OrderedFloat<f32>> = timeline_data
+            let timeline: BTreeMap<&(u64, String), &OrderedFloat<f32>> = tli2time
                 .iter()
                 .filter(|((d, _), _)| d == doc_node_id)
                 .collect();
@@ -369,8 +382,8 @@ impl Exporter for ExportExmaralda {
                         let node_a = a.0;
                         let node_b = b.0;
                         if let (Some(start_a), Some(start_b)) = (
-                            start_data.get(&(*doc_node_id, node_a)),
-                            start_data.get(&(*doc_node_id, node_b)),
+                            start_at_tli.get(&(*doc_node_id, node_a)),
+                            start_at_tli.get(&(*doc_node_id, node_b)),
                         ) {
                             if let (Some(time_a), Some(time_b)) = (
                                 timeline.get(&(*doc_node_id, start_a.to_string())),
@@ -415,8 +428,8 @@ impl Exporter for ExportExmaralda {
                     let tier = BytesStart::new("tier").with_attributes(tier_attributes);
                     writer.write_event(Event::Start(tier))?;
                     for (node_id, anno_value) in sorted_entries {
-                        if let Some(start) = start_data.get(&(*doc_node_id, *node_id))
-                            && let Some(end) = end_data.get(&(*doc_node_id, *node_id))
+                        if let Some(start) = start_at_tli.get(&(*doc_node_id, *node_id))
+                            && let Some(end) = end_at_tli.get(&(*doc_node_id, *node_id))
                         {
                             let mut event = BytesStart::new("event");
                             event.push_attribute(("start", start.as_str()));
@@ -442,13 +455,27 @@ impl Exporter for ExportExmaralda {
     }
 }
 
-type NodeData = (TimeData, TimeData, TimelineData, AnnoData);
+#[derive(Default)]
+struct NodeData {
+    start_at_tli: TimeData,
+    end_at_tli: TimeData,
+    tli2time: TimelineData,
+    anno_data: AnnoData,
+}
+
+#[derive(Default)]
+struct EdgeData {
+    ordering_data: OrderingData,
+    media_data: MediaData,
+}
+
 type TimeData = BTreeMap<(u64, u64), String>;
 type AnnoData = BTreeMap<(u64, (String, String)), Vec<(u64, String)>>;
 type TimelineData = BTreeMap<(u64, String), OrderedFloat<f32>>;
-type OrderingData = BTreeMap<u64, String>; // node ids in this set are member of an ordering (relevant to determine tier type)
-type AudioData = BTreeMap<u64, Vec<PathBuf>>; // maps document nodes to linked files
-type EdgeData = (OrderingData, AudioData);
+/// node ids in this set are member of an ordering (relevant to determine tier type)
+type OrderingData = BTreeMap<u64, String>;
+/// maps document nodes to linked files
+type MediaData = BTreeMap<u64, Vec<PathBuf>>;
 
 impl Traverse<NodeData, EdgeData> for ExportExmaralda {
     fn node(
@@ -516,7 +543,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
             // note: the following produces multiple entries for the same document node
             // in case this exporter gets a graph that cannot be represented in EXMARaLDA
             // (e. g., multiple ordering roots in one document for the same named ordering)
-            let document_with_ordering_root = base_ordering_root_nodes
+            let document_with_ordering_root: LinkedHashSet<_> = base_ordering_root_nodes
                 .iter()
                 .filter_map(|n| {
                     let dfs =
@@ -534,7 +561,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                     }
                     ret
                 })
-                .collect_vec();
+                .collect();
             // walk the ordering for each document and gather the nodes
             let mut cache = BTreeMap::default();
             let vertical_components =
@@ -543,8 +570,16 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                 .iter()
                 .filter_map(|c| graph.get_graphstorage(c))
                 .collect_vec();
-            let (start_at_tli, end_at_tli, tli2time, anno_data) = node_buffer;
-            let (ordering_data, audio_data) = edge_buffer;
+            let NodeData {
+                start_at_tli,
+                end_at_tli,
+                tli2time,
+                anno_data,
+            } = node_buffer;
+            let EdgeData {
+                ordering_data,
+                media_data,
+            } = edge_buffer;
             let mut processed_nodes = BTreeSet::default();
             let time_key = AnnoKey {
                 ns: ANNIS_NS.into(),
@@ -668,7 +703,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                         media_vec.push(path.to_path_buf());
                     }
                 }
-                audio_data.insert(doc_node, media_vec);
+                media_data.insert(doc_node, media_vec);
             }
             // collecting named ordering data
             let mut storages = Vec::new();

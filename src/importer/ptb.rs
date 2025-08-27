@@ -316,7 +316,7 @@ impl Importer for ImportPTB {
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
 
         for (file_path, doc_path) in documents {
-            reporter.info(&format!("Processing {}", &file_path.to_string_lossy()))?;
+            reporter.info(format!("Processing {}", &file_path.to_string_lossy()))?;
 
             let f = std::fs::File::open(&file_path)?;
             let mut decoder = DecodeReaderBytes::new(f);

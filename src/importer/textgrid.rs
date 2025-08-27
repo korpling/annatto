@@ -105,7 +105,7 @@ impl DocumentMapper<'_> {
             if audio_path.exists() {
                 map_audio_source(u, &audio_path, &self.root_corpus, &self.doc_path)?;
             } else {
-                self.reporter.info(&format!(
+                self.reporter.info(format!(
                     "Could not find corresponding audio file {}",
                     audio_path.to_string_lossy()
                 ))?;
@@ -377,7 +377,7 @@ impl DocumentMapper<'_> {
             }
         } else {
             self.reporter
-                .warn(&format!("Missing tier with name '{tier_name}'"))?;
+                .warn(format!("Missing tier with name '{tier_name}'"))?;
         }
         Ok(node_ids_sorted.into_values().collect_vec())
     }
@@ -438,7 +438,7 @@ impl Importer for ImportTextgrid {
         let documents = import_corpus_graph_from_files(&mut u, input_path, self.file_extensions())?;
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
         for (file_path, doc_path) in documents {
-            reporter.info(&format!("Processing {}", &file_path.to_string_lossy()))?;
+            reporter.info(format!("Processing {}", &file_path.to_string_lossy()))?;
 
             // Some TextGrid files are not UTF-8, but UTF-16, so use a reader
             // that uses the BOM and can transcode the file content if

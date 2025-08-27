@@ -87,7 +87,7 @@ impl SaltDocumentGraphMapper {
 
         let (output_path, output_file) =
             self.create_saltfile(graph, document_node_id, &corpusgraph_helper, output_path)?;
-        progress.info(&format!(
+        progress.info(format!(
             "Writing SaltXML file {}",
             output_path.to_string_lossy()
         ))?;
@@ -367,7 +367,7 @@ impl SaltDocumentGraphMapper {
             self.timeline_items.extend(timeline_items);
             let empty_content_matcher = Regex::new("\\A\\s*\\z")?;
             if !empty_content_matcher.is_match(&content) {
-                progress.warn(&format!("Text for timeline is not empty and will be omitted from the SaltXML file, because this is unsupported by Salt ({document_node_name})."))?;
+                progress.warn(format!("Text for timeline is not empty and will be omitted from the SaltXML file, because this is unsupported by Salt ({document_node_name})."))?;
             }
 
             let tli_count = self.timeline_items.len();

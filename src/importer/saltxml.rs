@@ -53,7 +53,7 @@ impl Importer for ImportSaltXml {
         // Create a new progress reporter that can now estimate the work based on the number of documents
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
         for document_node_name in documents {
-            reporter.info(&format!("Reading document {document_node_name}"))?;
+            reporter.info(format!("Reading document {document_node_name}"))?;
 
             let mut relative_document_path = document_node_name.clone();
             relative_document_path.push_str(".salt");

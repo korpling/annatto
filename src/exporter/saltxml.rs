@@ -182,7 +182,7 @@ where
         }
         if anno_name.is_empty() {
             // Ignore labels that have no name
-            self.progress.warn(&format!(
+            self.progress.warn(format!(
                 "Label ({:?}={}) with empty name is ignored for file {}",
                 key,
                 value,

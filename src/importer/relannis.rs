@@ -513,7 +513,7 @@ fn parse_corpus_tab(
         "corpus.tab"
     });
 
-    progress.info(&format!(
+    progress.info(format!(
         "loading {}",
         corpus_tab_path.to_str().unwrap_or_default()
     ))?;
@@ -543,7 +543,7 @@ fn parse_corpus_tab(
             if *existing_count > 1 {
                 let old_name = name.clone();
                 name = format!("{name}_duplicated_document_name_{existing_count}");
-                progress.warn(&format!(
+                progress.warn(format!(
                     "duplicated document name \"{old_name}\" detected: will be renamed to \"{name}\""
                 ))?;
             }
@@ -595,7 +595,7 @@ fn parse_text_tab(
         "text.tab"
     });
 
-    progress.info(&format!(
+    progress.info(format!(
         "loading {}",
         text_tab_path.to_str().unwrap_or_default()
     ))?;
@@ -848,7 +848,7 @@ fn calculate_automatic_coverage_edges(
             )
         {
             // output a warning but do not fail
-            progress.warn(&format!(
+            progress.warn(format!(
                 "Adding coverage edges (connects spans with tokens) failed: {e}"
             ))?;
         } // end if not a token
@@ -984,7 +984,7 @@ fn add_white_space_token_labels(
             previous_token_id = Some(current_token_id);
         }
     }
-    progress.info(&format!(
+    progress.info(format!(
         "added {added_whitespace_label_count} non-tokenized primary text segments as white-space labels to the existing tokens"
     ))?;
 
@@ -1010,7 +1010,7 @@ fn load_node_tab(
         "node.tab"
     });
 
-    progress.info(&format!(
+    progress.info(format!(
         "loading {}",
         node_tab_path.to_str().unwrap_or_default()
     ))?;
@@ -1222,7 +1222,7 @@ fn load_node_tab(
         }
     } // end "scan all lines" visibility block
 
-    progress.info(&format!(
+    progress.info(format!(
         "creating index for content of {}",
         &node_tab_path.to_string_lossy()
     ))?;
@@ -1270,7 +1270,7 @@ fn load_node_anno_tab(
         "node_annotation.tab"
     });
 
-    progress.info(&format!(
+    progress.info(format!(
         "loading {}",
         node_anno_tab_path.to_str().unwrap_or_default()
     ))?;
@@ -1331,7 +1331,7 @@ fn load_component_tab(
         "component.tab"
     });
 
-    progress.info(&format!(
+    progress.info(format!(
         "loading {}",
         component_tab_path.to_str().unwrap_or_default()
     ))?;
@@ -1395,7 +1395,7 @@ fn load_rank_tab(
         "rank.tab"
     });
 
-    progress.info(&format!(
+    progress.info(format!(
         "loading {}",
         rank_tab_path.to_str().unwrap_or_default()
     ))?;
@@ -1480,7 +1480,7 @@ fn load_rank_tab(
         }
     }
 
-    progress.info(&format!(
+    progress.info(format!(
         "creating index for content of {}",
         &rank_tab_path.to_string_lossy()
     ))?;
@@ -1509,7 +1509,7 @@ fn load_edge_annotation(
         "edge_annotation.tab"
     });
 
-    progress.info(&format!(
+    progress.info(format!(
         "loading {}",
         edge_anno_tab_path.to_str().unwrap_or_default()
     ))?;
@@ -1565,7 +1565,7 @@ fn load_corpus_annotation(
         "corpus_annotation.tab"
     });
 
-    progress.info(&format!(
+    progress.info(format!(
         "loading {}",
         corpus_anno_tab_path.to_str().unwrap_or_default()
     ))?;
