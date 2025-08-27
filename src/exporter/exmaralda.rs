@@ -125,8 +125,16 @@ impl Exporter for ExportExmaralda {
         let mut node_buffer = NodeData::default();
         let mut edge_buffer = EdgeData::default();
         self.traverse(&step_id, graph, &mut node_buffer, &mut edge_buffer)?;
-        let (start_data, end_data, timeline_data, anno_data) = node_buffer;
-        let (ordering_data, media_data) = edge_buffer;
+        let NodeData {
+            start_at_tli: start_data,
+            end_at_tli: end_data,
+            tli2time: timeline_data,
+            anno_data,
+        } = node_buffer;
+        let EdgeData {
+            ordering_data,
+            audio_data: media_data,
+        } = edge_buffer;
         let doc_nodes = start_data.iter().map(|((d, _), _)| d).collect_vec();
         let node_annos = graph.get_node_annos();
         let media_dir_opt = if !media_data.is_empty() & self.copy_media {
@@ -443,13 +451,25 @@ impl Exporter for ExportExmaralda {
     }
 }
 
-type NodeData = (TimeData, TimeData, TimelineData, AnnoData);
+#[derive(Default)]
+struct NodeData {
+    start_at_tli: TimeData,
+    end_at_tli: TimeData,
+    tli2time: TimelineData,
+    anno_data: AnnoData,
+}
+
+#[derive(Default)]
+struct EdgeData {
+    ordering_data: OrderingData,
+    audio_data: AudioData,
+}
+
 type TimeData = BTreeMap<(u64, u64), String>;
 type AnnoData = BTreeMap<(u64, (String, String)), Vec<(u64, String)>>;
 type TimelineData = BTreeMap<(u64, String), OrderedFloat<f32>>;
 type OrderingData = BTreeMap<u64, String>; // node ids in this set are member of an ordering (relevant to determine tier type)
 type AudioData = BTreeMap<u64, Vec<PathBuf>>; // maps document nodes to linked files
-type EdgeData = (OrderingData, AudioData);
 
 impl Traverse<NodeData, EdgeData> for ExportExmaralda {
     fn node(
@@ -544,8 +564,16 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                 .iter()
                 .filter_map(|c| graph.get_graphstorage(c))
                 .collect_vec();
-            let (start_at_tli, end_at_tli, tli2time, anno_data) = node_buffer;
-            let (ordering_data, audio_data) = edge_buffer;
+            let NodeData {
+                start_at_tli,
+                end_at_tli,
+                tli2time,
+                anno_data,
+            } = node_buffer;
+            let EdgeData {
+                ordering_data,
+                audio_data,
+            } = edge_buffer;
             let mut processed_nodes = BTreeSet::default();
             let time_key = AnnoKey {
                 ns: ANNIS_NS.into(),
