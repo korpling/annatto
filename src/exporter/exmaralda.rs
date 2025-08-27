@@ -126,16 +126,16 @@ impl Exporter for ExportExmaralda {
         let mut edge_buffer = EdgeData::default();
         self.traverse(&step_id, graph, &mut node_buffer, &mut edge_buffer)?;
         let NodeData {
-            start_at_tli: start_data,
-            end_at_tli: end_data,
-            tli2time: timeline_data,
+            start_at_tli,
+            end_at_tli,
+            tli2time,
             anno_data,
         } = node_buffer;
         let EdgeData {
             ordering_data,
-            audio_data: media_data,
+            media_data,
         } = edge_buffer;
-        let doc_nodes = start_data.iter().map(|((d, _), _)| d).collect_vec();
+        let doc_nodes = start_at_tli.iter().map(|((d, _), _)| d).collect_vec();
         let node_annos = graph.get_node_annos();
         let media_dir_opt = if !media_data.is_empty() & self.copy_media {
             let d = output_path.join(MEDIA_DIR_NAME);
@@ -336,7 +336,7 @@ impl Exporter for ExportExmaralda {
             writer.write_event(Event::Start(BytesStart::new("basic-body")))?;
             writer.write_event(Event::Start(BytesStart::new("common-timeline")))?;
             // write timeline
-            let timeline: BTreeMap<&(u64, String), &OrderedFloat<f32>> = timeline_data
+            let timeline: BTreeMap<&(u64, String), &OrderedFloat<f32>> = tli2time
                 .iter()
                 .filter(|((d, _), _)| d == doc_node_id)
                 .collect();
@@ -378,8 +378,8 @@ impl Exporter for ExportExmaralda {
                         let node_a = a.0;
                         let node_b = b.0;
                         if let (Some(start_a), Some(start_b)) = (
-                            start_data.get(&(*doc_node_id, node_a)),
-                            start_data.get(&(*doc_node_id, node_b)),
+                            start_at_tli.get(&(*doc_node_id, node_a)),
+                            start_at_tli.get(&(*doc_node_id, node_b)),
                         ) {
                             if let (Some(time_a), Some(time_b)) = (
                                 timeline.get(&(*doc_node_id, start_a.to_string())),
@@ -424,8 +424,8 @@ impl Exporter for ExportExmaralda {
                     let tier = BytesStart::new("tier").with_attributes(tier_attributes);
                     writer.write_event(Event::Start(tier))?;
                     for (node_id, anno_value) in sorted_entries {
-                        if let Some(start) = start_data.get(&(*doc_node_id, *node_id))
-                            && let Some(end) = end_data.get(&(*doc_node_id, *node_id))
+                        if let Some(start) = start_at_tli.get(&(*doc_node_id, *node_id))
+                            && let Some(end) = end_at_tli.get(&(*doc_node_id, *node_id))
                         {
                             let mut event = BytesStart::new("event");
                             event.push_attribute(("start", start.as_str()));
@@ -462,14 +462,16 @@ struct NodeData {
 #[derive(Default)]
 struct EdgeData {
     ordering_data: OrderingData,
-    audio_data: AudioData,
+    media_data: MediaData,
 }
 
 type TimeData = BTreeMap<(u64, u64), String>;
 type AnnoData = BTreeMap<(u64, (String, String)), Vec<(u64, String)>>;
 type TimelineData = BTreeMap<(u64, String), OrderedFloat<f32>>;
-type OrderingData = BTreeMap<u64, String>; // node ids in this set are member of an ordering (relevant to determine tier type)
-type AudioData = BTreeMap<u64, Vec<PathBuf>>; // maps document nodes to linked files
+/// node ids in this set are member of an ordering (relevant to determine tier type)
+type OrderingData = BTreeMap<u64, String>;
+/// maps document nodes to linked files
+type MediaData = BTreeMap<u64, Vec<PathBuf>>;
 
 impl Traverse<NodeData, EdgeData> for ExportExmaralda {
     fn node(
@@ -572,7 +574,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
             } = node_buffer;
             let EdgeData {
                 ordering_data,
-                audio_data,
+                media_data,
             } = edge_buffer;
             let mut processed_nodes = BTreeSet::default();
             let time_key = AnnoKey {
@@ -697,7 +699,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                         media_vec.push(path.to_path_buf());
                     }
                 }
-                audio_data.insert(doc_node, media_vec);
+                media_data.insert(doc_node, media_vec);
             }
             // collecting named ordering data
             let mut storages = Vec::new();
