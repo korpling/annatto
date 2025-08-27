@@ -24,6 +24,7 @@ use graphannis_core::{
     types::AnnoKey,
 };
 use itertools::Itertools;
+use linked_hash_set::LinkedHashSet;
 use ordered_float::OrderedFloat;
 use quick_xml::{
     Writer,
@@ -516,7 +517,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
             // note: the following produces multiple entries for the same document node
             // in case this exporter gets a graph that cannot be represented in EXMARaLDA
             // (e. g., multiple ordering roots in one document for the same named ordering)
-            let document_with_ordering_root = base_ordering_root_nodes
+            let document_with_ordering_root: LinkedHashSet<_> = base_ordering_root_nodes
                 .iter()
                 .filter_map(|n| {
                     let dfs =
@@ -534,7 +535,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                     }
                     ret
                 })
-                .collect_vec();
+                .collect();
             // walk the ordering for each document and gather the nodes
             let mut cache = BTreeMap::default();
             let vertical_components =
