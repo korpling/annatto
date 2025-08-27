@@ -148,10 +148,7 @@ impl Exporter for ExportExmaralda {
         };
         let progress = ProgressReporter::new(tx.clone(), step_id.clone(), doc_nodes.len())?;
 
-        progress.info(format!(
-            "Starting to convert {} documents.",
-            doc_nodes.len()
-        ))?;
+        progress.info(format!("Exporting {} document", doc_nodes.len()))?;
         let extension = self.file_extension();
         for doc_node_id in doc_nodes {
             let doc_name =
@@ -164,7 +161,6 @@ impl Exporter for ExportExmaralda {
                 "{}.{extension}",
                 doc_name.split(['/', '\\']).next_back().unwrap_or(&doc_name) // This always has a last
             ));
-            progress.info(format!("Writing file {}", doc_path.to_string_lossy()))?;
             if let Some(doc_parent) = doc_path.as_path().parent() {
                 fs::create_dir_all(doc_parent)?;
             } else {
