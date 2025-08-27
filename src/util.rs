@@ -48,7 +48,7 @@ pub(crate) fn update_graph(
 ) -> std::result::Result<(), anyhow::Error> {
     let step_id = step_id.unwrap_or(FALLBACK_STEP_ID.clone());
     let update_size = update.len()?;
-    let progress = ProgressReporter::new(tx.clone(), step_id.clone(), update_size)?;
+    let progress = ProgressReporter::new_unknown_total_work(tx.clone(), step_id.clone())?;
     graph
         .apply_update_keep_statistics(update, |msg| {
             if let Err(e) = progress.info(msg) {

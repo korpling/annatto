@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Exmaralda exporter would export the same file several times depending on the
   token number.
+- `create_annotation_graph` step should show an animation because the progress
+  can't be displayed in percent
 
 ## [0.39.0] - 2025-08-25
 
