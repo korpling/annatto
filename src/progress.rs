@@ -51,20 +51,22 @@ impl ProgressReporter {
         Ok(reporter)
     }
 
-    pub fn info(&self, msg: &str) -> Result<(), AnnattoError> {
+    pub fn info<S: ToString>(&self, msg: S) -> Result<(), AnnattoError> {
+        let msg = msg.to_string();
         let state = self.state.lock()?;
         if let Some(ref tx) = state.tx {
-            tx.send(StatusMessage::Info(msg.to_string()))?;
+            tx.send(StatusMessage::Info(msg))?;
         } else {
             info!("{msg}");
         }
         Ok(())
     }
 
-    pub fn warn(&self, msg: &str) -> Result<(), AnnattoError> {
+    pub fn warn<S: ToString>(&self, msg: S) -> Result<(), AnnattoError> {
+        let msg = msg.to_string();
         let state = self.state.lock()?;
         if let Some(ref tx) = state.tx {
-            tx.send(StatusMessage::Warning(msg.to_string()))?;
+            tx.send(StatusMessage::Warning(msg))?;
         } else {
             warn!("{msg}");
         }
