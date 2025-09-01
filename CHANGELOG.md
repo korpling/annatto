@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.39.1] - 2025-09-01
+
 ### Fixed
 
 - Exmaralda exporter would export the same file several times depending on the
