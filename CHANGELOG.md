@@ -5,6 +5,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `skip_unchanged_files` config parameter to `xlsx` exporter. It creates a
+  diff using the `sheet-diff` crate with an existing output file. The existing
+  file is only overwritten if the content of the files are different. This is
+  useful because binary Excel files will be marked as changed in version control
+  systems because even for the same content, the binary file representation will
+  be different.
+
 ## [0.39.1] - 2025-09-01
 
 ### Fixed

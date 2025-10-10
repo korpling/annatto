@@ -15,6 +15,7 @@ use graphannis_core::{
 use linked_hash_map::LinkedHashMap;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
+use tempfile::NamedTempFile;
 use umya_spreadsheet::{Worksheet, helper::coordinate::string_from_column_index};
 
 use crate::{
@@ -44,6 +45,14 @@ pub struct ExportXlsx {
     /// Has no effect if the vector is empty.
     #[serde(default, with = "crate::estarde::anno_key::in_sequence")]
     annotation_order: Vec<AnnoKey>,
+    /// If an output file for a document already exists and the content seems to
+    /// be the same, don't overwrite the output file.
+    ///
+    /// Even with the same content, Excel files will appear as changed for
+    /// version control systems because the binary files will be different. When
+    /// this configuration value is set, the existing file will read and
+    /// compared to the file that will be generated before overwriting it.
+    skip_unchanged_files: bool,
 }
 
 fn find_token_roots(
@@ -117,8 +126,8 @@ impl ExportXlsx {
         g: &graphannis::AnnotationGraph,
         output_path: &std::path::Path,
     ) -> Result<(), anyhow::Error> {
-        let mut book = umya_spreadsheet::new_file();
-        let worksheet = book.get_active_sheet_mut();
+        let mut spreadsheet = umya_spreadsheet::new_file();
+        let worksheet = spreadsheet.get_active_sheet_mut();
 
         let token_helper = TokenHelper::new(g)?;
         let ordering_component = Component::new(
@@ -146,7 +155,7 @@ impl ExportXlsx {
         // Add meta data sheet
         let meta_annos = g.get_node_annos().get_annotations_for_item(&doc_node_id)?;
         if !meta_annos.is_empty() {
-            let meta_sheet = book.new_sheet("meta").map_err(|e| anyhow!(e))?;
+            let meta_sheet = spreadsheet.new_sheet("meta").map_err(|e| anyhow!(e))?;
             meta_sheet.insert_new_row(&1, &2);
             meta_sheet.get_cell_mut((&1, &1)).set_value_string("Name");
             meta_sheet.get_cell_mut((&2, &1)).set_value_string("Value");
@@ -167,7 +176,27 @@ impl ExportXlsx {
         }
 
         let output_path = output_path.join(format!("{doc_name}.xlsx"));
-        umya_spreadsheet::writer::xlsx::write(&book, output_path)?;
+
+        if self.skip_unchanged_files
+            && output_path.is_file()
+            && let Some(parent_dir) = output_path.parent()
+        {
+            // Write the file to a temporary location and use a Excel-diff tool to compare the files
+            let tmp_out = NamedTempFile::with_suffix_in(".xlsx", parent_dir)?;
+            umya_spreadsheet::writer::xlsx::write(&spreadsheet, tmp_out.path())?;
+            let diff = sheets_diff::core::diff::Diff::new(
+                &output_path.to_string_lossy(),
+                &tmp_out.path().to_string_lossy(),
+            );
+            let contains_changes = !diff.sheet_diff.is_empty() || !diff.cell_diffs.is_empty();
+            if contains_changes {
+                // Overwrite the output file with the temporary one
+                tmp_out.persist(output_path)?;
+            }
+        } else {
+            // Directly write the output file
+            umya_spreadsheet::writer::xlsx::write(&spreadsheet, output_path)?;
+        }
 
         Ok(())
     }
@@ -398,9 +427,13 @@ impl Exporter for ExportXlsx {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::{
+        fs::File,
+        path::{Path, PathBuf},
+    };
 
     use insta::assert_snapshot;
+    use sha2::{Digest, Sha256};
     use tempfile::TempDir;
 
     use crate::{
@@ -436,6 +469,7 @@ mod tests {
                 },
             ],
             include_namespace: true,
+            skip_unchanged_files: false,
         };
         let serialization = toml::to_string(&module);
         assert!(
@@ -691,5 +725,167 @@ mod tests {
         let q = graphannis::aql::parse("Name _ident_ annis:doc", false).unwrap();
         let it = graphannis::aql::execute_query_on_graph(&written_graph, &q, false, None).unwrap();
         assert_eq!(0, it.count());
+    }
+
+    //// Create a tempory corpus directory with a copy of an excel file that we can read and change
+    /// Returns the corpus directory, the path to the single document in it and the hash of the document;
+    fn create_corpus_folder_and_hash() -> (TempDir, PathBuf, String) {
+        let corpus_dir = tempfile::TempDir::new().unwrap();
+
+        let document_path = corpus_dir.path().join("doc1.xlsx");
+        std::fs::copy(
+            Path::new("./tests/data/import/xlsx/sample_sentence/doc1.xlsx"),
+            &document_path,
+        )
+        .unwrap();
+        let mut file = File::open(&document_path).unwrap();
+        let mut sha256 = Sha256::new();
+        std::io::copy(&mut file, &mut sha256).unwrap();
+        let hash_value = format!("{:02X?}", sha256.finalize());
+
+        (corpus_dir, document_path, hash_value)
+    }
+
+    #[test]
+    fn export_skips_unchanged() {
+        let (corpus_dir, document_path, original_hash) = create_corpus_folder_and_hash();
+
+        // Import an example document
+        let importer: ImportSpreadsheet = toml::from_str(
+            r#"
+        column_map = {"tok" = ["lb"]}
+        metasheet = "meta"
+        metasheet_skip_rows = 1
+            "#,
+        )
+        .unwrap();
+        let importer = crate::ReadFrom::Xlsx(importer);
+        let orig_import_step = ImporterStep {
+            module: importer,
+            path: corpus_dir.path().to_path_buf(),
+        };
+        let mut updates = orig_import_step.execute(None).unwrap();
+        let mut graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        graph.apply_update(&mut updates, |_| {}).unwrap();
+
+        // Export to the same folder and configure exporter to skip unchanged files
+        let exporter: ExportXlsx = toml::from_str(
+            r#"
+            skip_unchanged_files = true
+            annotation_order = ["tok", "lb"]
+            "#,
+        )
+        .unwrap();
+
+        let exporter = crate::WriteAs::Xlsx(exporter);
+        let export_step = ExporterStep {
+            module: exporter,
+            path: corpus_dir.path().to_path_buf(),
+        };
+        export_step.execute(&graph, None).unwrap();
+
+        // Calculate the hash sum of the file again, it should not have changed because the file was not overwritten
+        let mut file = File::open(&document_path).unwrap();
+        let mut sha256 = Sha256::new();
+        std::io::copy(&mut file, &mut sha256).unwrap();
+        let hash_after_conversion = format!("{:02X?}", sha256.finalize());
+
+        assert_eq!(original_hash, hash_after_conversion);
+    }
+
+    #[test]
+    fn export_overwrites_changed() {
+        let (corpus_dir, document_path, original_hash) = create_corpus_folder_and_hash();
+
+        // Import an example document
+        let importer: ImportSpreadsheet = toml::from_str(
+            r#"
+        column_map = {"tok" = ["lb"]}
+        metasheet = "meta"
+        metasheet_skip_rows = 1
+            "#,
+        )
+        .unwrap();
+        let importer = crate::ReadFrom::Xlsx(importer);
+        let orig_import_step = ImporterStep {
+            module: importer,
+            path: corpus_dir.path().to_path_buf(),
+        };
+        let mut updates = orig_import_step.execute(None).unwrap();
+        let mut graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        graph.apply_update(&mut updates, |_| {}).unwrap();
+
+        // Export to the same folder and configure exporter to skip unchanged
+        // files but configure the annotation order in a way that the file will
+        // be different from the original one
+        let exporter: ExportXlsx = toml::from_str(
+            r#"
+            skip_unchanged_files = true
+            annotation_order = ["lb", "tok"]
+            "#,
+        )
+        .unwrap();
+
+        let exporter = crate::WriteAs::Xlsx(exporter);
+        let export_step = ExporterStep {
+            module: exporter,
+            path: corpus_dir.path().to_path_buf(),
+        };
+        export_step.execute(&graph, None).unwrap();
+
+        // Calculate the hash sum of the file again, it should have changed because the file was overwritten
+        let mut file = File::open(&document_path).unwrap();
+        let mut sha256 = Sha256::new();
+        std::io::copy(&mut file, &mut sha256).unwrap();
+        let hash_after_conversion = format!("{:02X?}", sha256.finalize());
+
+        assert_ne!(original_hash, hash_after_conversion);
+    }
+
+    #[test]
+    fn export_overwrites_unchanged() {
+        let (corpus_dir, document_path, original_hash) = create_corpus_folder_and_hash();
+
+        // Import an example document
+        let importer: ImportSpreadsheet = toml::from_str(
+            r#"
+        column_map = {"tok" = ["lb"]}
+        metasheet = "meta"
+        metasheet_skip_rows = 1
+            "#,
+        )
+        .unwrap();
+        let importer = crate::ReadFrom::Xlsx(importer);
+        let orig_import_step = ImporterStep {
+            module: importer,
+            path: corpus_dir.path().to_path_buf(),
+        };
+        let mut updates = orig_import_step.execute(None).unwrap();
+        let mut graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        graph.apply_update(&mut updates, |_| {}).unwrap();
+
+        // Export to the same folder and configure exporter to overwrite unchanged files
+        let exporter: ExportXlsx = toml::from_str(
+            r#"
+            skip_unchanged_files = false
+            annotation_order = ["tok", "lb"]
+            "#,
+        )
+        .unwrap();
+
+        let exporter = crate::WriteAs::Xlsx(exporter);
+        let export_step = ExporterStep {
+            module: exporter,
+            path: corpus_dir.path().to_path_buf(),
+        };
+        export_step.execute(&graph, None).unwrap();
+
+        // Calculate the hash sum of the file again, it should have changed because the file was overwritten
+        let mut file = File::open(&document_path).unwrap();
+        let mut sha256 = Sha256::new();
+        std::io::copy(&mut file, &mut sha256).unwrap();
+        let hash_after_conversion = format!("{:02X?}", sha256.finalize());
+
+        assert_ne!(original_hash, hash_after_conversion);
     }
 }
