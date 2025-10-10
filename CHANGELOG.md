@@ -5,6 +5,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `skip_unchanged_files` of `xlsx` exporter should have a default value if not
+  given in the workflow file.
+
 ## [0.40.0] - 2025-10-10
 
 ### Added

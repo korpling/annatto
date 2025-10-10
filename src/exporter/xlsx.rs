@@ -52,6 +52,7 @@ pub struct ExportXlsx {
     /// version control systems because the binary files will be different. When
     /// this configuration value is set, the existing file will read and
     /// compared to the file that will be generated before overwriting it.
+    #[serde(default)]
     skip_unchanged_files: bool,
 }
 
