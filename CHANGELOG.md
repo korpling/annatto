@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.40.1] - 2025-10-10
+
 ### Fixed
 
 - `skip_unchanged_files` of `xlsx` exporter should have a default value if not
