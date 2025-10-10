@@ -4,3 +4,4 @@ expression: serialization.unwrap()
 ---
 include_namespace = true
 annotation_order = ["text::text", "edition::edition"]
+skip_unchanged_files = false
