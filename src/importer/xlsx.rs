@@ -73,6 +73,10 @@ pub struct ImportSpreadsheet {
     /// Map the given annotation columns as token annotations and not as span if possible.
     #[serde(default)]
     token_annos: Vec<String>,
+    /// If formulas should be evaluated (false by default), set this to true. If false,
+    /// a cell entry will be treated as text value including the `=`.
+    #[serde(default)]
+    evaluate: bool,
 }
 
 #[derive(Facet, Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -144,17 +148,20 @@ struct MetasheetMapper<'a> {
     sheet: &'a umya_spreadsheet::Worksheet,
     skip_rows: usize,
     max_row: u32,
+    evaluate_formulas: bool,
 }
 
 impl<'a> MetasheetMapper<'a> {
     fn new(
         sheet: &'a umya_spreadsheet::Worksheet,
         skip_rows: usize,
+        evaluate_formulas: bool,
     ) -> Result<MetasheetMapper<'a>, anyhow::Error> {
         Ok(MetasheetMapper {
             sheet,
             skip_rows,
             max_row: max_row(sheet)?,
+            evaluate_formulas,
         })
     }
 
@@ -173,11 +180,15 @@ impl<'a> MetasheetMapper<'a> {
             if let Some(key_cell) = entry_map.get(&1)
                 && let Some(value_cell) = entry_map.get(&2)
             {
-                let kv = key_cell.get_value();
+                let kv = key_cell.get_raw_value().to_string();
                 let key = kv.trim();
                 if !key.is_empty() {
                     let (ns, name) = split_qname(key);
-                    let vv = value_cell.get_value();
+                    let vv = if value_cell.is_formula() && !self.evaluate_formulas {
+                        value_cell.get_formula().to_string()
+                    } else {
+                        value_cell.get_raw_value().to_string()
+                    };
                     let value = vv.trim();
                     update.add_event(UpdateEvent::AddNodeLabel {
                         node_name: doc_node_name.to_string(),
@@ -200,6 +211,7 @@ struct DatasheetMapper<'a> {
     reverse_col_map: &'a BTreeMap<String, String>,
     fallback: Option<String>,
     token_annos: &'a [String],
+    evaluate_formulas: bool,
 }
 
 impl<'a> DatasheetMapper<'a> {
@@ -209,6 +221,7 @@ impl<'a> DatasheetMapper<'a> {
         reverse_col_map: &'a BTreeMap<String, String>,
         fallback: Option<String>,
         token_annos: &'a [String],
+        evaluate_formulas: bool,
     ) -> Result<DatasheetMapper<'a>, anyhow::Error> {
         Ok(DatasheetMapper {
             sheet,
@@ -218,6 +231,7 @@ impl<'a> DatasheetMapper<'a> {
             reverse_col_map,
             fallback,
             token_annos,
+            evaluate_formulas,
         })
     }
 
@@ -314,7 +328,11 @@ impl<'a> DatasheetMapper<'a> {
                 .get_cell((col_num, row_num))
                 .filter(|c| !c.get_raw_value().is_empty())
             {
-                cell.get_raw_value().to_string()
+                if cell.is_formula() && !self.evaluate_formulas {
+                    format!("={}", cell.get_formula())
+                } else {
+                    cell.get_raw_value().to_string()
+                }
             } else {
                 continue;
             };
@@ -504,7 +522,11 @@ struct WorkbookMapper<'a> {
 }
 
 impl WorkbookMapper<'_> {
-    fn import_workbook(self, update: &mut GraphUpdate) -> Result<(), AnnattoError> {
+    fn import_workbook(
+        self,
+        update: &mut GraphUpdate,
+        evaluate_formulas: bool,
+    ) -> Result<(), AnnattoError> {
         let book = umya_spreadsheet::reader::xlsx::read(&self.path)?;
         let reverse_col_map = self
             .column_map
@@ -518,11 +540,12 @@ impl WorkbookMapper<'_> {
                 &reverse_col_map,
                 self.fallback.clone(),
                 self.token_annos,
+                evaluate_formulas,
             )?;
             mapper.import_datasheet(&self.doc_node_name, update, self.progress)?;
         }
         if let Some(sheet) = sheet_from_address(&book, &self.metasheet, None) {
-            let mapper = MetasheetMapper::new(sheet, self.metasheet_skip_rows)?;
+            let mapper = MetasheetMapper::new(sheet, self.metasheet_skip_rows, evaluate_formulas)?;
             mapper.import_as_metadata(&self.doc_node_name, update)?;
         }
         self.progress.worked(1)?;
@@ -596,7 +619,7 @@ impl Importer for ImportSpreadsheet {
             .collect_vec();
         mapper_vec
             .into_iter()
-            .try_for_each(|m| m.import_workbook(&mut update))?;
+            .try_for_each(|m| m.import_workbook(&mut update, self.evaluate))?;
         // delete document nodes that exist for backup files
         ignore_docs
             .into_iter()
@@ -611,7 +634,7 @@ impl Importer for ImportSpreadsheet {
 
 #[cfg(test)]
 mod tests {
-    use std::{path::Path, sync::mpsc};
+    use std::{fs, path::Path, sync::mpsc};
 
     use graphannis::{
         AnnotationGraph, CorpusStorage,
@@ -665,6 +688,7 @@ mod tests {
             fallback: Some("dipl".to_string()),
             metasheet_skip_rows: 1,
             token_annos: vec!["pos".to_string(), "lemma".to_string()],
+            evaluate: false,
         };
         let serialization = toml::to_string(&module);
         assert!(
@@ -796,6 +820,7 @@ mod tests {
             metasheet: None,
             token_annos: vec![],
             metasheet_skip_rows: 0,
+            evaluate: false,
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
@@ -908,6 +933,7 @@ mod tests {
             metasheet: None,
             token_annos: vec![],
             metasheet_skip_rows: 0,
+            evaluate: false,
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/dirty/xlsx/");
@@ -943,6 +969,7 @@ mod tests {
             metasheet: None,
             token_annos: vec![],
             metasheet_skip_rows: 0,
+            evaluate: false,
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/warnings/xlsx/");
@@ -1022,6 +1049,7 @@ mod tests {
             metasheet: None,
             token_annos: vec![],
             metasheet_skip_rows: 0,
+            evaluate: false,
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
@@ -1114,6 +1142,7 @@ mod tests {
             metasheet: Some(SheetAddress::Name("meta".to_string())),
             token_annos: vec![],
             metasheet_skip_rows: 0,
+            evaluate: false,
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
@@ -1229,5 +1258,31 @@ norm = ["pos", "lemma"]
         let actual = export_to_string(&graph, export);
         assert!(actual.is_ok());
         assert_snapshot!(actual.unwrap());
+    }
+
+    #[test]
+    fn formula_data() {
+        let s = fs::read_to_string("./tests/data/import/xlsx/formula-data/build.toml");
+        assert!(s.is_ok());
+        let m: Result<ImportSpreadsheet, _> = toml::from_str(&s.unwrap());
+        assert!(m.is_ok(), "Err: {:?}", m.err().unwrap());
+        let module = m.unwrap();
+        let u = module.import_corpus(
+            Path::new("./tests/data/import/xlsx/formula-data/"),
+            StepID {
+                module_name: "test_import".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(u.is_ok());
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut u.unwrap(), |_| {}).is_ok());
+        let m: Result<GraphMLExporter, _> = toml::from_str("stable_order = true");
+        assert!(m.is_ok());
+        let module = m.unwrap();
+        assert_snapshot!(export_to_string(&graph, module).unwrap());
     }
 }
