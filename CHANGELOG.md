@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- import `xlsx`: via `evaluate` formula evaluation can be activated. By default, formulas are imported as formula text values, not as the result of their evaluation.
+
 ## [0.40.1] - 2025-10-10
 
 ### Fixed
