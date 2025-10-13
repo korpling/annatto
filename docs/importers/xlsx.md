@@ -53,3 +53,8 @@ Skip the first given rows in the meta data sheet.
 
 Map the given annotation columns as token annotations and not as span if possible.
 
+###  evaluate
+
+If formulas should be evaluated (false by default), set this to true. If false,
+a cell entry will be treated as text value including the `=`.
+

@@ -9,6 +9,7 @@ path = "xlsx/"
 [import.config]
 metasheet_skip_rows = 0
 token_annos = []
+evaluate = false
 
 [import.config.column_map]
 "ahd::AHD" = []

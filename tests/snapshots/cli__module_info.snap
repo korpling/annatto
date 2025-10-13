@@ -43,6 +43,8 @@ spans and merged cells can be used for spans that cover more than one token.
 |                     | no metadata is imported.                                                                                  |
 | metasheet_skip_rows | Skip the first given rows in the meta data sheet.                                                         |
 | token_annos         | Map the given annotation columns as token annotations and not as span if possible.                        |
+| evaluate            | If formulas should be evaluated (false by default), set this to true. If false,                           |
+|                     | a cell entry will be treated as text value including the `=`.                                             |
 
 # Exporters
 
