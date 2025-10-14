@@ -163,7 +163,7 @@ impl ExportXlsx {
             token_to_row,
             &token_helper,
             worksheet,
-            &progress,
+            progress,
         )?;
 
         // Add meta data sheet
@@ -300,11 +300,10 @@ impl ExportXlsx {
                 if let Some(val) = g
                     .get_node_annos()
                     .get_value_for_item(&current_token, &TOKEN_KEY)?
+                    && !val.trim().is_empty()
                 {
-                    if !val.trim().is_empty() {
-                        has_only_empty_token = false;
-                        worksheet.write(row_index, 0, val)?;
-                    }
+                    has_only_empty_token = false;
+                    worksheet.write(row_index, 0, val)?;
                 }
 
                 token_to_row.insert(current_token, row_index);
