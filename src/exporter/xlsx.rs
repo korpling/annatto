@@ -131,6 +131,7 @@ impl ExportXlsx {
         doc_node_id: NodeID,
         g: &graphannis::AnnotationGraph,
         output_path: &std::path::Path,
+        progress: &ProgressReporter,
     ) -> Result<(), anyhow::Error> {
         let mut workbook = Workbook::new();
         let worksheet = workbook.add_worksheet();
@@ -156,7 +157,14 @@ impl ExportXlsx {
         };
         // Output all spans
         let name_to_column = self.get_span_columns(g, &token_helper, column_offset)?;
-        self.create_span_columns(g, &name_to_column, token_to_row, &token_helper, worksheet)?;
+        self.create_span_columns(
+            g,
+            &name_to_column,
+            token_to_row,
+            &token_helper,
+            worksheet,
+            &progress,
+        )?;
 
         // Add meta data sheet
         let meta_annos = g.get_node_annos().get_annotations_for_item(&doc_node_id)?;
@@ -324,6 +332,7 @@ impl ExportXlsx {
         token_to_row: HashMap<NodeID, u32>,
         token_helper: &TokenHelper,
         worksheet: &mut Worksheet,
+        progress: &ProgressReporter,
     ) -> anyhow::Result<()> {
         for span_anno_key in name_to_column.keys() {
             if let Some(column_index) = name_to_column.get(span_anno_key) {
@@ -364,14 +373,19 @@ impl ExportXlsx {
                         && let Some(last) = last_row
                     {
                         if *last - *first > 0 {
-                            worksheet.merge_range(
-                                **first,
-                                *column_index,
-                                **last,
-                                *column_index,
-                                &span_val,
-                                &DEFAULT_FORMAT,
-                            )?;
+                            if worksheet
+                                .merge_range(
+                                    **first,
+                                    *column_index,
+                                    **last,
+                                    *column_index,
+                                    &span_val,
+                                    &DEFAULT_FORMAT,
+                                )
+                                .is_err()
+                            {
+                                progress.warn(format!("Could not write span value {span_val} from row {first} to row {last} in column `{}`. A span already exists.", span_anno_key.name))?;
+                            }
                         } else {
                             worksheet.write(**first, *column_index, span_val)?;
                         }
@@ -416,7 +430,7 @@ impl Exporter for ExportXlsx {
         let results: anyhow::Result<Vec<_>> = document_names
             .par_iter()
             .map(|(doc_name, doc_node_id)| {
-                self.export_document(doc_name, *doc_node_id, graph, output_path)?;
+                self.export_document(doc_name, *doc_node_id, graph, output_path, &reporter)?;
                 reporter.worked(1)?;
                 Ok(())
             })
