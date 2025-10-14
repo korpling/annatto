@@ -1,10 +1,8 @@
-use encoding_rs::UTF_8;
-use regex::Regex;
+use regex::{Regex, RegexBuilder};
 use std::borrow::Cow;
-use std::collections::HashSet;
-use std::env;
-use std::fs::File;
-use std::io::{self, BufRead, BufReader, Read, Write};
+use std::collections::{HashMap, HashSet};
+use std::io::{BufRead, BufReader, Read};
+use std::sync::{LazyLock, Mutex};
 
 pub(super) enum Language {
     Unknown,
@@ -52,7 +50,7 @@ impl Into<LanguageConfig> for Language {
         }
 
         // TODO: make this configurable
-        let mut abbreviations: HashSet<String> = HashSet::new();
+        let abbreviations: HashSet<String> = HashSet::new();
 
         LanguageConfig {
             p_char: p_char.to_string(),
@@ -77,26 +75,47 @@ struct LanguageConfig {
 /// A character to pre-mark locations to split. The algorithm will determine
 /// places like spaces where to insert splits. But we can't use the space
 /// character for this, because inside SGML tags there should actually not be a
-/// split when there is a whitespace character.
-/// To workaround this problem, a special character is defined instead of a whitespace that takes the role of marking where to split.
+/// split when there is a space character (blank).
+/// To workaround this problem, a special character is defined instead of a blank that takes the role of marking where to split.
 const SPLIT_MARKER: char = '\u{0179}';
 const SPLIT_MARKER_STR: &'static str = "\u{0179}";
 
-pub(super) fn tokenize<R: Read>(
-    reader: R,
-    language: Language,
-) -> anyhow::Result<Vec<(String, Option<String>)>> {
+static COMPILED_REGEX_CACHE: LazyLock<Mutex<HashMap<String, Regex>>> =
+    LazyLock::new(|| Mutex::default());
+
+fn cached_regex(p: &str) -> crate::error::Result<Regex> {
+    let mut cache = COMPILED_REGEX_CACHE.lock()?;
+    if let Some(existing) = cache.get(p) {
+        Ok(existing.clone())
+    } else {
+        let compiled = Regex::new(p)?;
+        cache.insert(p.to_string(), compiled.clone());
+        Ok(compiled)
+    }
+}
+
+fn cached_regex_case_insensitive(p: &str) -> crate::error::Result<Regex> {
+    let mut cache = COMPILED_REGEX_CACHE.lock()?;
+    if let Some(existing) = cache.get(p) {
+        Ok(existing.clone())
+    } else {
+        let compiled = RegexBuilder::new(p).case_insensitive(true).build()?;
+        cache.insert(p.to_string(), compiled.clone());
+        Ok(compiled)
+    }
+}
+
+pub(super) fn tokenize<R: Read>(reader: R, language: Language) -> anyhow::Result<Vec<String>> {
     let mut result = Vec::new();
 
     let config: LanguageConfig = language.into();
 
-    // Compile the regular expressions once instead repeatingly when iterating over the lines.
-    let re_bom = Regex::new("^\u{FEFF}")?;
-    let re_newline_tab = Regex::new("[\n\t]")?;
-    let re_space_inside_sgml = Regex::new("(<[^<> ]*) ([^<>]*>)")?;
-    let re_sgml_tags = Regex::new("(<[^<>]*>)")?;
-    let re_repeating_split_marker =
-        Regex::new(&format!("{SPLIT_MARKER}{SPLIT_MARKER}{SPLIT_MARKER}*"))?;
+    let re_preceding_punct = Regex::new(&format!("^([{}])(.+)", &config.p_char))?;
+    let re_trailing_punct = Regex::new(&format!("^(.+)([{}])$", &config.f_char))?;
+    let re_trailing_period = Regex::new(&format!("^(.+[{}])(\\.)$", &config.f_char))?;
+    let re_simple_abbrs = Regex::new("^([\\w-]\\.)+$")?;
+    let re_ends_in_period = Regex::new("^(.+)(\\.)$")?;
+    let re_three_periods_with_number = Regex::new("^(\\.\\.\\.|[0-9]+\\.)$")?;
 
     let mut buffered_reader = BufReader::new(reader);
 
@@ -106,19 +125,21 @@ pub(super) fn tokenize<R: Read>(
     while buffered_reader.read_line(&mut line)? > 0 {
         if is_first_line {
             // The first line might contain a byte order marker (BOM)
-            line = re_bom.replace(&line, "").to_string();
+            line = cached_regex("^\u{FEFF}")?.replace(&line, "").to_string();
             is_first_line = false;
         }
     }
 
     // Replace newline and tab charachters with spaces, so we don't have to distinguish them later
-    line = re_newline_tab.replace_all(&line, " ").to_string();
+    line = cached_regex("[\n\t]")?.replace_all(&line, " ").to_string();
 
     // Spaces *inside* SGML tags (e.g. `<mytag a=" " b = "">` should be
     // protected and not create new separate token. Replace all spaces within a
     // special character, then replace all other spaces with another character
     // and restore the original spaces inside the SGML tags.
-    while let Cow::Owned(new_line) = re_space_inside_sgml.replace_all(&line, "${1}\u{0179}${2}") {
+    while let Cow::Owned(new_line) =
+        cached_regex("(<[^<> ]*) ([^<>]*>)")?.replace_all(&line, "${1}\u{0179}${2}")
+    {
         line = new_line;
     }
     line = line.replace(' ', "\u{178}");
@@ -127,19 +148,137 @@ pub(super) fn tokenize<R: Read>(
         .replace('\u{178}', SPLIT_MARKER_STR);
 
     // Mark SGML tags as split points for the tokenization
-    line = re_sgml_tags
+    line = cached_regex("(<[^<>]*>)")?
         .replace_all(&line, &format!("{SPLIT_MARKER}$1{SPLIT_MARKER}"))
         .to_string();
 
     // Remove split marks at beginning and end of the line, and also repeating ones
     line = line.trim_matches(SPLIT_MARKER).to_string();
-    line = re_repeating_split_marker
+    line = cached_regex(&format!("{SPLIT_MARKER}{SPLIT_MARKER}{SPLIT_MARKER}*"))?
         .replace_all(&line, SPLIT_MARKER_STR)
         .to_string();
 
     // Split by the prepared split marker
     for segment in line.split(SPLIT_MARKER) {
-        todo!()
+        let mut segment = segment.to_string();
+        if cached_regex("^<.*>$")?.is_match(&segment) {
+            // The complete segment (not line) is an SGML tag and can be added as one token
+            result.push(segment);
+        } else {
+            // The pre-splitted segment can contain more than one token, e.g.
+            // because of punctuation.
+
+            // Add missing blanks between certain punctuation characters
+            segment = cached_regex("([;!?])([^ ])")?
+                .replace_all(&segment, "$1 $2")
+                .to_string();
+
+            // Split the remaining string at blanks and use this as initial
+            // token list. Since we already know this is not an SGML-Tag, no
+            // special whitespace handling is necessary.
+            for mut current_token in segment.split(' ').map(str::to_string) {
+                let mut suffix = Vec::new();
+                // separate punctuation and parentheses from words
+                let mut finished = false;
+                while !finished {
+                    let re_preceeding = cached_regex("^(\\()([^\\)]*)(.)$")?;
+                    let re_following_preceeding = cached_regex("^([^(]+)(\\))$")?;
+                    let re_preceeding_punct = cached_regex(&format!("^([{}])(.)", &config.p_char))?;
+                    let re_trailing_punct = cached_regex(&format!("(.)([{}])$", &config.f_char))?;
+                    let re_trailing_period =
+                        cached_regex(&format!("([{}]|\\))\\.$", &config.f_char))?;
+
+                    if let Some(m) = re_preceeding.captures(&current_token.clone()) {
+                        // preceding parentheses
+                        m.expand("$2$3", &mut current_token);
+                        result.push(m.get(2).map_or("", |m| m.as_str()).to_string());
+                    } else if let Some(m) = re_following_preceeding.captures(&current_token.clone())
+                    {
+                        // following preceding parentheses
+                        m.expand("$1", &mut current_token);
+                        suffix.insert(0, m.get(2).map_or("", |m| m.as_str()).to_string());
+                    } else if let Some(m) = re_preceeding_punct.captures(&current_token.clone()) {
+                        // cut off preceding punctuation
+                        m.expand("$2", &mut current_token);
+                        result.push(m.get(1).map_or("", |m| m.as_str()).to_string());
+                    } else if let Some(m) = re_trailing_punct.captures(&current_token.clone()) {
+                        // cut off trailing punctuation
+                        m.expand("$1", &mut current_token);
+                        suffix.insert(0, m.get(2).map_or("", |m| m.as_str()).to_string());
+                    } else if let Some(m) = re_trailing_period.captures(&current_token.clone()) {
+                        // cut off trailing periods if punctuation precedes
+                        m.expand("", &mut current_token);
+                        suffix.insert(0, ".".to_string());
+                        let punction_before_period =
+                            m.get(1).map_or("", |m| m.as_str()).to_string();
+                        if current_token.is_empty() {
+                            current_token = punction_before_period;
+                        } else {
+                            suffix.insert(0, punction_before_period);
+                        }
+                    } else {
+                        finished = true;
+                    }
+                }
+
+                // handle explicitly listed tokens
+                if config.abbreviations.contains(&current_token) {
+                    result.push(current_token.clone());
+                    result.extend(suffix.iter().cloned());
+                    continue;
+                }
+                // abbreviations of the form A. or U.S.A.
+                if cached_regex("^([A-Za-z-]\\.)+$")?.is_match(&current_token) {
+                    result.push(current_token.to_string());
+                    result.extend(suffix.iter().cloned());
+                    continue;
+                }
+                // disambiguate periods
+                if let Some(m) = cached_regex("^(..*)\\.$")?.captures(&current_token.clone())
+                    && current_token != "..."
+                {
+                    current_token = m.get(1).map_or("", |m| m.as_str()).to_string();
+                    suffix.insert(0, ".".to_string());
+                    if config.abbreviations.contains(&current_token) {
+                        result.push(current_token.clone());
+                        result.extend(suffix.iter().cloned());
+                        continue;
+                    }
+                }
+                // cut off clitics
+                while let Some(m) = cached_regex("^(--)(.)")?.captures(&current_token.clone()) {
+                    m.expand("$2", &mut current_token);
+                    result.push(m.get(1).map_or("", |m| m.as_str()).to_string());
+                }
+                if !config.p_clitic.is_empty() {
+                    while let Some(m) =
+                        cached_regex_case_insensitive(&format!("^({})(.)", config.p_clitic))?
+                            .captures(&current_token.clone())
+                    {
+                        m.expand("$2", &mut current_token);
+                        result.push(m.get(1).map_or("", |m| m.as_str()).to_string());
+                    }
+                }
+                while let Some(m) = cached_regex("(.)(--)$")?.captures(&current_token.clone()) {
+                    m.expand("$1", &mut current_token);
+                    suffix.insert(0, m.get(2).map_or("", |m| m.as_str()).to_string());
+                }
+                if !config.f_clitic.is_empty() {
+                    while let Some(m) =
+                        cached_regex_case_insensitive(&format!("(.)({})$", config.f_clitic))?
+                            .captures(&current_token.clone())
+                    {
+                        m.expand("$1", &mut current_token);
+                        suffix.insert(0, m.get(2).map_or("", |m| m.as_str()).to_string());
+                    }
+                }
+                result.push(current_token);
+                result.extend(suffix.into_iter());
+            }
+        }
     }
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests;
