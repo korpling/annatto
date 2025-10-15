@@ -15,15 +15,15 @@ pub(super) enum Language {
     Catalan,
 }
 
-impl Into<LanguageConfig> for Language {
-    fn into(self) -> LanguageConfig {
+impl From<Language> for LanguageConfig {
+    fn from(value: Language) -> Self {
         // Start with the defaults
         let p_char = r#"\[¿¡{'`"‚„†‡‹‘’“”•–—›»«"#;
         let f_char = r#"\]}'`",;:!?؟%‚„…†‡‰‹‘’“”•–—›»«"#;
         let mut p_clitic = "";
         let mut f_clitic = "";
 
-        match self {
+        match value {
             Language::Unknown => { /* use the default values */ }
             Language::English => {
                 f_clitic = "['’´](s|re|ve|d|m|em|ll)|n['’´]t";
@@ -104,10 +104,10 @@ struct LanguageConfig {
 /// split when there is a space character (blank).
 /// To workaround this problem, a special character is defined instead of a blank that takes the role of marking where to split.
 const SPLIT_MARKER: char = '\u{0179}';
-const SPLIT_MARKER_STR: &'static str = "\u{0179}";
+const SPLIT_MARKER_STR: &str = "\u{0179}";
 
 static COMPILED_REGEX_CACHE: LazyLock<Mutex<HashMap<String, Regex>>> =
-    LazyLock::new(|| Mutex::default());
+    LazyLock::new(Mutex::default);
 
 fn cached_regex(p: &str) -> crate::error::Result<Regex> {
     let mut cache = COMPILED_REGEX_CACHE.lock()?;
@@ -140,16 +140,6 @@ pub(super) struct TreeTaggerTokenizer {
 pub(super) struct Token {
     pub value: String,
     pub whitespace_after: Option<String>,
-}
-
-impl ToString for Token {
-    fn to_string(&self) -> String {
-        if let Some(ws) = &self.whitespace_after {
-            format!("{}{ws}", self.value)
-        } else {
-            self.value.clone()
-        }
-    }
 }
 
 impl Token {
@@ -356,7 +346,7 @@ fn substitute(
 ) -> anyhow::Result<Option<Vec<String>>> {
     let pattern = cached_regex(pattern)?;
     // The first capture group is always the whole match
-    if let Some(caps) = pattern.captures(&buffer)
+    if let Some(caps) = pattern.captures(buffer)
         && let Some(whole_match) = caps.get(0)
     {
         // Collect the captured values before we replace the original buffer
@@ -396,7 +386,7 @@ fn substitute_i(
 ) -> anyhow::Result<Option<Vec<String>>> {
     let pattern = cached_regex_case_insensitive(pattern)?;
     // The first capture group is always the whole match
-    if let Some(caps) = pattern.captures(&buffer)
+    if let Some(caps) = pattern.captures(buffer)
         && let Some(whole_match) = caps.get(0)
     {
         // Collect the captured values before we replace the original buffer
