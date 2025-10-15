@@ -168,6 +168,10 @@ pub(super) fn tokenize<R: Read>(reader: R, language: Language) -> anyhow::Result
             // The pre-splitted segment can contain more than one token, e.g.
             // because of punctuation.
 
+            // Special handling for "..."
+            segment = cached_regex("(\\.\\.\\.)")?
+                .replace_all(&segment, " ... ")
+                .to_string();
             // Add missing blanks between certain punctuation characters
             segment = cached_regex("([;!?])([^ ])")?
                 .replace_all(&segment, "$1 $2")
@@ -276,6 +280,9 @@ pub(super) fn tokenize<R: Read>(reader: R, language: Language) -> anyhow::Result
             }
         }
     }
+
+    let result = result.into_iter().filter(|t| !t.is_empty()).collect();
+
     Ok(result)
 }
 
