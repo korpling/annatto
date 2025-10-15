@@ -43,7 +43,10 @@ use serde_derive::Deserialize;
 use tabled::Tabled;
 use workflow::StatusSender;
 
-use crate::{exporter::treetagger::ExportTreeTagger, importer::git::ImportGitMetadata};
+use crate::{
+    exporter::treetagger::ExportTreeTagger,
+    importer::{git::ImportGitMetadata, text::ImportText},
+};
 
 #[derive(Tabled)]
 pub struct ModuleConfiguration {
@@ -114,6 +117,7 @@ pub enum ReadFrom {
     RelAnnis(#[serde(default)] ImportRelAnnis),
     SaltXml(#[serde(default)] ImportSaltXml),
     Table(#[serde(default)] ImportTable),
+    Text(#[serde(default)] ImportText),
     TextGrid(#[serde(default)] ImportTextgrid),
     Toolbox(#[serde(default)] ImportToolBox),
     TreeTagger(#[serde(default)] ImportTreeTagger),
@@ -144,6 +148,7 @@ impl ReadFrom {
             ReadFrom::RelAnnis(m) => m,
             ReadFrom::SaltXml(m) => m,
             ReadFrom::Table(m) => m,
+            ReadFrom::Text(m) => m,
             ReadFrom::TextGrid(m) => m,
             ReadFrom::Toolbox(m) => m,
             ReadFrom::TreeTagger(m) => m,

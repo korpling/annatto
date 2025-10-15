@@ -2,10 +2,10 @@
 source: tests/cli.rs
 expression: output
 ---
-| Type             | Modules                                                                                                                                            |
-|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
-| Import formats   | conllu, exmaralda, git, graphml, meta, none, opus, path, ptb, relannis, saltxml, table, textgrid, toolbox, treetagger, webanno, whisper, xlsx, xml |
-| Export formats   | conllu, exmaralda, graphml, meta, saltxml, sequence, table, textgrid, treetagger, xlsx                                                             |
-| Graph operations | align, check, collapse, filter, visualize, enumerate, link, map, revise, time, chunk, split, sleep, none                                           |
+| Type             | Modules                                                                                                                                                  |
+|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Import formats   | conllu, exmaralda, git, graphml, meta, none, opus, path, ptb, relannis, saltxml, table, text, textgrid, toolbox, treetagger, webanno, whisper, xlsx, xml |
+| Export formats   | conllu, exmaralda, graphml, meta, saltxml, sequence, table, textgrid, treetagger, xlsx                                                                   |
+| Graph operations | align, check, collapse, filter, visualize, enumerate, link, map, revise, time, chunk, split, sleep, none                                                 |
 
 Use `annatto info <name>` to get more information about one of the formats or graph operations.

@@ -11,6 +11,7 @@ pub mod ptb;
 pub mod relannis;
 pub mod saltxml;
 pub mod table;
+pub mod text;
 pub mod textgrid;
 pub mod toolbox;
 pub mod treetagger;
