@@ -181,33 +181,34 @@ pub(super) fn tokenize<R: Read>(reader: R, language: Language) -> anyhow::Result
                 // separate punctuation and parentheses from words
                 let mut finished = false;
                 while !finished {
-                    let re_preceeding = cached_regex("^(\\()([^\\)]*)(.)$")?;
-                    let re_following_preceeding = cached_regex("^([^(]+)(\\))$")?;
-                    let re_preceeding_punct = cached_regex(&format!("^([{}])(.)", &config.p_char))?;
-                    let re_trailing_punct = cached_regex(&format!("(.)([{}])$", &config.f_char))?;
-                    let re_trailing_period =
-                        cached_regex(&format!("([{}]|\\))\\.$", &config.f_char))?;
-
-                    if let Some(m) = re_preceeding.captures(&current_token.clone()) {
+                    if let Some(m) = substitute("^(\\()([^\\)]*)(.)$", "$2$3", &mut current_token)?
+                    {
                         // preceding parentheses
-                        m.expand("$2$3", &mut current_token);
                         result.push(m.get(2).map_or("", |m| m.as_str()).to_string());
-                    } else if let Some(m) = re_following_preceeding.captures(&current_token.clone())
+                    } else if let Some(m) = substitute("^([^(]+)(\\))$", "$1", &mut current_token)?
                     {
                         // following preceding parentheses
-                        m.expand("$1", &mut current_token);
                         suffix.insert(0, m.get(2).map_or("", |m| m.as_str()).to_string());
-                    } else if let Some(m) = re_preceeding_punct.captures(&current_token.clone()) {
+                    } else if let Some(m) = substitute(
+                        &format!("^([{}])(.)", &config.p_char),
+                        "$2",
+                        &mut current_token,
+                    )? {
                         // cut off preceding punctuation
-                        m.expand("$2", &mut current_token);
                         result.push(m.get(1).map_or("", |m| m.as_str()).to_string());
-                    } else if let Some(m) = re_trailing_punct.captures(&current_token.clone()) {
+                    } else if let Some(m) = substitute(
+                        &format!("(.)([{}])$", &config.f_char),
+                        "$1",
+                        &mut current_token,
+                    )? {
                         // cut off trailing punctuation
-                        m.expand("$1", &mut current_token);
                         suffix.insert(0, m.get(2).map_or("", |m| m.as_str()).to_string());
-                    } else if let Some(m) = re_trailing_period.captures(&current_token.clone()) {
+                    } else if let Some(m) = substitute(
+                        &format!("([{}]|\\))\\.$", &config.f_char),
+                        "",
+                        &mut current_token,
+                    )? {
                         // cut off trailing periods if punctuation precedes
-                        m.expand("", &mut current_token);
                         suffix.insert(0, ".".to_string());
                         let punction_before_period =
                             m.get(1).map_or("", |m| m.as_str()).to_string();
@@ -246,29 +247,27 @@ pub(super) fn tokenize<R: Read>(reader: R, language: Language) -> anyhow::Result
                     }
                 }
                 // cut off clitics
-                while let Some(m) = cached_regex("^(--)(.)")?.captures(&current_token.clone()) {
-                    m.expand("$2", &mut current_token);
+                while let Some(m) = substitute("^(--)(.)", "$2", &mut current_token)? {
                     result.push(m.get(1).map_or("", |m| m.as_str()).to_string());
                 }
                 if !config.p_clitic.is_empty() {
-                    while let Some(m) =
-                        cached_regex_case_insensitive(&format!("^({})(.)", config.p_clitic))?
-                            .captures(&current_token.clone())
-                    {
-                        m.expand("$2", &mut current_token);
+                    while let Some(m) = substitute_i(
+                        &format!("^({})(.)", config.p_clitic),
+                        "$2",
+                        &mut current_token,
+                    )? {
                         result.push(m.get(1).map_or("", |m| m.as_str()).to_string());
                     }
                 }
-                while let Some(m) = cached_regex("(.)(--)$")?.captures(&current_token.clone()) {
-                    m.expand("$1", &mut current_token);
+                while let Some(m) = substitute("(.)(--)$", "$1", &mut current_token)? {
                     suffix.insert(0, m.get(2).map_or("", |m| m.as_str()).to_string());
                 }
                 if !config.f_clitic.is_empty() {
-                    while let Some(m) =
-                        cached_regex_case_insensitive(&format!("(.)({})$", config.f_clitic))?
-                            .captures(&current_token.clone())
-                    {
-                        m.expand("$1", &mut current_token);
+                    while let Some(m) = substitute_i(
+                        &format!("(.)({})$", config.f_clitic),
+                        "$1",
+                        &mut current_token,
+                    )? {
                         suffix.insert(0, m.get(2).map_or("", |m| m.as_str()).to_string());
                     }
                 }
@@ -278,6 +277,85 @@ pub(super) fn tokenize<R: Read>(reader: R, language: Language) -> anyhow::Result
         }
     }
     Ok(result)
+}
+
+/// Substitute the first match for the `pattern` in the `buffer` with the `replacement`.
+/// The `replacement` can contain back-references to the pattern.
+/// Returns `Ok(Some(Vec<String>))` with the captured values as string vector if there was a match.
+fn substitute(
+    pattern: &str,
+    replacement: &str,
+    buffer: &mut String,
+) -> anyhow::Result<Option<Vec<String>>> {
+    let pattern = cached_regex(pattern)?;
+    // The first capture group is always the whole match
+    if let Some(caps) = pattern.captures(&buffer)
+        && let Some(whole_match) = caps.get(0)
+    {
+        // Collect the captured values before we replace the original buffer
+        let captured_values = caps
+            .iter()
+            .map(|c| {
+                if let Some(m) = c {
+                    m.as_str().to_string()
+                } else {
+                    String::new()
+                }
+            })
+            .collect();
+
+        // Get the expanded captures as string
+        let mut expanded_replacment = String::new();
+        caps.expand(replacement, &mut expanded_replacment);
+        // Add the left and right context from the original buffer to the replacement
+        expanded_replacment.insert_str(0, &buffer[0..whole_match.start()]);
+        expanded_replacment.push_str(&buffer[whole_match.end()..]);
+        // Replace the whole match with the expanded string in the original buffer
+        *buffer = expanded_replacment;
+
+        return Ok(Some(captured_values));
+    }
+    Ok(None)
+}
+
+/// Substitute the first match for the `pattern` in the `buffer` with the `replacement`.
+/// The search is **case-insensitive**.
+/// The `replacement` can contain back-references to the pattern.
+/// Returns `Ok(Some(Vec<String>))` with the captured values as string vector if there was a match.
+fn substitute_i(
+    pattern: &str,
+    replacement: &str,
+    buffer: &mut String,
+) -> anyhow::Result<Option<Vec<String>>> {
+    let pattern = cached_regex_case_insensitive(pattern)?;
+    // The first capture group is always the whole match
+    if let Some(caps) = pattern.captures(&buffer)
+        && let Some(whole_match) = caps.get(0)
+    {
+        // Collect the captured values before we replace the original buffer
+        let captured_values = caps
+            .iter()
+            .map(|c| {
+                if let Some(m) = c {
+                    m.as_str().to_string()
+                } else {
+                    String::new()
+                }
+            })
+            .collect();
+
+        // Get the expanded captures as string
+        let mut expanded_replacment = String::new();
+        caps.expand(replacement, &mut expanded_replacment);
+        // Add the left and right context from the original buffer to the replacement
+        expanded_replacment.insert_str(0, &buffer[0..whole_match.start()]);
+        expanded_replacment.push_str(&buffer[whole_match.end()..]);
+        // Replace the whole match with the expanded string in the original buffer
+        *buffer = expanded_replacment;
+
+        return Ok(Some(captured_values));
+    }
+    Ok(None)
 }
 
 #[cfg(test)]
