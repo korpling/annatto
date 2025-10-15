@@ -18,8 +18,8 @@ pub(super) enum Language {
 impl Into<LanguageConfig> for Language {
     fn into(self) -> LanguageConfig {
         // Start with the defaults
-        let mut p_char = "\\[\\{\\(´`\"»«‚„†‡‹‘’“”•–—›";
-        let mut f_char = "\\]\\}'`\"\\),;:!\\?%»«‚„…†‡‰‹‘’“”•–—›";
+        let p_char = r#"\[¿¡{'`"‚„†‡‹‘’“”•–—›»«"#;
+        let f_char = r#"\]}'`",;:!?؟%‚„…†‡‰‹‘’“”•–—›»«"#;
         let mut p_clitic = "";
         let mut f_clitic = "";
 
@@ -63,9 +63,11 @@ impl Into<LanguageConfig> for Language {
 }
 
 struct LanguageConfig {
-    /// Punctuation characters to cut of at a beginning of a word
+    /// Punctuation characters to cut of at a beginning of a word. Must be in a
+    /// form that can be inserted into a Regex character class `[p_char]`.
     p_char: String,
-    // Punctuation characters to cut of at the ending of a word
+    /// Punctuation characters to cut of at the ending of a word. Must be in a
+    /// form that can be inserted into a Regex character class `[f_char]`.
     f_char: String,
     p_clitic: String,
     f_clitic: String,
@@ -109,13 +111,6 @@ pub(super) fn tokenize<R: Read>(reader: R, language: Language) -> anyhow::Result
     let mut result = Vec::new();
 
     let config: LanguageConfig = language.into();
-
-    let re_preceding_punct = Regex::new(&format!("^([{}])(.+)", &config.p_char))?;
-    let re_trailing_punct = Regex::new(&format!("^(.+)([{}])$", &config.f_char))?;
-    let re_trailing_period = Regex::new(&format!("^(.+[{}])(\\.)$", &config.f_char))?;
-    let re_simple_abbrs = Regex::new("^([\\w-]\\.)+$")?;
-    let re_ends_in_period = Regex::new("^(.+)(\\.)$")?;
-    let re_three_periods_with_number = Regex::new("^(\\.\\.\\.|[0-9]+\\.)$")?;
 
     let mut buffered_reader = BufReader::new(reader);
 
@@ -182,37 +177,37 @@ pub(super) fn tokenize<R: Read>(reader: R, language: Language) -> anyhow::Result
             // special whitespace handling is necessary.
             for mut current_token in segment.split(' ').map(str::to_string) {
                 let mut suffix = Vec::new();
-                // separate punctuation and parentheses from words
+                // Separate punctuation and parentheses from words
                 let mut finished = false;
                 while !finished {
                     if let Some(m) = substitute("^(\\()([^\\)]*)(.)$", "$2$3", &mut current_token)?
                     {
-                        // preceding parentheses
-                        result.push(m.get(2).map_or("", |m| m.as_str()).to_string());
+                        // Separate preceding parentheses
+                        result.push(m.get(1).map_or("", |m| m.as_str()).to_string());
                     } else if let Some(m) = substitute("^([^(]+)(\\))$", "$1", &mut current_token)?
                     {
-                        // following preceding parentheses
+                        // Separate following preceding parentheses
                         suffix.insert(0, m.get(2).map_or("", |m| m.as_str()).to_string());
                     } else if let Some(m) = substitute(
                         &format!("^([{}])(.)", &config.p_char),
                         "$2",
                         &mut current_token,
                     )? {
-                        // cut off preceding punctuation
+                        // Separate preceding punctuation
                         result.push(m.get(1).map_or("", |m| m.as_str()).to_string());
                     } else if let Some(m) = substitute(
                         &format!("(.)([{}])$", &config.f_char),
                         "$1",
                         &mut current_token,
                     )? {
-                        // cut off trailing punctuation
+                        // Separate trailing punctuation
                         suffix.insert(0, m.get(2).map_or("", |m| m.as_str()).to_string());
                     } else if let Some(m) = substitute(
                         &format!("([{}]|\\))\\.$", &config.f_char),
                         "",
                         &mut current_token,
                     )? {
-                        // cut off trailing periods if punctuation precedes
+                        // Separate trailing periods if punctuation precedes
                         suffix.insert(0, ".".to_string());
                         let punction_before_period =
                             m.get(1).map_or("", |m| m.as_str()).to_string();
