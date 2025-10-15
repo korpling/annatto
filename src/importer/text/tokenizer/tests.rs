@@ -3,6 +3,20 @@ use itertools::Itertools;
 use super::*;
 
 #[test]
+fn tokenize_unknown() {
+    let text = "Riuscire all'università";
+    let tokenizer = TreeTaggerTokenizer::new("unknown".into()).unwrap();
+    let tokens = tokenizer
+        .tokenize(text.as_bytes())
+        .unwrap()
+        .into_iter()
+        .map(|t| t.value)
+        .collect_vec();
+
+    assert_eq!(tokens, vec!["Riuscire", "all'università"]);
+}
+
+#[test]
 fn tokenize_english() {
     let text = "O.K., so the answer's obvious. Don't feed the trolls...";
     let tokenizer = TreeTaggerTokenizer::new("en".into()).unwrap();
