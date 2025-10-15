@@ -59,7 +59,7 @@ fn tokenize_clitics_french() {
             "ceux",
             "-là",
             "mêmes",
-            "qu",
+            "qu'",
             "il",
             "s'",
             "affirmaient"
@@ -73,5 +73,5 @@ fn tokenize_clitics_italian() {
     let text = "Riuscire all'università";
     let tokens = super::tokenize(text.as_bytes(), super::Language::Italian).unwrap();
 
-    assert_eq!(tokens, vec!["Riuscire", "all", "università"]);
+    assert_eq!(tokens, vec!["Riuscire", "all'", "università"]);
 }
