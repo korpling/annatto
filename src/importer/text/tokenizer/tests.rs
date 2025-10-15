@@ -237,3 +237,17 @@ fn tokenize_sgml() {
         tokens,
     );
 }
+
+#[test]
+fn tokenize_trailing_punctuation() {
+    let text = "What!!?!.";
+    let tokenizer = TreeTaggerTokenizer::new(Language::Unknown).unwrap();
+    let tokens = tokenizer
+        .tokenize(text.as_bytes())
+        .unwrap()
+        .into_iter()
+        .map(|t| t.value)
+        .collect_vec();
+
+    assert_eq!(vec!["What", "!", "!", "?", "!", "."], tokens);
+}
