@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Import and tokenize plain text files with the new `text` importer.
+
 ## [0.41.0] - 2025-10-13
 
 ### Changed
