@@ -1,7 +1,10 @@
+use super::*;
+
 #[test]
 fn tokenize_english() {
     let text = "O.K., so the answer's obvious. Don't feed the trolls...";
-    let tokens = super::tokenize(text.as_bytes(), super::Language::English).unwrap();
+    let tokenizer = TreeTaggerTokenizer::new(Language::English).unwrap();
+    let tokens = tokenizer.tokenize(text.as_bytes()).unwrap();
 
     assert_eq!(
         vec![
@@ -15,7 +18,8 @@ fn tokenize_english() {
 #[test]
 fn tokenize_parenthesis() {
     let text = "No(t) ((this)) (time)!";
-    let tokens = super::tokenize(text.as_bytes(), super::Language::English).unwrap();
+    let tokenizer = TreeTaggerTokenizer::new(Language::English).unwrap();
+    let tokens = tokenizer.tokenize(text.as_bytes()).unwrap();
 
     assert_eq!(vec!["No(t)", "((this))", "(", "time", ")", "!"], tokens,);
 }
@@ -27,7 +31,8 @@ fn tokenize_sgml() {
        A <b>test</b> for <span ordering='1.0'>SGML spans</span>.
        </doc>
        "#;
-    let tokens = super::tokenize(text.as_bytes(), super::Language::English).unwrap();
+    let tokenizer = TreeTaggerTokenizer::new(Language::Unknown);
+    let tokens = tokenizer.tokenize(text.as_bytes()).unwrap();
 
     assert_eq!(
         vec![
@@ -51,7 +56,8 @@ fn tokenize_sgml() {
 #[test]
 fn tokenize_clitics_french() {
     let text = "ou ceux-là mêmes qu'il s'affirmaient";
-    let tokens = super::tokenize(text.as_bytes(), super::Language::French).unwrap();
+    let tokenizer = TreeTaggerTokenizer::new(Language::French).unwrap();
+    let tokens = tokenizer.tokenize(text.as_bytes()).unwrap();
 
     assert_eq!(
         vec![
@@ -71,7 +77,8 @@ fn tokenize_clitics_french() {
 #[test]
 fn tokenize_clitics_italian() {
     let text = "Riuscire all'università";
-    let tokens = super::tokenize(text.as_bytes(), super::Language::Italian).unwrap();
+    let tokenizer = TreeTaggerTokenizer::new(Language::Italian).unwrap();
+    let tokens = tokenizer.tokenize(text.as_bytes()).unwrap();
 
     assert_eq!(tokens, vec!["Riuscire", "all'", "università"]);
 }
