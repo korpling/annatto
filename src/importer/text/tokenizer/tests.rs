@@ -1,10 +1,17 @@
+use itertools::Itertools;
+
 use super::*;
 
 #[test]
 fn tokenize_english() {
     let text = "O.K., so the answer's obvious. Don't feed the trolls...";
     let tokenizer = TreeTaggerTokenizer::new(Language::English).unwrap();
-    let tokens = tokenizer.tokenize(text.as_bytes()).unwrap();
+    let tokens = tokenizer
+        .tokenize(text.as_bytes())
+        .unwrap()
+        .into_iter()
+        .map(|t| t.value)
+        .collect_vec();
 
     assert_eq!(
         vec![
@@ -19,9 +26,14 @@ fn tokenize_english() {
 fn tokenize_parenthesis() {
     let text = "No(t) ((this)) (time)!";
     let tokenizer = TreeTaggerTokenizer::new(Language::English).unwrap();
-    let tokens = tokenizer.tokenize(text.as_bytes()).unwrap();
+    let tokens = tokenizer
+        .tokenize(text.as_bytes())
+        .unwrap()
+        .into_iter()
+        .map(|t| t.value)
+        .collect_vec();
 
-    assert_eq!(vec!["No(t)", "((this))", "(", "time", ")", "!"], tokens,);
+    assert_eq!(vec!["No(t)", "((this))", "(", "time", ")", "!"], tokens);
 }
 
 #[test]
@@ -31,8 +43,13 @@ fn tokenize_sgml() {
        A <b>test</b> for <span ordering='1.0'>SGML spans</span>.
        </doc>
        "#;
-    let tokenizer = TreeTaggerTokenizer::new(Language::Unknown);
-    let tokens = tokenizer.tokenize(text.as_bytes()).unwrap();
+    let tokenizer = TreeTaggerTokenizer::new(Language::Unknown).unwrap();
+    let tokens = tokenizer
+        .tokenize(text.as_bytes())
+        .unwrap()
+        .into_iter()
+        .map(|t| t.value)
+        .collect_vec();
 
     assert_eq!(
         vec![
@@ -57,7 +74,12 @@ fn tokenize_sgml() {
 fn tokenize_clitics_french() {
     let text = "ou ceux-là mêmes qu'il s'affirmaient";
     let tokenizer = TreeTaggerTokenizer::new(Language::French).unwrap();
-    let tokens = tokenizer.tokenize(text.as_bytes()).unwrap();
+    let tokens = tokenizer
+        .tokenize(text.as_bytes())
+        .unwrap()
+        .into_iter()
+        .map(|t| t.value)
+        .collect_vec();
 
     assert_eq!(
         vec![
@@ -78,7 +100,12 @@ fn tokenize_clitics_french() {
 fn tokenize_clitics_italian() {
     let text = "Riuscire all'università";
     let tokenizer = TreeTaggerTokenizer::new(Language::Italian).unwrap();
-    let tokens = tokenizer.tokenize(text.as_bytes()).unwrap();
+    let tokens = tokenizer
+        .tokenize(text.as_bytes())
+        .unwrap()
+        .into_iter()
+        .map(|t| t.value)
+        .collect_vec();
 
     assert_eq!(tokens, vec!["Riuscire", "all'", "università"]);
 }

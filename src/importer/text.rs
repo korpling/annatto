@@ -36,6 +36,7 @@ pub struct ImportText {
     #[serde(default)]
     file_encoding: Option<String>,
     /// Which tokenizer implementation to use
+    #[serde(default)]
     tokenizer: Tokenizer,
 }
 
@@ -204,4 +205,43 @@ pub fn create_token_node(
     })?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use graphannis::AnnotationGraph;
+    use insta::assert_snapshot;
+
+    use crate::{
+        exporter::graphml::GraphMLExporter,
+        importer::{Importer, text::ImportText},
+        test_util::export_to_string,
+        util::update_graph_silent,
+    };
+
+    #[test]
+    fn import_text_with_default_tokenizer() {
+        let import_path = Path::new("tests/data/import/text/example/");
+        let importer: ImportText = toml::from_str("").unwrap();
+        let u = importer.import_corpus(
+            import_path,
+            crate::StepID {
+                module_name: "test_text".to_string(),
+                path: Some(import_path.to_path_buf()),
+            },
+            None,
+        );
+        assert!(u.is_ok(), "Err: {:?}", u.err());
+        let mut update = u.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(update_graph_silent(&mut graph, &mut update).is_ok());
+        let exporter: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        let actual = export_to_string(&graph, exporter);
+        assert!(actual.is_ok());
+        assert_snapshot!(actual.unwrap());
+    }
 }

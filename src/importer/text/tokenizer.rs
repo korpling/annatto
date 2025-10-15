@@ -142,6 +142,16 @@ pub(super) struct Token {
     pub whitespace_after: Option<String>,
 }
 
+impl ToString for Token {
+    fn to_string(&self) -> String {
+        if let Some(ws) = &self.whitespace_after {
+            format!("{}{ws}", self.value)
+        } else {
+            self.value.clone()
+        }
+    }
+}
+
 impl Token {
     fn new_val<S: ToString>(value: S) -> Self {
         Self {
