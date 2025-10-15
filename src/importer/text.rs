@@ -28,6 +28,8 @@ mod tokenizer;
 /// path = "..."
 ///
 /// [import.config]
+/// tokenizer = { strategy = "treetagger", language="fr" }
+/// file_encoding = "UTF-8"
 /// ```
 #[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -35,18 +37,42 @@ pub struct ImportText {
     /// The encoding to use when for the input files. Defaults to UTF-8.
     #[serde(default)]
     file_encoding: Option<String>,
-    /// Which tokenizer implementation to use
+    /// Which tokenizer implementation to use.
+    /// In general, this is configured with the name of the `strategy` and
+    /// additional configuration values specific to this strategy.
+    ///
+    /// ```toml
+    /// [import.config]
+    /// tokenizer = { strategy = "treetagger", language="fr" }
+    /// ```
+    ///
+    /// Currently, only the `treetagger` strategy is available. It imitates the
+    /// behavior of the `utf8-tokenize.perl` script from the
+    /// [TreeTagger](https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/)
+    /// and can be configured to use a language specific configuration with the
+    /// additional `language` parameter.
+    ///
+    /// The `language` field is the ISO 639-1 language code and the following languages have specific implementations:
+    /// - English (en),
+    /// - Romanian (ro),
+    /// - Italian (it),
+    /// - French (fr),
+    /// - Portuguese (pt),
+    /// - Galician (gl),
+    /// - Catalan (ca)
+    /// The default is a generic language configuration, which works well with German texts.
     #[serde(default)]
     tokenizer: Tokenizer,
 }
 
 #[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[repr(u8)]
+#[serde(tag = "strategy", rename_all = "snake_case")]
 pub enum Tokenizer {
     /// A tokenizer that imitates the behavior of the `utf8-tokenize.perl` of
     /// the
     /// [TreeTagger](https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/).
-    TreeTagger {
+    Treetagger {
         /// ISO 639-1 language code to use for language-specific behavior of the tokenizer.
         /// Leave empty for a generic handling.
         /// Language-specific behavior exists for English, Romanian, Italian, French, Portoguese, Galician and Catalan,
@@ -56,7 +82,7 @@ pub enum Tokenizer {
 
 impl Default for Tokenizer {
     fn default() -> Self {
-        Tokenizer::TreeTagger {
+        Tokenizer::Treetagger {
             language: "".to_string(),
         }
     }
@@ -78,7 +104,7 @@ impl Importer for ImportText {
         )?;
 
         let tokenizer = match &self.tokenizer {
-            Tokenizer::TreeTagger { language } => TreeTaggerTokenizer::new(language.into())?,
+            Tokenizer::Treetagger { language } => TreeTaggerTokenizer::new(language.into())?,
         };
 
         // Each file is a work step
@@ -225,6 +251,30 @@ mod tests {
     fn import_text_with_default_tokenizer() {
         let import_path = Path::new("tests/data/import/text/example/");
         let importer: ImportText = toml::from_str("").unwrap();
+        let u = importer.import_corpus(
+            import_path,
+            crate::StepID {
+                module_name: "test_text".to_string(),
+                path: Some(import_path.to_path_buf()),
+            },
+            None,
+        );
+        assert!(u.is_ok(), "Err: {:?}", u.err());
+        let mut update = u.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(update_graph_silent(&mut graph, &mut update).is_ok());
+        let exporter: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        let actual = export_to_string(&graph, exporter);
+        assert!(actual.is_ok());
+        assert_snapshot!(actual.unwrap());
+    }
+    #[test]
+    fn import_text_with_french_tokenizer() {
+        let import_path = Path::new("tests/data/import/text/example_french/");
+        let importer: ImportText =
+            toml::from_str(r#"tokenizer = {strategy = "treetagger", language="fr"}"#).unwrap();
         let u = importer.import_corpus(
             import_path,
             crate::StepID {
