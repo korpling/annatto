@@ -166,7 +166,6 @@ impl<'a> TextfileMapper<'a> {
                 update,
                 &format!("{}tok{}", prefix, i),
                 t,
-                None,
                 ws.as_ref(),
                 &self.doc_node_name,
             )?;
@@ -190,7 +189,6 @@ pub fn create_token_node(
     update: &mut GraphUpdate,
     node_name: &str,
     token_value: &str,
-    whitespace_before: Option<&String>,
     whitespace_after: Option<&String>,
     document_node: &str,
 ) -> anyhow::Result<()> {
@@ -205,14 +203,6 @@ pub fn create_token_node(
         anno_value: token_value.to_string(),
     })?;
 
-    if let Some(ws) = whitespace_before {
-        update.add_event(UpdateEvent::AddNodeLabel {
-            node_name: node_name.to_string(),
-            anno_ns: ANNIS_NS.to_string(),
-            anno_name: "tok-whitespace-before".to_string(),
-            anno_value: ws.to_string(),
-        })?;
-    }
     if let Some(ws) = whitespace_after {
         update.add_event(UpdateEvent::AddNodeLabel {
             node_name: node_name.to_string(),

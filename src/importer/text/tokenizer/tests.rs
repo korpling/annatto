@@ -5,7 +5,7 @@ use super::*;
 #[test]
 fn tokenize_english() {
     let text = "O.K., so the answer's obvious. Don't feed the trolls...";
-    let tokenizer = TreeTaggerTokenizer::new(Language::English).unwrap();
+    let tokenizer = TreeTaggerTokenizer::new("en".into()).unwrap();
     let tokens = tokenizer
         .tokenize(text.as_bytes())
         .unwrap()
@@ -23,9 +23,163 @@ fn tokenize_english() {
 }
 
 #[test]
+fn tokenize_french() {
+    let text = "ou ceux-là mêmes qu'il s'affirmaient";
+    let tokenizer = TreeTaggerTokenizer::new("fr".into()).unwrap();
+    let tokens = tokenizer
+        .tokenize(text.as_bytes())
+        .unwrap()
+        .into_iter()
+        .map(|t| t.value)
+        .collect_vec();
+
+    assert_eq!(
+        vec![
+            "ou",
+            "ceux",
+            "-là",
+            "mêmes",
+            "qu'",
+            "il",
+            "s'",
+            "affirmaient"
+        ],
+        tokens,
+    );
+}
+
+#[test]
+fn tokenize_italian() {
+    let text = "Riuscire all'università";
+    let tokenizer = TreeTaggerTokenizer::new("it".into()).unwrap();
+    let tokens = tokenizer
+        .tokenize(text.as_bytes())
+        .unwrap()
+        .into_iter()
+        .map(|t| t.value)
+        .collect_vec();
+
+    assert_eq!(tokens, vec!["Riuscire", "all'", "università"]);
+}
+
+#[test]
+fn tokenize_romanian() {
+    let text = "Toate ființele umane se nasc libere și egale în demnitate și în drepturi.";
+    let tokenizer = TreeTaggerTokenizer::new("ro".into()).unwrap();
+    let tokens = tokenizer
+        .tokenize(text.as_bytes())
+        .unwrap()
+        .into_iter()
+        .map(|t| t.value)
+        .collect_vec();
+
+    assert_eq!(
+        tokens,
+        vec![
+            "Toate",
+            "ființele",
+            "umane",
+            "se",
+            "nasc",
+            "libere",
+            "și",
+            "egale",
+            "în",
+            "demnitate",
+            "și",
+            "în",
+            "drepturi",
+            "."
+        ]
+    );
+}
+
+#[test]
+fn tokenize_portuguese() {
+    let text = "Todos os seres humanos nascem livres e iguais em dignidade e em direitos.";
+    let tokenizer = TreeTaggerTokenizer::new("pt".into()).unwrap();
+    let tokens = tokenizer
+        .tokenize(text.as_bytes())
+        .unwrap()
+        .into_iter()
+        .map(|t| t.value)
+        .collect_vec();
+
+    assert_eq!(
+        tokens,
+        vec![
+            "Todos",
+            "os",
+            "seres",
+            "humanos",
+            "nascem",
+            "livres",
+            "e",
+            "iguais",
+            "em",
+            "dignidade",
+            "e",
+            "em",
+            "direitos",
+            "."
+        ]
+    );
+}
+
+#[test]
+fn tokenize_galician() {
+    let text = "Como te chamas?";
+    let tokenizer = TreeTaggerTokenizer::new("gl".into()).unwrap();
+    let tokens = tokenizer
+        .tokenize(text.as_bytes())
+        .unwrap()
+        .into_iter()
+        .map(|t| t.value)
+        .collect_vec();
+
+    assert_eq!(tokens, vec!["Como", "te", "chamas", "?",]);
+}
+
+#[test]
+fn tokenize_catalan() {
+    let text =
+        "No existia, no existí mai entre nosaltres, una comunitat d'interessos, d'afeccions.";
+    let tokenizer = TreeTaggerTokenizer::new("ca".into()).unwrap();
+    let tokens = tokenizer
+        .tokenize(text.as_bytes())
+        .unwrap()
+        .into_iter()
+        .map(|t| t.value)
+        .collect_vec();
+
+    assert_eq!(
+        tokens,
+        vec![
+            "No",
+            "existia",
+            ",",
+            "no",
+            "existí",
+            "mai",
+            "entre",
+            "nosaltres",
+            ",",
+            "una",
+            "comunitat",
+            "d'",
+            "interessos",
+            ",",
+            "d'",
+            "afeccions",
+            "."
+        ]
+    );
+}
+
+#[test]
 fn tokenize_parenthesis() {
     let text = "No(t) ((this)) (time)!";
-    let tokenizer = TreeTaggerTokenizer::new(Language::English).unwrap();
+    let tokenizer = TreeTaggerTokenizer::new("en".into()).unwrap();
     let tokens = tokenizer
         .tokenize(text.as_bytes())
         .unwrap()
@@ -68,44 +222,4 @@ fn tokenize_sgml() {
         ],
         tokens,
     );
-}
-
-#[test]
-fn tokenize_clitics_french() {
-    let text = "ou ceux-là mêmes qu'il s'affirmaient";
-    let tokenizer = TreeTaggerTokenizer::new(Language::French).unwrap();
-    let tokens = tokenizer
-        .tokenize(text.as_bytes())
-        .unwrap()
-        .into_iter()
-        .map(|t| t.value)
-        .collect_vec();
-
-    assert_eq!(
-        vec![
-            "ou",
-            "ceux",
-            "-là",
-            "mêmes",
-            "qu'",
-            "il",
-            "s'",
-            "affirmaient"
-        ],
-        tokens,
-    );
-}
-
-#[test]
-fn tokenize_clitics_italian() {
-    let text = "Riuscire all'università";
-    let tokenizer = TreeTaggerTokenizer::new(Language::Italian).unwrap();
-    let tokens = tokenizer
-        .tokenize(text.as_bytes())
-        .unwrap()
-        .into_iter()
-        .map(|t| t.value)
-        .collect_vec();
-
-    assert_eq!(tokens, vec!["Riuscire", "all'", "università"]);
 }

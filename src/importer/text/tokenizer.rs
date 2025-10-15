@@ -18,8 +18,8 @@ pub(super) enum Language {
 impl From<Language> for LanguageConfig {
     fn from(value: Language) -> Self {
         // Start with the defaults
-        let p_char = r#"\[¿¡{'`"‚„†‡‹‘’“”•–—›»«"#;
-        let f_char = r#"\]}'`",;:!?؟%‚„…†‡‰‹‘’“”•–—›»«"#;
+        let mut p_char = r#"\[¿¡{'`"‚„†‡‹‘’“”•–—›»«"#;
+        let mut f_char = r#"\]}'`",;:!?؟%‚„…†‡‰‹‘’“”•–—›»«"#;
         let mut p_clitic = "";
         let mut f_clitic = "";
 
@@ -28,7 +28,10 @@ impl From<Language> for LanguageConfig {
             Language::English => {
                 f_clitic = "['’´](s|re|ve|d|m|em|ll)|n['’´]t";
             }
-            Language::Romanian => todo!(),
+            Language::Romanian => {
+                p_char = r#"\[¿¡{`"‚„†‡‹‘’“”•–—›»«"#;
+                f_char = r#"\]}`",;:!?\%‚„…†‡‰‹‘’“”•–—›»«"#
+            }
             Language::Italian => {
                 p_clitic = "(?:d[ae]ll|nell|all|[ld]|sull|quest|un|senz|tutt|c|s)['´’]";
             }
