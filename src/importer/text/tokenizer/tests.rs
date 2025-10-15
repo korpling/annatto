@@ -5,7 +5,7 @@ fn tokenize_english() {
 
     assert_eq!(
         vec![
-            "O.K.", ",", "so", "the", "answer", "'s", "obvious", ".", "Don", "'t", "feed", "the",
+            "O.K.", ",", "so", "the", "answer", "'s", "obvious", ".", "Do", "n't", "feed", "the",
             "trolls", "..."
         ],
         tokens,
