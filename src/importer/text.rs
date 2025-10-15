@@ -60,6 +60,7 @@ pub struct ImportText {
     /// - Portuguese (pt),
     /// - Galician (gl),
     /// - Catalan (ca)
+    ///
     /// The default is a generic language configuration, which works well with German texts.
     #[serde(default)]
     tokenizer: Tokenizer,
