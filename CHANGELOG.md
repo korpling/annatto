@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Import and tokenize plain text files with the new `text` importer.
 
+### Changed
+
+- export `xlsx`: Switched to another library for writing xlsx.
+
+### Fixed
+
+- export `xlsx`: Overlapping spans in the same column cannot be written anymore and a warning is raised.
+
 ## [0.41.0] - 2025-10-13
 
 ### Changed
