@@ -31,7 +31,7 @@ mod tokenizer;
 /// tokenizer = { strategy = "treetagger", language="fr" }
 /// file_encoding = "UTF-8"
 /// ```
-#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq, Default)]
 #[serde(deny_unknown_fields)]
 pub struct ImportText {
     /// The encoding to use when for the input files. Defaults to UTF-8.
