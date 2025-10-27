@@ -277,6 +277,8 @@ pub struct ImporterStep {
     #[serde(flatten)]
     module: ReadFrom,
     path: PathBuf,
+    #[serde(default)]
+    label: Option<String>,
 }
 
 impl ImporterStep {
@@ -288,6 +290,7 @@ impl ImporterStep {
         Self {
             module,
             path: path.into(),
+            label: None,
         }
     }
 
@@ -310,6 +313,8 @@ pub struct ExporterStep {
     #[serde(flatten)]
     module: WriteAs,
     path: PathBuf,
+    #[serde(default)]
+    label: Option<String>,
 }
 
 impl ExporterStep {
@@ -321,6 +326,7 @@ impl ExporterStep {
         Self {
             module,
             path: path.into(),
+            label: None,
         }
     }
 
@@ -344,6 +350,8 @@ pub struct ManipulatorStep {
     #[serde(flatten)]
     module: GraphOp,
     workflow_directory: Option<PathBuf>,
+    #[serde(default)]
+    label: Option<String>,
 }
 
 impl ManipulatorStep {
@@ -355,6 +363,7 @@ impl ManipulatorStep {
         Self {
             module,
             workflow_directory: workflow_directory.map(|d| d.into()),
+            label: None,
         }
     }
 
@@ -383,7 +392,7 @@ mod tests {
 
     use serde::de::DeserializeOwned;
 
-    use crate::{GraphOp, ReadFrom, WriteAs};
+    use crate::{GraphOp, ReadFrom, WriteAs, workflow::Workflow};
 
     #[test]
     fn deser_read_from_pass() {
@@ -419,5 +428,11 @@ mod tests {
         let toml_string = fs::read_to_string(path);
         assert!(toml_string.is_ok());
         toml::from_str(&toml_string.unwrap())
+    }
+
+    #[test]
+    fn deserialize_with_custom_id() {
+        let d = deserialize_toml::<Workflow>("tests/deser/workflow-with-custom-labels.toml");
+        assert!(d.is_ok(), "Err: {:?}", d.err().unwrap());
     }
 }

@@ -325,6 +325,7 @@ mod tests {
         let import_step = ImporterStep {
             module: add_metadata,
             path: tmp_dir.path().join("metadata").to_path_buf(),
+            label: None,
         };
         let r = import_step.execute(None);
         assert_eq!(
