@@ -392,7 +392,7 @@ mod tests {
 
     use serde::de::DeserializeOwned;
 
-    use crate::{GraphOp, ReadFrom, WriteAs};
+    use crate::{GraphOp, ReadFrom, WriteAs, workflow::Workflow};
 
     #[test]
     fn deser_read_from_pass() {
@@ -428,5 +428,11 @@ mod tests {
         let toml_string = fs::read_to_string(path);
         assert!(toml_string.is_ok());
         toml::from_str(&toml_string.unwrap())
+    }
+
+    #[test]
+    fn deserialize_with_custom_id() {
+        let d = deserialize_toml::<Workflow>("tests/deser/workflow-with-custom-labels.toml");
+        assert!(d.is_ok(), "Err: {:?}", d.err().unwrap());
     }
 }

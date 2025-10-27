@@ -1,0 +1,21 @@
+[[import]]
+label = "import conll-u data"
+path = "import"
+format = "conllu"
+
+[import.config]
+
+[[graph_op]]
+action = "check"
+label = "run some checks"
+
+[graph_op.config]
+report = "list"
+tests = []
+
+[[export]]
+label = "annis import"
+format = "graphml"
+path = "./"
+
+[export.config]
