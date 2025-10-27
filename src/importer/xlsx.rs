@@ -827,6 +827,7 @@ mod tests {
         let import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
+            id: None,
         };
 
         let import = import_step.execute(None);
@@ -940,6 +941,7 @@ mod tests {
         let import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
+            id: None,
         };
         let (sender, receiver) = mpsc::channel();
         let import = import_step.execute(Some(sender));
@@ -976,6 +978,7 @@ mod tests {
         let import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
+            id: None,
         };
         let (sender, receiver) = mpsc::channel();
         let import = import_step.execute(Some(sender));
@@ -1056,6 +1059,7 @@ mod tests {
         let import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
+            id: None,
         };
         let (sender, receiver) = mpsc::channel();
         let import = import_step.execute(Some(sender));
@@ -1149,6 +1153,7 @@ mod tests {
         let import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
+            id: None,
         };
 
         let import = import_step.execute(None);

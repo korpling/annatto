@@ -50,6 +50,7 @@ fn test_conll_fail_invalid() {
     let import_step = ImporterStep {
         module: import,
         path: import_path.to_path_buf(),
+        id: None,
     };
     let job = import_step.execute(None);
     assert!(job.is_err());
@@ -77,6 +78,7 @@ fn fail_missing_column() {
     let import_step = ImporterStep {
         module: import,
         path: import_path.to_path_buf(),
+        id: None,
     };
     let (sender, _receiver) = mpsc::channel();
     let job = import_step.execute(Some(sender));
@@ -91,6 +93,7 @@ fn test_conll_fail_invalid_heads() {
     let import_step = ImporterStep {
         module: import,
         path: import_path.to_path_buf(),
+        id: None,
     };
     let (sender, _receiver) = mpsc::channel();
     let job = import_step.execute(Some(sender));
@@ -105,6 +108,7 @@ fn test_conll_fail_cyclic() -> Result<(), Box<dyn std::error::Error>> {
     let import_step = ImporterStep {
         module: import,
         path: import_path.to_path_buf(),
+        id: None,
     };
 
     let job = import_step.execute(None);

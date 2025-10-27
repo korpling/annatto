@@ -175,6 +175,7 @@ mod tests {
         let step = ImporterStep {
             module: crate::ReadFrom::Path(import),
             path: PathBuf::from("tests/data/import/xlsx/clean/xlsx/"),
+            id: Some("Custom-id-import".to_string()),
         };
         let mut test_u = step.execute(None)?;
         // add dummy node and dummy ordering edge to pass model checks when applying the update to the graph

@@ -339,18 +339,47 @@ impl Workflow {
             }
             if let Some(importers) = &self.import {
                 steps.extend(importers.iter().map(StepID::from_importer_step));
+                for import_step in importers {
+                    let import_id = if let Some(id) = &import_step.id {
+                        StepID {
+                            module_name: id.to_string(),
+                            path: Some(import_step.path.to_path_buf()),
+                        }
+                    } else {
+                        StepID::from_importer_step(import_step)
+                    };
+                    steps.push(import_id);
+                }
                 steps.push(apply_update_step_id.clone());
             }
 
             let mut graph_op_position = 1;
             if let Some(ref manipulators) = self.graph_op {
                 for m in manipulators {
-                    steps.push(StepID::from_graphop_step(m, graph_op_position));
+                    let graph_op_id = if let Some(id) = &m.id {
+                        StepID {
+                            module_name: id.to_string(),
+                            path: None,
+                        }
+                    } else {
+                        StepID::from_graphop_step(m, graph_op_position)
+                    };
+                    steps.push(graph_op_id);
                     graph_op_position += 1;
                 }
             }
-            if let Some(ref exporters) = self.export {
-                steps.extend(exporters.iter().map(StepID::from_exporter_step));
+            if let Some(exporters) = &self.export {
+                for export_step in exporters {
+                    let export_id = if let Some(id) = &export_step.id {
+                        StepID {
+                            module_name: id.to_string(),
+                            path: Some(export_step.path.to_path_buf()),
+                        }
+                    } else {
+                        StepID::from_exporter_step(export_step)
+                    };
+                    steps.push(export_id);
+                }
             }
             if self.save.is_some() {
                 steps.push(save_graph_step_id.clone());
