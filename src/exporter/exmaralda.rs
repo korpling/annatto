@@ -863,7 +863,7 @@ mod tests {
         let step = ImporterStep {
             module: crate::ReadFrom::EXMARaLDA(import),
             path: PathBuf::from("./tests/data/import/exmaralda/clean/import/"),
-            id: None,
+            label: None,
         };
         let u = step.execute(None);
         assert!(u.is_ok());
@@ -895,7 +895,7 @@ mod tests {
         let step = ImporterStep {
             module: crate::ReadFrom::EXMARaLDA(import),
             path: PathBuf::from("./tests/data/import/exmaralda/clean/import/"),
-            id: None,
+            label: None,
         };
         let u = step.execute(None);
         assert!(u.is_ok());
@@ -935,7 +935,7 @@ mod tests {
         let step = ImporterStep {
             module: import,
             path: source_path,
-            id: None,
+            label: None,
         };
         let u = step.execute(None);
 

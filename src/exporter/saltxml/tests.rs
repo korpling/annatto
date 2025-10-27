@@ -285,7 +285,7 @@ fn import_export_sample_sentence() {
     let orig_import_step = ImporterStep {
         module: crate::ReadFrom::SaltXml(importer),
         path: path.to_path_buf(),
-        id: None,
+        label: None,
     };
     let mut updates = orig_import_step.execute(None).unwrap();
     let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -299,7 +299,7 @@ fn import_export_sample_sentence() {
     let export_step = ExporterStep {
         module: exporter,
         path: output_dir.clone(),
-        id: None,
+        label: None,
     };
     export_step.execute(&original_graph, None).unwrap();
 
@@ -307,7 +307,7 @@ fn import_export_sample_sentence() {
     let second_import_step = ImporterStep {
         module: crate::ReadFrom::SaltXml(importer),
         path: output_dir.clone(),
-        id: None,
+        label: None,
     };
     let mut updates = second_import_step.execute(None).unwrap();
     let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -327,7 +327,7 @@ fn import_export_dialog_demo() {
     let orig_import_step = ImporterStep {
         module: crate::ReadFrom::SaltXml(importer),
         path: path.to_path_buf(),
-        id: None,
+        label: None,
     };
     let mut updates = orig_import_step.execute(None).unwrap();
     let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -341,7 +341,7 @@ fn import_export_dialog_demo() {
     let export_step = ExporterStep {
         module: exporter,
         path: output_dir.clone(),
-        id: None,
+        label: None,
     };
     export_step.execute(&original_graph, None).unwrap();
 
@@ -349,7 +349,7 @@ fn import_export_dialog_demo() {
     let second_import_step = ImporterStep {
         module: crate::ReadFrom::SaltXml(importer),
         path: output_dir.clone(),
-        id: None,
+        label: None,
     };
     let mut updates = second_import_step.execute(None).unwrap();
     let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();

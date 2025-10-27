@@ -340,7 +340,7 @@ impl Workflow {
             if let Some(importers) = &self.import {
                 steps.extend(importers.iter().map(StepID::from_importer_step));
                 for import_step in importers {
-                    let import_id = if let Some(id) = &import_step.id {
+                    let import_id = if let Some(id) = &import_step.label {
                         StepID {
                             module_name: id.to_string(),
                             path: Some(import_step.path.to_path_buf()),
@@ -356,7 +356,7 @@ impl Workflow {
             let mut graph_op_position = 1;
             if let Some(ref manipulators) = self.graph_op {
                 for m in manipulators {
-                    let graph_op_id = if let Some(id) = &m.id {
+                    let graph_op_id = if let Some(id) = &m.label {
                         StepID {
                             module_name: id.to_string(),
                             path: None,
@@ -370,7 +370,7 @@ impl Workflow {
             }
             if let Some(exporters) = &self.export {
                 for export_step in exporters {
-                    let export_id = if let Some(id) = &export_step.id {
+                    let export_id = if let Some(id) = &export_step.label {
                         StepID {
                             module_name: id.to_string(),
                             path: Some(export_step.path.to_path_buf()),

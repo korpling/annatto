@@ -278,7 +278,7 @@ pub struct ImporterStep {
     module: ReadFrom,
     path: PathBuf,
     #[serde(default)]
-    id: Option<String>,
+    label: Option<String>,
 }
 
 impl ImporterStep {
@@ -290,7 +290,7 @@ impl ImporterStep {
         Self {
             module,
             path: path.into(),
-            id: None
+            label: None,
         }
     }
 
@@ -314,7 +314,7 @@ pub struct ExporterStep {
     module: WriteAs,
     path: PathBuf,
     #[serde(default)]
-    id: Option<String>,
+    label: Option<String>,
 }
 
 impl ExporterStep {
@@ -326,7 +326,7 @@ impl ExporterStep {
         Self {
             module,
             path: path.into(),
-            id: None
+            label: None,
         }
     }
 
@@ -351,7 +351,7 @@ pub struct ManipulatorStep {
     module: GraphOp,
     workflow_directory: Option<PathBuf>,
     #[serde(default)]
-    id: Option<String>,
+    label: Option<String>,
 }
 
 impl ManipulatorStep {
@@ -363,7 +363,7 @@ impl ManipulatorStep {
         Self {
             module,
             workflow_directory: workflow_directory.map(|d| d.into()),
-            id: None
+            label: None,
         }
     }
 
