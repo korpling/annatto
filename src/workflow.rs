@@ -333,53 +333,28 @@ impl Workflow {
         };
 
         if let Some(tx) = &tx {
-            let mut steps: Vec<StepID> = Vec::default();
+            let mut steps: Vec<StepID> = Vec::with_capacity(
+                self.import.as_ref().map_or(0, |v| v.len())
+                    + self.graph_op.as_ref().map_or(0, |v| v.len())
+                    + self.export.as_ref().map_or(0, |v| v.len()),
+            );
             if self.load.is_some() {
                 steps.push(load_graph_step_id.clone());
             }
             if let Some(importers) = &self.import {
                 steps.extend(importers.iter().map(StepID::from_importer_step));
-                for import_step in importers {
-                    let import_id = if let Some(id) = &import_step.label {
-                        StepID {
-                            module_name: id.to_string(),
-                            path: Some(import_step.path.to_path_buf()),
-                        }
-                    } else {
-                        StepID::from_importer_step(import_step)
-                    };
-                    steps.push(import_id);
-                }
                 steps.push(apply_update_step_id.clone());
             }
 
             let mut graph_op_position = 1;
             if let Some(ref manipulators) = self.graph_op {
                 for m in manipulators {
-                    let graph_op_id = if let Some(id) = &m.label {
-                        StepID {
-                            module_name: id.to_string(),
-                            path: None,
-                        }
-                    } else {
-                        StepID::from_graphop_step(m, graph_op_position)
-                    };
-                    steps.push(graph_op_id);
+                    steps.push(StepID::from_graphop_step(m, graph_op_position));
                     graph_op_position += 1;
                 }
             }
             if let Some(exporters) = &self.export {
-                for export_step in exporters {
-                    let export_id = if let Some(id) = &export_step.label {
-                        StepID {
-                            module_name: id.to_string(),
-                            path: Some(export_step.path.to_path_buf()),
-                        }
-                    } else {
-                        StepID::from_exporter_step(export_step)
-                    };
-                    steps.push(export_id);
-                }
+                steps.extend(exporters.iter().map(StepID::from_exporter_step));
             }
             if self.save.is_some() {
                 steps.push(save_graph_step_id.clone());
@@ -588,7 +563,6 @@ impl Workflow {
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate> {
         let step_id = StepID::from_importer_step(step);
-
         // Do not use the import path directly, but resolve it against the
         // workflow directory if the path is relative.
         let import_path = if step.path.is_relative() {

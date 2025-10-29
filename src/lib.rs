@@ -234,25 +234,40 @@ pub struct StepID {
 
 impl StepID {
     pub fn from_importer_step(step: &ImporterStep) -> StepID {
+        let module_name = if let Some(label) = &step.label {
+            label.to_string()
+        } else {
+            format!("import_{}", step.module.name().unwrap_or_default())
+        };
         StepID {
-            module_name: format!("import_{}", step.module.name().unwrap_or_default()),
+            module_name,
             path: Some(step.path.clone()),
         }
     }
 
     pub fn from_graphop_step(step: &ManipulatorStep, position_in_workflow: usize) -> StepID {
-        StepID {
-            module_name: format!(
+        let module_name = if let Some(label) = &step.label {
+            label.to_string()
+        } else {
+            format!(
                 "{position_in_workflow}_{}",
                 step.module.name().unwrap_or_default()
-            ),
+            )
+        };
+        StepID {
+            module_name,
             path: None,
         }
     }
 
     pub fn from_exporter_step(step: &ExporterStep) -> StepID {
+        let module_name = if let Some(label) = &step.label {
+            label.to_string()
+        } else {
+            format!("export_{}", step.module.name().unwrap_or_default())
+        };
         StepID {
-            module_name: format!("export_{}", step.module.name().unwrap_or_default()),
+            module_name,
             path: Some(step.path.clone()),
         }
     }

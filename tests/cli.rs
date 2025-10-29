@@ -1,4 +1,4 @@
-use assert_cmd::Command;
+use assert_cmd::cargo;
 use insta::assert_snapshot;
 use regex::Regex;
 use std::{fs, path::PathBuf};
@@ -6,7 +6,7 @@ use tempfile::{TempDir, tempdir};
 
 #[test]
 fn show_help() {
-    let mut cmd = Command::cargo_bin("annatto").unwrap();
+    let mut cmd = cargo::cargo_bin_cmd!("annatto");
 
     let output = cmd.arg("help").output().unwrap();
     cmd.assert().success();
@@ -20,7 +20,7 @@ fn show_help() {
 
 #[test]
 fn run_empty_conversion() {
-    let mut cmd = Command::cargo_bin("annatto").unwrap();
+    let mut cmd = cargo::cargo_bin_cmd!("annatto");
 
     let output = cmd
         .arg("run")
@@ -44,7 +44,7 @@ fn convert_to_itself() {
     unsafe {
         std::env::set_var("TEST_OUTPUT", tmp_out.path().to_string_lossy().as_ref());
     }
-    let mut cmd = Command::cargo_bin("annatto").unwrap();
+    let mut cmd = cargo::cargo_bin_cmd!("annatto");
 
     cmd.arg("run")
         .arg("--env")
@@ -62,7 +62,7 @@ fn convert_to_itself() {
 
 #[test]
 fn run_empty_conversion_abs_path() {
-    let mut cmd = Command::cargo_bin("annatto").unwrap();
+    let mut cmd = cargo::cargo_bin_cmd!("annatto");
 
     let workflow_file = PathBuf::from("tests/data/import/empty/empty.toml");
 
@@ -88,7 +88,7 @@ fn run_empty_conversion_abs_path() {
 
 #[test]
 fn run_failing_conversion() {
-    let mut cmd = Command::cargo_bin("annatto").unwrap();
+    let mut cmd = cargo::cargo_bin_cmd!("annatto");
 
     let output = cmd
         .arg("run")
@@ -106,7 +106,7 @@ fn run_failing_conversion() {
 
 #[test]
 fn load_complex_workflow() {
-    let mut cmd = Command::cargo_bin("annatto").unwrap();
+    let mut cmd = cargo::cargo_bin_cmd!("annatto");
 
     let output = cmd
         .arg("validate")
@@ -124,7 +124,7 @@ fn load_complex_workflow() {
 
 #[test]
 fn load_complex_workflow_attr_ommited() {
-    let mut cmd = Command::cargo_bin("annatto").unwrap();
+    let mut cmd = cargo::cargo_bin_cmd!("annatto");
 
     let output = cmd
         .arg("validate")
@@ -142,7 +142,7 @@ fn load_complex_workflow_attr_ommited() {
 
 #[test]
 fn list_modules() {
-    let mut cmd = Command::cargo_bin("annatto").unwrap();
+    let mut cmd = cargo::cargo_bin_cmd!("annatto");
 
     let output = cmd.env("NO_COLOR", "1").arg("list").output().unwrap();
     cmd.assert().success();
@@ -153,7 +153,7 @@ fn list_modules() {
 
 #[test]
 fn module_info() {
-    let mut cmd = Command::cargo_bin("annatto").unwrap();
+    let mut cmd = cargo::cargo_bin_cmd!("annatto");
 
     let output = cmd
         .env("NO_COLOR", "1")
@@ -170,7 +170,7 @@ fn module_info() {
 
 #[test]
 fn module_info_relannis() {
-    let mut cmd = Command::cargo_bin("annatto").unwrap();
+    let mut cmd = cargo::cargo_bin_cmd!("annatto");
 
     let output = cmd
         .env("NO_COLOR", "1")
@@ -187,7 +187,7 @@ fn module_info_relannis() {
 
 #[test]
 fn graph_op_info() {
-    let mut cmd = Command::cargo_bin("annatto").unwrap();
+    let mut cmd = cargo::cargo_bin_cmd!("annatto");
 
     let output = cmd
         .env("NO_COLOR", "1")
@@ -203,7 +203,7 @@ fn graph_op_info() {
 
 #[test]
 fn unknown_module_info() {
-    let mut cmd = Command::cargo_bin("annatto").unwrap();
+    let mut cmd = cargo::cargo_bin_cmd!("annatto");
 
     let output = cmd
         .env("NO_COLOR", "1")
@@ -222,7 +222,7 @@ fn write_documentation() {
     // Create an output directory for the documentation
     let output_dir = tempdir().unwrap();
 
-    let mut cmd = Command::cargo_bin("annatto").unwrap();
+    let mut cmd = cargo::cargo_bin_cmd!("annatto");
 
     let output = cmd
         .arg("documentation")
@@ -243,7 +243,7 @@ fn write_documentation() {
 
 #[test]
 fn run_and_serialize() {
-    let mut cmd = Command::cargo_bin("annatto").unwrap();
+    let mut cmd = cargo::cargo_bin_cmd!("annatto");
     let tmp_dir = TempDir::new().unwrap();
     let output_file = tmp_dir.path().join("exported_workflow.toml");
     let output = cmd
