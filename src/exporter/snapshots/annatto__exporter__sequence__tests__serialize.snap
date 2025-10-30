@@ -2,7 +2,9 @@
 source: src/exporter/sequence.rs
 expression: serialization.unwrap()
 ---
-horizontal = false
+delimiter = """
+
+"""
 fileby = "annis::doc"
 group_component_type = "Coverage"
 anno = "annis::tok"

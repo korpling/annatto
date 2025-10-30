@@ -2,7 +2,7 @@
 source: src/exporter/sequence.rs
 expression: serialization.unwrap()
 ---
-horizontal = true
+delimiter = " "
 fileby = "org::file_data"
 groupby = "dipl::sentence"
 group_component_type = "Coverage"
