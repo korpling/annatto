@@ -1,3 +1,2 @@
-horizontal = false
 component = { ctype = "Ordering", layer = "default_ns", name = "norm" }
 anno = { ns = "norm", name = "norm" }

@@ -22,11 +22,12 @@ use super::Exporter;
 #[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ExportSequence {
-    /// Choose horizontal mode if you want one group (e. g. sentence) per line,
-    /// choose false if you prefer one element per line.
-    /// In the latter case groups will be seperated by empty lines.
-    #[serde(default)]
-    horizontal: bool,
+    /// This influences the way the output is shaped. The default value is '\n', that means each annotation value
+    /// for the configured annotation key will be in a new line. Setting this to a single whitespace (' ') will lead
+    /// to one line per group (see groupby configuration). Setting this to the empty string can be useful for corpora,
+    /// in which each token corresponds to a character.
+    #[serde(default = "default_delimiter")]
+    delimiter: String,
     /// The annotation key that determines which nodes in the graph bunble a document in the part of component.
     #[serde(default = "default_fileby_key", with = "crate::estarde::anno_key")]
     fileby: AnnoKey,
@@ -85,10 +86,14 @@ const fn default_groupby_ctype() -> Option<AnnotationComponentType> {
     Some(AnnotationComponentType::Coverage)
 }
 
+fn default_delimiter() -> String {
+    "\n".to_string()
+}
+
 impl Default for ExportSequence {
     fn default() -> Self {
         Self {
-            horizontal: Default::default(),
+            delimiter: default_delimiter(),
             fileby: default_fileby_key(),
             groupby: Default::default(),
             group_component_type: default_groupby_ctype(),
@@ -146,40 +151,15 @@ impl ExportSequence {
         groups: &BTreeMap<u64, u64>,
         target_dir: &Path,
     ) -> Result<()> {
+        let delimiter_bytes = self.delimiter.as_bytes();
+        let new_group_bytes = if self.delimiter == "\n" {
+            "\n\n".as_bytes()
+        } else {
+            "\n".as_bytes()
+        };
         let node_annos = graph.get_node_annos();
-        let mut values = Vec::new();
-        let mut blocks = Vec::new();
         let dfs = CycleSafeDFS::new(storage.as_edgecontainer(), sequence_start, 0, usize::MAX);
         let mut last_group = groups.get(&sequence_start);
-        for step in dfs {
-            let node = step?.node;
-            if let Some(g) = last_group
-                && let Some(ng) = groups.get(&node)
-            {
-                last_group = Some(ng);
-                if g != ng {
-                    if self.horizontal {
-                        // build and push group
-                        let joint_value = values.join(" ");
-                        blocks.push(joint_value);
-                        values.clear();
-                    } else {
-                        values.push("".to_string()); // inserts empty line to separate groups in output (such as sentences)
-                    }
-                }
-            }
-            if let Some(v) = node_annos.get_value_for_item(&node, &self.anno)? {
-                values.push(v.to_string());
-            }
-        }
-        if !values.is_empty() {
-            if self.horizontal {
-                let joint_value = values.join(" ");
-                blocks.push(joint_value);
-            } else {
-                blocks.extend(values);
-            }
-        }
         let doc_name = if let Some(v) = node_annos.get_value_for_item(&file_node, &self.fileby)? {
             v
         } else {
@@ -191,11 +171,27 @@ impl ExportSequence {
         };
         let out_path = target_dir.join(format!("{doc_name}.{}", self.file_extension()));
         let mut out_file = fs::File::create(out_path)?;
-        for value in blocks {
-            out_file.write_all(value.as_bytes())?;
-            out_file.write_all("\n".as_bytes())?;
+        let mut write_delimiter = false;
+        for step in dfs {
+            let node = step?.node;
+            if let Some(g) = last_group
+                && let Some(ng) = groups.get(&node)
+            {
+                if g != ng {
+                    out_file.write_all(new_group_bytes)?;
+                    write_delimiter = false;
+                }
+                last_group = Some(ng);
+            }
+            if let Some(v) = node_annos.get_value_for_item(&node, &self.anno)? {
+                if write_delimiter {
+                    out_file.write_all(delimiter_bytes)?;
+                }
+                out_file.write_all(v.as_bytes())?;
+                write_delimiter = true;
+            }
         }
-        out_file.write_all("\n".as_bytes())?;
+        out_file.write_all(new_group_bytes)?;
         out_file.flush()?;
         Ok(())
     }
@@ -328,7 +324,7 @@ mod tests {
     use insta::assert_snapshot;
 
     use crate::{
-        exporter::sequence::{default_anno, default_fileby_key},
+        exporter::sequence::{default_anno, default_delimiter, default_fileby_key},
         importer::{Importer, xlsx::ImportSpreadsheet},
         test_util::export_to_string,
     };
@@ -359,7 +355,7 @@ mod tests {
                 ANNIS_NS.into(),
                 "".into(),
             ),
-            horizontal: true,
+            delimiter: " ".to_string(),
             fileby: AnnoKey {
                 name: "file_data".into(),
                 ns: "org".into(),
@@ -389,7 +385,7 @@ mod tests {
         let graph: AnnotationGraph = g.unwrap().0;
         let exporter = ExportSequence {
             anno: default_anno(),
-            horizontal: false,
+            delimiter: default_delimiter(),
             fileby: default_fileby_key(),
             groupby: Some(AnnoKey {
                 ns: "".into(),
@@ -413,7 +409,7 @@ mod tests {
         let graph: AnnotationGraph = g.unwrap().0;
         let exporter = ExportSequence {
             anno: default_anno(),
-            horizontal: true,
+            delimiter: " ".to_string(),
             fileby: default_fileby_key(),
             groupby: Some(AnnoKey {
                 ns: "".into(),
@@ -458,7 +454,7 @@ mod tests {
                 name: "norm".into(),
                 ns: "norm".into(),
             },
-            horizontal: true,
+            delimiter: " ".to_string(),
             fileby: default_fileby_key(),
             groupby: Some(AnnoKey {
                 ns: "norm".into(),
