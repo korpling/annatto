@@ -5,12 +5,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The label of workflow steps (`import`, `graph_op`, `export`) in the progress display can be configured using key `label`.
+
+### Changed
+
+- export `sequence`: key `horizontal` is replaced by `delimiter`, thus vertical and horizontal format output will be defined by the delimiter.
+
 ## [0.42.0] - 2025-10-16
 
 ### Added
 
 - Import and tokenize plain text files with the new `text` importer.
-- The label of workflow steps (`import`, `graph_op`, `export`) in the progress display can be configured using key `label`.
 
 ### Changed
 
