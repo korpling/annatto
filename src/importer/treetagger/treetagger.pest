@@ -6,10 +6,10 @@ TAB          = _{ "\t" }
 WHITESPACE   = _{ " " | TAB | NEWLINE }
 DOUBLE_QUOTE = _{ "\"" }
 /*
-Follow the extensive HTML standard for attribute names
+Follow the extensive HTML standard for attribute names and allow a wide range of element/attribute names.
 https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
 */
-ATTR_NAME_CHAR  = _{
+NAME_CHAR  = _{
     !(
         CONTROL | " " | "\"" | "'" | ">" | "<" | "/" | "=" | NONCHARACTER_CODE_POINT
     ) ~ ANY}
@@ -19,8 +19,8 @@ token_line = ${
     column_value ~ (TAB ~ column_value)* ~ &(NEWLINE | EOI)
 }
 
-tag_name     = @{ !(">" | "<") ~ ASCII_ALPHANUMERIC+ }
-attr_id      = @{ ATTR_NAME_CHAR+ }
+tag_name     = @{ !(">" | "<") ~ NAME_CHAR+ }
+attr_id      = @{ NAME_CHAR+ }
 string       = _{ DOUBLE_QUOTE ~ string_value ~ DOUBLE_QUOTE }
 string_value = @{ (!("\"" | "\\") ~ ANY)* ~ (escape ~ string_value)? }
 escape       = @{ "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t" | unicode) }

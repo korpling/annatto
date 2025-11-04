@@ -107,7 +107,7 @@ fn disable_attribute_encoding() {
 #[test]
 fn complex_attribute_names() {
     let importer = ImportTreeTagger::default();
-    let path = Path::new("tests/data/import/treetagger/complex_attribute_names/");
+    let path = Path::new("tests/data/import/treetagger/complex_names/");
 
     let step_id = StepID {
         module_name: "import_under_test".to_string(),
@@ -131,6 +131,11 @@ fn complex_attribute_names() {
         .collect();
     assert_eq!(
         result,
-        vec!["Attribute-with.hyphen", "text_structure", "Übersicht"]
+        vec![
+            "Attribute-with.hyphen",
+            "pb_n",
+            "text_structure",
+            "Übersicht"
+        ]
     )
 }
