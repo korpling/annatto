@@ -5,7 +5,14 @@ treetagger = {
 TAB          = _{ "\t" }
 WHITESPACE   = _{ " " | TAB | NEWLINE }
 DOUBLE_QUOTE = _{ "\"" }
-
+/*
+Follow the extensive HTML standard for attribute names
+https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
+*/
+ATTR_NAME_CHAR  = _{
+    !(
+        CONTROL | " " | "\"" | "'" | ">" | "<" | "/" | "=" | NONCHARACTER_CODE_POINT
+    ) ~ ANY}
 column_value = { (!(TAB | NEWLINE) ~ ANY)+ }
 
 token_line = ${
@@ -13,7 +20,7 @@ token_line = ${
 }
 
 tag_name     = @{ !(">" | "<") ~ ASCII_ALPHANUMERIC+ }
-attr_id      = @{ ASCII_ALPHANUMERIC+ }
+attr_id      = @{ ATTR_NAME_CHAR+ }
 string       = _{ DOUBLE_QUOTE ~ string_value ~ DOUBLE_QUOTE }
 string_value = @{ (!("\"" | "\\") ~ ANY)* ~ (escape ~ string_value)? }
 escape       = @{ "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t" | unicode) }

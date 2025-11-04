@@ -1,0 +1,10 @@
+<document Übersicht="false" Attribute-with.hyphen="test" text_structure="true">
+Die
+Jugendlichen
+in
+Zossen
+wollen
+ein
+Musikcafé
+.
+</document>
