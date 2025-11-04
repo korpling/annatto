@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - export `sequence`: key `horizontal` is replaced by `delimiter`, thus vertical and horizontal format output will be defined by the delimiter.
 
+### Fixed
+
+- Be more permissive with TreeTagger SGML element and attribute names, e.g.
+  hyphens and dots. Follow the HTML attribute name definition to be as
+  compatible as possible, e.g. with certain TEI tags.
+
 ## [0.42.0] - 2025-10-16
 
 ### Added

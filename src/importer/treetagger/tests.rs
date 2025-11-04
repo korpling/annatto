@@ -1,9 +1,15 @@
 use std::path::Path;
 
+use graphannis::AnnotationGraph;
 use insta::assert_snapshot;
+use itertools::Itertools;
 
 use crate::{
-    importer::treetagger::{AttributeDecoding, ImportTreeTagger},
+    StepID,
+    importer::{
+        Importer,
+        treetagger::{AttributeDecoding, ImportTreeTagger},
+    },
     test_util::import_as_graphml_string,
 };
 
@@ -99,13 +105,37 @@ fn disable_attribute_encoding() {
 }
 
 #[test]
-fn single_sentence() {
-    let actual = import_as_graphml_string(
-        ImportTreeTagger::default(),
-        Path::new("tests/data/import/treetagger/single_sentence"),
-        Some(TT_DEFAULT_VIS_CONFIG),
-    )
-    .unwrap();
+fn complex_attribute_names() {
+    let importer = ImportTreeTagger::default();
+    let path = Path::new("tests/data/import/treetagger/complex_names/");
 
-    assert_snapshot!(actual);
+    let step_id = StepID {
+        module_name: "import_under_test".to_string(),
+        path: None,
+    };
+    let mut u = importer
+        .import_corpus(path.as_ref(), step_id.clone(), None)
+        .unwrap();
+    let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+    g.apply_update(&mut u, |_| {}).unwrap();
+
+    // Test that all document attribute names have been imported correctly
+    let result: Vec<_> = g
+        .get_node_annos()
+        .annotation_keys()
+        .unwrap()
+        .into_iter()
+        .filter(|k| k.ns == "")
+        .map(|k| k.name)
+        .sorted()
+        .collect();
+    assert_eq!(
+        result,
+        vec![
+            "Attribute-with.hyphen",
+            "pb_n",
+            "text_structure",
+            "Übersicht"
+        ]
+    )
 }
