@@ -2,15 +2,15 @@ use std::path::Path;
 
 use graphannis::AnnotationGraph;
 use insta::assert_snapshot;
+use itertools::Itertools;
 
 use crate::{
     StepID,
-    exporter::treetagger::ExportTreeTagger,
     importer::{
         Importer,
         treetagger::{AttributeDecoding, ImportTreeTagger},
     },
-    test_util::{export_to_string, import_as_graphml_string},
+    test_util::import_as_graphml_string,
 };
 
 const TT_DEFAULT_VIS_CONFIG: &str = r#"
@@ -108,7 +108,6 @@ fn disable_attribute_encoding() {
 fn complex_attribute_names() {
     let importer = ImportTreeTagger::default();
     let path = Path::new("tests/data/import/treetagger/complex_attribute_names/");
-    let exporter = ExportTreeTagger::default();
 
     let step_id = StepID {
         module_name: "import_under_test".to_string(),
@@ -120,7 +119,18 @@ fn complex_attribute_names() {
     let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
     g.apply_update(&mut u, |_| {}).unwrap();
 
-    let result = export_to_string(&g, exporter).unwrap();
-
-    assert_snapshot!(result);
+    // Test that all document attribute names have been imported correctly
+    let result: Vec<_> = g
+        .get_node_annos()
+        .annotation_keys()
+        .unwrap()
+        .into_iter()
+        .filter(|k| k.ns == "")
+        .map(|k| k.name)
+        .sorted()
+        .collect();
+    assert_eq!(
+        result,
+        vec!["Attribute-with.hyphen", "text_structure", "Übersicht"]
+    )
 }
