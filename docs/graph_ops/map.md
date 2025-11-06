@@ -102,6 +102,27 @@ value = { copy = 1 }
 delete = [1]
 ```
 
+When there are several nodes, you want to source a value from, you can do that by configuring a list of
+matching nodes. You can furthermore define the delimiter of the source values (default is a single whitespace):
+
+```toml
+[[rules]]
+query = "norm . norm"
+target = [1, 2]
+anno = "bigram"
+value = { copy = [1, 2], delimiter = ',' }
+```
+
+The same works with replacements:
+
+```toml
+[[rules]]
+query = "norm . norm"
+target = [1, 2]
+anno = "bigram"
+value = { target = [1, 2], replacements = [["-", ""]], delimiter = ',' }
+```
+
 ## Configuration
 
 ###  rule_file

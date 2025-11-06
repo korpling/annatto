@@ -4,11 +4,12 @@ This exports a node sequence as horizontal or vertical text.
 
 ## Configuration
 
-###  horizontal
+###  delimiter
 
-Choose horizontal mode if you want one group (e. g. sentence) per line,
-choose false if you prefer one element per line.
-In the latter case groups will be seperated by empty lines.
+This influences the way the output is shaped. The default value is '\n', that means each annotation value
+for the configured annotation key will be in a new line. Setting this to a single whitespace (' ') will lead
+to one line per group (see groupby configuration). Setting this to the empty string can be useful for corpora,
+in which each token corresponds to a character.
 
 ###  fileby
 
