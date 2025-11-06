@@ -276,7 +276,7 @@ impl TargetRef {
         &self,
         graph: &AnnotationGraph,
         mg: &[Match],
-        sep: char,
+        sep: &str,
     ) -> anyhow::Result<String> {
         let targets: Vec<usize> = match self {
             TargetRef::Node(n) => vec![*n],
@@ -298,7 +298,7 @@ impl TargetRef {
                 .get_value_for_item(&m.node, &anno_key)?
                 .unwrap_or_default();
             if !result.is_empty() {
-                result.push(sep);
+                result.push_str(sep);
             }
             result.push_str(&orig_val);
         }
@@ -316,6 +316,10 @@ enum Value {
         /// more than one target is given, the strings a separated with a space
         /// character.
         copy: TargetRef,
+        /// If the target reference spans more than one value, you can set a delimiter
+        /// for those values. The default delimiter is a single space.
+        #[serde(default = "default_value_delimiter")]
+        delimiter: String,
     },
     Replace {
         /// The target node(s) of the query the annotation is fetched from. If
@@ -325,7 +329,15 @@ enum Value {
         /// Pairs of regular expression that is used to find parts of the string to be
         /// replaced and the fixed strings the matches are replaced with.
         replacements: Vec<(String, String)>,
+        /// If the target reference spans more than one value, you can set a delimiter
+        /// for those values. The default delimiter is a single space.
+        #[serde(default = "default_value_delimiter")]
+        delimiter: String,
     },
+}
+
+fn default_value_delimiter() -> String {
+    " ".to_string()
 }
 
 #[derive(Facet, Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -344,12 +356,13 @@ impl Rule {
     fn resolve_value(&self, graph: &AnnotationGraph, mg: &[Match]) -> anyhow::Result<String> {
         match &self.value {
             Value::Fixed(val) => Ok(val.clone()),
-            Value::Copy { copy } => copy.resolve_value(graph, mg, ' '),
+            Value::Copy { copy, delimiter } => copy.resolve_value(graph, mg, delimiter),
             Value::Replace {
                 target,
                 replacements,
+                delimiter,
             } => {
-                let mut val = target.resolve_value(graph, mg, ' ')?;
+                let mut val = target.resolve_value(graph, mg, delimiter)?;
                 for (search, replace) in replacements {
                     // replace all occurences of the value
                     let search = Regex::new(search)?;
@@ -594,13 +607,15 @@ mod tests {
     use std::sync::mpsc;
 
     use graphannis::{
-        AnnotationGraph, aql,
+        AnnotationGraph,
+        aql::{self, execute_query_on_graph},
         model::AnnotationComponentType,
         update::{GraphUpdate, UpdateEvent},
     };
     use graphannis_core::{annostorage::ValueSearch, graph::ANNIS_NS};
 
     use insta::assert_snapshot;
+    use itertools::Itertools;
     use pretty_assertions::assert_eq;
     use tempfile::NamedTempFile;
     use tests::test_util::export_to_string;
@@ -743,6 +758,7 @@ mod tests {
             },
             value: Value::Copy {
                 copy: TargetRef::Node(1),
+                delimiter: default_value_delimiter(),
             },
             delete: vec![1],
         };
@@ -834,6 +850,7 @@ mod tests {
             value: Value::Replace {
                 target: TargetRef::Node(1),
                 replacements: vec![("cat".to_string(), "dog".to_string())],
+                delimiter: default_value_delimiter(),
             },
             delete: vec![],
         };
@@ -847,6 +864,121 @@ mod tests {
 
         let resolved = fixed_value.resolve_value(&g, &vec![tok_match]).unwrap();
         assert_eq!("complidoged", resolved);
+    }
+
+    #[test]
+    fn test_resolve_value_copy_span_custom_delim() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
+        let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let fixed_value = Rule {
+            query: "tok . tok=/complicated/".to_string(),
+            target: super::TargetRef::Node(2),
+            anno: AnnoKey {
+                name: "test".into(),
+                ns: "test_ns".into(),
+            },
+            value: Value::Copy {
+                delimiter: "###".to_string(),
+                copy: TargetRef::Span(vec![1, 2]),
+            },
+            delete: vec![],
+        };
+
+        let mapper = MapAnnos {
+            rule_file: None,
+            mapping: Some(Mapping {
+                rules: vec![fixed_value],
+                repetition: RepetitionMode::Fixed { n: 1 },
+            }),
+            debug: false,
+        };
+
+        let r = mapper.manipulate_corpus(
+            &mut g,
+            Path::new("./"),
+            StepID {
+                module_name: "test".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(r.is_ok(), "Err: {:?}", r.err().unwrap());
+        let query = aql::parse("test_ns:test", false).unwrap();
+        let search = execute_query_on_graph(&g, &query, true, None).unwrap();
+        assert_snapshot!(
+            search
+                .map(|m| {
+                    let m = m.unwrap();
+                    let m = m.get(0).unwrap();
+                    g.get_node_annos()
+                        .get_value_for_item(&m.node, &m.anno_key)
+                        .unwrap()
+                        .unwrap()
+                })
+                .join("\n")
+        );
+    }
+
+    #[test]
+    fn test_resolve_value_replace_span_custom_delim() {
+        let mut updates = GraphUpdate::new();
+        example_generator::create_corpus_structure_simple(&mut updates);
+        example_generator::create_tokens(&mut updates, Some("root/doc1"));
+        let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        g.apply_update(&mut updates, |_msg| {}).unwrap();
+
+        let fixed_value = Rule {
+            query: "tok . tok=/complicated/".to_string(),
+            target: super::TargetRef::Node(2),
+            anno: AnnoKey {
+                name: "test".into(),
+                ns: "test_ns".into(),
+            },
+            value: Value::Replace {
+                target: TargetRef::Span(vec![1, 2]),
+                replacements: vec![("cat".to_string(), "dog".to_string())],
+                delimiter: "###".to_string(),
+            },
+            delete: vec![],
+        };
+
+        let mapper = MapAnnos {
+            rule_file: None,
+            mapping: Some(Mapping {
+                rules: vec![fixed_value],
+                repetition: RepetitionMode::Fixed { n: 1 },
+            }),
+            debug: false,
+        };
+
+        let r = mapper.manipulate_corpus(
+            &mut g,
+            Path::new("./"),
+            StepID {
+                module_name: "test".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(r.is_ok(), "Err: {:?}", r.err().unwrap());
+        let query = aql::parse("test_ns:test", false).unwrap();
+        let search = execute_query_on_graph(&g, &query, true, None).unwrap();
+        assert_snapshot!(
+            search
+                .map(|m| {
+                    let m = m.unwrap();
+                    let m = m.get(0).unwrap();
+                    g.get_node_annos()
+                        .get_value_for_item(&m.node, &m.anno_key)
+                        .unwrap()
+                        .unwrap()
+                })
+                .join("\n")
+        );
     }
 
     #[test]
@@ -867,6 +999,7 @@ mod tests {
             value: Value::Replace {
                 target: TargetRef::Node(1),
                 replacements: vec![("cat.*".to_string(), "$0$0".to_string())],
+                delimiter: default_value_delimiter(),
             },
             delete: vec![],
         };
