@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.43.0] - 2025-11-06
+
 ### Added
 
 - The label of workflow steps (`import`, `graph_op`, `export`) in the progress display can be configured using key `label`.
