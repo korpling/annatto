@@ -1,0 +1,5 @@
+---
+source: src/manipulator/map.rs
+expression: "search.map(|m|\n{\n    let m = m.unwrap(); let m = m.get(0).unwrap();\n    g.get_node_annos().get_value_for_item(&m.node,\n    &m.anno_key).unwrap().unwrap()\n}).join(\"\\n\")"
+---
+more###complidoged

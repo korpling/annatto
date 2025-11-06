@@ -86,6 +86,7 @@ delete = []
 
 [graph_op.config.mapping.rules.value]
 copy = 2
+delimiter = " "
 
 [[graph_op.config.mapping.rules]]
 query = "ahd:AHD _r_ row !_r_ map?"
@@ -95,6 +96,7 @@ delete = []
 
 [graph_op.config.mapping.rules.value]
 copy = 2
+delimiter = " "
 
 [graph_op.config.mapping.repetition.Fixed]
 n = 1

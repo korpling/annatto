@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - The label of workflow steps (`import`, `graph_op`, `export`) in the progress display can be configured using key `label`.
+- `map`: the delimiter for joining values from several nodes can be set to a custom value if desired via attribute `delimiter` in copy or replacement configurations
 
 ### Changed
 
