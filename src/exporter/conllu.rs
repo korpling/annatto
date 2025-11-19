@@ -15,7 +15,8 @@ use graphannis::{
 };
 use graphannis_core::{
     annostorage::ValueSearch,
-    graph::{ANNIS_NS, NODE_NAME_KEY},
+    dfs::CycleSafeDFS,
+    graph::{ANNIS_NS, NODE_NAME_KEY, storage::union::UnionEdgeContainer},
 };
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -415,26 +416,44 @@ impl ExportCoNLLU {
             .into_iter()
             .filter_map(|c| graph.get_graphstorage(&c))
             .collect_vec();
-        let mut connected_nodes = BTreeSet::default();
-        for storage in coverage_storages {
-            storage
-                .find_connected(node, 0, Bound::Unbounded)
-                .flatten()
-                .for_each(|n| {
-                    connected_nodes.insert(n);
-                });
-            let extra_nodes = connected_nodes
+        let container_union = UnionEdgeContainer::new(
+            coverage_storages
                 .iter()
-                .map(|n| {
-                    storage
-                        .find_connected_inverse(*n, 1, Bound::Unbounded)
-                        .flatten()
-                })
-                .collect_vec();
-            extra_nodes
-                .into_iter()
-                .for_each(|v| connected_nodes.extend(v));
-        }
+                .map(|s| s.as_edgecontainer())
+                .collect_vec(),
+        );
+        let mut connected_nodes = BTreeSet::default();
+        let dfs = CycleSafeDFS::new(&container_union, node, 0, usize::MAX);
+        dfs.into_iter().flatten().for_each(|s| {
+            connected_nodes.insert(s.node);
+        });
+        let extra_nodes = connected_nodes
+            .iter()
+            .flat_map(|n| {
+                CycleSafeDFS::new_inverse(&container_union, *n, 1, usize::MAX)
+                    .flatten()
+                    .map(|s| s.node)
+            })
+            .collect_vec();
+        connected_nodes.extend(extra_nodes);
+        // storage
+        //     .find_connected(node, 0, Bound::Unbounded)
+        //     .flatten()
+        //     .for_each(|n| {
+        //         connected_nodes.insert(n);
+        //     });
+        // let extra_nodes = connected_nodes
+        //     .iter()
+        //     .map(|n| {
+        //         storage
+        //             .find_connected_inverse(*n, 1, Bound::Unbounded)
+        //             .flatten()
+        //     })
+        //     .collect_vec();
+        // extra_nodes
+        //     .into_iter()
+        //     .for_each(|v| connected_nodes.extend(v));
+
         let mut data = BTreeMap::default();
         let mut remaining_keys: BTreeSet<&AnnoKey> = keys.into_iter().collect();
         let node_annos = graph.get_node_annos();
