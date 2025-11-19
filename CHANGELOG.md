@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- export `conllu` properly determines covering spans for grouping nodes
+
 ## [0.43.0] - 2025-11-06
 
 ### Added
