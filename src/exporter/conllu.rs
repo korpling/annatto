@@ -3,7 +3,7 @@ use std::{
     fs,
     io::{LineWriter, Write},
     ops::Bound,
-    path::Path,    
+    path::Path,
 };
 
 use anyhow::{anyhow, bail};
