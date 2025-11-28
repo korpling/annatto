@@ -24,6 +24,7 @@
 \mrph -/a.sg.f.  a.sg.   3.ft.      $
 
 \ref
+ignore this line please
 \tx
 \PoS
 \syl
@@ -31,5 +32,7 @@
 
 \ref Testsatz 3 nochmal
 \tx mana       Galwạ atties     .
+ignore this line as well
+it's to be ignored
 \std mano-maną galvą  atties     $
 \mrph -/a.sg.f.  a.sg.   3.ft.      $

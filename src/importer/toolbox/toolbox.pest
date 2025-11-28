@@ -1,6 +1,7 @@
 data = { SOI ~ block+ }
-block = { line+ ~ (EOI | NEWLINE*) }
+block = { (line | ignore_line)+ ~ (EOI | NEWLINE*) }
 line = { "\\" ~ (anno_field | proc_field) ~ entries? ~ (NEWLINE | EOI) }
+ignore_line = { !("\\") ~ (!(NEWLINE | EOI) ~ ANY)+ ~ (NEWLINE | EOI) }
 entries = { (spaces ~ (null | entry)?)+ }
 anno_field = { ALPHABETIC+ }
 proc_field = { "_" ~ ALPHABETIC+ }

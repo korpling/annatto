@@ -436,23 +436,6 @@ impl ExportCoNLLU {
             })
             .collect_vec();
         connected_nodes.extend(extra_nodes);
-        // storage
-        //     .find_connected(node, 0, Bound::Unbounded)
-        //     .flatten()
-        //     .for_each(|n| {
-        //         connected_nodes.insert(n);
-        //     });
-        // let extra_nodes = connected_nodes
-        //     .iter()
-        //     .map(|n| {
-        //         storage
-        //             .find_connected_inverse(*n, 1, Bound::Unbounded)
-        //             .flatten()
-        //     })
-        //     .collect_vec();
-        // extra_nodes
-        //     .into_iter()
-        //     .for_each(|v| connected_nodes.extend(v));
 
         let mut data = BTreeMap::default();
         let mut remaining_keys: BTreeSet<&AnnoKey> = keys.into_iter().collect();
