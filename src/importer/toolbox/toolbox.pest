@@ -1,7 +1,7 @@
 data = { SOI ~ block+ }
 block = { line+ ~ (EOI | NEWLINE*) }
-line = { "\\" ~ (anno_field | proc_field) ~ entries ~ (NEWLINE | EOI) }
-entries = { (spaces ~ (null | entry))+ }
+line = { "\\" ~ (anno_field | proc_field) ~ entries? ~ (NEWLINE | EOI) }
+entries = { (spaces ~ (null | entry)?)+ }
 anno_field = { ALPHABETIC+ }
 proc_field = { "_" ~ ALPHABETIC+ }
 entry = { redub | with_dashes | complex | default }
