@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- import `toolbox` can deal with linebreaks in comments and empty blocks
+
 ## [0.43.1] - 2025-11-19
 
 ### Fixed
