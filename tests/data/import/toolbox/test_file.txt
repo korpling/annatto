@@ -22,3 +22,14 @@
 \tx mana       Galwạ atties     .
 \std mano-maną galvą  atties     $
 \mrph -/a.sg.f.  a.sg.   3.ft.      $
+
+\ref
+\tx
+\PoS
+\syl
+\mrph
+
+\ref Testsatz 3 nochmal
+\tx mana       Galwạ atties     .
+\std mano-maną galvą  atties     $
+\mrph -/a.sg.f.  a.sg.   3.ft.      $
