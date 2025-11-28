@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - import `toolbox` can deal with linebreaks in comments and empty blocks
+- import `toolbox`: fixed parsing of multi-entry cells with null value (`-`)
 
 ## [0.43.1] - 2025-11-19
 
