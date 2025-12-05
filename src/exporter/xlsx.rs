@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::anyhow;
+use edit_xlsx::Write;
 use facet::Facet;
 use graphannis::{AnnotationGraph, graph::GraphStorage, model::AnnotationComponentType};
 use graphannis_core::{
@@ -12,14 +13,13 @@ use graphannis_core::{
     types::{AnnoKey, Component, NodeID},
     util::join_qname,
 };
-use lazy_static::lazy_static;
 use linked_hash_map::LinkedHashMap;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use rust_xlsxwriter::{Format, workbook::Workbook, worksheet::Worksheet};
 use serde::{Deserialize, Serialize};
 use tempfile::NamedTempFile;
 
 use crate::{
+    importer::xlsx::SheetAddress,
     progress::ProgressReporter,
     util::token_helper::{TOKEN_KEY, TokenHelper},
 };
@@ -55,6 +55,11 @@ pub struct ExportXlsx {
     /// compared to the file that will be generated before overwriting it.
     #[serde(default)]
     skip_unchanged_files: bool,
+    /// Set this to a sheet index or name to only update the data (not metadata)
+    /// in an existing workbook and not write a completely new file. If no target
+    /// file exists, a new workbook is created.
+    #[serde(default)]
+    update_datasheet: Option<SheetAddress>,
 }
 
 fn find_token_roots(
@@ -106,8 +111,8 @@ fn is_span_column(
 
 fn overwritten_position_for_key(
     anno_key: &AnnoKey,
-    position_overwrite: &HashMap<AnnoKey, u16>,
-) -> Option<u16> {
+    position_overwrite: &HashMap<AnnoKey, u32>,
+) -> Option<u32> {
     // Try the fully qualified name first, then check if the unspecific name is configured
     position_overwrite
         .get(anno_key)
@@ -120,10 +125,6 @@ fn overwritten_position_for_key(
         .copied()
 }
 
-lazy_static! {
-    static ref DEFAULT_FORMAT: Format = Format::new();
-}
-
 impl ExportXlsx {
     fn export_document(
         &self,
@@ -133,9 +134,20 @@ impl ExportXlsx {
         output_path: &std::path::Path,
         progress: &ProgressReporter,
     ) -> Result<(), anyhow::Error> {
-        let mut workbook = Workbook::new();
-        let worksheet = workbook.add_worksheet();
-
+        let output_path = output_path.join(format!("{doc_name}.xlsx"));
+        let mut workbook = if self.update_datasheet.is_some() && output_path.exists() {
+            edit_xlsx::Workbook::from_path(&output_path)?
+        } else {
+            edit_xlsx::Workbook::new()
+        };
+        let worksheet = if let Some(addr) = &self.update_datasheet {
+            match addr {
+                SheetAddress::Numeric(i) => workbook.get_worksheet_mut(*i as u32)?,
+                SheetAddress::Name(s) => workbook.get_worksheet_mut_by_name(s)?,
+            }
+        } else {
+            workbook.add_worksheet()?
+        };
         let token_helper = TokenHelper::new(g)?;
         let ordering_component = Component::new(
             AnnotationComponentType::Ordering,
@@ -150,7 +162,7 @@ impl ExportXlsx {
             self.create_token_colum(g, &token_roots, doc_node_id, worksheet)?;
 
         let column_offset = if !has_only_empty_token {
-            worksheet.write(0, 0, "tok")?;
+            worksheet.write((0, 0), "tok")?;
             1
         } else {
             0
@@ -168,23 +180,21 @@ impl ExportXlsx {
 
         // Add meta data sheet
         let meta_annos = g.get_node_annos().get_annotations_for_item(&doc_node_id)?;
-        if !meta_annos.is_empty() {
-            let meta_sheet = workbook.add_worksheet();
+        if !meta_annos.is_empty() && self.update_datasheet.is_none() {
+            let meta_sheet = workbook.add_worksheet()?;
             meta_sheet.set_name("meta")?;
-            meta_sheet.write(0, 0, "Name")?;
-            meta_sheet.write(0, 1, "Value")?;
+            meta_sheet.write((0, 0), "Name")?;
+            meta_sheet.write((0, 1), "Value")?;
 
             let mut current_row = 1;
             for a in meta_annos {
                 if a.key.ns != ANNIS_NS {
-                    meta_sheet.write(current_row, 0, join_qname(&a.key.ns, &a.key.name))?;
-                    meta_sheet.write(current_row, 1, a.val)?;
+                    meta_sheet.write((current_row, 0), join_qname(&a.key.ns, &a.key.name))?;
+                    meta_sheet.write((current_row, 1), a.val)?;
                     current_row += 1;
                 }
             }
         }
-
-        let output_path = output_path.join(format!("{doc_name}.xlsx"));
 
         if self.skip_unchanged_files
             && output_path.is_file()
@@ -192,7 +202,7 @@ impl ExportXlsx {
         {
             // Write the file to a temporary location and use a Excel-diff tool to compare the files
             let tmp_out = NamedTempFile::with_suffix_in(".xlsx", parent_dir)?;
-            workbook.save(tmp_out.path())?;
+            workbook.save_as(tmp_out.path())?;
             let diff = sheets_diff::core::diff::Diff::new(
                 &output_path.to_string_lossy(),
                 &tmp_out.path().to_string_lossy(),
@@ -204,7 +214,7 @@ impl ExportXlsx {
             }
         } else {
             // Directly write the output file
-            workbook.save(output_path)?;
+            workbook.save_as(output_path)?;
         }
 
         Ok(())
@@ -215,14 +225,14 @@ impl ExportXlsx {
         &self,
         g: &AnnotationGraph,
         token_helper: &TokenHelper,
-        column_offset: u16,
-    ) -> anyhow::Result<LinkedHashMap<AnnoKey, u16>> {
+        column_offset: u32,
+    ) -> anyhow::Result<LinkedHashMap<AnnoKey, u32>> {
         // create a hash map from the configuration value
-        let position_overwrite: HashMap<AnnoKey, u16> = self
+        let position_overwrite: HashMap<AnnoKey, u32> = self
             .annotation_order
             .iter()
             .enumerate()
-            .map(|(idx, anno)| (anno.clone(), (idx as u16) + column_offset))
+            .map(|(idx, anno)| (anno.clone(), (idx as u32) + column_offset))
             .collect();
 
         let node_annos = g.get_node_annos();
@@ -266,7 +276,7 @@ impl ExportXlsx {
         g: &AnnotationGraph,
         token_roots: &HashSet<NodeID>,
         doc_node_id: NodeID,
-        worksheet: &mut rust_xlsxwriter::worksheet::Worksheet,
+        worksheet: &mut edit_xlsx::WorkSheet,
     ) -> anyhow::Result<(HashMap<NodeID, u32>, bool)> {
         let ordering_component = Component::new(
             AnnotationComponentType::Ordering,
@@ -303,7 +313,7 @@ impl ExportXlsx {
                     && !val.trim().is_empty()
                 {
                     has_only_empty_token = false;
-                    worksheet.write(row_index, 0, val)?;
+                    worksheet.write((row_index, 0), &*val)?;
                 }
 
                 token_to_row.insert(current_token, row_index);
@@ -327,22 +337,21 @@ impl ExportXlsx {
     fn create_span_columns(
         &self,
         g: &AnnotationGraph,
-        name_to_column: &LinkedHashMap<AnnoKey, u16>,
+        name_to_column: &LinkedHashMap<AnnoKey, u32>,
         token_to_row: HashMap<NodeID, u32>,
         token_helper: &TokenHelper,
-        worksheet: &mut Worksheet,
+        worksheet: &mut edit_xlsx::WorkSheet,
         progress: &ProgressReporter,
     ) -> anyhow::Result<()> {
         for span_anno_key in name_to_column.keys() {
             if let Some(column_index) = name_to_column.get(span_anno_key) {
                 if self.include_namespace {
                     worksheet.write(
-                        0,
-                        *column_index,
+                        (0, *column_index),
                         join_qname(&span_anno_key.ns, &span_anno_key.name),
                     )?;
                 } else {
-                    worksheet.write(0, *column_index, span_anno_key.name.clone())?;
+                    worksheet.write((0, *column_index), span_anno_key.name.clone())?;
                 }
                 for span in g.get_node_annos().exact_anno_search(
                     Some(&span_anno_key.ns),
@@ -374,19 +383,15 @@ impl ExportXlsx {
                         if *last - *first > 0 {
                             if worksheet
                                 .merge_range(
-                                    **first,
-                                    *column_index,
-                                    **last,
-                                    *column_index,
-                                    &span_val,
-                                    &DEFAULT_FORMAT,
+                                    (**first, *column_index, **last, *column_index),
+                                    &*span_val,
                                 )
                                 .is_err()
                             {
                                 progress.warn(format!("Could not write span value {span_val} from row {first} to row {last} in column `{}`. A span already exists.", span_anno_key.name))?;
                             }
                         } else {
-                            worksheet.write(**first, *column_index, span_val)?;
+                            worksheet.write((**first, *column_index), &*span_val)?;
                         }
                     }
                 }
@@ -488,6 +493,7 @@ mod tests {
             ],
             include_namespace: true,
             skip_unchanged_files: false,
+            update_datasheet: None,
         };
         let serialization = toml::to_string(&module);
         assert!(
