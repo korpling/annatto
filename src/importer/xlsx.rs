@@ -82,7 +82,7 @@ pub struct ImportSpreadsheet {
 #[derive(Facet, Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[repr(u8)]
 #[serde(untagged)]
-enum SheetAddress {
+pub(crate) enum SheetAddress {
     Numeric(usize),
     Name(String),
 }
