@@ -1,12 +1,9 @@
 use std::{
     cmp::Ordering,
     collections::{BTreeSet, HashMap, HashSet},
-    fs,
-    path::Path,
 };
 
 use anyhow::anyhow;
-use edit_xlsx::Write;
 use facet::Facet;
 use graphannis::{AnnotationGraph, graph::GraphStorage, model::AnnotationComponentType};
 use graphannis_core::{
@@ -137,23 +134,25 @@ impl ExportXlsx {
         progress: &ProgressReporter,
     ) -> Result<(), anyhow::Error> {
         let output_path = output_path.join(format!("{doc_name}.xlsx"));
-        if !output_path.exists() {
-            fs::copy(Path::new("src/models/xlsx/new.xlsx"), &output_path)?;
+        let mut workbook = if output_path.exists() && self.update_datasheet.is_some() {
+            umya_spreadsheet::reader::xlsx::read(&output_path)?
+        } else {
+            umya_spreadsheet::new_file()
         };
-        let mut workbook = edit_xlsx::Workbook::from_path(&output_path)?;
         let worksheet = if let Some(addr) = &self.update_datasheet {
             match addr {
-                SheetAddress::Numeric(i) => workbook.get_worksheet_mut(*i as u32)?,
-                SheetAddress::Name(s) => workbook.get_worksheet_mut_by_name(s)?,
+                SheetAddress::Numeric(i) => workbook
+                    .get_sheet_mut(i)
+                    .ok_or(anyhow!("Sheet with index {i} does not exist."))?,
+                SheetAddress::Name(s) => workbook
+                    .get_sheet_by_name_mut(s)
+                    .ok_or(anyhow!("Sheet with name {s} does not exist."))?,
             }
         } else {
-            if let Ok(sh) = workbook.get_worksheet_mut(0) {
-                sh
-            } else {
-                workbook.add_worksheet()?
-            }
+            workbook
+                .get_sheet_mut(&0)
+                .ok_or(anyhow!("Could not obtain blank sheet."))?
         };
-        worksheet.activate();
         let token_helper = TokenHelper::new(g)?;
         let ordering_component = Component::new(
             AnnotationComponentType::Ordering,
@@ -168,7 +167,7 @@ impl ExportXlsx {
             self.create_token_colum(g, &token_roots, doc_node_id, worksheet)?;
 
         let column_offset = if !has_only_empty_token {
-            worksheet.write((1, 1), "tok")?;
+            worksheet.get_cell_mut((1, 1)).set_value("tok");
             1
         } else {
             0
@@ -187,22 +186,21 @@ impl ExportXlsx {
         // Add meta data sheet
         let meta_annos = g.get_node_annos().get_annotations_for_item(&doc_node_id)?;
         if !meta_annos.is_empty() && self.update_datasheet.is_none() {
-            let meta_sheet = workbook.add_worksheet()?;
-            meta_sheet.set_name("meta")?;
-            meta_sheet.write((1, 1), "Name")?;
-            meta_sheet.write((1, 2), "Value")?;
+            let meta_sheet = workbook.new_sheet("meta").map_err(|s| anyhow!(s))?;
+            meta_sheet.get_cell_mut((1, 1)).set_value("Name");
+            meta_sheet.get_cell_mut((2, 1)).set_value("Value");
 
             let mut current_row = 2;
             for a in meta_annos {
                 if a.key.ns != ANNIS_NS {
-                    meta_sheet.write((current_row, 1), join_qname(&a.key.ns, &a.key.name))?;
-                    meta_sheet.write((current_row, 2), a.val)?;
+                    meta_sheet
+                        .get_cell_mut((1, current_row))
+                        .set_value(join_qname(&a.key.ns, &a.key.name));
+                    meta_sheet.get_cell_mut((2, current_row)).set_value(a.val);
                     current_row += 1;
                 }
             }
         }
-
-        dbg!(workbook.sheets.len());
 
         if self.skip_unchanged_files
             && output_path.is_file()
@@ -210,7 +208,7 @@ impl ExportXlsx {
         {
             // Write the file to a temporary location and use a Excel-diff tool to compare the files
             let tmp_out = NamedTempFile::with_suffix_in(".xlsx", parent_dir)?;
-            workbook.save_as(tmp_out.path())?;
+            umya_spreadsheet::writer::xlsx::write(&workbook, tmp_out.path())?;
             let diff = sheets_diff::core::diff::Diff::new(
                 &output_path.to_string_lossy(),
                 &tmp_out.path().to_string_lossy(),
@@ -222,9 +220,8 @@ impl ExportXlsx {
             }
         } else {
             // Directly write the output file
-            workbook.save_as(output_path)?;
+            umya_spreadsheet::writer::xlsx::write(&workbook, output_path)?;
         }
-        workbook.finish();
 
         Ok(())
     }
@@ -269,7 +266,7 @@ impl ExportXlsx {
 
         let mut result = LinkedHashMap::new();
 
-        let mut column_index = column_offset;
+        let mut column_index = column_offset + 1;
         for anno_key in all_anno_keys {
             if anno_key.ns != ANNIS_NS && is_span_column(&anno_key, node_annos, token_helper)? {
                 result.insert(anno_key, column_index);
@@ -285,7 +282,7 @@ impl ExportXlsx {
         g: &AnnotationGraph,
         token_roots: &HashSet<NodeID>,
         doc_node_id: NodeID,
-        worksheet: &mut edit_xlsx::WorkSheet,
+        worksheet: &mut umya_spreadsheet::Worksheet,
     ) -> anyhow::Result<(HashMap<NodeID, u32>, bool)> {
         let ordering_component = Component::new(
             AnnotationComponentType::Ordering,
@@ -322,7 +319,7 @@ impl ExportXlsx {
                     && !val.trim().is_empty()
                 {
                     has_only_empty_token = false;
-                    worksheet.write((row_index, 1), &*val)?;
+                    worksheet.get_cell_mut((1, row_index)).set_value(val);
                 }
 
                 token_to_row.insert(current_token, row_index);
@@ -349,19 +346,21 @@ impl ExportXlsx {
         name_to_column: &LinkedHashMap<AnnoKey, u32>,
         token_to_row: HashMap<NodeID, u32>,
         token_helper: &TokenHelper,
-        worksheet: &mut edit_xlsx::WorkSheet,
+        worksheet: &mut umya_spreadsheet::Worksheet,
         progress: &ProgressReporter,
     ) -> anyhow::Result<()> {
         for span_anno_key in name_to_column.keys() {
             if let Some(column_index) = name_to_column.get(span_anno_key) {
                 if self.include_namespace {
-                    worksheet.write(
-                        (1, *column_index),
-                        join_qname(&span_anno_key.ns, &span_anno_key.name),
-                    )?;
+                    worksheet
+                        .get_cell_mut((*column_index, 1))
+                        .set_value(join_qname(&span_anno_key.ns, &span_anno_key.name));
                 } else {
-                    worksheet.write((1, *column_index), span_anno_key.name.clone())?;
+                    worksheet
+                        .get_cell_mut((*column_index, 1))
+                        .set_value(&span_anno_key.name);
                 }
+                let mut written_rows = BTreeSet::default();
                 for span in g.get_node_annos().exact_anno_search(
                     Some(&span_anno_key.ns),
                     &span_anno_key.name,
@@ -389,19 +388,26 @@ impl ExportXlsx {
                     if let Some(first) = first_row
                         && let Some(last) = last_row
                     {
-                        if *last - *first > 0 {
-                            if worksheet
-                                .merge_range(
-                                    (**first, *column_index, **last, *column_index),
-                                    &*span_val,
-                                )
-                                .is_err()
-                            {
-                                progress.warn(format!("Could not write span value {span_val} from row {first} to row {last} in column `{}`. A span already exists.", span_anno_key.name))?;
-                            }
-                        } else {
-                            worksheet.write((**first, *column_index), &*span_val)?;
+                        if spanned_rows.intersection(&written_rows).count() > 0 {
+                            progress.warn(format!("Could not write span value {span_val} from row {first} to row {last} in column `{}`. A span already exists in at least of the affected rows.", span_anno_key.name))?;
+                            continue;
                         }
+                        if *last - *first > 0 {
+                            worksheet
+                                .get_cell_mut((*column_index, **first))
+                                .set_value(span_val);
+                            let column_letter =
+                                umya_spreadsheet::helper::coordinate::string_from_column_index(
+                                    column_index,
+                                );
+                            let range = format!("{column_letter}{first}:{column_letter}{last}");
+                            worksheet.add_merge_cells(range);
+                        } else {
+                            worksheet
+                                .get_cell_mut((*column_index, **first))
+                                .set_value(span_val);
+                        }
+                        written_rows.extend(spanned_rows);
                     }
                 }
             }
@@ -753,7 +759,9 @@ mod tests {
             path: output_dir.clone(),
             label: None,
         };
-        let mut updates = second_import_step.execute(None).unwrap();
+        let e = second_import_step.execute(None);
+        assert!(e.is_ok(), "Error re-importing: {:?}", e.err().unwrap());
+        let mut updates = e.unwrap();
 
         let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
         written_graph.apply_update(&mut updates, |_| {}).unwrap();
