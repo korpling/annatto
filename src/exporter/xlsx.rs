@@ -1,6 +1,8 @@
 use std::{
     cmp::Ordering,
     collections::{BTreeSet, HashMap, HashSet},
+    fs,
+    path::Path,
 };
 
 use anyhow::anyhow;
@@ -135,19 +137,23 @@ impl ExportXlsx {
         progress: &ProgressReporter,
     ) -> Result<(), anyhow::Error> {
         let output_path = output_path.join(format!("{doc_name}.xlsx"));
-        let mut workbook = if self.update_datasheet.is_some() && output_path.exists() {
-            edit_xlsx::Workbook::from_path(&output_path)?
-        } else {
-            edit_xlsx::Workbook::new()
+        if !output_path.exists() {
+            fs::copy(Path::new("src/models/xlsx/new.xlsx"), &output_path)?;
         };
+        let mut workbook = edit_xlsx::Workbook::from_path(&output_path)?;
         let worksheet = if let Some(addr) = &self.update_datasheet {
             match addr {
                 SheetAddress::Numeric(i) => workbook.get_worksheet_mut(*i as u32)?,
                 SheetAddress::Name(s) => workbook.get_worksheet_mut_by_name(s)?,
             }
         } else {
-            workbook.add_worksheet()?
+            if let Ok(sh) = workbook.get_worksheet_mut(0) {
+                sh
+            } else {
+                workbook.add_worksheet()?
+            }
         };
+        worksheet.activate();
         let token_helper = TokenHelper::new(g)?;
         let ordering_component = Component::new(
             AnnotationComponentType::Ordering,
@@ -162,7 +168,7 @@ impl ExportXlsx {
             self.create_token_colum(g, &token_roots, doc_node_id, worksheet)?;
 
         let column_offset = if !has_only_empty_token {
-            worksheet.write((0, 0), "tok")?;
+            worksheet.write((1, 1), "tok")?;
             1
         } else {
             0
@@ -183,18 +189,20 @@ impl ExportXlsx {
         if !meta_annos.is_empty() && self.update_datasheet.is_none() {
             let meta_sheet = workbook.add_worksheet()?;
             meta_sheet.set_name("meta")?;
-            meta_sheet.write((0, 0), "Name")?;
-            meta_sheet.write((0, 1), "Value")?;
+            meta_sheet.write((1, 1), "Name")?;
+            meta_sheet.write((1, 2), "Value")?;
 
-            let mut current_row = 1;
+            let mut current_row = 2;
             for a in meta_annos {
                 if a.key.ns != ANNIS_NS {
-                    meta_sheet.write((current_row, 0), join_qname(&a.key.ns, &a.key.name))?;
-                    meta_sheet.write((current_row, 1), a.val)?;
+                    meta_sheet.write((current_row, 1), join_qname(&a.key.ns, &a.key.name))?;
+                    meta_sheet.write((current_row, 2), a.val)?;
                     current_row += 1;
                 }
             }
         }
+
+        dbg!(workbook.sheets.len());
 
         if self.skip_unchanged_files
             && output_path.is_file()
@@ -216,6 +224,7 @@ impl ExportXlsx {
             // Directly write the output file
             workbook.save_as(output_path)?;
         }
+        workbook.finish();
 
         Ok(())
     }
@@ -232,7 +241,7 @@ impl ExportXlsx {
             .annotation_order
             .iter()
             .enumerate()
-            .map(|(idx, anno)| (anno.clone(), (idx as u32) + column_offset))
+            .map(|(idx, anno)| (anno.clone(), (1 + idx as u32) + column_offset))
             .collect();
 
         let node_annos = g.get_node_annos();
@@ -305,7 +314,7 @@ impl ExportXlsx {
             let mut token = token_roots_for_document.into_iter().next();
 
             // Reserve the first row for the header
-            let mut row_index = 1;
+            let mut row_index = 2;
             while let Some(current_token) = token {
                 if let Some(val) = g
                     .get_node_annos()
@@ -313,7 +322,7 @@ impl ExportXlsx {
                     && !val.trim().is_empty()
                 {
                     has_only_empty_token = false;
-                    worksheet.write((row_index, 0), &*val)?;
+                    worksheet.write((row_index, 1), &*val)?;
                 }
 
                 token_to_row.insert(current_token, row_index);
@@ -347,11 +356,11 @@ impl ExportXlsx {
             if let Some(column_index) = name_to_column.get(span_anno_key) {
                 if self.include_namespace {
                     worksheet.write(
-                        (0, *column_index),
+                        (1, *column_index),
                         join_qname(&span_anno_key.ns, &span_anno_key.name),
                     )?;
                 } else {
-                    worksheet.write((0, *column_index), span_anno_key.name.clone())?;
+                    worksheet.write((1, *column_index), span_anno_key.name.clone())?;
                 }
                 for span in g.get_node_annos().exact_anno_search(
                     Some(&span_anno_key.ns),
