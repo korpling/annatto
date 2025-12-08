@@ -467,7 +467,6 @@ impl Exporter for ExportXlsx {
 mod tests {
     use std::{
         fs::{self, File},
-        io::Read,
         path::{Path, PathBuf},
     };
 
