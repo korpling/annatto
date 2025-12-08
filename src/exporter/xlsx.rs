@@ -142,7 +142,7 @@ impl ExportXlsx {
         let worksheet = if let Some(addr) = &self.update_datasheet {
             match addr {
                 SheetAddress::Numeric(i) => workbook
-                    .get_sheet_mut(i)
+                    .get_sheet_mut(&(*i - 1))
                     .ok_or(anyhow!("Sheet with index {i} does not exist."))?,
                 SheetAddress::Name(s) => workbook
                     .get_sheet_by_name_mut(s)
@@ -466,16 +466,18 @@ impl Exporter for ExportXlsx {
 #[cfg(test)]
 mod tests {
     use std::{
-        fs::File,
+        fs::{self, File},
+        io::Read,
         path::{Path, PathBuf},
     };
 
     use insta::assert_snapshot;
     use sha2::{Digest, Sha256};
-    use tempfile::TempDir;
+    use tempfile::{TempDir, tempdir};
 
     use crate::{
-        ExporterStep, ImporterStep, ReadFrom, WriteAs, importer::xlsx::ImportSpreadsheet,
+        ExporterStep, ImporterStep, ReadFrom, WriteAs,
+        importer::{Importer, xlsx::ImportSpreadsheet},
         test_util::compare_graphs,
     };
 
@@ -946,5 +948,73 @@ mod tests {
         let hash_after_conversion = format!("{:02X?}", sha256.finalize());
 
         assert_ne!(original_hash, hash_after_conversion);
+    }
+
+    #[test]
+    fn manipulate_sheet_in_existing_book() {
+        let test_path = Path::new("./tests/data/export/xlsx/existing/existing.xlsx");
+        let importer: ImportSpreadsheet = toml::from_str(
+            r#"
+        column_map = { "tok" = ["sentence"] }
+        datasheet = 1
+        "#,
+        )
+        .unwrap();
+        let exporter: ExportXlsx = toml::from_str(
+            r#"
+        update_datasheet = 1
+        "#,
+        )
+        .unwrap();
+        let mut graph = AnnotationGraph::with_default_graphstorages(true).unwrap();
+        let mut update = importer
+            .import_corpus(
+                test_path.parent().unwrap(),
+                crate::StepID {
+                    module_name: "test_import".to_string(),
+                    path: None,
+                },
+                None,
+            )
+            .unwrap();
+        assert!(graph.apply_update(&mut update, |_| {}).is_ok());
+        let test_dir = tempdir().unwrap();
+        let test_target = &test_dir.path().join("existing.xlsx");
+        assert!(fs::copy(&test_path, &test_target).is_ok());
+        assert!(
+            exporter
+                .export_corpus(
+                    &graph,
+                    test_dir.path(),
+                    crate::StepID {
+                        module_name: "test_export".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
+        let wb = umya_spreadsheet::reader::xlsx::read(test_target);
+        assert!(wb.is_ok());
+        let book = wb.unwrap();
+        let sheet = book.get_sheet(&1).unwrap();
+        let merge_cells = sheet.get_merge_cells();
+        assert_eq!(1, merge_cells.len());
+        let merge_cell = merge_cells.get(0);
+        assert!(merge_cell.is_some());
+        let merge_cell = merge_cell.unwrap();
+        assert_eq!("C4:E7", &merge_cell.get_range());
+        let c = merge_cell.get_coordinate_start_col().unwrap().get_num();
+        let r = merge_cell.get_coordinate_start_row().unwrap().get_num();
+        let cell = &sheet.get_cell((c, r)).unwrap();
+        assert_eq!("EXACTLY", cell.get_formatted_value());
+        let bg = cell.get_style().get_background_color().unwrap();
+        let fnt = cell.get_style().get_font().unwrap();
+        assert_snapshot!(format!(
+            "{}\n{}\n{}",
+            bg.get_argb(),
+            fnt.get_color().get_argb(),
+            fnt.get_bold()
+        ));
     }
 }
