@@ -1,0 +1,7 @@
+---
+source: src/exporter/xlsx.rs
+expression: "format!(\"{}\\n{}\\n{}\", bg.get_argb(), fnt.get_color().get_argb(),\nfnt.get_bold())"
+---
+FFFFFF00
+FFC9211E
+true

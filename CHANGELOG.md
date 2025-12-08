@@ -5,6 +5,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Added
+
+- export `xlsx`: allow to manipulate a single sheet for linguistic data and keep existing sheets in existing files as they are
+
+## Changed
+
+- export `xlsx`: swap internal spreadsheet library (`umya_spreadsheet`)
+
 ### Fixed
 
 - import `toolbox` can deal with linebreaks in comments and empty blocks
