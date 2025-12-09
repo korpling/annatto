@@ -13,7 +13,6 @@ use graphannis_core::{
     util::join_qname,
 };
 use linked_hash_map::LinkedHashMap;
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use tempfile::NamedTempFile;
 
@@ -378,7 +377,7 @@ impl ExportXlsx {
                         for t in gs.get_outgoing_edges(span.node) {
                             let t = t?;
                             if let Some(row) = token_to_row.get(&t) {
-                                spanned_rows.insert(row);
+                                spanned_rows.insert(*row);
                             }
                         }
                     }
@@ -394,7 +393,7 @@ impl ExportXlsx {
                         }
                         if *last - *first > 0 {
                             worksheet
-                                .get_cell_mut((*column_index, **first))
+                                .get_cell_mut((*column_index, *first))
                                 .set_value(span_val);
                             let column_letter =
                                 umya_spreadsheet::helper::coordinate::string_from_column_index(
@@ -404,7 +403,7 @@ impl ExportXlsx {
                             worksheet.add_merge_cells(range);
                         } else {
                             worksheet
-                                .get_cell_mut((*column_index, **first))
+                                .get_cell_mut((*column_index, *first))
                                 .set_value(span_val);
                         }
                         written_rows.extend(spanned_rows);
@@ -447,7 +446,7 @@ impl Exporter for ExportXlsx {
         std::fs::create_dir_all(output_path)?;
 
         let results: anyhow::Result<Vec<_>> = document_names
-            .par_iter()
+            .iter()
             .map(|(doc_name, doc_node_id)| {
                 self.export_document(doc_name, *doc_node_id, graph, output_path, &reporter)?;
                 reporter.worked(1)?;
@@ -470,6 +469,7 @@ mod tests {
         path::{Path, PathBuf},
     };
 
+    use graphannis::update::GraphUpdate;
     use insta::assert_snapshot;
     use sha2::{Digest, Sha256};
     use tempfile::{TempDir, tempdir};
@@ -478,6 +478,7 @@ mod tests {
         ExporterStep, ImporterStep, ReadFrom, WriteAs,
         importer::{Importer, xlsx::ImportSpreadsheet},
         test_util::compare_graphs,
+        util::example_generator,
     };
 
     use super::*;
@@ -1015,5 +1016,42 @@ mod tests {
             fnt.get_color().get_argb(),
             fnt.get_bold()
         ));
+    }
+
+    #[test]
+    fn spans() {
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let mut u = GraphUpdate::default();
+        example_generator::create_corpus_structure_simple(&mut u);
+        example_generator::create_multiple_segmentations(&mut u, "root/doc1");
+        assert!(graph.apply_update(&mut u, |_| {}).is_ok());
+        let exporter = ExportXlsx {
+            ..Default::default()
+        };
+        let target_dir = tempdir().unwrap();
+        assert!(
+            exporter
+                .export_corpus(
+                    &graph,
+                    target_dir.path(),
+                    crate::StepID {
+                        module_name: "test_export".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
+        assert!(
+            sheets_diff::core::diff::Diff::new(
+                "./tests/data/export/xlsx/span-target/doc1.xlsx",
+                &target_dir.path().join("doc1.xlsx").to_string_lossy()
+            )
+            .diff()
+            .cell_diffs
+            .is_empty()
+        );
     }
 }
