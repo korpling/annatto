@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- export `xlsx`: No more parallel document processing in one export step, as this caused the exporter to crash when more than one file was present
+
 ## [0.44.1] - 2025-12-09
 
 ## [0.44.0] - 2025-12-08
