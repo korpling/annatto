@@ -1007,7 +1007,7 @@ mod tests {
         let wb = umya_spreadsheet::reader::xlsx::read(test_target);
         assert!(wb.is_ok());
         let book = wb.unwrap();
-        let sheet = book.get_sheet(&1).unwrap();
+        let sheet = book.get_sheet(&0).unwrap();
         let merge_cells = sheet.get_merge_cells();
         assert_eq!(1, merge_cells.len());
         let merge_cell = merge_cells.get(0);
