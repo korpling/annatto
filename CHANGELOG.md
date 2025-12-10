@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - export `xlsx`: No more parallel document processing in one export step, as this caused the exporter to crash when more than one file was present
+- export `xlsx`: Better warning messages
+
+### Fixed
+
+- import `xlsx`: Trim column names
 
 ## [0.44.1] - 2025-12-09
 
