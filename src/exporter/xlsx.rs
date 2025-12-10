@@ -140,13 +140,20 @@ impl ExportXlsx {
         };
         let worksheet = if let Some(addr) = &self.update_datasheet {
             match addr {
-                SheetAddress::Numeric(i) => workbook
-                    .get_sheet_mut(&(*i - 1))
-                    .ok_or(anyhow!("Sheet with index {i} does not exist."))?,
-                SheetAddress::Name(s) => workbook
-                    .get_sheet_by_name_mut(s)
-                    .ok_or(anyhow!("Sheet with name {s} does not exist."))?,
+                SheetAddress::Numeric(i) => {
+                    workbook.remove_sheet(*i - 1).map_err(|e| anyhow!(e))?;
+                }
+                SheetAddress::Name(s) => {
+                    workbook.remove_sheet_by_name(s).map_err(|e| anyhow!(e))?;
+                }
             }
+            let sheet_name = chrono::Local::now()
+                .format("%Y-%m-%d-%H-%M-%S-%9f")
+                .to_string();
+            let new_sheet = workbook
+                .new_sheet(&sheet_name)
+                .map_err(|e| anyhow!("Could not create new sheet with name `{sheet_name}`: {e}"))?;
+            new_sheet
         } else {
             workbook
                 .get_sheet_mut(&0)
@@ -180,6 +187,7 @@ impl ExportXlsx {
             &token_helper,
             worksheet,
             progress,
+            doc_name,
         )?;
 
         // Add meta data sheet
@@ -347,6 +355,7 @@ impl ExportXlsx {
         token_helper: &TokenHelper,
         worksheet: &mut umya_spreadsheet::Worksheet,
         progress: &ProgressReporter,
+        document: &str,
     ) -> anyhow::Result<()> {
         for span_anno_key in name_to_column.keys() {
             if let Some(column_index) = name_to_column.get(span_anno_key) {
@@ -387,8 +396,9 @@ impl ExportXlsx {
                     if let Some(first) = first_row
                         && let Some(last) = last_row
                     {
-                        if spanned_rows.intersection(&written_rows).count() > 0 {
-                            progress.warn(format!("Could not write span value {span_val} from row {first} to row {last} in column `{}`. A span already exists in at least of the affected rows.", span_anno_key.name))?;
+                        let intersection_size = spanned_rows.intersection(&written_rows).count();
+                        if intersection_size > 0 {
+                            progress.warn(format!("Could not write span value {span_val} from row {first} to row {last} in column `{}` in document {document}. A span already exists in at least of the affected rows. {intersection_size} node(s) overlap(s).", span_anno_key.name))?;
                             continue;
                         }
                         if *last - *first > 0 {
