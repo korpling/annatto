@@ -187,7 +187,7 @@ fn contained_variables(workflow: &'_ str) -> Result<Vec<(i32, &'_ str)>> {
 
 fn parse_variables(
     workflow: String,
-    buf: &mut String,
+    buf: &mut Vec<u8>,
     visited: &mut BTreeSet<String>,
 ) -> Result<()> {
     let vars = contained_variables(&workflow)?;
@@ -195,7 +195,7 @@ fn parse_variables(
     let mut p = 0;
     for (start_index, var) in vars {
         for ci in p..start_index {
-            buf.push(content[ci as usize] as char);
+            buf.push(content[ci as usize]);
         }
         p = start_index + var.len() as i32;
         let var_name = &var[1..];
@@ -207,21 +207,21 @@ fn parse_variables(
         visited.insert(var_name.to_string());
         if let Ok(value) = std::env::var(var_name) {
             // value might contain variables again, parse
-            let mut value_buf = String::new();
+            let mut value_buf = Vec::with_capacity(value.len());
             parse_variables(value, &mut value_buf, visited)?;
             visited.remove(var_name);
-            for c in value_buf.chars() {
+            for c in value_buf {
                 buf.push(c);
             }
         } else {
             // variable value could not be resolved, do not step into, just copy
             for ci in start_index..start_index + var.len() as i32 {
-                buf.push(content[ci as usize] as char);
+                buf.push(content[ci as usize]);
             }
         }
     }
     for remain_i in p..workflow.len() as i32 {
-        buf.push(content[remain_i as usize] as char);
+        buf.push(content[remain_i as usize]);
     }
     Ok(())
 }
@@ -229,9 +229,12 @@ fn parse_variables(
 fn read_workflow(path: PathBuf, read_env: bool) -> Result<String> {
     let toml_content = fs::read_to_string(path.as_path())?;
     if read_env {
-        let mut buf = String::new();
+        let cap = (1.1f64 * toml_content.len() as f64).ceil() as usize;
+        let mut buf = Vec::with_capacity(cap);
         parse_variables(toml_content, &mut buf, &mut Default::default())?;
-        Ok(buf)
+        Ok(str::from_utf8(&buf)
+            .map_err(|e| anyhow!("Could not parse variables, invalid utf-8: {e}"))?
+            .to_string())
     } else {
         Ok(toml_content)
     }
@@ -818,9 +821,10 @@ mod tests {
                 "export/to/this/path/if/you/can/if/not/no/worries",
             );
         }
-        let mut clean_str = String::new();
+        let mut clean_str = Vec::default();
         assert!(parse_variables(ts.unwrap(), &mut clean_str, &mut BTreeSet::default()).is_ok());
-        let wf: std::result::Result<Workflow, _> = toml::from_str(&clean_str);
+        let wf: std::result::Result<Workflow, _> =
+            toml::from_str(&str::from_utf8(&clean_str).unwrap());
         assert!(wf.is_ok(), "Could not deserialize workflow: {:?}", wf.err());
         let workflow = wf.unwrap();
         let of = tempfile::NamedTempFile::new();
@@ -1011,5 +1015,16 @@ mod tests {
             t.unwrap().value,
             OptimizationTarget::TypeList { .. }
         ));
+    }
+
+    #[test]
+    fn env_var_with_non_ascii() {
+        let var = "VARIABLE_WITH_NON_ASCII_CHARACTERS";
+        // SAFETY: This is a test.
+        let value = unsafe {
+            std::env::set_var(var, "ßäöü€");
+            std::env::var(var).unwrap()
+        };
+        assert_snapshot!(value);
     }
 }

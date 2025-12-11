@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - import `xlsx`: Trim column names
+- parsing of workflow: Environment variables can now contain non-ascii characters
 
 ## [0.44.1] - 2025-12-09
 
