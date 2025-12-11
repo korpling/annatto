@@ -1016,4 +1016,15 @@ mod tests {
             OptimizationTarget::TypeList { .. }
         ));
     }
+
+    #[test]
+    fn env_var_with_non_ascii() {
+        let var = "VARIABLE_WITH_NON_ASCII_CHARACTERS";
+        // SAFETY: This is a test.
+        let value = unsafe {
+            std::env::set_var(var, "ßäöü€");
+            std::env::var(var).unwrap()
+        };
+        assert_snapshot!(value);
+    }
 }
