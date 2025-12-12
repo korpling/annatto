@@ -1,5 +1,4 @@
 remove_nodes = ["any_weird_node_address"]
-move_node_annos = true
 [[node_annos]]
 from = "norm::pos"
 to = "norm::POS"
