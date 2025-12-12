@@ -12,9 +12,29 @@ A map of nodes to rename, usually useful for corpus nodes. If the target name ex
 the operation will fail with an error. If the target name is empty, the node will be
 deleted.
 
+Example:
+```toml
+[[graph_op]]
+action = "revise"
+
+[graph_op.config.node_names]
+"corpus-root" = "FancyCorpus"
+"corpus-root/document1" = "FancyCorpus/document1"
+"corpus-root/obsolete-document" = ""  # this one will be deleted
+```
+
 ###  remove_nodes
 
-a list of names of nodes to be removed
+a list of names of nodes to be removed.
+
+Example:
+```toml
+[[graph_op]]
+action = "revise"
+
+[graph_op.config]
+remove_nodes = ["corpus/doc#tok1", "corpus/doc#tok2"]
+```
 
 ###  remove_match
 
@@ -49,21 +69,48 @@ query = "pos=/PROPN/ _=_ norm"
 remove = [{node=1, anno="pos"}]
 ```
 
-###  move_node_annos
-
-also move annotations to other host nodes determined by namespace
-
 ###  node_annos
 
-rename node annotation
+Modify annotation keys that are found on nodes in the graph. Leaving out the target key of
+the renaming procedure will lead to deletion of the key.
+
+Example:
+```toml
+[[graph_op]]
+action = "revise"
+
+[[graph_op.config.node_annos]]
+from = "annis::tok"
+to = "default_ns::word"
+
+[[graph_op.config.node_annos]]
+from = "norm::universal_pos"
+to = "norm::upos"
+
+[[graph_op.config.node_annos]]
+from = "norm::comment"  # this annotation will be deleted, as there is no target key
+
+```
 
 ###  edge_annos
 
-rename edge annotations
+Modify annotation keys that are found on edges of any edge component.
+The mapping is configured analogous to `node_annos` (see above).
 
 ###  namespaces
 
-rename or erase namespaces
+Rename or erase namespaces (=rename with empty string).
+
+Example:
+```toml
+[[graph_op]]
+action = "revise"
+
+[graph_op.config.namespaces]
+"norm" = "default_ns"
+"" = "default_ns"  # every empty namespace in an annotation key will be changed to "default_ns"
+"dipl" = ""  # the namespace "dipl" will be replaced with the empty namespace
+```
 
 ###  components
 
@@ -82,5 +129,32 @@ from = { ctype = "Ordering", layer = "annis", "custom" }
 
 ###  remove_subgraph
 
-The given node names and all ingoing paths (incl. nodes) in PartOf/annis/ will be removed
+The given node names and all ingoing paths (incl. nodes) in PartOf/annis/ will be removed.
+
+Example:
+
+Imagine a corpus that consists of two documents. The corpus structure will look
+something like this:
+
+corpus-root
+/           \
+/             \
+/               \
+/                 \
+corpus-root/doc_1         corpus-root/doc_2
+|     |         |          |             |
+tok_1 tok_2 ...tok_n      tok_1   ...  tok_m
+
+
+The following configuration deletes document `doc_2` and all subnodes, thus, the attached tokens:
+```toml
+[[graph_op]]
+action = "revise"
+
+[graph_op.config]
+remove_subgraph = ["corpus-root/doc_2"]
+```
+
+Note that you have to mention the nodes' actual names, which in most cases, but not necessarily always, is
+a path as in the example. But the underlying model allows to deviate from paths as node names.
 
