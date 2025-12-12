@@ -55,7 +55,6 @@ action = "revise"
 
 [graph_op.config]
 remove_nodes = []
-move_node_annos = false
 node_annos = []
 edge_annos = []
 components = []
