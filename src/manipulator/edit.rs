@@ -21,7 +21,6 @@ impl Manipulator for EditGraph {
         let progress = ProgressReporter::new_unknown_total_work(tx, step_id)?;
         let mut update = GraphUpdate::default();
         for instruction in &self.instructions {
-            dbg!(instruction);
             update.add_event(instruction.clone())?;
         }
         progress.info(format!(
