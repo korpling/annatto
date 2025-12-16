@@ -59,12 +59,12 @@ impl TryFrom<&UpdateEvent> for SerdeUE {
                 edges: vec![EdgeConfig {
                     source: source_node.to_string(),
                     target: target_node.to_string(),
-                    component: AnnotationComponent::new(
-                        AnnotationComponentType::from_str(component_type)?,
-                        layer.to_string(),
-                        component_name.to_string(),
-                    ),
                 }],
+                component: AnnotationComponent::new(
+                    AnnotationComponentType::from_str(component_type)?,
+                    layer.to_string(),
+                    component_name.to_string(),
+                ),
             }),
             UpdateEvent::DeleteEdge {
                 source_node,
@@ -76,12 +76,12 @@ impl TryFrom<&UpdateEvent> for SerdeUE {
                 edges: vec![EdgeConfig {
                     source: source_node.to_string(),
                     target: target_node.to_string(),
-                    component: AnnotationComponent::new(
-                        AnnotationComponentType::from_str(component_type)?,
-                        layer.to_string(),
-                        component_name.to_string(),
-                    ),
                 }],
+                component: AnnotationComponent::new(
+                    AnnotationComponentType::from_str(component_type)?,
+                    layer.to_string(),
+                    component_name.to_string(),
+                ),
             }),
             UpdateEvent::AddEdgeLabel {
                 source_node,
@@ -96,12 +96,12 @@ impl TryFrom<&UpdateEvent> for SerdeUE {
                 edges: vec![EdgeConfig {
                     source: source_node.to_string(),
                     target: target_node.to_string(),
-                    component: AnnotationComponent::new(
-                        AnnotationComponentType::from_str(component_type)?,
-                        layer.to_string(),
-                        component_name.to_string(),
-                    ),
                 }],
+                component: AnnotationComponent::new(
+                    AnnotationComponentType::from_str(component_type)?,
+                    layer.to_string(),
+                    component_name.to_string(),
+                ),
                 anno: AnnoKey {
                     name: anno_name.to_string(),
                     ns: anno_ns.to_string(),
@@ -120,12 +120,12 @@ impl TryFrom<&UpdateEvent> for SerdeUE {
                 edges: vec![EdgeConfig {
                     source: source_node.to_string(),
                     target: target_node.to_string(),
-                    component: AnnotationComponent::new(
-                        AnnotationComponentType::from_str(component_type)?,
-                        layer.to_string(),
-                        component_name.to_string(),
-                    ),
                 }],
+                component: AnnotationComponent::new(
+                    AnnotationComponentType::from_str(component_type)?,
+                    layer.to_string(),
+                    component_name.to_string(),
+                ),
                 annos: vec![AnnoKey {
                     ns: anno_ns.to_string(),
                     name: anno_name.to_string(),
@@ -168,24 +168,29 @@ impl IntoInner for RawAdd {
                     anno_value: value.to_string(),
                 })
                 .collect_vec(),
-            RawAdd::Edges { edges } => edges
+            RawAdd::Edges { edges, component } => edges
                 .into_iter()
                 .map(|edge| UpdateEvent::AddEdge {
                     source_node: edge.source,
                     target_node: edge.target,
-                    layer: edge.component.layer.to_string(),
-                    component_type: edge.component.get_type().to_string(),
-                    component_name: edge.component.name,
+                    layer: component.layer.to_string(),
+                    component_type: component.get_type().to_string(),
+                    component_name: component.name.to_string(),
                 })
                 .collect_vec(),
-            RawAdd::EdgeLabels { edges, anno, value } => edges
+            RawAdd::EdgeLabels {
+                edges,
+                component,
+                anno,
+                value,
+            } => edges
                 .into_iter()
                 .map(|edge| UpdateEvent::AddEdgeLabel {
                     source_node: edge.source,
                     target_node: edge.target,
-                    layer: edge.component.layer.to_string(),
-                    component_type: edge.component.get_type().to_string(),
-                    component_name: edge.component.name,
+                    layer: component.layer.to_string(),
+                    component_type: component.get_type().to_string(),
+                    component_name: component.name.to_string(),
                     anno_ns: anno.ns.to_string(),
                     anno_name: anno.name.to_string(),
                     anno_value: value.to_string(),
@@ -213,25 +218,29 @@ impl IntoInner for RawRemove {
                     anno_name: anno.name.to_string(),
                 })
                 .collect_vec(),
-            RawRemove::Edges { edges } => edges
+            RawRemove::Edges { edges, component } => edges
                 .into_iter()
                 .map(|edge| UpdateEvent::DeleteEdge {
                     source_node: edge.source,
                     target_node: edge.target,
-                    layer: edge.component.layer.to_string(),
-                    component_type: edge.component.get_type().to_string(),
-                    component_name: edge.component.name,
+                    layer: component.layer.to_string(),
+                    component_type: component.get_type().to_string(),
+                    component_name: component.name.to_string(),
                 })
                 .collect_vec(),
-            RawRemove::EdgeLabels { edges, annos } => edges
+            RawRemove::EdgeLabels {
+                edges,
+                component,
+                annos,
+            } => edges
                 .into_iter()
                 .cartesian_product(annos)
                 .map(|(edge, anno)| UpdateEvent::DeleteEdgeLabel {
                     source_node: edge.source,
                     target_node: edge.target,
-                    layer: edge.component.layer.to_string(),
-                    component_type: edge.component.get_type().to_string(),
-                    component_name: edge.component.name,
+                    layer: component.layer.to_string(),
+                    component_type: component.get_type().to_string(),
+                    component_name: component.name.to_string(),
                     anno_ns: anno.ns.to_string(),
                     anno_name: anno.name.to_string(),
                 })
@@ -286,9 +295,13 @@ enum RawAdd {
     },
     Edges {
         edges: Vec<EdgeConfig>,
+        #[serde(with = "crate::estarde::annotation_component")]
+        component: AnnotationComponent,
     },
     EdgeLabels {
         edges: Vec<EdgeConfig>,
+        #[serde(with = "crate::estarde::annotation_component")]
+        component: AnnotationComponent,
         anno: AnnoKey,
         value: String,
     },
@@ -311,9 +324,13 @@ enum RawRemove {
     },
     Edges {
         edges: Vec<EdgeConfig>,
+        #[serde(with = "crate::estarde::annotation_component")]
+        component: AnnotationComponent,
     },
     EdgeLabels {
         edges: Vec<EdgeConfig>,
+        #[serde(with = "crate::estarde::annotation_component")]
+        component: AnnotationComponent,
         #[serde(with = "crate::estarde::anno_key::in_sequence")]
         annos: Vec<AnnoKey>,
     },
@@ -323,6 +340,4 @@ enum RawRemove {
 struct EdgeConfig {
     source: String,
     target: String,
-    #[serde(with = "crate::estarde::annotation_component")]
-    component: AnnotationComponent,
 }
