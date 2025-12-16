@@ -133,26 +133,17 @@ The given node names and all ingoing paths (incl. nodes) in PartOf/annis/ will b
 
 Example:
 
-Imagine a corpus that consists of two documents. The corpus structure will look
-something like this:
+Imagine a corpus that consists of two documents, i. e., there is a root node called `corpus`
+and two child nodes `corpus/doc_1` and `corpus/doc_2`, one for each document. Each document
+then has many annotation nodes, such as tokens, as their children.
 
-corpus-root
-/           \
-/             \
-/               \
-/                 \
-corpus-root/doc_1         corpus-root/doc_2
-|     |         |          |             |
-tok_1 tok_2 ...tok_n      tok_1   ...  tok_m
-
-
-The following configuration deletes document `doc_2` and all subnodes, thus, the attached tokens:
+The following configuration deletes document `doc_2` and all its structural children:
 ```toml
 [[graph_op]]
 action = "revise"
 
 [graph_op.config]
-remove_subgraph = ["corpus-root/doc_2"]
+remove_subgraph = ["corpus/doc_2"]
 ```
 
 Note that you have to mention the nodes' actual names, which in most cases, but not necessarily always, is
