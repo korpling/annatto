@@ -117,3 +117,110 @@ target = "a#t1"
 ctype = "Pointing"
 layer = ""
 name = "dep"
+
+[[instructions]]
+do = "rm"
+annos = ["default_ns::deprel"]
+
+[[instructions.edges]]
+source = "a#t2"
+target = "a#t1"
+
+[instructions.component]
+ctype = "Pointing"
+layer = ""
+name = "dep"
+
+[[instructions]]
+do = "rm"
+
+[[instructions.edges]]
+source = "a#t2"
+target = "a#t1"
+
+[instructions.component]
+ctype = "Pointing"
+layer = ""
+name = "dep"
+
+[[instructions]]
+do = "rm"
+
+[[instructions.edges]]
+source = "a#t1"
+target = "a"
+
+[instructions.component]
+ctype = "PartOf"
+layer = "annis"
+name = ""
+
+[[instructions]]
+do = "rm"
+
+[[instructions.edges]]
+source = "a#t2"
+target = "a"
+
+[instructions.component]
+ctype = "PartOf"
+layer = "annis"
+name = ""
+
+[[instructions]]
+do = "rm"
+
+[[instructions.edges]]
+source = "b#t1"
+target = "b"
+
+[instructions.component]
+ctype = "PartOf"
+layer = "annis"
+name = ""
+
+[[instructions]]
+do = "rm"
+
+[[instructions.edges]]
+source = "b#t2"
+target = "b"
+
+[instructions.component]
+ctype = "PartOf"
+layer = "annis"
+name = ""
+
+[[instructions]]
+do = "rm"
+nodes = ["a#t1"]
+
+[[instructions]]
+do = "rm"
+nodes = ["a#t2"]
+
+[[instructions]]
+do = "rm"
+nodes = ["b#t1"]
+
+[[instructions]]
+do = "rm"
+nodes = ["b#t2"]
+
+[[instructions]]
+do = "rm"
+nodes = ["a"]
+annos = ["annis::doc"]
+
+[[instructions]]
+do = "rm"
+nodes = ["b"]
+annos = ["annis::doc"]
+
+[[instructions]]
+do = "rm"
+nodes = ["a"]
+
+[[instructions]]
+do = "rm"
+nodes = ["b"]

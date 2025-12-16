@@ -68,7 +68,6 @@ mod tests {
     fn build_graph() {
         let toml_str = fs::read_to_string("tests/data/graph_op/edit/config.toml").unwrap();
         let cut_off_index = toml_str.find("[[instructions]]\ndo = \"rm\"").unwrap();
-        dbg!(&toml_str[0..cut_off_index]);
         let m: Result<EditGraph, _> = toml::from_str(&toml_str[0..cut_off_index]);
         assert!(m.is_ok(), "Deserialization error: {:?}", m.err().unwrap());
         let g = AnnotationGraph::with_default_graphstorages(true);
