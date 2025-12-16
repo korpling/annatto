@@ -19,10 +19,10 @@ impl TryFrom<&UpdateEvent> for SerdeUE {
                 node_name,
                 node_type,
             } => SerdeUE::Add(RawAdd::Node {
-                names: vec![node_name.to_string()],
+                nodes: vec![node_name.to_string()],
                 node_type: node_type.to_string(),
             }),
-            UpdateEvent::DeleteNode { node_name } => SerdeUE::Remove(RawRemove::Nodes {
+            UpdateEvent::DeleteNode { node_name } => SerdeUE::RM(RawRemove::Nodes {
                 nodes: vec![node_name.to_string()],
             }),
             UpdateEvent::AddNodeLabel {
@@ -31,7 +31,7 @@ impl TryFrom<&UpdateEvent> for SerdeUE {
                 anno_name,
                 anno_value,
             } => SerdeUE::Add(RawAdd::NodeLabels {
-                names: vec![node_name.to_string()],
+                nodes: vec![node_name.to_string()],
                 anno: AnnoKey {
                     name: anno_name.to_string(),
                     ns: anno_ns.to_string(),
@@ -42,7 +42,7 @@ impl TryFrom<&UpdateEvent> for SerdeUE {
                 node_name,
                 anno_ns,
                 anno_name,
-            } => SerdeUE::Remove(RawRemove::NodeLabels {
+            } => SerdeUE::RM(RawRemove::NodeLabels {
                 nodes: vec![node_name.to_string()],
                 annos: vec![AnnoKey {
                     ns: anno_ns.to_string(),
@@ -72,7 +72,7 @@ impl TryFrom<&UpdateEvent> for SerdeUE {
                 layer,
                 component_type,
                 component_name,
-            } => SerdeUE::Remove(RawRemove::Edges {
+            } => SerdeUE::RM(RawRemove::Edges {
                 edges: vec![EdgeConfig {
                     source: source_node.to_string(),
                     target: target_node.to_string(),
@@ -116,7 +116,7 @@ impl TryFrom<&UpdateEvent> for SerdeUE {
                 component_name,
                 anno_ns,
                 anno_name,
-            } => SerdeUE::Remove(RawRemove::EdgeLabels {
+            } => SerdeUE::RM(RawRemove::EdgeLabels {
                 edges: vec![EdgeConfig {
                     source: source_node.to_string(),
                     target: target_node.to_string(),
@@ -142,7 +142,7 @@ impl IntoInner for SerdeUE {
     fn into_inner(self) -> Self::I {
         match self {
             SerdeUE::Add(raw_add) => raw_add.into_inner(),
-            SerdeUE::Remove(raw_remove) => raw_remove.into_inner(),
+            SerdeUE::RM(raw_remove) => raw_remove.into_inner(),
         }
     }
 }
@@ -152,14 +152,14 @@ impl IntoInner for RawAdd {
 
     fn into_inner(self) -> Self::I {
         match self {
-            RawAdd::Node { names, node_type } => names
+            RawAdd::Node { nodes: names, node_type } => names
                 .into_iter()
                 .map(|name| UpdateEvent::AddNode {
                     node_name: name,
                     node_type: node_type.clone(),
                 })
                 .collect_vec(),
-            RawAdd::NodeLabels { names, anno, value } => names
+            RawAdd::NodeLabels { nodes: names, anno, value } => names
                 .into_iter()
                 .map(|name| UpdateEvent::AddNodeLabel {
                     node_name: name,
@@ -273,22 +273,22 @@ pub fn serialize<'a, S: Serializer, T: IntoIterator<Item = &'a UpdateEvent>>(
 }
 
 #[derive(Deserialize, Serialize)]
-#[serde(rename_all = "snake_case", tag = "do")]
+#[serde(rename_all = "lowercase", tag = "do")]
 enum SerdeUE {
     Add(RawAdd),
-    Remove(RawRemove),
+    RM(RawRemove),
 }
 
 #[derive(Deserialize, Serialize)]
 #[serde(untagged)]
 enum RawAdd {
     Node {
-        names: Vec<String>,
+        nodes: Vec<String>,
         #[serde(alias = "type", default = "default_node_type")]
         node_type: String,
     },
     NodeLabels {
-        names: Vec<String>,
+        nodes: Vec<String>,
         #[serde(with = "crate::estarde::anno_key")]
         anno: AnnoKey,
         value: String,

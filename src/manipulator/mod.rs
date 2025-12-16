@@ -14,6 +14,7 @@ pub mod sleep;
 pub mod split;
 pub mod time;
 pub mod visualize;
+pub mod edit;
 
 use crate::{
     StepID,
