@@ -12,14 +12,12 @@ use graphannis_core::{
     types::{AnnoKey, Component, NodeID},
     util::join_qname,
 };
-use lazy_static::lazy_static;
 use linked_hash_map::LinkedHashMap;
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use rust_xlsxwriter::{Format, workbook::Workbook, worksheet::Worksheet};
 use serde::{Deserialize, Serialize};
 use tempfile::NamedTempFile;
 
 use crate::{
+    importer::xlsx::SheetAddress,
     progress::ProgressReporter,
     util::token_helper::{TOKEN_KEY, TokenHelper},
 };
@@ -55,6 +53,11 @@ pub struct ExportXlsx {
     /// compared to the file that will be generated before overwriting it.
     #[serde(default)]
     skip_unchanged_files: bool,
+    /// Set this to a sheet index or name to only update the data (not metadata)
+    /// in an existing workbook and not write a completely new file. If no target
+    /// file exists, a new workbook is created.
+    #[serde(default)]
+    update_datasheet: Option<SheetAddress>,
 }
 
 fn find_token_roots(
@@ -106,8 +109,8 @@ fn is_span_column(
 
 fn overwritten_position_for_key(
     anno_key: &AnnoKey,
-    position_overwrite: &HashMap<AnnoKey, u16>,
-) -> Option<u16> {
+    position_overwrite: &HashMap<AnnoKey, u32>,
+) -> Option<u32> {
     // Try the fully qualified name first, then check if the unspecific name is configured
     position_overwrite
         .get(anno_key)
@@ -120,10 +123,6 @@ fn overwritten_position_for_key(
         .copied()
 }
 
-lazy_static! {
-    static ref DEFAULT_FORMAT: Format = Format::new();
-}
-
 impl ExportXlsx {
     fn export_document(
         &self,
@@ -133,9 +132,33 @@ impl ExportXlsx {
         output_path: &std::path::Path,
         progress: &ProgressReporter,
     ) -> Result<(), anyhow::Error> {
-        let mut workbook = Workbook::new();
-        let worksheet = workbook.add_worksheet();
-
+        let output_path = output_path.join(format!("{doc_name}.xlsx"));
+        let mut workbook = if output_path.exists() && self.update_datasheet.is_some() {
+            umya_spreadsheet::reader::xlsx::read(&output_path)?
+        } else {
+            umya_spreadsheet::new_file()
+        };
+        let worksheet = if let Some(addr) = &self.update_datasheet {
+            match addr {
+                SheetAddress::Numeric(i) => {
+                    workbook.remove_sheet(*i - 1).map_err(|e| anyhow!(e))?;
+                }
+                SheetAddress::Name(s) => {
+                    workbook.remove_sheet_by_name(s).map_err(|e| anyhow!(e))?;
+                }
+            }
+            let sheet_name = format!(
+                "{doc_name}-{}",
+                chrono::Local::now().format("%Y-%m-%d-%H-%M-%S-%9f")
+            );
+            workbook
+                .new_sheet(&sheet_name)
+                .map_err(|e| anyhow!("Could not create new sheet with name `{sheet_name}`: {e}"))?
+        } else {
+            workbook
+                .get_sheet_mut(&0)
+                .ok_or(anyhow!("Could not obtain blank sheet."))?
+        };
         let token_helper = TokenHelper::new(g)?;
         let ordering_component = Component::new(
             AnnotationComponentType::Ordering,
@@ -150,7 +173,7 @@ impl ExportXlsx {
             self.create_token_colum(g, &token_roots, doc_node_id, worksheet)?;
 
         let column_offset = if !has_only_empty_token {
-            worksheet.write(0, 0, "tok")?;
+            worksheet.get_cell_mut((1, 1)).set_value("tok");
             1
         } else {
             0
@@ -168,23 +191,22 @@ impl ExportXlsx {
 
         // Add meta data sheet
         let meta_annos = g.get_node_annos().get_annotations_for_item(&doc_node_id)?;
-        if !meta_annos.is_empty() {
-            let meta_sheet = workbook.add_worksheet();
-            meta_sheet.set_name("meta")?;
-            meta_sheet.write(0, 0, "Name")?;
-            meta_sheet.write(0, 1, "Value")?;
+        if !meta_annos.is_empty() && self.update_datasheet.is_none() {
+            let meta_sheet = workbook.new_sheet("meta").map_err(|s| anyhow!(s))?;
+            meta_sheet.get_cell_mut((1, 1)).set_value("Name");
+            meta_sheet.get_cell_mut((2, 1)).set_value("Value");
 
-            let mut current_row = 1;
+            let mut current_row = 2;
             for a in meta_annos {
                 if a.key.ns != ANNIS_NS {
-                    meta_sheet.write(current_row, 0, join_qname(&a.key.ns, &a.key.name))?;
-                    meta_sheet.write(current_row, 1, a.val)?;
+                    meta_sheet
+                        .get_cell_mut((1, current_row))
+                        .set_value(join_qname(&a.key.ns, &a.key.name));
+                    meta_sheet.get_cell_mut((2, current_row)).set_value(a.val);
                     current_row += 1;
                 }
             }
         }
-
-        let output_path = output_path.join(format!("{doc_name}.xlsx"));
 
         if self.skip_unchanged_files
             && output_path.is_file()
@@ -192,7 +214,7 @@ impl ExportXlsx {
         {
             // Write the file to a temporary location and use a Excel-diff tool to compare the files
             let tmp_out = NamedTempFile::with_suffix_in(".xlsx", parent_dir)?;
-            workbook.save(tmp_out.path())?;
+            umya_spreadsheet::writer::xlsx::write(&workbook, tmp_out.path())?;
             let diff = sheets_diff::core::diff::Diff::new(
                 &output_path.to_string_lossy(),
                 &tmp_out.path().to_string_lossy(),
@@ -204,7 +226,7 @@ impl ExportXlsx {
             }
         } else {
             // Directly write the output file
-            workbook.save(output_path)?;
+            umya_spreadsheet::writer::xlsx::write(&workbook, output_path)?;
         }
 
         Ok(())
@@ -215,14 +237,14 @@ impl ExportXlsx {
         &self,
         g: &AnnotationGraph,
         token_helper: &TokenHelper,
-        column_offset: u16,
-    ) -> anyhow::Result<LinkedHashMap<AnnoKey, u16>> {
+        column_offset: u32,
+    ) -> anyhow::Result<LinkedHashMap<AnnoKey, u32>> {
         // create a hash map from the configuration value
-        let position_overwrite: HashMap<AnnoKey, u16> = self
+        let position_overwrite: HashMap<AnnoKey, u32> = self
             .annotation_order
             .iter()
             .enumerate()
-            .map(|(idx, anno)| (anno.clone(), (idx as u16) + column_offset))
+            .map(|(idx, anno)| (anno.clone(), (1 + idx as u32) + column_offset))
             .collect();
 
         let node_annos = g.get_node_annos();
@@ -250,7 +272,7 @@ impl ExportXlsx {
 
         let mut result = LinkedHashMap::new();
 
-        let mut column_index = column_offset;
+        let mut column_index = column_offset + 1;
         for anno_key in all_anno_keys {
             if anno_key.ns != ANNIS_NS && is_span_column(&anno_key, node_annos, token_helper)? {
                 result.insert(anno_key, column_index);
@@ -266,7 +288,7 @@ impl ExportXlsx {
         g: &AnnotationGraph,
         token_roots: &HashSet<NodeID>,
         doc_node_id: NodeID,
-        worksheet: &mut rust_xlsxwriter::worksheet::Worksheet,
+        worksheet: &mut umya_spreadsheet::Worksheet,
     ) -> anyhow::Result<(HashMap<NodeID, u32>, bool)> {
         let ordering_component = Component::new(
             AnnotationComponentType::Ordering,
@@ -295,7 +317,7 @@ impl ExportXlsx {
             let mut token = token_roots_for_document.into_iter().next();
 
             // Reserve the first row for the header
-            let mut row_index = 1;
+            let mut row_index = 2;
             while let Some(current_token) = token {
                 if let Some(val) = g
                     .get_node_annos()
@@ -303,7 +325,7 @@ impl ExportXlsx {
                     && !val.trim().is_empty()
                 {
                     has_only_empty_token = false;
-                    worksheet.write(row_index, 0, val)?;
+                    worksheet.get_cell_mut((1, row_index)).set_value(val);
                 }
 
                 token_to_row.insert(current_token, row_index);
@@ -327,23 +349,24 @@ impl ExportXlsx {
     fn create_span_columns(
         &self,
         g: &AnnotationGraph,
-        name_to_column: &LinkedHashMap<AnnoKey, u16>,
+        name_to_column: &LinkedHashMap<AnnoKey, u32>,
         token_to_row: HashMap<NodeID, u32>,
         token_helper: &TokenHelper,
-        worksheet: &mut Worksheet,
+        worksheet: &mut umya_spreadsheet::Worksheet,
         progress: &ProgressReporter,
     ) -> anyhow::Result<()> {
         for span_anno_key in name_to_column.keys() {
             if let Some(column_index) = name_to_column.get(span_anno_key) {
                 if self.include_namespace {
-                    worksheet.write(
-                        0,
-                        *column_index,
-                        join_qname(&span_anno_key.ns, &span_anno_key.name),
-                    )?;
+                    worksheet
+                        .get_cell_mut((*column_index, 1))
+                        .set_value(join_qname(&span_anno_key.ns, &span_anno_key.name));
                 } else {
-                    worksheet.write(0, *column_index, span_anno_key.name.clone())?;
+                    worksheet
+                        .get_cell_mut((*column_index, 1))
+                        .set_value(&span_anno_key.name);
                 }
+                let mut written_rows = BTreeSet::default();
                 for span in g.get_node_annos().exact_anno_search(
                     Some(&span_anno_key.ns),
                     &span_anno_key.name,
@@ -361,7 +384,7 @@ impl ExportXlsx {
                         for t in gs.get_outgoing_edges(span.node) {
                             let t = t?;
                             if let Some(row) = token_to_row.get(&t) {
-                                spanned_rows.insert(row);
+                                spanned_rows.insert(*row);
                             }
                         }
                     }
@@ -371,23 +394,27 @@ impl ExportXlsx {
                     if let Some(first) = first_row
                         && let Some(last) = last_row
                     {
-                        if *last - *first > 0 {
-                            if worksheet
-                                .merge_range(
-                                    **first,
-                                    *column_index,
-                                    **last,
-                                    *column_index,
-                                    &span_val,
-                                    &DEFAULT_FORMAT,
-                                )
-                                .is_err()
-                            {
-                                progress.warn(format!("Could not write span value {span_val} from row {first} to row {last} in column `{}`. A span already exists.", span_anno_key.name))?;
-                            }
-                        } else {
-                            worksheet.write(**first, *column_index, span_val)?;
+                        let intersection_size = spanned_rows.intersection(&written_rows).count();
+                        if intersection_size > 0 {
+                            progress.warn(format!("Could not write span value {span_val} from row {first} to row {last} in column `{}` in document {}. A span already exists in at least of the affected rows. {intersection_size} node(s) overlap(s).", span_anno_key.name, worksheet.get_name()))?;
+                            continue;
                         }
+                        if *last - *first > 0 {
+                            worksheet
+                                .get_cell_mut((*column_index, *first))
+                                .set_value(span_val);
+                            let column_letter =
+                                umya_spreadsheet::helper::coordinate::string_from_column_index(
+                                    column_index,
+                                );
+                            let range = format!("{column_letter}{first}:{column_letter}{last}");
+                            worksheet.add_merge_cells(range);
+                        } else {
+                            worksheet
+                                .get_cell_mut((*column_index, *first))
+                                .set_value(span_val);
+                        }
+                        written_rows.extend(spanned_rows);
                     }
                 }
             }
@@ -427,7 +454,7 @@ impl Exporter for ExportXlsx {
         std::fs::create_dir_all(output_path)?;
 
         let results: anyhow::Result<Vec<_>> = document_names
-            .par_iter()
+            .iter()
             .map(|(doc_name, doc_node_id)| {
                 self.export_document(doc_name, *doc_node_id, graph, output_path, &reporter)?;
                 reporter.worked(1)?;
@@ -446,17 +473,20 @@ impl Exporter for ExportXlsx {
 #[cfg(test)]
 mod tests {
     use std::{
-        fs::File,
+        fs::{self, File},
         path::{Path, PathBuf},
     };
 
+    use graphannis::update::GraphUpdate;
     use insta::assert_snapshot;
     use sha2::{Digest, Sha256};
-    use tempfile::TempDir;
+    use tempfile::{TempDir, tempdir};
 
     use crate::{
-        ExporterStep, ImporterStep, ReadFrom, WriteAs, importer::xlsx::ImportSpreadsheet,
+        ExporterStep, ImporterStep, ReadFrom, WriteAs,
+        importer::{Importer, xlsx::ImportSpreadsheet},
         test_util::compare_graphs,
+        util::example_generator,
     };
 
     use super::*;
@@ -488,6 +518,7 @@ mod tests {
             ],
             include_namespace: true,
             skip_unchanged_files: false,
+            update_datasheet: None,
         };
         let serialization = toml::to_string(&module);
         assert!(
@@ -738,7 +769,9 @@ mod tests {
             path: output_dir.clone(),
             label: None,
         };
-        let mut updates = second_import_step.execute(None).unwrap();
+        let e = second_import_step.execute(None);
+        assert!(e.is_ok(), "Error re-importing: {:?}", e.err().unwrap());
+        let mut updates = e.unwrap();
 
         let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
         written_graph.apply_update(&mut updates, |_| {}).unwrap();
@@ -923,5 +956,110 @@ mod tests {
         let hash_after_conversion = format!("{:02X?}", sha256.finalize());
 
         assert_ne!(original_hash, hash_after_conversion);
+    }
+
+    #[test]
+    fn manipulate_sheet_in_existing_book() {
+        let test_path = Path::new("./tests/data/export/xlsx/existing/existing.xlsx");
+        let importer: ImportSpreadsheet = toml::from_str(
+            r#"
+        column_map = { "tok" = ["sentence"] }
+        datasheet = 1
+        "#,
+        )
+        .unwrap();
+        let exporter: ExportXlsx = toml::from_str(
+            r#"
+        update_datasheet = 1
+        "#,
+        )
+        .unwrap();
+        let mut graph = AnnotationGraph::with_default_graphstorages(true).unwrap();
+        let mut update = importer
+            .import_corpus(
+                test_path.parent().unwrap(),
+                crate::StepID {
+                    module_name: "test_import".to_string(),
+                    path: None,
+                },
+                None,
+            )
+            .unwrap();
+        assert!(graph.apply_update(&mut update, |_| {}).is_ok());
+        let test_dir = tempdir().unwrap();
+        let test_target = &test_dir.path().join("existing.xlsx");
+        assert!(fs::copy(&test_path, &test_target).is_ok());
+        assert!(
+            exporter
+                .export_corpus(
+                    &graph,
+                    test_dir.path(),
+                    crate::StepID {
+                        module_name: "test_export".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
+        let wb = umya_spreadsheet::reader::xlsx::read(test_target);
+        assert!(wb.is_ok());
+        let book = wb.unwrap();
+        let sheet = book.get_sheet(&0).unwrap();
+        let merge_cells = sheet.get_merge_cells();
+        assert_eq!(1, merge_cells.len());
+        let merge_cell = merge_cells.get(0);
+        assert!(merge_cell.is_some());
+        let merge_cell = merge_cell.unwrap();
+        assert_eq!("C4:E7", &merge_cell.get_range());
+        let c = merge_cell.get_coordinate_start_col().unwrap().get_num();
+        let r = merge_cell.get_coordinate_start_row().unwrap().get_num();
+        let cell = &sheet.get_cell((c, r)).unwrap();
+        assert_eq!("EXACTLY", cell.get_formatted_value());
+        let bg = cell.get_style().get_background_color().unwrap();
+        let fnt = cell.get_style().get_font().unwrap();
+        assert_snapshot!(format!(
+            "{}\n{}\n{}",
+            bg.get_argb(),
+            fnt.get_color().get_argb(),
+            fnt.get_bold()
+        ));
+    }
+
+    #[test]
+    fn spans() {
+        let g = AnnotationGraph::with_default_graphstorages(true);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let mut u = GraphUpdate::default();
+        example_generator::create_corpus_structure_simple(&mut u);
+        example_generator::create_multiple_segmentations(&mut u, "root/doc1");
+        assert!(graph.apply_update(&mut u, |_| {}).is_ok());
+        let exporter = ExportXlsx {
+            ..Default::default()
+        };
+        let target_dir = tempdir().unwrap();
+        assert!(
+            exporter
+                .export_corpus(
+                    &graph,
+                    target_dir.path(),
+                    crate::StepID {
+                        module_name: "test_export".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
+        assert!(
+            sheets_diff::core::diff::Diff::new(
+                "./tests/data/export/xlsx/span-target/doc1.xlsx",
+                &target_dir.path().join("doc1.xlsx").to_string_lossy()
+            )
+            .diff()
+            .cell_diffs
+            .is_empty()
+        );
     }
 }

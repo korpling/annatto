@@ -82,7 +82,7 @@ pub struct ImportSpreadsheet {
 #[derive(Facet, Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[repr(u8)]
 #[serde(untagged)]
-enum SheetAddress {
+pub(crate) enum SheetAddress {
     Numeric(usize),
     Name(String),
 }
@@ -245,7 +245,7 @@ impl<'a> DatasheetMapper<'a> {
             .reverse_col_map
             .keys()
             .chain(self.reverse_col_map.values())
-            .map(|e| e.as_str())
+            .map(|e| e.trim())
             .collect_vec();
         let mut merged_cells = self.collect_merged_cells(expected_names, progress)?;
         let base_tokens = self.build_tokens(update, doc_node_name)?;
@@ -284,8 +284,8 @@ impl<'a> DatasheetMapper<'a> {
             || self.column_map.contains_key(&col_name);
         let anno_key = if is_segmentation {
             AnnoKey {
-                ns: ns.unwrap_or(name).into(), // prefer the namespace in the column header
-                name: name.into(),
+                ns: ns.unwrap_or(name.trim()).into(), // prefer the namespace in the column header
+                name: name.trim().into(),
             }
         } else if let Some(seg_name) = self
             .reverse_col_map
@@ -294,8 +294,8 @@ impl<'a> DatasheetMapper<'a> {
             .or(self.fallback.as_ref())
         {
             AnnoKey {
-                ns: ns.unwrap_or(seg_name).into(), // prefer the namespace in the column header
-                name: name.into(),
+                ns: ns.unwrap_or(seg_name.trim()).into(), // prefer the namespace in the column header
+                name: name.trim().into(),
             }
         } else {
             let msg = format!(
@@ -479,7 +479,7 @@ impl<'a> DatasheetMapper<'a> {
                 if start_col != end_col {
                     if (*start_col.get_num()..=*end_col.get_num()).any(|c| {
                         if let Some(cell) = self.sheet.get_cell((c, 1)) {
-                            col_names.contains(&cell.get_raw_value().to_string().as_str())
+                            col_names.contains(&cell.get_raw_value().to_string().trim())
                         } else {
                             false
                         }

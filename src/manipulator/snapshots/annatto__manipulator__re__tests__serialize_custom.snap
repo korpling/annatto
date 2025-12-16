@@ -3,7 +3,6 @@ source: src/manipulator/re.rs
 expression: serialization.unwrap()
 ---
 remove_nodes = ["obsolete", "even_more_obsolete"]
-move_node_annos = true
 remove_subgraph = ["subcorpus"]
 
 [node_names]

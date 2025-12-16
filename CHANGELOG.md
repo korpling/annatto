@@ -5,6 +5,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- better documentation for `revise`
+
+### Changed
+
+- `revise`: Removed obsolete feature for magically moving node annotations through the coverage component to other nodes with a matching namespace (too specific and thus too prone to failure)
+
+## [0.45.0] - 2025-12-11
+
+### Changed
+
+- export `xlsx`: No more parallel document processing in one export step, as this caused the exporter to crash when more than one file was present
+- export `xlsx`: Better warning messages
+
+### Fixed
+
+- import `xlsx`: Trim column names
+- parsing of workflow: Environment variables can now contain non-ascii characters
+
+## [0.44.1] - 2025-12-09
+
+## [0.44.0] - 2025-12-08
+
+## Added
+
+- export `xlsx`: allow to manipulate a single sheet for linguistic data and keep existing sheets in existing files as they are
+
+## Changed
+
+- export `xlsx`: swap internal spreadsheet library (`umya_spreadsheet`)
+
 ### Fixed
 
 - import `toolbox` can deal with linebreaks in comments and empty blocks
