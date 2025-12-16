@@ -1,6 +1,7 @@
 use std::{borrow::Cow, collections::BTreeMap, sync::Arc, usize};
 
 use anyhow::{anyhow, bail};
+use facet::Facet;
 use graphannis::{
     AnnotationGraph,
     graph::{AnnoKey, EdgeContainer, GraphStorage, NodeID},
@@ -20,7 +21,7 @@ use crate::{manipulator::Manipulator, progress::ProgressReporter, util::update_g
 
 /// Compare to sub graphs, derive a patch from one towards the other,
 /// and apply it.
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Facet, PartialEq, Serialize)]
 pub struct DiffSubgraphs {
     /// Provide an annotation key that distinguishes relevant sub graphs to match
     /// differences between. Default is `annis::doc`, which means that diffs are
@@ -64,7 +65,8 @@ fn default_by_key() -> AnnoKey {
     }
 }
 
-#[derive(Clone, Default, Deserialize, Serialize)]
+#[derive(Clone, Default, Deserialize, Facet, PartialEq, Serialize)]
+#[repr(u8)]
 #[serde(rename_all = "lowercase")]
 enum DiffAlgorithm {
     Lcs,
