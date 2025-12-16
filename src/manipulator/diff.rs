@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::BTreeMap, sync::Arc, usize};
+use std::{borrow::Cow, collections::BTreeMap, sync::Arc};
 
 use anyhow::{anyhow, bail};
 use facet::Facet;
@@ -75,9 +75,9 @@ enum DiffAlgorithm {
     Patience,
 }
 
-impl Into<Algorithm> for DiffAlgorithm {
-    fn into(self) -> Algorithm {
-        match self {
+impl From<DiffAlgorithm> for Algorithm {
+    fn from(value: DiffAlgorithm) -> Self {
+        match value {
             DiffAlgorithm::Lcs => Algorithm::Lcs,
             DiffAlgorithm::Myers => Algorithm::Myers,
             DiffAlgorithm::Patience => Algorithm::Patience,
@@ -141,8 +141,7 @@ impl<'a> GraphDiffHelper<'a> {
         let part_of_storages = graph
             .get_all_components(Some(AnnotationComponentType::PartOf), None)
             .into_iter()
-            .map(|c| graph.get_graphstorage(&c))
-            .flatten()
+            .filter_map(|c| graph.get_graphstorage(&c))
             .collect_vec();
         Ok(GraphDiffHelper {
             graph,
@@ -184,10 +183,9 @@ impl<'a> GraphDiffHelper<'a> {
                 .map(|gs| gs.as_edgecontainer())
                 .collect(),
         );
-        let mut dfs =
-            CycleSafeDFS::new_inverse(&part_of_container, parent, 0, usize::MAX).flatten();
+        let dfs = CycleSafeDFS::new_inverse(&part_of_container, parent, 0, usize::MAX).flatten();
         let mut random_seq_node = None;
-        while let Some(s) = dfs.next() {
+        for s in dfs {
             let n = s.node;
             if component_storage.has_ingoing_edges(n)? || component_storage.has_outgoing_edges(n)? {
                 random_seq_node = Some(n);
@@ -237,7 +235,7 @@ impl<'a> DiffSubgraphs {
                 .flatten()
                 .collect_vec();
             if matching.len() != 2 {
-                progress.warn(&format!(
+                progress.warn(format!(
                     "Cannot create diff for {} nodes with by-value `{value}`. Must be exactly 2.",
                     matching.len()
                 ))?;
@@ -291,7 +289,7 @@ impl<'a> Vocabulary<'a> {
     fn to_index(&self, value: Cow<str>) -> Result<usize, anyhow::Error> {
         self.dictionary
             .get(&value)
-            .map(|i| *i)
+            .copied()
             .ok_or(anyhow!("Unknown value."))
     }
 }
