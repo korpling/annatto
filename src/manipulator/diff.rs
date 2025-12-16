@@ -302,15 +302,14 @@ struct SequencePair<'a> {
 }
 
 impl<'a> SequencePair<'a> {
-    fn diff(
-        self,
-        graph: &'a AnnotationGraph,
+    fn compute_diff(
+        &self,
+        graph: &AnnotationGraph,
         vocab: Vocabulary,
         source_key: &AnnoKey,
         target_key: &AnnoKey,
         algorithm: DiffAlgorithm,
-        update: &mut GraphUpdate,
-    ) -> Result<(), anyhow::Error> {
+    ) -> Result<Vec<DiffOp>, anyhow::Error> {
         let (a, b) = {
             let (mut a, mut b) = (
                 Vec::with_capacity(self.source_nodes.len()),
@@ -329,7 +328,19 @@ impl<'a> SequencePair<'a> {
             }
             (a, b)
         };
-        let diffs = capture_diff_slices(algorithm.into(), &a, &b);
+        Ok(capture_diff_slices(algorithm.into(), &a, &b))
+    }
+
+    fn diff(
+        self,
+        graph: &'a AnnotationGraph,
+        vocab: Vocabulary,
+        source_key: &AnnoKey,
+        target_key: &AnnoKey,
+        algorithm: DiffAlgorithm,
+        update: &mut GraphUpdate,
+    ) -> Result<(), anyhow::Error> {
+        let diffs = self.compute_diff(graph, vocab, source_key, target_key, algorithm)?;
         for d in diffs {
             match d {
                 DiffOp::Equal {
