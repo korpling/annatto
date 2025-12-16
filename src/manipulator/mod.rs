@@ -3,6 +3,7 @@ pub mod align;
 pub mod check;
 pub mod chunker;
 pub mod collapse;
+pub mod diff;
 pub mod enumerate;
 pub mod filter;
 pub mod link;

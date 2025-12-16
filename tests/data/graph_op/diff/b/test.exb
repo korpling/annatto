@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<basic-transcription>
+<head>
+<meta-information><project-name></project-name><transcription-name></transcription-name><referenced-file url=""/><ud-meta-information></ud-meta-information><comment></comment><transcription-convention></transcription-convention></meta-information><speakertable><speaker id="SPK0">
+<abbreviation>norm</abbreviation>
+<sex value="m"/>
+<languages-used></languages-used>
+<l1></l1>
+<l2></l2>
+<ud-speaker-information>
+</ud-speaker-information>
+<comment></comment>
+</speaker>
+</speakertable></head>
+<basic-body>
+<common-timeline>
+<tli id="T0"/>
+<tli id="T1"/>
+<tli id="T2"/>
+<tli id="T3"/>
+<tli id="T4"/>
+<tli id="T5"/>
+<tli id="T6"/>
+</common-timeline>
+<tier id="TIE0" speaker="SPK0" category="norm" type="t" display-name="norm [norm]"><event start="T0" end="T1">Das</event>
+<event start="T1" end="T2">ist</event>
+<event start="T2" end="T3">ein</event>
+<event start="T3" end="T4">zweiter</event>
+<event start="T4" end="T5">Test</event>
+<event start="T5" end="T6">.</event>
+</tier></basic-body>
+</basic-transcription>
