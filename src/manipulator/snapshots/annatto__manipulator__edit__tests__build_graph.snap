@@ -1,0 +1,48 @@
+---
+source: src/manipulator/edit.rs
+expression: serialized.unwrap()
+---
+---- a.graphml:
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>
+    <key id="k1" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k2" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k3" for="node" attr.name="default_ns::deprel" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <data key="k0"><![CDATA[
+# configure visualizations here
+]]></data>
+        <node id="a">
+            <data key="k1">a</data>
+            <data key="k2">corpus</data>
+        </node>
+        <node id="b">
+            <data key="k1">b</data>
+            <data key="k2">corpus</data>
+        </node>
+        <node id="a#t1">
+            <data key="k2">node</data>
+        </node>
+        <node id="a#t2">
+            <data key="k2">node</data>
+        </node>
+        <node id="b#t1">
+            <data key="k2">node</data>
+        </node>
+        <node id="b#t2">
+            <data key="k2">node</data>
+        </node>
+        <edge id="e0" source="a#t2" target="a#t1" label="Pointing//dep">
+            <data key="k3">subj</data>
+        </edge>
+        <edge id="e1" source="a#t1" target="a" label="PartOf/annis/">
+        </edge>
+        <edge id="e2" source="a#t2" target="a" label="PartOf/annis/">
+        </edge>
+        <edge id="e3" source="b#t1" target="b" label="PartOf/annis/">
+        </edge>
+        <edge id="e4" source="b#t2" target="b" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>

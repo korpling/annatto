@@ -152,14 +152,21 @@ impl IntoInner for RawAdd {
 
     fn into_inner(self) -> Self::I {
         match self {
-            RawAdd::Node { nodes: names, node_type } => names
+            RawAdd::Node {
+                nodes: names,
+                node_type,
+            } => names
                 .into_iter()
                 .map(|name| UpdateEvent::AddNode {
                     node_name: name,
                     node_type: node_type.clone(),
                 })
                 .collect_vec(),
-            RawAdd::NodeLabels { nodes: names, anno, value } => names
+            RawAdd::NodeLabels {
+                nodes: names,
+                anno,
+                value,
+            } => names
                 .into_iter()
                 .map(|name| UpdateEvent::AddNodeLabel {
                     node_name: name,
@@ -273,14 +280,14 @@ pub fn serialize<'a, S: Serializer, T: IntoIterator<Item = &'a UpdateEvent>>(
 }
 
 #[derive(Deserialize, Serialize)]
-#[serde(rename_all = "lowercase", tag = "do")]
+#[serde(rename_all = "lowercase", tag = "do", deny_unknown_fields)]
 enum SerdeUE {
     Add(RawAdd),
     RM(RawRemove),
 }
 
 #[derive(Deserialize, Serialize)]
-#[serde(untagged)]
+#[serde(untagged, deny_unknown_fields)]
 enum RawAdd {
     Node {
         nodes: Vec<String>,
@@ -302,6 +309,7 @@ enum RawAdd {
         edges: Vec<EdgeConfig>,
         #[serde(with = "crate::estarde::annotation_component")]
         component: AnnotationComponent,
+        #[serde(with = "crate::estarde::anno_key")]
         anno: AnnoKey,
         value: String,
     },
@@ -312,7 +320,7 @@ fn default_node_type() -> String {
 }
 
 #[derive(Deserialize, Serialize)]
-#[serde(untagged)]
+#[serde(untagged, deny_unknown_fields)]
 enum RawRemove {
     Nodes {
         nodes: Vec<String>,
@@ -337,6 +345,7 @@ enum RawRemove {
 }
 
 #[derive(Clone, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct EdgeConfig {
     source: String,
     target: String,

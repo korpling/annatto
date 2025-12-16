@@ -15,12 +15,14 @@ node_type = "corpus"
 [[instructions]]
 do = "add"
 nodes = ["a"]
-node_type = "node"
+anno = "annis::doc"
+value = "a"
 
 [[instructions]]
 do = "add"
 nodes = ["b"]
-node_type = "node"
+anno = "annis::doc"
+value = "b"
 
 [[instructions]]
 do = "add"
@@ -104,6 +106,8 @@ name = "dep"
 
 [[instructions]]
 do = "add"
+anno = "default_ns::deprel"
+value = "subj"
 
 [[instructions.edges]]
 source = "a#t2"
@@ -113,107 +117,3 @@ target = "a#t1"
 ctype = "Pointing"
 layer = ""
 name = "dep"
-
-[[instructions]]
-do = "rm"
-
-[[instructions.edges]]
-source = "a#t2"
-target = "a#t1"
-
-[instructions.component]
-ctype = "Pointing"
-layer = ""
-name = "dep"
-
-[[instructions]]
-do = "rm"
-
-[[instructions.edges]]
-source = "a#t2"
-target = "a#t1"
-
-[instructions.component]
-ctype = "Pointing"
-layer = ""
-name = "dep"
-
-[[instructions]]
-do = "rm"
-
-[[instructions.edges]]
-source = "a#t1"
-target = "a"
-
-[instructions.component]
-ctype = "PartOf"
-layer = "annis"
-name = ""
-
-[[instructions]]
-do = "rm"
-
-[[instructions.edges]]
-source = "a#t2"
-target = "a"
-
-[instructions.component]
-ctype = "PartOf"
-layer = "annis"
-name = ""
-
-[[instructions]]
-do = "rm"
-
-[[instructions.edges]]
-source = "b#t1"
-target = "b"
-
-[instructions.component]
-ctype = "PartOf"
-layer = "annis"
-name = ""
-
-[[instructions]]
-do = "rm"
-
-[[instructions.edges]]
-source = "b#t2"
-target = "b"
-
-[instructions.component]
-ctype = "PartOf"
-layer = "annis"
-name = ""
-
-[[instructions]]
-do = "rm"
-nodes = ["a#t1"]
-
-[[instructions]]
-do = "rm"
-nodes = ["a#t2"]
-
-[[instructions]]
-do = "rm"
-nodes = ["b#t1"]
-
-[[instructions]]
-do = "rm"
-nodes = ["b#t2"]
-
-[[instructions]]
-do = "rm"
-nodes = ["a"]
-
-[[instructions]]
-do = "rm"
-nodes = ["b"]
-
-[[instructions]]
-do = "rm"
-nodes = ["a"]
-
-[[instructions]]
-do = "rm"
-nodes = ["b"]
