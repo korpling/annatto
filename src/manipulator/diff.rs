@@ -21,7 +21,7 @@ use crate::{manipulator::Manipulator, progress::ProgressReporter, util::update_g
 /// Compare to sub graphs, derive a patch from one towards the other,
 /// and apply it.
 #[derive(Deserialize, Serialize)]
-pub struct MarkDiffs {
+pub struct DiffSubgraphs {
     /// Provide an annotation key that distinguishes relevant sub graphs to match
     /// differences between. Default is `annis::doc`, which means that diffs are
     /// annotated by comparing documents with the same name in different subgraphs.
@@ -83,7 +83,7 @@ impl Into<Algorithm> for DiffAlgorithm {
     }
 }
 
-impl Manipulator for MarkDiffs {
+impl Manipulator for DiffSubgraphs {
     fn manipulate_corpus(
         &self,
         graph: &mut AnnotationGraph,
@@ -220,7 +220,7 @@ impl<'a> GraphDiffHelper<'a> {
     }
 }
 
-impl<'a> MarkDiffs {
+impl<'a> DiffSubgraphs {
     fn pair(
         &self,
         graph_helper: GraphDiffHelper<'a>,
@@ -490,7 +490,7 @@ mod tests {
         StepID,
         exporter::graphml::GraphMLExporter,
         importer::{Importer, exmaralda::ImportEXMARaLDA},
-        manipulator::{Manipulator, diff::MarkDiffs},
+        manipulator::{Manipulator, diff::DiffSubgraphs},
         test_util::export_to_string,
         util::update_graph_silent,
     };
@@ -515,7 +515,7 @@ mod tests {
         let mut graph = g.unwrap();
         assert!(update_graph_silent(&mut graph, &mut update).is_ok());
         assert!(graph.calculate_all_statistics().is_ok());
-        let d: Result<MarkDiffs, _> = toml::from_str(
+        let d: Result<DiffSubgraphs, _> = toml::from_str(
             r#"
         source_parent = "diff/a"
         source_component = { ctype = "Ordering", layer = "annis", name = "dipl" }
@@ -566,7 +566,7 @@ mod tests {
         let mut graph = g.unwrap();
         assert!(update_graph_silent(&mut graph, &mut update).is_ok());
         assert!(graph.calculate_all_statistics().is_ok());
-        let d: Result<MarkDiffs, _> = toml::from_str(
+        let d: Result<DiffSubgraphs, _> = toml::from_str(
             r#"
         target_parent = "diff/a"
         target_component = { ctype = "Ordering", layer = "annis", name = "dipl" }
