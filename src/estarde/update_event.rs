@@ -10,6 +10,24 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::estarde::IntoInner;
 
+pub fn deserialize<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Vec<UpdateEvent>, D::Error> {
+    let raw = Vec::<SerdeUE>::deserialize(deserializer)?;
+    Ok(raw
+        .into_iter()
+        .flat_map(|entry| entry.into_inner())
+        .collect_vec())
+}
+
+pub fn serialize<'a, S: Serializer, T: IntoIterator<Item = &'a UpdateEvent>>(
+    value: T,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    let anno_component_vec = value.into_iter().flat_map(SerdeUE::try_from).collect_vec();
+    anno_component_vec.serialize(serializer)
+}
+
 impl TryFrom<&UpdateEvent> for SerdeUE {
     type Error = anyhow::Error;
 
@@ -254,24 +272,6 @@ impl IntoInner for RawRemove {
                 .collect_vec(),
         }
     }
-}
-
-pub fn deserialize<'de, D: Deserializer<'de>>(
-    deserializer: D,
-) -> Result<Vec<UpdateEvent>, D::Error> {
-    let raw = Vec::<SerdeUE>::deserialize(deserializer)?;
-    Ok(raw
-        .into_iter()
-        .flat_map(|entry| entry.into_inner())
-        .collect_vec())
-}
-
-pub fn serialize<'a, S: Serializer, T: IntoIterator<Item = &'a UpdateEvent>>(
-    value: T,
-    serializer: S,
-) -> Result<S::Ok, S::Error> {
-    let anno_component_vec = value.into_iter().flat_map(SerdeUE::try_from).collect_vec();
-    anno_component_vec.serialize(serializer)
 }
 
 #[derive(Deserialize, Serialize)]
