@@ -67,7 +67,7 @@ fn default_by_key() -> AnnoKey {
 
 #[derive(Clone, Default, Deserialize, Facet, PartialEq, Serialize)]
 #[repr(u8)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "lowercase", deny_unknown_fields)]
 enum DiffAlgorithm {
     Lcs,
     Myers,
