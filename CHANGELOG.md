@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - better documentation for `revise`
 - Add `diff`, a graph op that highlights editions between subgraphs with specific edge and node annotations
+- Add `edit` for directly manipulating the graph via graph updates
 
 ### Changed
 
