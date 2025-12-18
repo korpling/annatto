@@ -1,0 +1,20 @@
+---
+source: src/manipulator/diff.rs
+expression: "toml::to_string(&diff).unwrap()"
+---
+by = "namespace::alternative_key"
+source_parent = "corpus/subcorpora/a"
+source_key = "norm::norm"
+target_parent = "corpus/subcorpora/b"
+target_key = "txt::txt"
+algorithm = "lcs"
+
+[source_component]
+ctype = "Ordering"
+layer = "default_ns"
+name = "norm"
+
+[target_component]
+ctype = "Ordering"
+layer = "default_ns"
+name = "txt"
