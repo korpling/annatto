@@ -9,7 +9,7 @@ empty graph:
 [[graph_op]]
 action = "edit"
 
-[[graph_op.config.instructions]] # note that you can define more than one node to be added for the same type 
+[[graph_op.config.instructions]] # note that you can define more than one node to be added for the same type
 do = "add"
 nodes = ["a", "b"]
 node_type = "corpus"
