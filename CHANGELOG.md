@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `revise`: Removed obsolete feature for magically moving node annotations through the coverage component to other nodes with a matching namespace (too specific and thus too prone to failure)
 
+### Fixed:
+
+- `diff`: Deserialization fixed for string representation of anno key
+
 ## [0.45.0] - 2025-12-11
 
 ### Changed
