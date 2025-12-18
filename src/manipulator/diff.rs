@@ -26,7 +26,7 @@ pub struct DiffSubgraphs {
     /// Provide an annotation key that distinguishes relevant sub graphs to match
     /// differences between. Default is `annis::doc`, which means that diffs are
     /// annotated by comparing documents with the same name in different subgraphs.
-    #[serde(default = "default_by_key")]
+    #[serde(with = "crate::estarde::anno_key", default = "default_by_key")]
     by: AnnoKey,
     /// The node name of the common parent of all source parent nodes matching the `by` key.
     /// If you are importing your source data for comparison from a directory "path/to/a",
@@ -505,6 +505,24 @@ mod tests {
         test_util::export_to_string,
         util::update_graph_silent,
     };
+
+    #[test]
+    fn deserialize_serialize() {
+        let toml_str = r#"
+        by = "namespace::alternative_key"
+        source_parent = "corpus/subcorpora/a"
+        source_component = { ctype = "Ordering", layer = "default_ns", name = "norm" }
+        source_key = "norm::norm"
+        target_parent = "corpus/subcorpora/b"
+        target_component = { ctype = "Ordering", layer = "default_ns", name = "txt" }
+        target_key = "txt::txt"
+        algorithm = "lcs"
+        "#;
+        let r: Result<DiffSubgraphs, _> = toml::from_str(toml_str);
+        assert!(r.is_ok(), "Could not deserialize: {:?}", r.err().unwrap());
+        let diff = r.unwrap();
+        assert_snapshot!(toml::to_string(&diff).unwrap());
+    }
 
     #[test]
     fn diff() {
