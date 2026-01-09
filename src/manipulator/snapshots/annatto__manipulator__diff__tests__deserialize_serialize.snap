@@ -8,6 +8,7 @@ source_key = "norm::norm"
 target_parent = "corpus/subcorpora/b"
 target_key = "txt::txt"
 algorithm = "lcs"
+merge = false
 
 [source_component]
 ctype = "Ordering"
