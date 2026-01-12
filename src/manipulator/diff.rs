@@ -10,7 +10,7 @@ use graphannis::{
 };
 use graphannis_core::{
     annostorage::ValueSearch,
-    dfs::CycleSafeDFS,
+    dfs::{CycleSafeDFS, DFSStep},
     graph::{ANNIS_NS, NODE_NAME_KEY, storage::union::UnionEdgeContainer},
 };
 use itertools::Itertools;
@@ -502,23 +502,53 @@ impl SequencePair {
     }
 
     fn merge_diff(
-        self,
+        mut self,
         helper: &mut GraphDiffHelper,
         source_key: &AnnoKey,
         target_key: &AnnoKey,
         algorithm: DiffAlgorithm,
     ) -> Result<(), anyhow::Error> {
+        dbg!(&self.source_nodes);
+        dbg!(&self.target_nodes);
         let diff = self.compute_diff(helper, source_key, target_key, algorithm)?;
         // get to work
         for d in diff {
             let mut update = GraphUpdate::default();
             match d {
-                DiffOp::Equal { .. } => {}
+                DiffOp::Equal { new_index, len, .. } => {
+                    let coverage_storages = helper
+                        .graph
+                        .get_all_components(Some(AnnotationComponentType::Coverage), None)
+                        .iter()
+                        .flat_map(|c| helper.graph.get_graphstorage(c))
+                        .collect_vec();
+                    let coverage_container = UnionEdgeContainer::new(
+                        coverage_storages
+                            .iter()
+                            .map(|gs| gs.as_edgecontainer())
+                            .collect_vec(),
+                    );
+                    for node in &self.target_nodes[new_index..new_index + len] {
+                        let node_name = helper.node_name(*node)?;
+                        update.add_event(UpdateEvent::DeleteNode { node_name })?;
+                        for reachable_node in
+                            CycleSafeDFS::new(&coverage_container, *node, 1, usize::MAX)
+                                .flatten()
+                                .map(|DFSStep { node, .. }| node)
+                        {
+                            let reachable_node_name = helper.node_name(reachable_node)?;
+                            update.add_event(UpdateEvent::DeleteNode {
+                                node_name: reachable_node_name,
+                            })?;
+                        }
+                        // now back up from terminals
+                    }
+                }
                 DiffOp::Delete {
                     old_index, old_len, ..
                 } => {
                     // set up containers (we need to do this here every time to not interfere with the update process,
-                    // as Arc blocks mutable references for a ref-count > 1)
+                    // as Arc<GraphStorage> blocks mutable references for a ref-count > 1
                     let coverage_storages = helper
                         .graph
                         .get_all_components(Some(AnnotationComponentType::Coverage), None)
@@ -621,7 +651,7 @@ impl SequencePair {
     }
 
     fn replace_or_insert(
-        &self,
+        &mut self,
         helper: &mut GraphDiffHelper,
         old_index: usize,
         old_len: Option<usize>,
@@ -629,6 +659,9 @@ impl SequencePair {
         new_len: usize,
         update: &mut GraphUpdate,
     ) -> Result<(), anyhow::Error> {
+        if helper.graph.global_statistics.is_none() {
+            helper.calculate_statistics()?; // this is unfortunate, but well
+        }
         // setup
         let coverage_storages = helper
             .graph
@@ -651,12 +684,9 @@ impl SequencePair {
             .graph
             .get_graphstorage(&default_ordering)
             .ok_or(anyhow!("Could not obtain storage of default ordering."))?;
-        if helper.graph.global_statistics.is_none() {
-            helper.calculate_statistics()?; // this is unfortunate, but well
-        }
         let insert_at_node = *self
             .source_nodes
-            .get(old_index)
+            .get(old_index - 1)
             .ok_or(anyhow!("Could not obtain node for start of insertion."))?;
         let right_end_node = if let Some(len_value) = old_len {
             *self
@@ -724,6 +754,14 @@ impl SequencePair {
                     component_type: AnnotationComponentType::Ordering.to_string(),
                     component_name: oc.name.to_string(),
                 })?;
+                update.add_event(UpdateEvent::AddEdge {
+                    source_node: end_of_insertion_sequence_name.to_string(),
+                    target_node: self.source_stem.to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::PartOf.to_string(),
+                    component_name: "".to_string(),
+                })?;
+                //
                 let query_for_successor_tok = aql::parse(
                     &format!(r#"annis:node_name="{}" _l_ tok"#, &old_right_successor_name),
                     false,
@@ -740,6 +778,13 @@ impl SequencePair {
                 layer: oc.layer.to_string(),
                 component_type: AnnotationComponentType::Ordering.to_string(),
                 component_name: oc.name.to_string(),
+            })?;
+            update.add_event(UpdateEvent::AddEdge {
+                source_node: start_of_insertion_sequence_name.to_string(),
+                target_node: self.source_stem.to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".to_string(),
             })?;
             // now the toks have to be taken care of as well
             let query_for_insertion_at_tok = aql::parse(
@@ -817,11 +862,41 @@ impl SequencePair {
                     .get(1)
                     .ok_or(anyhow!("Result cannot be parsed."))?
                     .node;
+                let mut dfs = CycleSafeDFS::new(
+                    default_ordering_gs.as_edgecontainer(),
+                    link_source,
+                    1,
+                    usize::MAX,
+                );
+                let old_right_successor_tok =
+                    m3.as_ref().map(|m| m.get(1).map(|e| e.node)).flatten();
+                while let Some(Ok(DFSStep {
+                    node: follow_up_node,
+                    ..
+                })) = dfs.next()
+                    && (old_right_successor_tok.is_none()
+                        || old_right_successor_tok
+                            .map(|u| u == follow_up_node)
+                            .unwrap_or_default())
+                {
+                    // delete all tok nodes in the old graph that are not used anymore
+                    let delete_tok_name = helper.node_name(follow_up_node)?;
+                    update.add_event(UpdateEvent::DeleteNode {
+                        node_name: delete_tok_name,
+                    })?;
+                }
                 update.add_event(UpdateEvent::AddEdge {
                     source_node: helper.node_name(link_source)?,
                     target_node: helper.node_name(link_target)?,
                     layer: ANNIS_NS.to_string(),
                     component_type: AnnotationComponentType::Ordering.to_string(),
+                    component_name: "".to_string(),
+                })?;
+                update.add_event(UpdateEvent::AddEdge {
+                    source_node: helper.node_name(link_target)?,
+                    target_node: self.source_stem.to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::PartOf.to_string(),
                     component_name: "".to_string(),
                 })?;
                 let reachable_from_left =
@@ -871,6 +946,13 @@ impl SequencePair {
                                 layer: c.layer.to_string(),
                                 component_type: c.get_type().to_string(),
                                 component_name: c.name.to_string(),
+                            })?;
+                            update.add_event(UpdateEvent::AddEdge {
+                                source_node: helper.node_name(*n_)?,
+                                target_node: self.source_stem.to_string(),
+                                layer: ANNIS_NS.to_string(),
+                                component_type: AnnotationComponentType::PartOf.to_string(),
+                                component_name: "".to_string(),
                             })?;
                         }
                     }
@@ -894,6 +976,13 @@ impl SequencePair {
                     component_type: AnnotationComponentType::Ordering.to_string(),
                     component_name: "".to_string(),
                 })?;
+                update.add_event(UpdateEvent::AddEdge {
+                    source_node: helper.node_name(link_source)?,
+                    target_node: self.source_stem.to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::PartOf.to_string(),
+                    component_name: "".to_string(),
+                })?;
                 let reachable_from_left =
                     CycleSafeDFS::new_inverse(&coverage_container, link_source, 1, usize::MAX)
                         .into_iter()
@@ -942,9 +1031,25 @@ impl SequencePair {
                                 component_type: c.get_type().to_string(),
                                 component_name: c.name.to_string(),
                             })?;
+                            update.add_event(UpdateEvent::AddEdge {
+                                source_node: helper.node_name(n)?,
+                                target_node: self.source_stem.to_string(),
+                                layer: ANNIS_NS.to_string(),
+                                component_type: AnnotationComponentType::PartOf.to_string(),
+                                component_name: "".to_string(),
+                            })?;
                         }
                     }
                 }
+            }
+        }
+        {
+            // update last node_id (insert_node_at looks back -1, so this might be relevant)
+            if let Some(v) = self
+                .source_nodes
+                .get_mut(old_index + old_len.unwrap_or(1) - 1)
+            {
+                *v = end_of_insertion_sequence;
             }
         }
         Ok(())
@@ -960,7 +1065,9 @@ mod tests {
 
     use crate::{
         StepID,
-        exporter::graphml::GraphMLExporter,
+        exporter::{
+            exmaralda::ExportExmaralda, graphml::GraphMLExporter, sequence::ExportSequence,
+        },
         importer::{Importer, exmaralda::ImportEXMARaLDA},
         manipulator::{Manipulator, diff::DiffSubgraphs},
         test_util::export_to_string,
@@ -1107,10 +1214,10 @@ mod tests {
         assert!(graph.calculate_all_statistics().is_ok());
         let d: Result<DiffSubgraphs, _> = toml::from_str(
             r#"
-        target_parent = "merge/a"
+        target_parent = "merge/b"
         target_component = { ctype = "Ordering", layer = "annis", name = "norm" }
         target_key = "norm::norm"
-        source_parent = "merge/b"
+        source_parent = "merge/a"
         source_component = { ctype = "Ordering", layer = "annis", name = "norm" }
         source_key = "norm::norm"
         merge = true
@@ -1131,7 +1238,24 @@ mod tests {
         let export: Result<GraphMLExporter, _> = toml::from_str("stable_order = true");
         assert!(export.is_ok());
         let export = export.unwrap();
-        let actual = export_to_string(&graph, export);
-        assert_snapshot!(actual.unwrap());
+        let actual_graphml = export_to_string(&graph, export).unwrap();
+        let export2 = ExportExmaralda::default();
+        let actual_exb = export_to_string(&graph, export2).unwrap();
+        let export3: ExportSequence = toml::from_str(
+            r#"
+        component = { ctype = "Ordering", layer = "annis", name = "norm" }
+        anno = "norm::norm"
+        "#,
+        )
+        .unwrap();
+        let actual_seq = export_to_string(&graph, export3).unwrap();
+        let mut snapshot_string =
+            String::with_capacity(actual_exb.len() + actual_graphml.len() + actual_seq.len() + 2);
+        snapshot_string.push_str(&actual_graphml);
+        snapshot_string.push_str("\n");
+        snapshot_string.push_str(&actual_exb);
+        snapshot_string.push_str("\n");
+        snapshot_string.push_str(&actual_seq);
+        assert_snapshot!(snapshot_string);
     }
 }
