@@ -26,23 +26,21 @@
 <common-timeline>
 <tli id="T0"/>
 <tli id="T1"/>
-<tli id="T7"/>
+<tli id="T2"/>
 <tli id="T3"/>
 <tli id="T4"/>
-<tli id="T8"/>
-<tli id="T9"/>
 <tli id="T5"/>
 <tli id="T6"/>
 </common-timeline>
 <tier id="TIE0" speaker="SPK0" category="dipl" type="t" display-name="dipl [dipl]"><event start="T0" end="T1">dis</event>
-<event start="T1" end="T7">is</event>
-<event start="T7" end="T3">some</event>
+<event start="T1" end="T2">is</event>
+<event start="T2" end="T3">some</event>
 <event start="T3" end="T4">stuff</event>
 <event start="T4" end="T5">here</event>
 <event start="T5" end="T6">.</event>
 </tier><tier id="TIE1" speaker="SPK1" category="norm" type="t" display-name="norm [norm]"><event start="T0" end="T1">This</event>
-<event start="T1" end="T7">is</event>
-<event start="T7" end="T3">some</event>
+<event start="T1" end="T2">is</event>
+<event start="T2" end="T3">some</event>
 <event start="T3" end="T4">stuff</event>
 <event start="T4" end="T5">here</event>
 <event start="T5" end="T6">.</event>
