@@ -24,8 +24,8 @@ pub fn serialize<'a, S: Serializer, T: IntoIterator<Item = &'a UpdateEvent>>(
     value: T,
     serializer: S,
 ) -> Result<S::Ok, S::Error> {
-    let anno_component_vec = value.into_iter().flat_map(SerdeUE::try_from).collect_vec();
-    anno_component_vec.serialize(serializer)
+    let update_vec = value.into_iter().flat_map(SerdeUE::try_from).collect_vec();
+    update_vec.serialize(serializer)
 }
 
 impl TryFrom<&UpdateEvent> for SerdeUE {
