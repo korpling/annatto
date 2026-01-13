@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `diff`, a graph op that highlights editions between subgraphs with specific edge and node annotations
 - Add `edit` for directly manipulating the graph via graph updates
 - import `whisper`: More format flexibility (json keys can be skipped or have different names)
+- import `whisper`: include vocabulary in binary
 
 ### Changed
 

@@ -355,11 +355,11 @@ fn load_json(path: &Path) -> Result<WhisperJSON, anyhow::Error> {
     serde_json::from_str(&data).map_err(|e| anyhow!("Could not parse json file: {:?}", e))
 }
 
-const VOCAB_FILE_PATH: &str = "src/importer/whisper/vocab.json";
+const VOCAB_DATA: &[u8] = include_bytes!("whisper/vocab.json");
 
 fn load_vocabulary() -> Result<BTreeMap<usize, String>, anyhow::Error> {
-    let data = fs::read_to_string(Path::new(VOCAB_FILE_PATH))?;
-    serde_json::from_str(&data).map_err(|e| anyhow!("Could not read vocabulary file: {:?}", e))
+    serde_json::from_slice(VOCAB_DATA)
+        .map_err(|e| anyhow!("Could not read vocabulary file: {:?}", e))
 }
 
 #[cfg(test)]
