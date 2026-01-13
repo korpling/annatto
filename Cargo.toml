@@ -25,8 +25,8 @@ facet = "0.28.0"
 facet-reflect = "0.28.0"
 git2 = { version = "0.20.2", default-features = false }
 glob = "0.3"
-graphannis = { git = 'https://github.com/korpling/graphannis.git' }
-graphannis-core = { git = 'https://github.com/korpling/graphannis.git' }
+graphannis = "4.1.1"
+graphannis-core = "4.1.1"
 graphviz-rust = "0.9.0"
 indicatif = "0.17"
 itertools = "0.12"
