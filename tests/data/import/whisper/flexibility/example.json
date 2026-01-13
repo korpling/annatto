@@ -1,0 +1,70 @@
+{
+    "segments": [
+        {
+            "start": 11.26,
+            "end": 12.982,
+            "text": " Dies ist ein anderes Beispiel, siehste?",
+            "words": [
+                {
+                    "word": "Dies",
+                    "start": 11.26,
+                    "end": 11.38,
+                    "score": 0.833
+                },
+                {
+                    "word": "ist",
+                    "start": 11.421,
+                    "end": 11.721,
+                    "score": 0.915
+                },
+                {
+                    "word": "ein",
+                    "start": 12.001,
+                    "end": 12.121,
+                    "score": 0.683
+                },
+                {
+                    "word": "anderes",
+                    "start": 12.141,
+                    "end": 12.321,
+                    "score": 0.935
+                },
+                {
+                    "word": "Beispiel,",
+                    "start": 12.361,
+                    "end": 12.661,
+                    "score": 0.978
+                },
+                {
+                    "word": "siehste?",
+                    "start": 12.741,
+                    "end": 12.982,
+                    "score": 0.81
+                }
+            ]
+        },
+        {
+            "start": 13.022,
+            "end": 14.502,
+            "text": "Wer's braucht ...",
+            "words": [
+                {
+                    "word": "Wer's",
+                    "start": 13.022,
+                    "end": 13.162,
+                    "score": 0.262
+                },
+                {
+                    "word": "braucht",
+                    "start": 13.202,
+                    "end": 14.502,
+                    "score": 0.745
+                },
+                {
+                    "word": "..."
+                }
+            ]
+        }
+    ],
+    "language": "pl"
+}
