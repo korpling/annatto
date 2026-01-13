@@ -4,7 +4,7 @@ use anyhow::{anyhow, bail};
 use facet::Facet;
 use graphannis::{
     AnnotationGraph, aql,
-    graph::{AnnoKey, EdgeContainer, GraphStorage, NodeID},
+    graph::{AnnoKey, EdgeContainer, GraphStorage, Match, NodeID},
     model::{AnnotationComponent, AnnotationComponentType},
     update::{GraphUpdate, UpdateEvent},
 };
@@ -646,6 +646,26 @@ impl SequencePair {
             }
             // update after each diff op is required to allow follow-up ops to build on previous modifications, e. g. deletion after insertion
             helper.apply_update(&mut update)?;
+        }
+        {
+            // final clean-up  (this seems to be a bad idea)
+            let mut update = GraphUpdate::default();
+            let query_for_deletion = aql::parse(
+                &format!(
+                    r#"node @* node_name="{}" & #1 !@* node_name="{}""#,
+                    self.target_stem, self.source_stem
+                ),
+                false,
+            )?;
+            for m in aql::execute_query_on_graph(helper.graph, &query_for_deletion, true, None)?
+                .flatten()
+            {
+                if let Some(Match { node, .. }) = m.get(0) {
+                    update.add_event(UpdateEvent::DeleteNode {
+                        node_name: helper.node_name(*node)?,
+                    })?;
+                }
+            }
         }
         Ok(())
     }
