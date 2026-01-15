@@ -5,6 +5,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- import `conllu`: Allow `newpar` and `newdoc` keywords
+
+### Changed
+
+- `enumerate`: sort as numeric uses float internally (lower maximum value, but sorting time values is possible)
+- `time`: More generic functionality
+- `time`: existing time annotations are now overwritten
+
+### Fixed
+
+- `enumerate`: Fixed tracking of `by`-values
+- `time`: no more misleading error messages
+
 ## [0.46.0] - 2026-01-13
 
 ### Added
