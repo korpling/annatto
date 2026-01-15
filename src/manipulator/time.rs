@@ -100,15 +100,29 @@ impl Manipulator for Filltime {
         }
         let progress = ProgressReporter::new(tx, step_id, roots.len())?;
         for root in roots {
-            self.fill(
-                graph,
-                &mut update,
-                root,
-                &mut node_to_start,
-                &mut node_to_end,
-                &progress,
-            )?;
+            self.fill(graph, root, &mut node_to_start, &mut node_to_end, &progress)?;
             progress.worked(1)?;
+        }
+        // build update
+        let time_key = AnnoKey {
+            ns: ANNIS_NS.into(),
+            name: "time".into(),
+        };
+        for (node, start_time) in node_to_start {
+            let node_name = graph
+                .get_node_annos()
+                .get_value_for_item(&node, &NODE_NAME_KEY)?
+                .ok_or(anyhow!("Node has no name."))?;
+            if let Some(end_time) = node_to_end.get(&node) {
+                update.add_event(UpdateEvent::AddNodeLabel {
+                    node_name: node_name.to_string(),
+                    anno_ns: time_key.ns.to_string(),
+                    anno_name: time_key.name.to_string(),
+                    anno_value: format!("{start_time:.16}-{end_time:.16}"),
+                })?;
+            } else {
+                progress.warn(format!("Node {node_name} could not be assigned a time annotation as there is no end time available.").as_str())?;
+            }
         }
         update_graph_silent(graph, &mut update)?;
         Ok(())
@@ -123,7 +137,6 @@ impl Filltime {
     fn fill(
         &self,
         graph: &AnnotationGraph,
-        update: &mut GraphUpdate,
         start_node: NodeID,
         start_cache: &mut BTreeMap<NodeID, OrderedFloat<f64>>,
         end_cache: &mut BTreeMap<NodeID, OrderedFloat<f64>>,
@@ -142,27 +155,6 @@ impl Filltime {
         )?;
         // do l-r propagation a second time
         lr_propagate(graph, start_cache, end_cache)?;
-        // build update
-        let time_key = AnnoKey {
-            ns: ANNIS_NS.into(),
-            name: "time".into(),
-        };
-        for (node, start_time) in start_cache {
-            let node_name = graph
-                .get_node_annos()
-                .get_value_for_item(node, &NODE_NAME_KEY)?
-                .ok_or(anyhow!("Node has no name."))?;
-            if let Some(end_time) = end_cache.get(node) {
-                update.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: node_name.to_string(),
-                    anno_ns: time_key.ns.to_string(),
-                    anno_name: time_key.name.to_string(),
-                    anno_value: format!("{start_time:.16}-{end_time:.16}"),
-                })?;
-            } else {
-                progress.warn(format!("Node {node_name} could not be assigned a time annotation as there is no end time available.").as_str())?;
-            }
-        }
         Ok(())
     }
 }
@@ -235,7 +227,7 @@ fn order_interpolate(
     };
     let mut untimed_gaps = Vec::new();
     for (node, node_) in ordered_nodes.iter().tuple_windows() {
-        let time_value_for_gap = start_cache.get(node_).or(end_cache.get(node)).copied();
+        let time_value_for_gap = end_cache.get(node).or(start_cache.get(node_)).copied();
         if let Some(t) = time_value_for_gap {
             if !untimed_gaps.is_empty() {
                 interpolate(
