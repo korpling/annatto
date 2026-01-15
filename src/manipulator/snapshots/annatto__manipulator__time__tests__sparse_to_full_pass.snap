@@ -109,7 +109,7 @@ expression: actual.unwrap()
         <node id="valid-sparse-timevalues_2/import/exmaralda/test_doc#t_dipl_T3-T4">
             <data key="k11">dipl</data>
             <data key="k13">node</data>
-            <data key="k19">4.44444-5.55555</data>
+            <data key="k19">4.4444400000000002-5.5555500000000002</data>
             <data key="k20">York</data>
             <data key="k5">York</data>
         </node>
@@ -117,7 +117,7 @@ expression: actual.unwrap()
             <data key="k11">norm</data>
             <data key="k13">node</data>
             <data key="k14">I</data>
-            <data key="k19">0-1</data>
+            <data key="k19">0.0000000000000000-1.0000000000000000</data>
             <data key="k20">I</data>
         </node>
         <node id="valid-sparse-timevalues_2/import/exmaralda/test_doc#t_norm_T0-T1">
@@ -145,14 +145,14 @@ expression: actual.unwrap()
             <data key="k11">dipl</data>
             <data key="k13">node</data>
             <data key="k18">1</data>
-            <data key="k19">0-5.55555</data>
+            <data key="k19">0.0000000000000000-5.5555500000000002</data>
         </node>
         <node id="valid-sparse-timevalues_2/import/exmaralda/test_doc#a_norm_T286-T0">
             <data key="k11">norm</data>
             <data key="k12">I</data>
             <data key="k13">node</data>
             <data key="k17">PRON</data>
-            <data key="k19">0-1</data>
+            <data key="k19">0.0000000000000000-1.0000000000000000</data>
         </node>
         <node id="valid-sparse-timevalues_2/import/exmaralda/test_doc#a_norm_T0-T1">
             <data key="k11">norm</data>

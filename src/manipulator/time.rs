@@ -114,6 +114,15 @@ impl Manipulator for Filltime {
                 .get_value_for_item(&node, &NODE_NAME_KEY)?
                 .ok_or(anyhow!("Node has no name."))?;
             if let Some(end_time) = node_to_end.get(&node) {
+                if start_time >= *end_time {
+                    progress.warn(
+                        format!(
+                            "Inconsistent interval: {}--{} ({node_name})",
+                            start_time, end_time
+                        )
+                        .as_str(),
+                    )?;
+                }
                 update.add_event(UpdateEvent::AddNodeLabel {
                     node_name: node_name.to_string(),
                     anno_ns: time_key.ns.to_string(),
@@ -227,8 +236,7 @@ fn order_interpolate(
     };
     let mut untimed_gaps = Vec::new();
     for (node, node_) in ordered_nodes.iter().tuple_windows() {
-        let time_value_for_gap = end_cache.get(node).or(start_cache.get(node_)).copied();
-        if let Some(t) = time_value_for_gap {
+        if let Some(t) = end_cache.get(node).copied() {
             if !untimed_gaps.is_empty() {
                 interpolate(
                     start_cache,
@@ -238,10 +246,23 @@ fn order_interpolate(
                     t,
                 );
             }
-            end_cache.entry(*node).or_insert(t);
             start_cache.entry(*node_).or_insert(t);
-            last_known_time = t;
-        } else {
+            last_known_time = start_cache.get(node_).copied().unwrap_or(t);
+        }
+        if let Some(t) = start_cache.get(node_).copied() {
+            end_cache.entry(*node).or_insert(t);
+            if !untimed_gaps.is_empty() {
+                interpolate(
+                    start_cache,
+                    end_cache,
+                    &mut untimed_gaps,
+                    last_known_time,
+                    t,
+                );
+                last_known_time = t;
+            }
+        }
+        if !end_cache.contains_key(node) && !start_cache.contains_key(node_) {
             untimed_gaps.push((*node, *node_));
         }
     }
@@ -350,10 +371,16 @@ fn lr_propagate(
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::{path::Path, sync::mpsc};
 
-    use graphannis::{AnnotationGraph, update::GraphUpdate};
+    use graphannis::{
+        AnnotationGraph,
+        model::AnnotationComponentType,
+        update::{GraphUpdate, UpdateEvent},
+    };
+    use graphannis_core::graph::ANNIS_NS;
     use insta::assert_snapshot;
+    use itertools::Itertools;
 
     use crate::{
         StepID,
@@ -526,5 +553,116 @@ mod tests {
         let actual = export_to_string(&graph, GraphMLExporter::default());
         assert!(actual.is_ok(), "Export failed: {:?}", actual.err());
         assert_snapshot!(actual.unwrap());
+    }
+
+    #[test]
+    fn fill_gaps() {
+        let mut graph = AnnotationGraph::with_default_graphstorages(true).unwrap();
+        let mut update = GraphUpdate::default();
+        update
+            .add_event(UpdateEvent::AddNode {
+                node_name: "corpus".to_string(),
+                node_type: "corpus".to_string(),
+            })
+            .unwrap();
+        update
+            .add_event(UpdateEvent::AddNode {
+                node_name: "corpus/doc".to_string(),
+                node_type: "corpus".to_string(),
+            })
+            .unwrap();
+        for (i, (tok, start, end)) in [
+            ("This", Some("0."), None),
+            ("is", None, None),
+            ("a", None, None),
+            ("test", None, Some("3.")),
+            ("What", Some("4."), None),
+            ("will", None, None),
+            ("happen", None, Some("8.")),
+            ("nothing", Some("20."), Some("22.")),
+            ("sure", Some("27."), None),
+            ("thing", None, Some("30.")),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let node_name = format!("corpus/doc#t{i}");
+            update
+                .add_event(UpdateEvent::AddNode {
+                    node_name: node_name.to_string(),
+                    node_type: "node".to_string(),
+                })
+                .unwrap();
+            update
+                .add_event(UpdateEvent::AddNodeLabel {
+                    node_name: node_name.to_string(),
+                    anno_ns: ANNIS_NS.to_string(),
+                    anno_name: "tok".to_string(),
+                    anno_value: tok.to_string(),
+                })
+                .unwrap();
+            if start.is_some() || end.is_some() {
+                let value = format!("{}-{}", start.unwrap_or_default(), end.unwrap_or_default());
+                update
+                    .add_event(UpdateEvent::AddNodeLabel {
+                        node_name: node_name.to_string(),
+                        anno_ns: ANNIS_NS.to_string(),
+                        anno_name: "time".to_string(),
+                        anno_value: value,
+                    })
+                    .unwrap();
+            }
+            update
+                .add_event(UpdateEvent::AddEdge {
+                    source_node: node_name.to_string(),
+                    target_node: "corpus/doc".to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::PartOf.to_string(),
+                    component_name: "".to_string(),
+                })
+                .unwrap();
+            if i > 0 {
+                update
+                    .add_event(UpdateEvent::AddEdge {
+                        source_node: format!("corpus/doc#t{}", i - 1),
+                        target_node: node_name.to_string(),
+                        layer: ANNIS_NS.to_string(),
+                        component_type: AnnotationComponentType::Ordering.to_string(),
+                        component_name: "".to_string(),
+                    })
+                    .unwrap();
+            }
+        }
+        assert!(graph.apply_update(&mut update, |_| {}).is_ok());
+        let add_time_values = Filltime {
+            fallback_start: None,
+        };
+        let (tx, rx) = mpsc::channel();
+        assert!(
+            add_time_values
+                .manipulate_corpus(
+                    &mut graph,
+                    Path::new("./"),
+                    StepID {
+                        module_name: "test".to_string(),
+                        path: None
+                    },
+                    Some(tx)
+                )
+                .is_ok()
+        );
+        let data_output = export_to_string(
+            &graph,
+            toml::from_str::<GraphMLExporter>("stable_order = true").unwrap(),
+        )
+        .unwrap();
+        let messages = rx
+            .into_iter()
+            .map(|m| match m {
+                crate::workflow::StatusMessage::Warning(w) => w,
+                _ => "".to_string(),
+            })
+            .join("\n");
+        assert_snapshot!(format!("{data_output}\n{messages}"));
     }
 }
