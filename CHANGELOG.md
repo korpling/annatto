@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `enumerate`: sort as numeric uses float internally (lower maximum value, but sorting time values is possible)
 - `time`: More generic functionality
 - `time`: existing time annotations are now overwritten
 
