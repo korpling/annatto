@@ -127,7 +127,9 @@ impl<'a> SortByNode {
     fn sortable_value(&self, value: Cow<'a, str>) -> Result<SortValue<'a>, anyhow::Error> {
         Ok(match self {
             SortByNode::AsString(_) => SortValue::StringValue(value),
-            SortByNode::AsInteger { .. } => SortValue::NumericValue(value.parse::<OrderedFloat<f64>>()?),
+            SortByNode::AsInteger { .. } => {
+                SortValue::NumericValue(value.parse::<OrderedFloat<f64>>()?)
+            }
         })
     }
 }
