@@ -153,18 +153,12 @@ impl Filltime {
                 .get_value_for_item(node, &NODE_NAME_KEY)?
                 .ok_or(anyhow!("Node has no name."))?;
             if let Some(end_time) = end_cache.get(node) {
-                if !graph
-                    .get_node_annos()
-                    .has_value_for_item(node, &time_key)
-                    .unwrap_or_default()
-                {
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: time_key.ns.to_string(),
-                        anno_name: time_key.name.to_string(),
-                        anno_value: format!("{start_time:.16}-{end_time:.16}"),
-                    })?;
-                }
+                update.add_event(UpdateEvent::AddNodeLabel {
+                    node_name: node_name.to_string(),
+                    anno_ns: time_key.ns.to_string(),
+                    anno_name: time_key.name.to_string(),
+                    anno_value: format!("{start_time:.16}-{end_time:.16}"),
+                })?;
             } else {
                 progress.warn(format!("Node {node_name} could not be assigned a time annotation as there is no end time available.").as_str())?;
             }
