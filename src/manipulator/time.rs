@@ -138,6 +138,7 @@ impl Filltime {
             start_cache,
             end_cache,
             self.fallback_start,
+            progress,
         )?;
         // do l-r propagation a second time
         lr_propagate(graph, start_cache, end_cache)?;
@@ -175,24 +176,18 @@ impl Filltime {
 fn interpolate(
     start_cache: &mut BTreeMap<NodeID, OrderedFloat<f64>>,
     end_cache: &mut BTreeMap<NodeID, OrderedFloat<f64>>,
-    target_nodes: &mut Vec<u64>,
+    target_nodes: &mut Vec<(u64, u64)>,
     lower: OrderedFloat<f64>,
     upper: OrderedFloat<f64>,
 ) {
-    let start_values = (1..target_nodes.len() + 1)
-        .map(|i| {
-            (upper - lower)
-                * (OrderedFloat::from(i as f64) / OrderedFloat::from(target_nodes.len() as f64))
-                + lower
-        })
-        .collect_vec();
-    for (n, st) in target_nodes.iter().zip(start_values.iter()) {
-        end_cache.insert(*n, *st);
+    let n = target_nodes.len();
+    let gap_values = (1..n + 1).map(|i| {
+        (upper - lower) * (OrderedFloat::from(i as f64) / OrderedFloat::from(1. + n as f64)) + lower
+    });
+    for (t, (left, right)) in gap_values.zip_eq(target_nodes.drain(..)) {
+        end_cache.entry(left).or_insert(t);
+        start_cache.entry(right).or_insert(t);
     }
-    for (n, et) in target_nodes.iter().skip(1).zip(start_values.iter()) {
-        start_cache.insert(*n, *et);
-    }
-    target_nodes.clear();
 }
 
 fn order_interpolate(
@@ -201,6 +196,7 @@ fn order_interpolate(
     start_cache: &mut BTreeMap<NodeID, OrderedFloat<f64>>,
     end_cache: &mut BTreeMap<NodeID, OrderedFloat<f64>>,
     fallback: Option<f64>,
+    progress: &ProgressReporter,
 ) -> Result<(), anyhow::Error> {
     let ordering_storage = graph
         .get_graphstorage(&AnnotationComponent::new(
@@ -229,49 +225,55 @@ fn order_interpolate(
             end_cache.insert(*last_node, OrderedFloat::from(ordered_nodes.len() as f64));
         }
     }
-    let mut last_known_time = if let Some(et) =
-        end_cache.get(&start_node).copied().map(|o| *o).or(fallback)
+    let mut last_known_time = if let Some(et) = start_cache
+        .get(&start_node)
+        .copied()
+        .map(|o| *o)
+        .or(fallback)
     {
-        OrderedFloat::from(et)
+        let t = OrderedFloat::from(et);
+        start_cache.insert(start_node, t);
+        t
     } else {
         bail!(
             "Could not determine start time value to initiate interpolation. Consider setting a fallback value."
         )
     };
-    let mut untimed_nodes = Vec::new();
-    for node in ordered_nodes {
-        if untimed_nodes.is_empty() {
-            start_cache.entry(node).or_insert(last_known_time);
-            if let Some(t) = end_cache.get(&node) {
-                last_known_time = *t;
-            } else {
-                untimed_nodes.push(node);
+    let mut untimed_gaps = Vec::new();
+    for (node, node_) in ordered_nodes.iter().tuple_windows() {
+        let time_value_for_gap = start_cache.get(node_).or(end_cache.get(node)).copied();
+        if let Some(t) = time_value_for_gap {
+            if !untimed_gaps.is_empty() {
+                interpolate(
+                    start_cache,
+                    end_cache,
+                    &mut untimed_gaps,
+                    last_known_time,
+                    t,
+                );
             }
-        } else if let Some(t) = start_cache.remove(&node) {
-            interpolate(
-                start_cache,
-                end_cache,
-                &mut untimed_nodes,
-                last_known_time,
-                t,
-            );
+            end_cache.entry(*node).or_insert(t);
+            start_cache.entry(*node_).or_insert(t);
             last_known_time = t;
-            start_cache.insert(node, t);
-        } else if let Some(t) = end_cache.remove(&node) {
-            untimed_nodes.push(node);
-            interpolate(
-                start_cache,
-                end_cache,
-                &mut untimed_nodes,
-                last_known_time,
-                t,
-            );
-            last_known_time = t;
-            end_cache.insert(node, t);
         } else {
-            untimed_nodes.push(node);
+            untimed_gaps.push((*node, *node_));
         }
     }
+    // do the work for the tail
+    if let Some(node) = ordered_nodes.last()
+        && let Some(final_value) = end_cache.get(node).or(start_cache.get(node))
+    {
+        interpolate(
+            start_cache,
+            end_cache,
+            &mut untimed_gaps,
+            last_known_time,
+            *final_value,
+        );
+    } else {
+        progress.warn("Tail nodes cannot be assigned time values as the last timeline node does not provide an end time. This is not necessarily a problem, but rather indicates that the last timeline node has no purpose.")?;
+    }
+
     Ok(())
 }
 
@@ -425,41 +427,6 @@ mod tests {
                 .is_ok()
         );
         assert!(graph.global_statistics.is_none());
-    }
-
-    #[test]
-    fn sparse_to_full_fail() {
-        let import_exmaralda = ImportEXMARaLDA::default();
-        let import = import_exmaralda.import_corpus(
-            Path::new("./tests/data/import/exmaralda/valid-sparse-timevalues/"),
-            StepID {
-                module_name: "test_import".to_string(),
-                path: None,
-            },
-            None,
-        );
-        assert!(import.is_ok(), "import failed: {:?}", import.err());
-        let mut update = import.unwrap();
-        let g = AnnotationGraph::with_default_graphstorages(true);
-        assert!(g.is_ok());
-        let mut graph = g.unwrap();
-        let apply_update = graph.apply_update(&mut update, |_| {});
-        assert!(
-            apply_update.is_ok(),
-            "Applying update failed: {:?}",
-            apply_update.err()
-        );
-        let manipulate = Filltime::default();
-        let fill_time = manipulate.manipulate_corpus(
-            &mut graph,
-            Path::new("./"),
-            StepID {
-                module_name: "test_fill_time".to_string(),
-                path: None,
-            },
-            None,
-        );
-        assert!(fill_time.is_err());
     }
 
     #[test]
