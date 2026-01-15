@@ -11,11 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- `time`: More generic functionality; existing time annotations are now overwritten
+- `time`: More generic functionality
+- `time`: existing time annotations are now overwritten
 
 ### Fixed
 
 - `enumerate`: Fixed tracking of `by`-values
+- `time`: no more misleading error messages
 
 ## [0.46.0] - 2026-01-13
 
