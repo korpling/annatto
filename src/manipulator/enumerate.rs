@@ -13,6 +13,7 @@ use graphannis_core::{
     graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY},
 };
 use itertools::Itertools;
+use ordered_float::OrderedFloat;
 use serde::Serialize;
 use serde_derive::Deserialize;
 
@@ -126,7 +127,7 @@ impl<'a> SortByNode {
     fn sortable_value(&self, value: Cow<'a, str>) -> Result<SortValue<'a>, anyhow::Error> {
         Ok(match self {
             SortByNode::AsString(_) => SortValue::StringValue(value),
-            SortByNode::AsInteger { .. } => SortValue::NumericValue(value.parse::<usize>()?),
+            SortByNode::AsInteger { .. } => SortValue::NumericValue(value.parse::<OrderedFloat<f64>>()?),
         })
     }
 }
@@ -134,7 +135,7 @@ impl<'a> SortByNode {
 #[derive(PartialEq, PartialOrd, Eq, Ord)]
 enum SortValue<'a> {
     StringValue(Cow<'a, str>),
-    NumericValue(usize),
+    NumericValue(OrderedFloat<f64>),
 }
 
 impl Default for EnumerateMatches {
