@@ -5,6 +5,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- import `conllu`: Allow `newpar` and `newdoc` keywords
+
+### Changed
+
+- `time`: More generic functionality
+
+### Fixed
+
+- `enumerate`: Fixed tracking of `by`-values
+
 ## [0.46.0] - 2026-01-13
 
 ### Added
