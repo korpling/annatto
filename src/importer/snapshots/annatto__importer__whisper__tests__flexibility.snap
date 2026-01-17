@@ -1,0 +1,162 @@
+---
+source: src/importer/whisper.rs
+expression: actual.unwrap()
+---
+---- flexibility.graphml:
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>
+    <key id="k1" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k2" for="node" attr.name="whisper::language" attr.type="string"/>
+    <key id="k3" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k4" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k5" for="node" attr.name="whisper::score" attr.type="string"/>
+    <key id="k6" for="node" attr.name="whisper::segment" attr.type="string"/>
+    <key id="k7" for="node" attr.name="annis::time" attr.type="string"/>
+    <key id="k8" for="node" attr.name="annis::tok" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <data key="k0"><![CDATA[
+# configure visualizations here
+]]></data>
+        <node id="flexibility">
+            <data key="k4">corpus</data>
+        </node>
+        <node id="flexibility/example">
+            <data key="k1">example</data>
+            <data key="k2">pl</data>
+            <data key="k4">corpus</data>
+        </node>
+        <node id="flexibility/example#datasource">
+            <data key="k4">datasource</data>
+        </node>
+        <node id="flexibility/example#s0">
+            <data key="k4">node</data>
+            <data key="k6">Dies ist ein anderes Beispiel, siehste?</data>
+            <data key="k7">11.26-12.982</data>
+        </node>
+        <node id="flexibility/example#t0-0">
+            <data key="k3">default_layer</data>
+            <data key="k4">node</data>
+            <data key="k5">0.833</data>
+            <data key="k7">11.26-11.38</data>
+            <data key="k8">Dies</data>
+        </node>
+        <node id="flexibility/example#t0-1">
+            <data key="k3">default_layer</data>
+            <data key="k4">node</data>
+            <data key="k5">0.915</data>
+            <data key="k7">11.421-11.721</data>
+            <data key="k8">ist</data>
+        </node>
+        <node id="flexibility/example#t0-2">
+            <data key="k3">default_layer</data>
+            <data key="k4">node</data>
+            <data key="k5">0.683</data>
+            <data key="k7">12.001-12.121</data>
+            <data key="k8">ein</data>
+        </node>
+        <node id="flexibility/example#t0-3">
+            <data key="k3">default_layer</data>
+            <data key="k4">node</data>
+            <data key="k5">0.935</data>
+            <data key="k7">12.141-12.321</data>
+            <data key="k8">anderes</data>
+        </node>
+        <node id="flexibility/example#t0-4">
+            <data key="k3">default_layer</data>
+            <data key="k4">node</data>
+            <data key="k5">0.978</data>
+            <data key="k7">12.361-12.661</data>
+            <data key="k8">Beispiel,</data>
+        </node>
+        <node id="flexibility/example#t0-5">
+            <data key="k3">default_layer</data>
+            <data key="k4">node</data>
+            <data key="k5">0.81</data>
+            <data key="k7">12.741-12.982</data>
+            <data key="k8">siehste?</data>
+        </node>
+        <node id="flexibility/example#s1">
+            <data key="k4">node</data>
+            <data key="k6">Wer&apos;s braucht ...</data>
+            <data key="k7">13.022-14.502</data>
+        </node>
+        <node id="flexibility/example#t1-0">
+            <data key="k3">default_layer</data>
+            <data key="k4">node</data>
+            <data key="k5">0.262</data>
+            <data key="k7">13.022-13.162</data>
+            <data key="k8">Wer&apos;s</data>
+        </node>
+        <node id="flexibility/example#t1-1">
+            <data key="k3">default_layer</data>
+            <data key="k4">node</data>
+            <data key="k5">0.745</data>
+            <data key="k7">13.202-14.502</data>
+            <data key="k8">braucht</data>
+        </node>
+        <node id="flexibility/example#t1-2">
+            <data key="k3">default_layer</data>
+            <data key="k4">node</data>
+            <data key="k8">...</data>
+        </node>
+        <edge id="e0" source="flexibility/example#s0" target="flexibility/example#t0-0" label="Coverage/annis/">
+        </edge>
+        <edge id="e1" source="flexibility/example#s0" target="flexibility/example#t0-1" label="Coverage/annis/">
+        </edge>
+        <edge id="e2" source="flexibility/example#s0" target="flexibility/example#t0-2" label="Coverage/annis/">
+        </edge>
+        <edge id="e3" source="flexibility/example#s0" target="flexibility/example#t0-3" label="Coverage/annis/">
+        </edge>
+        <edge id="e4" source="flexibility/example#s0" target="flexibility/example#t0-4" label="Coverage/annis/">
+        </edge>
+        <edge id="e5" source="flexibility/example#s0" target="flexibility/example#t0-5" label="Coverage/annis/">
+        </edge>
+        <edge id="e6" source="flexibility/example#s1" target="flexibility/example#t1-0" label="Coverage/annis/">
+        </edge>
+        <edge id="e7" source="flexibility/example#s1" target="flexibility/example#t1-1" label="Coverage/annis/">
+        </edge>
+        <edge id="e8" source="flexibility/example#s1" target="flexibility/example#t1-2" label="Coverage/annis/">
+        </edge>
+        <edge id="e9" source="flexibility/example#t0-0" target="flexibility/example#t0-1" label="Ordering/annis/">
+        </edge>
+        <edge id="e10" source="flexibility/example#t0-1" target="flexibility/example#t0-2" label="Ordering/annis/">
+        </edge>
+        <edge id="e11" source="flexibility/example#t0-2" target="flexibility/example#t0-3" label="Ordering/annis/">
+        </edge>
+        <edge id="e12" source="flexibility/example#t0-3" target="flexibility/example#t0-4" label="Ordering/annis/">
+        </edge>
+        <edge id="e13" source="flexibility/example#t0-4" target="flexibility/example#t0-5" label="Ordering/annis/">
+        </edge>
+        <edge id="e14" source="flexibility/example#t1-0" target="flexibility/example#t1-1" label="Ordering/annis/">
+        </edge>
+        <edge id="e15" source="flexibility/example#t1-1" target="flexibility/example#t1-2" label="Ordering/annis/">
+        </edge>
+        <edge id="e16" source="flexibility/example" target="flexibility" label="PartOf/annis/">
+        </edge>
+        <edge id="e17" source="flexibility/example#datasource" target="flexibility/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e18" source="flexibility/example#s0" target="flexibility/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e19" source="flexibility/example#t0-0" target="flexibility/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e20" source="flexibility/example#t0-1" target="flexibility/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e21" source="flexibility/example#t0-2" target="flexibility/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e22" source="flexibility/example#t0-3" target="flexibility/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e23" source="flexibility/example#t0-4" target="flexibility/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e24" source="flexibility/example#t0-5" target="flexibility/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e25" source="flexibility/example#s1" target="flexibility/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e26" source="flexibility/example#t1-0" target="flexibility/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e27" source="flexibility/example#t1-1" target="flexibility/example" label="PartOf/annis/">
+        </edge>
+        <edge id="e28" source="flexibility/example#t1-2" target="flexibility/example" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>

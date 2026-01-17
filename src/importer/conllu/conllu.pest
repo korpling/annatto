@@ -3,11 +3,14 @@ whitespace = _{ "\t" }
 initial_padding = _{ SOI ~ (NEWLINE*)? }
 final_padding = _{ (NEWLINE*)? ~ EOI }
 conllu = ${ initial_padding ~ sentence+ ~ final_padding }
-sentence = ${ ( s_anno | s_comment )* ~ (multi_token | empty_node | token)+ ~ NEWLINE? }
+sentence = ${ ( text_structure | s_anno | s_comment )* ~ (multi_token | empty_node | token)+ ~ NEWLINE? }
 s_anno = ${ hash ~ space* ~ name ~ space* ~ equals ~ space* ~ s_anno_value ~ NEWLINE }
 s_anno_value = @{ (char | WHITESPACE )+ }
 s_comment = ${ hash ~ space* ~ comment ~ NEWLINE }
 comment = @{ comment_char+ }
+text_structure = { hash ~ space* ~ (newdoc | newpar) ~ NEWLINE }
+newdoc = { "newdoc" ~ (char | space)* }
+newpar = { "newpar" }
 
 token = ${ id ~ whitespace
 ~ ( no_value | form ) ~ whitespace
