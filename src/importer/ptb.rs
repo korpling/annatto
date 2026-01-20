@@ -319,8 +319,6 @@ impl Importer for ImportPTB {
         let mut files_with_errors = Vec::default();
 
         for (file_path, doc_path) in documents {
-            reporter.info(format!("Processing {}", &file_path.to_string_lossy()))?;
-
             let f = std::fs::File::open(&file_path)?;
             let mut decoder = DecodeReaderBytes::new(f);
             let mut file_content = String::new();
