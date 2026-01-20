@@ -2,4 +2,4 @@
 source: tests/cli.rs
 expression: output_err
 ---
-Error: Error during importing corpus from doesnotexist.graphml with "import_graphml": "No such file or directory (os error 2)"
+Error: Error during importing corpus from doesnotexist.graphml with import_graphml: No such file or directory (os error 2)
