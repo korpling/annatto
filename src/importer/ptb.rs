@@ -348,7 +348,7 @@ impl Importer for ImportPTB {
         if !files_with_errors.is_empty() {
             let msg = files_with_errors
                 .into_iter()
-                .map(|(p, e)| format!("\nCould not parse {p:?}: {}", e.to_string()))
+                .map(|(p, e)| format!("\nCould not parse {p:?}: {}", e))
                 .join("");
             Err(anyhow!(msg).into())
         } else {
