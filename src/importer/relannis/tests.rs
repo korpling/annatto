@@ -351,7 +351,7 @@ fn parse_relannis_workflow() {
     // This should fail, because the input directory does not exist
     assert_eq!(true, r.is_err());
     assert_eq!(
-        r#"Error during importing corpus from ../data/import/relannis/does-not-exist with "import_relannis": "directory ./tests/workflows/../data/import/relannis/does-not-exist not found""#,
+        r#"Error during importing corpus from ../data/import/relannis/does-not-exist with import_relannis: directory ./tests/workflows/../data/import/relannis/does-not-exist not found"#,
         r.err().unwrap().to_string()
     )
 }
