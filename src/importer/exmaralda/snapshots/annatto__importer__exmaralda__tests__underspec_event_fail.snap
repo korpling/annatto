@@ -2,6 +2,6 @@
 source: src/importer/exmaralda/tests.rs
 expression: r.err().unwrap().to_string()
 ---
-Conversion failed with errors: Error during importing corpus from ./tests/data/import/exmaralda/fail-no_start_no_end/test_doc.exb with "import_exmaralda": "Could not determine end id of currently processed event `in`. Event will be skipped. Import will fail."
-Error during importing corpus from ./tests/data/import/exmaralda/fail-no_start_no_end/test_doc.exb with "import_exmaralda": "Could not determine start id of currently processed event `York`. Event will be skipped. Import will fail."
-Error during importing corpus from ./tests/data/import/exmaralda/fail-no_start_no_end/test_doc.exb with "import_exmaralda": "Could not determine start id of currently processed event `in`. Event will be skipped. Import will fail."
+Conversion failed with errors: Error during importing corpus from ./tests/data/import/exmaralda/fail-no_start_no_end/test_doc.exb with import_exmaralda: Could not determine end id of currently processed event `in`. Event will be skipped. Import will fail.
+Error during importing corpus from ./tests/data/import/exmaralda/fail-no_start_no_end/test_doc.exb with import_exmaralda: Could not determine start id of currently processed event `York`. Event will be skipped. Import will fail.
+Error during importing corpus from ./tests/data/import/exmaralda/fail-no_start_no_end/test_doc.exb with import_exmaralda: Could not determine start id of currently processed event `in`. Event will be skipped. Import will fail.
