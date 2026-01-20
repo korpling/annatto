@@ -21,7 +21,7 @@ pub enum AnnattoError {
         exporter: String,
         path: PathBuf,
     },
-    #[error("Error during importing corpus from {path} with {importer:?}: {reason:?}")]
+    #[error("Error during importing corpus from {path} with {importer}: {reason}")]
     Import {
         reason: String,
         importer: String,
