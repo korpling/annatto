@@ -6,6 +6,7 @@ use graphannis::{
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
+use itertools::Itertools;
 use pest::{
     Parser,
     iterators::{Pair, Pairs},
@@ -315,31 +316,42 @@ impl Importer for ImportPTB {
 
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
 
-        for (file_path, doc_path) in documents {
-            reporter.info(format!("Processing {}", &file_path.to_string_lossy()))?;
+        let mut files_with_errors = Vec::default();
 
+        for (file_path, doc_path) in documents {
             let f = std::fs::File::open(&file_path)?;
             let mut decoder = DecodeReaderBytes::new(f);
             let mut file_content = String::new();
             decoder.read_to_string(&mut file_content)?;
 
-            let ptb: Pairs<Rule> = PtbParser::parse(Rule::ptb, file_content.trim())?;
+            match PtbParser::parse(Rule::ptb, file_content.trim()) {
+                Ok(ptb) => {
+                    let text_node_name = format!("{}#text", &doc_path);
 
-            let text_node_name = format!("{}#text", &doc_path);
+                    let mut doc_mapper = DocumentMapper {
+                        doc_path,
+                        text_node_name,
+                        last_token_id: None,
+                        number_of_token: 0,
+                        number_of_spans: 0,
+                        edge_delimiter: self.edge_delimiter.clone(),
+                    };
 
-            let mut doc_mapper = DocumentMapper {
-                doc_path,
-                text_node_name,
-                last_token_id: None,
-                number_of_token: 0,
-                number_of_spans: 0,
-                edge_delimiter: self.edge_delimiter.clone(),
+                    doc_mapper.map(&mut u, ptb)?;
+                    reporter.worked(1)?;
+                }
+                Err(e) => files_with_errors.push((file_path, e)),
             };
-
-            doc_mapper.map(&mut u, ptb)?;
-            reporter.worked(1)?;
         }
-        Ok(u)
+        if !files_with_errors.is_empty() {
+            let msg = files_with_errors
+                .into_iter()
+                .map(|(p, e)| format!("\nCould not parse {p:?}: {}", e))
+                .join("");
+            Err(anyhow!(msg).into())
+        } else {
+            Ok(u)
+        }
     }
 
     fn file_extensions(&self) -> &[&str] {

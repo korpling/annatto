@@ -2,4 +2,4 @@
 source: src/importer/exmaralda/tests.rs
 expression: r.err().unwrap().to_string()
 ---
-Error during importing corpus from ./tests/data/import/exmaralda/fail-unknown_tli/test_doc.exb with "import_exmaralda": "Unknown time line item: T1"
+Error during importing corpus from ./tests/data/import/exmaralda/fail-unknown_tli/test_doc.exb with import_exmaralda: Unknown time line item: T1
