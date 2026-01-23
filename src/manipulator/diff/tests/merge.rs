@@ -88,7 +88,6 @@ fn with_data() {
 fn single_tok() {
     let mut graph = AnnotationGraph::with_default_graphstorages(true).unwrap();
     let mut update = GraphUpdate::default();
-    // assert!(update.add_event().is_ok());
     assert!(
         update
             .add_event(UpdateEvent::AddNode {
@@ -132,6 +131,36 @@ fn single_tok() {
                 .add_event(UpdateEvent::AddEdge {
                     source_node: name.to_string(),
                     target_node: "corpus".to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::PartOf.to_string(),
+                    component_name: "".to_string()
+                })
+                .is_ok()
+        );
+        let name = format!("{name}/doc");
+        assert!(
+            update
+                .add_event(UpdateEvent::AddNode {
+                    node_name: name.to_string(),
+                    node_type: "corpus".to_string()
+                })
+                .is_ok()
+        );
+        assert!(
+            update
+                .add_event(UpdateEvent::AddNodeLabel {
+                    node_name: name.to_string(),
+                    anno_ns: ANNIS_NS.to_string(),
+                    anno_name: "doc".to_string(),
+                    anno_value: "test".to_string()
+                })
+                .is_ok()
+        );
+        assert!(
+            update
+                .add_event(UpdateEvent::AddEdge {
+                    source_node: name.to_string(),
+                    target_node: format!("corpus/{subcorpus}"),
                     layer: ANNIS_NS.to_string(),
                     component_type: AnnotationComponentType::PartOf.to_string(),
                     component_name: "".to_string()

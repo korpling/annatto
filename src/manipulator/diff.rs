@@ -508,11 +508,11 @@ impl SequencePair {
         target_key: &AnnoKey,
         algorithm: DiffAlgorithm,
     ) -> Result<(), anyhow::Error> {
-        dbg!(&self.source_nodes);
-        dbg!(&self.target_nodes);
         let diff = self.compute_diff(helper, source_key, target_key, algorithm)?;
         // get to work
         for d in diff {
+            dbg!(&self.source_nodes);
+            dbg!(&self.target_nodes);
             let mut update = GraphUpdate::default();
             match d {
                 DiffOp::Equal { new_index, len, .. } => {
@@ -719,7 +719,7 @@ impl SequencePair {
             insert_at_node
         };
         let insert_at_node_name = helper.node_name(insert_at_node)?;
-        let right_end_name = helper.node_name(right_end_node)?;
+        let right_end_name = helper.node_name(right_end_node)?; // FIXME can this be deleted when old_len is Some?
         let start_of_insertion_sequence = *self.target_nodes.get(new_index).ok_or(anyhow!(
             "Could not obtain start node of sequence to be inserted."
         ))?;
@@ -744,29 +744,45 @@ impl SequencePair {
                 // we are looking at the wrong ordering
                 continue;
             }
-            if old_len.is_some()
-                && let Some(old_successor) = gs.get_outgoing_edges(insert_at_node).flatten().next()
+            if let Some(len_value) = old_len
+                && let Some(old_sequence_start) =
+                    gs.get_outgoing_edges(insert_at_node).flatten().next()
             {
-                let old_successor_name = helper.node_name(old_successor)?;
-                update.add_event(UpdateEvent::DeleteEdge {
-                    source_node: insert_at_node_name.to_string(),
-                    target_node: old_successor_name.to_string(),
-                    layer: oc.layer.to_string(),
-                    component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: oc.name.to_string(),
-                })?;
+                // let old_successor_name = helper.node_name(old_sequence_start)?;
+                // update.add_event(UpdateEvent::DeleteEdge {
+                //     source_node: insert_at_node_name.to_string(),
+                //     target_node: old_successor_name.to_string(),
+                //     layer: oc.layer.to_string(),
+                //     component_type: AnnotationComponentType::Ordering.to_string(),
+                //     component_name: oc.name.to_string(),
+                // })?;
+                for reachable_ordered_node in gs
+                    .find_connected(old_sequence_start, 0, std::ops::Bound::Excluded(len_value))
+                    .flatten()
+                {
+                    let delete_node_name = helper.node_name(reachable_ordered_node)?;
+                    update.add_event(UpdateEvent::DeleteNode {
+                        node_name: delete_node_name,
+                    })?;
+                }
             }
             let m3 = if let Some(old_right_successor) =
                 gs.get_outgoing_edges(right_end_node).flatten().next()
             {
                 let old_right_successor_name = helper.node_name(old_right_successor)?; // this is the same as `old_successor_name` for the case of insertion (old_len.is_none() == true)
-                update.add_event(UpdateEvent::DeleteEdge {
-                    source_node: right_end_name.to_string(),
-                    target_node: old_right_successor_name.to_string(),
-                    layer: oc.layer.to_string(),
-                    component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: oc.name.to_string(),
-                })?;
+                if old_len.is_some() {
+                    update.add_event(UpdateEvent::DeleteNode {
+                        node_name: right_end_name.to_string(),
+                    })?;
+                } else {
+                    update.add_event(UpdateEvent::DeleteEdge {
+                        source_node: right_end_name.to_string(),
+                        target_node: old_right_successor_name.to_string(),
+                        layer: oc.layer.to_string(),
+                        component_type: AnnotationComponentType::Ordering.to_string(),
+                        component_name: oc.name.to_string(),
+                    })?;
+                }
                 update.add_event(UpdateEvent::AddEdge {
                     source_node: end_of_insertion_sequence_name.to_string(),
                     target_node: old_right_successor_name.to_string(),
@@ -892,7 +908,7 @@ impl SequencePair {
                 })) = dfs.next()
                     && (old_right_successor_tok.is_none()
                         || old_right_successor_tok
-                            .map(|u| u == follow_up_node)
+                            .map(|u| u != follow_up_node)
                             .unwrap_or_default())
                 {
                     // delete all tok nodes in the old graph that are not used anymore

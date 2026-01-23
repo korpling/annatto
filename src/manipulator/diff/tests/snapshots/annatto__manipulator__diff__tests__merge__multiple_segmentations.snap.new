@@ -1,0 +1,703 @@
+---
+source: src/manipulator/diff/tests/merge.rs
+assertion_line: 682
+expression: actual.unwrap()
+---
+---- corpus.graphml:
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>
+    <key id="k1" for="node" attr.name="default_ns::dipl" attr.type="string"/>
+    <key id="k2" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k3" for="node" attr.name="default_ns::norm" attr.type="string"/>
+    <key id="k4" for="node" attr.name="pos" attr.type="string"/>
+    <key id="k5" for="node" attr.name="annis::tok" attr.type="string"/>
+    <key id="k6" for="node" attr.name="deprel" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <data key="k0"><![CDATA[
+# configure visualizations here
+]]></data>
+        <node id="corpus">
+            <data key="k2">corpus</data>
+        </node>
+        <node id="corpus/a">
+            <data key="k2">corpus</data>
+        </node>
+        <node id="corpus/a#t0">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/a#t1">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/a#t2">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/a#t3">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/a#t4">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/a#t5">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/a#t6">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/a#t7">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/a#t8">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/a#t9">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/a#t10">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/a#dipl0">
+            <data key="k1">I</data>
+            <data key="k2">node</data>
+        </node>
+        <node id="corpus/a#dipl1">
+            <data key="k1">live</data>
+            <data key="k2">node</data>
+        </node>
+        <node id="corpus/a#dipl2">
+            <data key="k1">in</data>
+            <data key="k2">node</data>
+        </node>
+        <node id="corpus/a#dipl3">
+            <data key="k1">New York</data>
+            <data key="k2">node</data>
+        </node>
+        <node id="corpus/a#dipl4">
+            <data key="k1">for</data>
+            <data key="k2">node</data>
+        </node>
+        <node id="corpus/a#dipl5">
+            <data key="k1">my</data>
+            <data key="k2">node</data>
+        </node>
+        <node id="corpus/a#dipl6">
+            <data key="k1">entire</data>
+            <data key="k2">node</data>
+        </node>
+        <node id="corpus/a#dipl7">
+            <data key="k1">life</data>
+            <data key="k2">node</data>
+        </node>
+        <node id="corpus/a#norm0">
+            <data key="k2">node</data>
+            <data key="k3">I</data>
+        </node>
+        <node id="corpus/a#norm_pos_0">
+            <data key="k2">node</data>
+            <data key="k4">PRON</data>
+        </node>
+        <node id="corpus/a#norm1">
+            <data key="k2">node</data>
+            <data key="k3">live</data>
+        </node>
+        <node id="corpus/a#norm_pos_1">
+            <data key="k2">node</data>
+            <data key="k4">VERB</data>
+        </node>
+        <node id="corpus/a#norm2">
+            <data key="k2">node</data>
+            <data key="k3">in</data>
+        </node>
+        <node id="corpus/a#norm_pos_2">
+            <data key="k2">node</data>
+            <data key="k4">ADP</data>
+        </node>
+        <node id="corpus/a#norm3">
+            <data key="k2">node</data>
+            <data key="k3">New</data>
+        </node>
+        <node id="corpus/a#norm_pos_3">
+            <data key="k2">node</data>
+            <data key="k4">PROPN</data>
+        </node>
+        <node id="corpus/a#norm4">
+            <data key="k2">node</data>
+            <data key="k3">York</data>
+        </node>
+        <node id="corpus/a#norm_pos_4">
+            <data key="k2">node</data>
+            <data key="k4">PROPN</data>
+        </node>
+        <node id="corpus/a#norm5">
+            <data key="k2">node</data>
+            <data key="k3">for</data>
+        </node>
+        <node id="corpus/a#norm_pos_5">
+            <data key="k2">node</data>
+            <data key="k4">ADP</data>
+        </node>
+        <node id="corpus/a#norm6">
+            <data key="k2">node</data>
+            <data key="k3">my</data>
+        </node>
+        <node id="corpus/a#norm_pos_6">
+            <data key="k2">node</data>
+            <data key="k4">PRON</data>
+        </node>
+        <node id="corpus/a#norm7">
+            <data key="k2">node</data>
+            <data key="k3">entire</data>
+        </node>
+        <node id="corpus/a#norm_pos_7">
+            <data key="k2">node</data>
+            <data key="k4">ADJ</data>
+        </node>
+        <node id="corpus/a#norm8">
+            <data key="k2">node</data>
+            <data key="k3">life</data>
+        </node>
+        <node id="corpus/a#norm_pos_8">
+            <data key="k2">node</data>
+            <data key="k4">NOUN</data>
+        </node>
+        <node id="corpus/a#norm9">
+            <data key="k2">node</data>
+            <data key="k3">.</data>
+        </node>
+        <node id="corpus/a#norm_pos_9">
+            <data key="k2">node</data>
+            <data key="k4">PUNCT</data>
+        </node>
+        <node id="corpus/b">
+            <data key="k2">corpus</data>
+        </node>
+        <node id="corpus/b#t0">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/b#t1">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/b#t2">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/b#t3">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/b#t4">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/b#t5">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/b#t6">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/b#t7">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/b#t8">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/b#t9">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/b#t10">
+            <data key="k2">node</data>
+            <data key="k5"> </data>
+        </node>
+        <node id="corpus/b#dipl0">
+            <data key="k1">I</data>
+            <data key="k2">node</data>
+        </node>
+        <node id="corpus/b#dipl1">
+            <data key="k1">have</data>
+            <data key="k2">node</data>
+        </node>
+        <node id="corpus/b#dipl2">
+            <data key="k1">been</data>
+            <data key="k2">node</data>
+        </node>
+        <node id="corpus/b#dipl3">
+            <data key="k1">living</data>
+            <data key="k2">node</data>
+        </node>
+        <node id="corpus/b#dipl4">
+            <data key="k1">in</data>
+            <data key="k2">node</data>
+        </node>
+        <node id="corpus/b#dipl5">
+            <data key="k1">New Jersey</data>
+            <data key="k2">node</data>
+        </node>
+        <node id="corpus/b#dipl6">
+            <data key="k1">my</data>
+            <data key="k2">node</data>
+        </node>
+        <node id="corpus/b#dipl7">
+            <data key="k1">whole</data>
+            <data key="k2">node</data>
+        </node>
+        <node id="corpus/b#dipl8">
+            <data key="k1">life</data>
+            <data key="k2">node</data>
+        </node>
+        <node id="corpus/b#norm0">
+            <data key="k2">node</data>
+            <data key="k3">I</data>
+        </node>
+        <node id="corpus/b#norm_pos_0">
+            <data key="k2">node</data>
+            <data key="k4">PRON</data>
+        </node>
+        <node id="corpus/b#norm1">
+            <data key="k2">node</data>
+            <data key="k3">have</data>
+        </node>
+        <node id="corpus/b#norm_pos_1">
+            <data key="k2">node</data>
+            <data key="k4">VERB</data>
+        </node>
+        <node id="corpus/b#norm2">
+            <data key="k2">node</data>
+            <data key="k3">been</data>
+        </node>
+        <node id="corpus/b#norm_pos_2">
+            <data key="k2">node</data>
+            <data key="k4">VERB</data>
+        </node>
+        <node id="corpus/b#norm3">
+            <data key="k2">node</data>
+            <data key="k3">living</data>
+        </node>
+        <node id="corpus/b#norm_pos_3">
+            <data key="k2">node</data>
+            <data key="k4">VERB</data>
+        </node>
+        <node id="corpus/b#norm4">
+            <data key="k2">node</data>
+            <data key="k3">in</data>
+        </node>
+        <node id="corpus/b#norm_pos_4">
+            <data key="k2">node</data>
+            <data key="k4">ADP</data>
+        </node>
+        <node id="corpus/b#norm5">
+            <data key="k2">node</data>
+            <data key="k3">New</data>
+        </node>
+        <node id="corpus/b#norm_pos_5">
+            <data key="k2">node</data>
+            <data key="k4">PROPN</data>
+        </node>
+        <node id="corpus/b#norm6">
+            <data key="k2">node</data>
+            <data key="k3">Jersey</data>
+        </node>
+        <node id="corpus/b#norm_pos_6">
+            <data key="k2">node</data>
+            <data key="k4">PROPN</data>
+        </node>
+        <node id="corpus/b#norm7">
+            <data key="k2">node</data>
+            <data key="k3">my</data>
+        </node>
+        <node id="corpus/b#norm_pos_7">
+            <data key="k2">node</data>
+            <data key="k4">PRON</data>
+        </node>
+        <node id="corpus/b#norm8">
+            <data key="k2">node</data>
+            <data key="k3">entire</data>
+        </node>
+        <node id="corpus/b#norm_pos_8">
+            <data key="k2">node</data>
+            <data key="k4">ADJ</data>
+        </node>
+        <node id="corpus/b#norm9">
+            <data key="k2">node</data>
+            <data key="k3">life</data>
+        </node>
+        <node id="corpus/b#norm_pos_9">
+            <data key="k2">node</data>
+            <data key="k4">NOUN</data>
+        </node>
+        <node id="corpus/b#norm10">
+            <data key="k2">node</data>
+            <data key="k3">.</data>
+        </node>
+        <node id="corpus/b#norm_pos_10">
+            <data key="k2">node</data>
+            <data key="k4">PUNCT</data>
+        </node>
+        <edge id="e0" source="corpus/a#dipl0" target="corpus/a#t0" label="Coverage/annis/">
+        </edge>
+        <edge id="e1" source="corpus/a#dipl0" target="corpus/a#t1" label="Coverage/annis/">
+        </edge>
+        <edge id="e2" source="corpus/a#dipl1" target="corpus/a#t1" label="Coverage/annis/">
+        </edge>
+        <edge id="e3" source="corpus/a#norm0" target="corpus/a#t0" label="Coverage/annis/">
+        </edge>
+        <edge id="e4" source="corpus/a#norm0" target="corpus/a#t1" label="Coverage/annis/">
+        </edge>
+        <edge id="e5" source="corpus/a#norm1" target="corpus/a#t1" label="Coverage/annis/">
+        </edge>
+        <edge id="e6" source="corpus/b#dipl0" target="corpus/b#t0" label="Coverage/annis/">
+        </edge>
+        <edge id="e7" source="corpus/b#dipl0" target="corpus/b#t1" label="Coverage/annis/">
+        </edge>
+        <edge id="e8" source="corpus/b#dipl1" target="corpus/b#t1" label="Coverage/annis/">
+        </edge>
+        <edge id="e9" source="corpus/b#norm0" target="corpus/b#t0" label="Coverage/annis/">
+        </edge>
+        <edge id="e10" source="corpus/b#norm0" target="corpus/b#t1" label="Coverage/annis/">
+        </edge>
+        <edge id="e11" source="corpus/b#norm1" target="corpus/b#t1" label="Coverage/annis/">
+        </edge>
+        <edge id="e12" source="corpus/a#norm1" target="corpus/a#norm0" label="Pointing//dep">
+            <data key="k6">subj</data>
+        </edge>
+        <edge id="e13" source="corpus/a#norm1" target="corpus/a#norm2" label="Pointing//dep">
+            <data key="k6">obl</data>
+        </edge>
+        <edge id="e14" source="corpus/a#norm1" target="corpus/a#norm5" label="Pointing//dep">
+            <data key="k6">mod</data>
+        </edge>
+        <edge id="e15" source="corpus/a#norm2" target="corpus/a#norm3" label="Pointing//dep">
+            <data key="k6">comp</data>
+        </edge>
+        <edge id="e16" source="corpus/a#norm3" target="corpus/a#norm4" label="Pointing//dep">
+            <data key="k6">flat</data>
+        </edge>
+        <edge id="e17" source="corpus/a#norm5" target="corpus/a#norm8" label="Pointing//dep">
+            <data key="k6">comp</data>
+        </edge>
+        <edge id="e18" source="corpus/a#norm8" target="corpus/a#norm6" label="Pointing//dep">
+            <data key="k6">det</data>
+        </edge>
+        <edge id="e19" source="corpus/a#norm8" target="corpus/a#norm7" label="Pointing//dep">
+            <data key="k6">mod</data>
+        </edge>
+        <edge id="e20" source="corpus/b#norm1" target="corpus/b#norm0" label="Pointing//dep">
+            <data key="k6">subj</data>
+        </edge>
+        <edge id="e21" source="corpus/b#norm1" target="corpus/b#norm2" label="Pointing//dep">
+            <data key="k6">comp</data>
+        </edge>
+        <edge id="e22" source="corpus/b#norm1" target="corpus/b#norm9" label="Pointing//dep">
+            <data key="k6">mod</data>
+        </edge>
+        <edge id="e23" source="corpus/b#norm2" target="corpus/b#norm3" label="Pointing//dep">
+            <data key="k6">comp</data>
+        </edge>
+        <edge id="e24" source="corpus/b#norm3" target="corpus/b#norm4" label="Pointing//dep">
+            <data key="k6">obl</data>
+        </edge>
+        <edge id="e25" source="corpus/b#norm4" target="corpus/b#norm5" label="Pointing//dep">
+            <data key="k6">comp</data>
+        </edge>
+        <edge id="e26" source="corpus/b#norm5" target="corpus/b#norm6" label="Pointing//dep">
+            <data key="k6">flat</data>
+        </edge>
+        <edge id="e27" source="corpus/b#norm9" target="corpus/b#norm7" label="Pointing//dep">
+            <data key="k6">det</data>
+        </edge>
+        <edge id="e28" source="corpus/b#norm9" target="corpus/b#norm8" label="Pointing//dep">
+            <data key="k6">mod</data>
+        </edge>
+        <edge id="e29" source="corpus/a#t0" target="corpus/a#t1" label="Ordering/annis/">
+        </edge>
+        <edge id="e30" source="corpus/a#t1" target="corpus/a#t2" label="Ordering/annis/">
+        </edge>
+        <edge id="e31" source="corpus/a#t2" target="corpus/a#t3" label="Ordering/annis/">
+        </edge>
+        <edge id="e32" source="corpus/a#t3" target="corpus/a#t4" label="Ordering/annis/">
+        </edge>
+        <edge id="e33" source="corpus/a#t4" target="corpus/a#t5" label="Ordering/annis/">
+        </edge>
+        <edge id="e34" source="corpus/a#t5" target="corpus/a#t6" label="Ordering/annis/">
+        </edge>
+        <edge id="e35" source="corpus/a#t6" target="corpus/a#t7" label="Ordering/annis/">
+        </edge>
+        <edge id="e36" source="corpus/a#t7" target="corpus/a#t8" label="Ordering/annis/">
+        </edge>
+        <edge id="e37" source="corpus/a#t8" target="corpus/a#t9" label="Ordering/annis/">
+        </edge>
+        <edge id="e38" source="corpus/a#t9" target="corpus/a#t10" label="Ordering/annis/">
+        </edge>
+        <edge id="e39" source="corpus/b#t0" target="corpus/b#t1" label="Ordering/annis/">
+        </edge>
+        <edge id="e40" source="corpus/b#t1" target="corpus/b#t2" label="Ordering/annis/">
+        </edge>
+        <edge id="e41" source="corpus/b#t2" target="corpus/b#t3" label="Ordering/annis/">
+        </edge>
+        <edge id="e42" source="corpus/b#t3" target="corpus/b#t4" label="Ordering/annis/">
+        </edge>
+        <edge id="e43" source="corpus/b#t4" target="corpus/b#t5" label="Ordering/annis/">
+        </edge>
+        <edge id="e44" source="corpus/b#t5" target="corpus/b#t6" label="Ordering/annis/">
+        </edge>
+        <edge id="e45" source="corpus/b#t6" target="corpus/b#t7" label="Ordering/annis/">
+        </edge>
+        <edge id="e46" source="corpus/b#t7" target="corpus/b#t8" label="Ordering/annis/">
+        </edge>
+        <edge id="e47" source="corpus/b#t8" target="corpus/b#t9" label="Ordering/annis/">
+        </edge>
+        <edge id="e48" source="corpus/b#t9" target="corpus/b#t10" label="Ordering/annis/">
+        </edge>
+        <edge id="e49" source="corpus/a#dipl0" target="corpus/a#dipl1" label="Ordering/default_ns/dipl">
+        </edge>
+        <edge id="e50" source="corpus/a#dipl1" target="corpus/a#dipl2" label="Ordering/default_ns/dipl">
+        </edge>
+        <edge id="e51" source="corpus/a#dipl2" target="corpus/a#dipl3" label="Ordering/default_ns/dipl">
+        </edge>
+        <edge id="e52" source="corpus/a#dipl3" target="corpus/a#dipl4" label="Ordering/default_ns/dipl">
+        </edge>
+        <edge id="e53" source="corpus/a#dipl4" target="corpus/a#dipl5" label="Ordering/default_ns/dipl">
+        </edge>
+        <edge id="e54" source="corpus/a#dipl5" target="corpus/a#dipl6" label="Ordering/default_ns/dipl">
+        </edge>
+        <edge id="e55" source="corpus/a#dipl6" target="corpus/a#dipl7" label="Ordering/default_ns/dipl">
+        </edge>
+        <edge id="e56" source="corpus/b#dipl0" target="corpus/b#dipl1" label="Ordering/default_ns/dipl">
+        </edge>
+        <edge id="e57" source="corpus/b#dipl1" target="corpus/b#dipl2" label="Ordering/default_ns/dipl">
+        </edge>
+        <edge id="e58" source="corpus/b#dipl2" target="corpus/b#dipl3" label="Ordering/default_ns/dipl">
+        </edge>
+        <edge id="e59" source="corpus/b#dipl3" target="corpus/b#dipl4" label="Ordering/default_ns/dipl">
+        </edge>
+        <edge id="e60" source="corpus/b#dipl4" target="corpus/b#dipl5" label="Ordering/default_ns/dipl">
+        </edge>
+        <edge id="e61" source="corpus/b#dipl5" target="corpus/b#dipl6" label="Ordering/default_ns/dipl">
+        </edge>
+        <edge id="e62" source="corpus/b#dipl6" target="corpus/b#dipl7" label="Ordering/default_ns/dipl">
+        </edge>
+        <edge id="e63" source="corpus/b#dipl7" target="corpus/b#dipl8" label="Ordering/default_ns/dipl">
+        </edge>
+        <edge id="e64" source="corpus/a#norm0" target="corpus/a#norm1" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e65" source="corpus/a#norm1" target="corpus/a#norm2" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e66" source="corpus/a#norm2" target="corpus/a#norm3" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e67" source="corpus/a#norm3" target="corpus/a#norm4" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e68" source="corpus/a#norm4" target="corpus/a#norm5" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e69" source="corpus/a#norm5" target="corpus/a#norm6" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e70" source="corpus/a#norm6" target="corpus/a#norm7" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e71" source="corpus/a#norm7" target="corpus/a#norm8" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e72" source="corpus/a#norm8" target="corpus/a#norm9" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e73" source="corpus/b#norm0" target="corpus/b#norm1" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e74" source="corpus/b#norm1" target="corpus/b#norm2" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e75" source="corpus/b#norm2" target="corpus/b#norm3" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e76" source="corpus/b#norm3" target="corpus/b#norm4" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e77" source="corpus/b#norm4" target="corpus/b#norm5" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e78" source="corpus/b#norm5" target="corpus/b#norm6" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e79" source="corpus/b#norm6" target="corpus/b#norm7" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e80" source="corpus/b#norm7" target="corpus/b#norm8" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e81" source="corpus/b#norm8" target="corpus/b#norm9" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e82" source="corpus/b#norm9" target="corpus/b#norm10" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e83" source="corpus/a" target="corpus" label="PartOf/annis/">
+        </edge>
+        <edge id="e84" source="corpus/a#t0" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e85" source="corpus/a#t1" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e86" source="corpus/a#t2" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e87" source="corpus/a#t3" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e88" source="corpus/a#t4" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e89" source="corpus/a#t5" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e90" source="corpus/a#t6" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e91" source="corpus/a#t7" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e92" source="corpus/a#t8" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e93" source="corpus/a#t9" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e94" source="corpus/a#t10" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e95" source="corpus/a#dipl0" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e96" source="corpus/a#dipl1" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e97" source="corpus/a#dipl2" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e98" source="corpus/a#dipl3" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e99" source="corpus/a#dipl4" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e100" source="corpus/a#dipl5" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e101" source="corpus/a#dipl6" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e102" source="corpus/a#dipl7" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e103" source="corpus/a#norm0" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e104" source="corpus/a#norm_pos_0" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e105" source="corpus/a#norm1" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e106" source="corpus/a#norm_pos_1" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e107" source="corpus/a#norm2" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e108" source="corpus/a#norm_pos_2" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e109" source="corpus/a#norm3" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e110" source="corpus/a#norm_pos_3" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e111" source="corpus/a#norm4" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e112" source="corpus/a#norm_pos_4" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e113" source="corpus/a#norm5" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e114" source="corpus/a#norm_pos_5" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e115" source="corpus/a#norm6" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e116" source="corpus/a#norm_pos_6" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e117" source="corpus/a#norm7" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e118" source="corpus/a#norm_pos_7" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e119" source="corpus/a#norm8" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e120" source="corpus/a#norm_pos_8" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e121" source="corpus/a#norm9" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e122" source="corpus/a#norm_pos_9" target="corpus/a" label="PartOf/annis/">
+        </edge>
+        <edge id="e123" source="corpus/b" target="corpus" label="PartOf/annis/">
+        </edge>
+        <edge id="e124" source="corpus/b#t0" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e125" source="corpus/b#t1" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e126" source="corpus/b#t2" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e127" source="corpus/b#t3" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e128" source="corpus/b#t4" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e129" source="corpus/b#t5" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e130" source="corpus/b#t6" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e131" source="corpus/b#t7" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e132" source="corpus/b#t8" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e133" source="corpus/b#t9" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e134" source="corpus/b#t10" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e135" source="corpus/b#dipl0" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e136" source="corpus/b#dipl1" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e137" source="corpus/b#dipl2" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e138" source="corpus/b#dipl3" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e139" source="corpus/b#dipl4" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e140" source="corpus/b#dipl5" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e141" source="corpus/b#dipl6" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e142" source="corpus/b#dipl7" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e143" source="corpus/b#dipl8" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e144" source="corpus/b#norm0" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e145" source="corpus/b#norm_pos_0" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e146" source="corpus/b#norm1" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e147" source="corpus/b#norm_pos_1" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e148" source="corpus/b#norm2" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e149" source="corpus/b#norm_pos_2" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e150" source="corpus/b#norm3" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e151" source="corpus/b#norm_pos_3" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e152" source="corpus/b#norm4" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e153" source="corpus/b#norm_pos_4" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e154" source="corpus/b#norm5" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e155" source="corpus/b#norm_pos_5" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e156" source="corpus/b#norm6" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e157" source="corpus/b#norm_pos_6" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e158" source="corpus/b#norm7" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e159" source="corpus/b#norm_pos_7" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e160" source="corpus/b#norm8" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e161" source="corpus/b#norm_pos_8" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e162" source="corpus/b#norm9" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e163" source="corpus/b#norm_pos_9" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e164" source="corpus/b#norm10" target="corpus/b" label="PartOf/annis/">
+        </edge>
+        <edge id="e165" source="corpus/b#norm_pos_10" target="corpus/b" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>
