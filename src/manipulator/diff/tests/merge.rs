@@ -425,7 +425,7 @@ fn multiple_segmentations() {
             ("New", 1),
             ("Jersey", 1),
             ("my", 1),
-            ("entire", 1),
+            ("whole", 1),
             ("life", 1),
             (".", 1),
         ],
@@ -459,6 +459,102 @@ fn multiple_segmentations() {
             })
             .is_ok()
     );
+    assert!(
+        update
+            .add_event(UpdateEvent::AddNode {
+                node_name: "corpus/a".to_string(),
+                node_type: "corpus".to_string()
+            })
+            .is_ok()
+    );
+    assert!(
+        update
+            .add_event(UpdateEvent::AddEdge {
+                source_node: "corpus/a".to_string(),
+                target_node: "corpus".to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".to_string()
+            })
+            .is_ok()
+    );
+    assert!(
+        update
+            .add_event(UpdateEvent::AddNode {
+                node_name: "corpus/b".to_string(),
+                node_type: "corpus".to_string()
+            })
+            .is_ok()
+    );
+    assert!(
+        update
+            .add_event(UpdateEvent::AddEdge {
+                source_node: "corpus/b".to_string(),
+                target_node: "corpus".to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".to_string()
+            })
+            .is_ok()
+    );
+    assert!(
+        update
+            .add_event(UpdateEvent::AddNode {
+                node_name: "corpus/a/doc".to_string(),
+                node_type: "corpus".to_string()
+            })
+            .is_ok()
+    );
+    assert!(
+        update
+            .add_event(UpdateEvent::AddNodeLabel {
+                node_name: "corpus/a/doc".to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "doc".to_string(),
+                anno_value: "test".to_string()
+            })
+            .is_ok()
+    );
+    assert!(
+        update
+            .add_event(UpdateEvent::AddEdge {
+                source_node: "corpus/a/doc".to_string(),
+                target_node: "corpus/a".to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".to_string()
+            })
+            .is_ok()
+    );
+    assert!(
+        update
+            .add_event(UpdateEvent::AddNode {
+                node_name: "corpus/b/doc".to_string(),
+                node_type: "corpus".to_string()
+            })
+            .is_ok()
+    );
+    assert!(
+        update
+            .add_event(UpdateEvent::AddNodeLabel {
+                node_name: "corpus/b/doc".to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "doc".to_string(),
+                anno_value: "test".to_string()
+            })
+            .is_ok()
+    );
+    assert!(
+        update
+            .add_event(UpdateEvent::AddEdge {
+                source_node: "corpus/b/doc".to_string(),
+                target_node: "corpus/b".to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".to_string()
+            })
+            .is_ok()
+    );
     let n_tokens = 11;
     for (((branch, segments), pos), deps) in ["a", "b"]
         .into_iter()
@@ -466,26 +562,7 @@ fn multiple_segmentations() {
         .zip([pos_a, pos_b])
         .zip([dep_a, dep_b])
     {
-        let name = format!("corpus/{branch}");
-        assert!(
-            update
-                .add_event(UpdateEvent::AddNode {
-                    node_name: name.to_string(),
-                    node_type: "corpus".to_string()
-                })
-                .is_ok()
-        );
-        assert!(
-            update
-                .add_event(UpdateEvent::AddEdge {
-                    source_node: name.to_string(),
-                    target_node: "corpus".to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::PartOf.to_string(),
-                    component_name: "".to_string()
-                })
-                .is_ok()
-        );
+        let name = format!("corpus/{branch}/doc");
         let s_name = format!("{name}#s1");
         for ti in 0..n_tokens {
             let tok_name = format!("{name}#t{ti}");
@@ -615,7 +692,7 @@ fn multiple_segmentations() {
                             .is_ok()
                     );
                 }
-                for covered_t in l..length + 1 {
+                for covered_t in l..l + length {
                     let target_node = format!("{name}#t{covered_t}");
                     assert!(
                         update
@@ -681,10 +758,10 @@ fn multiple_segmentations() {
     let toml_str = r#"
         target_parent = "corpus/b"
         target_component = { ctype = "Ordering", layer = "default_ns", name = "norm" }
-        target_key = "norm::norm"
+        target_key = "default_ns::norm"
         source_parent = "corpus/a"
         source_component = { ctype = "Ordering", layer = "default_ns", name = "norm" }
-        source_key = "norm::norm"
+        source_key = "default_ns::norm"
         merge = true
     "#;
     let m: Result<DiffSubgraphs, _> = toml::from_str(toml_str);
@@ -706,7 +783,7 @@ fn multiple_segmentations() {
     );
     let actual = export_to_string(
         &graph,
-        toml::from_str::<GraphMLExporter>("stable_order = true").unwrap(),
+        toml::from_str::<GraphMLExporter>("stable_order = true\nguess_vis = true").unwrap(),
     );
     assert_snapshot!(actual.unwrap());
 }

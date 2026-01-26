@@ -870,6 +870,7 @@ impl SequencePair {
                         && (c.layer != oc.layer || c.name != oc.name)
                 })
                 .collect_vec();
+            let mut new_tok_sequence_start = None;
             if let Some(res_m0) = m0
                 && let Some(res_m1) = m1
             {
@@ -894,6 +895,7 @@ impl SequencePair {
                     .get(1)
                     .ok_or(anyhow!("Result cannot be parsed."))?
                     .node;
+                new_tok_sequence_start = Some(link_target);
                 let mut dfs = CycleSafeDFS::new(
                     default_ordering_gs.as_edgecontainer(),
                     link_source,
@@ -972,6 +974,23 @@ impl SequencePair {
                 for (c, n) in reachable_from_left {
                     for (c_, n_) in &reachable_from_right {
                         if &c == c_ {
+                            let comp_storage = helper.graph.get_graphstorage(c_);
+                            if let Some(gs) = comp_storage {
+                                if let Some(old_outgoing) =
+                                    gs.get_outgoing_edges(n).flatten().next()
+                                {
+                                    update.add_event(UpdateEvent::DeleteNode {
+                                        node_name: helper.node_name(old_outgoing)?,
+                                    })?;
+                                }
+                                if let Some(old_incoming) =
+                                    gs.get_ingoing_edges(*n_).flatten().next()
+                                {
+                                    update.add_event(UpdateEvent::DeleteNode {
+                                        node_name: helper.node_name(old_incoming)?,
+                                    })?;
+                                }
+                            }
                             update.add_event(UpdateEvent::AddEdge {
                                 source_node: helper.node_name(n)?,
                                 target_node: helper.node_name(*n_)?,
@@ -990,6 +1009,7 @@ impl SequencePair {
                     }
                 }
             }
+            let mut new_tok_sequence_end = None;
             if let Some(res_m2) = m2
                 && let Some(res_m3) = m3
             {
@@ -997,6 +1017,7 @@ impl SequencePair {
                     .get(1)
                     .ok_or(anyhow!("Result cannot be parsed."))?
                     .node;
+                new_tok_sequence_end = Some(link_source);
                 let link_target = res_m3
                     .get(1)
                     .ok_or(anyhow!("Result cannot be parsed."))?
@@ -1056,6 +1077,23 @@ impl SequencePair {
                 for (c, n) in reachable_from_left {
                     for (c_, n_) in &reachable_from_right {
                         if &c == c_ {
+                            let comp_storage = helper.graph.get_graphstorage(c_);
+                            if let Some(gs) = comp_storage {
+                                if let Some(old_outgoing) =
+                                    gs.get_outgoing_edges(n).flatten().next()
+                                {
+                                    update.add_event(UpdateEvent::DeleteNode {
+                                        node_name: helper.node_name(old_outgoing)?,
+                                    })?;
+                                }
+                                if let Some(old_incoming) =
+                                    gs.get_ingoing_edges(*n_).flatten().next()
+                                {
+                                    update.add_event(UpdateEvent::DeleteNode {
+                                        node_name: helper.node_name(old_incoming)?,
+                                    })?;
+                                }
+                            }
                             update.add_event(UpdateEvent::AddEdge {
                                 source_node: helper.node_name(n)?,
                                 target_node: helper.node_name(*n_)?,
@@ -1073,6 +1111,46 @@ impl SequencePair {
                         }
                     }
                 }
+            }
+            if let Some(start_tok_node_id) = new_tok_sequence_start
+                && let Some(end_tok_node_id) = new_tok_sequence_end
+            {
+                let span_name = format!(
+                    "{}#op-span_{start_tok_node_id}-{end_tok_node_id}",
+                    self.source_stem
+                );
+                update.add_event(UpdateEvent::AddNode {
+                    node_name: span_name.to_string(),
+                    node_type: "node".to_string(),
+                })?;
+                update.add_event(UpdateEvent::AddEdge {
+                    source_node: span_name.to_string(),
+                    target_node: self.source_stem.to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::PartOf.to_string(),
+                    component_name: "".to_string(),
+                })?;
+                let mut connected_nodes = default_ordering_gs
+                    .find_connected(start_tok_node_id, 0, std::ops::Bound::Unbounded)
+                    .flatten();
+                while let Some(next_tok_node) = connected_nodes.next()
+                    && next_tok_node != end_tok_node_id
+                {
+                    update.add_event(UpdateEvent::AddEdge {
+                        source_node: span_name.to_string(),
+                        target_node: helper.node_name(next_tok_node)?,
+                        layer: ANNIS_NS.to_string(),
+                        component_type: AnnotationComponentType::Coverage.to_string(),
+                        component_name: "".to_string(),
+                    })?;
+                }
+                update.add_event(UpdateEvent::AddEdge {
+                    source_node: span_name.to_string(),
+                    target_node: helper.node_name(end_tok_node_id)?,
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::Coverage.to_string(),
+                    component_name: "".to_string(),
+                })?;
             }
         }
         {
