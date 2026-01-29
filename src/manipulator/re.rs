@@ -1,13 +1,10 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    path::Path,
-};
+use std::{collections::BTreeMap, path::Path};
 
 use anyhow::{anyhow, bail};
 use facet::Facet;
 use graphannis::{
     AnnotationGraph, aql,
-    graph::{AnnoKey, Edge, Match},
+    graph::{AnnoKey, Edge},
     model::{AnnotationComponent, AnnotationComponentType},
     update::{GraphUpdate, UpdateEvent},
 };
@@ -37,9 +34,29 @@ pub struct Revise {
     /// A map of nodes to rename, usually useful for corpus nodes. If the target name exists,
     /// the operation will fail with an error. If the target name is empty, the node will be
     /// deleted.
+    ///
+    /// Example:
+    /// ```toml
+    /// [[graph_op]]
+    /// action = "revise"
+    ///
+    /// [graph_op.config.node_names]
+    /// "corpus-root" = "FancyCorpus"
+    /// "corpus-root/document1" = "FancyCorpus/document1"
+    /// "corpus-root/obsolete-document" = ""  # this one will be deleted
+    /// ```
     #[serde(default)]
     node_names: BTreeMap<String, String>,
-    /// a list of names of nodes to be removed
+    /// a list of names of nodes to be removed.
+    ///
+    /// Example:
+    /// ```toml
+    /// [[graph_op]]
+    /// action = "revise"
+    ///
+    /// [graph_op.config]
+    /// remove_nodes = ["corpus/doc#tok1", "corpus/doc#tok2"]
+    /// ```
     #[serde(default)]
     remove_nodes: Vec<String>,
     /// Remove nodes that match a query result. The `query` defines the aql search query and
@@ -74,16 +91,44 @@ pub struct Revise {
     /// ```
     #[serde(default)]
     remove_match: Vec<RemoveMatch>,
-    /// also move annotations to other host nodes determined by namespace
-    #[serde(default)]
-    move_node_annos: bool,
-    /// rename node annotation
+    /// Modify annotation keys that are found on nodes in the graph. Leaving out the target key of
+    /// the renaming procedure will lead to deletion of the key.
+    ///
+    /// Example:
+    /// ```toml
+    /// [[graph_op]]
+    /// action = "revise"
+    ///
+    /// [[graph_op.config.node_annos]]
+    /// from = "annis::tok"
+    /// to = "default_ns::word"
+    ///
+    /// [[graph_op.config.node_annos]]
+    /// from = "norm::universal_pos"
+    /// to = "norm::upos"
+    ///
+    /// [[graph_op.config.node_annos]]
+    /// from = "norm::comment"  # this annotation will be deleted, as there is no target key
+    ///
+    /// ```
     #[serde(default)]
     node_annos: Vec<KeyMapping>,
-    /// rename edge annotations
+    /// Modify annotation keys that are found on edges of any edge component.
+    /// The mapping is configured analogous to `node_annos` (see above).
     #[serde(default)]
     edge_annos: Vec<KeyMapping>,
-    /// rename or erase namespaces
+    /// Rename or erase namespaces (=rename with empty string).
+    ///
+    /// Example:
+    /// ```toml
+    /// [[graph_op]]
+    /// action = "revise"
+    ///
+    /// [graph_op.config.namespaces]
+    /// "norm" = "default_ns"
+    /// "" = "default_ns"  # every empty namespace in an annotation key will be changed to "default_ns"
+    /// "dipl" = ""  # the namespace "dipl" will be replaced with the empty namespace
+    /// ```
     #[serde(default)]
     namespaces: BTreeMap<String, String>,
     /// rename or erase components. Specify a list of entries `from` and `to` keys, where the `to` key is optional
@@ -100,7 +145,25 @@ pub struct Revise {
     /// ```
     #[serde(default)]
     components: Vec<ComponentMapping>,
-    /// The given node names and all ingoing paths (incl. nodes) in PartOf/annis/ will be removed
+    /// The given node names and all ingoing paths (incl. nodes) in PartOf/annis/ will be removed.
+    ///
+    /// Example:
+    ///
+    /// Imagine a corpus that consists of two documents, i. e., there is a root node called `corpus`
+    /// and two child nodes `corpus/doc_1` and `corpus/doc_2`, one for each document. Each document
+    /// then has many annotation nodes, such as tokens, as their children.
+    ///
+    /// The following configuration deletes document `doc_2` and all its structural children:
+    /// ```toml
+    /// [[graph_op]]
+    /// action = "revise"
+    ///
+    /// [graph_op.config]
+    /// remove_subgraph = ["corpus/doc_2"]
+    /// ```
+    ///
+    /// Note that you have to mention the nodes' actual names, which in most cases, but not necessarily always, is
+    /// a path as in the example. But the underlying model allows to deviate from paths as node names.
     #[serde(default)]
     remove_subgraph: Vec<String>,
 }
@@ -364,137 +427,10 @@ fn remove_nodes(
     Ok(())
 }
 
-fn place_at_new_target(
-    graph: &AnnotationGraph,
-    update: &mut GraphUpdate,
-    m: &Match,
-    target_key: &AnnoKey,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let coverage_component = AnnotationComponent::new(
-        AnnotationComponentType::Coverage,
-        ANNIS_NS.into(),
-        "".into(),
-    );
-    let coverage_storage = if let Some(strg) = graph.get_graphstorage(&coverage_component) {
-        strg
-    } else {
-        return Err(anyhow!("Could not obtain storage of coverage component.").into());
-    };
-    let order_component = AnnotationComponent::new(
-        AnnotationComponentType::Ordering,
-        ANNIS_NS.to_string(),
-        target_key.ns.clone(),
-    );
-    let order_storage = if let Some(strg) = graph.get_graphstorage(&order_component) {
-        strg
-    } else {
-        return Err(anyhow!("Could not obtain storage of ordering component.").into());
-    };
-    let source_node = m.node;
-    let mut covered_terminal_nodes = Vec::new();
-    CycleSafeDFS::new(
-        coverage_storage.as_edgecontainer(),
-        source_node,
-        1,
-        usize::MAX,
-    )
-    .filter_map(|sr| {
-        if let Ok(step) = sr {
-            let n = step.node;
-            if !coverage_storage.has_outgoing_edges(n).unwrap_or_default() {
-                Some(n)
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    })
-    .for_each(|n| covered_terminal_nodes.push(n));
-    let mut covering_nodes = BTreeSet::new();
-    for terminal in covered_terminal_nodes {
-        for reachable in
-            CycleSafeDFS::new_inverse(coverage_storage.as_edgecontainer(), terminal, 1, usize::MAX)
-        {
-            let covering_node = reachable?.node;
-            let is_part_of_ordering = order_storage.has_outgoing_edges(covering_node)?
-                || order_storage.get_ingoing_edges(covering_node).count() > 0;
-            if is_part_of_ordering {
-                covering_nodes.insert(covering_node);
-            }
-        }
-    }
-    let node_annos = graph.get_node_annos();
-    if let Some(anno_value) = node_annos.get_value_for_item(&m.node, &m.anno_key)? {
-        let probe_node = if let Some(nid) = covering_nodes.pop_last() {
-            nid
-        } else {
-            return Err(anyhow!(
-                "Could not gather any covered nodes for name `{}`",
-                target_key.ns
-            )
-            .into());
-        };
-        if covering_nodes.is_empty() {
-            let target_name = node_name(&probe_node, node_annos)?;
-            update.add_event(UpdateEvent::DeleteNodeLabel {
-                node_name: target_name.to_string(),
-                anno_ns: target_key.ns.to_string(),
-                anno_name: target_key.name.to_string(),
-            })?; // safety delete in case of multiple annotations
-            update.add_event(UpdateEvent::AddNodeLabel {
-                node_name: target_name.to_string(),
-                anno_ns: target_key.ns.to_string(),
-                anno_name: target_key.name.to_string(),
-                anno_value: anno_value.to_string(),
-            })?;
-        } else {
-            // create new span first (we could also check for an exiting one, but it sounds expensive and not promising)
-            let old_name = node_name(&probe_node, node_annos)?;
-            let name_pref = old_name.trim_end_matches(char::is_numeric);
-            covering_nodes.insert(probe_node);
-            let existing = node_annos
-                .get_all_values(&NODE_NAME_KEY, false)?
-                .iter()
-                .filter(|v| v.starts_with(name_pref))
-                .collect_vec()
-                .len();
-            let span_name = format!("{name_pref}{}", existing + 1);
-            update.add_event(UpdateEvent::AddNode {
-                node_name: span_name.clone(),
-                node_type: "node".to_string(),
-            })?;
-            update.add_event(UpdateEvent::DeleteNodeLabel {
-                node_name: span_name.to_string(),
-                anno_ns: target_key.ns.to_string(),
-                anno_name: target_key.name.to_string(),
-            })?; // safety delete in case of multiple annotations
-            update.add_event(UpdateEvent::AddNodeLabel {
-                node_name: span_name.clone(),
-                anno_ns: target_key.ns.to_string(),
-                anno_name: target_key.name.to_string(),
-                anno_value: anno_value.to_string(),
-            })?;
-            for member in covering_nodes {
-                let member_name = node_name(&member, node_annos)?;
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: span_name.clone(),
-                    target_node: member_name.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Coverage.to_string(),
-                    component_name: "".to_string(),
-                })?;
-            }
-        };
-    }
-    Ok(())
-}
-
 fn replace_node_annos(
     graph: &mut AnnotationGraph,
     update: &mut GraphUpdate,
     anno_keys: &Vec<KeyMapping>,
-    move_by_ns: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let annos = graph.get_node_annos();
     for mapping in anno_keys {
@@ -512,17 +448,15 @@ fn replace_node_annos(
                 anno_ns: old_key.ns.to_string(),
                 anno_name: old_key.name.to_string(),
             })?;
-            if let Some(new_key) = new_key_opt {
-                if move_by_ns {
-                    place_at_new_target(graph, update, &m, new_key)?;
-                } else if let Some(value) = annos.get_value_for_item(&m.node, old_key)? {
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: new_key.ns.to_string(),
-                        anno_name: new_key.name.to_string(),
-                        anno_value: value.to_string(),
-                    })?;
-                }
+            if let Some(new_key) = new_key_opt
+                && let Some(value) = annos.get_value_for_item(&m.node, old_key)?
+            {
+                update.add_event(UpdateEvent::AddNodeLabel {
+                    node_name: node_name.to_string(),
+                    anno_ns: new_key.ns.to_string(),
+                    anno_name: new_key.name.to_string(),
+                    anno_value: value.to_string(),
+                })?;
             }
         }
     }
@@ -790,7 +724,6 @@ impl Manipulator for Revise {
             update_graph_silent(graph, &mut update)?;
             update = GraphUpdate::default();
         }
-        let move_by_ns = self.move_node_annos;
         if !self.remove_nodes.is_empty() {
             remove_nodes(&mut update, &self.remove_nodes)?;
             update_graph_silent(graph, &mut update)?;
@@ -804,7 +737,7 @@ impl Manipulator for Revise {
             update = GraphUpdate::default();
         }
         if !self.node_annos.is_empty() {
-            replace_node_annos(graph, &mut update, &self.node_annos, move_by_ns)?;
+            replace_node_annos(graph, &mut update, &self.node_annos)?;
             update_graph_silent(graph, &mut update)?;
             update = GraphUpdate::default();
         }
@@ -921,7 +854,6 @@ mod tests {
                 query: "pos=/invalid/".to_string(),
                 remove: vec![RemoveTarget::Node(1)],
             }],
-            move_node_annos: true,
             node_annos: vec![KeyMapping {
                 from: AnnoKey {
                     name: "name".into(),
@@ -973,7 +905,6 @@ mod tests {
             remove_nodes: vec![],
             edge_annos: vec![],
             remove_match: vec![],
-            move_node_annos: false,
             node_annos: vec![],
             namespaces: BTreeMap::default(),
             remove_subgraph: vec![],
@@ -1032,7 +963,6 @@ mod tests {
         let replace = Revise {
             node_names: BTreeMap::default(),
             remove_nodes: vec![],
-            move_node_annos: false,
             node_annos: vec![node_map],
             edge_annos: vec![edge_map],
             namespaces: BTreeMap::default(),
@@ -1152,140 +1082,6 @@ mod tests {
     }
 
     #[test]
-    fn test_move_on_disk() {
-        let r = move_test(true);
-        assert_eq!(r.is_ok(), true, "Probing move test result {:?}", r);
-    }
-
-    #[test]
-    fn test_move_in_mem() {
-        let r = move_test(false);
-        assert_eq!(r.is_ok(), true, "Probing move test result {:?}", r);
-    }
-
-    fn move_test(on_disk: bool) -> Result<()> {
-        let mut g = input_graph_for_move(on_disk)?;
-        let node_map: KeyMapping = toml::from_str(
-            r#"
-from = "norm::pos"
-to = "dipl::derived_pos"
-        "#,
-        )?;
-        let replace = Revise {
-            node_names: BTreeMap::default(),
-            move_node_annos: true,
-            namespaces: BTreeMap::default(),
-            node_annos: vec![node_map],
-            edge_annos: vec![],
-            remove_nodes: vec![],
-            components: vec![],
-            remove_subgraph: vec![],
-            remove_match: vec![],
-        };
-        let step_id = StepID {
-            module_name: "replace".to_string(),
-            path: None,
-        };
-        let result = replace.manipulate_corpus(&mut g, tempdir()?.path(), step_id, None);
-        g.calculate_all_statistics().unwrap();
-        assert_eq!(result.is_ok(), true, "Probing merge result {:?}", &result);
-        let mut e_g = expected_output_for_move(on_disk)?;
-        // corpus nodes
-        let e_corpus_nodes: BTreeSet<String> = e_g
-            .get_node_annos()
-            .exact_anno_search(
-                Some(&NODE_TYPE_KEY.ns),
-                &NODE_TYPE_KEY.name,
-                ValueSearch::Some("corpus"),
-            )
-            .into_iter()
-            .map(|r| r.unwrap().node)
-            .map(|id_| {
-                e_g.get_node_annos()
-                    .get_value_for_item(&id_, &NODE_NAME_KEY)
-                    .unwrap()
-                    .unwrap()
-                    .to_string()
-            })
-            .collect();
-        let g_corpus_nodes: BTreeSet<String> = g
-            .get_node_annos()
-            .exact_anno_search(
-                Some(&NODE_TYPE_KEY.ns),
-                &NODE_TYPE_KEY.name,
-                ValueSearch::Some("corpus"),
-            )
-            .into_iter()
-            .map(|r| r.unwrap().node)
-            .map(|id_| {
-                g.get_node_annos()
-                    .get_value_for_item(&id_, &NODE_NAME_KEY)
-                    .unwrap()
-                    .unwrap()
-                    .to_string()
-            })
-            .collect();
-        assert_eq!(e_corpus_nodes, g_corpus_nodes); //TODO clarify: Delegate or assertion?
-        // test by components
-        let e_c_list = e_g
-            .get_all_components(None, None)
-            .into_iter()
-            .filter(|c| e_g.get_graphstorage(c).unwrap().source_nodes().count() > 0)
-            .collect_vec();
-        let g_c_list = g
-            .get_all_components(None, None)
-            .into_iter()
-            .filter(|c| g.get_graphstorage(c).unwrap().source_nodes().count() > 0) // graph might contain empty components after merge
-            .collect_vec();
-        assert_eq!(
-            e_c_list.len(),
-            g_c_list.len(),
-            "components expected:\n{:?};\ncomponents are:\n{:?}",
-            &e_c_list,
-            &g_c_list
-        );
-        for c in e_c_list {
-            let candidates = g.get_all_components(Some(c.get_type()), Some(c.name.as_str()));
-            assert_eq!(candidates.len(), 1);
-            let c_o = candidates.get(0);
-            assert_eq!(&c, c_o.unwrap());
-        }
-        // test with queries
-        let queries = ["tok", "pos", "derived_pos"];
-        let corpus_name = "current";
-        let tmp_dir_e = tempdir()?;
-        let tmp_dir_g = tempdir()?;
-        e_g.save_to(&tmp_dir_e.path().join(corpus_name))?;
-        g.save_to(&tmp_dir_g.path().join(corpus_name))?;
-        let cs_e = CorpusStorage::with_auto_cache_size(&tmp_dir_e.path(), true)?;
-        let cs_g = CorpusStorage::with_auto_cache_size(&tmp_dir_g.path(), true)?;
-        for query_s in queries {
-            let query = SearchQuery {
-                corpus_names: &[corpus_name],
-                query: query_s,
-                query_language: QueryLanguage::AQL,
-                timeout: None,
-            };
-            let matches_e = cs_e.find(query.clone(), 0, None, ResultOrder::Normal)?;
-            let matches_g = cs_g.find(query, 0, None, ResultOrder::Normal)?;
-            assert_eq!(
-                matches_e.len(),
-                matches_g.len(),
-                "Failed with query: {}",
-                query_s
-            );
-            for (m_e, m_g) in matches_e
-                .into_iter()
-                .sorted()
-                .zip(matches_g.into_iter().sorted())
-            {
-                assert_eq!(m_e, m_g);
-            }
-        }
-        Ok(())
-    }
-
-    #[test]
     fn test_export_mem() {
         let export = export_test(false);
         assert_eq!(
@@ -1321,7 +1117,6 @@ from = "deprel"
         )?;
         let replace = Revise {
             node_names: BTreeMap::default(),
-            move_node_annos: true,
             namespaces: BTreeMap::default(),
             node_annos: vec![node_map],
             edge_annos: vec![edge_map],
@@ -1384,7 +1179,6 @@ from = "deprel"
         )?;
         let replace = Revise {
             node_names: BTreeMap::default(),
-            move_node_annos: true,
             namespaces: BTreeMap::default(),
             node_annos: vec![node_map],
             edge_annos: vec![edge_map],
@@ -1433,7 +1227,6 @@ from = "deprel"
         let replace = Revise {
             node_names: BTreeMap::default(),
             remove_nodes: vec![],
-            move_node_annos: false,
             node_annos: vec![],
             edge_annos: vec![],
             namespaces: ns_map,
@@ -1937,201 +1730,6 @@ from = "deprel"
         Ok(g)
     }
 
-    fn expected_output_for_move(on_disk: bool) -> Result<AnnotationGraph> {
-        let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
-        let mut u = GraphUpdate::default();
-        u.add_event(UpdateEvent::AddNode {
-            node_name: "root".to_string(),
-            node_type: "corpus".to_string(),
-        })?;
-        // import 1
-        u.add_event(UpdateEvent::AddNode {
-            node_name: "root/a".to_string(),
-            node_type: "corpus".to_string(),
-        })?;
-        u.add_event(UpdateEvent::AddEdge {
-            source_node: "root/a".to_string(),
-            target_node: "root".to_string(),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::PartOf.to_string(),
-            component_name: "".to_string(),
-        })?;
-        u.add_event(UpdateEvent::AddNode {
-            node_name: "root/a/doc".to_string(),
-            node_type: "corpus".to_string(),
-        })?;
-        u.add_event(UpdateEvent::AddEdge {
-            source_node: "root/a/doc".to_string(),
-            target_node: "root/a".to_string(),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::PartOf.to_string(),
-            component_name: "".to_string(),
-        })?;
-        for i in 0..5 {
-            u.add_event(UpdateEvent::AddNode {
-                node_name: format!("root/a/doc#t{}", i),
-                node_type: "node".to_string(),
-            })?;
-            u.add_event(UpdateEvent::AddNodeLabel {
-                node_name: format!("root/a/doc#t{}", i),
-                anno_ns: ANNIS_NS.to_string(),
-                anno_name: "tok".to_string(),
-                anno_value: " ".to_string(),
-            })?;
-            if i > 1 {
-                u.add_event(UpdateEvent::AddEdge {
-                    source_node: format!("root/a/doc#t{}", i - 1),
-                    target_node: format!("root/a/doc#t{}", i),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: "".to_string(),
-                })?;
-            }
-        }
-        // fake-tok 1
-        let sentence_span_name = "root/a/doc#s0";
-        u.add_event(UpdateEvent::AddNode {
-            node_name: sentence_span_name.to_string(),
-            node_type: "node".to_string(),
-        })?;
-        u.add_event(UpdateEvent::AddNodeLabel {
-            node_name: sentence_span_name.to_string(),
-            anno_ns: "dipl".to_string(),
-            anno_name: "sentence".to_string(),
-            anno_value: "1".to_string(),
-        })?;
-        for (ii, (txt, start, end, pos_label)) in [
-            ("I'm", 0, 2, Some("VERB")),
-            ("in", 2, 3, Some("ADP")),
-            ("New", 3, 4, None),
-            ("York", 4, 5, None),
-        ]
-        .iter()
-        .enumerate()
-        {
-            let i = ii + 1;
-            let name = format!("root/a/doc#s{}", i);
-            u.add_event(UpdateEvent::AddNode {
-                node_name: name.to_string(),
-                node_type: "node".to_string(),
-            })?;
-            u.add_event(UpdateEvent::AddNodeLabel {
-                node_name: name.to_string(),
-                anno_ns: ANNIS_NS.to_string(),
-                anno_name: "tok".to_string(),
-                anno_value: txt.to_string(),
-            })?;
-            u.add_event(UpdateEvent::AddNodeLabel {
-                node_name: name.to_string(),
-                anno_ns: "".to_string(),
-                anno_name: "dipl".to_string(),
-                anno_value: txt.to_string(),
-            })?;
-            if let Some(v) = pos_label {
-                u.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: name.to_string(),
-                    anno_ns: "dipl".to_string(),
-                    anno_name: "derived_pos".to_string(),
-                    anno_value: v.to_string(),
-                })?;
-            }
-            u.add_event(UpdateEvent::AddEdge {
-                source_node: sentence_span_name.to_string(),
-                target_node: name.to_string(),
-                layer: ANNIS_NS.to_string(),
-                component_type: AnnotationComponentType::Coverage.to_string(),
-                component_name: "".to_string(),
-            })?;
-            for j in *start..*end {
-                u.add_event(UpdateEvent::AddEdge {
-                    source_node: name.to_string(),
-                    target_node: format!("root/a/doc#t{}", j),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Coverage.to_string(),
-                    component_name: "".to_string(),
-                })?;
-            }
-            if i > 1 {
-                u.add_event(UpdateEvent::AddEdge {
-                    source_node: format!("root/a/doc#s{}", i - 1),
-                    target_node: name.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: "dipl".to_string(),
-                })?;
-            }
-        }
-        let span_name = "root/a/doc#s10";
-        u.add_event(UpdateEvent::AddNode {
-            node_name: span_name.to_string(),
-            node_type: "node".to_string(),
-        })?;
-        u.add_event(UpdateEvent::AddNodeLabel {
-            node_name: span_name.to_string(),
-            anno_ns: "dipl".to_string(),
-            anno_name: "derived_pos".to_string(),
-            anno_value: "PROPN".to_string(),
-        })?;
-        u.add_event(UpdateEvent::AddEdge {
-            source_node: span_name.to_string(),
-            target_node: "root/a/doc#s3".to_string(),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::Coverage.to_string(),
-            component_name: "".to_string(),
-        })?;
-        u.add_event(UpdateEvent::AddEdge {
-            source_node: span_name.to_string(),
-            target_node: "root/a/doc#s4".to_string(),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::Coverage.to_string(),
-            component_name: "".to_string(),
-        })?;
-        // fake-tok 2
-        for (ii, (txt, start, end)) in [("I", 0, 1), ("am", 1, 2), ("in", 2, 3), ("New York", 3, 5)]
-            .iter()
-            .enumerate()
-        {
-            let i = ii + 6;
-            let name = format!("root/a/doc#s{}", i);
-            u.add_event(UpdateEvent::AddNode {
-                node_name: name.to_string(),
-                node_type: "node".to_string(),
-            })?;
-            u.add_event(UpdateEvent::AddNodeLabel {
-                node_name: name.to_string(),
-                anno_ns: ANNIS_NS.to_string(),
-                anno_name: "tok".to_string(),
-                anno_value: txt.to_string(),
-            })?;
-            u.add_event(UpdateEvent::AddNodeLabel {
-                node_name: name.to_string(),
-                anno_ns: "".to_string(),
-                anno_name: "norm".to_string(),
-                anno_value: txt.to_string(),
-            })?;
-            for j in *start..*end {
-                u.add_event(UpdateEvent::AddEdge {
-                    source_node: name.to_string(),
-                    target_node: format!("root/a/doc#t{}", j),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Coverage.to_string(),
-                    component_name: "".to_string(),
-                })?;
-            }
-            if ii > 0 {
-                u.add_event(UpdateEvent::AddEdge {
-                    source_node: format!("root/a/doc#s{}", i - 1),
-                    target_node: name.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: "norm".to_string(),
-                })?;
-            }
-        }
-        g.apply_update(&mut u, |_msg| {})?;
-        Ok(g)
-    }
-
     fn namespace_test_graph(on_disk: bool, after: bool) -> Result<AnnotationGraph> {
         let mut g = AnnotationGraph::with_default_graphstorages(on_disk)?;
         let mut u = GraphUpdate::default();
@@ -2280,7 +1878,6 @@ from = "deprel"
         let op = Revise {
             node_names: BTreeMap::default(),
             remove_nodes: vec![],
-            move_node_annos: false,
             node_annos: vec![],
             edge_annos: vec![],
             namespaces: BTreeMap::default(),
@@ -2320,7 +1917,6 @@ from = "deprel"
             vec!["any_weird_node_address".to_string()],
             revise.remove_nodes
         );
-        assert!(revise.move_node_annos);
         let mut node_key_vec = Vec::new();
         node_key_vec.push(KeyMapping {
             from: AnnoKey {
@@ -2511,7 +2107,6 @@ from = "deprel"
             remove_nodes: vec![],
             edge_annos: vec![],
             remove_match: vec![],
-            move_node_annos: false,
             node_annos: vec![],
             namespaces: BTreeMap::default(),
         }
@@ -2545,7 +2140,6 @@ from = "deprel"
             remove_nodes: vec![],
             edge_annos: vec![],
             remove_match: vec![],
-            move_node_annos: false,
             node_annos: vec![],
             namespaces: BTreeMap::default(),
         }
@@ -2579,7 +2173,6 @@ from = "deprel"
             remove_nodes: vec![],
             edge_annos: vec![],
             remove_match: vec![],
-            move_node_annos: false,
             node_annos: vec![],
             namespaces: BTreeMap::default(),
             remove_subgraph: vec![],
@@ -2617,7 +2210,6 @@ from = "deprel"
             remove_nodes: vec![],
             edge_annos: vec![],
             remove_match: vec![],
-            move_node_annos: false,
             node_annos: vec![],
             namespaces: BTreeMap::default(),
             remove_subgraph: vec![],
@@ -2651,7 +2243,6 @@ from = "deprel"
             remove_nodes: vec![],
             edge_annos: vec![],
             remove_match: vec![],
-            move_node_annos: false,
             node_annos: vec![],
             namespaces: BTreeMap::default(),
             remove_subgraph: vec![],

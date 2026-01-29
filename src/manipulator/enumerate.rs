@@ -13,6 +13,7 @@ use graphannis_core::{
     graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY},
 };
 use itertools::Itertools;
+use ordered_float::OrderedFloat;
 use serde::Serialize;
 use serde_derive::Deserialize;
 
@@ -126,7 +127,9 @@ impl<'a> SortByNode {
     fn sortable_value(&self, value: Cow<'a, str>) -> Result<SortValue<'a>, anyhow::Error> {
         Ok(match self {
             SortByNode::AsString(_) => SortValue::StringValue(value),
-            SortByNode::AsInteger { .. } => SortValue::NumericValue(value.parse::<usize>()?),
+            SortByNode::AsInteger { .. } => {
+                SortValue::NumericValue(value.parse::<OrderedFloat<f64>>()?)
+            }
         })
     }
 }
@@ -134,7 +137,7 @@ impl<'a> SortByNode {
 #[derive(PartialEq, PartialOrd, Eq, Ord)]
 enum SortValue<'a> {
     StringValue(Cow<'a, str>),
-    NumericValue(usize),
+    NumericValue(OrderedFloat<f64>),
 }
 
 impl Default for EnumerateMatches {
@@ -174,11 +177,9 @@ impl Manipulator for EnumerateMatches {
 
             for query_s in &self.queries {
                 let query = aql::parse(query_s, false)?;
-                let mut search_results: Vec<_> = Vec::new();
-                for m in aql::execute_query_on_graph(graph, &query, true, None)? {
-                    let m = m?;
-                    search_results.push(m);
-                }
+                let mut search_results = aql::execute_query_on_graph(graph, &query, true, None)?
+                    .flatten()
+                    .collect_vec();
                 // Sort results with the default ANNIS sort order
                 search_results.sort_by(|m1, m2| {
                     sort_cache
@@ -230,9 +231,10 @@ impl Manipulator for EnumerateMatches {
                 let mut offset = 0;
                 let mut i_correction = 0;
                 let mut visited = BTreeSet::new();
-                let mut by_values = Vec::with_capacity(self.by.len());
+                let mut by_values = vec![String::with_capacity(0); self.by.len()];
+                let mut reset_count;
                 for (i, mut m) in search_results.into_iter().enumerate() {
-                    let mut reset_count = false;
+                    reset_count = false;
                     let matching_nodes: Result<Vec<String>, GraphAnnisCoreError> = m
                         .iter()
                         .map(|m| {
@@ -257,17 +259,19 @@ impl Manipulator for EnumerateMatches {
                                         .get_value_for_item(&internal_id, &coord_anno_key)?
                                         .unwrap_or_default()
                                         .to_string();
-                                    if let Some(previous_value) = by_values.get(bi)
+                                    if let Some(previous_value) = by_values.get_mut(bi)
                                         && &next_value != previous_value
                                     {
                                         // reset count
                                         reset_count = true;
+                                        previous_value.clear();
+                                        previous_value.push_str(&next_value);
                                     }
-                                    by_values.insert(bi, next_value);
                                 }
                             }
                             if reset_count {
                                 i_correction = i;
+                                offset = 0;
                             }
                             if let Some(value_i) = self.value {
                                 if value_i <= m.len() {

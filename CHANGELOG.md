@@ -5,6 +5,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- cleaner messages for generic import, graph_op, and export errors
+
+## [0.47.0] - 2026-01-15
+
+### Added
+
+- import `conllu`: Allow `newpar` and `newdoc` keywords
+
+### Changed
+
+- `enumerate`: sort as numeric uses float internally (lower maximum value, but sorting time values is possible)
+- `time`: More generic functionality
+- `time`: existing time annotations are now overwritten
+
+### Fixed
+
+- `enumerate`: Fixed tracking of `by`-values
+- `time`: no more misleading error messages
+
+## [0.46.0] - 2026-01-13
+
+### Added
+
+- better documentation for `revise`
+- Add `diff`, a graph op that highlights editions between subgraphs with specific edge and node annotations
+- Add `edit` for directly manipulating the graph via graph updates
+- import `whisper`: More format flexibility (json keys can be skipped or have different names)
+- import `whisper`: include vocabulary in binary
+
+### Changed
+
+- `revise`: Removed obsolete feature for magically moving node annotations through the coverage component to other nodes with a matching namespace (too specific and thus too prone to failure)
+
+### Fixed:
+
+- `diff`: Deserialization fixed for string representation of anno key
+
+## [0.45.0] - 2025-12-11
+
+### Changed
+
+- export `xlsx`: No more parallel document processing in one export step, as this caused the exporter to crash when more than one file was present
+- export `xlsx`: Better warning messages
+
+### Fixed
+
+- import `xlsx`: Trim column names
+- parsing of workflow: Environment variables can now contain non-ascii characters
+
 ## [0.44.1] - 2025-12-09
 
 ## [0.44.0] - 2025-12-08

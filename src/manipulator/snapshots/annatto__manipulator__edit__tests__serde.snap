@@ -1,0 +1,226 @@
+---
+source: src/manipulator/edit.rs
+expression: serialized.unwrap()
+---
+[[instructions]]
+do = "add"
+nodes = ["a"]
+node_type = "corpus"
+
+[[instructions]]
+do = "add"
+nodes = ["b"]
+node_type = "corpus"
+
+[[instructions]]
+do = "add"
+nodes = ["a"]
+anno = "annis::doc"
+value = "a"
+
+[[instructions]]
+do = "add"
+nodes = ["b"]
+anno = "annis::doc"
+value = "b"
+
+[[instructions]]
+do = "add"
+nodes = ["a#t1"]
+node_type = "node"
+
+[[instructions]]
+do = "add"
+nodes = ["a#t2"]
+node_type = "node"
+
+[[instructions]]
+do = "add"
+nodes = ["b#t1"]
+node_type = "node"
+
+[[instructions]]
+do = "add"
+nodes = ["b#t2"]
+node_type = "node"
+
+[[instructions]]
+do = "add"
+
+[[instructions.edges]]
+source = "a#t1"
+target = "a"
+
+[instructions.component]
+ctype = "PartOf"
+layer = "annis"
+name = ""
+
+[[instructions]]
+do = "add"
+
+[[instructions.edges]]
+source = "a#t2"
+target = "a"
+
+[instructions.component]
+ctype = "PartOf"
+layer = "annis"
+name = ""
+
+[[instructions]]
+do = "add"
+
+[[instructions.edges]]
+source = "b#t1"
+target = "b"
+
+[instructions.component]
+ctype = "PartOf"
+layer = "annis"
+name = ""
+
+[[instructions]]
+do = "add"
+
+[[instructions.edges]]
+source = "b#t2"
+target = "b"
+
+[instructions.component]
+ctype = "PartOf"
+layer = "annis"
+name = ""
+
+[[instructions]]
+do = "add"
+
+[[instructions.edges]]
+source = "a#t2"
+target = "a#t1"
+
+[instructions.component]
+ctype = "Pointing"
+layer = ""
+name = "dep"
+
+[[instructions]]
+do = "add"
+anno = "default_ns::deprel"
+value = "subj"
+
+[[instructions.edges]]
+source = "a#t2"
+target = "a#t1"
+
+[instructions.component]
+ctype = "Pointing"
+layer = ""
+name = "dep"
+
+[[instructions]]
+do = "rm"
+annos = ["default_ns::deprel"]
+
+[[instructions.edges]]
+source = "a#t2"
+target = "a#t1"
+
+[instructions.component]
+ctype = "Pointing"
+layer = ""
+name = "dep"
+
+[[instructions]]
+do = "rm"
+
+[[instructions.edges]]
+source = "a#t2"
+target = "a#t1"
+
+[instructions.component]
+ctype = "Pointing"
+layer = ""
+name = "dep"
+
+[[instructions]]
+do = "rm"
+
+[[instructions.edges]]
+source = "a#t1"
+target = "a"
+
+[instructions.component]
+ctype = "PartOf"
+layer = "annis"
+name = ""
+
+[[instructions]]
+do = "rm"
+
+[[instructions.edges]]
+source = "a#t2"
+target = "a"
+
+[instructions.component]
+ctype = "PartOf"
+layer = "annis"
+name = ""
+
+[[instructions]]
+do = "rm"
+
+[[instructions.edges]]
+source = "b#t1"
+target = "b"
+
+[instructions.component]
+ctype = "PartOf"
+layer = "annis"
+name = ""
+
+[[instructions]]
+do = "rm"
+
+[[instructions.edges]]
+source = "b#t2"
+target = "b"
+
+[instructions.component]
+ctype = "PartOf"
+layer = "annis"
+name = ""
+
+[[instructions]]
+do = "rm"
+nodes = ["a#t1"]
+
+[[instructions]]
+do = "rm"
+nodes = ["a#t2"]
+
+[[instructions]]
+do = "rm"
+nodes = ["b#t1"]
+
+[[instructions]]
+do = "rm"
+nodes = ["b#t2"]
+
+[[instructions]]
+do = "rm"
+nodes = ["a"]
+annos = ["annis::doc"]
+
+[[instructions]]
+do = "rm"
+nodes = ["b"]
+annos = ["annis::doc"]
+
+[[instructions]]
+do = "rm"
+nodes = ["a"]
+
+[[instructions]]
+do = "rm"
+nodes = ["b"]

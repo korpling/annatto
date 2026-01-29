@@ -26,6 +26,9 @@
                 "${input:workflow_file}"
             ],
             "cwd": "${workspaceFolder}"
+            "env": {
+				"ENV_VAR": "${input:env_var}"
+			}
         }
     ],
     "inputs": [
@@ -33,6 +36,12 @@
             "id": "workflow_file",
             "type": "promptString",
             "description": "Annatto workflow file",
+            "default": ""
+        },
+        {
+            "id": "env_var",
+            "type": "promptString",
+            "description": "The value of a single environment variable stored as ENV_VAR (can be empty)",
             "default": ""
         },
     ]

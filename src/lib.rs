@@ -46,6 +46,7 @@ use workflow::StatusSender;
 use crate::{
     exporter::treetagger::ExportTreeTagger,
     importer::{git::ImportGitMetadata, text::ImportText},
+    manipulator::{diff::DiffSubgraphs, edit::EditGraph},
 };
 
 #[derive(Tabled)]
@@ -175,6 +176,8 @@ pub enum GraphOp {
     Align(AlignNodes),  // no default
     Check(Check),       // no default, has a (required) path attribute
     Collapse(Collapse), // no default, there is no such thing as a default component
+    Diff(DiffSubgraphs),
+    Edit(EditGraph),
     Filter(FilterNodes),
     Visualize(#[serde(default)] Visualize),
     Enumerate(#[serde(default)] EnumerateMatches),
@@ -212,6 +215,8 @@ impl GraphOp {
             GraphOp::Time(m) => m,
             GraphOp::Sleep(m) => m,
             GraphOp::Align(m) => m,
+            GraphOp::Diff(m) => m,
+            GraphOp::Edit(m) => m,
         }
     }
 

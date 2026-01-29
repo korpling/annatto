@@ -4,7 +4,6 @@ expression: serialization.unwrap()
 ---
 remove_nodes = []
 remove_match = []
-move_node_annos = false
 node_annos = []
 edge_annos = []
 components = []
