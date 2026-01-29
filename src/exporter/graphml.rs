@@ -24,6 +24,7 @@ use graphannis_core::{
     util::{join_qname, split_qname},
 };
 use itertools::Itertools;
+use log::{debug, warn};
 use serde_derive::{Deserialize, Serialize};
 use zip::ZipWriter;
 
@@ -621,19 +622,34 @@ impl Exporter for GraphMLExporter {
             // used, we can store them in the ZIP file itself and the when
             // unpacked, the paths are still valid regardless of whether they
             // existed in the first place on the target system.
+            debug!("Iterating over all linked files");
             for file_path in self.get_linked_files(graph)? {
+                let file_path = file_path?;
                 let original_path = self
                     .zip_copy_from
                     .clone()
                     .unwrap_or_default()
-                    .join(file_path?);
+                    .join(&file_path);
+
+                debug!(
+                    "Attempt to copy file {original_path:?} (from label value \"{file_path:?}\") to ZIP"
+                );
 
                 if original_path.is_relative() {
+                    debug!("Creating file in ZIP for {original_path:?}");
                     zip_file.start_file(original_path.to_string_lossy(), zip_options)?;
+                } else {
+                    warn!("Non-relative files are not supported in ZIP files: {original_path:?} ");
                 }
-                let file_to_copy = File::open(original_path)?;
-                let mut reader = BufReader::new(file_to_copy);
-                std::io::copy(&mut reader, &mut zip_file)?;
+                if original_path.exists() {
+                    let file_to_copy = File::open(original_path)?;
+                    let mut reader = BufReader::new(file_to_copy);
+                    std::io::copy(&mut reader, &mut zip_file)?;
+                } else {
+                    warn!(
+                        "Could not copy {original_path:?} because the source file does not exist"
+                    );
+                }
             }
         }
         Ok(())
