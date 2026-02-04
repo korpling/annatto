@@ -396,7 +396,13 @@ impl ExportXlsx {
                     {
                         let intersection_size = spanned_rows.intersection(&written_rows).count();
                         if intersection_size > 0 {
-                            progress.warn(format!("Could not write span value {span_val} from row {first} to row {last} in column `{}` in document {}. A span already exists in at least of the affected rows. {intersection_size} node(s) overlap(s).", span_anno_key.name, worksheet.get_name()))?;
+                            let msg = format!(
+                                "Could not write span value {span_val} from row {first} to row {last} in column `{}::{}` in document {}. A span already exists in at least of the affected rows. {intersection_size} node(s) overlap(s).",
+                                span_anno_key.ns,
+                                span_anno_key.name,
+                                worksheet.get_name()
+                            );
+                            progress.warn(msg)?;
                             continue;
                         }
                         if *last - *first > 0 {
