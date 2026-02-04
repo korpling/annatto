@@ -511,8 +511,6 @@ impl SequencePair {
         let diff = self.compute_diff(helper, source_key, target_key, algorithm)?;
         // get to work
         for d in diff {
-            dbg!(&self.source_nodes);
-            dbg!(&self.target_nodes);
             let mut update = GraphUpdate::default();
             match d {
                 DiffOp::Equal { new_index, len, .. } => {
@@ -704,22 +702,46 @@ impl SequencePair {
             .graph
             .get_graphstorage(&default_ordering)
             .ok_or(anyhow!("Could not obtain storage of default ordering."))?;
-        let insert_at_node = *self
-            .source_nodes
-            .get(old_index - 1)
-            .ok_or(anyhow!("Could not obtain node for start of insertion."))?;
+        let insert_at_node = if old_index == 0 {
+            // insertion before existing nodes or replacement at first index;
+            // no new edge from predecessor needs to be built
+            None
+        } else {
+            Some(
+                *self
+                    .source_nodes
+                    .get(old_index - 1)
+                    .ok_or(anyhow!("Could not obtain node for start of insertion."))?,
+            )
+        };
         let right_end_node = if let Some(len_value) = old_len {
-            *self
-                .source_nodes
-                .get(old_index + len_value - 1)
-                .ok_or(anyhow!(
-                    "Could not determine node at right end of the sequence to be replaced"
-                ))?
+            Some(
+                *self
+                    .source_nodes
+                    .get(old_index + len_value - 1)
+                    .ok_or(anyhow!(
+                        "Could not determine node at right end of the sequence to be replaced"
+                    ))?,
+            )
         } else {
             insert_at_node
         };
-        let insert_at_node_name = helper.node_name(insert_at_node)?;
-        let right_end_name = helper.node_name(right_end_node)?; // FIXME can this be deleted when old_len is Some?
+        let insert_at_node_name = insert_at_node.and_then(|nid| {
+            // warning, this buries the unlikely case of the anno storage not providing a value due to graphannis errors
+            if let Ok(s) = helper.node_name(nid) {
+                Some(s)
+            } else {
+                None
+            }
+        });
+        let right_end_name = right_end_node.and_then(|nid| {
+            // warning, this buries the unlikely case of the anno storage not providing a value due to graphannis errors
+            if let Ok(s) = helper.node_name(nid) {
+                Some(s)
+            } else {
+                None
+            }
+        }); // FIXME can this be deleted when old_len is Some?
         let start_of_insertion_sequence = *self.target_nodes.get(new_index).ok_or(anyhow!(
             "Could not obtain start node of sequence to be inserted."
         ))?;
@@ -740,43 +762,43 @@ impl SequencePair {
                 .graph
                 .get_graphstorage(&oc)
                 .ok_or(anyhow!("Could not obtain storage of {oc}"))?;
-            if !gs.has_ingoing_edges(insert_at_node)? && !gs.has_outgoing_edges(insert_at_node)? {
-                // we are looking at the wrong ordering
-                continue;
-            }
-            if let Some(len_value) = old_len
-                && let Some(old_sequence_start) =
-                    gs.get_outgoing_edges(insert_at_node).flatten().next()
-            {
-                // let old_successor_name = helper.node_name(old_sequence_start)?;
-                // update.add_event(UpdateEvent::DeleteEdge {
-                //     source_node: insert_at_node_name.to_string(),
-                //     target_node: old_successor_name.to_string(),
-                //     layer: oc.layer.to_string(),
-                //     component_type: AnnotationComponentType::Ordering.to_string(),
-                //     component_name: oc.name.to_string(),
-                // })?;
-                for reachable_ordered_node in gs
-                    .find_connected(old_sequence_start, 0, std::ops::Bound::Excluded(len_value))
-                    .flatten()
+            if let Some(insert_node_at_node_id) = &insert_at_node {
+                if !gs.has_ingoing_edges(*insert_node_at_node_id)?
+                    && !gs.has_outgoing_edges(*insert_node_at_node_id)?
                 {
-                    let delete_node_name = helper.node_name(reachable_ordered_node)?;
-                    update.add_event(UpdateEvent::DeleteNode {
-                        node_name: delete_node_name,
-                    })?;
+                    // we are looking at the wrong ordering
+                    continue;
+                }
+                if let Some(len_value) = old_len
+                    && let Some(old_sequence_start) = gs
+                        .get_outgoing_edges(*insert_node_at_node_id)
+                        .flatten()
+                        .next()
+                {
+                    for reachable_ordered_node in gs
+                        .find_connected(old_sequence_start, 0, std::ops::Bound::Excluded(len_value))
+                        .flatten()
+                    {
+                        let delete_node_name = helper.node_name(reachable_ordered_node)?;
+                        update.add_event(UpdateEvent::DeleteNode {
+                            node_name: delete_node_name,
+                        })?;
+                    }
                 }
             }
-            let m3 = if let Some(old_right_successor) =
-                gs.get_outgoing_edges(right_end_node).flatten().next()
+            let m3 = if let Some(right_end_node_id) = &right_end_node
+                && let Some(right_end_node_name) = &right_end_name
+                && let Some(old_right_successor) =
+                    gs.get_outgoing_edges(*right_end_node_id).flatten().next()
             {
                 let old_right_successor_name = helper.node_name(old_right_successor)?; // this is the same as `old_successor_name` for the case of insertion (old_len.is_none() == true)
                 if old_len.is_some() {
                     update.add_event(UpdateEvent::DeleteNode {
-                        node_name: right_end_name.to_string(),
+                        node_name: right_end_node_name.to_string(),
                     })?;
                 } else {
                     update.add_event(UpdateEvent::DeleteEdge {
-                        source_node: right_end_name.to_string(),
+                        source_node: right_end_node_name.to_string(),
                         target_node: old_right_successor_name.to_string(),
                         layer: oc.layer.to_string(),
                         component_type: AnnotationComponentType::Ordering.to_string(),
@@ -808,13 +830,15 @@ impl SequencePair {
             } else {
                 None
             };
-            update.add_event(UpdateEvent::AddEdge {
-                source_node: insert_at_node_name.to_string(),
-                target_node: start_of_insertion_sequence_name.to_string(),
-                layer: oc.layer.to_string(),
-                component_type: AnnotationComponentType::Ordering.to_string(),
-                component_name: oc.name.to_string(),
-            })?;
+            if let Some(node_name) = &insert_at_node_name {
+                update.add_event(UpdateEvent::AddEdge {
+                    source_node: node_name.to_string(),
+                    target_node: start_of_insertion_sequence_name.to_string(),
+                    layer: oc.layer.to_string(),
+                    component_type: AnnotationComponentType::Ordering.to_string(),
+                    component_name: oc.name.to_string(),
+                })?;
+            }
             update.add_event(UpdateEvent::AddEdge {
                 source_node: start_of_insertion_sequence_name.to_string(),
                 target_node: self.source_stem.to_string(),
@@ -823,10 +847,6 @@ impl SequencePair {
                 component_name: "".to_string(),
             })?;
             // now the toks have to be taken care of as well
-            let query_for_insertion_at_tok = aql::parse(
-                &format!(r#"annis:node_name="{}" _r_ tok"#, &insert_at_node_name),
-                false,
-            )?;
             let query_for_insertion_start_tok = aql::parse(
                 &format!(
                     r#"annis:node_name="{}" _l_ tok"#,
@@ -841,10 +861,17 @@ impl SequencePair {
                 ),
                 false,
             )?;
-            let m0 =
+            let m0 = if let Some(node_name) = &insert_at_node_name {
+                let query_for_insertion_at_tok = aql::parse(
+                    &format!(r#"annis:node_name="{}" _r_ tok"#, node_name),
+                    false,
+                )?;
                 aql::execute_query_on_graph(helper.graph, &query_for_insertion_at_tok, true, None)?
                     .flatten()
-                    .next();
+                    .next()
+            } else {
+                None
+            };
             let m1 = aql::execute_query_on_graph(
                 helper.graph,
                 &query_for_insertion_start_tok,

@@ -373,7 +373,7 @@ fn multiple_segmentations() {
             ("life", 1),
         ],
         vec![
-            ("I", 1),
+            (" I", 1), // initial space intended, should look like a correction
             ("live", 1),
             ("in", 1),
             ("New", 1),
