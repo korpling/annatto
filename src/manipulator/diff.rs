@@ -3,8 +3,8 @@ use std::{collections::BTreeMap, sync::Arc, usize};
 use anyhow::{anyhow, bail};
 use facet::Facet;
 use graphannis::{
-    AnnotationGraph, aql,
-    graph::{AnnoKey, EdgeContainer, GraphStorage, Match, NodeID},
+    AnnotationGraph,
+    graph::{AnnoKey, EdgeContainer, GraphStorage, NodeID},
     model::{AnnotationComponent, AnnotationComponentType},
     update::{GraphUpdate, UpdateEvent},
 };
@@ -15,6 +15,7 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use likewise::{Algorithm, DiffOp, capture_diff_slices};
+use linked_hash_set::LinkedHashSet;
 use serde::{Deserialize, Serialize};
 
 use crate::{manipulator::Manipulator, progress::ProgressReporter, util::update_graph_silent};
@@ -110,26 +111,43 @@ impl Manipulator for DiffSubgraphs {
         let mut graph_helper =
             GraphDiffHelper::new(graph, &self.source_component, &self.target_component)?;
         let pairs = self.pair(&graph_helper, &progress)?;
-        let progress = ProgressReporter::new(tx.clone(), step_id, pairs.len())?;
-        for pair in pairs {
-            if self.merge {
-                pair.merge_diff(
-                    &mut graph_helper,
-                    &self.source_key,
-                    &self.target_key,
-                    self.algorithm.clone(),
-                )?;
-            } else {
-                pair.annotate_diff(
+        let diffs = pairs
+            .iter()
+            .map(|p| {
+                compute_diff(
+                    &p.source_nodes,
+                    &p.target_nodes,
                     &graph_helper,
                     &self.source_key,
                     &self.target_key,
                     self.algorithm.clone(),
-                    &mut update,
-                )?;
+                )
+            })
+            .flatten()
+            .collect_vec();
+        let total_num_of_diff_ops = diffs.iter().map(|d| d.len()).sum();
+        let progress = ProgressReporter::new(tx.clone(), step_id, total_num_of_diff_ops)?;
+        progress.info(format!(
+            "Applying {total_num_of_diff_ops} diff operations across {} sequence pair(s) ...",
+            pairs.len()
+        ))?;
+        let orderings_existing_before = graph_helper
+            .graph()
+            .get_all_components(Some(AnnotationComponentType::Ordering), None);
+        for (pair, diff) in pairs.into_iter().zip_eq(diffs) {
+            if self.merge {
+                pair.merge_diff(&mut graph_helper, diff, &mut update, &progress)?;
+            } else {
+                pair.annotate_diff(&mut graph_helper, &mut update, diff, &progress)?;
             }
-            progress.worked(1)?;
         }
+        if self.merge {
+            for oc in orderings_existing_before {
+                let gs = graph_helper.graph.get_or_create_writable(&oc)?;
+                gs.clear()?;
+            }
+        }
+        graph_helper.apply_update(&mut update)?;
         Ok(())
     }
 
@@ -262,11 +280,6 @@ impl<'a> GraphDiffHelper<'a> {
         Ok(())
     }
 
-    fn calculate_statistics(&mut self) -> Result<(), anyhow::Error> {
-        self.graph.calculate_all_statistics()?;
-        Ok(())
-    }
-
     fn graph(&'a self) -> &'a AnnotationGraph {
         self.graph
     }
@@ -328,50 +341,50 @@ struct SequencePair {
     target_nodes: Vec<NodeID>,
 }
 
-impl SequencePair {
-    fn compute_diff(
-        &self,
-        helper: &GraphDiffHelper,
-        source_key: &AnnoKey,
-        target_key: &AnnoKey,
-        algorithm: DiffAlgorithm,
-    ) -> Result<Vec<DiffOp>, anyhow::Error> {
-        let mut vocabulary = BTreeMap::default();
-        let (a, b) = {
-            let (mut a, mut b) = (
-                Vec::with_capacity(self.source_nodes.len()),
-                Vec::with_capacity(self.target_nodes.len()),
-            );
-            for ((node_id_src, value_target), key) in [&self.source_nodes, &self.target_nodes]
-                .into_iter()
-                .zip([&mut a, &mut b])
-                .zip([source_key, target_key])
-            {
-                for n in node_id_src {
-                    if let Some(v) = helper.graph().get_node_annos().get_value_for_item(n, key)? {
-                        if let Some(index) = vocabulary.get(&v) {
-                            value_target.push(*index);
-                        } else {
-                            value_target.push(vocabulary.len());
-                            vocabulary.insert(v, vocabulary.len());
-                        }
+fn compute_diff(
+    source_nodes: &[NodeID],
+    target_nodes: &[NodeID],
+    helper: &GraphDiffHelper,
+    source_key: &AnnoKey,
+    target_key: &AnnoKey,
+    algorithm: DiffAlgorithm,
+) -> Result<Vec<DiffOp>, anyhow::Error> {
+    let mut vocabulary = BTreeMap::default();
+    let (a, b) = {
+        let (mut a, mut b) = (
+            Vec::with_capacity(source_nodes.len()),
+            Vec::with_capacity(target_nodes.len()),
+        );
+        for ((node_id_src, value_target), key) in [source_nodes, target_nodes]
+            .into_iter()
+            .zip([&mut a, &mut b])
+            .zip([source_key, target_key])
+        {
+            for n in node_id_src {
+                if let Some(v) = helper.graph().get_node_annos().get_value_for_item(n, key)? {
+                    if let Some(index) = vocabulary.get(&v) {
+                        value_target.push(*index);
+                    } else {
+                        value_target.push(vocabulary.len());
+                        vocabulary.insert(v, vocabulary.len());
                     }
                 }
             }
-            (a, b)
-        };
-        Ok(capture_diff_slices(algorithm.into(), &a, &b))
-    }
+        }
+        (a, b)
+    };
+    Ok(capture_diff_slices(algorithm.into(), &a, &b))
+}
 
+impl SequencePair {
     fn annotate_diff(
         self,
-        helper: &GraphDiffHelper,
-        source_key: &AnnoKey,
-        target_key: &AnnoKey,
-        algorithm: DiffAlgorithm,
+        helper: &mut GraphDiffHelper,
         update: &mut GraphUpdate,
+        diff: Vec<DiffOp>,
+        progress: &ProgressReporter,
     ) -> Result<(), anyhow::Error> {
-        for d in self.compute_diff(helper, source_key, target_key, algorithm)? {
+        for d in diff {
             match d {
                 DiffOp::Equal {
                     old_index,
@@ -497,696 +510,284 @@ impl SequencePair {
                     })?;
                 }
             };
+            progress.worked(1)?;
         }
+        helper.apply_update(update)?;
         Ok(())
     }
 
     fn merge_diff(
-        mut self,
+        self,
         helper: &mut GraphDiffHelper,
-        source_key: &AnnoKey,
-        target_key: &AnnoKey,
-        algorithm: DiffAlgorithm,
+        diff: Vec<DiffOp>,
+        update: &mut GraphUpdate,
+        progress: &ProgressReporter,
     ) -> Result<(), anyhow::Error> {
-        let diff = self.compute_diff(helper, source_key, target_key, algorithm)?;
-        // get to work
+        update.add_event(UpdateEvent::DeleteNode {
+            node_name: self.target_stem.to_string(),
+        })?;
+        let n_expected_elements = self.source_nodes.len().max(self.target_nodes.len());
+        let mut new_tok_order: Vec<NodeID> = Vec::with_capacity(n_expected_elements);
+        let l_gs = helper
+            .graph()
+            .get_graphstorage(&AnnotationComponent::new(
+                AnnotationComponentType::LeftToken,
+                ANNIS_NS.to_string(),
+                "".to_string(),
+            ))
+            .ok_or(anyhow!("Could not get left token component storage."))?;
+        let r_gs = helper
+            .graph()
+            .get_graphstorage(&AnnotationComponent::new(
+                AnnotationComponentType::RightToken,
+                ANNIS_NS.to_string(),
+                "".to_string(),
+            ))
+            .ok_or(anyhow!("Could not get right token component storage."))?;
+        let default_ordering_gs = helper
+            .graph()
+            .get_graphstorage(&AnnotationComponent::new(
+                AnnotationComponentType::Ordering,
+                ANNIS_NS.to_string(),
+                "".to_string(),
+            ))
+            .ok_or(anyhow!("Could not obtain storage of default ordering"))?;
+        let mut vertical_storages = helper
+            .graph()
+            .get_all_components(Some(AnnotationComponentType::Coverage), None)
+            .into_iter()
+            .map(|c| helper.graph().get_graphstorage(&c))
+            .flatten()
+            .collect_vec();
+        let dominance_storages = helper
+            .graph()
+            .get_all_components(Some(AnnotationComponentType::Dominance), None)
+            .into_iter()
+            .map(|c| helper.graph().get_graphstorage(&c))
+            .flatten()
+            .collect_vec();
+        vertical_storages.extend(dominance_storages);
+        let vertical_container = UnionEdgeContainer::new(
+            vertical_storages
+                .iter()
+                .map(|gs| gs.as_edgecontainer())
+                .collect_vec(),
+        );
         for d in diff {
-            let mut update = GraphUpdate::default();
             match d {
-                DiffOp::Equal { new_index, len, .. } => {
-                    let coverage_storages = helper
-                        .graph
-                        .get_all_components(Some(AnnotationComponentType::Coverage), None)
-                        .iter()
-                        .flat_map(|c| helper.graph.get_graphstorage(c))
-                        .collect_vec();
-                    let coverage_container = UnionEdgeContainer::new(
-                        coverage_storages
-                            .iter()
-                            .map(|gs| gs.as_edgecontainer())
-                            .collect_vec(),
-                    );
-                    for node in &self.target_nodes[new_index..new_index + len] {
-                        let node_name = helper.node_name(*node)?;
-                        update.add_event(UpdateEvent::DeleteNode { node_name })?;
-                        for reachable_node in
-                            CycleSafeDFS::new(&coverage_container, *node, 1, usize::MAX)
+                DiffOp::Equal {
+                    old_index,
+                    len,
+                    new_index,
+                } => {
+                    let start_node = l_gs
+                        .find_connected(self.source_nodes[old_index], 0, std::ops::Bound::Unbounded)
+                        .flatten()
+                        .last()
+                        .ok_or(anyhow!("Could not find left most token."))?;
+                    let end_node = r_gs
+                        .find_connected(
+                            self.source_nodes[old_index + len - 1],
+                            0,
+                            std::ops::Bound::Unbounded,
+                        )
+                        .flatten()
+                        .last()
+                        .ok_or(anyhow!("Could not find right most token."))?;
+                    let mut order_it = default_ordering_gs
+                        .find_connected(start_node, 0, std::ops::Bound::Unbounded)
+                        .flatten();
+                    while let Some(node_id) = order_it.next()
+                        && node_id != end_node
+                    {
+                        new_tok_order.push(node_id);
+                    }
+                    new_tok_order.push(end_node);
+                    for node_id in &self.target_nodes[new_index..new_index + len - 1] {
+                        for DFSStep { node, .. } in
+                            CycleSafeDFS::new_inverse(&vertical_container, *node_id, 0, usize::MAX)
                                 .flatten()
-                                .map(|DFSStep { node, .. }| node)
                         {
-                            let reachable_node_name = helper.node_name(reachable_node)?;
                             update.add_event(UpdateEvent::DeleteNode {
-                                node_name: reachable_node_name,
+                                node_name: helper.node_name(node)?,
                             })?;
                         }
-                        // now back up from terminals
                     }
                 }
                 DiffOp::Delete {
                     old_index, old_len, ..
                 } => {
-                    // set up containers (we need to do this here every time to not interfere with the update process,
-                    // as Arc<GraphStorage> blocks mutable references for a ref-count > 1
-                    let coverage_storages = helper
-                        .graph
-                        .get_all_components(Some(AnnotationComponentType::Coverage), None)
-                        .iter()
-                        .flat_map(|c| helper.graph.get_graphstorage(c))
-                        .collect_vec();
-                    let coverage_container = UnionEdgeContainer::new(
-                        coverage_storages
-                            .iter()
-                            .map(|gs| gs.as_edgecontainer())
-                            .collect_vec(),
-                    );
-                    for node in &self.source_nodes[old_index..old_index + old_len] {
-                        // flag directly compared nodes for deletion in old graph
-                        let node_name = helper.node_name(*node)?;
-                        update.add_event(UpdateEvent::DeleteNode {
-                            node_name: node_name.to_string(),
-                        })?;
-                        // delete covered coverage terminals
-                        for reachable in
-                            CycleSafeDFS::new(&coverage_container, *node, 1, usize::MAX).flatten()
+                    for node_id in &self.source_nodes[old_index..old_index + old_len - 1] {
+                        for DFSStep { node, .. } in
+                            CycleSafeDFS::new_inverse(&vertical_container, *node_id, 0, usize::MAX)
+                                .flatten()
                         {
-                            if !coverage_container.has_outgoing_edges(reachable.node)? {
-                                // flag coverage terminals for deletion, non-terminals might cover remaining nodes and need to be checked later
-                                let delete_name = helper.node_name(reachable.node)?;
-                                update.add_event(UpdateEvent::DeleteNode {
-                                    node_name: delete_name.to_string(),
-                                })?;
-                            }
-                        }
-                    }
-                    // Fix ordering
-                    let first_node = *self.source_nodes.first().ok_or(anyhow!(
-                        "Could not retrieve start of deleted sequence in original subgraph."
-                    ))?;
-                    let last_node = *self.source_nodes.last().ok_or(anyhow!(
-                        "Could not retrieve end of deleted sequence in original subgraph."
-                    ))?;
-                    for ordering_component in helper
-                        .graph
-                        .get_all_components(Some(AnnotationComponentType::Ordering), None)
-                    {
-                        let gs =
-                            helper
-                                .graph
-                                .get_graphstorage(&ordering_component)
-                                .ok_or(anyhow!(
-                                    "Could not load graph storage of component {:?}",
-                                    ordering_component
-                                ))?;
-                        // strict assumption: Ordering components are not branching out
-                        if let Some(from_node) = gs.get_ingoing_edges(first_node).flatten().next()
-                            && let Some(to_node) = gs.get_outgoing_edges(last_node).flatten().next()
-                        {
-                            // bridge the gap
-                            update.add_event(UpdateEvent::AddEdge {
-                                source_node: helper.node_name(from_node)?.to_string(),
-                                target_node: helper.node_name(to_node)?.to_string(),
-                                layer: ordering_component.layer.to_string(),
-                                component_type: ordering_component.get_type().to_string(),
-                                component_name: ordering_component.name.to_string(),
+                            update.add_event(UpdateEvent::DeleteNode {
+                                node_name: helper.node_name(node)?,
                             })?;
                         }
                     }
                 }
                 DiffOp::Insert {
-                    old_index,
-                    new_index,
-                    new_len,
+                    new_index, new_len, ..
                 } => {
-                    self.replace_or_insert(
-                        helper,
-                        old_index,
-                        None,
-                        new_index,
-                        new_len,
-                        &mut update,
-                    )?;
+                    let start_node = l_gs
+                        .find_connected(self.target_nodes[new_index], 0, std::ops::Bound::Unbounded)
+                        .flatten()
+                        .last()
+                        .ok_or(anyhow!("Could not find left most token."))?;
+                    let end_node = r_gs
+                        .find_connected(
+                            self.target_nodes[new_index + new_len - 1],
+                            0,
+                            std::ops::Bound::Unbounded,
+                        )
+                        .flatten()
+                        .last()
+                        .ok_or(anyhow!("Could not find right most token."))?;
+                    let mut order_it = default_ordering_gs
+                        .find_connected(start_node, 0, std::ops::Bound::Unbounded)
+                        .flatten();
+                    while let Some(node_id) = order_it.next()
+                        && node_id != end_node
+                    {
+                        new_tok_order.push(node_id);
+                    }
+                    new_tok_order.push(end_node);
                 }
                 DiffOp::Replace {
-                    old_index,
-                    old_len,
                     new_index,
                     new_len,
+                    old_index,
+                    old_len,
                 } => {
-                    self.replace_or_insert(
-                        helper,
-                        old_index,
-                        Some(old_len),
-                        new_index,
-                        new_len,
-                        &mut update,
-                    )?;
-                }
-            }
-            // update after each diff op is required to allow follow-up ops to build on previous modifications, e. g. deletion after insertion
-            helper.apply_update(&mut update)?;
-        }
-        {
-            // final clean-up  (this seems to be a bad idea)
-            let mut update = GraphUpdate::default();
-            let query_for_deletion = aql::parse(
-                &format!(
-                    r#"node @* node_name="{}" & #1 !@* node_name="{}"?"#,
-                    self.target_stem, self.source_stem
-                ),
-                false,
-            )?;
-            for m in aql::execute_query_on_graph(helper.graph, &query_for_deletion, true, None)?
-                .flatten()
-            {
-                if let Some(Match { node, .. }) = m.get(0) {
-                    update.add_event(UpdateEvent::DeleteNode {
-                        node_name: helper.node_name(*node)?,
-                    })?;
-                }
-            }
-        }
-        Ok(())
-    }
-
-    fn replace_or_insert(
-        &mut self,
-        helper: &mut GraphDiffHelper,
-        old_index: usize,
-        old_len: Option<usize>,
-        new_index: usize,
-        new_len: usize,
-        update: &mut GraphUpdate,
-    ) -> Result<(), anyhow::Error> {
-        if helper.graph.global_statistics.is_none() {
-            helper.calculate_statistics()?; // this is unfortunate, but well
-        }
-        // setup
-        let coverage_storages = helper
-            .graph
-            .get_all_components(Some(AnnotationComponentType::Coverage), None)
-            .iter()
-            .flat_map(|c| helper.graph.get_graphstorage(c))
-            .collect_vec();
-        let coverage_container = UnionEdgeContainer::new(
-            coverage_storages
-                .iter()
-                .map(|gs| gs.as_edgecontainer())
-                .collect_vec(),
-        );
-        let default_ordering = AnnotationComponent::new(
-            AnnotationComponentType::Ordering,
-            ANNIS_NS.to_string(),
-            "".to_string(),
-        );
-        let default_ordering_gs = helper
-            .graph
-            .get_graphstorage(&default_ordering)
-            .ok_or(anyhow!("Could not obtain storage of default ordering."))?;
-        let insert_at_node = if old_index == 0 {
-            // insertion before existing nodes or replacement at first index;
-            // no new edge from predecessor needs to be built
-            None
-        } else {
-            Some(
-                *self
-                    .source_nodes
-                    .get(old_index - 1)
-                    .ok_or(anyhow!("Could not obtain node for start of insertion."))?,
-            )
-        };
-        let right_end_node = if let Some(len_value) = old_len {
-            Some(
-                *self
-                    .source_nodes
-                    .get(old_index + len_value - 1)
-                    .ok_or(anyhow!(
-                        "Could not determine node at right end of the sequence to be replaced"
-                    ))?,
-            )
-        } else {
-            insert_at_node
-        };
-        let insert_at_node_name = insert_at_node.and_then(|nid| {
-            // warning, this buries the unlikely case of the anno storage not providing a value due to graphannis errors
-            if let Ok(s) = helper.node_name(nid) {
-                Some(s)
-            } else {
-                None
-            }
-        });
-        let right_end_name = right_end_node.and_then(|nid| {
-            // warning, this buries the unlikely case of the anno storage not providing a value due to graphannis errors
-            if let Ok(s) = helper.node_name(nid) {
-                Some(s)
-            } else {
-                None
-            }
-        }); // FIXME can this be deleted when old_len is Some?
-        let start_of_insertion_sequence = *self.target_nodes.get(new_index).ok_or(anyhow!(
-            "Could not obtain start node of sequence to be inserted."
-        ))?;
-        let start_of_insertion_sequence_name = helper.node_name(start_of_insertion_sequence)?;
-        let end_of_insertion_sequence =
-            *self
-                .target_nodes
-                .get(new_index + new_len - 1)
-                .ok_or(anyhow!(
-                    "Could not obtain end node of sequence to be inserted."
-                ))?;
-        let end_of_insertion_sequence_name = helper.node_name(end_of_insertion_sequence)?;
-        for oc in helper
-            .graph
-            .get_all_components(Some(AnnotationComponentType::Ordering), None)
-        {
-            let gs = helper
-                .graph
-                .get_graphstorage(&oc)
-                .ok_or(anyhow!("Could not obtain storage of {oc}"))?;
-            if let Some(insert_node_at_node_id) = &insert_at_node {
-                if !gs.has_ingoing_edges(*insert_node_at_node_id)?
-                    && !gs.has_outgoing_edges(*insert_node_at_node_id)?
-                {
-                    // we are looking at the wrong ordering
-                    continue;
-                }
-                if let Some(len_value) = old_len
-                    && let Some(old_sequence_start) = gs
-                        .get_outgoing_edges(*insert_node_at_node_id)
+                    let start_node = l_gs
+                        .find_connected(self.target_nodes[new_index], 0, std::ops::Bound::Unbounded)
                         .flatten()
-                        .next()
-                {
-                    for reachable_ordered_node in gs
-                        .find_connected(old_sequence_start, 0, std::ops::Bound::Excluded(len_value))
+                        .last()
+                        .ok_or(anyhow!("Could not find left most token."))?;
+                    let end_node = r_gs
+                        .find_connected(
+                            self.target_nodes[new_index + new_len - 1],
+                            0,
+                            std::ops::Bound::Unbounded,
+                        )
                         .flatten()
+                        .last()
+                        .ok_or(anyhow!("Could not find right most token."))?;
+                    let mut order_it = default_ordering_gs
+                        .find_connected(start_node, 0, std::ops::Bound::Unbounded)
+                        .flatten();
+                    while let Some(node_id) = order_it.next()
+                        && node_id != end_node
                     {
-                        let delete_node_name = helper.node_name(reachable_ordered_node)?;
-                        update.add_event(UpdateEvent::DeleteNode {
-                            node_name: delete_node_name,
-                        })?;
+                        new_tok_order.push(node_id);
+                    }
+                    new_tok_order.push(end_node);
+                    for node_id in &self.source_nodes[old_index..old_index + old_len - 1] {
+                        for DFSStep { node, .. } in
+                            CycleSafeDFS::new_inverse(&vertical_container, *node_id, 0, usize::MAX)
+                                .flatten()
+                        {
+                            update.add_event(UpdateEvent::DeleteNode {
+                                node_name: helper.node_name(node)?,
+                            })?;
+                        }
                     }
                 }
             }
-            let m3 = if let Some(right_end_node_id) = &right_end_node
-                && let Some(right_end_node_name) = &right_end_name
-                && let Some(old_right_successor) =
-                    gs.get_outgoing_edges(*right_end_node_id).flatten().next()
-            {
-                let old_right_successor_name = helper.node_name(old_right_successor)?; // this is the same as `old_successor_name` for the case of insertion (old_len.is_none() == true)
-                if old_len.is_some() {
-                    update.add_event(UpdateEvent::DeleteNode {
-                        node_name: right_end_node_name.to_string(),
-                    })?;
-                } else {
-                    update.add_event(UpdateEvent::DeleteEdge {
-                        source_node: right_end_node_name.to_string(),
-                        target_node: old_right_successor_name.to_string(),
-                        layer: oc.layer.to_string(),
-                        component_type: AnnotationComponentType::Ordering.to_string(),
-                        component_name: oc.name.to_string(),
-                    })?;
-                }
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: end_of_insertion_sequence_name.to_string(),
-                    target_node: old_right_successor_name.to_string(),
-                    layer: oc.layer.to_string(),
-                    component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: oc.name.to_string(),
-                })?;
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: end_of_insertion_sequence_name.to_string(),
-                    target_node: self.source_stem.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::PartOf.to_string(),
-                    component_name: "".to_string(),
-                })?;
-                //
-                let query_for_successor_tok = aql::parse(
-                    &format!(r#"annis:node_name="{}" _l_ tok"#, &old_right_successor_name),
-                    false,
-                )?;
-                aql::execute_query_on_graph(helper.graph, &query_for_successor_tok, true, None)?
-                    .flatten()
-                    .next()
-            } else {
-                None
-            };
-            if let Some(node_name) = &insert_at_node_name {
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: node_name.to_string(),
-                    target_node: start_of_insertion_sequence_name.to_string(),
-                    layer: oc.layer.to_string(),
-                    component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: oc.name.to_string(),
-                })?;
-            }
+            progress.worked(1)?;
+        }
+        let mut ordering_map = BTreeMap::<AnnotationComponent, LinkedHashSet<NodeID>>::default();
+        for oc in helper
+            .graph()
+            .get_all_components(Some(AnnotationComponentType::Ordering), None)
+        {
+            ordering_map.insert(oc, LinkedHashSet::with_capacity(n_expected_elements));
+        }
+        for (source_node, target_node) in new_tok_order.iter().tuple_windows() {
             update.add_event(UpdateEvent::AddEdge {
-                source_node: start_of_insertion_sequence_name.to_string(),
+                source_node: helper.node_name(*source_node)?,
+                target_node: helper.node_name(*target_node)?,
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::Ordering.to_string(),
+                component_name: "".to_string(),
+            })?;
+            // first the ending nodes, then the starting nodes
+            for lookup_storage in [&r_gs, &l_gs] {
+                for covering_node in lookup_storage
+                    .find_connected_inverse(*source_node, 1, std::ops::Bound::Included(1))
+                    .flatten()
+                {
+                    for (oc, ordered_set) in ordering_map.iter_mut() {
+                        let gs = helper.graph().get_graphstorage(oc).ok_or(anyhow!(
+                            "Component {oc} does not provide a readable storage."
+                        ))?;
+                        if (gs.has_ingoing_edges(covering_node)?
+                            || gs.has_outgoing_edges(covering_node)?)
+                            && !ordered_set.contains(&covering_node)
+                        {
+                            ordered_set.insert(covering_node);
+                        }
+                    }
+                }
+            }
+        }
+        // the last target node was never probed for starting or ending nodes,
+        // we only check for ending ones
+        if let Some(node_id) = new_tok_order.iter().next_back() {
+            for covering_node in r_gs
+                .find_connected_inverse(*node_id, 1, std::ops::Bound::Included(1))
+                .flatten()
+            {
+                for (oc, ordered_set) in ordering_map.iter_mut() {
+                    let gs = helper.graph().get_graphstorage(oc).ok_or(anyhow!(
+                        "Component {oc} does not provide a readable storage."
+                    ))?;
+                    if (gs.has_ingoing_edges(covering_node)?
+                        || gs.has_outgoing_edges(covering_node)?)
+                        && !ordered_set.contains(&covering_node)
+                    {
+                        ordered_set.insert(covering_node);
+                    }
+                }
+            }
+        }
+        new_tok_order.iter().try_for_each(|n| {
+            update.add_event(UpdateEvent::AddEdge {
+                source_node: helper.node_name(*n)?,
                 target_node: self.source_stem.to_string(),
                 layer: ANNIS_NS.to_string(),
                 component_type: AnnotationComponentType::PartOf.to_string(),
                 component_name: "".to_string(),
             })?;
-            // now the toks have to be taken care of as well
-            let query_for_insertion_start_tok = aql::parse(
-                &format!(
-                    r#"annis:node_name="{}" _l_ tok"#,
-                    &start_of_insertion_sequence_name
-                ),
-                false,
-            )?;
-            let query_for_insertion_end_tok = aql::parse(
-                &format!(
-                    r#"annis:node_name="{}" _r_ tok"#,
-                    &end_of_insertion_sequence_name
-                ),
-                false,
-            )?;
-            let m0 = if let Some(node_name) = &insert_at_node_name {
-                let query_for_insertion_at_tok = aql::parse(
-                    &format!(r#"annis:node_name="{}" _r_ tok"#, node_name),
-                    false,
-                )?;
-                aql::execute_query_on_graph(helper.graph, &query_for_insertion_at_tok, true, None)?
-                    .flatten()
-                    .next()
-            } else {
-                None
-            };
-            let m1 = aql::execute_query_on_graph(
-                helper.graph,
-                &query_for_insertion_start_tok,
-                true,
-                None,
-            )?
-            .flatten()
-            .next();
-            let m2 = aql::execute_query_on_graph(
-                helper.graph,
-                &query_for_insertion_end_tok,
-                true,
-                None,
-            )?
-            .flatten()
-            .next();
-            let remaining_ordering_components = helper
-                .graph
-                .get_all_components(Some(AnnotationComponentType::Ordering), None)
-                .into_iter()
-                .filter(|c| {
-                    (&c.layer != ANNIS_NS || &c.name != "")
-                        && (c.layer != oc.layer || c.name != oc.name)
-                })
-                .collect_vec();
-            let mut new_tok_sequence_start = None;
-            if let Some(res_m0) = m0
-                && let Some(res_m1) = m1
-            {
-                let link_source = res_m0
-                    .get(1)
-                    .ok_or(anyhow!("Result cannot be parsed."))?
-                    .node;
-                if let Some(old_successor_tok) = default_ordering_gs
-                    .get_outgoing_edges(link_source)
-                    .flatten()
-                    .next()
-                {
-                    update.add_event(UpdateEvent::DeleteEdge {
-                        source_node: helper.node_name(link_source)?,
-                        target_node: helper.node_name(old_successor_tok)?,
-                        layer: ANNIS_NS.to_string(),
-                        component_type: AnnotationComponentType::Ordering.to_string(),
-                        component_name: "".to_string(),
-                    })?;
-                }
-                let link_target = res_m1
-                    .get(1)
-                    .ok_or(anyhow!("Result cannot be parsed."))?
-                    .node;
-                new_tok_sequence_start = Some(link_target);
-                let mut dfs = CycleSafeDFS::new(
-                    default_ordering_gs.as_edgecontainer(),
-                    link_source,
-                    1,
-                    usize::MAX,
-                );
-                let old_right_successor_tok =
-                    m3.as_ref().map(|m| m.get(1).map(|e| e.node)).flatten();
-                while let Some(Ok(DFSStep {
-                    node: follow_up_node,
-                    ..
-                })) = dfs.next()
-                    && (old_right_successor_tok.is_none()
-                        || old_right_successor_tok
-                            .map(|u| u != follow_up_node)
-                            .unwrap_or_default())
-                {
-                    // delete all tok nodes in the old graph that are not used anymore
-                    let delete_tok_name = helper.node_name(follow_up_node)?;
-                    update.add_event(UpdateEvent::DeleteNode {
-                        node_name: delete_tok_name,
-                    })?;
-                }
+            Ok::<(), anyhow::Error>(())
+        })?;
+        for (oc, ordered_set) in ordering_map {
+            for (source_node, target_node) in ordered_set.iter().tuple_windows() {
                 update.add_event(UpdateEvent::AddEdge {
-                    source_node: helper.node_name(link_source)?,
-                    target_node: helper.node_name(link_target)?,
-                    layer: ANNIS_NS.to_string(),
+                    source_node: helper.node_name(*source_node)?,
+                    target_node: helper.node_name(*target_node)?,
+                    layer: oc.layer.to_string(),
                     component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: "".to_string(),
+                    component_name: oc.name.to_string(),
                 })?;
                 update.add_event(UpdateEvent::AddEdge {
-                    source_node: helper.node_name(link_target)?,
+                    source_node: helper.node_name(*source_node)?,
                     target_node: self.source_stem.to_string(),
                     layer: ANNIS_NS.to_string(),
                     component_type: AnnotationComponentType::PartOf.to_string(),
                     component_name: "".to_string(),
                 })?;
-                let reachable_from_left =
-                    CycleSafeDFS::new_inverse(&coverage_container, link_source, 1, usize::MAX)
-                        .into_iter()
-                        .flatten()
-                        .map(|s| {
-                            let mut gap_starts =
-                                Vec::with_capacity(remaining_ordering_components.len());
-                            for rc in &remaining_ordering_components {
-                                if let Some(gs) = helper.graph.get_graphstorage(rc)
-                                    && (gs.has_outgoing_edges(s.node).unwrap_or_default()
-                                        || gs.has_ingoing_edges(s.node).unwrap_or_default())
-                                {
-                                    gap_starts.push((rc, s.node));
-                                }
-                            }
-                            gap_starts
-                        })
-                        .flatten()
-                        .collect_vec();
-                let reachable_from_right =
-                    CycleSafeDFS::new_inverse(&coverage_container, link_target, 1, usize::MAX)
-                        .into_iter()
-                        .flatten()
-                        .map(|s| {
-                            let mut gap_ends =
-                                Vec::with_capacity(remaining_ordering_components.len());
-                            for rc in &remaining_ordering_components {
-                                if let Some(gs) = helper.graph.get_graphstorage(rc)
-                                    && (gs.has_outgoing_edges(s.node).unwrap_or_default()
-                                        || gs.has_ingoing_edges(s.node).unwrap_or_default())
-                                {
-                                    gap_ends.push((rc, s.node));
-                                }
-                            }
-                            gap_ends
-                        })
-                        .flatten()
-                        .collect_vec();
-                for (c, n) in reachable_from_left {
-                    for (c_, n_) in &reachable_from_right {
-                        if &c == c_ {
-                            let comp_storage = helper.graph.get_graphstorage(c_);
-                            if let Some(gs) = comp_storage {
-                                if let Some(old_outgoing) =
-                                    gs.get_outgoing_edges(n).flatten().next()
-                                {
-                                    update.add_event(UpdateEvent::DeleteNode {
-                                        node_name: helper.node_name(old_outgoing)?,
-                                    })?;
-                                }
-                                if let Some(old_incoming) =
-                                    gs.get_ingoing_edges(*n_).flatten().next()
-                                {
-                                    update.add_event(UpdateEvent::DeleteNode {
-                                        node_name: helper.node_name(old_incoming)?,
-                                    })?;
-                                }
-                            }
-                            update.add_event(UpdateEvent::AddEdge {
-                                source_node: helper.node_name(n)?,
-                                target_node: helper.node_name(*n_)?,
-                                layer: c.layer.to_string(),
-                                component_type: c.get_type().to_string(),
-                                component_name: c.name.to_string(),
-                            })?;
-                            update.add_event(UpdateEvent::AddEdge {
-                                source_node: helper.node_name(*n_)?,
-                                target_node: self.source_stem.to_string(),
-                                layer: ANNIS_NS.to_string(),
-                                component_type: AnnotationComponentType::PartOf.to_string(),
-                                component_name: "".to_string(),
-                            })?;
-                        }
-                    }
-                }
             }
-            let mut new_tok_sequence_end = None;
-            if let Some(res_m2) = m2
-                && let Some(res_m3) = m3
-            {
-                let link_source = res_m2
-                    .get(1)
-                    .ok_or(anyhow!("Result cannot be parsed."))?
-                    .node;
-                new_tok_sequence_end = Some(link_source);
-                let link_target = res_m3
-                    .get(1)
-                    .ok_or(anyhow!("Result cannot be parsed."))?
-                    .node;
+            if let Some(node_id) = ordered_set.iter().next_back() {
                 update.add_event(UpdateEvent::AddEdge {
-                    source_node: helper.node_name(link_source)?,
-                    target_node: helper.node_name(link_target)?,
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: "".to_string(),
-                })?;
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: helper.node_name(link_source)?,
+                    source_node: helper.node_name(*node_id)?,
                     target_node: self.source_stem.to_string(),
                     layer: ANNIS_NS.to_string(),
                     component_type: AnnotationComponentType::PartOf.to_string(),
                     component_name: "".to_string(),
                 })?;
-                let reachable_from_left =
-                    CycleSafeDFS::new_inverse(&coverage_container, link_source, 1, usize::MAX)
-                        .into_iter()
-                        .flatten()
-                        .map(|s| {
-                            let mut gap_starts =
-                                Vec::with_capacity(remaining_ordering_components.len());
-                            for rc in &remaining_ordering_components {
-                                if let Some(gs) = helper.graph.get_graphstorage(rc)
-                                    && (gs.has_outgoing_edges(s.node).unwrap_or_default()
-                                        || gs.has_ingoing_edges(s.node).unwrap_or_default())
-                                {
-                                    gap_starts.push((rc, s.node));
-                                }
-                            }
-                            gap_starts
-                        })
-                        .flatten()
-                        .collect_vec();
-                let reachable_from_right =
-                    CycleSafeDFS::new_inverse(&coverage_container, link_target, 1, usize::MAX)
-                        .into_iter()
-                        .flatten()
-                        .map(|s| {
-                            let mut gap_ends =
-                                Vec::with_capacity(remaining_ordering_components.len());
-                            for rc in &remaining_ordering_components {
-                                if let Some(gs) = helper.graph.get_graphstorage(rc)
-                                    && (gs.has_outgoing_edges(s.node).unwrap_or_default()
-                                        || gs.has_ingoing_edges(s.node).unwrap_or_default())
-                                {
-                                    gap_ends.push((rc, s.node));
-                                }
-                            }
-                            gap_ends
-                        })
-                        .flatten()
-                        .collect_vec();
-                for (c, n) in reachable_from_left {
-                    for (c_, n_) in &reachable_from_right {
-                        if &c == c_ {
-                            let comp_storage = helper.graph.get_graphstorage(c_);
-                            if let Some(gs) = comp_storage {
-                                if let Some(old_outgoing) =
-                                    gs.get_outgoing_edges(n).flatten().next()
-                                {
-                                    update.add_event(UpdateEvent::DeleteNode {
-                                        node_name: helper.node_name(old_outgoing)?,
-                                    })?;
-                                }
-                                if let Some(old_incoming) =
-                                    gs.get_ingoing_edges(*n_).flatten().next()
-                                {
-                                    update.add_event(UpdateEvent::DeleteNode {
-                                        node_name: helper.node_name(old_incoming)?,
-                                    })?;
-                                }
-                            }
-                            update.add_event(UpdateEvent::AddEdge {
-                                source_node: helper.node_name(n)?,
-                                target_node: helper.node_name(*n_)?,
-                                layer: c.layer.to_string(),
-                                component_type: c.get_type().to_string(),
-                                component_name: c.name.to_string(),
-                            })?;
-                            update.add_event(UpdateEvent::AddEdge {
-                                source_node: helper.node_name(n)?,
-                                target_node: self.source_stem.to_string(),
-                                layer: ANNIS_NS.to_string(),
-                                component_type: AnnotationComponentType::PartOf.to_string(),
-                                component_name: "".to_string(),
-                            })?;
-                        }
-                    }
-                }
-            }
-            if let Some(start_tok_node_id) = new_tok_sequence_start
-                && let Some(end_tok_node_id) = new_tok_sequence_end
-            {
-                let span_name = format!(
-                    "{}#op-span_{start_tok_node_id}-{end_tok_node_id}",
-                    self.source_stem
-                );
-                update.add_event(UpdateEvent::AddNode {
-                    node_name: span_name.to_string(),
-                    node_type: "node".to_string(),
-                })?;
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: span_name.to_string(),
-                    target_node: self.source_stem.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::PartOf.to_string(),
-                    component_name: "".to_string(),
-                })?;
-                let mut connected_nodes = default_ordering_gs
-                    .find_connected(start_tok_node_id, 0, std::ops::Bound::Unbounded)
-                    .flatten();
-                while let Some(next_tok_node) = connected_nodes.next()
-                    && next_tok_node != end_tok_node_id
-                {
-                    update.add_event(UpdateEvent::AddEdge {
-                        source_node: span_name.to_string(),
-                        target_node: helper.node_name(next_tok_node)?,
-                        layer: ANNIS_NS.to_string(),
-                        component_type: AnnotationComponentType::Coverage.to_string(),
-                        component_name: "".to_string(),
-                    })?;
-                }
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: span_name.to_string(),
-                    target_node: helper.node_name(end_tok_node_id)?,
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Coverage.to_string(),
-                    component_name: "".to_string(),
-                })?;
-            }
-        }
-        {
-            // update last node_id (insert_node_at looks back -1, so this might be relevant)
-            if let Some(v) = self
-                .source_nodes
-                .get_mut(old_index + old_len.unwrap_or(1) - 1)
-            {
-                *v = end_of_insertion_sequence;
             }
         }
         Ok(())
