@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - cleaner messages for generic import, graph_op, and export errors
 
+### Added
+
+- Implement `Clone` and `PartialEq` for `ImporterStep`, `ExporterStep` and
+  `ManipulatorStep`. Since the corresponding enums already implement these
+  traits, this does not add any actual constraints on the implementations, but
+  allows this structs to be easier used in third party libraries, e.g. for
+  storing it in a `BTreeMap`.
+
 ## [0.47.0] - 2026-01-15
 
 ### Added
