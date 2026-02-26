@@ -22,6 +22,7 @@ use graphannis_core::{
     dfs::CycleSafeDFS,
     graph::{ANNIS_NS, NODE_TYPE_KEY},
     types::AnnoKey,
+    util::join_qname,
 };
 use itertools::Itertools;
 use linked_hash_set::LinkedHashSet;
@@ -219,7 +220,28 @@ impl Exporter for ExportExmaralda {
                     }
                 }
             };
-            writer.create_element("ud-meta-information").write_empty()?;
+
+            let all_speaker_names = anno_data
+                .keys()
+                .filter(|(d, (_, _))| d == doc_node_id)
+                .map(|(_, (ns, _))| ns)
+                .collect::<BTreeSet<&String>>();
+            // Write all generic meta data attributes not connected to a speaker
+            writer
+                .create_element("ud-meta-information")
+                .write_inner_content(|writer| {
+                    for anno in node_annos.get_annotations_for_item(doc_node_id)? {
+                        if anno.key.ns != ANNIS_NS && !all_speaker_names.contains(&anno.key.ns) {
+                            let attr_name = join_qname(&anno.key.ns, &anno.key.name);
+                            writer
+                                .create_element("ud-information")
+                                .with_attribute(("attribute-name", attr_name.as_str()))
+                                .write_text_content(BytesText::new(&anno.val))?;
+                        }
+                    }
+                    Ok::<_, anyhow::Error>(())
+                })?;
+
             writer.create_element("comment").write_empty()?;
             writer
                 .create_element("transcription-convention")
@@ -228,12 +250,7 @@ impl Exporter for ExportExmaralda {
             writer.write_event(Event::Start(BytesStart::new("speakertable")))?;
             // note: speaker id and speaker name are derived from namespaces,
             // since this is most compatible what most imported graphs will look like
-            for speaker_name in anno_data
-                .keys()
-                .filter(|(d, (_, _))| d == doc_node_id)
-                .map(|(_, (ns, _))| ns)
-                .collect::<BTreeSet<&String>>()
-            {
+            for speaker_name in all_speaker_names {
                 if speaker_name == ANNIS_NS {
                     continue;
                 }
@@ -960,6 +977,47 @@ mod tests {
         );
         assert!(actual.is_ok());
 
+        assert_snapshot!(actual.unwrap());
+    }
+
+    #[test]
+    fn test_exmaralda_export_with_generic_metadata() {
+        let m: Result<ImportTreeTagger, _> = toml::from_str("attribute_decoding = \"entities\"");
+        let import = m.unwrap();
+        let u = import.import_corpus(
+            Path::new("tests/data/import/treetagger/single_sentence/zossen.tt"),
+            StepID {
+                module_name: "test_import".into(),
+                path: None,
+            },
+            None,
+        );
+        let mut update = u.unwrap();
+
+        // Add some additional metadata information to the document
+        update
+            .add_event(graphannis::update::UpdateEvent::AddNodeLabel {
+                node_name: "zossen/zossen".into(),
+                anno_ns: "mynamespace".into(),
+                anno_name: "author".into(),
+                anno_value: "John Doe".into(),
+            })
+            .unwrap();
+        update
+            .add_event(graphannis::update::UpdateEvent::AddNodeLabel {
+                node_name: "zossen/zossen".into(),
+                anno_ns: "anothernamespace".into(),
+                anno_name: "published".into(),
+                anno_value: "no".into(),
+            })
+            .unwrap();
+
+        let mut graph = AnnotationGraph::with_default_graphstorages(true).unwrap();
+        assert!(graph.apply_update(&mut update, |_| {}).is_ok());
+        let exporter: Result<ExportExmaralda, _> = toml::from_str("");
+        assert!(exporter.is_ok());
+        let actual = export_to_string(&graph, exporter.unwrap());
+        assert!(actual.is_ok());
         assert_snapshot!(actual.unwrap());
     }
 }
