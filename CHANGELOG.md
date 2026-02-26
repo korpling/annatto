@@ -11,13 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Exmaralda exporter: metadata that can not be assigned to a speaker by the
+  namespace is added to the generic meta-information section.
 - Implement `Clone` and `PartialEq` for `ImporterStep`, `ExporterStep` and
   `ManipulatorStep`. Since the corresponding enums already implement these
   traits, this does not add any actual constraints on the implementations, but
   allows this structs to be easier used in third party libraries, e.g. for
   storing it in a `BTreeMap`.
-- Exmaralda exporter: metadata that can not be assigned to a speaker by the
-  namespace is added to the generic meta-information section.
 
 ### Fixed
 
