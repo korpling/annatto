@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   allows this structs to be easier used in third party libraries, e.g. for
   storing it in a `BTreeMap`.
 
+### Fixed
+
+- Exmaralda exporter did not output the end timeline item for documents without
+  time codes.
+
 ## [0.47.0] - 2026-01-15
 
 ### Added

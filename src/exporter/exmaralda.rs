@@ -598,6 +598,7 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                     let tli_id = format!("T{}", step.distance);
                     tli2time.insert((doc_node, tli_id.to_string()), naive_time_value);
                     let next_tli_id = format!("T{}", 1 + step.distance);
+
                     start_at_tli.insert((doc_node, timeline_token), tli_id.to_string());
                     let mut covering_nodes = BTreeSet::default();
                     reachable_nodes(
@@ -678,7 +679,12 @@ impl Traverse<NodeData, EdgeData> for ExportExmaralda {
                         };
                     }
                 }
-                if !time_values.is_empty() {
+                if time_values.is_empty() {
+                    // Since the end value of a span is exclusive, we need an
+                    // additional TLI at the end that serves as the end marker.
+                    let naive_next_time_value = OrderedFloat(max_dist as f32);
+                    tli2time.insert((doc_node, format!("T{}", max_dist)), naive_next_time_value);
+                } else {
                     for (i, t) in (0..max_dist + 2).zip(time_values.into_iter().sorted()) {
                         tli2time.insert((doc_node, format!("T{i}")), t);
                     }
