@@ -550,7 +550,7 @@ mod tests {
 
     #[test]
     fn core() {
-        let exmaralda = ImportEXMARaLDA {};
+        let exmaralda = ImportEXMARaLDA::default();
         let mprt = exmaralda.import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
             StepID {
@@ -572,7 +572,7 @@ mod tests {
 
     #[test]
     fn quoted() {
-        let exmaralda = ImportEXMARaLDA {};
+        let exmaralda = ImportEXMARaLDA::default();
         let mprt = exmaralda.import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
             StepID {
@@ -673,7 +673,7 @@ mod tests {
 
     #[test]
     fn manual_column_ordering_no_id() {
-        let exmaralda = ImportEXMARaLDA {};
+        let exmaralda = ImportEXMARaLDA::default();
         let mprt = exmaralda.import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
             StepID {
@@ -704,7 +704,7 @@ mod tests {
 
     #[test]
     fn manual_column_ordering_with_id() {
-        let exmaralda = ImportEXMARaLDA {};
+        let exmaralda = ImportEXMARaLDA::default();
         let mprt = exmaralda.import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
             StepID {
@@ -735,7 +735,7 @@ mod tests {
 
     #[test]
     fn no_id_column() {
-        let exmaralda = ImportEXMARaLDA {};
+        let exmaralda = ImportEXMARaLDA::default();
         let mprt = exmaralda.import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
             StepID {

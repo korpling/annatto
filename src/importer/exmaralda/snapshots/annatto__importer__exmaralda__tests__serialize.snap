@@ -2,4 +2,4 @@
 source: src/importer/exmaralda/tests.rs
 expression: serialization.unwrap()
 ---
-
+merge_events = true
