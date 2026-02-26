@@ -409,7 +409,7 @@ impl ImportEXMARaLDA {
                                 i_val
                             } else {
                                 let err = AnnattoError::Import {
-                                    reason: format!("Unknown time line item: {start_id}"),
+                                    reason: format!("Unknown time line item: {end_id}"),
                                     importer: step_id.module_name.clone(),
                                     path: document_path.to_path_buf(),
                                 };
