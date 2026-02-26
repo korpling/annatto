@@ -46,6 +46,7 @@ expression: actual.unwrap()
       <tli id="T5" time="5"/>
       <tli id="T6" time="6"/>
       <tli id="T7" time="7"/>
+      <tli id="T8" time="8"/>
     </common-timeline>
     <tier speaker="" category="highlighted" type="a" id="TIER1" display-name="[highlighted]">
       <event start="T2" end="T4">highlighted</event>
