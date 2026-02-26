@@ -10,7 +10,8 @@ expression: actual.unwrap()
       <project-name/>
       <transcription-name/>
       <referenced-file url="[GRAPH_DIR]/tests/data/import/exmaralda/clean/import/exmaralda/test_file.wav"/>
-      <ud-meta-information/>
+      <ud-meta-information>
+      </ud-meta-information>
       <comment/>
       <transcription-convention/>
     </meta-information>

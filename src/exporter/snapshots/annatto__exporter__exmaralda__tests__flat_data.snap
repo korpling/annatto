@@ -9,7 +9,8 @@ expression: actual.unwrap()
     <meta-information>
       <project-name/>
       <transcription-name/>
-      <ud-meta-information/>
+      <ud-meta-information>
+      </ud-meta-information>
       <comment/>
       <transcription-convention/>
     </meta-information>

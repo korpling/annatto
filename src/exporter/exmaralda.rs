@@ -227,20 +227,20 @@ impl Exporter for ExportExmaralda {
                 .map(|(_, (ns, _))| ns)
                 .collect::<BTreeSet<&String>>();
             // Write all generic meta data attributes not connected to a speaker
-            let mut any_generic_ud_information_written = false;
-            for anno in node_annos.get_annotations_for_item(doc_node_id)? {
-                if anno.key.ns != ANNIS_NS && !all_speaker_names.contains(&anno.key.ns) {
-                    let attr_name = join_qname(&anno.key.ns, &anno.key.name);
-                    writer
-                        .create_element("ud-information")
-                        .with_attribute(("attribute-name", attr_name.as_str()))
-                        .write_text_content(BytesText::new(&anno.val))?;
-                    any_generic_ud_information_written = true;
-                }
-            }
-            if !any_generic_ud_information_written {
-                writer.create_element("ud-meta-information").write_empty()?;
-            }
+            writer
+                .create_element("ud-meta-information")
+                .write_inner_content(|writer| {
+                    for anno in node_annos.get_annotations_for_item(doc_node_id)? {
+                        if anno.key.ns != ANNIS_NS && !all_speaker_names.contains(&anno.key.ns) {
+                            let attr_name = join_qname(&anno.key.ns, &anno.key.name);
+                            writer
+                                .create_element("ud-information")
+                                .with_attribute(("attribute-name", attr_name.as_str()))
+                                .write_text_content(BytesText::new(&anno.val))?;
+                        }
+                    }
+                    Ok::<_, anyhow::Error>(())
+                })?;
 
             writer.create_element("comment").write_empty()?;
             writer
