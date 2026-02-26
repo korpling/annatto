@@ -194,7 +194,7 @@ mod tests {
 
     #[test]
     fn default() {
-        let exmaralda = ImportEXMARaLDA {};
+        let exmaralda = ImportEXMARaLDA::default();
         let mprt = exmaralda.import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
             StepID {
@@ -233,7 +233,7 @@ mod tests {
 
     #[test]
     fn inverse() {
-        let exmaralda = ImportEXMARaLDA {};
+        let exmaralda = ImportEXMARaLDA::default();
         let mprt = exmaralda.import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
             StepID {

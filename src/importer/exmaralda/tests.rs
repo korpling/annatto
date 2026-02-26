@@ -271,6 +271,24 @@ fn sparse_timeline_pass() {
     assert_snapshot!(r.unwrap());
 }
 
+#[test]
+fn merge_spans_disabled() {
+    let actual = import_as_graphml_string_2(
+        ImportEXMARaLDA {
+            merge_events: false,
+        },
+        env::current_dir()
+            .unwrap()
+            .join("tests/data/import/exmaralda/mergable_spans"),
+        None,
+        true,
+        None,
+    )
+    .unwrap();
+
+    assert_snapshot!(actual);
+}
+
 fn run_test(
     import_path: &str,
     expected_warnings_count: usize,
