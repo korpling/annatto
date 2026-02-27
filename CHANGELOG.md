@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.48.0] - 2026-02-27
+
 ### Changed
 
 - cleaner messages for generic import, graph_op, and export errors
