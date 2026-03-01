@@ -1,10 +1,14 @@
-use std::{collections::BTreeMap, sync::Arc, usize};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::Arc,
+    usize,
+};
 
 use anyhow::{anyhow, bail};
 use facet::Facet;
 use graphannis::{
-    AnnotationGraph,
-    graph::{AnnoKey, EdgeContainer, GraphStorage, NodeID},
+    AnnotationGraph, aql,
+    graph::{AnnoKey, EdgeContainer, GraphStorage, Match, NodeID},
     model::{AnnotationComponent, AnnotationComponentType},
     update::{GraphUpdate, UpdateEvent},
 };
@@ -18,7 +22,11 @@ use likewise::{Algorithm, DiffOp, capture_diff_slices};
 use linked_hash_set::LinkedHashSet;
 use serde::{Deserialize, Serialize};
 
-use crate::{manipulator::Manipulator, progress::ProgressReporter, util::update_graph_silent};
+use crate::{
+    manipulator::Manipulator,
+    progress::ProgressReporter,
+    util::{update_graph, update_graph_silent},
+};
 
 /// Compare to sub graphs, derive a patch from one towards the other,
 /// and apply it.
@@ -126,7 +134,7 @@ impl Manipulator for DiffSubgraphs {
             .flatten()
             .collect_vec();
         let total_num_of_diff_ops = diffs.iter().map(|d| d.len()).sum();
-        let progress = ProgressReporter::new(tx.clone(), step_id, total_num_of_diff_ops)?;
+        let progress = ProgressReporter::new(tx.clone(), step_id.clone(), total_num_of_diff_ops)?;
         progress.info(format!(
             "Applying {total_num_of_diff_ops} diff operations across {} sequence pair(s) ...",
             pairs.len()
@@ -134,9 +142,15 @@ impl Manipulator for DiffSubgraphs {
         let orderings_existing_before = graph_helper
             .graph()
             .get_all_components(Some(AnnotationComponentType::Ordering), None);
+        let mut licensed_tok_nodes: LinkedHashSet<NodeID> = LinkedHashSet::new();
         for (pair, diff) in pairs.into_iter().zip_eq(diffs) {
             if self.merge {
-                pair.merge_diff(&mut graph_helper, diff, &mut update, &progress)?;
+                licensed_tok_nodes.extend(&pair.merge_diff(
+                    &mut graph_helper,
+                    diff,
+                    &mut update,
+                    &progress,
+                )?);
             } else {
                 pair.annotate_diff(&mut graph_helper, &mut update, diff, &progress)?;
             }
@@ -147,12 +161,36 @@ impl Manipulator for DiffSubgraphs {
                 gs.clear()?;
             }
         }
-        graph_helper.apply_update(&mut update)?;
+        progress.info("Applying first update ...")?;
+        update_graph(&mut graph_helper.graph, &mut update, Some(step_id), tx)?;
+        graph_helper.graph.calculate_all_statistics()?;
+        progress.info("Cleaning up ...")?;
+        update = GraphUpdate::default();
+        let query = aql::parse("node_type=/node/ !@* node_type=/corpus/?", false)?;
+        for m in aql::execute_query_on_graph(graph_helper.graph(), &query, true, None)?.flatten() {
+            if let Some(Match { node, .. }) = m.get(0) {
+                update.add_event(UpdateEvent::DeleteNode {
+                    node_name: graph_helper.node_name(*node)?,
+                })?;
+            }
+        }
+        let query = aql::parse("tok", false)?;
+        for m in aql::execute_query_on_graph(graph_helper.graph(), &query, true, None)?.flatten() {
+            if let Some(Match { node, .. }) = m.get(0)
+                && !licensed_tok_nodes.contains(node)
+            {
+                update.add_event(UpdateEvent::DeleteNode {
+                    node_name: graph_helper.node_name(*node)?,
+                })?;
+            }
+        }
+        progress.info(format!("Clean-up update has size {}", update.len()?))?;
+        update_graph_silent(graph_helper.graph, &mut update)?;
         Ok(())
     }
 
     fn requires_statistics(&self) -> bool {
-        true
+        false
     }
 }
 
@@ -522,12 +560,13 @@ impl SequencePair {
         diff: Vec<DiffOp>,
         update: &mut GraphUpdate,
         progress: &ProgressReporter,
-    ) -> Result<(), anyhow::Error> {
+    ) -> Result<LinkedHashSet<NodeID>, anyhow::Error> {
         update.add_event(UpdateEvent::DeleteNode {
             node_name: self.target_stem.to_string(),
         })?;
         let n_expected_elements = self.source_nodes.len().max(self.target_nodes.len());
-        let mut new_tok_order: Vec<NodeID> = Vec::with_capacity(n_expected_elements);
+        let mut new_tok_order: LinkedHashSet<NodeID> =
+            LinkedHashSet::with_capacity(n_expected_elements);
         let l_gs = helper
             .graph()
             .get_graphstorage(&AnnotationComponent::new(
@@ -573,6 +612,7 @@ impl SequencePair {
                 .map(|gs| gs.as_edgecontainer())
                 .collect_vec(),
         );
+        progress.info("Evaluating diffs ...")?;
         for d in diff {
             match d {
                 DiffOp::Equal {
@@ -597,20 +637,42 @@ impl SequencePair {
                     let mut order_it = default_ordering_gs
                         .find_connected(start_node, 0, std::ops::Bound::Unbounded)
                         .flatten();
-                    while let Some(node_id) = order_it.next()
-                        && node_id != end_node
-                    {
-                        new_tok_order.push(node_id);
+                    while let Some(node_id) = order_it.next() {
+                        new_tok_order.insert(node_id);
+                        if node_id == end_node {
+                            break;
+                        }
                     }
-                    new_tok_order.push(end_node);
                     for node_id in &self.target_nodes[new_index..new_index + len - 1] {
-                        for DFSStep { node, .. } in
-                            CycleSafeDFS::new_inverse(&vertical_container, *node_id, 0, usize::MAX)
-                                .flatten()
+                        for DFSStep {
+                            node: downward_reachable,
+                            ..
+                        } in CycleSafeDFS::new(&vertical_container, *node_id, 0, usize::MAX)
+                            .flatten()
                         {
                             update.add_event(UpdateEvent::DeleteNode {
-                                node_name: helper.node_name(node)?,
+                                node_name: helper.node_name(downward_reachable)?,
                             })?;
+                            for DFSStep {
+                                node: upward_reachable,
+                                ..
+                            } in CycleSafeDFS::new_inverse(
+                                &vertical_container,
+                                downward_reachable,
+                                1,
+                                usize::MAX,
+                            )
+                            .flatten()
+                            {
+                                // soft delete
+                                update.add_event(UpdateEvent::DeleteEdge {
+                                    source_node: helper.node_name(upward_reachable)?,
+                                    target_node: self.target_stem.to_string(),
+                                    layer: ANNIS_NS.to_string(),
+                                    component_type: AnnotationComponentType::PartOf.to_string(),
+                                    component_name: "".to_string(),
+                                })?;
+                            }
                         }
                     }
                 }
@@ -618,13 +680,35 @@ impl SequencePair {
                     old_index, old_len, ..
                 } => {
                     for node_id in &self.source_nodes[old_index..old_index + old_len - 1] {
-                        for DFSStep { node, .. } in
-                            CycleSafeDFS::new_inverse(&vertical_container, *node_id, 0, usize::MAX)
-                                .flatten()
+                        for DFSStep {
+                            node: downward_reachable,
+                            ..
+                        } in CycleSafeDFS::new(&vertical_container, *node_id, 0, usize::MAX)
+                            .flatten()
                         {
                             update.add_event(UpdateEvent::DeleteNode {
-                                node_name: helper.node_name(node)?,
+                                node_name: helper.node_name(downward_reachable)?,
                             })?;
+                            for DFSStep {
+                                node: upward_reachable,
+                                ..
+                            } in CycleSafeDFS::new_inverse(
+                                &vertical_container,
+                                downward_reachable,
+                                1,
+                                usize::MAX,
+                            )
+                            .flatten()
+                            {
+                                // soft delete
+                                update.add_event(UpdateEvent::DeleteEdge {
+                                    source_node: helper.node_name(upward_reachable)?,
+                                    target_node: self.source_stem.to_string(),
+                                    layer: ANNIS_NS.to_string(),
+                                    component_type: AnnotationComponentType::PartOf.to_string(),
+                                    component_name: "".to_string(),
+                                })?;
+                            }
                         }
                     }
                 }
@@ -648,12 +732,28 @@ impl SequencePair {
                     let mut order_it = default_ordering_gs
                         .find_connected(start_node, 0, std::ops::Bound::Unbounded)
                         .flatten();
-                    while let Some(node_id) = order_it.next()
-                        && node_id != end_node
-                    {
-                        new_tok_order.push(node_id);
+                    let mut integrate_nodes = BTreeSet::default();
+                    while let Some(node_id) = order_it.next() {
+                        new_tok_order.insert(node_id);
+                        for DFSStep { node, .. } in
+                            CycleSafeDFS::new_inverse(&vertical_container, node_id, 1, usize::MAX)
+                                .flatten()
+                        {
+                            integrate_nodes.insert(node);
+                        }
+                        if node_id == end_node {
+                            break;
+                        }
                     }
-                    new_tok_order.push(end_node);
+                    for node_id in integrate_nodes {
+                        update.add_event(UpdateEvent::AddEdge {
+                            source_node: helper.node_name(node_id)?,
+                            target_node: self.source_stem.to_string(),
+                            layer: ANNIS_NS.to_string(),
+                            component_type: AnnotationComponentType::PartOf.to_string(),
+                            component_name: "".to_string(),
+                        })?;
+                    }
                 }
                 DiffOp::Replace {
                     new_index,
@@ -681,23 +781,46 @@ impl SequencePair {
                     while let Some(node_id) = order_it.next()
                         && node_id != end_node
                     {
-                        new_tok_order.push(node_id);
+                        new_tok_order.insert(node_id);
                     }
-                    new_tok_order.push(end_node);
+                    new_tok_order.insert(end_node);
                     for node_id in &self.source_nodes[old_index..old_index + old_len - 1] {
-                        for DFSStep { node, .. } in
-                            CycleSafeDFS::new_inverse(&vertical_container, *node_id, 0, usize::MAX)
-                                .flatten()
+                        for DFSStep {
+                            node: downward_reachable,
+                            ..
+                        } in CycleSafeDFS::new(&vertical_container, *node_id, 0, usize::MAX)
+                            .flatten()
                         {
                             update.add_event(UpdateEvent::DeleteNode {
-                                node_name: helper.node_name(node)?,
+                                node_name: helper.node_name(downward_reachable)?,
                             })?;
+                            for DFSStep {
+                                node: upward_reachable,
+                                ..
+                            } in CycleSafeDFS::new_inverse(
+                                &vertical_container,
+                                downward_reachable,
+                                1,
+                                usize::MAX,
+                            )
+                            .flatten()
+                            {
+                                // soft delete
+                                update.add_event(UpdateEvent::DeleteEdge {
+                                    source_node: helper.node_name(upward_reachable)?,
+                                    target_node: self.source_stem.to_string(),
+                                    layer: ANNIS_NS.to_string(),
+                                    component_type: AnnotationComponentType::PartOf.to_string(),
+                                    component_name: "".to_string(),
+                                })?;
+                            }
                         }
                     }
                 }
             }
             progress.worked(1)?;
         }
+        progress.info("Rebuilding secondary orderings ...")?;
         let mut ordering_map = BTreeMap::<AnnotationComponent, LinkedHashSet<NodeID>>::default();
         for oc in helper
             .graph()
@@ -753,6 +876,7 @@ impl SequencePair {
                 }
             }
         }
+        progress.info("Building new primary ordering ...")?;
         new_tok_order.iter().try_for_each(|n| {
             update.add_event(UpdateEvent::AddEdge {
                 source_node: helper.node_name(*n)?,
@@ -761,8 +885,16 @@ impl SequencePair {
                 component_type: AnnotationComponentType::PartOf.to_string(),
                 component_name: "".to_string(),
             })?;
+            update.add_event(UpdateEvent::DeleteEdge {
+                source_node: helper.node_name(*n)?,
+                target_node: self.target_stem.to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".to_string(),
+            })?;
             Ok::<(), anyhow::Error>(())
         })?;
+        progress.info("Building new secondary orderings ...")?;
         for (oc, ordered_set) in ordering_map {
             for (source_node, target_node) in ordered_set.iter().tuple_windows() {
                 update.add_event(UpdateEvent::AddEdge {
@@ -779,6 +911,13 @@ impl SequencePair {
                     component_type: AnnotationComponentType::PartOf.to_string(),
                     component_name: "".to_string(),
                 })?;
+                update.add_event(UpdateEvent::DeleteEdge {
+                    source_node: helper.node_name(*source_node)?,
+                    target_node: self.target_stem.to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::PartOf.to_string(),
+                    component_name: "".to_string(),
+                })?;
             }
             if let Some(node_id) = ordered_set.iter().next_back() {
                 update.add_event(UpdateEvent::AddEdge {
@@ -788,9 +927,16 @@ impl SequencePair {
                     component_type: AnnotationComponentType::PartOf.to_string(),
                     component_name: "".to_string(),
                 })?;
+                update.add_event(UpdateEvent::DeleteEdge {
+                    source_node: helper.node_name(*node_id)?,
+                    target_node: self.target_stem.to_string(),
+                    layer: ANNIS_NS.to_string(),
+                    component_type: AnnotationComponentType::PartOf.to_string(),
+                    component_name: "".to_string(),
+                })?;
             }
         }
-        Ok(())
+        Ok(new_tok_order)
     }
 }
 
