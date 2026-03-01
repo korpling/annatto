@@ -35,7 +35,6 @@ display_name = "pointing (dep)"
 visibility = "hidden"
 
 [visualizers.mappings]
-node_key = "norm"
 
 [[visualizers]]
 element = "node"
@@ -63,10 +62,6 @@ show_ns = "false"
             <data key="k2">test</data>
             <data key="k3">corpus</data>
         </node>
-        <node id="corpus/b/doc">
-            <data key="k2">test</data>
-            <data key="k3">corpus</data>
-        </node>
         <node id="corpus/a/doc#t0">
             <data key="k3">node</data>
             <data key="k6"> </data>
@@ -83,7 +78,19 @@ show_ns = "false"
             <data key="k3">node</data>
             <data key="k6"> </data>
         </node>
+        <node id="corpus/a/doc#t4">
+            <data key="k3">node</data>
+            <data key="k6"> </data>
+        </node>
+        <node id="corpus/a/doc#t5">
+            <data key="k3">node</data>
+            <data key="k6"> </data>
+        </node>
         <node id="corpus/a/doc#t6">
+            <data key="k3">node</data>
+            <data key="k6"> </data>
+        </node>
+        <node id="corpus/a/doc#t7">
             <data key="k3">node</data>
             <data key="k6"> </data>
         </node>
@@ -103,6 +110,10 @@ show_ns = "false"
             <data key="k1">I</data>
             <data key="k3">node</data>
         </node>
+        <node id="corpus/a/doc#dipl1">
+            <data key="k1">live</data>
+            <data key="k3">node</data>
+        </node>
         <node id="corpus/a/doc#dipl2">
             <data key="k1">in</data>
             <data key="k3">node</data>
@@ -111,21 +122,29 @@ show_ns = "false"
             <data key="k1">New York</data>
             <data key="k3">node</data>
         </node>
+        <node id="corpus/a/doc#dipl4">
+            <data key="k1">for</data>
+            <data key="k3">node</data>
+        </node>
         <node id="corpus/a/doc#dipl5">
             <data key="k1">my</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="corpus/a/doc#dipl6">
+            <data key="k1">entire</data>
             <data key="k3">node</data>
         </node>
         <node id="corpus/a/doc#dipl7">
             <data key="k1">life</data>
             <data key="k3">node</data>
         </node>
-        <node id="corpus/a/doc#norm0">
-            <data key="k3">node</data>
-            <data key="k4"> I</data>
-        </node>
         <node id="corpus/a/doc#norm_pos_0">
             <data key="k3">node</data>
             <data key="k5">PRON</data>
+        </node>
+        <node id="corpus/a/doc#norm1">
+            <data key="k3">node</data>
+            <data key="k4">live</data>
         </node>
         <node id="corpus/a/doc#norm_pos_1">
             <data key="k3">node</data>
@@ -151,6 +170,10 @@ show_ns = "false"
             <data key="k3">node</data>
             <data key="k5">PROPN</data>
         </node>
+        <node id="corpus/a/doc#norm5">
+            <data key="k3">node</data>
+            <data key="k4">for</data>
+        </node>
         <node id="corpus/a/doc#norm_pos_5">
             <data key="k3">node</data>
             <data key="k5">ADP</data>
@@ -162,6 +185,10 @@ show_ns = "false"
         <node id="corpus/a/doc#norm_pos_6">
             <data key="k3">node</data>
             <data key="k5">PRON</data>
+        </node>
+        <node id="corpus/a/doc#norm7">
+            <data key="k3">node</data>
+            <data key="k4">entire</data>
         </node>
         <node id="corpus/a/doc#norm_pos_7">
             <data key="k3">node</data>
@@ -199,11 +226,31 @@ show_ns = "false"
             <data key="k3">node</data>
             <data key="k6"> </data>
         </node>
+        <node id="corpus/b/doc#t4">
+            <data key="k3">node</data>
+            <data key="k6"> </data>
+        </node>
+        <node id="corpus/b/doc#t5">
+            <data key="k3">node</data>
+            <data key="k6"> </data>
+        </node>
         <node id="corpus/b/doc#t6">
             <data key="k3">node</data>
             <data key="k6"> </data>
         </node>
+        <node id="corpus/b/doc#t7">
+            <data key="k3">node</data>
+            <data key="k6"> </data>
+        </node>
         <node id="corpus/b/doc#t8">
+            <data key="k3">node</data>
+            <data key="k6"> </data>
+        </node>
+        <node id="corpus/b/doc#t9">
+            <data key="k3">node</data>
+            <data key="k6"> </data>
+        </node>
+        <node id="corpus/b/doc#t10">
             <data key="k3">node</data>
             <data key="k6"> </data>
         </node>
@@ -223,12 +270,24 @@ show_ns = "false"
             <data key="k1">living</data>
             <data key="k3">node</data>
         </node>
+        <node id="corpus/b/doc#dipl4">
+            <data key="k1">in</data>
+            <data key="k3">node</data>
+        </node>
         <node id="corpus/b/doc#dipl5">
             <data key="k1">New Jersey</data>
             <data key="k3">node</data>
         </node>
+        <node id="corpus/b/doc#dipl6">
+            <data key="k1">my</data>
+            <data key="k3">node</data>
+        </node>
         <node id="corpus/b/doc#dipl7">
             <data key="k1">whole</data>
+            <data key="k3">node</data>
+        </node>
+        <node id="corpus/b/doc#dipl8">
+            <data key="k1">life</data>
             <data key="k3">node</data>
         </node>
         <node id="corpus/b/doc#norm0">
@@ -267,6 +326,10 @@ show_ns = "false"
             <data key="k3">node</data>
             <data key="k5">ADP</data>
         </node>
+        <node id="corpus/b/doc#norm5">
+            <data key="k3">node</data>
+            <data key="k4">New</data>
+        </node>
         <node id="corpus/b/doc#norm_pos_5">
             <data key="k3">node</data>
             <data key="k5">PROPN</data>
@@ -278,6 +341,10 @@ show_ns = "false"
         <node id="corpus/b/doc#norm_pos_6">
             <data key="k3">node</data>
             <data key="k5">PROPN</data>
+        </node>
+        <node id="corpus/b/doc#norm7">
+            <data key="k3">node</data>
+            <data key="k4">my</data>
         </node>
         <node id="corpus/b/doc#norm_pos_7">
             <data key="k3">node</data>
@@ -295,292 +362,289 @@ show_ns = "false"
             <data key="k3">node</data>
             <data key="k5">NOUN</data>
         </node>
+        <node id="corpus/b/doc#norm10">
+            <data key="k3">node</data>
+            <data key="k4">.</data>
+        </node>
         <node id="corpus/b/doc#norm_pos_10">
             <data key="k3">node</data>
             <data key="k5">PUNCT</data>
         </node>
-        <node id="corpus/a/doc#op-span_50-50">
-            <data key="k3">node</data>
-        </node>
-        <node id="corpus/a/doc#op-span_52-52">
-            <data key="k3">node</data>
-        </node>
         <edge id="e0" source="corpus/a/doc#dipl0" target="corpus/a/doc#t0" label="Coverage/annis/">
         </edge>
-        <edge id="e1" source="corpus/a/doc#dipl2" target="corpus/a/doc#t2" label="Coverage/annis/">
+        <edge id="e1" source="corpus/a/doc#dipl1" target="corpus/a/doc#t1" label="Coverage/annis/">
         </edge>
-        <edge id="e2" source="corpus/a/doc#dipl3" target="corpus/a/doc#t3" label="Coverage/annis/">
+        <edge id="e2" source="corpus/a/doc#dipl2" target="corpus/a/doc#t2" label="Coverage/annis/">
         </edge>
-        <edge id="e3" source="corpus/a/doc#dipl5" target="corpus/a/doc#t6" label="Coverage/annis/">
+        <edge id="e3" source="corpus/a/doc#dipl3" target="corpus/a/doc#t3" label="Coverage/annis/">
         </edge>
-        <edge id="e4" source="corpus/a/doc#dipl7" target="corpus/a/doc#t8" label="Coverage/annis/">
+        <edge id="e4" source="corpus/a/doc#dipl3" target="corpus/a/doc#t4" label="Coverage/annis/">
         </edge>
-        <edge id="e5" source="corpus/a/doc#norm0" target="corpus/a/doc#t0" label="Coverage/annis/">
+        <edge id="e5" source="corpus/a/doc#dipl4" target="corpus/a/doc#t5" label="Coverage/annis/">
         </edge>
-        <edge id="e6" source="corpus/a/doc#norm2" target="corpus/a/doc#t2" label="Coverage/annis/">
+        <edge id="e6" source="corpus/a/doc#dipl5" target="corpus/a/doc#t6" label="Coverage/annis/">
         </edge>
-        <edge id="e7" source="corpus/a/doc#norm3" target="corpus/a/doc#t3" label="Coverage/annis/">
+        <edge id="e7" source="corpus/a/doc#dipl6" target="corpus/a/doc#t7" label="Coverage/annis/">
         </edge>
-        <edge id="e8" source="corpus/a/doc#norm6" target="corpus/a/doc#t6" label="Coverage/annis/">
+        <edge id="e8" source="corpus/a/doc#dipl7" target="corpus/a/doc#t8" label="Coverage/annis/">
         </edge>
-        <edge id="e9" source="corpus/a/doc#norm8" target="corpus/a/doc#t8" label="Coverage/annis/">
+        <edge id="e9" source="corpus/a/doc#norm1" target="corpus/a/doc#t1" label="Coverage/annis/">
         </edge>
-        <edge id="e10" source="corpus/a/doc#norm9" target="corpus/a/doc#t9" label="Coverage/annis/">
+        <edge id="e10" source="corpus/a/doc#norm2" target="corpus/a/doc#t2" label="Coverage/annis/">
         </edge>
-        <edge id="e11" source="corpus/b/doc#dipl0" target="corpus/b/doc#t0" label="Coverage/annis/">
+        <edge id="e11" source="corpus/a/doc#norm3" target="corpus/a/doc#t3" label="Coverage/annis/">
         </edge>
-        <edge id="e12" source="corpus/b/doc#dipl1" target="corpus/b/doc#t1" label="Coverage/annis/">
+        <edge id="e12" source="corpus/a/doc#norm5" target="corpus/a/doc#t5" label="Coverage/annis/">
         </edge>
-        <edge id="e13" source="corpus/b/doc#dipl2" target="corpus/b/doc#t2" label="Coverage/annis/">
+        <edge id="e13" source="corpus/a/doc#norm6" target="corpus/a/doc#t6" label="Coverage/annis/">
         </edge>
-        <edge id="e14" source="corpus/b/doc#dipl3" target="corpus/b/doc#t3" label="Coverage/annis/">
+        <edge id="e14" source="corpus/a/doc#norm7" target="corpus/a/doc#t7" label="Coverage/annis/">
         </edge>
-        <edge id="e15" source="corpus/b/doc#dipl5" target="corpus/b/doc#t6" label="Coverage/annis/">
+        <edge id="e15" source="corpus/a/doc#norm8" target="corpus/a/doc#t8" label="Coverage/annis/">
         </edge>
-        <edge id="e16" source="corpus/b/doc#dipl7" target="corpus/b/doc#t8" label="Coverage/annis/">
+        <edge id="e16" source="corpus/a/doc#norm9" target="corpus/a/doc#t9" label="Coverage/annis/">
         </edge>
-        <edge id="e17" source="corpus/b/doc#norm0" target="corpus/b/doc#t0" label="Coverage/annis/">
+        <edge id="e17" source="corpus/b/doc#dipl0" target="corpus/b/doc#t0" label="Coverage/annis/">
         </edge>
-        <edge id="e18" source="corpus/b/doc#norm1" target="corpus/b/doc#t1" label="Coverage/annis/">
+        <edge id="e18" source="corpus/b/doc#dipl1" target="corpus/b/doc#t1" label="Coverage/annis/">
         </edge>
-        <edge id="e19" source="corpus/b/doc#norm2" target="corpus/b/doc#t2" label="Coverage/annis/">
+        <edge id="e19" source="corpus/b/doc#dipl2" target="corpus/b/doc#t2" label="Coverage/annis/">
         </edge>
-        <edge id="e20" source="corpus/b/doc#norm3" target="corpus/b/doc#t3" label="Coverage/annis/">
+        <edge id="e20" source="corpus/b/doc#dipl3" target="corpus/b/doc#t3" label="Coverage/annis/">
         </edge>
-        <edge id="e21" source="corpus/b/doc#norm6" target="corpus/b/doc#t6" label="Coverage/annis/">
+        <edge id="e21" source="corpus/b/doc#dipl4" target="corpus/b/doc#t4" label="Coverage/annis/">
         </edge>
-        <edge id="e22" source="corpus/b/doc#norm8" target="corpus/b/doc#t8" label="Coverage/annis/">
+        <edge id="e22" source="corpus/b/doc#dipl5" target="corpus/b/doc#t5" label="Coverage/annis/">
         </edge>
-        <edge id="e23" source="corpus/a/doc#op-span_50-50" target="corpus/b/doc#t6" label="Coverage/annis/">
+        <edge id="e23" source="corpus/b/doc#dipl5" target="corpus/b/doc#t6" label="Coverage/annis/">
         </edge>
-        <edge id="e24" source="corpus/a/doc#op-span_52-52" target="corpus/b/doc#t8" label="Coverage/annis/">
+        <edge id="e24" source="corpus/b/doc#dipl6" target="corpus/b/doc#t7" label="Coverage/annis/">
         </edge>
-        <edge id="e25" source="corpus/a/doc#norm2" target="corpus/a/doc#norm3" label="Pointing//dep">
+        <edge id="e25" source="corpus/b/doc#dipl7" target="corpus/b/doc#t8" label="Coverage/annis/">
+        </edge>
+        <edge id="e26" source="corpus/b/doc#dipl8" target="corpus/b/doc#t9" label="Coverage/annis/">
+        </edge>
+        <edge id="e27" source="corpus/b/doc#norm0" target="corpus/b/doc#t0" label="Coverage/annis/">
+        </edge>
+        <edge id="e28" source="corpus/b/doc#norm1" target="corpus/b/doc#t1" label="Coverage/annis/">
+        </edge>
+        <edge id="e29" source="corpus/b/doc#norm2" target="corpus/b/doc#t2" label="Coverage/annis/">
+        </edge>
+        <edge id="e30" source="corpus/b/doc#norm3" target="corpus/b/doc#t3" label="Coverage/annis/">
+        </edge>
+        <edge id="e31" source="corpus/b/doc#norm5" target="corpus/b/doc#t5" label="Coverage/annis/">
+        </edge>
+        <edge id="e32" source="corpus/b/doc#norm6" target="corpus/b/doc#t6" label="Coverage/annis/">
+        </edge>
+        <edge id="e33" source="corpus/b/doc#norm7" target="corpus/b/doc#t7" label="Coverage/annis/">
+        </edge>
+        <edge id="e34" source="corpus/b/doc#norm8" target="corpus/b/doc#t8" label="Coverage/annis/">
+        </edge>
+        <edge id="e35" source="corpus/b/doc#norm10" target="corpus/b/doc#t10" label="Coverage/annis/">
+        </edge>
+        <edge id="e36" source="corpus/a/doc#norm1" target="corpus/a/doc#norm2" label="Pointing//dep">
+            <data key="k7">obl</data>
+        </edge>
+        <edge id="e37" source="corpus/a/doc#norm1" target="corpus/a/doc#norm5" label="Pointing//dep">
+            <data key="k7">mod</data>
+        </edge>
+        <edge id="e38" source="corpus/a/doc#norm2" target="corpus/a/doc#norm3" label="Pointing//dep">
             <data key="k7">comp</data>
         </edge>
-        <edge id="e26" source="corpus/a/doc#norm8" target="corpus/a/doc#norm6" label="Pointing//dep">
+        <edge id="e39" source="corpus/a/doc#norm5" target="corpus/a/doc#norm8" label="Pointing//dep">
+            <data key="k7">comp</data>
+        </edge>
+        <edge id="e40" source="corpus/a/doc#norm8" target="corpus/a/doc#norm6" label="Pointing//dep">
             <data key="k7">det</data>
         </edge>
-        <edge id="e27" source="corpus/b/doc#norm1" target="corpus/b/doc#norm0" label="Pointing//dep">
+        <edge id="e41" source="corpus/a/doc#norm8" target="corpus/a/doc#norm7" label="Pointing//dep">
+            <data key="k7">mod</data>
+        </edge>
+        <edge id="e42" source="corpus/b/doc#norm1" target="corpus/b/doc#norm0" label="Pointing//dep">
             <data key="k7">subj</data>
         </edge>
-        <edge id="e28" source="corpus/b/doc#norm1" target="corpus/b/doc#norm2" label="Pointing//dep">
+        <edge id="e43" source="corpus/b/doc#norm1" target="corpus/b/doc#norm2" label="Pointing//dep">
             <data key="k7">comp</data>
         </edge>
-        <edge id="e29" source="corpus/b/doc#norm2" target="corpus/b/doc#norm3" label="Pointing//dep">
+        <edge id="e44" source="corpus/b/doc#norm2" target="corpus/b/doc#norm3" label="Pointing//dep">
             <data key="k7">comp</data>
         </edge>
-        <edge id="e30" source="corpus/a/doc#t0" target="corpus/a/doc#t1" label="Ordering/annis/">
+        <edge id="e45" source="corpus/b/doc#norm5" target="corpus/b/doc#norm6" label="Pointing//dep">
+            <data key="k7">flat</data>
         </edge>
-        <edge id="e31" source="corpus/a/doc#t1" target="corpus/a/doc#t2" label="Ordering/annis/">
+        <edge id="e46" source="corpus/a/doc#t2" target="corpus/a/doc#t3" label="Ordering/annis/">
         </edge>
-        <edge id="e32" source="corpus/a/doc#t2" target="corpus/a/doc#t3" label="Ordering/annis/">
+        <edge id="e47" source="corpus/a/doc#t3" target="corpus/b/doc#t6" label="Ordering/annis/">
         </edge>
-        <edge id="e33" source="corpus/a/doc#t3" target="corpus/b/doc#t6" label="Ordering/annis/">
+        <edge id="e48" source="corpus/a/doc#t6" target="corpus/b/doc#t8" label="Ordering/annis/">
         </edge>
-        <edge id="e34" source="corpus/a/doc#t6" target="corpus/b/doc#t8" label="Ordering/annis/">
+        <edge id="e49" source="corpus/a/doc#t8" target="corpus/a/doc#t9" label="Ordering/annis/">
         </edge>
-        <edge id="e35" source="corpus/a/doc#t8" target="corpus/a/doc#t9" label="Ordering/annis/">
+        <edge id="e50" source="corpus/b/doc#t0" target="corpus/b/doc#t1" label="Ordering/annis/">
         </edge>
-        <edge id="e36" source="corpus/a/doc#t9" target="corpus/a/doc#t10" label="Ordering/annis/">
+        <edge id="e51" source="corpus/b/doc#t1" target="corpus/b/doc#t2" label="Ordering/annis/">
         </edge>
-        <edge id="e37" source="corpus/b/doc#t0" target="corpus/b/doc#t1" label="Ordering/annis/">
+        <edge id="e52" source="corpus/b/doc#t2" target="corpus/b/doc#t3" label="Ordering/annis/">
         </edge>
-        <edge id="e38" source="corpus/b/doc#t1" target="corpus/b/doc#t2" label="Ordering/annis/">
+        <edge id="e53" source="corpus/b/doc#t3" target="corpus/a/doc#t2" label="Ordering/annis/">
         </edge>
-        <edge id="e39" source="corpus/b/doc#t2" target="corpus/b/doc#t3" label="Ordering/annis/">
+        <edge id="e54" source="corpus/b/doc#t6" target="corpus/a/doc#t6" label="Ordering/annis/">
         </edge>
-        <edge id="e40" source="corpus/b/doc#t3" target="corpus/a/doc#t2" label="Ordering/annis/">
+        <edge id="e55" source="corpus/b/doc#t8" target="corpus/a/doc#t8" label="Ordering/annis/">
         </edge>
-        <edge id="e41" source="corpus/b/doc#t6" target="corpus/a/doc#t6" label="Ordering/annis/">
+        <edge id="e56" source="corpus/a/doc#dipl2" target="corpus/a/doc#dipl3" label="Ordering/default_ns/dipl">
         </edge>
-        <edge id="e42" source="corpus/b/doc#t8" target="corpus/a/doc#t8" label="Ordering/annis/">
+        <edge id="e57" source="corpus/a/doc#dipl3" target="corpus/b/doc#dipl5" label="Ordering/default_ns/dipl">
         </edge>
-        <edge id="e43" source="corpus/a/doc#dipl2" target="corpus/a/doc#dipl3" label="Ordering/default_ns/dipl">
+        <edge id="e58" source="corpus/a/doc#dipl5" target="corpus/b/doc#dipl7" label="Ordering/default_ns/dipl">
         </edge>
-        <edge id="e44" source="corpus/a/doc#dipl3" target="corpus/b/doc#dipl5" label="Ordering/default_ns/dipl">
+        <edge id="e59" source="corpus/b/doc#dipl0" target="corpus/b/doc#dipl1" label="Ordering/default_ns/dipl">
         </edge>
-        <edge id="e45" source="corpus/a/doc#dipl5" target="corpus/b/doc#dipl7" label="Ordering/default_ns/dipl">
+        <edge id="e60" source="corpus/b/doc#dipl1" target="corpus/b/doc#dipl2" label="Ordering/default_ns/dipl">
         </edge>
-        <edge id="e46" source="corpus/b/doc#dipl0" target="corpus/b/doc#dipl1" label="Ordering/default_ns/dipl">
+        <edge id="e61" source="corpus/b/doc#dipl2" target="corpus/b/doc#dipl3" label="Ordering/default_ns/dipl">
         </edge>
-        <edge id="e47" source="corpus/b/doc#dipl1" target="corpus/b/doc#dipl2" label="Ordering/default_ns/dipl">
+        <edge id="e62" source="corpus/b/doc#dipl3" target="corpus/a/doc#dipl2" label="Ordering/default_ns/dipl">
         </edge>
-        <edge id="e48" source="corpus/b/doc#dipl2" target="corpus/b/doc#dipl3" label="Ordering/default_ns/dipl">
+        <edge id="e63" source="corpus/b/doc#dipl5" target="corpus/a/doc#dipl5" label="Ordering/default_ns/dipl">
         </edge>
-        <edge id="e49" source="corpus/b/doc#dipl3" target="corpus/a/doc#dipl2" label="Ordering/default_ns/dipl">
+        <edge id="e64" source="corpus/b/doc#dipl7" target="corpus/a/doc#dipl7" label="Ordering/default_ns/dipl">
         </edge>
-        <edge id="e50" source="corpus/b/doc#dipl5" target="corpus/a/doc#dipl5" label="Ordering/default_ns/dipl">
+        <edge id="e65" source="corpus/a/doc#norm2" target="corpus/a/doc#norm3" label="Ordering/default_ns/norm">
         </edge>
-        <edge id="e51" source="corpus/b/doc#dipl7" target="corpus/a/doc#dipl7" label="Ordering/default_ns/dipl">
+        <edge id="e66" source="corpus/a/doc#norm3" target="corpus/b/doc#norm6" label="Ordering/default_ns/norm">
         </edge>
-        <edge id="e52" source="corpus/a/doc#norm2" target="corpus/a/doc#norm3" label="Ordering/default_ns/norm">
+        <edge id="e67" source="corpus/a/doc#norm6" target="corpus/b/doc#norm8" label="Ordering/default_ns/norm">
         </edge>
-        <edge id="e53" source="corpus/a/doc#norm3" target="corpus/b/doc#norm6" label="Ordering/default_ns/norm">
+        <edge id="e68" source="corpus/a/doc#norm8" target="corpus/a/doc#norm9" label="Ordering/default_ns/norm">
         </edge>
-        <edge id="e54" source="corpus/a/doc#norm6" target="corpus/b/doc#norm8" label="Ordering/default_ns/norm">
+        <edge id="e69" source="corpus/b/doc#norm0" target="corpus/b/doc#norm1" label="Ordering/default_ns/norm">
         </edge>
-        <edge id="e55" source="corpus/a/doc#norm8" target="corpus/a/doc#norm9" label="Ordering/default_ns/norm">
+        <edge id="e70" source="corpus/b/doc#norm1" target="corpus/b/doc#norm2" label="Ordering/default_ns/norm">
         </edge>
-        <edge id="e56" source="corpus/b/doc#norm0" target="corpus/b/doc#norm1" label="Ordering/default_ns/norm">
+        <edge id="e71" source="corpus/b/doc#norm2" target="corpus/b/doc#norm3" label="Ordering/default_ns/norm">
         </edge>
-        <edge id="e57" source="corpus/b/doc#norm1" target="corpus/b/doc#norm2" label="Ordering/default_ns/norm">
+        <edge id="e72" source="corpus/b/doc#norm3" target="corpus/a/doc#norm2" label="Ordering/default_ns/norm">
         </edge>
-        <edge id="e58" source="corpus/b/doc#norm2" target="corpus/b/doc#norm3" label="Ordering/default_ns/norm">
+        <edge id="e73" source="corpus/b/doc#norm6" target="corpus/a/doc#norm6" label="Ordering/default_ns/norm">
         </edge>
-        <edge id="e59" source="corpus/b/doc#norm3" target="corpus/a/doc#norm2" label="Ordering/default_ns/norm">
+        <edge id="e74" source="corpus/b/doc#norm8" target="corpus/a/doc#norm8" label="Ordering/default_ns/norm">
         </edge>
-        <edge id="e60" source="corpus/b/doc#norm6" target="corpus/a/doc#norm6" label="Ordering/default_ns/norm">
+        <edge id="e75" source="corpus/a" target="corpus" label="PartOf/annis/">
         </edge>
-        <edge id="e61" source="corpus/b/doc#norm8" target="corpus/a/doc#norm8" label="Ordering/default_ns/norm">
+        <edge id="e76" source="corpus/b" target="corpus" label="PartOf/annis/">
         </edge>
-        <edge id="e62" source="corpus/a" target="corpus" label="PartOf/annis/">
+        <edge id="e77" source="corpus/a/doc" target="corpus/a" label="PartOf/annis/">
         </edge>
-        <edge id="e63" source="corpus/b" target="corpus" label="PartOf/annis/">
+        <edge id="e78" source="corpus/a/doc#t0" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e64" source="corpus/a/doc" target="corpus/a" label="PartOf/annis/">
+        <edge id="e79" source="corpus/a/doc#t1" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e65" source="corpus/b/doc" target="corpus/b" label="PartOf/annis/">
+        <edge id="e80" source="corpus/a/doc#t2" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e66" source="corpus/a/doc#t0" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e81" source="corpus/a/doc#t3" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e67" source="corpus/a/doc#t1" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e82" source="corpus/a/doc#t4" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e68" source="corpus/a/doc#t2" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e83" source="corpus/a/doc#t5" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e69" source="corpus/a/doc#t3" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e84" source="corpus/a/doc#t6" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e70" source="corpus/a/doc#t6" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e85" source="corpus/a/doc#t7" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e71" source="corpus/a/doc#t8" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e86" source="corpus/a/doc#t8" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e72" source="corpus/a/doc#t9" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e87" source="corpus/a/doc#t9" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e73" source="corpus/a/doc#t10" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e88" source="corpus/a/doc#t10" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e74" source="corpus/a/doc#dipl0" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e89" source="corpus/a/doc#dipl0" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e75" source="corpus/a/doc#dipl2" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e90" source="corpus/a/doc#dipl1" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e76" source="corpus/a/doc#dipl3" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e91" source="corpus/a/doc#dipl2" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e77" source="corpus/a/doc#dipl5" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e92" source="corpus/a/doc#dipl3" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e78" source="corpus/a/doc#dipl7" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e93" source="corpus/a/doc#dipl4" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e79" source="corpus/a/doc#norm0" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e94" source="corpus/a/doc#dipl5" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e80" source="corpus/a/doc#norm_pos_0" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e95" source="corpus/a/doc#dipl6" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e81" source="corpus/a/doc#norm_pos_1" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e96" source="corpus/a/doc#dipl7" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e82" source="corpus/a/doc#norm2" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e97" source="corpus/a/doc#norm_pos_0" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e83" source="corpus/a/doc#norm_pos_2" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e98" source="corpus/a/doc#norm1" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e84" source="corpus/a/doc#norm3" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e99" source="corpus/a/doc#norm_pos_1" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e85" source="corpus/a/doc#norm_pos_3" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e100" source="corpus/a/doc#norm2" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e86" source="corpus/a/doc#norm_pos_4" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e101" source="corpus/a/doc#norm_pos_2" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e87" source="corpus/a/doc#norm_pos_5" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e102" source="corpus/a/doc#norm3" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e88" source="corpus/a/doc#norm6" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e103" source="corpus/a/doc#norm_pos_3" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e89" source="corpus/a/doc#norm_pos_6" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e104" source="corpus/a/doc#norm_pos_4" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e90" source="corpus/a/doc#norm_pos_7" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e105" source="corpus/a/doc#norm5" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e91" source="corpus/a/doc#norm8" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e106" source="corpus/a/doc#norm_pos_5" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e92" source="corpus/a/doc#norm_pos_8" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e107" source="corpus/a/doc#norm6" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e93" source="corpus/a/doc#norm9" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e108" source="corpus/a/doc#norm_pos_6" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e94" source="corpus/a/doc#norm_pos_9" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e109" source="corpus/a/doc#norm7" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e95" source="corpus/b/doc#t0" target="corpus/b/doc" label="PartOf/annis/">
+        <edge id="e110" source="corpus/a/doc#norm_pos_7" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e96" source="corpus/b/doc#t1" target="corpus/b/doc" label="PartOf/annis/">
+        <edge id="e111" source="corpus/a/doc#norm8" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e97" source="corpus/b/doc#t2" target="corpus/b/doc" label="PartOf/annis/">
+        <edge id="e112" source="corpus/a/doc#norm_pos_8" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e98" source="corpus/b/doc#t3" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e113" source="corpus/a/doc#norm9" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e99" source="corpus/b/doc#t3" target="corpus/b/doc" label="PartOf/annis/">
+        <edge id="e114" source="corpus/a/doc#norm_pos_9" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e100" source="corpus/b/doc#t6" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e115" source="corpus/b/doc#t0" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e101" source="corpus/b/doc#t6" target="corpus/b/doc" label="PartOf/annis/">
+        <edge id="e116" source="corpus/b/doc#t1" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e102" source="corpus/b/doc#t8" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e117" source="corpus/b/doc#t2" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e103" source="corpus/b/doc#t8" target="corpus/b/doc" label="PartOf/annis/">
+        <edge id="e118" source="corpus/b/doc#t3" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e104" source="corpus/b/doc#dipl0" target="corpus/b/doc" label="PartOf/annis/">
+        <edge id="e119" source="corpus/b/doc#t6" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e105" source="corpus/b/doc#dipl1" target="corpus/b/doc" label="PartOf/annis/">
+        <edge id="e120" source="corpus/b/doc#t8" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e106" source="corpus/b/doc#dipl2" target="corpus/b/doc" label="PartOf/annis/">
+        <edge id="e121" source="corpus/b/doc#dipl0" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e107" source="corpus/b/doc#dipl3" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e122" source="corpus/b/doc#dipl1" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e108" source="corpus/b/doc#dipl3" target="corpus/b/doc" label="PartOf/annis/">
+        <edge id="e123" source="corpus/b/doc#dipl2" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e109" source="corpus/b/doc#dipl5" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e124" source="corpus/b/doc#dipl3" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e110" source="corpus/b/doc#dipl5" target="corpus/b/doc" label="PartOf/annis/">
+        <edge id="e125" source="corpus/b/doc#dipl5" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e111" source="corpus/b/doc#dipl7" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e126" source="corpus/b/doc#dipl7" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e112" source="corpus/b/doc#dipl7" target="corpus/b/doc" label="PartOf/annis/">
+        <edge id="e127" source="corpus/b/doc#norm0" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e113" source="corpus/b/doc#norm0" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e128" source="corpus/b/doc#norm1" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e114" source="corpus/b/doc#norm0" target="corpus/b/doc" label="PartOf/annis/">
+        <edge id="e129" source="corpus/b/doc#norm2" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e115" source="corpus/b/doc#norm_pos_0" target="corpus/b/doc" label="PartOf/annis/">
+        <edge id="e130" source="corpus/b/doc#norm3" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e116" source="corpus/b/doc#norm1" target="corpus/b/doc" label="PartOf/annis/">
+        <edge id="e131" source="corpus/b/doc#norm6" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
-        <edge id="e117" source="corpus/b/doc#norm_pos_1" target="corpus/b/doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e118" source="corpus/b/doc#norm2" target="corpus/b/doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e119" source="corpus/b/doc#norm_pos_2" target="corpus/b/doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e120" source="corpus/b/doc#norm3" target="corpus/a/doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e121" source="corpus/b/doc#norm3" target="corpus/b/doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e122" source="corpus/b/doc#norm_pos_3" target="corpus/b/doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e123" source="corpus/b/doc#norm_pos_4" target="corpus/b/doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e124" source="corpus/b/doc#norm_pos_5" target="corpus/b/doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e125" source="corpus/b/doc#norm6" target="corpus/a/doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e126" source="corpus/b/doc#norm6" target="corpus/b/doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e127" source="corpus/b/doc#norm_pos_6" target="corpus/b/doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e128" source="corpus/b/doc#norm_pos_7" target="corpus/b/doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e129" source="corpus/b/doc#norm8" target="corpus/a/doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e130" source="corpus/b/doc#norm8" target="corpus/b/doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e131" source="corpus/b/doc#norm_pos_8" target="corpus/b/doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e132" source="corpus/b/doc#norm_pos_9" target="corpus/b/doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e133" source="corpus/b/doc#norm_pos_10" target="corpus/b/doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e134" source="corpus/a/doc#op-span_50-50" target="corpus/a/doc" label="PartOf/annis/">
-        </edge>
-        <edge id="e135" source="corpus/a/doc#op-span_52-52" target="corpus/a/doc" label="PartOf/annis/">
+        <edge id="e132" source="corpus/b/doc#norm8" target="corpus/a/doc" label="PartOf/annis/">
         </edge>
     </graph>
 </graphml>
