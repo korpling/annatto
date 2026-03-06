@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<basic-transcription>
+<head>
+<meta-information><project-name></project-name><transcription-name></transcription-name><referenced-file url=""/><ud-meta-information></ud-meta-information><comment></comment><transcription-convention></transcription-convention></meta-information><speakertable><speaker id="SPK0">
+<abbreviation>X</abbreviation>
+<sex value="m"/>
+<languages-used></languages-used>
+<l1></l1>
+<l2></l2>
+<ud-speaker-information>
+</ud-speaker-information>
+<comment></comment>
+</speaker>
+</speakertable></head>
+<basic-body>
+<common-timeline>
+<tli id="T0"/>
+<tli id="T1"/>
+<tli id="T11"/>
+</common-timeline>
+<tier id="TIE0" speaker="SPK0" category="v" type="t" display-name="X [v]"><event start="T0" end="T1">An</event>
+<event start="T1" end="T11">example</event>
+</tier><tier id="TIE1" speaker="SPK0" category="underlined" type="a" display-name="X [underlined]"><event start="T1" end="T11">underlined</event>
+</tier><tier id="TIE2" speaker="SPK0" category="italic" type="a" display-name="X [italic]"><event start="T1" end="T11">italic</event>
+</tier></basic-body>
+</basic-transcription>

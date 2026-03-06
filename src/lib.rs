@@ -291,7 +291,7 @@ impl Display for StepID {
 /// Represents a single step in a conversion pipeline.
 pub trait Step {}
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ImporterStep {
     #[serde(flatten)]
@@ -327,7 +327,7 @@ impl ImporterStep {
 
 impl Step for ImporterStep {}
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ExporterStep {
     #[serde(flatten)]
@@ -364,7 +364,7 @@ impl ExporterStep {
 
 impl Step for ExporterStep {}
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ManipulatorStep {
     #[serde(flatten)]

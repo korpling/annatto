@@ -10,7 +10,8 @@ expression: actual.unwrap()
       <project-name/>
       <transcription-name/>
       <referenced-file url="media/test_file.wav"/>
-      <ud-meta-information/>
+      <ud-meta-information>
+      </ud-meta-information>
       <comment/>
       <transcription-convention/>
     </meta-information>

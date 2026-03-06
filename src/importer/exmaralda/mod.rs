@@ -27,9 +27,26 @@ use crate::{
 
 /// Import [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
 /// (`.exb`) files.
-#[derive(Facet, Default, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
-pub struct ImportEXMARaLDA {}
+pub struct ImportEXMARaLDA {
+    /// If `true` (the default), events that cover the same timeline items and
+    /// belong to the same speaker are merged into a single span.
+    #[serde(default = "default_merge_events")]
+    merge_events: bool,
+}
+
+impl Default for ImportEXMARaLDA {
+    fn default() -> Self {
+        Self {
+            merge_events: default_merge_events(),
+        }
+    }
+}
+
+fn default_merge_events() -> bool {
+    true
+}
 
 const FILE_EXTENSIONS: [&str; 2] = ["exb", "xml"];
 
@@ -409,7 +426,7 @@ impl ImportEXMARaLDA {
                                 i_val
                             } else {
                                 let err = AnnattoError::Import {
-                                    reason: format!("Unknown time line item: {start_id}"),
+                                    reason: format!("Unknown time line item: {end_id}"),
                                     importer: step_id.module_name.clone(),
                                     path: document_path.to_path_buf(),
                                 };
@@ -438,9 +455,15 @@ impl ImportEXMARaLDA {
                                 }
                                 continue;
                             };
-                            let node_name = format!(
-                                "{doc_node_name}#{tier_type}_{speaker_id}_{start_id}-{end_id}"
-                            ); // this is not a unique id as not intended to be
+                            let node_name = if self.merge_events {
+                                format!(
+                                    "{doc_node_name}#{tier_type}_{speaker_id}_{start_id}-{end_id}"
+                                )
+                            } else {
+                                format!(
+                                    "{doc_node_name}#{tier_type}_{speaker_id}_{anno_name}_{start_id}-{end_id}"
+                                )
+                            };
                             if !already_defined.contains(&node_name) {
                                 update.add_event(UpdateEvent::AddNode {
                                     node_name: node_name.to_string(),

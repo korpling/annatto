@@ -608,7 +608,7 @@ ignore_others = true
 
     #[test]
     fn default_functionality() {
-        let exmaralda = ImportEXMARaLDA {};
+        let exmaralda = ImportEXMARaLDA::default();
         let mprt = exmaralda.import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
             StepID {
@@ -630,7 +630,7 @@ ignore_others = true
 
     #[test]
     fn customization() {
-        let exmaralda = ImportEXMARaLDA {};
+        let exmaralda = ImportEXMARaLDA::default();
         let mprt = exmaralda.import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
             StepID {
@@ -668,7 +668,7 @@ ignore_others = true
 
     #[test]
     fn customization_no_ignore() {
-        let exmaralda = ImportEXMARaLDA {};
+        let exmaralda = ImportEXMARaLDA::default();
         let mprt = exmaralda.import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
             StepID {
@@ -706,7 +706,7 @@ ignore_others = true
 
     #[test]
     fn with_point_tiers() {
-        let exmaralda = ImportEXMARaLDA {};
+        let exmaralda = ImportEXMARaLDA::default();
         let mprt = exmaralda.import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
             StepID {
@@ -748,7 +748,7 @@ ignore_others = true
 
     #[test]
     fn ignore_with_point_tiers() {
-        let exmaralda = ImportEXMARaLDA {};
+        let exmaralda = ImportEXMARaLDA::default();
         let mprt = exmaralda.import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
             StepID {
@@ -790,7 +790,7 @@ ignore_others = true
 
     #[test]
     fn ignore_only() {
-        let exmaralda = ImportEXMARaLDA {};
+        let exmaralda = ImportEXMARaLDA::default();
         let mprt = exmaralda.import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda/"),
             StepID {

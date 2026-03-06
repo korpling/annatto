@@ -10,6 +10,8 @@ expression: actual.unwrap()
       <project-name/>
       <transcription-name/>
       <ud-meta-information>
+        <ud-information attribute-name="mynamespace::author">John Doe</ud-information>
+        <ud-information attribute-name="anothernamespace::published">no</ud-information>
       </ud-meta-information>
       <comment/>
       <transcription-convention/>
@@ -49,17 +51,17 @@ expression: actual.unwrap()
       <tli id="T7" time="7"/>
       <tli id="T8" time="8"/>
     </common-timeline>
-    <tier speaker="" category="highlighted" type="a" id="TIER1" display-name="[highlighted]">
+    <tier speaker="" category="highlighted" type="a" id="TIER2" display-name="[highlighted]">
       <event start="T2" end="T4">highlighted</event>
     </tier>
-    <tier speaker="" category="lb" type="a" id="TIER5" display-name="[lb]">
+    <tier speaker="" category="lb" type="a" id="TIER6" display-name="[lb]">
       <event start="T0" end="T3">lb</event>
       <event start="T3" end="T8">lb</event>
     </tier>
-    <tier speaker="" category="lb_comment" type="a" id="TIER6" display-name="[lb_comment]">
+    <tier speaker="" category="lb_comment" type="a" id="TIER7" display-name="[lb_comment]">
       <event start="T0" end="T3">There are several &quot;unreadable&quot; characters in that line.</event>
     </tier>
-    <tier speaker="default_ns" category="lemma" type="a" id="TIER7" display-name="default_ns[lemma]">
+    <tier speaker="default_ns" category="lemma" type="a" id="TIER8" display-name="default_ns[lemma]">
       <event start="T0" end="T1">der</event>
       <event start="T1" end="T2">Jugendliche</event>
       <event start="T2" end="T3">in</event>
@@ -69,7 +71,7 @@ expression: actual.unwrap()
       <event start="T6" end="T7">Musikcafé</event>
       <event start="T7" end="T8">.</event>
     </tier>
-    <tier speaker="default_ns" category="pos" type="a" id="TIER10" display-name="default_ns[pos]">
+    <tier speaker="default_ns" category="pos" type="a" id="TIER11" display-name="default_ns[pos]">
       <event start="T0" end="T1">ART</event>
       <event start="T1" end="T2">NN</event>
       <event start="T2" end="T3">APPR</event>
@@ -79,16 +81,16 @@ expression: actual.unwrap()
       <event start="T6" end="T7">NN</event>
       <event start="T7" end="T8">$.</event>
     </tier>
-    <tier speaker="" category="s" type="a" id="TIER11" display-name="[s]">
+    <tier speaker="" category="s" type="a" id="TIER13" display-name="[s]">
       <event start="T0" end="T8">s</event>
     </tier>
-    <tier speaker="" category="s_complexity" type="a" id="TIER12" display-name="[s_complexity]">
+    <tier speaker="" category="s_complexity" type="a" id="TIER14" display-name="[s_complexity]">
       <event start="T0" end="T8">low</event>
     </tier>
-    <tier speaker="" category="s_n" type="a" id="TIER13" display-name="[s_n]">
+    <tier speaker="" category="s_n" type="a" id="TIER15" display-name="[s_n]">
       <event start="T0" end="T8">1</event>
     </tier>
-    <tier speaker="" category="tok" type="t" id="TIER14" display-name="annis[tok]">
+    <tier speaker="" category="tok" type="t" id="TIER16" display-name="annis[tok]">
       <event start="T0" end="T1">Die</event>
       <event start="T1" end="T2">Jugendlichen</event>
       <event start="T2" end="T3">in</event>
