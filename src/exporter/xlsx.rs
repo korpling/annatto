@@ -8,7 +8,7 @@ use facet::Facet;
 use graphannis::{AnnotationGraph, aql, graph::GraphStorage, model::AnnotationComponentType};
 use graphannis_core::{
     annostorage::{NodeAnnotationStorage, ValueSearch},
-    graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY},
+    graph::{ANNIS_NS, NODE_TYPE_KEY},
     types::{AnnoKey, Component, NodeID},
     util::join_qname,
 };
