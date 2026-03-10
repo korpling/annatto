@@ -5,10 +5,10 @@ use std::{
 
 use anyhow::anyhow;
 use facet::Facet;
-use graphannis::{AnnotationGraph, graph::GraphStorage, model::AnnotationComponentType};
+use graphannis::{AnnotationGraph, aql, graph::GraphStorage, model::AnnotationComponentType};
 use graphannis_core::{
     annostorage::{NodeAnnotationStorage, ValueSearch},
-    graph::{ANNIS_NS, NODE_TYPE_KEY},
+    graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE_KEY},
     types::{AnnoKey, Component, NodeID},
     util::join_qname,
 };
@@ -62,20 +62,18 @@ pub struct ExportXlsx {
 
 fn find_token_roots(
     g: &graphannis::AnnotationGraph,
+    doc_node_name: &str,
     token_helper: &TokenHelper,
     ordering_gs: Option<&dyn GraphStorage>,
 ) -> anyhow::Result<HashSet<NodeID>> {
     let mut roots: HashSet<_> = HashSet::new();
-    for n in g
-        .get_node_annos()
-        .exact_anno_search(Some(ANNIS_NS), "tok", ValueSearch::Any)
-    {
-        let n = n?;
-
+    let query = aql::parse(&format!("tok @* annis:doc=/{doc_node_name}/"), false)?;
+    for m in aql::execute_query_on_graph(g, &query, true, None)?.flatten() {
         // Check that this is an actual token and there are no outgoing coverage edges
-        if token_helper.is_token(n.node)?
+        if let Some(n) = m.first()
+            && token_helper.is_token(n.node)?
             && (ordering_gs.is_none()
-                || ordering_gs.is_some_and(|gs| gs.get_ingoing_edges(n.node).next().is_none()))
+                || ordering_gs.is_some_and(|gs| !gs.has_ingoing_edges(n.node).unwrap_or_default()))
         {
             roots.insert(n.node);
         }
@@ -167,7 +165,7 @@ impl ExportXlsx {
         );
         let ordering_gs = g.get_graphstorage_as_ref(&ordering_component);
 
-        let token_roots = find_token_roots(g, &token_helper, ordering_gs)?;
+        let token_roots = find_token_roots(g, doc_name, &token_helper, ordering_gs)?;
 
         let (token_to_row, has_only_empty_token) =
             self.create_token_colum(g, &token_roots, doc_node_id, worksheet)?;
