@@ -733,8 +733,34 @@ impl SequencePair {
                         .find_connected(start_node, 0, std::ops::Bound::Unbounded)
                         .flatten();
                     let mut integrate_nodes = BTreeSet::default();
+                    let diff_span =
+                        format!("{}#diff-span{}", self.source_stem, new_tok_order.len());
+                    update.add_event(UpdateEvent::AddNode {
+                        node_name: diff_span.to_string(),
+                        node_type: "node".to_string(),
+                    })?;
+                    update.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: diff_span.to_string(),
+                        anno_ns: "diff".to_string(),
+                        anno_name: "op".to_string(),
+                        anno_value: "inserted".to_string(),
+                    })?;
+                    update.add_event(UpdateEvent::AddEdge {
+                        source_node: diff_span.to_string(),
+                        target_node: self.source_stem.to_string(),
+                        layer: ANNIS_NS.to_string(),
+                        component_type: AnnotationComponentType::PartOf.to_string(),
+                        component_name: "".to_string(),
+                    })?;
                     while let Some(node_id) = order_it.next() {
                         new_tok_order.insert(node_id);
+                        update.add_event(UpdateEvent::AddEdge {
+                            source_node: diff_span.to_string(),
+                            target_node: helper.node_name(node_id)?,
+                            layer: ANNIS_NS.to_string(),
+                            component_type: AnnotationComponentType::Coverage.to_string(),
+                            component_name: "".to_string(),
+                        })?;
                         for DFSStep { node, .. } in
                             CycleSafeDFS::new_inverse(&vertical_container, node_id, 1, usize::MAX)
                                 .flatten()
@@ -778,12 +804,38 @@ impl SequencePair {
                     let mut order_it = default_ordering_gs
                         .find_connected(start_node, 0, std::ops::Bound::Unbounded)
                         .flatten();
-                    while let Some(node_id) = order_it.next()
-                        && node_id != end_node
-                    {
+                    let diff_span =
+                        format!("{}#diff-span{}", self.source_stem, new_tok_order.len());
+                    update.add_event(UpdateEvent::AddNode {
+                        node_name: diff_span.to_string(),
+                        node_type: "node".to_string(),
+                    })?;
+                    update.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: diff_span.to_string(),
+                        anno_ns: "diff".to_string(),
+                        anno_name: "op".to_string(),
+                        anno_value: "replaced".to_string(),
+                    })?;
+                    update.add_event(UpdateEvent::AddEdge {
+                        source_node: diff_span.to_string(),
+                        target_node: self.source_stem.to_string(),
+                        layer: ANNIS_NS.to_string(),
+                        component_type: AnnotationComponentType::PartOf.to_string(),
+                        component_name: "".to_string(),
+                    })?;
+                    while let Some(node_id) = order_it.next() {
                         new_tok_order.insert(node_id);
+                        update.add_event(UpdateEvent::AddEdge {
+                            source_node: diff_span.to_string(),
+                            target_node: helper.node_name(node_id)?,
+                            layer: ANNIS_NS.to_string(),
+                            component_type: AnnotationComponentType::Coverage.to_string(),
+                            component_name: "".to_string(),
+                        })?;
+                        if node_id == end_node {
+                            break;
+                        }
                     }
-                    new_tok_order.insert(end_node);
                     for node_id in &self.source_nodes[old_index..old_index + old_len - 1] {
                         for DFSStep {
                             node: downward_reachable,
