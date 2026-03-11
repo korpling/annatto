@@ -5,6 +5,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `unstable:diff` allows to execute a merge between two subgraphs by setting `merge = true`. 
+  The resulting graph might require manual post-hoc clean up, depending on other graph ops
+  and exports down the line.
+  
+### Changed
+
+- `diff` is `unstable:diff` to the user, to enforce consciousness of potential flaws in the outcome.
+
 ## [0.48.0] - 2026-02-27
 
 ### Changed
