@@ -176,6 +176,8 @@ pub enum GraphOp {
     Align(AlignNodes),  // no default
     Check(Check),       // no default, has a (required) path attribute
     Collapse(Collapse), // no default, there is no such thing as a default component
+    #[serde(rename = "unstable:diff")]
+    #[facet(rename = "unstable:diff")]
     Diff(DiffSubgraphs),
     Edit(EditGraph),
     Filter(FilterNodes),
