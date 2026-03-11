@@ -823,7 +823,7 @@ impl SequencePair {
                         component_type: AnnotationComponentType::PartOf.to_string(),
                         component_name: "".to_string(),
                     })?;
-                    while let Some(node_id) = order_it.next() {
+                    for node_id in order_it {
                         new_tok_order.insert(node_id);
                         update.add_event(UpdateEvent::AddEdge {
                             source_node: diff_span.to_string(),
