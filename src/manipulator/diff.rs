@@ -1,7 +1,6 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
     sync::Arc,
-    usize,
 };
 
 use anyhow::{anyhow, bail};
@@ -629,7 +628,7 @@ impl SequencePair {
                         .flatten()
                         .last()
                         .ok_or(anyhow!("Could not find right most token."))?;
-                    let mut order_it = default_ordering_gs
+                    let order_it = default_ordering_gs
                         .find_connected(start_node, 0, std::ops::Bound::Unbounded)
                         .flatten();
                     for node_id in order_it {
@@ -724,7 +723,7 @@ impl SequencePair {
                         .flatten()
                         .last()
                         .ok_or(anyhow!("Could not find right most token."))?;
-                    let mut order_it = default_ordering_gs
+                    let order_it = default_ordering_gs
                         .find_connected(start_node, 0, std::ops::Bound::Unbounded)
                         .flatten();
                     let mut integrate_nodes = BTreeSet::default();
