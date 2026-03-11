@@ -121,7 +121,7 @@ impl Manipulator for DiffSubgraphs {
         let pairs = self.pair(&graph_helper, &progress)?;
         let diffs = pairs
             .iter()
-            .map(|p| {
+            .flat_map(|p| {
                 compute_diff(
                     &p.source_nodes,
                     &p.target_nodes,
@@ -131,7 +131,6 @@ impl Manipulator for DiffSubgraphs {
                     self.algorithm.clone(),
                 )
             })
-            .flatten()
             .collect_vec();
         let total_num_of_diff_ops = diffs.iter().map(|d| d.len()).sum();
         let progress = ProgressReporter::new(tx.clone(), step_id.clone(), total_num_of_diff_ops)?;
@@ -162,13 +161,13 @@ impl Manipulator for DiffSubgraphs {
             }
         }
         progress.info("Applying first update ...")?;
-        update_graph(&mut graph_helper.graph, &mut update, Some(step_id), tx)?;
+        update_graph(graph_helper.graph, &mut update, Some(step_id), tx)?;
         graph_helper.graph.calculate_all_statistics()?;
         progress.info("Cleaning up ...")?;
         update = GraphUpdate::default();
         let query = aql::parse("node_type=/node/ !@* node_type=/corpus/?", false)?;
         for m in aql::execute_query_on_graph(graph_helper.graph(), &query, true, None)?.flatten() {
-            if let Some(Match { node, .. }) = m.get(0) {
+            if let Some(Match { node, .. }) = m.first() {
                 update.add_event(UpdateEvent::DeleteNode {
                     node_name: graph_helper.node_name(*node)?,
                 })?;
@@ -176,7 +175,7 @@ impl Manipulator for DiffSubgraphs {
         }
         let query = aql::parse("tok", false)?;
         for m in aql::execute_query_on_graph(graph_helper.graph(), &query, true, None)?.flatten() {
-            if let Some(Match { node, .. }) = m.get(0)
+            if let Some(Match { node, .. }) = m.first()
                 && !licensed_tok_nodes.contains(node)
             {
                 update.add_event(UpdateEvent::DeleteNode {
@@ -227,8 +226,7 @@ impl<'a> GraphDiffHelper<'a> {
             .graph
             .get_all_components(Some(AnnotationComponentType::PartOf), None)
             .iter()
-            .map(|c| self.graph.get_graphstorage(c))
-            .flatten()
+            .filter_map(|c| self.graph.get_graphstorage(c))
             .collect_vec();
         let container = UnionEdgeContainer::new(
             part_of_storages
@@ -252,8 +250,7 @@ impl<'a> GraphDiffHelper<'a> {
             .graph
             .get_all_components(Some(AnnotationComponentType::PartOf), None)
             .iter()
-            .map(|c| self.graph.get_graphstorage(c))
-            .flatten()
+            .filter_map(|c| self.graph.get_graphstorage(c))
             .collect_vec();
         let part_of_container = UnionEdgeContainer::new(
             part_of_storages
@@ -595,15 +592,13 @@ impl SequencePair {
             .graph()
             .get_all_components(Some(AnnotationComponentType::Coverage), None)
             .into_iter()
-            .map(|c| helper.graph().get_graphstorage(&c))
-            .flatten()
+            .filter_map(|c| helper.graph().get_graphstorage(&c))
             .collect_vec();
         let dominance_storages = helper
             .graph()
             .get_all_components(Some(AnnotationComponentType::Dominance), None)
             .into_iter()
-            .map(|c| helper.graph().get_graphstorage(&c))
-            .flatten()
+            .filter_map(|c| helper.graph().get_graphstorage(&c))
             .collect_vec();
         vertical_storages.extend(dominance_storages);
         let vertical_container = UnionEdgeContainer::new(
@@ -637,7 +632,7 @@ impl SequencePair {
                     let mut order_it = default_ordering_gs
                         .find_connected(start_node, 0, std::ops::Bound::Unbounded)
                         .flatten();
-                    while let Some(node_id) = order_it.next() {
+                    for node_id in order_it {
                         new_tok_order.insert(node_id);
                         if node_id == end_node {
                             break;
@@ -752,7 +747,7 @@ impl SequencePair {
                         component_type: AnnotationComponentType::PartOf.to_string(),
                         component_name: "".to_string(),
                     })?;
-                    while let Some(node_id) = order_it.next() {
+                    for node_id in order_it {
                         new_tok_order.insert(node_id);
                         update.add_event(UpdateEvent::AddEdge {
                             source_node: diff_span.to_string(),
@@ -801,7 +796,7 @@ impl SequencePair {
                         .flatten()
                         .last()
                         .ok_or(anyhow!("Could not find right most token."))?;
-                    let mut order_it = default_ordering_gs
+                    let order_it = default_ordering_gs
                         .find_connected(start_node, 0, std::ops::Bound::Unbounded)
                         .flatten();
                     let diff_span =
