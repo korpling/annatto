@@ -1,5 +1,5 @@
 ---
-source: src/manipulator/diff.rs
+source: src/manipulator/diff/tests.rs
 expression: "toml::to_string(&diff).unwrap()"
 ---
 by = "namespace::alternative_key"

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<basic-transcription>
+<head>
+<meta-information><project-name></project-name><transcription-name></transcription-name><referenced-file url=""/><ud-meta-information></ud-meta-information><comment></comment><transcription-convention></transcription-convention></meta-information><speakertable><speaker id="SPK0">
+<abbreviation>dipl</abbreviation>
+<sex value="m"/>
+<languages-used></languages-used>
+<l1></l1>
+<l2></l2>
+<ud-speaker-information>
+</ud-speaker-information>
+<comment></comment>
+</speaker>
+<speaker id="SPK1">
+<abbreviation>norm</abbreviation>
+<sex value="u"/>
+<languages-used></languages-used>
+<l1></l1>
+<l2></l2>
+<ud-speaker-information>
+</ud-speaker-information>
+<comment></comment>
+</speaker>
+</speakertable></head>
+<basic-body>
+<common-timeline>
+<tli id="T0"/>
+<tli id="T1"/>
+<tli id="T2"/>
+<tli id="T3"/>
+<tli id="T4"/>
+<tli id="T5"/>
+<tli id="T6"/>
+</common-timeline>
+<tier id="TIE0" speaker="SPK0" category="dipl" type="t" display-name="dipl [dipl]"><event start="T0" end="T1">dis</event>
+<event start="T1" end="T2">is</event>
+<event start="T2" end="T3">some</event>
+<event start="T3" end="T4">stuff</event>
+<event start="T4" end="T5">here</event>
+<event start="T5" end="T6">.</event>
+</tier><tier id="TIE1" speaker="SPK1" category="norm" type="t" display-name="norm [norm]"><event start="T0" end="T1">This</event>
+<event start="T1" end="T2">is</event>
+<event start="T2" end="T3">some</event>
+<event start="T3" end="T4">stuff</event>
+<event start="T4" end="T5">here</event>
+<event start="T5" end="T6">.</event>
+</tier></basic-body>
+</basic-transcription>
