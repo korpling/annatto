@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `diff` is `unstable:diff` to the user, to enforce consciousness of potential flaws in the outcome.
+- `visualize`: The dot output format written by `graphviz_rust` has changed
 
 ## [0.48.0] - 2026-02-27
 
