@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `unstable:diff` allows to execute a merge between two subgraphs by setting `merge = true`. 
   The resulting graph might require manual post-hoc clean up, depending on other graph ops
   and exports down the line.
+- import `toolbox`: allow annotation values with parentheses (opening **and** closing) as well as comments
   
 ### Changed
 
