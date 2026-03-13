@@ -795,9 +795,9 @@ mod tests {
     use std::path::Path;
 
     use crate::exporter::graphml::GraphMLExporter;
-    use crate::importer::{ImportRunConfiguration, Importer};
     use crate::importer::exmaralda::ImportEXMARaLDA;
     use crate::importer::graphml::GraphMLImporter;
+    use crate::importer::{ImportRunConfiguration, Importer};
     use crate::manipulator::Manipulator;
     use crate::manipulator::re::{ComponentMapping, KeyMapping, RemoveTarget, Revise};
     use crate::progress::ProgressReporter;

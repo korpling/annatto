@@ -17,7 +17,8 @@ use serde_derive::Deserialize;
 use std::{io::Read, path::Path};
 
 use crate::{
-    StepID, importer::ImportRunConfiguration, progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files
+    StepID, importer::ImportRunConfiguration, progress::ProgressReporter,
+    util::graphupdate::import_corpus_graph_from_files,
 };
 
 use super::Importer;

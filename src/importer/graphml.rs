@@ -20,7 +20,10 @@ use std::{
 };
 
 use crate::{
-    StepID, error::AnnattoError, importer::{ImportRunConfiguration, Importer}, progress::ProgressReporter,
+    StepID,
+    error::AnnattoError,
+    importer::{ImportRunConfiguration, Importer},
+    progress::ProgressReporter,
     workflow::StatusSender,
 };
 

@@ -18,7 +18,8 @@ use serde_derive::Deserialize;
 
 use super::Importer;
 use crate::{
-    StepID, importer::ImportRunConfiguration, progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files
+    StepID, importer::ImportRunConfiguration, progress::ProgressReporter,
+    util::graphupdate::import_corpus_graph_from_files,
 };
 
 #[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]

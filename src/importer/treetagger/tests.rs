@@ -7,7 +7,8 @@ use itertools::Itertools;
 use crate::{
     StepID,
     importer::{
-        ImportRunConfiguration, Importer, treetagger::{AttributeDecoding, ImportTreeTagger}
+        ImportRunConfiguration, Importer,
+        treetagger::{AttributeDecoding, ImportTreeTagger},
     },
     test_util::import_as_graphml_string,
 };

@@ -99,11 +99,8 @@ impl Importer for ImportText {
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
 
-        let all_files = util::graphupdate::import_corpus_graph_from_files(
-            &mut update,
-            input_path,
-            &config,
-        )?;
+        let all_files =
+            util::graphupdate::import_corpus_graph_from_files(&mut update, input_path, &config)?;
 
         let tokenizer = match &self.tokenizer {
             Tokenizer::Treetagger { language } => TreeTaggerTokenizer::new(language.into())?,
