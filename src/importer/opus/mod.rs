@@ -11,7 +11,10 @@ use serde_derive::Deserialize;
 use xml::{EventReader, ParserConfig};
 
 use crate::{
-    error::{AnnattoError, Result}, importer::ImportRunConfiguration, progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files
+    error::{AnnattoError, Result},
+    importer::ImportRunConfiguration,
+    progress::ProgressReporter,
+    util::graphupdate::import_corpus_graph_from_files,
 };
 
 use super::Importer;
@@ -65,8 +68,7 @@ impl Importer for ImportOpusLinks {
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let all_files =
-            import_corpus_graph_from_files(&mut update, input_path, self.file_extensions())?;
+        let all_files = import_corpus_graph_from_files(&mut update, input_path, &config)?;
         let progress = ProgressReporter::new(tx, step_id.clone(), all_files.len())?;
         all_files.into_iter().try_for_each(|(p, d)| {
             if let Err(e) =
@@ -80,7 +82,7 @@ impl Importer for ImportOpusLinks {
         Ok(update)
     }
 
-    fn file_extensions(&self) -> &[&str] {
+    fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
     }
 }

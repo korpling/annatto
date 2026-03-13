@@ -22,6 +22,7 @@ pub mod xml;
 
 use crate::{ImporterStep, StepID, workflow::StatusSender};
 use graphannis::update::GraphUpdate;
+use itertools::Itertools;
 use percent_encoding::{AsciiSet, CONTROLS};
 use std::path::Path;
 
@@ -45,7 +46,7 @@ pub trait Importer: Sync {
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>>;
 
-    fn file_extensions(&self) -> &[&str];
+    fn default_file_extensions(&self) -> &[&str];
 }
 
 /// An encoding set for node names.
@@ -72,20 +73,55 @@ pub const NODE_NAME_ENCODE_SET: &AsciiSet = &CONTROLS
 #[derive(Default)]
 pub struct ImportRunConfiguration {
     root_as: Option<String>,
-    extensions: Option<Vec<String>>,
+    extensions: Vec<String>,
 }
 
 impl<'a> ImportRunConfiguration {
-    fn root_name(&'a self) -> Option<&str> {
-        self.root_as.as_ref().map(String::as_str)
+    pub fn root_name(&'a self) -> Option<String> {
+        self.root_as.clone()
+    }
+
+    pub fn extensions(&'a self) -> &'a Vec<String> {
+        &self.extensions
+    }
+
+    #[cfg(test)]
+    pub fn new_with_root_name(root_name: String) -> ImportRunConfiguration {
+        ImportRunConfiguration {
+            root_as: Some(root_name),
+            extensions: vec![],
+        }
+    }
+
+    #[cfg(test)]
+    pub fn new_with_extensions(extensions: Vec<String>) -> ImportRunConfiguration {
+        ImportRunConfiguration {
+            root_as: None,
+            extensions,
+        }
+    }
+
+    #[cfg(test)]
+    pub fn and_extensions(self, extensions: Vec<String>) -> ImportRunConfiguration {
+        ImportRunConfiguration {
+            root_as: self.root_as,
+            extensions,
+        }
     }
 }
 
 impl From<&ImporterStep> for ImportRunConfiguration {
-    fn from(value: &ImporterStep) -> Self {
+    fn from(step: &ImporterStep) -> Self {
         ImportRunConfiguration {
-            root_as: value.root_name.clone(),
-            extensions: value.extensions.clone(),
+            root_as: step.root_name.clone(),
+            extensions: step.extensions.clone().unwrap_or(
+                step.module
+                    .reader()
+                    .default_file_extensions()
+                    .iter()
+                    .map(|e| e.to_string())
+                    .collect_vec(),
+            ),
         }
     }
 }

@@ -313,7 +313,7 @@ impl Importer for ImportPTB {
     ) -> std::result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut u = GraphUpdate::default();
 
-        let documents = import_corpus_graph_from_files(&mut u, input_path, self.file_extensions())?;
+        let documents = import_corpus_graph_from_files(&mut u, input_path, &config)?;
 
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
 
@@ -355,7 +355,7 @@ impl Importer for ImportPTB {
         }
     }
 
-    fn file_extensions(&self) -> &[&str] {
+    fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
     }
 }

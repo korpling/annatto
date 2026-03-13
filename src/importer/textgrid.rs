@@ -437,7 +437,7 @@ impl Importer for ImportTextgrid {
             audio_extension: self.audio_extension.as_str(),
         };
 
-        let documents = import_corpus_graph_from_files(&mut u, input_path, self.file_extensions())?;
+        let documents = import_corpus_graph_from_files(&mut u, input_path, &config)?;
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
         for (file_path, doc_path) in documents {
             reporter.info(format!("Processing {}", &file_path.to_string_lossy()))?;
@@ -472,7 +472,7 @@ impl Importer for ImportTextgrid {
         Ok(u)
     }
 
-    fn file_extensions(&self) -> &[&str] {
+    fn default_file_extensions(&self) -> &[&str] {
         &FILE_ENDINGS
     }
 }

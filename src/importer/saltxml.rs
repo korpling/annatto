@@ -38,7 +38,7 @@ impl Importer for ImportSaltXml {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        config: ImportRunConfiguration,
+        _config: ImportRunConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut updates = GraphUpdate::new();
@@ -73,7 +73,7 @@ impl Importer for ImportSaltXml {
         Ok(updates)
     }
 
-    fn file_extensions(&self) -> &[&str] {
+    fn default_file_extensions(&self) -> &[&str] {
         &[]
     }
 }

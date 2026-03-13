@@ -591,11 +591,8 @@ impl Importer for ImportSpreadsheet {
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
 
-        let all_files = util::graphupdate::import_corpus_graph_from_files(
-            &mut update,
-            input_path,
-            self.file_extensions(),
-        )?;
+        let all_files =
+            util::graphupdate::import_corpus_graph_from_files(&mut update, input_path, &config)?;
         // figure out which files are backup data and should not be imported
         let ignore_docs = invalid_doc_nodes(&all_files);
         // ignore the number of backup files for progress reporting, as these will be skipped
@@ -632,7 +629,7 @@ impl Importer for ImportSpreadsheet {
         Ok(update)
     }
 
-    fn file_extensions(&self) -> &[&str] {
+    fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
     }
 }
@@ -1237,7 +1234,9 @@ edition = ["chapter"]
         let files_with_names = util::graphupdate::import_corpus_graph_from_files(
             &mut update,
             Path::new("tests/data/import/xlsx/with_backup/xlsx/"),
-            &FILE_EXTENSIONS,
+            &ImportRunConfiguration::new_with_extensions(
+                FILE_EXTENSIONS.iter().map(|e| e.to_string()).collect_vec(),
+            ),
         );
         assert!(
             files_with_names.is_ok(),

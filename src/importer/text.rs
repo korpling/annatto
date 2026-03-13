@@ -102,7 +102,7 @@ impl Importer for ImportText {
         let all_files = util::graphupdate::import_corpus_graph_from_files(
             &mut update,
             input_path,
-            self.file_extensions(),
+            &config,
         )?;
 
         let tokenizer = match &self.tokenizer {
@@ -127,7 +127,7 @@ impl Importer for ImportText {
         Ok(update)
     }
 
-    fn file_extensions(&self) -> &[&str] {
+    fn default_file_extensions(&self) -> &[&str] {
         &["txt"]
     }
 }

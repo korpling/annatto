@@ -25,7 +25,7 @@ impl Importer for CreateFileNodes {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        config: ImportRunConfiguration,
+        _config: ImportRunConfiguration,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
@@ -75,7 +75,7 @@ impl Importer for CreateFileNodes {
         }
     }
 
-    fn file_extensions(&self) -> &[&str] {
+    fn default_file_extensions(&self) -> &[&str] {
         &[]
     }
 }

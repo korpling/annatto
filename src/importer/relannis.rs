@@ -40,7 +40,7 @@ impl Importer for ImportRelAnnis {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        config: ImportRunConfiguration,
+        _config: ImportRunConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let progress = ProgressReporter::new_unknown_total_work(tx, step_id.clone())?;
@@ -84,7 +84,7 @@ impl Importer for ImportRelAnnis {
         }
     }
 
-    fn file_extensions(&self) -> &[&str] {
+    fn default_file_extensions(&self) -> &[&str] {
         &[]
     }
 }
