@@ -2,7 +2,7 @@ use crate::{
     StepID,
     error::{AnnattoError, Result},
     exporter::Exporter,
-    importer::Importer,
+    importer::{ImportRunConfiguration, Importer},
     util::get_all_files,
     workflow::StatusSender,
 };
@@ -46,7 +46,7 @@ where
         path: None,
     };
     let mut u = importer
-        .import_corpus(path.as_ref(), step_id.clone(), tx)
+        .import_corpus(path.as_ref(), step_id.clone(), ImportRunConfiguration::default(), tx)
         .map_err(|e| AnnattoError::Import {
             reason: e.to_string(),
             importer: step_id.module_name.to_string(),

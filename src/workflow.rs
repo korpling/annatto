@@ -21,6 +21,7 @@ use serde_derive::Deserialize;
 use crate::{
     ExporterStep, ImporterStep, ManipulatorStep, StepID,
     error::{AnnattoError, Result},
+    importer::ImportRunConfiguration,
     progress::ProgressReporter,
     util::update_graph,
 };
@@ -582,7 +583,12 @@ impl Workflow {
         let updates = step
             .module
             .reader()
-            .import_corpus(resolved_import_path.as_path(), step_id.clone(), tx.clone())
+            .import_corpus(
+                resolved_import_path.as_path(),
+                step_id.clone(),
+                ImportRunConfiguration::from(step),
+                tx.clone(),
+            )
             .map_err(|reason| AnnattoError::Import {
                 reason: reason.to_string(),
                 importer: step_id.module_name.to_string(),

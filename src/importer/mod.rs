@@ -20,7 +20,7 @@ pub mod whisper;
 pub mod xlsx;
 pub mod xml;
 
-use crate::{StepID, workflow::StatusSender};
+use crate::{ImporterStep, StepID, workflow::StatusSender};
 use graphannis::update::GraphUpdate;
 use percent_encoding::{AsciiSet, CONTROLS};
 use std::path::Path;
@@ -78,5 +78,14 @@ pub struct ImportRunConfiguration {
 impl<'a> ImportRunConfiguration {
     fn root_name(&'a self) -> Option<&str> {
         self.root_as.as_ref().map(String::as_str)
+    }
+}
+
+impl From<&ImporterStep> for ImportRunConfiguration {
+    fn from(value: &ImporterStep) -> Self {
+        ImportRunConfiguration {
+            root_as: value.root_name.clone(),
+            extensions: value.extensions.clone(),
+        }
     }
 }

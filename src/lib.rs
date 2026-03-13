@@ -328,9 +328,14 @@ impl ImporterStep {
         &self,
         tx: Option<StatusSender>,
     ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        self.module
-            .reader()
-            .import_corpus(&self.path, StepID::from_importer_step(&self), tx)
+        use crate::importer::ImportRunConfiguration;
+
+        self.module.reader().import_corpus(
+            &self.path,
+            StepID::from_importer_step(&self),
+            ImportRunConfiguration::from(self),
+            tx,
+        )
     }
 }
 
