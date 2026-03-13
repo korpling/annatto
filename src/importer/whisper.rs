@@ -428,7 +428,7 @@ mod tests {
                     module_name: "test_whisper".to_string(),
                     path: Some(path.to_path_buf()),
                 },
-                ImportRunConfiguration::default(),
+                ImportRunConfiguration::new_with_default_extensions(&module),
                 None,
             )
             .map_err(|e| anyhow!("An error occured: {:?}", e))?;
@@ -452,7 +452,7 @@ mod tests {
                     module_name: "test_whisper".to_string(),
                     path: Some(path.to_path_buf()),
                 },
-                ImportRunConfiguration::default(),
+                ImportRunConfiguration::new_with_default_extensions(&module),
                 None,
             )
             .map_err(|e| anyhow!("An error occured: {:?}", e));

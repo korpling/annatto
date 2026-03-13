@@ -102,6 +102,14 @@ impl<'a> ImportRunConfiguration {
     }
 
     #[cfg(test)]
+    pub fn new_with_default_extensions(importer: &dyn Importer) -> ImportRunConfiguration {
+        ImportRunConfiguration {
+            root_as: None,
+            extensions: importer.default_file_extensions().iter().map(|s| s.to_string()).collect_vec(),
+        }
+    }
+
+    #[cfg(test)]
     pub fn and_extensions(self, extensions: Vec<String>) -> ImportRunConfiguration {
         ImportRunConfiguration {
             root_as: self.root_as,

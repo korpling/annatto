@@ -715,7 +715,7 @@ mod tests {
                 module_name: "test_xslx_import".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&import),
             Some(sender),
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -753,7 +753,7 @@ mod tests {
                 module_name: "test_xslx_import".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&import),
             None,
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -781,7 +781,7 @@ mod tests {
                 module_name: "test_xslx_import".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&import),
             None,
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -1266,7 +1266,7 @@ norm = ["pos", "lemma"]
                 module_name: "test_xlsx".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&import),
             None,
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -1296,7 +1296,7 @@ norm = ["pos", "lemma"]
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&module),
             None,
         );
         assert!(u.is_ok());

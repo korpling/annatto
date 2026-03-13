@@ -116,7 +116,7 @@ fn complex_attribute_names() {
         .import_corpus(
             path.as_ref(),
             step_id.clone(),
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&importer),
             None,
         )
         .unwrap();

@@ -439,7 +439,7 @@ mod tests {
                 module_name: "test_import_xlsx".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&import),
             None,
         );
         assert!(u.is_ok());

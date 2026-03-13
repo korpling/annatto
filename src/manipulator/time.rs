@@ -452,7 +452,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&import_exmaralda),
             None,
         );
         assert!(import.is_ok(), "import failed: {:?}", import.err());
@@ -490,7 +490,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&import_exmaralda),
             None,
         );
         assert!(import.is_ok(), "import failed: {:?}", import.err());
@@ -529,7 +529,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&import_conll),
             None,
         );
         assert!(import.is_ok(), "import failed: {:?}", import.err());

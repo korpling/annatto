@@ -258,7 +258,7 @@ mod tests {
                 module_name: "import_treetagger".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&importer),
             None,
         );
         assert!(u.is_ok());

@@ -55,7 +55,7 @@ fn export_as_zip_with_files() {
         .import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda"),
             step_id.clone(),
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&importer),
             None,
         )
         .unwrap();
@@ -98,7 +98,7 @@ fn export_graphml_with_vis() {
         .import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda"),
             step_id.clone(),
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&importer),
             None,
         )
         .unwrap();
@@ -133,19 +133,20 @@ fn zip_with_linked_files_custom() {
             module_name: "test_import".to_string(),
             path: None,
         },
-        ImportRunConfiguration::default(),
+        ImportRunConfiguration::new_with_default_extensions(&ImportSpreadsheet::default()),
         None,
     );
     assert!(u1.is_ok());
     let file_linker: Result<CreateFileNodes, _> = toml::from_str("corpus_name = \"data\"");
     assert!(file_linker.is_ok());
-    let u2 = file_linker.unwrap().import_corpus(
+    let file_linker = file_linker.unwrap();
+    let u2 = file_linker.import_corpus(
         Path::new("tests/data/export/graphml/linked-files/config_files/data"),
         StepID {
             module_name: "link_files".to_string(),
             path: None,
         },
-        ImportRunConfiguration::default(),
+        ImportRunConfiguration::new_with_default_extensions(&file_linker),
         None,
     );
     assert!(u2.is_ok(), "Error linking files: {:?}", u2.err());

@@ -868,7 +868,7 @@ mod tests {
                 module_name: "test_import".into(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&import),
             None,
         );
         assert!(u.is_ok());
@@ -1000,7 +1000,7 @@ mod tests {
                 module_name: "test_import".into(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&import),
             None,
         );
         let mut update = u.unwrap();

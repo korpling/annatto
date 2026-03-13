@@ -270,13 +270,14 @@ mod tests {
         assert!(toml_str.is_ok());
         let import: Result<AnnotateCorpus, _> = toml::from_str(toml_str.unwrap().as_str());
         assert!(import.is_ok());
-        let r = import.unwrap().import_corpus(
+        let import = import.unwrap();
+        let r = import.import_corpus(
             Path::new("./tests/data/import/meta/corpus/"),
             crate::StepID {
                 module_name: "test".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&import),
             None,
         );
         assert!(r.is_ok(), "ERROR: {:?}", r.err());

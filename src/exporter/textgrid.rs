@@ -617,7 +617,7 @@ ignore_others = true
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&exmaralda),
             None,
         );
         assert!(mprt.is_ok());
@@ -640,7 +640,7 @@ ignore_others = true
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&exmaralda),
             None,
         );
         assert!(mprt.is_ok());
@@ -679,7 +679,7 @@ ignore_others = true
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&exmaralda),
             None,
         );
         assert!(mprt.is_ok());
@@ -718,7 +718,7 @@ ignore_others = true
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&exmaralda),
             None,
         );
         assert!(mprt.is_ok());
@@ -761,7 +761,7 @@ ignore_others = true
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&exmaralda),
             None,
         );
         assert!(mprt.is_ok());
@@ -804,7 +804,7 @@ ignore_others = true
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&exmaralda),
             None,
         );
         assert!(mprt.is_ok());
@@ -853,13 +853,14 @@ tier_groups = { tok = ["pos", "lemma", "Inf-Struct"] }
         "#;
         let import_textgrid: Result<ImportTextgrid, _> = toml::from_str(import_config);
         assert!(import_textgrid.is_ok());
-        let u = import_textgrid.unwrap().import_corpus(
+        let import_textgrid = import_textgrid.unwrap();
+        let u = import_textgrid.import_corpus(
             import_path,
             StepID {
                 module_name: "test_import_textgrid".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&import_textgrid),
             None,
         );
         assert!(u.is_ok());

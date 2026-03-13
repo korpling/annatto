@@ -335,7 +335,7 @@ mod tests {
                 module_name: "import_docs".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&import),
             None,
         );
         assert!(u.is_ok());

@@ -440,7 +440,7 @@ mod tests {
                 module_name: "test_webanno".to_string(),
                 path: Some(import_path.to_path_buf()),
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&importer),
             None,
         );
         assert!(u.is_ok(), "Err: {:?}", u.err());
@@ -465,7 +465,7 @@ mod tests {
                 module_name: "test_webanno".to_string(),
                 path: Some(import_path.to_path_buf()),
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&importer),
             None,
         );
         assert!(u.is_ok(), "Err: {:?}", u.err());

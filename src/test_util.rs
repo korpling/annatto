@@ -46,7 +46,12 @@ where
         path: None,
     };
     let mut u = importer
-        .import_corpus(path.as_ref(), step_id.clone(), ImportRunConfiguration::default(), tx)
+        .import_corpus(
+            path.as_ref(),
+            step_id.clone(),
+            ImportRunConfiguration::new_with_default_extensions(&importer),
+            tx,
+        )
         .map_err(|e| AnnattoError::Import {
             reason: e.to_string(),
             importer: step_id.module_name.to_string(),

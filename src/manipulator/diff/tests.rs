@@ -43,7 +43,7 @@ fn diff() {
             module_name: "test_import".to_string(),
             path: None,
         },
-        ImportRunConfiguration::default(),
+        ImportRunConfiguration::new_with_default_extensions(&import),
         None,
     );
     assert!(u.is_ok());
@@ -95,7 +95,7 @@ fn diff_inverse() {
             module_name: "test_import".to_string(),
             path: None,
         },
-        ImportRunConfiguration::default(),
+        ImportRunConfiguration::new_with_default_extensions(&import),
         None,
     );
     assert!(u.is_ok());

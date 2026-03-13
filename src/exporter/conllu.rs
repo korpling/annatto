@@ -647,7 +647,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            ImportRunConfiguration::new_with_default_extensions(&conll_in),
             None,
         );
         assert!(u.is_ok());
