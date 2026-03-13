@@ -398,6 +398,25 @@ mod tests {
     }
 
     #[test]
+    fn rename_root() {
+        let mut u = GraphUpdate::new();
+        let mut result = import_corpus_graph_from_files(
+            &mut u,
+            Path::new("tests/data/import/exmaralda/"),
+            &ImportRunConfiguration::new_with_root_name("custom_root_name".to_string())
+                .and_extensions(vec!["exb".to_string()]),
+        )
+        .unwrap();
+        result.sort();
+        let path_to_name = result
+            .into_iter()
+            .map(|(p, s)| format!("{}  ->  {s}", p.to_string_lossy()))
+            .collect_vec();
+
+        assert_debug_snapshot!(path_to_name);
+    }
+
+    #[test]
     fn node_names_from_paths() {
         let paths = vec![
             "Sophisticated_Corpus_v1.9",
