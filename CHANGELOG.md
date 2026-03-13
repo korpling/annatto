@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The resulting graph might require manual post-hoc clean up, depending on other graph ops
   and exports down the line.
 - import `toolbox`: allow annotation values with parentheses (opening **and** closing) as well as comments
+- imports can now be configured to rename the root of the corpus by using key `as` on top level
+- imports' formats can now be customized using `extensions` on top level
   
 ### Changed
 
