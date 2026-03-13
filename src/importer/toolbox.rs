@@ -17,10 +17,7 @@ use pest_derive::Parser;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    StepID,
-    error::{AnnattoError, Result},
-    progress::ProgressReporter,
-    util::graphupdate::import_corpus_graph_from_files,
+    StepID, error::{AnnattoError, Result}, importer::ImportRunConfiguration, progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files
 };
 
 use super::Importer;
@@ -47,6 +44,7 @@ impl Importer for ImportToolBox {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
+        config: ImportRunConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();

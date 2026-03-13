@@ -8,7 +8,8 @@ use zip::ZipArchive;
 
 use crate::{
     importer::{
-        Importer, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes, xlsx::ImportSpreadsheet,
+        ImportRunConfiguration, Importer, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
+        xlsx::ImportSpreadsheet,
     },
     util::update_graph_silent,
 };
@@ -54,6 +55,7 @@ fn export_as_zip_with_files() {
         .import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda"),
             step_id.clone(),
+            ImportRunConfiguration::default(),
             None,
         )
         .unwrap();
@@ -96,6 +98,7 @@ fn export_graphml_with_vis() {
         .import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda"),
             step_id.clone(),
+            ImportRunConfiguration::default(),
             None,
         )
         .unwrap();
@@ -130,6 +133,7 @@ fn zip_with_linked_files_custom() {
             module_name: "test_import".to_string(),
             path: None,
         },
+        ImportRunConfiguration::default(),
         None,
     );
     assert!(u1.is_ok());
@@ -141,6 +145,7 @@ fn zip_with_linked_files_custom() {
             module_name: "link_files".to_string(),
             path: None,
         },
+        ImportRunConfiguration::default(),
         None,
     );
     assert!(u2.is_ok(), "Error linking files: {:?}", u2.err());

@@ -795,7 +795,7 @@ mod tests {
     use std::path::Path;
 
     use crate::exporter::graphml::GraphMLExporter;
-    use crate::importer::Importer;
+    use crate::importer::{ImportRunConfiguration, Importer};
     use crate::importer::exmaralda::ImportEXMARaLDA;
     use crate::importer::graphml::GraphMLImporter;
     use crate::manipulator::Manipulator;
@@ -2306,6 +2306,7 @@ remove = [1, 2]
                 module_name: "_test_helper_import".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(u.is_ok());
@@ -2339,6 +2340,7 @@ remove = [{node=1, anno="default_ns::pos"}]
                 module_name: "_test_helper_import".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(u.is_ok());

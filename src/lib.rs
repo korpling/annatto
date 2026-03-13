@@ -241,7 +241,7 @@ pub struct StepID {
 
 impl StepID {
     pub fn from_importer_step(step: &ImporterStep) -> StepID {
-        let module_name = if let Some(label) = &step.label {
+        let module_name = if let Some(label) = &step.description {
             label.to_string()
         } else {
             format!("import_{}", step.module.name().unwrap_or_default())
@@ -253,7 +253,7 @@ impl StepID {
     }
 
     pub fn from_graphop_step(step: &ManipulatorStep, position_in_workflow: usize) -> StepID {
-        let module_name = if let Some(label) = &step.label {
+        let module_name = if let Some(label) = &step.description {
             label.to_string()
         } else {
             format!(
@@ -268,7 +268,7 @@ impl StepID {
     }
 
     pub fn from_exporter_step(step: &ExporterStep) -> StepID {
-        let module_name = if let Some(label) = &step.label {
+        let module_name = if let Some(label) = &step.description {
             label.to_string()
         } else {
             format!("export_{}", step.module.name().unwrap_or_default())
@@ -299,8 +299,13 @@ pub struct ImporterStep {
     #[serde(flatten)]
     module: ReadFrom,
     path: PathBuf,
+    #[serde(default, alias = "label")]
+    description: Option<String>,
     #[serde(default)]
-    label: Option<String>,
+    extensions: Option<Vec<String>>, // this is an Option as an empty Vec has a different meaning (even though non-supported meaning, but for serialization this might become relevant),
+    /// This allows to overwrite the root name which is by default derived from the import path.
+    #[serde(default, alias = "as")]
+    root_name: Option<String>,
 }
 
 impl ImporterStep {
@@ -312,7 +317,9 @@ impl ImporterStep {
         Self {
             module,
             path: path.into(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         }
     }
 
@@ -335,8 +342,10 @@ pub struct ExporterStep {
     #[serde(flatten)]
     module: WriteAs,
     path: PathBuf,
+    #[serde(default, alias = "label")]
+    description: Option<String>,
     #[serde(default)]
-    label: Option<String>,
+    extension: Option<String>,
 }
 
 impl ExporterStep {
@@ -348,7 +357,8 @@ impl ExporterStep {
         Self {
             module,
             path: path.into(),
-            label: None,
+            description: None,
+            extension: None,
         }
     }
 
@@ -372,8 +382,8 @@ pub struct ManipulatorStep {
     #[serde(flatten)]
     module: GraphOp,
     workflow_directory: Option<PathBuf>,
-    #[serde(default)]
-    label: Option<String>,
+    #[serde(default, alias = "label")]
+    description: Option<String>,
 }
 
 impl ManipulatorStep {
@@ -385,7 +395,7 @@ impl ManipulatorStep {
         Self {
             module,
             workflow_directory: workflow_directory.map(|d| d.into()),
-            label: None,
+            description: None,
         }
     }
 

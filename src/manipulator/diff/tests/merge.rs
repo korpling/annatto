@@ -11,7 +11,7 @@ use insta::assert_snapshot;
 use crate::{
     StepID,
     exporter::{exmaralda::ExportExmaralda, graphml::GraphMLExporter, sequence::ExportSequence},
-    importer::{Importer, exmaralda::ImportEXMARaLDA},
+    importer::{ImportRunConfiguration, Importer, exmaralda::ImportEXMARaLDA},
     manipulator::{Manipulator, diff::DiffSubgraphs},
     test_util::export_to_string,
     util::update_graph_silent,
@@ -28,6 +28,7 @@ fn with_data() {
             module_name: "test_import".to_string(),
             path: None,
         },
+        ImportRunConfiguration::default(),
         None,
     );
     assert!(u.is_ok());

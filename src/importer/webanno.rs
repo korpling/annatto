@@ -13,7 +13,10 @@ use pest::{Parser, iterators::Pair};
 use pest_derive::Parser;
 use serde::{Deserialize, Serialize};
 
-use crate::{progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files};
+use crate::{
+    importer::ImportRunConfiguration, progress::ProgressReporter,
+    util::graphupdate::import_corpus_graph_from_files,
+};
 
 use super::Importer;
 
@@ -29,6 +32,7 @@ impl Importer for ImportWebAnnoTSV {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
+        config: ImportRunConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
@@ -406,7 +410,9 @@ mod tests {
     use insta::assert_snapshot;
 
     use crate::{
-        exporter::graphml::GraphMLExporter, importer::Importer, test_util::export_to_string,
+        exporter::graphml::GraphMLExporter,
+        importer::{ImportRunConfiguration, Importer},
+        test_util::export_to_string,
         util::update_graph_silent,
     };
 
@@ -434,6 +440,7 @@ mod tests {
                 module_name: "test_webanno".to_string(),
                 path: Some(import_path.to_path_buf()),
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(u.is_ok(), "Err: {:?}", u.err());
@@ -458,6 +465,7 @@ mod tests {
                 module_name: "test_webanno".to_string(),
                 path: Some(import_path.to_path_buf()),
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(u.is_ok(), "Err: {:?}", u.err());

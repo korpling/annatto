@@ -521,7 +521,9 @@ mod tests {
 
     use crate::{
         StepID,
-        importer::{Importer, exmaralda::ImportEXMARaLDA, textgrid::ImportTextgrid},
+        importer::{
+            ImportRunConfiguration, Importer, exmaralda::ImportEXMARaLDA, textgrid::ImportTextgrid,
+        },
         test_util::export_to_string,
     };
 
@@ -615,6 +617,7 @@ ignore_others = true
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(mprt.is_ok());
@@ -637,6 +640,7 @@ ignore_others = true
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(mprt.is_ok());
@@ -675,6 +679,7 @@ ignore_others = true
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(mprt.is_ok());
@@ -713,6 +718,7 @@ ignore_others = true
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(mprt.is_ok());
@@ -755,6 +761,7 @@ ignore_others = true
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(mprt.is_ok());
@@ -797,6 +804,7 @@ ignore_others = true
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(mprt.is_ok());
@@ -851,6 +859,7 @@ tier_groups = { tok = ["pos", "lemma", "Inf-Struct"] }
                 module_name: "test_import_textgrid".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(u.is_ok());

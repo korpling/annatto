@@ -4,7 +4,7 @@ use graphannis::update::GraphUpdate;
 use roxmltree::Node;
 use serde::{Deserialize, Serialize};
 
-use crate::progress::ProgressReporter;
+use crate::{importer::ImportRunConfiguration, progress::ProgressReporter};
 
 use super::Importer;
 
@@ -38,6 +38,7 @@ impl Importer for ImportSaltXml {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
+        config: ImportRunConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut updates = GraphUpdate::new();

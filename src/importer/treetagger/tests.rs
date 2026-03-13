@@ -7,8 +7,7 @@ use itertools::Itertools;
 use crate::{
     StepID,
     importer::{
-        Importer,
-        treetagger::{AttributeDecoding, ImportTreeTagger},
+        ImportRunConfiguration, Importer, treetagger::{AttributeDecoding, ImportTreeTagger}
     },
     test_util::import_as_graphml_string,
 };
@@ -114,7 +113,12 @@ fn complex_attribute_names() {
         path: None,
     };
     let mut u = importer
-        .import_corpus(path.as_ref(), step_id.clone(), None)
+        .import_corpus(
+            path.as_ref(),
+            step_id.clone(),
+            ImportRunConfiguration::default(),
+            None,
+        )
         .unwrap();
     let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
     g.apply_update(&mut u, |_| {}).unwrap();

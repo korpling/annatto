@@ -41,6 +41,7 @@ pub trait Importer: Sync {
         &self,
         input_path: &Path,
         step_id: StepID,
+        config: ImportRunConfiguration,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>>;
 
@@ -67,3 +68,15 @@ pub const NODE_NAME_ENCODE_SET: &AsciiSet = &CONTROLS
     .add(b'|')
     .add(b'?')
     .add(b'*');
+
+#[derive(Default)]
+pub struct ImportRunConfiguration {
+    root_as: Option<String>,
+    extensions: Option<Vec<String>>,
+}
+
+impl<'a> ImportRunConfiguration {
+    fn root_name(&'a self) -> Option<&str> {
+        self.root_as.as_ref().map(String::as_str)
+    }
+}

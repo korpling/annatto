@@ -23,7 +23,11 @@ use umya_spreadsheet::Cell;
 
 use super::Importer;
 use crate::{
-    StepID, error::AnnattoError, importer::NODE_NAME_ENCODE_SET, progress::ProgressReporter, util,
+    StepID,
+    error::AnnattoError,
+    importer::{ImportRunConfiguration, NODE_NAME_ENCODE_SET},
+    progress::ProgressReporter,
+    util,
 };
 
 /// Imports Excel Spreadsheets where each line is a token, the other columns are
@@ -582,6 +586,7 @@ impl Importer for ImportSpreadsheet {
         &self,
         input_path: &std::path::Path,
         step_id: StepID,
+        config: ImportRunConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
@@ -713,6 +718,7 @@ mod tests {
                 module_name: "test_xslx_import".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             Some(sender),
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -750,6 +756,7 @@ mod tests {
                 module_name: "test_xslx_import".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -777,6 +784,7 @@ mod tests {
                 module_name: "test_xslx_import".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -827,7 +835,9 @@ mod tests {
         let import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
 
         let import = import_step.execute(None);
@@ -941,7 +951,9 @@ mod tests {
         let import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
         let (sender, receiver) = mpsc::channel();
         let import = import_step.execute(Some(sender));
@@ -978,7 +990,9 @@ mod tests {
         let import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
         let (sender, receiver) = mpsc::channel();
         let import = import_step.execute(Some(sender));
@@ -1059,7 +1073,9 @@ mod tests {
         let import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
         let (sender, receiver) = mpsc::channel();
         let import = import_step.execute(Some(sender));
@@ -1153,7 +1169,9 @@ mod tests {
         let import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
 
         let import = import_step.execute(None);
@@ -1249,6 +1267,7 @@ norm = ["pos", "lemma"]
                 module_name: "test_xlsx".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -1278,6 +1297,7 @@ norm = ["pos", "lemma"]
                 module_name: "test_import".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(u.is_ok());

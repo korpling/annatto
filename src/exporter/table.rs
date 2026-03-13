@@ -498,7 +498,9 @@ mod tests {
     use crate::{
         StepID,
         exporter::table::ExportTable,
-        importer::{Importer, conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA},
+        importer::{
+            ImportRunConfiguration, Importer, conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA,
+        },
         test_util::export_to_string,
     };
 
@@ -557,6 +559,7 @@ mod tests {
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(mprt.is_ok());
@@ -579,6 +582,7 @@ mod tests {
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(mprt.is_ok());
@@ -608,6 +612,7 @@ mod tests {
                 module_name: "test_import_conll".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(mprt.is_ok());
@@ -640,6 +645,7 @@ mod tests {
                 module_name: "test_import_conll".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(mprt.is_ok());
@@ -680,6 +686,7 @@ mod tests {
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(mprt.is_ok());
@@ -711,6 +718,7 @@ mod tests {
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(mprt.is_ok());
@@ -742,6 +750,7 @@ mod tests {
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(mprt.is_ok());

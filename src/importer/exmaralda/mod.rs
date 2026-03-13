@@ -18,11 +18,7 @@ use xml::{EventReader, ParserConfig, attribute::OwnedAttribute, reader::XmlEvent
 
 use super::Importer;
 use crate::{
-    StepID,
-    error::AnnattoError,
-    progress::ProgressReporter,
-    util::graphupdate::{import_corpus_graph_from_files, map_audio_source},
-    workflow::StatusMessage,
+    StepID, error::AnnattoError, importer::ImportRunConfiguration, progress::ProgressReporter, util::graphupdate::{import_corpus_graph_from_files, map_audio_source}, workflow::StatusMessage
 };
 
 /// Import [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
@@ -55,6 +51,7 @@ impl Importer for ImportEXMARaLDA {
         &self,
         input_path: &std::path::Path,
         step_id: StepID,
+        config: ImportRunConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();

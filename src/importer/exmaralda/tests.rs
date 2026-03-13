@@ -34,7 +34,9 @@ fn timeline_fail() {
     let import_step = ImporterStep {
         module: import,
         path: PathBuf::from(import_path),
-        label: None,
+        description: None,
+        extensions: None,
+        root_name: None,
     };
 
     let (sender, _receiver) = mpsc::channel();
@@ -66,7 +68,9 @@ fn category_fail() {
     let import_step = ImporterStep {
         module: import,
         path: PathBuf::from(import_path),
-        label: None,
+        description: None,
+        extensions: None,
+        root_name: None,
     };
 
     let step_id = StepID::from_importer_step(&import_step);
@@ -103,7 +107,9 @@ fn undefined_speaker_fail() {
     let import_step = ImporterStep {
         module: import,
         path: PathBuf::from(import_path),
-        label: None,
+        description: None,
+        extensions: None,
+        root_name: None,
     };
 
     let step_id = StepID::from_importer_step(&import_step);
@@ -135,7 +141,9 @@ fn unknown_tli_fail() {
     let import_step = ImporterStep {
         module: import,
         path: PathBuf::from(import_path),
-        label: None,
+        description: None,
+        extensions: None,
+        root_name: None,
     };
 
     let step_id = StepID::from_importer_step(&import_step);
@@ -167,7 +175,9 @@ fn bad_timevalue_fail() {
     let import_step = ImporterStep {
         module: import,
         path: PathBuf::from(import_path),
-        label: None,
+        description: None,
+        extensions: None,
+        root_name: None,
     };
 
     let step_id = StepID::from_importer_step(&import_step);
@@ -199,7 +209,9 @@ fn underspec_event_fail() {
     let import_step = ImporterStep {
         module: import,
         path: PathBuf::from(import_path),
-        label: None,
+        description: None,
+        extensions: None,
+        root_name: None,
     };
 
     let (sender, _receiver) = mpsc::channel();
@@ -215,7 +227,9 @@ fn invalid_fail() {
     let import_step = ImporterStep {
         module: import,
         path: PathBuf::from(import_path),
-        label: None,
+        description: None,
+        extensions: None,
+        root_name: None,
     };
 
     let step_id = StepID::from_importer_step(&import_step);

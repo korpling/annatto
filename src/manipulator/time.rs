@@ -385,11 +385,12 @@ mod tests {
     use crate::{
         StepID,
         exporter::graphml::GraphMLExporter,
-        importer::{Importer, conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA},
+        importer::{
+            ImportRunConfiguration, Importer, conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA,
+        },
         manipulator::{Manipulator, time::Filltime},
         test_util::export_to_string,
-        util::example_generator,
-        util::update_graph_silent,
+        util::{example_generator, update_graph_silent},
     };
 
     #[test]
@@ -451,6 +452,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(import.is_ok(), "import failed: {:?}", import.err());
@@ -488,6 +490,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(import.is_ok(), "import failed: {:?}", import.err());
@@ -526,6 +529,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(import.is_ok(), "import failed: {:?}", import.err());

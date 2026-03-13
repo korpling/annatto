@@ -18,7 +18,9 @@ use graphannis_core::{
 use serde::Serialize;
 use serde_derive::Deserialize;
 
-use crate::{StepID, progress::ProgressReporter, util::get_all_files};
+use crate::{
+    StepID, importer::ImportRunConfiguration, progress::ProgressReporter, util::get_all_files,
+};
 
 use super::Importer;
 
@@ -98,6 +100,7 @@ impl Importer for AnnotateCorpus {
         &self,
         input_path: &std::path::Path,
         step_id: StepID,
+        config: ImportRunConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
@@ -227,7 +230,9 @@ mod tests {
     use tempfile::tempdir;
 
     use crate::{
-        ImporterStep, ReadFrom, exporter::graphml::GraphMLExporter, importer::Importer,
+        ImporterStep, ReadFrom,
+        exporter::graphml::GraphMLExporter,
+        importer::{ImportRunConfiguration, Importer},
         test_util::export_to_string,
     };
 
@@ -269,6 +274,7 @@ mod tests {
                 module_name: "test".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::default(),
             None,
         );
         assert!(r.is_ok(), "ERROR: {:?}", r.err());
@@ -325,7 +331,9 @@ mod tests {
         let import_step = ImporterStep {
             module: add_metadata,
             path: tmp_dir.path().join("metadata").to_path_buf(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
         let r = import_step.execute(None);
         assert_eq!(
