@@ -1033,4 +1033,27 @@ mod tests {
         };
         assert_snapshot!(value);
     }
+
+    #[test]
+    fn customized_import() {
+        let toml_str = r#"
+        [[import]]
+        format = "exmaralda"
+        path = "path/to/data"
+        extensions = ["xml"]
+        as = "RUEG"
+
+        [import.config]
+        "#;
+        let workflow: std::result::Result<Workflow, _> = toml::from_str(toml_str);
+        assert!(
+            workflow.is_ok(),
+            "Error deserializing: {:?}",
+            workflow.err().unwrap()
+        );
+        let mut workflow = workflow.unwrap();
+        workflow.footer.annatto_version.clear();
+        let toml_str = toml::to_string(&workflow);
+        assert_snapshot!(toml_str.unwrap());
+    }
 }
