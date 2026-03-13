@@ -23,7 +23,11 @@ use umya_spreadsheet::Cell;
 
 use super::Importer;
 use crate::{
-    StepID, error::AnnattoError, importer::NODE_NAME_ENCODE_SET, progress::ProgressReporter, util,
+    StepID,
+    error::AnnattoError,
+    importer::{ImportRunConfiguration, NODE_NAME_ENCODE_SET},
+    progress::ProgressReporter,
+    util,
 };
 
 /// Imports Excel Spreadsheets where each line is a token, the other columns are
@@ -582,15 +586,13 @@ impl Importer for ImportSpreadsheet {
         &self,
         input_path: &std::path::Path,
         step_id: StepID,
+        config: ImportRunConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
 
-        let all_files = util::graphupdate::import_corpus_graph_from_files(
-            &mut update,
-            input_path,
-            self.file_extensions(),
-        )?;
+        let all_files =
+            util::graphupdate::import_corpus_graph_from_files(&mut update, input_path, &config)?;
         // figure out which files are backup data and should not be imported
         let ignore_docs = invalid_doc_nodes(&all_files);
         // ignore the number of backup files for progress reporting, as these will be skipped
@@ -627,7 +629,7 @@ impl Importer for ImportSpreadsheet {
         Ok(update)
     }
 
-    fn file_extensions(&self) -> &[&str] {
+    fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
     }
 }
@@ -713,6 +715,7 @@ mod tests {
                 module_name: "test_xslx_import".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::new_with_default_extensions(&import),
             Some(sender),
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -750,6 +753,7 @@ mod tests {
                 module_name: "test_xslx_import".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::new_with_default_extensions(&import),
             None,
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -777,6 +781,7 @@ mod tests {
                 module_name: "test_xslx_import".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::new_with_default_extensions(&import),
             None,
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -827,7 +832,9 @@ mod tests {
         let import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
 
         let import = import_step.execute(None);
@@ -941,7 +948,9 @@ mod tests {
         let import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
         let (sender, receiver) = mpsc::channel();
         let import = import_step.execute(Some(sender));
@@ -978,7 +987,9 @@ mod tests {
         let import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
         let (sender, receiver) = mpsc::channel();
         let import = import_step.execute(Some(sender));
@@ -1059,7 +1070,9 @@ mod tests {
         let import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
         let (sender, receiver) = mpsc::channel();
         let import = import_step.execute(Some(sender));
@@ -1153,7 +1166,9 @@ mod tests {
         let import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
 
         let import = import_step.execute(None);
@@ -1219,7 +1234,9 @@ edition = ["chapter"]
         let files_with_names = util::graphupdate::import_corpus_graph_from_files(
             &mut update,
             Path::new("tests/data/import/xlsx/with_backup/xlsx/"),
-            &FILE_EXTENSIONS,
+            &ImportRunConfiguration::new_with_extensions(
+                FILE_EXTENSIONS.iter().map(|e| e.to_string()).collect_vec(),
+            ),
         );
         assert!(
             files_with_names.is_ok(),
@@ -1249,6 +1266,7 @@ norm = ["pos", "lemma"]
                 module_name: "test_xlsx".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::new_with_default_extensions(&import),
             None,
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -1278,6 +1296,7 @@ norm = ["pos", "lemma"]
                 module_name: "test_import".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::new_with_default_extensions(&module),
             None,
         );
         assert!(u.is_ok());

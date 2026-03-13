@@ -4,12 +4,13 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::Result;
+use crate::{Result, importer::ImportRunConfiguration};
 use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
+use itertools::Itertools;
 use normpath::PathExt;
 
 fn add_subcorpora(
@@ -150,16 +151,19 @@ pub fn root_corpus_from_path(root_path: &Path) -> Result<String> {
 pub fn import_corpus_graph_from_files(
     u: &mut GraphUpdate,
     root_path: &Path,
-    file_endings: &[&str],
+    config: &ImportRunConfiguration,
 ) -> Result<Vec<(PathBuf, String)>> {
-    let root_name = root_corpus_from_path(root_path)?;
+    let root_name = config
+        .root_name()
+        .unwrap_or(root_corpus_from_path(root_path)?);
 
     u.add_event(UpdateEvent::AddNode {
         node_name: root_name.clone(),
         node_type: "corpus".to_string(),
     })?;
 
-    let mut path_tuples = add_subcorpora(u, root_path, &root_name, file_endings)?;
+    let file_endings = config.extensions().iter().map(String::as_str).collect_vec();
+    let mut path_tuples = add_subcorpora(u, root_path, &root_name, &file_endings)?;
     path_tuples.sort();
     Ok(path_tuples)
 }
@@ -366,6 +370,8 @@ mod tests {
     use itertools::Itertools;
     use tempfile::TempDir;
 
+    use crate::importer::ImportRunConfiguration;
+
     use super::import_corpus_graph_from_files;
 
     #[test]
@@ -374,7 +380,7 @@ mod tests {
         let result = import_corpus_graph_from_files(
             &mut u,
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda/test_doc.exb"),
-            &["exb"],
+            &ImportRunConfiguration::new_with_extensions(vec!["exb".to_string()]),
         )
         .unwrap();
 
@@ -389,6 +395,25 @@ mod tests {
         let created_updates = created_updates.unwrap();
 
         assert_debug_snapshot!(created_updates);
+    }
+
+    #[test]
+    fn rename_root() {
+        let mut u = GraphUpdate::new();
+        let mut result = import_corpus_graph_from_files(
+            &mut u,
+            Path::new("tests/data/import/exmaralda/"),
+            &ImportRunConfiguration::new_with_root_name("custom_root_name".to_string())
+                .and_extensions(vec!["exb".to_string()]),
+        )
+        .unwrap();
+        result.sort();
+        let path_to_name = result
+            .into_iter()
+            .map(|(p, s)| format!("{}  ->  {s}", p.to_string_lossy()))
+            .collect_vec();
+
+        assert_debug_snapshot!(path_to_name);
     }
 
     #[test]
@@ -415,7 +440,12 @@ mod tests {
         let root_path = tmp_dir.path().join(paths[0]);
         let mut update = GraphUpdate::default();
         assert!(
-            import_corpus_graph_from_files(&mut update, &root_path, &["fancyExtension"]).is_ok()
+            import_corpus_graph_from_files(
+                &mut update,
+                &root_path,
+                &ImportRunConfiguration::new_with_extensions(vec!["fancyExtension".to_string()])
+            )
+            .is_ok()
         );
         assert_snapshot!(
             update

@@ -8,7 +8,7 @@ use insta::assert_snapshot;
 use crate::{
     StepID,
     exporter::graphml::GraphMLExporter,
-    importer::{Importer, exmaralda::ImportEXMARaLDA},
+    importer::{ImportRunConfiguration, Importer, exmaralda::ImportEXMARaLDA},
     manipulator::{Manipulator, diff::DiffSubgraphs},
     test_util::export_to_string,
     util::update_graph_silent,
@@ -43,6 +43,7 @@ fn diff() {
             module_name: "test_import".to_string(),
             path: None,
         },
+        ImportRunConfiguration::new_with_default_extensions(&import),
         None,
     );
     assert!(u.is_ok());
@@ -94,6 +95,7 @@ fn diff_inverse() {
             module_name: "test_import".to_string(),
             path: None,
         },
+        ImportRunConfiguration::new_with_default_extensions(&import),
         None,
     );
     assert!(u.is_ok());

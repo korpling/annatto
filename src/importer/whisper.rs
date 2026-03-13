@@ -9,7 +9,10 @@ use graphannis::{
 use graphannis_core::graph::ANNIS_NS;
 use serde::{Deserialize, Serialize};
 
-use crate::{progress::ProgressReporter, util::graphupdate::import_corpus_graph_from_files};
+use crate::{
+    importer::ImportRunConfiguration, progress::ProgressReporter,
+    util::graphupdate::import_corpus_graph_from_files,
+};
 
 use super::Importer;
 
@@ -74,11 +77,12 @@ impl Importer for ImportWhisper {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
+        config: ImportRunConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
         let paths_and_node_names =
-            import_corpus_graph_from_files(&mut update, input_path, self.file_extensions())?;
+            import_corpus_graph_from_files(&mut update, input_path, &config)?;
         let progress =
             ProgressReporter::new(tx.clone(), step_id.clone(), paths_and_node_names.len())?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
@@ -88,7 +92,7 @@ impl Importer for ImportWhisper {
         Ok(update)
     }
 
-    fn file_extensions(&self) -> &[&str] {
+    fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
     }
 }
@@ -369,7 +373,9 @@ mod tests {
     use insta::assert_snapshot;
 
     use crate::{
-        exporter::graphml::GraphMLExporter, importer::Importer, test_util::export_to_string,
+        exporter::graphml::GraphMLExporter,
+        importer::{ImportRunConfiguration, Importer},
+        test_util::export_to_string,
     };
 
     use super::ImportWhisper;
@@ -422,6 +428,7 @@ mod tests {
                     module_name: "test_whisper".to_string(),
                     path: Some(path.to_path_buf()),
                 },
+                ImportRunConfiguration::new_with_default_extensions(&module),
                 None,
             )
             .map_err(|e| anyhow!("An error occured: {:?}", e))?;
@@ -445,6 +452,7 @@ mod tests {
                     module_name: "test_whisper".to_string(),
                     path: Some(path.to_path_buf()),
                 },
+                ImportRunConfiguration::new_with_default_extensions(&module),
                 None,
             )
             .map_err(|e| anyhow!("An error occured: {:?}", e));

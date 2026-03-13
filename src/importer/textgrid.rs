@@ -6,6 +6,7 @@ use std::*;
 
 use super::Importer;
 use crate::StepID;
+use crate::importer::ImportRunConfiguration;
 use crate::models::textgrid::{Interval, TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{
@@ -419,6 +420,7 @@ impl Importer for ImportTextgrid {
         &self,
         input_path: &Path,
         step_id: StepID,
+        config: ImportRunConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut u = GraphUpdate::default();
@@ -435,7 +437,7 @@ impl Importer for ImportTextgrid {
             audio_extension: self.audio_extension.as_str(),
         };
 
-        let documents = import_corpus_graph_from_files(&mut u, input_path, self.file_extensions())?;
+        let documents = import_corpus_graph_from_files(&mut u, input_path, &config)?;
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
         for (file_path, doc_path) in documents {
             reporter.info(format!("Processing {}", &file_path.to_string_lossy()))?;
@@ -470,7 +472,7 @@ impl Importer for ImportTextgrid {
         Ok(u)
     }
 
-    fn file_extensions(&self) -> &[&str] {
+    fn default_file_extensions(&self) -> &[&str] {
         &FILE_ENDINGS
     }
 }

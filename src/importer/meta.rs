@@ -15,10 +15,13 @@ use graphannis_core::{
     graph::ANNIS_NS,
     util::{join_qname, split_qname},
 };
+use itertools::Itertools;
 use serde::Serialize;
 use serde_derive::Deserialize;
 
-use crate::{StepID, progress::ProgressReporter, util::get_all_files};
+use crate::{
+    StepID, importer::ImportRunConfiguration, progress::ProgressReporter, util::get_all_files,
+};
 
 use super::Importer;
 
@@ -98,10 +101,12 @@ impl Importer for AnnotateCorpus {
         &self,
         input_path: &std::path::Path,
         step_id: StepID,
+        config: ImportRunConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let all_files = get_all_files(input_path, self.file_extensions())?;
+        let file_extensions = config.extensions().iter().map(String::as_str).collect_vec();
+        let all_files = get_all_files(input_path, &file_extensions)?;
         let progress = ProgressReporter::new(tx, step_id, all_files.len())?;
         let start_index = input_path.to_string_lossy().len() + 1;
         for file_path in all_files.into_iter().filter(|p| p.is_file()) {
@@ -146,7 +151,7 @@ impl Importer for AnnotateCorpus {
         Ok(update)
     }
 
-    fn file_extensions(&self) -> &[&str] {
+    fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
     }
 }
@@ -227,7 +232,9 @@ mod tests {
     use tempfile::tempdir;
 
     use crate::{
-        ImporterStep, ReadFrom, exporter::graphml::GraphMLExporter, importer::Importer,
+        ImporterStep, ReadFrom,
+        exporter::graphml::GraphMLExporter,
+        importer::{ImportRunConfiguration, Importer},
         test_util::export_to_string,
     };
 
@@ -263,12 +270,14 @@ mod tests {
         assert!(toml_str.is_ok());
         let import: Result<AnnotateCorpus, _> = toml::from_str(toml_str.unwrap().as_str());
         assert!(import.is_ok());
-        let r = import.unwrap().import_corpus(
+        let import = import.unwrap();
+        let r = import.import_corpus(
             Path::new("./tests/data/import/meta/corpus/"),
             crate::StepID {
                 module_name: "test".to_string(),
                 path: None,
             },
+            ImportRunConfiguration::new_with_default_extensions(&import),
             None,
         );
         assert!(r.is_ok(), "ERROR: {:?}", r.err());
@@ -325,7 +334,9 @@ mod tests {
         let import_step = ImporterStep {
             module: add_metadata,
             path: tmp_dir.path().join("metadata").to_path_buf(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
         let r = import_step.execute(None);
         assert_eq!(

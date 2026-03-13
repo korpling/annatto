@@ -1,7 +1,9 @@
 use std::path::Path;
 
 use super::Importer;
-use crate::{StepID, progress::ProgressReporter, workflow::StatusSender};
+use crate::{
+    StepID, importer::ImportRunConfiguration, progress::ProgressReporter, workflow::StatusSender,
+};
 use facet::Facet;
 use graphannis::update::GraphUpdate;
 use serde::Serialize;
@@ -17,6 +19,7 @@ impl Importer for CreateEmptyCorpus {
         &self,
         _path: &Path,
         step_id: StepID,
+        _config: ImportRunConfiguration,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let progress_reporter = ProgressReporter::new(tx, step_id, 1)?;
@@ -25,7 +28,7 @@ impl Importer for CreateEmptyCorpus {
         Ok(graph_update)
     }
 
-    fn file_extensions(&self) -> &[&str] {
+    fn default_file_extensions(&self) -> &[&str] {
         &[]
     }
 }

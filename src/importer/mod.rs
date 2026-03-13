@@ -20,8 +20,9 @@ pub mod whisper;
 pub mod xlsx;
 pub mod xml;
 
-use crate::{StepID, workflow::StatusSender};
+use crate::{ImporterStep, StepID, workflow::StatusSender};
 use graphannis::update::GraphUpdate;
+use itertools::Itertools;
 use percent_encoding::{AsciiSet, CONTROLS};
 use std::path::Path;
 
@@ -41,10 +42,11 @@ pub trait Importer: Sync {
         &self,
         input_path: &Path,
         step_id: StepID,
+        config: ImportRunConfiguration,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>>;
 
-    fn file_extensions(&self) -> &[&str];
+    fn default_file_extensions(&self) -> &[&str];
 }
 
 /// An encoding set for node names.
@@ -67,3 +69,71 @@ pub const NODE_NAME_ENCODE_SET: &AsciiSet = &CONTROLS
     .add(b'|')
     .add(b'?')
     .add(b'*');
+
+#[derive(Default)]
+pub struct ImportRunConfiguration {
+    root_as: Option<String>,
+    extensions: Vec<String>,
+}
+
+impl<'a> ImportRunConfiguration {
+    pub fn root_name(&'a self) -> Option<String> {
+        self.root_as.clone()
+    }
+
+    pub fn extensions(&'a self) -> &'a Vec<String> {
+        &self.extensions
+    }
+
+    #[cfg(test)]
+    pub fn new_with_root_name(root_name: String) -> ImportRunConfiguration {
+        ImportRunConfiguration {
+            root_as: Some(root_name),
+            extensions: vec![],
+        }
+    }
+
+    #[cfg(test)]
+    pub fn new_with_extensions(extensions: Vec<String>) -> ImportRunConfiguration {
+        ImportRunConfiguration {
+            root_as: None,
+            extensions,
+        }
+    }
+
+    #[cfg(test)]
+    pub fn new_with_default_extensions(importer: &dyn Importer) -> ImportRunConfiguration {
+        ImportRunConfiguration {
+            root_as: None,
+            extensions: importer
+                .default_file_extensions()
+                .iter()
+                .map(|s| s.to_string())
+                .collect_vec(),
+        }
+    }
+
+    #[cfg(test)]
+    pub fn and_extensions(self, extensions: Vec<String>) -> ImportRunConfiguration {
+        ImportRunConfiguration {
+            root_as: self.root_as,
+            extensions,
+        }
+    }
+}
+
+impl From<&ImporterStep> for ImportRunConfiguration {
+    fn from(step: &ImporterStep) -> Self {
+        ImportRunConfiguration {
+            root_as: step.root_name.clone(),
+            extensions: step.extensions.clone().unwrap_or(
+                step.module
+                    .reader()
+                    .default_file_extensions()
+                    .iter()
+                    .map(|e| e.to_string())
+                    .collect_vec(),
+            ),
+        }
+    }
+}

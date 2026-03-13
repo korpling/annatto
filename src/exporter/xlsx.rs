@@ -488,7 +488,7 @@ mod tests {
 
     use crate::{
         ExporterStep, ImporterStep, ReadFrom, WriteAs,
-        importer::{Importer, xlsx::ImportSpreadsheet},
+        importer::{ImportRunConfiguration, Importer, xlsx::ImportSpreadsheet},
         test_util::compare_graphs,
         util::example_generator,
     };
@@ -548,7 +548,9 @@ mod tests {
         let orig_import_step = ImporterStep {
             module: crate::ReadFrom::Xlsx(importer),
             path: path.to_path_buf(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
         let mut updates = orig_import_step.execute(None).unwrap();
         let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -562,7 +564,8 @@ mod tests {
         let export_step = ExporterStep {
             module: exporter,
             path: output_dir.clone(),
-            label: None,
+            description: None,
+            extension: None,
         };
         export_step.execute(&original_graph, None).unwrap();
 
@@ -575,7 +578,9 @@ mod tests {
         let second_import_step = ImporterStep {
             module: crate::ReadFrom::Xlsx(importer),
             path: output_dir.clone(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
         let mut updates = second_import_step.execute(None).unwrap();
         let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -601,7 +606,9 @@ mod tests {
         let orig_import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
         let mut updates = orig_import_step.execute(None).unwrap();
         let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -615,7 +622,8 @@ mod tests {
         let export_step = ExporterStep {
             module: exporter,
             path: output_dir.clone(),
-            label: None,
+            description: None,
+            extension: None,
         };
         export_step.execute(&original_graph, None).unwrap();
 
@@ -628,7 +636,9 @@ mod tests {
         let second_import_step = ImporterStep {
             module: crate::ReadFrom::Xlsx(importer),
             path: output_dir.clone(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
         let mut updates = second_import_step.execute(None).unwrap();
 
@@ -673,7 +683,9 @@ mod tests {
         let first_import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
 
         let mut updates = first_import_step.execute(None).unwrap();
@@ -687,7 +699,8 @@ mod tests {
         let export_step = ExporterStep {
             module: exporter,
             path: output_dir.clone(),
-            label: None,
+            description: None,
+            extension: None,
         };
         export_step.execute(&original_graph, None).unwrap();
 
@@ -700,7 +713,9 @@ mod tests {
         let second_import_step = ImporterStep {
             module: crate::ReadFrom::Xlsx(importer),
             path: output_dir.clone(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
         let mut updates = second_import_step.execute(None).unwrap();
 
@@ -742,7 +757,9 @@ mod tests {
         let orig_import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
         let mut updates = orig_import_step.execute(None).unwrap();
         let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -756,7 +773,8 @@ mod tests {
         let export_step = ExporterStep {
             module: exporter,
             path: output_dir.clone(),
-            label: None,
+            description: None,
+            extension: None,
         };
         export_step.execute(&original_graph, None).unwrap();
 
@@ -771,7 +789,9 @@ mod tests {
         let second_import_step = ImporterStep {
             module: crate::ReadFrom::Xlsx(importer),
             path: output_dir.clone(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
         let e = second_import_step.execute(None);
         assert!(e.is_ok(), "Error re-importing: {:?}", e.err().unwrap());
@@ -830,7 +850,9 @@ mod tests {
         let orig_import_step = ImporterStep {
             module: importer,
             path: corpus_dir.path().to_path_buf(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
         let mut updates = orig_import_step.execute(None).unwrap();
         let mut graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -849,7 +871,8 @@ mod tests {
         let export_step = ExporterStep {
             module: exporter,
             path: corpus_dir.path().to_path_buf(),
-            label: None,
+            description: None,
+            extension: None,
         };
         export_step.execute(&graph, None).unwrap();
 
@@ -879,7 +902,9 @@ mod tests {
         let orig_import_step = ImporterStep {
             module: importer,
             path: corpus_dir.path().to_path_buf(),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
         let mut updates = orig_import_step.execute(None).unwrap();
         let mut graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -900,7 +925,8 @@ mod tests {
         let export_step = ExporterStep {
             module: exporter,
             path: corpus_dir.path().to_path_buf(),
-            label: None,
+            description: None,
+            extension: None,
         };
         export_step.execute(&graph, None).unwrap();
 
@@ -930,7 +956,9 @@ mod tests {
         let orig_import_step = ImporterStep {
             module: importer,
             path: corpus_dir.path().to_path_buf(),
-            label: Some("custom-xlsx-export-id".to_string()),
+            description: Some("custom-xlsx-export-id".to_string()),
+            extensions: None,
+            root_name: None,
         };
         let mut updates = orig_import_step.execute(None).unwrap();
         let mut graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -949,7 +977,8 @@ mod tests {
         let export_step = ExporterStep {
             module: exporter,
             path: corpus_dir.path().to_path_buf(),
-            label: None,
+            description: None,
+            extension: None,
         };
         export_step.execute(&graph, None).unwrap();
 
@@ -986,6 +1015,7 @@ mod tests {
                     module_name: "test_import".to_string(),
                     path: None,
                 },
+                ImportRunConfiguration::new_with_default_extensions(&importer),
                 None,
             )
             .unwrap();

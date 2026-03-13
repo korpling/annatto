@@ -29,7 +29,7 @@ use serde_derive::Deserialize;
 
 use super::Importer;
 use crate::{
-    StepID, error::AnnattoError, progress::ProgressReporter,
+    StepID, error::AnnattoError, importer::ImportRunConfiguration, progress::ProgressReporter,
     util::graphupdate::import_corpus_graph_from_files, workflow::StatusSender,
 };
 
@@ -77,11 +77,12 @@ impl Importer for ImportCoNLLU {
         &self,
         input_path: &std::path::Path,
         step_id: StepID,
+        config: ImportRunConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
         let paths_and_node_names =
-            import_corpus_graph_from_files(&mut update, input_path, self.file_extensions())?;
+            import_corpus_graph_from_files(&mut update, input_path, &config)?;
         let progress =
             ProgressReporter::new(tx.clone(), step_id.clone(), paths_and_node_names.len())?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
@@ -91,7 +92,7 @@ impl Importer for ImportCoNLLU {
         Ok(update)
     }
 
-    fn file_extensions(&self) -> &[&str] {
+    fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
     }
 }

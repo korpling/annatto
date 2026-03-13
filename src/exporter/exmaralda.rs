@@ -810,7 +810,10 @@ mod tests {
     use crate::{
         ImporterStep, ReadFrom, StepID,
         exporter::exmaralda::ExportExmaralda,
-        importer::{Importer, exmaralda::ImportEXMARaLDA, treetagger::ImportTreeTagger},
+        importer::{
+            ImportRunConfiguration, Importer, exmaralda::ImportEXMARaLDA,
+            treetagger::ImportTreeTagger,
+        },
         test_util::{export_to_string, export_to_string_in_directory},
     };
 
@@ -865,6 +868,7 @@ mod tests {
                 module_name: "test_import".into(),
                 path: None,
             },
+            ImportRunConfiguration::new_with_default_extensions(&import),
             None,
         );
         assert!(u.is_ok());
@@ -886,7 +890,9 @@ mod tests {
         let step = ImporterStep {
             module: crate::ReadFrom::EXMARaLDA(import),
             path: PathBuf::from("./tests/data/import/exmaralda/clean/import/"),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
         let u = step.execute(None);
         assert!(u.is_ok());
@@ -918,7 +924,9 @@ mod tests {
         let step = ImporterStep {
             module: crate::ReadFrom::EXMARaLDA(import),
             path: PathBuf::from("./tests/data/import/exmaralda/clean/import/"),
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
         let u = step.execute(None);
         assert!(u.is_ok());
@@ -958,7 +966,9 @@ mod tests {
         let step = ImporterStep {
             module: import,
             path: source_path,
-            label: None,
+            description: None,
+            extensions: None,
+            root_name: None,
         };
         let u = step.execute(None);
 
@@ -990,6 +1000,7 @@ mod tests {
                 module_name: "test_import".into(),
                 path: None,
             },
+            ImportRunConfiguration::new_with_default_extensions(&import),
             None,
         );
         let mut update = u.unwrap();

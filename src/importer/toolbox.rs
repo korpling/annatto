@@ -19,6 +19,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     StepID,
     error::{AnnattoError, Result},
+    importer::ImportRunConfiguration,
     progress::ProgressReporter,
     util::graphupdate::import_corpus_graph_from_files,
 };
@@ -47,11 +48,12 @@ impl Importer for ImportToolBox {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
+        config: ImportRunConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
         let paths_and_node_names =
-            import_corpus_graph_from_files(&mut update, input_path, self.file_extensions())?;
+            import_corpus_graph_from_files(&mut update, input_path, &config)?;
         let progress = ProgressReporter::new(tx, step_id.clone(), paths_and_node_names.len())?;
         for (path, doc_node_name) in paths_and_node_names {
             self.map_document(path.as_path(), &doc_node_name, &mut update, &step_id)?;
@@ -60,7 +62,7 @@ impl Importer for ImportToolBox {
         Ok(update)
     }
 
-    fn file_extensions(&self) -> &[&str] {
+    fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
     }
 }

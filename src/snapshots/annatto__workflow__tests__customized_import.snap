@@ -1,0 +1,16 @@
+---
+source: src/workflow.rs
+expression: toml_str.unwrap()
+---
+[[import]]
+format = "exmaralda"
+path = "path/to/data"
+extensions = ["xml"]
+root_name = "RUEG"
+
+[import.config]
+merge_events = true
+
+[footer]
+annatto_version = ""
+success = false

@@ -21,6 +21,7 @@ use serde_derive::Deserialize;
 use crate::{
     ExporterStep, ImporterStep, ManipulatorStep, StepID,
     error::{AnnattoError, Result},
+    importer::ImportRunConfiguration,
     progress::ProgressReporter,
     util::update_graph,
 };
@@ -582,7 +583,12 @@ impl Workflow {
         let updates = step
             .module
             .reader()
-            .import_corpus(resolved_import_path.as_path(), step_id.clone(), tx.clone())
+            .import_corpus(
+                resolved_import_path.as_path(),
+                step_id.clone(),
+                ImportRunConfiguration::from(step),
+                tx.clone(),
+            )
             .map_err(|reason| AnnattoError::Import {
                 reason: reason.to_string(),
                 importer: step_id.module_name.to_string(),
@@ -1026,5 +1032,28 @@ mod tests {
             std::env::var(var).unwrap()
         };
         assert_snapshot!(value);
+    }
+
+    #[test]
+    fn customized_import() {
+        let toml_str = r#"
+        [[import]]
+        format = "exmaralda"
+        path = "path/to/data"
+        extensions = ["xml"]
+        as = "RUEG"
+
+        [import.config]
+        "#;
+        let workflow: std::result::Result<Workflow, _> = toml::from_str(toml_str);
+        assert!(
+            workflow.is_ok(),
+            "Error deserializing: {:?}",
+            workflow.err().unwrap()
+        );
+        let mut workflow = workflow.unwrap();
+        workflow.footer.annatto_version.clear();
+        let toml_str = toml::to_string(&workflow);
+        assert_snapshot!(toml_str.unwrap());
     }
 }
