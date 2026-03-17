@@ -1,4 +1,4 @@
-# diff (graph_operation)
+# unstable:diff (graph_operation)
 
 Compare to sub graphs, derive a patch from one towards the other,
 and apply it.
@@ -47,4 +47,16 @@ This annotation key determines the values in the target sequence.
 ###  algorithm
 
 Define the diff algorithm. Options are `lcs`, `myers`, and `patience` (default).
+
+###  merge
+
+Directly merge the two subgraphs instead of creating diff annotations.
+Example:
+
+```toml
+[graph_op.config]
+merge = true
+```
+
+Default is `false`.
 

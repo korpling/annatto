@@ -37,7 +37,8 @@ fn write_module_list_table(
             .iter()
             .map(|m| {
                 let module_name = m.name.to_lowercase();
-                format!("[{module_name}](importers/{module_name}.md)")
+                let file_stem = module_name.replace("unstable:", "");
+                format!("[{module_name}](importers/{file_stem}.md)")
             })
             .join(", "),
     ];
@@ -49,7 +50,8 @@ fn write_module_list_table(
             .iter()
             .map(|m| {
                 let module_name = m.name.to_lowercase();
-                format!("[{module_name}](exporters/{module_name}.md)")
+                let file_stem = module_name.replace("unstable:", "");
+                format!("[{module_name}](exporters/{file_stem}.md)")
             })
             .join(", "),
     ];
@@ -61,7 +63,8 @@ fn write_module_list_table(
             .iter()
             .map(|m| {
                 let module_name = m.name.to_lowercase();
-                format!("[{module_name}](graph_ops/{module_name}.md)")
+                let file_stem = module_name.replace("unstable:", "");
+                format!("[{module_name}](graph_ops/{file_stem}.md)")
             })
             .join(", "),
     ];
@@ -81,7 +84,7 @@ fn write_importer_files(importers: &[Variant], output_directory: &Path) -> anyho
 
     for m in importers {
         let ModuleInfo { name, doc, configs } = ModuleInfo::from(m);
-        let path = importers_directory.join(format!("{name}.md"));
+        let path = importers_directory.join(format!("{}.md", name.replace("unstable:", "")));
         let mut output = File::create(path)?;
         writeln!(output, "# {name} (importer)")?;
         writeln!(output)?;
@@ -99,7 +102,7 @@ fn write_exporter_files(exporters: &[Variant], output_directory: &Path) -> anyho
 
     for m in exporters {
         let ModuleInfo { name, doc, configs } = ModuleInfo::from(m);
-        let path = exporters_directory.join(format!("{name}.md"));
+        let path = exporters_directory.join(format!("{}.md", name.replace("unstable:", "")));
         let mut output = File::create(path)?;
         writeln!(output, "# {name} (exporter)")?;
         writeln!(output)?;
@@ -116,7 +119,7 @@ fn write_graph_op_files(graph_ops: &[Variant], output_directory: &Path) -> anyho
 
     for m in graph_ops {
         let ModuleInfo { name, doc, configs } = ModuleInfo::from(m);
-        let path = graph_ops_directory.join(format!("{name}.md"));
+        let path = graph_ops_directory.join(format!("{}.md", name.replace("unstable:", "")));
         let mut output = File::create(path)?;
         writeln!(output, "# {name} (graph_operation)")?;
         writeln!(output)?;
