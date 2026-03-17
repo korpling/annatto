@@ -1,0 +1,7 @@
+[[import]]
+format = "exmaralda"
+path = "./"
+extensions = ["xml"]
+as = "custom_corpus_root"
+
+[import.config]
