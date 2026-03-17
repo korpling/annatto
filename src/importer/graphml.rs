@@ -22,7 +22,7 @@ use std::{
 use crate::{
     StepID,
     error::AnnattoError,
-    importer::{ImportRunConfiguration, Importer},
+    importer::{GenericImportConfiguration, Importer},
     progress::ProgressReporter,
     workflow::StatusSender,
 };
@@ -281,7 +281,7 @@ impl Importer for GraphMLImporter {
         &self,
         path: &Path,
         step_id: StepID,
-        _config: ImportRunConfiguration,
+        _config: GenericImportConfiguration,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let reporter = ProgressReporter::new(tx, step_id, 2)?;

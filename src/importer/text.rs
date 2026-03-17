@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     importer::{
-        ImportRunConfiguration, Importer,
+        GenericImportConfiguration, Importer,
         text::tokenizer::{Token, TreeTaggerTokenizer},
     },
     progress::ProgressReporter,
@@ -94,7 +94,7 @@ impl Importer for ImportText {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        config: ImportRunConfiguration,
+        config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
@@ -231,7 +231,7 @@ mod tests {
 
     use crate::{
         exporter::graphml::GraphMLExporter,
-        importer::{ImportRunConfiguration, Importer, text::ImportText},
+        importer::{GenericImportConfiguration, Importer, text::ImportText},
         test_util::export_to_string,
         util::update_graph_silent,
     };
@@ -246,7 +246,7 @@ mod tests {
                 module_name: "test_text".to_string(),
                 path: Some(import_path.to_path_buf()),
             },
-            ImportRunConfiguration::new_with_default_extensions(&importer),
+            GenericImportConfiguration::new_with_default_extensions(&importer),
             None,
         );
         assert!(u.is_ok(), "Err: {:?}", u.err());
@@ -271,7 +271,7 @@ mod tests {
                 module_name: "test_text".to_string(),
                 path: Some(import_path.to_path_buf()),
             },
-            ImportRunConfiguration::new_with_default_extensions(&importer),
+            GenericImportConfiguration::new_with_default_extensions(&importer),
             None,
         );
         assert!(u.is_ok(), "Err: {:?}", u.err());

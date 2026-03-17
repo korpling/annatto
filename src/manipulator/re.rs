@@ -797,7 +797,7 @@ mod tests {
     use crate::exporter::graphml::GraphMLExporter;
     use crate::importer::exmaralda::ImportEXMARaLDA;
     use crate::importer::graphml::GraphMLImporter;
-    use crate::importer::{ImportRunConfiguration, Importer};
+    use crate::importer::{GenericImportConfiguration, Importer};
     use crate::manipulator::Manipulator;
     use crate::manipulator::re::{ComponentMapping, KeyMapping, RemoveTarget, Revise};
     use crate::progress::ProgressReporter;
@@ -2306,7 +2306,7 @@ remove = [1, 2]
                 module_name: "_test_helper_import".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&import),
+            GenericImportConfiguration::new_with_default_extensions(&import),
             None,
         );
         assert!(u.is_ok());
@@ -2340,7 +2340,7 @@ remove = [{node=1, anno="default_ns::pos"}]
                 module_name: "_test_helper_import".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&import),
+            GenericImportConfiguration::new_with_default_extensions(&import),
             None,
         );
         assert!(u.is_ok());

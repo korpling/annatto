@@ -7,7 +7,7 @@ use itertools::Itertools;
 use crate::{
     StepID,
     importer::{
-        ImportRunConfiguration, Importer,
+        GenericImportConfiguration, Importer,
         treetagger::{AttributeDecoding, ImportTreeTagger},
     },
     test_util::import_as_graphml_string,
@@ -117,7 +117,7 @@ fn complex_attribute_names() {
         .import_corpus(
             path.as_ref(),
             step_id.clone(),
-            ImportRunConfiguration::new_with_default_extensions(&importer),
+            GenericImportConfiguration::new_with_default_extensions(&importer),
             None,
         )
         .unwrap();

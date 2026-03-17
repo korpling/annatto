@@ -286,8 +286,7 @@ fn import_export_sample_sentence() {
         module: crate::ReadFrom::SaltXml(importer),
         path: path.to_path_buf(),
         description: None,
-        extensions: None,
-        root_name: None,
+        generic_config: None,
     };
     let mut updates = orig_import_step.execute(None).unwrap();
     let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -311,8 +310,7 @@ fn import_export_sample_sentence() {
         module: crate::ReadFrom::SaltXml(importer),
         path: output_dir.clone(),
         description: None,
-        extensions: None,
-        root_name: None,
+        generic_config: None,
     };
     let mut updates = second_import_step.execute(None).unwrap();
     let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -333,8 +331,7 @@ fn import_export_dialog_demo() {
         module: crate::ReadFrom::SaltXml(importer),
         path: path.to_path_buf(),
         description: None,
-        extensions: None,
-        root_name: None,
+        generic_config: None,
     };
     let mut updates = orig_import_step.execute(None).unwrap();
     let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -358,8 +355,7 @@ fn import_export_dialog_demo() {
         module: crate::ReadFrom::SaltXml(importer),
         path: output_dir.clone(),
         description: None,
-        extensions: None,
-        root_name: None,
+        generic_config: None,
     };
     let mut updates = second_import_step.execute(None).unwrap();
     let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();

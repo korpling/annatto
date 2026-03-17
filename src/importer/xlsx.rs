@@ -25,7 +25,7 @@ use super::Importer;
 use crate::{
     StepID,
     error::AnnattoError,
-    importer::{ImportRunConfiguration, NODE_NAME_ENCODE_SET},
+    importer::{GenericImportConfiguration, NODE_NAME_ENCODE_SET},
     progress::ProgressReporter,
     util,
 };
@@ -586,7 +586,7 @@ impl Importer for ImportSpreadsheet {
         &self,
         input_path: &std::path::Path,
         step_id: StepID,
-        config: ImportRunConfiguration,
+        config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
@@ -715,7 +715,7 @@ mod tests {
                 module_name: "test_xslx_import".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&import),
+            GenericImportConfiguration::new_with_default_extensions(&import),
             Some(sender),
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -753,7 +753,7 @@ mod tests {
                 module_name: "test_xslx_import".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&import),
+            GenericImportConfiguration::new_with_default_extensions(&import),
             None,
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -781,7 +781,7 @@ mod tests {
                 module_name: "test_xslx_import".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&import),
+            GenericImportConfiguration::new_with_default_extensions(&import),
             None,
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -833,8 +833,7 @@ mod tests {
             module: importer,
             path: path.to_path_buf(),
             description: None,
-            extensions: None,
-            root_name: None,
+            generic_config: None,
         };
 
         let import = import_step.execute(None);
@@ -949,8 +948,7 @@ mod tests {
             module: importer,
             path: path.to_path_buf(),
             description: None,
-            extensions: None,
-            root_name: None,
+            generic_config: None,
         };
         let (sender, receiver) = mpsc::channel();
         let import = import_step.execute(Some(sender));
@@ -988,8 +986,7 @@ mod tests {
             module: importer,
             path: path.to_path_buf(),
             description: None,
-            extensions: None,
-            root_name: None,
+            generic_config: None,
         };
         let (sender, receiver) = mpsc::channel();
         let import = import_step.execute(Some(sender));
@@ -1071,8 +1068,7 @@ mod tests {
             module: importer,
             path: path.to_path_buf(),
             description: None,
-            extensions: None,
-            root_name: None,
+            generic_config: None,
         };
         let (sender, receiver) = mpsc::channel();
         let import = import_step.execute(Some(sender));
@@ -1167,8 +1163,7 @@ mod tests {
             module: importer,
             path: path.to_path_buf(),
             description: None,
-            extensions: None,
-            root_name: None,
+            generic_config: None,
         };
 
         let import = import_step.execute(None);
@@ -1234,7 +1229,7 @@ edition = ["chapter"]
         let files_with_names = util::graphupdate::import_corpus_graph_from_files(
             &mut update,
             Path::new("tests/data/import/xlsx/with_backup/xlsx/"),
-            &ImportRunConfiguration::new_with_extensions(
+            &GenericImportConfiguration::new_with_extensions(
                 FILE_EXTENSIONS.iter().map(|e| e.to_string()).collect_vec(),
             ),
         );
@@ -1266,7 +1261,7 @@ norm = ["pos", "lemma"]
                 module_name: "test_xlsx".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&import),
+            GenericImportConfiguration::new_with_default_extensions(&import),
             None,
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -1296,7 +1291,7 @@ norm = ["pos", "lemma"]
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&module),
+            GenericImportConfiguration::new_with_default_extensions(&module),
             None,
         );
         assert!(u.is_ok());

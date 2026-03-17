@@ -249,7 +249,7 @@ mod tests {
     use crate::{
         StepID,
         exporter::graphml::GraphMLExporter,
-        importer::{ImportRunConfiguration, Importer, treetagger::ImportTreeTagger},
+        importer::{GenericImportConfiguration, Importer, treetagger::ImportTreeTagger},
         manipulator::{
             Manipulator,
             align::{AlignNodes, AlignmentMethod, NodeGroup, default_component},
@@ -335,7 +335,7 @@ mod tests {
                 module_name: "import_docs".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&import),
+            GenericImportConfiguration::new_with_default_extensions(&import),
             None,
         );
         assert!(u.is_ok());

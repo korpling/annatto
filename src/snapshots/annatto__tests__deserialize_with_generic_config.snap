@@ -1,11 +1,11 @@
 ---
-source: src/workflow.rs
-expression: toml_str.unwrap()
+source: src/lib.rs
+expression: "toml::to_string(&workflow).unwrap()"
 ---
 [[import]]
 format = "exmaralda"
-path = "path/to/data"
-root_as = "RUEG"
+path = "./"
+root_as = "custom_corpus_root"
 extensions = ["xml"]
 
 [import.config]

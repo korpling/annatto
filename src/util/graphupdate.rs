@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{Result, importer::ImportRunConfiguration};
+use crate::{Result, importer::GenericImportConfiguration};
 use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
@@ -151,7 +151,7 @@ pub fn root_corpus_from_path(root_path: &Path) -> Result<String> {
 pub fn import_corpus_graph_from_files(
     u: &mut GraphUpdate,
     root_path: &Path,
-    config: &ImportRunConfiguration,
+    config: &GenericImportConfiguration,
 ) -> Result<Vec<(PathBuf, String)>> {
     let root_name = config
         .root_name()
@@ -370,7 +370,7 @@ mod tests {
     use itertools::Itertools;
     use tempfile::TempDir;
 
-    use crate::importer::ImportRunConfiguration;
+    use crate::importer::GenericImportConfiguration;
 
     use super::import_corpus_graph_from_files;
 
@@ -380,7 +380,7 @@ mod tests {
         let result = import_corpus_graph_from_files(
             &mut u,
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda/test_doc.exb"),
-            &ImportRunConfiguration::new_with_extensions(vec!["exb".to_string()]),
+            &GenericImportConfiguration::new_with_extensions(vec!["exb".to_string()]),
         )
         .unwrap();
 
@@ -403,7 +403,7 @@ mod tests {
         let mut result = import_corpus_graph_from_files(
             &mut u,
             Path::new("tests/data/import/exmaralda/"),
-            &ImportRunConfiguration::new_with_root_name("custom_root_name".to_string())
+            &GenericImportConfiguration::new_with_root_name("custom_root_name".to_string())
                 .and_extensions(vec!["exb".to_string()]),
         )
         .unwrap();
@@ -443,7 +443,7 @@ mod tests {
             import_corpus_graph_from_files(
                 &mut update,
                 &root_path,
-                &ImportRunConfiguration::new_with_extensions(vec!["fancyExtension".to_string()])
+                &GenericImportConfiguration::new_with_extensions(vec!["fancyExtension".to_string()])
             )
             .is_ok()
         );

@@ -1,4 +1,4 @@
-use crate::{importer::ImportRunConfiguration, test_util::import_as_graphml_string};
+use crate::{importer::GenericImportConfiguration, test_util::import_as_graphml_string};
 
 use super::*;
 use insta::assert_snapshot;
@@ -174,7 +174,7 @@ fn fail_wrong_map() {
                 module_name: "test_failing_import".to_string(),
                 path: None
             },
-            ImportRunConfiguration::new_with_default_extensions(&ImportTextgrid::default()),
+            GenericImportConfiguration::new_with_default_extensions(&ImportTextgrid::default()),
             None
         )
         .is_err()

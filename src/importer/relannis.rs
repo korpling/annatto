@@ -1,4 +1,4 @@
-use crate::importer::ImportRunConfiguration;
+use crate::importer::GenericImportConfiguration;
 use crate::progress::ProgressReporter;
 
 use super::{Importer, NODE_NAME_ENCODE_SET};
@@ -40,7 +40,7 @@ impl Importer for ImportRelAnnis {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        _config: ImportRunConfiguration,
+        _config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let progress = ProgressReporter::new_unknown_total_work(tx, step_id.clone())?;

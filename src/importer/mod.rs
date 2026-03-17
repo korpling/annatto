@@ -20,10 +20,10 @@ pub mod whisper;
 pub mod xlsx;
 pub mod xml;
 
-use crate::{ImporterStep, StepID, workflow::StatusSender};
+use crate::{StepID, workflow::StatusSender};
 use graphannis::update::GraphUpdate;
-use itertools::Itertools;
 use percent_encoding::{AsciiSet, CONTROLS};
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 /// An importer is a module that takes a path and produces a list of graph update events.
@@ -42,11 +42,22 @@ pub trait Importer: Sync {
         &self,
         input_path: &Path,
         step_id: StepID,
-        config: ImportRunConfiguration,
+        config: GenericImportConfiguration,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>>;
 
     fn default_file_extensions(&self) -> &[&str];
+
+    fn default_configuration(&self) -> GenericImportConfiguration {
+        GenericImportConfiguration {
+            root_as: None,
+            extensions: self
+                .default_file_extensions()
+                .iter()
+                .map(<&str>::to_string)
+                .collect(),
+        }
+    }
 }
 
 /// An encoding set for node names.
@@ -70,13 +81,14 @@ pub const NODE_NAME_ENCODE_SET: &AsciiSet = &CONTROLS
     .add(b'?')
     .add(b'*');
 
-#[derive(Default)]
-pub struct ImportRunConfiguration {
+#[derive(Clone, Default, Deserialize, PartialEq, Serialize)]
+pub struct GenericImportConfiguration {
+    #[serde(alias = "as")]
     root_as: Option<String>,
     extensions: Vec<String>,
 }
 
-impl<'a> ImportRunConfiguration {
+impl<'a> GenericImportConfiguration {
     pub fn root_name(&'a self) -> Option<String> {
         self.root_as.clone()
     }
@@ -86,24 +98,26 @@ impl<'a> ImportRunConfiguration {
     }
 
     #[cfg(test)]
-    pub fn new_with_root_name(root_name: String) -> ImportRunConfiguration {
-        ImportRunConfiguration {
+    pub fn new_with_root_name(root_name: String) -> GenericImportConfiguration {
+        GenericImportConfiguration {
             root_as: Some(root_name),
             extensions: vec![],
         }
     }
 
     #[cfg(test)]
-    pub fn new_with_extensions(extensions: Vec<String>) -> ImportRunConfiguration {
-        ImportRunConfiguration {
+    pub fn new_with_extensions(extensions: Vec<String>) -> GenericImportConfiguration {
+        GenericImportConfiguration {
             root_as: None,
             extensions,
         }
     }
 
     #[cfg(test)]
-    pub fn new_with_default_extensions(importer: &dyn Importer) -> ImportRunConfiguration {
-        ImportRunConfiguration {
+    pub fn new_with_default_extensions(importer: &dyn Importer) -> GenericImportConfiguration {
+        use itertools::Itertools;
+
+        GenericImportConfiguration {
             root_as: None,
             extensions: importer
                 .default_file_extensions()
@@ -114,26 +128,10 @@ impl<'a> ImportRunConfiguration {
     }
 
     #[cfg(test)]
-    pub fn and_extensions(self, extensions: Vec<String>) -> ImportRunConfiguration {
-        ImportRunConfiguration {
+    pub fn and_extensions(self, extensions: Vec<String>) -> GenericImportConfiguration {
+        GenericImportConfiguration {
             root_as: self.root_as,
             extensions,
-        }
-    }
-}
-
-impl From<&ImporterStep> for ImportRunConfiguration {
-    fn from(step: &ImporterStep) -> Self {
-        ImportRunConfiguration {
-            root_as: step.root_name.clone(),
-            extensions: step.extensions.clone().unwrap_or(
-                step.module
-                    .reader()
-                    .default_file_extensions()
-                    .iter()
-                    .map(|e| e.to_string())
-                    .collect_vec(),
-            ),
         }
     }
 }

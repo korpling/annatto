@@ -499,7 +499,7 @@ mod tests {
         StepID,
         exporter::table::ExportTable,
         importer::{
-            ImportRunConfiguration, Importer, conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA,
+            GenericImportConfiguration, Importer, conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA,
         },
         test_util::export_to_string,
     };
@@ -559,7 +559,7 @@ mod tests {
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&exmaralda),
+            GenericImportConfiguration::new_with_default_extensions(&exmaralda),
             None,
         );
         assert!(mprt.is_ok());
@@ -582,7 +582,7 @@ mod tests {
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&exmaralda),
+            GenericImportConfiguration::new_with_default_extensions(&exmaralda),
             None,
         );
         assert!(mprt.is_ok());
@@ -612,7 +612,7 @@ mod tests {
                 module_name: "test_import_conll".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&to_conll),
+            GenericImportConfiguration::new_with_default_extensions(&to_conll),
             None,
         );
         assert!(mprt.is_ok());
@@ -645,7 +645,7 @@ mod tests {
                 module_name: "test_import_conll".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&to_conll),
+            GenericImportConfiguration::new_with_default_extensions(&to_conll),
             None,
         );
         assert!(mprt.is_ok());
@@ -686,7 +686,7 @@ mod tests {
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&exmaralda),
+            GenericImportConfiguration::new_with_default_extensions(&exmaralda),
             None,
         );
         assert!(mprt.is_ok());
@@ -718,7 +718,7 @@ mod tests {
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&exmaralda),
+            GenericImportConfiguration::new_with_default_extensions(&exmaralda),
             None,
         );
         assert!(mprt.is_ok());
@@ -750,7 +750,7 @@ mod tests {
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&exmaralda),
+            GenericImportConfiguration::new_with_default_extensions(&exmaralda),
             None,
         );
         assert!(mprt.is_ok());

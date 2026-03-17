@@ -35,8 +35,7 @@ fn timeline_fail() {
         module: import,
         path: PathBuf::from(import_path),
         description: None,
-        extensions: None,
-        root_name: None,
+        generic_config: None,
     };
 
     let (sender, _receiver) = mpsc::channel();
@@ -69,8 +68,7 @@ fn category_fail() {
         module: import,
         path: PathBuf::from(import_path),
         description: None,
-        extensions: None,
-        root_name: None,
+        generic_config: None,
     };
 
     let step_id = StepID::from_importer_step(&import_step);
@@ -108,8 +106,7 @@ fn undefined_speaker_fail() {
         module: import,
         path: PathBuf::from(import_path),
         description: None,
-        extensions: None,
-        root_name: None,
+        generic_config: None,
     };
 
     let step_id = StepID::from_importer_step(&import_step);
@@ -142,8 +139,7 @@ fn unknown_tli_fail() {
         module: import,
         path: PathBuf::from(import_path),
         description: None,
-        extensions: None,
-        root_name: None,
+        generic_config: None,
     };
 
     let step_id = StepID::from_importer_step(&import_step);
@@ -176,8 +172,7 @@ fn bad_timevalue_fail() {
         module: import,
         path: PathBuf::from(import_path),
         description: None,
-        extensions: None,
-        root_name: None,
+        generic_config: None,
     };
 
     let step_id = StepID::from_importer_step(&import_step);
@@ -210,8 +205,7 @@ fn underspec_event_fail() {
         module: import,
         path: PathBuf::from(import_path),
         description: None,
-        extensions: None,
-        root_name: None,
+        generic_config: None,
     };
 
     let (sender, _receiver) = mpsc::channel();
@@ -228,8 +222,7 @@ fn invalid_fail() {
         module: import,
         path: PathBuf::from(import_path),
         description: None,
-        extensions: None,
-        root_name: None,
+        generic_config: None,
     };
 
     let step_id = StepID::from_importer_step(&import_step);
