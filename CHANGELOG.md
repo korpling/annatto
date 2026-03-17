@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - import `toolbox`: allow annotation values with parentheses (opening **and** closing) as well as comments
 - imports can now be configured to rename the root of the corpus by using key `as` on top level
 - imports' formats can now be customized using `extensions` on top level
+- generic import configuration is also available in library use
   
 ### Changed
 

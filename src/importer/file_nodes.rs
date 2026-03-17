@@ -1,4 +1,4 @@
-use crate::{error::AnnattoError, importer::ImportRunConfiguration};
+use crate::{error::AnnattoError, importer::GenericImportConfiguration};
 
 use super::Importer;
 use facet::Facet;
@@ -25,7 +25,7 @@ impl Importer for CreateFileNodes {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        _config: ImportRunConfiguration,
+        _config: GenericImportConfiguration,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
@@ -177,8 +177,7 @@ mod tests {
             module: crate::ReadFrom::Path(import),
             path: PathBuf::from("tests/data/import/xlsx/clean/xlsx/"),
             description: Some("Custom-id-import".to_string()),
-            extensions: None,
-            root_name: None,
+            generic_config: None,
         };
         let mut test_u = step.execute(None)?;
         // add dummy node and dummy ordering edge to pass model checks when applying the update to the graph

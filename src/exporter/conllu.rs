@@ -548,7 +548,7 @@ mod tests {
     use crate::{
         StepID,
         exporter::conllu::ExportCoNLLU,
-        importer::{ImportRunConfiguration, Importer, conllu::ImportCoNLLU},
+        importer::{GenericImportConfiguration, Importer, conllu::ImportCoNLLU},
         test_util::export_to_string,
     };
 
@@ -647,7 +647,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&conll_in),
+            GenericImportConfiguration::new_with_default_extensions(&conll_in),
             None,
         );
         assert!(u.is_ok());

@@ -168,7 +168,7 @@ mod tests {
     use crate::{
         StepID,
         exporter::graphml::GraphMLExporter,
-        importer::{ImportRunConfiguration, Importer, treetagger::ImportTreeTagger},
+        importer::{GenericImportConfiguration, Importer, treetagger::ImportTreeTagger},
         manipulator::{
             Manipulator,
             split::{Layer, SplitValues, default_delimiter},
@@ -258,7 +258,7 @@ mod tests {
                 module_name: "import_treetagger".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&importer),
+            GenericImportConfiguration::new_with_default_extensions(&importer),
             None,
         );
         assert!(u.is_ok());

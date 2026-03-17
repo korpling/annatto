@@ -522,7 +522,8 @@ mod tests {
     use crate::{
         StepID,
         importer::{
-            ImportRunConfiguration, Importer, exmaralda::ImportEXMARaLDA, textgrid::ImportTextgrid,
+            GenericImportConfiguration, Importer, exmaralda::ImportEXMARaLDA,
+            textgrid::ImportTextgrid,
         },
         test_util::export_to_string,
     };
@@ -617,7 +618,7 @@ ignore_others = true
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&exmaralda),
+            GenericImportConfiguration::new_with_default_extensions(&exmaralda),
             None,
         );
         assert!(mprt.is_ok());
@@ -640,7 +641,7 @@ ignore_others = true
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&exmaralda),
+            GenericImportConfiguration::new_with_default_extensions(&exmaralda),
             None,
         );
         assert!(mprt.is_ok());
@@ -679,7 +680,7 @@ ignore_others = true
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&exmaralda),
+            GenericImportConfiguration::new_with_default_extensions(&exmaralda),
             None,
         );
         assert!(mprt.is_ok());
@@ -718,7 +719,7 @@ ignore_others = true
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&exmaralda),
+            GenericImportConfiguration::new_with_default_extensions(&exmaralda),
             None,
         );
         assert!(mprt.is_ok());
@@ -761,7 +762,7 @@ ignore_others = true
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&exmaralda),
+            GenericImportConfiguration::new_with_default_extensions(&exmaralda),
             None,
         );
         assert!(mprt.is_ok());
@@ -804,7 +805,7 @@ ignore_others = true
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&exmaralda),
+            GenericImportConfiguration::new_with_default_extensions(&exmaralda),
             None,
         );
         assert!(mprt.is_ok());
@@ -860,7 +861,7 @@ tier_groups = { tok = ["pos", "lemma", "Inf-Struct"] }
                 module_name: "test_import_textgrid".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&import_textgrid),
+            GenericImportConfiguration::new_with_default_extensions(&import_textgrid),
             None,
         );
         assert!(u.is_ok());

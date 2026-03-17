@@ -325,7 +325,7 @@ mod tests {
 
     use crate::{
         exporter::sequence::{default_anno, default_delimiter, default_fileby_key},
-        importer::{ImportRunConfiguration, Importer, xlsx::ImportSpreadsheet},
+        importer::{GenericImportConfiguration, Importer, xlsx::ImportSpreadsheet},
         test_util::export_to_string,
     };
 
@@ -439,7 +439,7 @@ mod tests {
                 module_name: "test_import_xlsx".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&import),
+            GenericImportConfiguration::new_with_default_extensions(&import),
             None,
         );
         assert!(u.is_ok());

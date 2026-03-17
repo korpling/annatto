@@ -12,7 +12,7 @@ use xml::{EventReader, ParserConfig};
 
 use crate::{
     error::{AnnattoError, Result},
-    importer::ImportRunConfiguration,
+    importer::GenericImportConfiguration,
     progress::ProgressReporter,
     util::graphupdate::import_corpus_graph_from_files,
 };
@@ -64,7 +64,7 @@ impl Importer for ImportOpusLinks {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        config: ImportRunConfiguration,
+        config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();

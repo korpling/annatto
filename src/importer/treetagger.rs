@@ -1,7 +1,7 @@
 use std::{collections::HashMap, io::Read, path::Path};
 
 use crate::{
-    StepID, importer::ImportRunConfiguration, progress::ProgressReporter,
+    StepID, importer::GenericImportConfiguration, progress::ProgressReporter,
     util::graphupdate::import_corpus_graph_from_files,
 };
 
@@ -393,7 +393,7 @@ impl Importer for ImportTreeTagger {
         &self,
         input_path: &Path,
         step_id: StepID,
-        config: ImportRunConfiguration,
+        config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut u = GraphUpdate::default();

@@ -45,7 +45,7 @@ use workflow::StatusSender;
 
 use crate::{
     exporter::treetagger::ExportTreeTagger,
-    importer::{git::ImportGitMetadata, text::ImportText},
+    importer::{GenericImportConfiguration, git::ImportGitMetadata, text::ImportText},
     manipulator::{diff::DiffSubgraphs, edit::EditGraph},
 };
 
@@ -301,11 +301,8 @@ pub struct ImporterStep {
     path: PathBuf,
     #[serde(default, alias = "label")]
     description: Option<String>,
-    #[serde(default)]
-    extensions: Option<Vec<String>>, // this is an Option as an empty Vec has a different meaning (even though non-supported meaning, but for serialization this might become relevant),
-    /// This allows to overwrite the root name which is by default derived from the import path.
-    #[serde(default, alias = "as")]
-    root_name: Option<String>,
+    #[serde(flatten, default)]
+    generic_config: Option<GenericImportConfiguration>,
 }
 
 impl ImporterStep {
@@ -314,12 +311,12 @@ impl ImporterStep {
     where
         P: Into<PathBuf>,
     {
+        let generic_config = Some(module.reader().default_configuration());
         Self {
             module,
             path: path.into(),
             description: None,
-            extensions: None,
-            root_name: None,
+            generic_config,
         }
     }
 
@@ -328,12 +325,11 @@ impl ImporterStep {
         &self,
         tx: Option<StatusSender>,
     ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        use crate::importer::ImportRunConfiguration;
-
+        let default_conf = self.module.reader().default_configuration();
         self.module.reader().import_corpus(
             &self.path,
             StepID::from_importer_step(&self),
-            ImportRunConfiguration::from(self),
+            self.generic_config.clone().unwrap_or(default_conf),
             tx,
         )
     }
@@ -427,6 +423,7 @@ impl Step for ManipulatorStep {}
 mod tests {
     use std::fs;
 
+    use insta::assert_snapshot;
     use serde::de::DeserializeOwned;
 
     use crate::{GraphOp, ReadFrom, WriteAs, workflow::Workflow};
@@ -471,5 +468,28 @@ mod tests {
     fn deserialize_with_custom_id() {
         let d = deserialize_toml::<Workflow>("tests/deser/workflow-with-custom-labels.toml");
         assert!(d.is_ok(), "Err: {:?}", d.err().unwrap());
+    }
+
+    #[test]
+    fn deserialize_with_generic_config() {
+        let d = deserialize_toml::<Workflow>("tests/deser/workflow-with-generic-config.toml");
+        assert!(d.is_ok());
+        let workflow = d.unwrap();
+        let import_step = &workflow.import_steps().unwrap()[0];
+        assert_eq!(
+            import_step
+                .generic_config
+                .as_ref()
+                .unwrap()
+                .root_name()
+                .as_ref()
+                .unwrap(),
+            "custom_corpus_root"
+        );
+        assert_eq!(
+            import_step.generic_config.as_ref().unwrap().extensions(),
+            &["xml"]
+        );
+        assert_snapshot!(toml::to_string(&workflow).unwrap());
     }
 }

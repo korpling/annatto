@@ -20,7 +20,7 @@ use super::Importer;
 use crate::{
     StepID,
     error::AnnattoError,
-    importer::ImportRunConfiguration,
+    importer::GenericImportConfiguration,
     progress::ProgressReporter,
     util::graphupdate::{import_corpus_graph_from_files, map_audio_source},
     workflow::StatusMessage,
@@ -56,7 +56,7 @@ impl Importer for ImportEXMARaLDA {
         &self,
         input_path: &std::path::Path,
         step_id: StepID,
-        config: ImportRunConfiguration,
+        config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();

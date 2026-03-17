@@ -10,7 +10,7 @@ use graphannis_core::graph::ANNIS_NS;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    importer::ImportRunConfiguration, progress::ProgressReporter,
+    importer::GenericImportConfiguration, progress::ProgressReporter,
     util::graphupdate::import_corpus_graph_from_files,
 };
 
@@ -77,7 +77,7 @@ impl Importer for ImportWhisper {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        config: ImportRunConfiguration,
+        config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
@@ -374,7 +374,7 @@ mod tests {
 
     use crate::{
         exporter::graphml::GraphMLExporter,
-        importer::{ImportRunConfiguration, Importer},
+        importer::{GenericImportConfiguration, Importer},
         test_util::export_to_string,
     };
 
@@ -428,7 +428,7 @@ mod tests {
                     module_name: "test_whisper".to_string(),
                     path: Some(path.to_path_buf()),
                 },
-                ImportRunConfiguration::new_with_default_extensions(&module),
+                GenericImportConfiguration::new_with_default_extensions(&module),
                 None,
             )
             .map_err(|e| anyhow!("An error occured: {:?}", e))?;
@@ -452,7 +452,7 @@ mod tests {
                     module_name: "test_whisper".to_string(),
                     path: Some(path.to_path_buf()),
                 },
-                ImportRunConfiguration::new_with_default_extensions(&module),
+                GenericImportConfiguration::new_with_default_extensions(&module),
                 None,
             )
             .map_err(|e| anyhow!("An error occured: {:?}", e));

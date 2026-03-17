@@ -2,7 +2,8 @@ use std::path::Path;
 
 use super::Importer;
 use crate::{
-    StepID, importer::ImportRunConfiguration, progress::ProgressReporter, workflow::StatusSender,
+    StepID, importer::GenericImportConfiguration, progress::ProgressReporter,
+    workflow::StatusSender,
 };
 use facet::Facet;
 use graphannis::update::GraphUpdate;
@@ -19,7 +20,7 @@ impl Importer for CreateEmptyCorpus {
         &self,
         _path: &Path,
         step_id: StepID,
-        _config: ImportRunConfiguration,
+        _config: GenericImportConfiguration,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let progress_reporter = ProgressReporter::new(tx, step_id, 1)?;

@@ -7,7 +7,7 @@ use graphannis::update::{GraphUpdate, UpdateEvent};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::importer::{ImportRunConfiguration, Importer};
+use crate::importer::{GenericImportConfiguration, Importer};
 
 /// This importer can enrich a corpus with commit metadata. The import path needs
 /// to be the root directory of the local git repository.
@@ -27,7 +27,7 @@ impl Importer for ImportGitMetadata {
         &self,
         input_path: &std::path::Path,
         _step_id: crate::StepID,
-        _config: ImportRunConfiguration,
+        _config: GenericImportConfiguration,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
@@ -92,7 +92,7 @@ mod tests {
     use crate::{
         StepID,
         exporter::graphml::GraphMLExporter,
-        importer::{ImportRunConfiguration, Importer, git::ImportGitMetadata},
+        importer::{GenericImportConfiguration, Importer, git::ImportGitMetadata},
         test_util::export_to_string,
     };
 
@@ -148,7 +148,7 @@ mod tests {
                 module_name: "test_git".to_string(),
                 path: None,
             },
-            ImportRunConfiguration::default(),
+            GenericImportConfiguration::default(),
             None,
         );
         assert_eq!(u.is_ok(), commit, "Result: {:?}", u.err());

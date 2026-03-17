@@ -2,7 +2,7 @@ use crate::{
     StepID,
     error::{AnnattoError, Result},
     exporter::Exporter,
-    importer::{ImportRunConfiguration, Importer},
+    importer::{GenericImportConfiguration, Importer},
     util::get_all_files,
     workflow::StatusSender,
 };
@@ -49,7 +49,7 @@ where
         .import_corpus(
             path.as_ref(),
             step_id.clone(),
-            ImportRunConfiguration::new_with_default_extensions(&importer),
+            GenericImportConfiguration::new_with_default_extensions(&importer),
             tx,
         )
         .map_err(|e| AnnattoError::Import {

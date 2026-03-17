@@ -811,7 +811,7 @@ mod tests {
         ImporterStep, ReadFrom, StepID,
         exporter::exmaralda::ExportExmaralda,
         importer::{
-            ImportRunConfiguration, Importer, exmaralda::ImportEXMARaLDA,
+            GenericImportConfiguration, Importer, exmaralda::ImportEXMARaLDA,
             treetagger::ImportTreeTagger,
         },
         test_util::{export_to_string, export_to_string_in_directory},
@@ -868,7 +868,7 @@ mod tests {
                 module_name: "test_import".into(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&import),
+            GenericImportConfiguration::new_with_default_extensions(&import),
             None,
         );
         assert!(u.is_ok());
@@ -891,8 +891,7 @@ mod tests {
             module: crate::ReadFrom::EXMARaLDA(import),
             path: PathBuf::from("./tests/data/import/exmaralda/clean/import/"),
             description: None,
-            extensions: None,
-            root_name: None,
+            generic_config: None,
         };
         let u = step.execute(None);
         assert!(u.is_ok());
@@ -925,8 +924,7 @@ mod tests {
             module: crate::ReadFrom::EXMARaLDA(import),
             path: PathBuf::from("./tests/data/import/exmaralda/clean/import/"),
             description: None,
-            extensions: None,
-            root_name: None,
+            generic_config: None,
         };
         let u = step.execute(None);
         assert!(u.is_ok());
@@ -967,8 +965,7 @@ mod tests {
             module: import,
             path: source_path,
             description: None,
-            extensions: None,
-            root_name: None,
+            generic_config: None,
         };
         let u = step.execute(None);
 
@@ -1000,7 +997,7 @@ mod tests {
                 module_name: "test_import".into(),
                 path: None,
             },
-            ImportRunConfiguration::new_with_default_extensions(&import),
+            GenericImportConfiguration::new_with_default_extensions(&import),
             None,
         );
         let mut update = u.unwrap();

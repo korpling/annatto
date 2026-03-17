@@ -6,7 +6,7 @@ use std::*;
 
 use super::Importer;
 use crate::StepID;
-use crate::importer::ImportRunConfiguration;
+use crate::importer::GenericImportConfiguration;
 use crate::models::textgrid::{Interval, TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{
@@ -420,7 +420,7 @@ impl Importer for ImportTextgrid {
         &self,
         input_path: &Path,
         step_id: StepID,
-        config: ImportRunConfiguration,
+        config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut u = GraphUpdate::default();
