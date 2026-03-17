@@ -5,3 +5,6 @@ extensions = ["xml"]
 as = "custom_corpus_root"
 
 [import.config]
+
+[footer]
+annatto_version = ""
