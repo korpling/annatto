@@ -427,6 +427,7 @@ impl Step for ManipulatorStep {}
 mod tests {
     use std::fs;
 
+    use insta::assert_snapshot;
     use serde::de::DeserializeOwned;
 
     use crate::{GraphOp, ReadFrom, WriteAs, workflow::Workflow};
@@ -471,5 +472,19 @@ mod tests {
     fn deserialize_with_custom_id() {
         let d = deserialize_toml::<Workflow>("tests/deser/workflow-with-custom-labels.toml");
         assert!(d.is_ok(), "Err: {:?}", d.err().unwrap());
+    }
+
+    #[test]
+    fn deserialize_with_generic_config() {
+        let d = deserialize_toml::<Workflow>("tests/deser/workflow-with-generic-config.toml");
+        assert!(d.is_ok());
+        let workflow = d.unwrap();
+        let import_step = &workflow.import_steps().unwrap()[0];
+        assert_eq!(
+            import_step.root_name.as_ref().unwrap(),
+            "custom_corpus_root"
+        );
+        assert_eq!(import_step.extensions.as_ref().unwrap(), &["xml"]);
+        assert_snapshot!(toml::to_string(&workflow).unwrap());
     }
 }
