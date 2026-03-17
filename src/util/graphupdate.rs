@@ -443,7 +443,9 @@ mod tests {
             import_corpus_graph_from_files(
                 &mut update,
                 &root_path,
-                &GenericImportConfiguration::new_with_extensions(vec!["fancyExtension".to_string()])
+                &GenericImportConfiguration::new_with_extensions(vec![
+                    "fancyExtension".to_string()
+                ])
             )
             .is_ok()
         );

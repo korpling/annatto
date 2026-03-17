@@ -522,7 +522,8 @@ mod tests {
     use crate::{
         StepID,
         importer::{
-            GenericImportConfiguration, Importer, exmaralda::ImportEXMARaLDA, textgrid::ImportTextgrid,
+            GenericImportConfiguration, Importer, exmaralda::ImportEXMARaLDA,
+            textgrid::ImportTextgrid,
         },
         test_util::export_to_string,
     };

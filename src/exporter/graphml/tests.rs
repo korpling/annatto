@@ -8,8 +8,8 @@ use zip::ZipArchive;
 
 use crate::{
     importer::{
-        GenericImportConfiguration, Importer, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
-        xlsx::ImportSpreadsheet,
+        GenericImportConfiguration, Importer, exmaralda::ImportEXMARaLDA,
+        file_nodes::CreateFileNodes, xlsx::ImportSpreadsheet,
     },
     util::update_graph_silent,
 };

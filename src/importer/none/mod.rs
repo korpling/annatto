@@ -2,7 +2,8 @@ use std::path::Path;
 
 use super::Importer;
 use crate::{
-    StepID, importer::GenericImportConfiguration, progress::ProgressReporter, workflow::StatusSender,
+    StepID, importer::GenericImportConfiguration, progress::ProgressReporter,
+    workflow::StatusSender,
 };
 use facet::Facet;
 use graphannis::update::GraphUpdate;
