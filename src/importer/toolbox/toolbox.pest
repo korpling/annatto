@@ -17,4 +17,4 @@ valid_chars = _{ !(" " | NEWLINE | EOI | "-") ~ ANY }
 par_chars = _{ !(" " | NEWLINE | EOI | "-" | "(" | ")" ) ~ ANY }
 null = { "-" ~ &(spaces | NEWLINE | EOI) }
 spaces = { " "+ }
-comment = { "###" ~ (!(NEWLINE) ~ ANY)* }
+comment = { "###" ~ (!(NEWLINE ~ "\\") ~ ANY)* }
