@@ -162,11 +162,7 @@ pub fn import_corpus_graph_from_files(
         node_type: "corpus".to_string(),
     })?;
 
-    let file_endings = config
-        .extensions()
-        .iter()
-        .map(String::as_str)
-        .collect_vec();
+    let file_endings = config.extensions().iter().map(String::as_str).collect_vec();
     let mut path_tuples = add_subcorpora(u, root_path, &root_name, &file_endings)?;
     path_tuples.sort();
     Ok(path_tuples)
