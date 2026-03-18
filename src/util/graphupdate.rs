@@ -154,7 +154,7 @@ pub fn import_corpus_graph_from_files(
     config: &GenericImportConfiguration,
 ) -> Result<Vec<(PathBuf, String)>> {
     let root_name = config
-        .root_name()
+        .custom_root_name()
         .unwrap_or(root_corpus_from_path(root_path)?);
 
     u.add_event(UpdateEvent::AddNode {
@@ -162,7 +162,11 @@ pub fn import_corpus_graph_from_files(
         node_type: "corpus".to_string(),
     })?;
 
-    let file_endings = config.extensions().iter().map(String::as_str).collect_vec();
+    let file_endings = config
+        .extensions()
+        .iter()
+        .map(String::as_str)
+        .collect_vec();
     let mut path_tuples = add_subcorpora(u, root_path, &root_name, &file_endings)?;
     path_tuples.sort();
     Ok(path_tuples)

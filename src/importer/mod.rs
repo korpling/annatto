@@ -83,18 +83,19 @@ pub const NODE_NAME_ENCODE_SET: &AsciiSet = &CONTROLS
 
 #[derive(Clone, Default, Deserialize, PartialEq, Serialize)]
 pub struct GenericImportConfiguration {
-    #[serde(alias = "as")]
-    root_as: Option<String>,
-    extensions: Vec<String>,
+    #[serde(alias = "as", default)]
+    pub(crate) root_as: Option<String>,
+    #[serde(default)]
+    pub(crate) extensions: Vec<String>,
 }
 
 impl<'a> GenericImportConfiguration {
-    pub fn root_name(&'a self) -> Option<String> {
+    pub fn custom_root_name(&'a self) -> Option<String> {
         self.root_as.clone()
     }
 
     pub fn extensions(&'a self) -> &'a Vec<String> {
-        &self.extensions
+        self.extensions.as_ref()
     }
 
     #[cfg(test)]
@@ -122,7 +123,7 @@ impl<'a> GenericImportConfiguration {
             extensions: importer
                 .default_file_extensions()
                 .iter()
-                .map(|s| s.to_string())
+                .map(<&str>::to_string)
                 .collect_vec(),
         }
     }

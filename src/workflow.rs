@@ -59,6 +59,10 @@ pub enum StatusMessage {
 pub struct Workflow {
     #[serde(default)]
     load: Option<LoadGraph>,
+    #[serde(
+        default,
+        deserialize_with = "crate::estarde::importer_step::optional_sequence::deserialize"
+    )]
     import: Option<Vec<ImporterStep>>,
     graph_op: Option<Vec<ManipulatorStep>>,
     export: Option<Vec<ExporterStep>>,
@@ -269,6 +273,7 @@ pub fn execute_from_file(
     } else {
         Path::new("")
     };
+    // End of workaround
     let result = wf.execute(tx, parent_dir, in_memory);
     if let Some(save_path) = save_workflow {
         wf.footer.success = result.is_ok();
