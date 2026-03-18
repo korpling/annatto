@@ -132,11 +132,14 @@ impl ImportToolBox {
         let mut block_annos = Vec::with_capacity(lines.len());
         for line in lines {
             if line.as_rule() == Rule::line {
-                let (end_id, block_anno) =
+                let (end_id, block_anno, comment) =
                     self.map_annotation_line(update, doc_node_name, line, start_id, ordering)?;
                 end_ids.insert(end_id);
                 if let Some(anno) = block_anno {
                     block_annos.push(anno);
+                }
+                if let Some(comment_anno) = comment {
+                    block_annos.push(comment_anno);
                 }
             }
         }
@@ -169,10 +172,11 @@ impl ImportToolBox {
         data: Pair<Rule>,
         start_id: usize,
         ordering: &mut BTreeMap<String, BTreeSet<(NodeSpec, String)>>,
-    ) -> Result<(usize, Option<Annotation>)> {
+    ) -> Result<(usize, Option<Annotation>, Option<Annotation>)> {
         let mut layer_name = String::new();
         let mut end_id = start_id;
         let mut span_anno = None;
+        let mut comment = None;
         for pair in data.into_inner() {
             match pair.as_rule() {
                 Rule::entries => {
@@ -188,13 +192,12 @@ impl ImportToolBox {
                         span_anno = Some(Annotation {
                             key: AnnoKey {
                                 ns: "".into(),
-                                name: layer_name,
+                                name: layer_name.to_string(),
                             },
                             val: anno_val,
                         });
                     }
                     end_id = final_id;
-                    return Ok((end_id, span_anno));
                 }
                 Rule::anno_field => {
                     layer_name.push_str(pair.as_str().trim());
@@ -202,11 +205,21 @@ impl ImportToolBox {
                         "".to_string();
                     }
                 }
-                Rule::proc_field => return Ok((end_id, None)), // TODO make configurable, for now internal markers ("\_...") are not processed
+                Rule::proc_field => return Ok((end_id, None, None)), // TODO make configurable, for now internal markers ("\_...") are not processed
+                Rule::comment => {
+                    comment = Some(Annotation {
+                        key: AnnoKey {
+                            name: "inline_comment".to_string(),
+                            ns: "toolbox".to_string(),
+                        },
+                        val: pair.as_str().to_string(),
+                    });
+                    println!("{:?}", &comment);
+                }
                 _ => {}
             }
         }
-        Ok((end_id, span_anno)) // if this is ever executed, something went wrong
+        Ok((end_id, span_anno, comment)) // if this is ever executed, something went wrong
     }
 
     fn map_line_entries(
