@@ -154,7 +154,7 @@ pub fn import_corpus_graph_from_files(
     config: &GenericImportConfiguration,
 ) -> Result<Vec<(PathBuf, String)>> {
     let root_name = config
-        .root_name()
+        .custom_root_name()
         .unwrap_or(root_corpus_from_path(root_path)?);
 
     u.add_event(UpdateEvent::AddNode {

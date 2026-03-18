@@ -5,6 +5,7 @@ expression: "Regex::new(r#\"[0-9]+\\.[0-9]+\\.[0-9]+\"#).unwrap().replace(&writt
 [[import]]
 format = "xlsx"
 path = "xlsx/"
+extensions = ["xlsx"]
 
 [import.config]
 metasheet_skip_rows = 0

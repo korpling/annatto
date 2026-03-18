@@ -481,7 +481,7 @@ mod tests {
                 .generic_config
                 .as_ref()
                 .unwrap()
-                .root_name()
+                .custom_root_name()
                 .as_ref()
                 .unwrap(),
             "custom_corpus_root"
