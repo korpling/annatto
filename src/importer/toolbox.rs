@@ -214,7 +214,6 @@ impl ImportToolBox {
                         },
                         val: pair.as_str().to_string(),
                     });
-                    println!("{:?}", &comment);
                 }
                 _ => {}
             }
