@@ -10,7 +10,9 @@
 
 \comment  Dieser Kommentar sollte nicht im Zielgraph erscheinen.
 
-\ref  Testsatz 2
+\ref  Testsatz 2 ### dies ist ein von Toolbox
+umgebrochener Multi-Line-Comment und der sollte
+im Ganzen importiert werden
 \tx   Damit    lassen   sich  Sachen   testen   .
 \PoS  ADV      AUX      PRON  NOUN     VERB     .
 \syl  da -mit  las -sen sich  sa -chen tes -ten -
