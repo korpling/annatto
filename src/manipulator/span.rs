@@ -20,16 +20,29 @@ use serde::{Deserialize, Serialize};
 
 use crate::{manipulator::Manipulator, util::update_graph_silent};
 
+/// This module can query annotations and create spans across
+/// all matching nodes for the same value, adjacency is optional.
 #[derive(Deserialize, Facet, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct CreateSpans {
+    /// The query for retrieving the relevant annotation values and
+    /// nodes for the spans to be created.
     query: String,
+    /// The node index (starting at 1) to pick the target node for the new span.
+    /// Note, that the new span will not directly point to the target node, but
+    /// will have edges of component `component` (s. below) to the covered tokens.
     node: usize,
+    /// The annotation key holding the values on the newly created spans.
     #[serde(with = "crate::estarde::anno_key")]
     anno: AnnoKey,
+    /// The query indices for determining an annotation value, join via empty string if
+    /// more than one index is provided.
     value: Vec<usize>,
+    /// By default only adjacent matches (in base ordering) will be covered by a new span.
+    /// If discontinuous spans are legal or useful in your model, you can set this to `false`.
     #[serde(default = "default_adjacent")]
     adjacent: bool,
+    /// The component for the spanning edges, by default `{ ctype = "Coverage", layer = "annis", name = ""}` (the default coverage component).
     #[serde(
         default = "default_component",
         with = "crate::estarde::annotation_component"
