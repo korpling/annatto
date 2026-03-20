@@ -12,6 +12,7 @@ pub mod map;
 pub mod no_op;
 pub mod re;
 pub mod sleep;
+pub mod span;
 pub mod split;
 pub mod time;
 pub mod visualize;

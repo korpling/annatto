@@ -46,7 +46,7 @@ use workflow::StatusSender;
 use crate::{
     exporter::treetagger::ExportTreeTagger,
     importer::{GenericImportConfiguration, git::ImportGitMetadata, text::ImportText},
-    manipulator::{diff::DiffSubgraphs, edit::EditGraph},
+    manipulator::{diff::DiffSubgraphs, edit::EditGraph, span::CreateSpans},
 };
 
 #[derive(Tabled)]
@@ -186,6 +186,7 @@ pub enum GraphOp {
     Link(LinkNodes),                  // no default, has required attributes
     Map(MapAnnos),                    // no default, has a (required) path attribute
     Revise(#[serde(default)] Revise), // does nothing on default
+    Span(CreateSpans),
     Time(#[serde(default)] Filltime),
     Chunk(#[serde(default)] Chunk),
     Split(#[serde(default)] SplitValues), // default does nothing
@@ -219,6 +220,7 @@ impl GraphOp {
             GraphOp::Align(m) => m,
             GraphOp::Diff(m) => m,
             GraphOp::Edit(m) => m,
+            GraphOp::Span(m) => m,
         }
     }
 

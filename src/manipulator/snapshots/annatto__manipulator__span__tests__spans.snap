@@ -1,0 +1,297 @@
+---
+source: src/manipulator/span.rs
+expression: actual.unwrap()
+---
+---- adjacent.graphml:
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>
+    <key id="k1" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k2" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k3" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k4" for="node" attr.name="default_ns::sentence" attr.type="string"/>
+    <key id="k5" for="node" attr.name="sentence_span" attr.type="string"/>
+    <key id="k6" for="node" attr.name="annis::tok" attr.type="string"/>
+    <key id="k7" for="node" attr.name="annis::tok-whitespace-before" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <data key="k0"><![CDATA[
+# configure visualizations here
+]]></data>
+        <node id="adjacent">
+            <data key="k3">corpus</data>
+        </node>
+        <node id="adjacent/doc1">
+            <data key="k1">doc1</data>
+            <data key="k3">corpus</data>
+        </node>
+        <node id="adjacent/doc1#text">
+            <data key="k3">datasource</data>
+        </node>
+        <node id="adjacent/doc1#t1">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">1</data>
+            <data key="k6">This</data>
+        </node>
+        <node id="adjacent/doc1#t2">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">1</data>
+            <data key="k6">is</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="adjacent/doc1#t3">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">1</data>
+            <data key="k6">text</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="adjacent/doc1#t4">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">1</data>
+            <data key="k6">in</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="adjacent/doc1#t5">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">1</data>
+            <data key="k6">treetagger</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="adjacent/doc1#t6">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">1</data>
+            <data key="k6">format</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="adjacent/doc1#t7">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">1</data>
+            <data key="k6">.</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="adjacent/doc1#t8">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">2</data>
+            <data key="k6">There</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="adjacent/doc1#t9">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">2</data>
+            <data key="k6">are</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="adjacent/doc1#t10">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">2</data>
+            <data key="k6">no</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="adjacent/doc1#t11">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">2</data>
+            <data key="k6">sentence</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="adjacent/doc1#t12">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">2</data>
+            <data key="k6">indicators</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="adjacent/doc1#t13">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">2</data>
+            <data key="k6">.</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="adjacent/doc1#t14">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">3</data>
+            <data key="k6">So</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="adjacent/doc1#t15">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">3</data>
+            <data key="k6">they</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="adjacent/doc1#t16">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">3</data>
+            <data key="k6">are</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="adjacent/doc1#t17">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">3</data>
+            <data key="k6">annotated</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="adjacent/doc1#t18">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">3</data>
+            <data key="k6">instead</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="adjacent/doc1#t19">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">3</data>
+            <data key="k6">.</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="adjacent/doc1#text#merged_span_-sentence_span-1-0">
+            <data key="k3">node</data>
+            <data key="k5">1</data>
+        </node>
+        <node id="adjacent/doc1#text#merged_span_-sentence_span-2-0">
+            <data key="k3">node</data>
+            <data key="k5">2</data>
+        </node>
+        <node id="adjacent/doc1#text#merged_span_-sentence_span-3-0">
+            <data key="k3">node</data>
+            <data key="k5">3</data>
+        </node>
+        <edge id="e0" source="adjacent/doc1#text#merged_span_-sentence_span-1-0" target="adjacent/doc1#t1" label="Coverage/annis/">
+        </edge>
+        <edge id="e1" source="adjacent/doc1#text#merged_span_-sentence_span-1-0" target="adjacent/doc1#t2" label="Coverage/annis/">
+        </edge>
+        <edge id="e2" source="adjacent/doc1#text#merged_span_-sentence_span-1-0" target="adjacent/doc1#t3" label="Coverage/annis/">
+        </edge>
+        <edge id="e3" source="adjacent/doc1#text#merged_span_-sentence_span-1-0" target="adjacent/doc1#t4" label="Coverage/annis/">
+        </edge>
+        <edge id="e4" source="adjacent/doc1#text#merged_span_-sentence_span-1-0" target="adjacent/doc1#t5" label="Coverage/annis/">
+        </edge>
+        <edge id="e5" source="adjacent/doc1#text#merged_span_-sentence_span-1-0" target="adjacent/doc1#t6" label="Coverage/annis/">
+        </edge>
+        <edge id="e6" source="adjacent/doc1#text#merged_span_-sentence_span-1-0" target="adjacent/doc1#t7" label="Coverage/annis/">
+        </edge>
+        <edge id="e7" source="adjacent/doc1#text#merged_span_-sentence_span-2-0" target="adjacent/doc1#t8" label="Coverage/annis/">
+        </edge>
+        <edge id="e8" source="adjacent/doc1#text#merged_span_-sentence_span-2-0" target="adjacent/doc1#t9" label="Coverage/annis/">
+        </edge>
+        <edge id="e9" source="adjacent/doc1#text#merged_span_-sentence_span-2-0" target="adjacent/doc1#t10" label="Coverage/annis/">
+        </edge>
+        <edge id="e10" source="adjacent/doc1#text#merged_span_-sentence_span-2-0" target="adjacent/doc1#t11" label="Coverage/annis/">
+        </edge>
+        <edge id="e11" source="adjacent/doc1#text#merged_span_-sentence_span-2-0" target="adjacent/doc1#t12" label="Coverage/annis/">
+        </edge>
+        <edge id="e12" source="adjacent/doc1#text#merged_span_-sentence_span-2-0" target="adjacent/doc1#t13" label="Coverage/annis/">
+        </edge>
+        <edge id="e13" source="adjacent/doc1#text#merged_span_-sentence_span-3-0" target="adjacent/doc1#t14" label="Coverage/annis/">
+        </edge>
+        <edge id="e14" source="adjacent/doc1#text#merged_span_-sentence_span-3-0" target="adjacent/doc1#t15" label="Coverage/annis/">
+        </edge>
+        <edge id="e15" source="adjacent/doc1#text#merged_span_-sentence_span-3-0" target="adjacent/doc1#t16" label="Coverage/annis/">
+        </edge>
+        <edge id="e16" source="adjacent/doc1#text#merged_span_-sentence_span-3-0" target="adjacent/doc1#t17" label="Coverage/annis/">
+        </edge>
+        <edge id="e17" source="adjacent/doc1#text#merged_span_-sentence_span-3-0" target="adjacent/doc1#t18" label="Coverage/annis/">
+        </edge>
+        <edge id="e18" source="adjacent/doc1#text#merged_span_-sentence_span-3-0" target="adjacent/doc1#t19" label="Coverage/annis/">
+        </edge>
+        <edge id="e19" source="adjacent/doc1#t1" target="adjacent/doc1#t2" label="Ordering/annis/">
+        </edge>
+        <edge id="e20" source="adjacent/doc1#t2" target="adjacent/doc1#t3" label="Ordering/annis/">
+        </edge>
+        <edge id="e21" source="adjacent/doc1#t3" target="adjacent/doc1#t4" label="Ordering/annis/">
+        </edge>
+        <edge id="e22" source="adjacent/doc1#t4" target="adjacent/doc1#t5" label="Ordering/annis/">
+        </edge>
+        <edge id="e23" source="adjacent/doc1#t5" target="adjacent/doc1#t6" label="Ordering/annis/">
+        </edge>
+        <edge id="e24" source="adjacent/doc1#t6" target="adjacent/doc1#t7" label="Ordering/annis/">
+        </edge>
+        <edge id="e25" source="adjacent/doc1#t7" target="adjacent/doc1#t8" label="Ordering/annis/">
+        </edge>
+        <edge id="e26" source="adjacent/doc1#t8" target="adjacent/doc1#t9" label="Ordering/annis/">
+        </edge>
+        <edge id="e27" source="adjacent/doc1#t9" target="adjacent/doc1#t10" label="Ordering/annis/">
+        </edge>
+        <edge id="e28" source="adjacent/doc1#t10" target="adjacent/doc1#t11" label="Ordering/annis/">
+        </edge>
+        <edge id="e29" source="adjacent/doc1#t11" target="adjacent/doc1#t12" label="Ordering/annis/">
+        </edge>
+        <edge id="e30" source="adjacent/doc1#t12" target="adjacent/doc1#t13" label="Ordering/annis/">
+        </edge>
+        <edge id="e31" source="adjacent/doc1#t13" target="adjacent/doc1#t14" label="Ordering/annis/">
+        </edge>
+        <edge id="e32" source="adjacent/doc1#t14" target="adjacent/doc1#t15" label="Ordering/annis/">
+        </edge>
+        <edge id="e33" source="adjacent/doc1#t15" target="adjacent/doc1#t16" label="Ordering/annis/">
+        </edge>
+        <edge id="e34" source="adjacent/doc1#t16" target="adjacent/doc1#t17" label="Ordering/annis/">
+        </edge>
+        <edge id="e35" source="adjacent/doc1#t17" target="adjacent/doc1#t18" label="Ordering/annis/">
+        </edge>
+        <edge id="e36" source="adjacent/doc1#t18" target="adjacent/doc1#t19" label="Ordering/annis/">
+        </edge>
+        <edge id="e37" source="adjacent/doc1" target="adjacent" label="PartOf/annis/">
+        </edge>
+        <edge id="e38" source="adjacent/doc1#text" target="adjacent/doc1" label="PartOf/annis/">
+        </edge>
+        <edge id="e39" source="adjacent/doc1#t1" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e40" source="adjacent/doc1#t2" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e41" source="adjacent/doc1#t3" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e42" source="adjacent/doc1#t4" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e43" source="adjacent/doc1#t5" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e44" source="adjacent/doc1#t6" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e45" source="adjacent/doc1#t7" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e46" source="adjacent/doc1#t8" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e47" source="adjacent/doc1#t9" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e48" source="adjacent/doc1#t10" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e49" source="adjacent/doc1#t11" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e50" source="adjacent/doc1#t12" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e51" source="adjacent/doc1#t13" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e52" source="adjacent/doc1#t14" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e53" source="adjacent/doc1#t15" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e54" source="adjacent/doc1#t16" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e55" source="adjacent/doc1#t17" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e56" source="adjacent/doc1#t18" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e57" source="adjacent/doc1#t19" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e58" source="adjacent/doc1#text#merged_span_-sentence_span-1-0" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e59" source="adjacent/doc1#text#merged_span_-sentence_span-2-0" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e60" source="adjacent/doc1#text#merged_span_-sentence_span-3-0" target="adjacent/doc1#text" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>
