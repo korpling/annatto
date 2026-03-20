@@ -1,0 +1,14 @@
+---
+source: src/manipulator/span.rs
+expression: serialization.unwrap()
+---
+query = "sentence"
+node = 1
+anno = "sentence_span"
+value = [1]
+adjacent = true
+
+[component]
+ctype = "Dominance"
+layer = "annis"
+name = ""
