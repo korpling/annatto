@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - import `toolbox`: multi-line comments starting with `###` are supported
+- graph op `span`: Query token annotations and create spans for equal values covering adjacent (default) or even non-adjacent matching nodes
 
 ### Fixed
 
