@@ -1,7 +1,6 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
     sync::Arc,
-    usize,
 };
 
 use anyhow::anyhow;
@@ -66,8 +65,7 @@ impl Manipulator for CreateSpans {
             let coverage_storages = graph
                 .get_all_components(Some(AnnotationComponentType::Coverage), None)
                 .into_iter()
-                .map(|c| graph.get_graphstorage(&c))
-                .flatten()
+                .flat_map(|c| graph.get_graphstorage(&c))
                 .collect_vec();
             let coverage_container = UnionEdgeContainer::new(
                 coverage_storages
@@ -175,7 +173,7 @@ impl Manipulator for CreateSpans {
                     for target_node in group {
                         let target_node_name = graph
                             .get_node_annos()
-                            .get_value_for_item(&target_node, &NODE_NAME_KEY)?
+                            .get_value_for_item(target_node, &NODE_NAME_KEY)?
                             .ok_or(anyhow!("Node has no name."))?;
                         update.add_event(UpdateEvent::AddEdge {
                             source_node: span_name.to_string(),
@@ -197,7 +195,7 @@ impl Manipulator for CreateSpans {
     }
 }
 
-impl<'a> CreateSpans {
+impl CreateSpans {
     fn adjacent_groups(
         &self,
         ordering: Arc<dyn GraphStorage>,
@@ -216,10 +214,10 @@ impl<'a> CreateSpans {
             );
             let mut group = connected
                 .intersection(&nodes)
-                .map(|n| *n)
+                .copied()
                 .collect::<BTreeSet<NodeID>>();
             group.insert(node);
-            nodes = nodes.difference(&group).map(|n| *n).collect();
+            nodes = nodes.difference(&group).copied().collect();
             adjacent_groups.push(group);
         }
         Ok(adjacent_groups)
