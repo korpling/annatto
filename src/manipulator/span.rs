@@ -230,7 +230,8 @@ impl<'a> CreateSpans {
 mod tests {
     use std::path::Path;
 
-    use graphannis::{AnnotationGraph, graph::AnnoKey};
+    use graphannis::{AnnotationGraph, graph::AnnoKey, model::AnnotationComponent};
+    use graphannis_core::graph::ANNIS_NS;
     use insta::assert_snapshot;
 
     use crate::{
@@ -242,6 +243,60 @@ mod tests {
         },
         test_util::export_to_string,
     };
+
+    #[test]
+    fn deserialize() {
+        let module: Result<CreateSpans, _> = toml::from_str(
+            r#"
+        query = "speaker _=_ tok"
+        node = 2
+        value = [1]
+        anno = "speaker_span"        
+        "#,
+        );
+        assert!(module.is_ok());
+    }
+
+    #[test]
+    fn deserialize_custom() {
+        let module: Result<CreateSpans, _> = toml::from_str(
+            r#"
+        adjacent = true
+        query = "speaker _=_ tok"
+        node = 2
+        value = [1]
+        anno = "speaker_span"
+        component = { ctype = "Dominance", layer = "annis", name = "" }
+        "#,
+        );
+        assert!(module.is_ok());
+    }
+
+    #[test]
+    fn serialize_custom() {
+        let module = CreateSpans {
+            adjacent: true,
+            query: "sentence".to_string(),
+            node: 1,
+            value: vec![1],
+            anno: AnnoKey {
+                name: "sentence_span".to_string(),
+                ns: "".to_string(),
+            },
+            component: AnnotationComponent::new(
+                graphannis::model::AnnotationComponentType::Dominance,
+                ANNIS_NS.to_string(),
+                "".to_string(),
+            ),
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn spans() {
