@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - generic importer configuration is now properly read and used
 
+### Changed
+
+- replaced `likewise` crate with `similar` as requested by the maintainer or `likewise` (#522)
+
 ## [0.49.0] - 2026-03-17
 
 ### Added
