@@ -17,9 +17,9 @@ use graphannis_core::{
     graph::{ANNIS_NS, NODE_NAME_KEY, storage::union::UnionEdgeContainer},
 };
 use itertools::Itertools;
-use likewise::{Algorithm, DiffOp, capture_diff_slices};
 use linked_hash_set::LinkedHashSet;
 use serde::{Deserialize, Serialize};
+use similar::{Algorithm, DiffOp, capture_diff_slices};
 
 use crate::{
     manipulator::Manipulator,
