@@ -184,7 +184,7 @@ impl Manipulator for DivideSegments {
             let mut deleted_minimal_nodes: BTreeMap<NodeID, String> = BTreeMap::default();
 
             for node_sequence in source_node_sequences {
-                let mut previous= None;
+                let mut previous = None;
                 for node in node_sequence {
                     let horizontal_node_name = graph
                         .get_node_annos()
@@ -212,10 +212,11 @@ impl Manipulator for DivideSegments {
 
                     if let Some(value) = &anno_value {
                         let new_values = self.op.resolve(value);
-                        let names = new_values
-                            .iter()
-                            .enumerate()
-                            .map(|(i, v)| format!("{parent_name}#divide_{node_name_stem}_{i}_{v}"));
+                        let names = new_values.iter().enumerate().map(|(i, v)| {
+                            format!("{parent_name}#divide_{node_name_stem}_{i}_{v}")
+                                .trim()
+                                .to_string()
+                        });
                         let mut is_tok = false;
                         let (left_most, right_most) = if !vertical_container
                             .has_outgoing_edges(node)?
@@ -481,6 +482,66 @@ mod tests {
             r#"
         source_anno = "norm::norm"
         op = "char"
+
+        [horizontal]
+        source = { ctype = "Ordering", layer = "default_ns", name = "norm" }
+        minimal = { ctype = "Ordering", layer = "annis", name = "" }
+        "#,
+        );
+        assert!(
+            manip.is_ok(),
+            "Err deserializing: {:?}",
+            manip.err().unwrap()
+        );
+        let manip = manip.unwrap();
+        let appl = manip.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_divide".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(
+            appl.is_ok(),
+            "Error performing divide: {:?}",
+            appl.err().unwrap()
+        );
+        let exporter: Result<GraphMLExporter, _> = toml::from_str("stable_order = true");
+        assert!(exporter.is_ok());
+        let exporter = exporter.unwrap();
+        assert_snapshot!(export_to_string(&graph, exporter).unwrap());
+    }
+
+    #[test]
+    fn offset_tok_fixed_n() {
+        let import: Result<ImportSpreadsheet, _> = toml::from_str(
+            r#"
+            [column_map]
+            norm = ["pos", "lemma"]
+            "#,
+        );
+        assert!(import.is_ok());
+        let import = import.unwrap();
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let u = import.import_corpus(
+            Path::new("tests/data/graph_op/divide/offset-tok/"),
+            crate::StepID {
+                module_name: "test_import".to_string(),
+                path: None,
+            },
+            import.default_configuration(),
+            None,
+        );
+        assert!(u.is_ok());
+        assert!(graph.apply_update(&mut u.unwrap(), |_| {}).is_ok());
+        let manip: Result<DivideSegments, _> = toml::from_str(
+            r#"
+        source_anno = "norm::norm"
+        op = { n = 3, value = " " }
 
         [horizontal]
         source = { ctype = "Ordering", layer = "default_ns", name = "norm" }
