@@ -1,0 +1,5 @@
+This	PRON
+is	VERB
+a	DET
+test	NOUN
+.	PUNCT

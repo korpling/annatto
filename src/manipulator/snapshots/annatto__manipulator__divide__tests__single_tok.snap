@@ -1,0 +1,204 @@
+---
+source: src/manipulator/divide.rs
+expression: "export_to_string(&graph, exporter).unwrap()"
+---
+---- single-tok.graphml:
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>
+    <key id="k1" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k2" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k3" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k4" for="node" attr.name="default_ns::pos" attr.type="string"/>
+    <key id="k5" for="node" attr.name="annis::tok" attr.type="string"/>
+    <key id="k6" for="node" attr.name="annis::tok-whitespace-before" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <data key="k0"><![CDATA[
+# configure visualizations here
+]]></data>
+        <node id="single-tok">
+            <data key="k3">corpus</data>
+        </node>
+        <node id="single-tok/test_file">
+            <data key="k1">test_file</data>
+            <data key="k3">corpus</data>
+        </node>
+        <node id="single-tok/test_file#text">
+            <data key="k3">datasource</data>
+        </node>
+        <node id="single-tok/test_file#t1">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">PRON</data>
+            <data key="k5">This</data>
+        </node>
+        <node id="single-tok/test_file#t2">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">VERB</data>
+            <data key="k5">is</data>
+            <data key="k6"> </data>
+        </node>
+        <node id="single-tok/test_file#t3">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">DET</data>
+            <data key="k5">a</data>
+            <data key="k6"> </data>
+        </node>
+        <node id="single-tok/test_file#t4">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">NOUN</data>
+            <data key="k5">test</data>
+            <data key="k6"> </data>
+        </node>
+        <node id="single-tok/test_file#t5">
+            <data key="k2">default_layer</data>
+            <data key="k3">node</data>
+            <data key="k4">PUNCT</data>
+            <data key="k5">.</data>
+            <data key="k6"> </data>
+        </node>
+        <node id="single-tok/test_file#text#divide_t1_0_T">
+            <data key="k3">node</data>
+            <data key="k5">T</data>
+        </node>
+        <node id="single-tok/test_file#text#divide_t1_1_h">
+            <data key="k3">node</data>
+            <data key="k5">h</data>
+        </node>
+        <node id="single-tok/test_file#text#divide_t1_2_i">
+            <data key="k3">node</data>
+            <data key="k5">i</data>
+        </node>
+        <node id="single-tok/test_file#text#divide_t1_3_s">
+            <data key="k3">node</data>
+            <data key="k5">s</data>
+        </node>
+        <node id="single-tok/test_file#text#divide_t2_0_i">
+            <data key="k3">node</data>
+            <data key="k5">i</data>
+        </node>
+        <node id="single-tok/test_file#text#divide_t2_1_s">
+            <data key="k3">node</data>
+            <data key="k5">s</data>
+        </node>
+        <node id="single-tok/test_file#text#divide_t3_0_a">
+            <data key="k3">node</data>
+            <data key="k5">a</data>
+        </node>
+        <node id="single-tok/test_file#text#divide_t4_0_t">
+            <data key="k3">node</data>
+            <data key="k5">t</data>
+        </node>
+        <node id="single-tok/test_file#text#divide_t4_1_e">
+            <data key="k3">node</data>
+            <data key="k5">e</data>
+        </node>
+        <node id="single-tok/test_file#text#divide_t4_2_s">
+            <data key="k3">node</data>
+            <data key="k5">s</data>
+        </node>
+        <node id="single-tok/test_file#text#divide_t4_3_t">
+            <data key="k3">node</data>
+            <data key="k5">t</data>
+        </node>
+        <node id="single-tok/test_file#text#divide_t5_0_.">
+            <data key="k3">node</data>
+            <data key="k5">.</data>
+        </node>
+        <edge id="e0" source="single-tok/test_file#t1" target="single-tok/test_file#text#divide_t1_0_T" label="Coverage/annis/">
+        </edge>
+        <edge id="e1" source="single-tok/test_file#t1" target="single-tok/test_file#text#divide_t1_1_h" label="Coverage/annis/">
+        </edge>
+        <edge id="e2" source="single-tok/test_file#t1" target="single-tok/test_file#text#divide_t1_2_i" label="Coverage/annis/">
+        </edge>
+        <edge id="e3" source="single-tok/test_file#t1" target="single-tok/test_file#text#divide_t1_3_s" label="Coverage/annis/">
+        </edge>
+        <edge id="e4" source="single-tok/test_file#t2" target="single-tok/test_file#text#divide_t2_0_i" label="Coverage/annis/">
+        </edge>
+        <edge id="e5" source="single-tok/test_file#t2" target="single-tok/test_file#text#divide_t2_1_s" label="Coverage/annis/">
+        </edge>
+        <edge id="e6" source="single-tok/test_file#t3" target="single-tok/test_file#text#divide_t3_0_a" label="Coverage/annis/">
+        </edge>
+        <edge id="e7" source="single-tok/test_file#t4" target="single-tok/test_file#text#divide_t4_0_t" label="Coverage/annis/">
+        </edge>
+        <edge id="e8" source="single-tok/test_file#t4" target="single-tok/test_file#text#divide_t4_1_e" label="Coverage/annis/">
+        </edge>
+        <edge id="e9" source="single-tok/test_file#t4" target="single-tok/test_file#text#divide_t4_2_s" label="Coverage/annis/">
+        </edge>
+        <edge id="e10" source="single-tok/test_file#t4" target="single-tok/test_file#text#divide_t4_3_t" label="Coverage/annis/">
+        </edge>
+        <edge id="e11" source="single-tok/test_file#t5" target="single-tok/test_file#text#divide_t5_0_." label="Coverage/annis/">
+        </edge>
+        <edge id="e12" source="single-tok/test_file#t1" target="single-tok/test_file#t2" label="Ordering/annis/">
+        </edge>
+        <edge id="e13" source="single-tok/test_file#t2" target="single-tok/test_file#t3" label="Ordering/annis/">
+        </edge>
+        <edge id="e14" source="single-tok/test_file#t3" target="single-tok/test_file#t4" label="Ordering/annis/">
+        </edge>
+        <edge id="e15" source="single-tok/test_file#t4" target="single-tok/test_file#t5" label="Ordering/annis/">
+        </edge>
+        <edge id="e16" source="single-tok/test_file#text#divide_t1_0_T" target="single-tok/test_file#text#divide_t1_1_h" label="Ordering/annis/new">
+        </edge>
+        <edge id="e17" source="single-tok/test_file#text#divide_t1_1_h" target="single-tok/test_file#text#divide_t1_2_i" label="Ordering/annis/new">
+        </edge>
+        <edge id="e18" source="single-tok/test_file#text#divide_t1_2_i" target="single-tok/test_file#text#divide_t1_3_s" label="Ordering/annis/new">
+        </edge>
+        <edge id="e19" source="single-tok/test_file#text#divide_t1_3_s" target="single-tok/test_file#text#divide_t2_0_i" label="Ordering/annis/new">
+        </edge>
+        <edge id="e20" source="single-tok/test_file#text#divide_t2_0_i" target="single-tok/test_file#text#divide_t2_1_s" label="Ordering/annis/new">
+        </edge>
+        <edge id="e21" source="single-tok/test_file#text#divide_t2_1_s" target="single-tok/test_file#text#divide_t3_0_a" label="Ordering/annis/new">
+        </edge>
+        <edge id="e22" source="single-tok/test_file#text#divide_t3_0_a" target="single-tok/test_file#text#divide_t4_0_t" label="Ordering/annis/new">
+        </edge>
+        <edge id="e23" source="single-tok/test_file#text#divide_t4_0_t" target="single-tok/test_file#text#divide_t4_1_e" label="Ordering/annis/new">
+        </edge>
+        <edge id="e24" source="single-tok/test_file#text#divide_t4_1_e" target="single-tok/test_file#text#divide_t4_2_s" label="Ordering/annis/new">
+        </edge>
+        <edge id="e25" source="single-tok/test_file#text#divide_t4_2_s" target="single-tok/test_file#text#divide_t4_3_t" label="Ordering/annis/new">
+        </edge>
+        <edge id="e26" source="single-tok/test_file#text#divide_t4_3_t" target="single-tok/test_file#text#divide_t5_0_." label="Ordering/annis/new">
+        </edge>
+        <edge id="e27" source="single-tok/test_file" target="single-tok" label="PartOf/annis/">
+        </edge>
+        <edge id="e28" source="single-tok/test_file#text" target="single-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e29" source="single-tok/test_file#t1" target="single-tok/test_file#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e30" source="single-tok/test_file#t2" target="single-tok/test_file#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e31" source="single-tok/test_file#t3" target="single-tok/test_file#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e32" source="single-tok/test_file#t4" target="single-tok/test_file#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e33" source="single-tok/test_file#t5" target="single-tok/test_file#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e34" source="single-tok/test_file#text#divide_t1_0_T" target="single-tok/test_file#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e35" source="single-tok/test_file#text#divide_t1_1_h" target="single-tok/test_file#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e36" source="single-tok/test_file#text#divide_t1_2_i" target="single-tok/test_file#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e37" source="single-tok/test_file#text#divide_t1_3_s" target="single-tok/test_file#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e38" source="single-tok/test_file#text#divide_t2_0_i" target="single-tok/test_file#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e39" source="single-tok/test_file#text#divide_t2_1_s" target="single-tok/test_file#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e40" source="single-tok/test_file#text#divide_t3_0_a" target="single-tok/test_file#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e41" source="single-tok/test_file#text#divide_t4_0_t" target="single-tok/test_file#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e42" source="single-tok/test_file#text#divide_t4_1_e" target="single-tok/test_file#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e43" source="single-tok/test_file#text#divide_t4_2_s" target="single-tok/test_file#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e44" source="single-tok/test_file#text#divide_t4_3_t" target="single-tok/test_file#text" label="PartOf/annis/">
+        </edge>
+        <edge id="e45" source="single-tok/test_file#text#divide_t5_0_." target="single-tok/test_file#text" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>
