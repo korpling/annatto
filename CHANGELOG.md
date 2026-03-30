@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - import `toolbox`: multi-line comments starting with `###` are supported
 - graph op `span`: Query token annotations and create spans for equal values covering adjacent (default) or even non-adjacent matching nodes
+- graph op `divide`: Split ordered segments into sub nodes, either with a fixed number or split into characters
 
 ### Fixed
 

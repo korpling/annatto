@@ -1,0 +1,300 @@
+---
+source: src/manipulator/divide.rs
+expression: "export_to_string(&graph, exporter).unwrap()"
+---
+---- offset-tok.graphml:
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>
+    <key id="k1" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k2" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k3" for="node" attr.name="norm::lemma" attr.type="string"/>
+    <key id="k4" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k5" for="node" attr.name="norm::norm" attr.type="string"/>
+    <key id="k6" for="node" attr.name="norm::pos" attr.type="string"/>
+    <key id="k7" for="node" attr.name="annis::tok" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <data key="k0"><![CDATA[
+# configure visualizations here
+]]></data>
+        <node id="offset-tok">
+            <data key="k4">corpus</data>
+        </node>
+        <node id="offset-tok/test_file">
+            <data key="k1">test_file</data>
+            <data key="k4">corpus</data>
+        </node>
+        <node id="offset-tok/test_file#row4">
+            <data key="k2">default_layer</data>
+            <data key="k4">node</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="offset-tok/test_file#norm_2-3">
+            <data key="k2">norm</data>
+            <data key="k4">node</data>
+            <data key="k5">I</data>
+        </node>
+        <node id="offset-tok/test_file#norm_3-4">
+            <data key="k2">norm</data>
+            <data key="k4">node</data>
+            <data key="k5">am</data>
+        </node>
+        <node id="offset-tok/test_file#norm_5-6">
+            <data key="k2">norm</data>
+            <data key="k4">node</data>
+            <data key="k5">in</data>
+        </node>
+        <node id="offset-tok/test_file#norm_6-7">
+            <data key="k2">norm</data>
+            <data key="k4">node</data>
+            <data key="k5">Berlin</data>
+        </node>
+        <node id="offset-tok/test_file#norm_7-8">
+            <data key="k2">norm</data>
+            <data key="k4">node</data>
+            <data key="k5">.</data>
+        </node>
+        <node id="offset-tok/test_file#span_pos_2-3">
+            <data key="k2">norm</data>
+            <data key="k4">node</data>
+            <data key="k6">PRON</data>
+        </node>
+        <node id="offset-tok/test_file#span_pos_3-4">
+            <data key="k2">norm</data>
+            <data key="k4">node</data>
+            <data key="k6">VERB</data>
+        </node>
+        <node id="offset-tok/test_file#span_pos_5-6">
+            <data key="k2">norm</data>
+            <data key="k4">node</data>
+            <data key="k6">ADP</data>
+        </node>
+        <node id="offset-tok/test_file#span_pos_6-7">
+            <data key="k2">norm</data>
+            <data key="k4">node</data>
+            <data key="k6">PROPN</data>
+        </node>
+        <node id="offset-tok/test_file#span_pos_7-8">
+            <data key="k2">norm</data>
+            <data key="k4">node</data>
+            <data key="k6">PUNCT</data>
+        </node>
+        <node id="offset-tok/test_file#span_lemma_2-3">
+            <data key="k2">norm</data>
+            <data key="k3">I</data>
+            <data key="k4">node</data>
+        </node>
+        <node id="offset-tok/test_file#span_lemma_3-4">
+            <data key="k2">norm</data>
+            <data key="k3">be</data>
+            <data key="k4">node</data>
+        </node>
+        <node id="offset-tok/test_file#span_lemma_5-6">
+            <data key="k2">norm</data>
+            <data key="k3">in</data>
+            <data key="k4">node</data>
+        </node>
+        <node id="offset-tok/test_file#span_lemma_6-7">
+            <data key="k2">norm</data>
+            <data key="k3">Berlin</data>
+            <data key="k4">node</data>
+        </node>
+        <node id="offset-tok/test_file#span_lemma_7-8">
+            <data key="k2">norm</data>
+            <data key="k3">.</data>
+            <data key="k4">node</data>
+        </node>
+        <node id="offset-tok/test_file#divide_norm_2-3_0_">
+            <data key="k4">node</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="offset-tok/test_file#divide_norm_2-3_1_">
+            <data key="k4">node</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="offset-tok/test_file#divide_norm_2-3_2_">
+            <data key="k4">node</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="offset-tok/test_file#divide_norm_3-4_0_">
+            <data key="k4">node</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="offset-tok/test_file#divide_norm_3-4_1_">
+            <data key="k4">node</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="offset-tok/test_file#divide_norm_3-4_2_">
+            <data key="k4">node</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="offset-tok/test_file#divide_norm_5-6_0_">
+            <data key="k4">node</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="offset-tok/test_file#divide_norm_5-6_1_">
+            <data key="k4">node</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="offset-tok/test_file#divide_norm_5-6_2_">
+            <data key="k4">node</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="offset-tok/test_file#divide_norm_6-7_0_">
+            <data key="k4">node</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="offset-tok/test_file#divide_norm_6-7_1_">
+            <data key="k4">node</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="offset-tok/test_file#divide_norm_6-7_2_">
+            <data key="k4">node</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="offset-tok/test_file#divide_norm_7-8_0_">
+            <data key="k4">node</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="offset-tok/test_file#divide_norm_7-8_1_">
+            <data key="k4">node</data>
+            <data key="k7"> </data>
+        </node>
+        <node id="offset-tok/test_file#divide_norm_7-8_2_">
+            <data key="k4">node</data>
+            <data key="k7"> </data>
+        </node>
+        <edge id="e0" source="offset-tok/test_file#norm_2-3" target="offset-tok/test_file#divide_norm_2-3_0_" label="Coverage/annis/">
+        </edge>
+        <edge id="e1" source="offset-tok/test_file#norm_2-3" target="offset-tok/test_file#divide_norm_2-3_1_" label="Coverage/annis/">
+        </edge>
+        <edge id="e2" source="offset-tok/test_file#norm_2-3" target="offset-tok/test_file#divide_norm_2-3_2_" label="Coverage/annis/">
+        </edge>
+        <edge id="e3" source="offset-tok/test_file#norm_3-4" target="offset-tok/test_file#divide_norm_3-4_0_" label="Coverage/annis/">
+        </edge>
+        <edge id="e4" source="offset-tok/test_file#norm_3-4" target="offset-tok/test_file#divide_norm_3-4_1_" label="Coverage/annis/">
+        </edge>
+        <edge id="e5" source="offset-tok/test_file#norm_3-4" target="offset-tok/test_file#divide_norm_3-4_2_" label="Coverage/annis/">
+        </edge>
+        <edge id="e6" source="offset-tok/test_file#norm_5-6" target="offset-tok/test_file#divide_norm_5-6_0_" label="Coverage/annis/">
+        </edge>
+        <edge id="e7" source="offset-tok/test_file#norm_5-6" target="offset-tok/test_file#divide_norm_5-6_1_" label="Coverage/annis/">
+        </edge>
+        <edge id="e8" source="offset-tok/test_file#norm_5-6" target="offset-tok/test_file#divide_norm_5-6_2_" label="Coverage/annis/">
+        </edge>
+        <edge id="e9" source="offset-tok/test_file#norm_6-7" target="offset-tok/test_file#divide_norm_6-7_0_" label="Coverage/annis/">
+        </edge>
+        <edge id="e10" source="offset-tok/test_file#norm_6-7" target="offset-tok/test_file#divide_norm_6-7_1_" label="Coverage/annis/">
+        </edge>
+        <edge id="e11" source="offset-tok/test_file#norm_6-7" target="offset-tok/test_file#divide_norm_6-7_2_" label="Coverage/annis/">
+        </edge>
+        <edge id="e12" source="offset-tok/test_file#norm_7-8" target="offset-tok/test_file#divide_norm_7-8_0_" label="Coverage/annis/">
+        </edge>
+        <edge id="e13" source="offset-tok/test_file#norm_7-8" target="offset-tok/test_file#divide_norm_7-8_1_" label="Coverage/annis/">
+        </edge>
+        <edge id="e14" source="offset-tok/test_file#norm_7-8" target="offset-tok/test_file#divide_norm_7-8_2_" label="Coverage/annis/">
+        </edge>
+        <edge id="e15" source="offset-tok/test_file#row4" target="offset-tok/test_file#divide_norm_5-6_0_" label="Ordering/annis/">
+        </edge>
+        <edge id="e16" source="offset-tok/test_file#divide_norm_2-3_0_" target="offset-tok/test_file#divide_norm_2-3_1_" label="Ordering/annis/">
+        </edge>
+        <edge id="e17" source="offset-tok/test_file#divide_norm_2-3_1_" target="offset-tok/test_file#divide_norm_2-3_2_" label="Ordering/annis/">
+        </edge>
+        <edge id="e18" source="offset-tok/test_file#divide_norm_2-3_2_" target="offset-tok/test_file#divide_norm_3-4_0_" label="Ordering/annis/">
+        </edge>
+        <edge id="e19" source="offset-tok/test_file#divide_norm_3-4_0_" target="offset-tok/test_file#divide_norm_3-4_1_" label="Ordering/annis/">
+        </edge>
+        <edge id="e20" source="offset-tok/test_file#divide_norm_3-4_1_" target="offset-tok/test_file#divide_norm_3-4_2_" label="Ordering/annis/">
+        </edge>
+        <edge id="e21" source="offset-tok/test_file#divide_norm_3-4_2_" target="offset-tok/test_file#row4" label="Ordering/annis/">
+        </edge>
+        <edge id="e22" source="offset-tok/test_file#divide_norm_5-6_0_" target="offset-tok/test_file#divide_norm_5-6_1_" label="Ordering/annis/">
+        </edge>
+        <edge id="e23" source="offset-tok/test_file#divide_norm_5-6_1_" target="offset-tok/test_file#divide_norm_5-6_2_" label="Ordering/annis/">
+        </edge>
+        <edge id="e24" source="offset-tok/test_file#divide_norm_5-6_2_" target="offset-tok/test_file#divide_norm_6-7_0_" label="Ordering/annis/">
+        </edge>
+        <edge id="e25" source="offset-tok/test_file#divide_norm_6-7_0_" target="offset-tok/test_file#divide_norm_6-7_1_" label="Ordering/annis/">
+        </edge>
+        <edge id="e26" source="offset-tok/test_file#divide_norm_6-7_1_" target="offset-tok/test_file#divide_norm_6-7_2_" label="Ordering/annis/">
+        </edge>
+        <edge id="e27" source="offset-tok/test_file#divide_norm_6-7_2_" target="offset-tok/test_file#divide_norm_7-8_0_" label="Ordering/annis/">
+        </edge>
+        <edge id="e28" source="offset-tok/test_file#divide_norm_7-8_0_" target="offset-tok/test_file#divide_norm_7-8_1_" label="Ordering/annis/">
+        </edge>
+        <edge id="e29" source="offset-tok/test_file#divide_norm_7-8_1_" target="offset-tok/test_file#divide_norm_7-8_2_" label="Ordering/annis/">
+        </edge>
+        <edge id="e30" source="offset-tok/test_file#norm_2-3" target="offset-tok/test_file#norm_3-4" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e31" source="offset-tok/test_file#norm_3-4" target="offset-tok/test_file#norm_5-6" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e32" source="offset-tok/test_file#norm_5-6" target="offset-tok/test_file#norm_6-7" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e33" source="offset-tok/test_file#norm_6-7" target="offset-tok/test_file#norm_7-8" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e34" source="offset-tok/test_file" target="offset-tok" label="PartOf/annis/">
+        </edge>
+        <edge id="e35" source="offset-tok/test_file#row4" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e36" source="offset-tok/test_file#norm_2-3" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e37" source="offset-tok/test_file#norm_3-4" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e38" source="offset-tok/test_file#norm_5-6" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e39" source="offset-tok/test_file#norm_6-7" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e40" source="offset-tok/test_file#norm_7-8" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e41" source="offset-tok/test_file#span_pos_2-3" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e42" source="offset-tok/test_file#span_pos_3-4" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e43" source="offset-tok/test_file#span_pos_5-6" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e44" source="offset-tok/test_file#span_pos_6-7" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e45" source="offset-tok/test_file#span_pos_7-8" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e46" source="offset-tok/test_file#span_lemma_2-3" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e47" source="offset-tok/test_file#span_lemma_3-4" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e48" source="offset-tok/test_file#span_lemma_5-6" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e49" source="offset-tok/test_file#span_lemma_6-7" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e50" source="offset-tok/test_file#span_lemma_7-8" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e51" source="offset-tok/test_file#divide_norm_2-3_0_" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e52" source="offset-tok/test_file#divide_norm_2-3_1_" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e53" source="offset-tok/test_file#divide_norm_2-3_2_" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e54" source="offset-tok/test_file#divide_norm_3-4_0_" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e55" source="offset-tok/test_file#divide_norm_3-4_1_" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e56" source="offset-tok/test_file#divide_norm_3-4_2_" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e57" source="offset-tok/test_file#divide_norm_5-6_0_" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e58" source="offset-tok/test_file#divide_norm_5-6_1_" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e59" source="offset-tok/test_file#divide_norm_5-6_2_" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e60" source="offset-tok/test_file#divide_norm_6-7_0_" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e61" source="offset-tok/test_file#divide_norm_6-7_1_" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e62" source="offset-tok/test_file#divide_norm_6-7_2_" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e63" source="offset-tok/test_file#divide_norm_7-8_0_" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e64" source="offset-tok/test_file#divide_norm_7-8_1_" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e65" source="offset-tok/test_file#divide_norm_7-8_2_" target="offset-tok/test_file" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>

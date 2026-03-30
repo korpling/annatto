@@ -4,6 +4,7 @@ pub mod check;
 pub mod chunker;
 pub mod collapse;
 pub mod diff;
+pub mod divide;
 pub mod edit;
 pub mod enumerate;
 pub mod filter;
