@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use anyhow::anyhow;
+use facet::Facet;
 use graphannis::{
     AnnotationGraph,
     graph::{AnnoKey, EdgeContainer, NodeID},
@@ -16,7 +17,21 @@ use serde::{Deserialize, Serialize};
 
 use crate::{manipulator::Manipulator, progress::ProgressReporter, util::update_graph_silent};
 
-#[derive(Deserialize, Serialize)]
+/// This graph op can be used to split segment values into multiple sub nodes holding a character
+/// or a predefined value.
+///
+/// Example:
+/// ```toml
+/// source_anno = "norm::norm"
+/// mode = "char"
+///
+/// [horizontal]
+/// source = { ctype = "Ordering", layer = "default_ns", name = "norm" }
+/// minimal = { ctype = "Ordering", layer = "annis", name = "" }
+/// ```
+///
+/// This splits value of "norm::norm" along the component of "Ordering/default_ns/norm" into characters.
+#[derive(Clone, Deserialize, Facet, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct DivideSegments {
     /// This determines which component provides the set of nodes whose values require a smaller division
@@ -35,13 +50,25 @@ pub struct DivideSegments {
     /// ```
     horizontal: HorizontalTargets,
     #[serde(default)]
+    /// Provide the vertical component type to build edges from old segments to new ones.
+    /// Default is "Coverage", but also different component type or a list of components can be provided.
     vertical: VerticalTarget,
+    /// The annotation holding the value that is used for splitting into characters when mode "char" is used.
     #[serde(with = "crate::estarde::anno_key")]
     source_anno: AnnoKey,
+    /// The annotation holding the newly created value (depending on the chosen mode, see below).
     #[serde(with = "crate::estarde::anno_key", default = "default_target_anno")]
     target_anno: AnnoKey,
+    /// There are two modes, "char" splits values stored in the source key into characters, alternatively a dummy value
+    /// can be provided and the number of segments to be used.
+    ///
+    /// Example:
+    /// ```toml
+    /// target_anno = "annis::tok"
+    /// mode = { n = 3, value = " " }  # three tokens with an empty space per retrieved segment.
+    /// ```
     #[serde(default)]
-    op: DivideOp,
+    mode: DivideMode,
 }
 
 fn default_target_anno() -> AnnoKey {
@@ -51,9 +78,10 @@ fn default_target_anno() -> AnnoKey {
     }
 }
 
-#[derive(Default, Deserialize, Serialize)]
+#[derive(Clone, Default, Deserialize, Facet, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
-enum DivideOp {
+#[repr(u8)]
+enum DivideMode {
     #[default]
     #[serde(rename = "char")]
     Char,
@@ -69,16 +97,16 @@ fn default_segment_value() -> String {
     " ".to_string()
 }
 
-impl DivideOp {
+impl DivideMode {
     fn resolve(&self, value: &str) -> Vec<String> {
         match self {
-            DivideOp::Char => value.chars().map(|c| c.to_string()).collect(),
-            DivideOp::Num { n, value } => vec![value.to_string(); *n],
+            DivideMode::Char => value.chars().map(|c| c.to_string()).collect(),
+            DivideMode::Num { n, value } => vec![value.to_string(); *n],
         }
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Facet, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 struct HorizontalTargets {
     #[serde(with = "crate::estarde::annotation_component")]
@@ -98,8 +126,9 @@ fn default_minimal() -> AnnotationComponent {
     )
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Facet, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
+#[repr(u8)]
 enum VerticalTarget {
     Ctype(AnnotationComponentType),
     Components(
@@ -211,7 +240,7 @@ impl Manipulator for DivideSegments {
                     };
 
                     if let Some(value) = &anno_value {
-                        let new_values = self.op.resolve(value);
+                        let new_values = self.mode.resolve(value);
                         let names = new_values.iter().enumerate().map(|(i, v)| {
                             format!("{parent_name}#divide_{node_name_stem}_{i}_{v}")
                                 .trim()
@@ -421,7 +450,7 @@ mod tests {
         let manip: Result<DivideSegments, _> = toml::from_str(
             r#"
         source_anno = "annis::tok"
-        op = "char"
+        mode = "char"
 
         [horizontal]
         source = { ctype = "Ordering", layer = "annis", name = "" }
@@ -481,7 +510,7 @@ mod tests {
         let manip: Result<DivideSegments, _> = toml::from_str(
             r#"
         source_anno = "norm::norm"
-        op = "char"
+        mode = "char"
 
         [horizontal]
         source = { ctype = "Ordering", layer = "default_ns", name = "norm" }
@@ -541,7 +570,7 @@ mod tests {
         let manip: Result<DivideSegments, _> = toml::from_str(
             r#"
         source_anno = "norm::norm"
-        op = { n = 3, value = " " }
+        mode = { n = 3, value = " " }
 
         [horizontal]
         source = { ctype = "Ordering", layer = "default_ns", name = "norm" }
@@ -602,7 +631,7 @@ mod tests {
         let manip: Result<DivideSegments, _> = toml::from_str(
             r#"
         source_anno = "norm::norm"
-        op = "char"
+        mode = "char"
 
         [horizontal]
         source = { ctype = "Ordering", layer = "default_ns", name = "norm" }

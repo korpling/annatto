@@ -46,7 +46,9 @@ use workflow::StatusSender;
 use crate::{
     exporter::treetagger::ExportTreeTagger,
     importer::{GenericImportConfiguration, git::ImportGitMetadata, text::ImportText},
-    manipulator::{diff::DiffSubgraphs, edit::EditGraph, span::CreateSpans},
+    manipulator::{
+        diff::DiffSubgraphs, divide::DivideSegments, edit::EditGraph, span::CreateSpans,
+    },
 };
 
 #[derive(Tabled)]
@@ -179,6 +181,7 @@ pub enum GraphOp {
     #[serde(rename = "unstable:diff")]
     #[facet(rename = "unstable:diff")]
     Diff(DiffSubgraphs),
+    Divide(DivideSegments),
     Edit(EditGraph),
     Filter(FilterNodes),
     Visualize(#[serde(default)] Visualize),
@@ -221,6 +224,7 @@ impl GraphOp {
             GraphOp::Diff(m) => m,
             GraphOp::Edit(m) => m,
             GraphOp::Span(m) => m,
+            GraphOp::Divide(m) => m,
         }
     }
 
