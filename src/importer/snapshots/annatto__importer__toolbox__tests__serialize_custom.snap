@@ -4,3 +4,4 @@ expression: serialization.unwrap()
 ---
 target = "tx"
 span = ["clause", "sentence"]
+explicit_null = false
