@@ -15,6 +15,7 @@ use graphannis_core::{
 use linked_hash_map::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 use tempfile::NamedTempFile;
+use umya_spreadsheet::{Cell, NumberingFormat};
 
 use crate::{
     importer::xlsx::SheetAddress,
@@ -157,6 +158,7 @@ impl ExportXlsx {
                 .get_sheet_mut(&0)
                 .ok_or(anyhow!("Could not obtain blank sheet."))?
         };
+
         let token_helper = TokenHelper::new(g)?;
         let ordering_component = Component::new(
             AnnotationComponentType::Ordering,
@@ -171,7 +173,7 @@ impl ExportXlsx {
             self.create_token_colum(g, &token_roots, doc_node_id, worksheet)?;
 
         let column_offset = if !has_only_empty_token {
-            worksheet.get_cell_mut((1, 1)).set_value("tok");
+            set_cell_value(worksheet.get_cell_mut((1, 1)), "tok");
             1
         } else {
             0
@@ -191,16 +193,17 @@ impl ExportXlsx {
         let meta_annos = g.get_node_annos().get_annotations_for_item(&doc_node_id)?;
         if !meta_annos.is_empty() && self.update_datasheet.is_none() {
             let meta_sheet = workbook.new_sheet("meta").map_err(|s| anyhow!(s))?;
-            meta_sheet.get_cell_mut((1, 1)).set_value("Name");
-            meta_sheet.get_cell_mut((2, 1)).set_value("Value");
+            set_cell_value(meta_sheet.get_cell_mut((1, 1)), "Name");
+            set_cell_value(meta_sheet.get_cell_mut((2, 1)), "Value");
 
             let mut current_row = 2;
             for a in meta_annos {
                 if a.key.ns != ANNIS_NS {
-                    meta_sheet
-                        .get_cell_mut((1, current_row))
-                        .set_value(join_qname(&a.key.ns, &a.key.name));
-                    meta_sheet.get_cell_mut((2, current_row)).set_value(a.val);
+                    set_cell_value(
+                        meta_sheet.get_cell_mut((1, current_row)),
+                        &join_qname(&a.key.ns, &a.key.name),
+                    );
+                    set_cell_value(meta_sheet.get_cell_mut((2, current_row)), &a.val);
                     current_row += 1;
                 }
             }
@@ -323,7 +326,7 @@ impl ExportXlsx {
                     && !val.trim().is_empty()
                 {
                     has_only_empty_token = false;
-                    worksheet.get_cell_mut((1, row_index)).set_value(val);
+                    set_cell_value(worksheet.get_cell_mut((1, row_index)), &val);
                 }
 
                 token_to_row.insert(current_token, row_index);
@@ -356,13 +359,15 @@ impl ExportXlsx {
         for span_anno_key in name_to_column.keys() {
             if let Some(column_index) = name_to_column.get(span_anno_key) {
                 if self.include_namespace {
-                    worksheet
-                        .get_cell_mut((*column_index, 1))
-                        .set_value(join_qname(&span_anno_key.ns, &span_anno_key.name));
+                    set_cell_value(
+                        worksheet.get_cell_mut((*column_index, 1)),
+                        &join_qname(&span_anno_key.ns, &span_anno_key.name),
+                    );
                 } else {
-                    worksheet
-                        .get_cell_mut((*column_index, 1))
-                        .set_value(&span_anno_key.name);
+                    set_cell_value(
+                        worksheet.get_cell_mut((*column_index, 1)),
+                        &span_anno_key.name,
+                    );
                 }
                 let mut written_rows = BTreeSet::default();
                 for span in g.get_node_annos().exact_anno_search(
@@ -404,9 +409,11 @@ impl ExportXlsx {
                             continue;
                         }
                         if *last - *first > 0 {
-                            worksheet
-                                .get_cell_mut((*column_index, *first))
-                                .set_value(span_val);
+                            set_cell_value(
+                                worksheet.get_cell_mut((*column_index, *first)),
+                                &span_val,
+                            );
+
                             let column_letter =
                                 umya_spreadsheet::helper::coordinate::string_from_column_index(
                                     column_index,
@@ -414,9 +421,10 @@ impl ExportXlsx {
                             let range = format!("{column_letter}{first}:{column_letter}{last}");
                             worksheet.add_merge_cells(range);
                         } else {
-                            worksheet
-                                .get_cell_mut((*column_index, *first))
-                                .set_value(span_val);
+                            set_cell_value(
+                                worksheet.get_cell_mut((*column_index, *first)),
+                                &span_val,
+                            );
                         }
                         written_rows.extend(spanned_rows);
                     }
@@ -425,6 +433,13 @@ impl ExportXlsx {
         }
         Ok(())
     }
+}
+
+fn set_cell_value(cell: &mut Cell, value: &str) {
+    cell.get_style_mut()
+        .get_number_format_mut()
+        .set_format_code(NumberingFormat::FORMAT_TEXT);
+    cell.set_value_string(value);
 }
 
 impl Exporter for ExportXlsx {
@@ -481,7 +496,7 @@ mod tests {
         path::{Path, PathBuf},
     };
 
-    use graphannis::update::GraphUpdate;
+    use graphannis::update::{GraphUpdate, UpdateEvent};
     use insta::assert_snapshot;
     use sha2::{Digest, Sha256};
     use tempfile::{TempDir, tempdir};
@@ -828,6 +843,7 @@ mod tests {
     #[test]
     fn export_skips_unchanged() {
         let (corpus_dir, document_path, original_hash) = create_corpus_folder_and_hash();
+        let before = document_path.metadata().unwrap().modified().unwrap();
 
         // Import an example document
         let importer: ImportSpreadsheet = toml::from_str(
@@ -872,8 +888,10 @@ mod tests {
         let mut sha256 = Sha256::new();
         std::io::copy(&mut file, &mut sha256).unwrap();
         let hash_after_conversion = format!("{:02X?}", sha256.finalize());
+        let after = document_path.metadata().unwrap().modified().unwrap();
 
         assert_eq!(original_hash, hash_after_conversion);
+        assert_eq!(before, after);
     }
 
     #[test]
@@ -931,7 +949,8 @@ mod tests {
 
     #[test]
     fn export_overwrites_unchanged() {
-        let (corpus_dir, document_path, original_hash) = create_corpus_folder_and_hash();
+        let (corpus_dir, document_path, _) = create_corpus_folder_and_hash();
+        let before = document_path.metadata().unwrap().modified().unwrap();
 
         // Import an example document
         let importer: ImportSpreadsheet = toml::from_str(
@@ -971,13 +990,9 @@ mod tests {
         };
         export_step.execute(&graph, None).unwrap();
 
-        // Calculate the hash sum of the file again, it should have changed because the file was overwritten
-        let mut file = File::open(&document_path).unwrap();
-        let mut sha256 = Sha256::new();
-        std::io::copy(&mut file, &mut sha256).unwrap();
-        let hash_after_conversion = format!("{:02X?}", sha256.finalize());
+        let after = document_path.metadata().unwrap().modified().unwrap();
 
-        assert_ne!(original_hash, hash_after_conversion);
+        assert_ne!(before, after);
     }
 
     #[test]
@@ -1057,6 +1072,15 @@ mod tests {
         let mut u = GraphUpdate::default();
         example_generator::create_corpus_structure_simple(&mut u);
         example_generator::create_multiple_segmentations(&mut u, "root/doc1");
+        assert!(
+            u.add_event(UpdateEvent::AddNodeLabel {
+                node_name: "root/doc1#a1".to_string(),
+                anno_ns: "".to_string(),
+                anno_name: "number".to_string(),
+                anno_value: "1.".to_string(),
+            })
+            .is_ok()
+        );
         assert!(graph.apply_update(&mut u, |_| {}).is_ok());
         let exporter = ExportXlsx {
             ..Default::default()
