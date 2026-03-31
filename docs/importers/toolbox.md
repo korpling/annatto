@@ -16,3 +16,8 @@ are not considered delimiters, but part of the annotation value. Such annotation
 rely on the existence of the target nodes, i. e. annotation lines without any other
 non-spanning annotation in the block will be dropped.
 
+###  explicit_null
+
+Null values are represented as `-` in toolbox. If you want those to remain explicit
+annotations, set `explicit_null = true`.
+

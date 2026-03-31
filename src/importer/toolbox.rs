@@ -39,6 +39,10 @@ pub struct ImportToolBox {
     /// non-spanning annotation in the block will be dropped.
     #[serde(default)]
     span: BTreeSet<String>,
+    /// Null values are represented as `-` in toolbox. If you want those to remain explicit
+    /// annotations, set `explicit_null = true`.
+    #[serde(default)]
+    explicit_null: bool,
 }
 
 const FILE_EXTENSIONS: [&str; 1] = ["txt"];
@@ -237,13 +241,17 @@ impl ImportToolBox {
         let build_joint = self.span.contains(anno_name);
         let use_tokens = self.target == anno_name;
         for entry_or_space in inner {
-            match entry_or_space.as_rule() {
-                Rule::entry => {
+            match (entry_or_space.as_rule(), self.explicit_null) {
+                (Rule::entry, _) | (Rule::null, true) => {
                     if build_joint {
                         join_list.push(entry_or_space.as_str());
                     } else {
-                        let mut inner = entry_or_space.clone().into_inner();
-                        let entry_node = if let Some(nxt) = inner.next() {
+                        let inner = if matches!(entry_or_space.as_rule(), Rule::null) {
+                            Some(entry_or_space.clone())
+                        } else {
+                            entry_or_space.clone().into_inner().next()
+                        };
+                        let entry_node = if let Some(nxt) = inner {
                             nxt
                         } else {
                             continue;
@@ -307,12 +315,12 @@ impl ImportToolBox {
                         };
                     }
                 }
-                Rule::spaces => {
+                (Rule::spaces, _) => {
                     if build_joint {
                         join_list.push(entry_or_space.as_str());
                     }
                 }
-                Rule::null => {
+                (Rule::null, false) => {
                     timeline_id += 1;
                 }
                 _ => {}
@@ -493,6 +501,7 @@ mod tests {
                 .into_iter()
                 .collect(),
             target: "tx".to_string(),
+            explicit_null: false,
         };
         let serialization = toml::to_string(&module);
         assert!(
@@ -506,6 +515,27 @@ mod tests {
     #[test]
     fn core_functionality() {
         let ts = fs::read_to_string("tests/data/import/toolbox/build.toml");
+        assert!(ts.is_ok(), "Could not read workflow: {:?}", ts.err());
+        let toml_str = ts.unwrap();
+        let imp: Result<ImportToolBox, _> = toml::from_str(toml_str.as_str());
+        assert!(imp.is_ok(), "Error occurred: {:?}", imp.err());
+        let importer = imp.unwrap();
+        let graphml_is = crate::test_util::import_as_graphml_string(
+            importer,
+            Path::new("tests/data/import/toolbox/"),
+            None,
+        );
+        assert!(
+            graphml_is.is_ok(),
+            "Failed to import test file: {:?}",
+            graphml_is.err()
+        );
+        assert_snapshot!(graphml_is.unwrap());
+    }
+
+    #[test]
+    fn explicit_null() {
+        let ts = fs::read_to_string("tests/data/import/toolbox/build-explicit-null.toml");
         assert!(ts.is_ok(), "Could not read workflow: {:?}", ts.err());
         let toml_str = ts.unwrap();
         let imp: Result<ImportToolBox, _> = toml::from_str(toml_str.as_str());
