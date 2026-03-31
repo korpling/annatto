@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- export `xlsx`: Data category is `text` for all cells. This allows to properly export ordinal numbers.
+
 ## [0.50.0] - 2026-03-30
 
 ### Added
