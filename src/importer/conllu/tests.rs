@@ -59,17 +59,15 @@ fn test_conll_fail_invalid() {
     let mut u = GraphUpdate::default();
     let import = ImportCoNLLU::default();
     let step_id = StepID::from_importer_step(&import_step);
-    assert!(
-        import
-            .import_document(
-                &step_id,
-                &mut u,
-                import_path.join("test_file.conllu").as_path(),
-                import_path.join("test_file").to_str().unwrap().to_string(),
-                &None
-            )
-            .is_err()
+    let run = import.import_document(
+        &step_id,
+        &mut u,
+        import_path.join("test_file.conllu").as_path(),
+        import_path.join("test_file").to_str().unwrap().to_string(),
+        &None,
     );
+    assert!(run.is_err());
+    assert_snapshot!(run.err().unwrap());
 }
 
 #[test]
