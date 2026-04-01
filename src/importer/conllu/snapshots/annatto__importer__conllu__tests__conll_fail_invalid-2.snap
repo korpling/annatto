@@ -1,0 +1,11 @@
+---
+source: src/importer/conllu/tests.rs
+expression: run.err().unwrap()
+---
+Could not parse "tests/data/import/conll/invalid/test_file.conllu":
+ --> 1:1
+  |
+1 | a	_
+  | ^---
+  |
+  = expected sentence
