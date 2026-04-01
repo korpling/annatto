@@ -1,6 +1,6 @@
 ---
 source: src/importer/conllu/tests.rs
-expression: job.err().unwrap().to_string()
+expression: run.err().unwrap()
 ---
 Could not parse "tests/data/import/conll/invalid/test_file.conllu":
  --> 1:1

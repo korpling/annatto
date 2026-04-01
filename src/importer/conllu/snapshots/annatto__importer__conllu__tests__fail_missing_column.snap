@@ -2,6 +2,7 @@
 source: src/importer/conllu/tests.rs
 expression: job.err().unwrap().to_string()
 ---
+Could not parse "tests/data/import/conll/missing-column/website_example.conllu":
   --> 10:17
    |
 10 | 6	.	.	PUNCT	.	_	punct	2:punct	_

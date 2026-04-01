@@ -126,7 +126,8 @@ impl ImportCoNLLU {
         let mut decoder = DecodeReaderBytes::new(f);
         let mut file_content = String::new();
         decoder.read_to_string(&mut file_content)?; // TODO this needs to be buffered. UD Files can be very large
-        let conllu: Pairs<Rule> = CoNLLUParser::parse(Rule::conllu, &file_content)?;
+        let conllu: Pairs<Rule> = CoNLLUParser::parse(Rule::conllu, &file_content)
+            .map_err(|e| anyhow!("Could not parse {document_path:?}:\n{e}"))?;
         self.map_document(step_id, update, document_node_name, conllu, tx)?;
         Ok(())
     }
