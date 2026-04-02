@@ -139,9 +139,9 @@ impl SplitValues {
     ) -> Result<()> {
         let splits = if self.regex {
             let p = regex::Regex::new(&self.delimiter)?;
-            p.split(value).map(|e| e).collect_vec()
+            p.split(value).collect_vec()
         } else {
-            value.split(&self.delimiter).map(|e| e).collect_vec()
+            value.split(&self.delimiter).collect_vec()
         };
         for (i, v) in splits.into_iter().enumerate() {
             if let Some(key) = index_map.get(&(i + 1)) {
