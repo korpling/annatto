@@ -8,6 +8,10 @@ This operation splits conflated annotation values into individual annotations.
 
 This is the delimiter between the parts of the conflated annotation in the input graph
 
+###  regex
+
+The delimiter is a regular expression.
+
 ###  anno
 
 The annotation that holds the conflated values.

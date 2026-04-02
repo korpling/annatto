@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - import `conllu` parsing errors: Add file name to error message
+- graph op `split`: setting `regex = true` will interpret and use the delimiter as a regular expression
 
 ## [0.50.1] - 2026-03-31
 

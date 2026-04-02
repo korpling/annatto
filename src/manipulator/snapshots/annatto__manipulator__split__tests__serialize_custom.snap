@@ -3,6 +3,7 @@ source: src/manipulator/split.rs
 expression: serialization.unwrap()
 ---
 delimiter = "."
+regex = false
 anno = "ud::rftag"
 delete = true
 
