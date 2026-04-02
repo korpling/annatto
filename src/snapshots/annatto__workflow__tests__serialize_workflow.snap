@@ -24,6 +24,7 @@ action = "split"
 
 [graph_op.config]
 delimiter = ","
+regex = false
 anno = "map"
 delete = true
 
@@ -44,6 +45,7 @@ action = "split"
 
 [graph_op.config]
 delimiter = "#row"
+regex = false
 anno = "annis::node_name"
 delete = false
 

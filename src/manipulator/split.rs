@@ -20,6 +20,9 @@ pub struct SplitValues {
     /// This is the delimiter between the parts of the conflated annotation in the input graph
     #[serde(default = "default_delimiter")]
     delimiter: String,
+    /// The delimiter is a regular expression.
+    #[serde(default)]
+    regex: bool,
     /// The annotation that holds the conflated values.
     #[serde(with = "crate::estarde::anno_key")]
     anno: AnnoKey,
@@ -134,7 +137,13 @@ impl SplitValues {
         value_map: &BTreeMap<&str, &AnnoKey>,
         index_map: &BTreeMap<usize, &AnnoKey>,
     ) -> Result<()> {
-        for (i, v) in value.split(&self.delimiter).enumerate() {
+        let splits = if self.regex {
+            let p = regex::Regex::new(&self.delimiter)?;
+            p.split(value).map(|e| e).collect_vec()
+        } else {
+            value.split(&self.delimiter).map(|e| e).collect_vec()
+        };
+        for (i, v) in splits.into_iter().enumerate() {
             if let Some(key) = index_map.get(&(i + 1)) {
                 update.add_event(UpdateEvent::AddNodeLabel {
                     node_name: node_name.to_string(),
@@ -160,7 +169,7 @@ impl SplitValues {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, path::Path};
+    use std::{collections::BTreeMap, fmt::Write, fs, path::Path};
 
     use graphannis::{AnnotationGraph, graph::AnnoKey, update::GraphUpdate};
     use insta::assert_snapshot;
@@ -185,6 +194,7 @@ mod tests {
                 ns: "ud".into(),
             },
             delimiter: ".".to_string(),
+            regex: false,
             layers: vec![
                 Layer::ByIndex {
                     index: 1,
@@ -226,6 +236,7 @@ mod tests {
         assert!(update_graph_silent(&mut graph, &mut u).is_ok());
         let module = SplitValues {
             delimiter: default_delimiter(),
+            regex: false,
             anno: AnnoKey {
                 ns: "".into(),
                 name: "".into(),
@@ -297,5 +308,53 @@ mod tests {
         let start = graphml.find("<node ").unwrap_or(0);
         let end = graphml.rfind("</node>").unwrap_or(usize::MAX);
         assert_snapshot!(&graphml[start..end + 7]);
+    }
+
+    #[test]
+    fn regex() {
+        let split = SplitValues {
+            anno: AnnoKey {
+                name: "doesn't matter for this test".to_string(),
+                ns: "".to_string(),
+            },
+            delimiter: String::from(r#"-|\(|\)"#),
+            regex: true,
+            layers: vec![],
+            delete: false,
+        };
+        let mut u = GraphUpdate::default();
+        let mut index_map = BTreeMap::default();
+        let k1 = AnnoKey {
+            ns: "".to_string(),
+            name: "start".to_string(),
+        };
+        let k2 = AnnoKey {
+            ns: "".to_string(),
+            name: "end".to_string(),
+        };
+        let k3 = AnnoKey {
+            ns: "".to_string(),
+            name: "id".to_string(),
+        };
+        index_map.insert(1, &k1);
+        index_map.insert(2, &k2);
+        index_map.insert(3, &k3);
+        let mut value_map = BTreeMap::default();
+        let k4 = AnnoKey {
+            ns: "".to_string(),
+            name: "Number".to_string(),
+        };
+        value_map.insert("Pl", &k4);
+        assert!(
+            split
+                .map(&mut u, "random_node", "0-3(7)Pl", &value_map, &index_map,)
+                .is_ok()
+        );
+        let mut buf = String::new();
+        u.iter()
+            .unwrap()
+            .flatten()
+            .for_each(|(_, ue)| write!(&mut buf, "{ue:?}\n").unwrap());
+        assert_snapshot!(buf);
     }
 }

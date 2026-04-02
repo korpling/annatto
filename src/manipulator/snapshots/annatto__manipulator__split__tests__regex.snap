@@ -1,0 +1,8 @@
+---
+source: src/manipulator/split.rs
+expression: buf
+---
+AddNodeLabel { node_name: "random_node", anno_ns: "", anno_name: "start", anno_value: "0" }
+AddNodeLabel { node_name: "random_node", anno_ns: "", anno_name: "end", anno_value: "3" }
+AddNodeLabel { node_name: "random_node", anno_ns: "", anno_name: "id", anno_value: "7" }
+AddNodeLabel { node_name: "random_node", anno_ns: "", anno_name: "Number", anno_value: "Pl" }
