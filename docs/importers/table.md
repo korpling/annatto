@@ -49,3 +49,19 @@ empty_line_group = {anno = "csv::sentence, value="S", component = {ctype="Domina
 ```
 
 
+###  na
+
+Null entries can be skipped by providing an explicit na-value.
+
+Example:
+```toml
+[[import]]
+format = "table"
+path = "..."
+
+[import.config]
+na = "_"
+```
+
+If provided, for all values matching the `na` value, no annotation is created.
+

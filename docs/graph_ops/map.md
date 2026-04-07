@@ -123,6 +123,23 @@ anno = "bigram"
 value = { target = [1, 2], replacements = [["-", ""]], delimiter = ',' }
 ```
 
+`map` can also be used to turn annotation values or combinations of annotation values into factors:
+
+Example:
+```toml
+[[rules]]
+query = "pos"
+target = 1
+anno = "factorized_pos"
+value = { factorize = 1 }
+
+[[rules]]
+query = "pos _=_ Number"
+target = 1
+anno = "factorized_number_pos"
+value = { factorize = [1, 2] }
+```
+
 ## Configuration
 
 ###  rule_file
