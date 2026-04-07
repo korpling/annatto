@@ -1,0 +1,9 @@
+This	PRON	this
+is	VERB	be
+a	DET	a
+sentence	NOUN	sentence
+
+This	PRON	this
+could	VERB	can
+,	PUNCT	,
+too	ADV	too

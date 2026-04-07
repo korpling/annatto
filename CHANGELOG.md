@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - import `conllu` parsing errors: Add file name to error message
 - graph op `split`: setting `regex = true` will interpret and use the delimiter as a regular expression
 - import `table`: allow to predefine an n/a value, for which no annotations are created
+- graph op `map`: Value can be factors of queried annotations by using `factorize` in the value definition of a rule
 
 ## [0.50.1] - 2026-03-31
 

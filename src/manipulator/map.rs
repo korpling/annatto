@@ -1,5 +1,5 @@
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     fs,
     path::{Path, PathBuf},
     sync::mpsc,
@@ -11,19 +11,21 @@ use crate::{
     progress::ProgressReporter,
     util::{
         CorpusGraphHelper,
+        sort_matches::SortCache,
         token_helper::{TOKEN_KEY, TokenHelper},
+        update_graph, update_graph_silent,
     },
-    util::{update_graph, update_graph_silent},
 };
 use anyhow::{Context, anyhow};
 use facet::Facet;
 use graphannis::{
     AnnotationGraph,
     graph::{AnnoKey, EdgeContainer, Match},
-    model::AnnotationComponentType,
+    model::{AnnotationComponent, AnnotationComponentType},
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS, NODE_NAME_KEY, NODE_TYPE_KEY};
+use itertools::Itertools;
 use regex::Regex;
 use serde::Serialize;
 use serde_derive::Deserialize;
@@ -149,6 +151,23 @@ use serde_derive::Deserialize;
 /// target = [1, 2]
 /// anno = "bigram"
 /// value = { target = [1, 2], replacements = [["-", ""]], delimiter = ',' }
+/// ```
+///
+/// `map` can also be used to turn annotation values or combinations of annotation values into factors:
+///
+/// Example:
+/// ```toml
+/// [[rules]]
+/// query = "pos"
+/// target = 1
+/// anno = "factorized_pos"
+/// value = { factorize = 1 }
+///
+/// [[rules]]
+/// query = "pos _=_ Number"
+/// target = 1
+/// anno = "factorized_number_pos"
+/// value = { factorize = [1, 2] }
 /// ```
 #[derive(Facet, Default, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -355,6 +374,14 @@ enum Value {
         #[serde(default = "default_value_delimiter")]
         delimiter: String,
     },
+    Factorize {
+        /// Pick the nodes providing the values for all value combinations that should be
+        /// factorized. Factors are growing integers by order of appearance in the corpus,
+        /// i. e. the order in which the query results are returned naturally. This neverthelss
+        /// depends on the current corpus structure. Also, this is a more costly operation, as
+        /// it involves sorting the results.
+        factorize: TargetRef,
+    },
 }
 
 fn default_value_delimiter() -> String {
@@ -374,7 +401,12 @@ struct Rule {
 }
 
 impl Rule {
-    fn resolve_value(&self, graph: &AnnotationGraph, mg: &[Match]) -> anyhow::Result<String> {
+    fn resolve_value(
+        &self,
+        graph: &AnnotationGraph,
+        mg: &[Match],
+        factors: &mut BTreeMap<String, usize>,
+    ) -> anyhow::Result<String> {
         match &self.value {
             Value::Fixed(val) => Ok(val.clone()),
             Value::Copy { copy, delimiter } => copy.resolve_value(graph, mg, delimiter),
@@ -390,6 +422,20 @@ impl Rule {
                     val = search.replace_all(&val, replace).to_string();
                 }
                 Ok(val)
+            }
+            Value::Factorize { factorize } => {
+                let val = factorize.resolve_value(graph, mg, "")?;
+                let v = factors.len();
+                let v = match factors.entry(val) {
+                    std::collections::btree_map::Entry::Vacant(vacant_entry) => {
+                        vacant_entry.insert(v);
+                        v
+                    }
+                    std::collections::btree_map::Entry::Occupied(occupied_entry) => {
+                        *occupied_entry.get()
+                    }
+                };
+                Ok(v.to_string())
             }
         }
     }
@@ -449,14 +495,58 @@ impl MapperImpl {
                 .with_context(|| format!("could not parse query '{}'", &rule.query))?;
             let result_it = graphannis::aql::execute_query_on_graph(graph, &query, true, None)?;
             let mut n = 0;
-            for match_group in result_it {
+            let mut factors = BTreeMap::default();
+            let results = if matches!(rule.value, Value::Factorize { .. }) {
+                let gs_order = graph
+                    .get_graphstorage(&AnnotationComponent::new(
+                        AnnotationComponentType::Ordering,
+                        ANNIS_NS.to_string(),
+                        "".to_string(),
+                    ))
+                    .ok_or(anyhow!("No default ordering found."))?;
+                let mut sort_cache = SortCache::new(gs_order);
+                let token_helper = TokenHelper::new(graph)?;
+                Box::new(result_it.sorted_by(|a, b| {
+                    if let Ok(a) = a
+                        && let Ok(b) = b
+                    {
+                        sort_cache
+                            .compare_matchgroup_by_text_pos(
+                                a,
+                                b,
+                                graph.get_node_annos(),
+                                &token_helper,
+                            )
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    } else {
+                        std::cmp::Ordering::Equal
+                    }
+                }))
+            } else {
+                result_it
+            };
+            for match_group in results {
                 let match_group = match_group?;
                 match rule.target {
                     TargetRef::Node(target) => {
-                        self.map_single_node(&rule, target, &match_group, graph, &mut updates)?;
+                        self.map_single_node(
+                            &rule,
+                            target,
+                            &match_group,
+                            &mut factors,
+                            graph,
+                            &mut updates,
+                        )?;
                     }
                     TargetRef::Span(ref all_targets) => {
-                        self.map_span(&rule, all_targets, &match_group, graph, &mut updates)?;
+                        self.map_span(
+                            &rule,
+                            all_targets,
+                            &match_group,
+                            &mut factors,
+                            graph,
+                            &mut updates,
+                        )?;
                     }
                 }
                 self.delete_existing_annotations(&rule, &match_group, graph, &mut updates)?;
@@ -497,6 +587,7 @@ impl MapperImpl {
         rule: &Rule,
         target: usize,
         match_group: &[Match],
+        factors: &mut BTreeMap<String, usize>,
         graph: &AnnotationGraph,
         update: &mut GraphUpdate,
     ) -> anyhow::Result<()> {
@@ -509,7 +600,7 @@ impl MapperImpl {
                 node_name: match_node_name.to_string(),
                 anno_ns: rule.anno.ns.to_string(),
                 anno_name: rule.anno.name.to_string(),
-                anno_value: rule.resolve_value(graph, match_group)?,
+                anno_value: rule.resolve_value(graph, match_group, factors)?,
             })?;
         }
         Ok(())
@@ -520,6 +611,7 @@ impl MapperImpl {
         rule: &Rule,
         targets: &[usize],
         match_group: &[Match],
+        factors: &mut BTreeMap<String, usize>,
         graph: &AnnotationGraph,
         update: &mut GraphUpdate,
     ) -> anyhow::Result<()> {
@@ -559,7 +651,7 @@ impl MapperImpl {
                 node_name: new_node_name.clone(),
                 anno_ns: rule.anno.ns.to_string(),
                 anno_name: rule.anno.name.to_string(),
-                anno_value: rule.resolve_value(graph, match_group)?,
+                anno_value: rule.resolve_value(graph, match_group, factors)?,
             })?;
 
             // Add the new node to the common parent
@@ -642,7 +734,11 @@ mod tests {
     use tests::test_util::export_to_string;
 
     use crate::{
-        StepID, exporter::graphml::GraphMLExporter, manipulator::Manipulator, test_util,
+        StepID,
+        exporter::graphml::GraphMLExporter,
+        importer::{Importer, treetagger::ImportTreeTagger},
+        manipulator::Manipulator,
+        test_util,
         util::example_generator,
     };
 
@@ -757,7 +853,7 @@ mod tests {
             .unwrap();
 
         let resolved = mapper.mapping.unwrap().rules[0]
-            .resolve_value(&g, &vec![tok_match])
+            .resolve_value(&g, &vec![tok_match], &mut BTreeMap::default())
             .unwrap();
         assert_eq!("complicated", resolved);
     }
@@ -820,7 +916,9 @@ mod tests {
             delete: vec![],
         };
 
-        let resolved = fixed_value.resolve_value(&g, &vec![]).unwrap();
+        let resolved = fixed_value
+            .resolve_value(&g, &vec![], &mut BTreeMap::default())
+            .unwrap();
         assert_eq!("myvalue", resolved);
     }
 
@@ -849,7 +947,9 @@ mod tests {
             .unwrap()
             .unwrap();
 
-        let resolved = m.rules[0].resolve_value(&g, &vec![tok_match]).unwrap();
+        let resolved = m.rules[0]
+            .resolve_value(&g, &vec![tok_match], &mut BTreeMap::default())
+            .unwrap();
         assert_eq!("complicated", resolved);
     }
 
@@ -883,7 +983,9 @@ mod tests {
             .unwrap()
             .unwrap();
 
-        let resolved = fixed_value.resolve_value(&g, &vec![tok_match]).unwrap();
+        let resolved = fixed_value
+            .resolve_value(&g, &vec![tok_match], &mut BTreeMap::default())
+            .unwrap();
         assert_eq!("complidoged", resolved);
     }
 
@@ -1032,7 +1134,9 @@ mod tests {
             .unwrap()
             .unwrap();
 
-        let resolved = fixed_value.resolve_value(&g, &vec![tok_match]).unwrap();
+        let resolved = fixed_value
+            .resolve_value(&g, &vec![tok_match], &mut BTreeMap::default())
+            .unwrap();
         assert_eq!("complicatedcated", resolved);
     }
 
@@ -1060,7 +1164,9 @@ replacements = [["([A-Z])[a-z]+ ([A-Z])[a-z]+", "${1}${2}"]]
             .unwrap()
             .unwrap();
 
-        let result = m.rules[0].resolve_value(&g, &[newyork_match]).unwrap();
+        let result = m.rules[0]
+            .resolve_value(&g, &[newyork_match], &mut BTreeMap::default())
+            .unwrap();
         assert_eq!("NY", result);
     }
 
@@ -1094,7 +1200,9 @@ replacements = [
             .unwrap()
             .unwrap();
 
-        let result = m.rules[0].resolve_value(&g, &[singlemacron]).unwrap();
+        let result = m.rules[0]
+            .resolve_value(&g, &[singlemacron], &mut BTreeMap::default())
+            .unwrap();
         assert_eq!("anderthalbem|anderthalben", result);
 
         let multiple_macron = g
@@ -1104,7 +1212,9 @@ replacements = [
             .unwrap()
             .unwrap();
 
-        let result = m.rules[0].resolve_value(&g, &[multiple_macron]).unwrap();
+        let result = m.rules[0]
+            .resolve_value(&g, &[multiple_macron], &mut BTreeMap::default())
+            .unwrap();
         assert_eq!("ellembogem|ellenbogem|ellembogen|ellenbogen", result);
     }
 
@@ -1342,6 +1452,60 @@ value = "PROPN"
             );
         }
         Ok(())
+    }
+
+    #[test]
+    fn factorize() {
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let import: Result<ImportTreeTagger, _> =
+            toml::from_str(r#"column_names = ["tok", "pos", "lemma"]"#);
+        assert!(import.is_ok());
+        let import = import.unwrap();
+        let u = import.import_corpus(
+            Path::new("tests/data/graph_op/map/factorize"),
+            StepID {
+                module_name: "test_import".to_string(),
+                path: None,
+            },
+            import.default_configuration(),
+            None,
+        );
+        assert!(u.is_ok());
+        assert!(graph.apply_update(&mut u.unwrap(), |_| {}).is_ok());
+
+        let m: Result<MapAnnos, _> = toml::from_str(
+            r#"
+        [[mapping.rules]]
+        query = "pos _=_ lemma"
+        target = 1
+        anno = "factors_pos_lemma"
+        value = { factorize = [1, 2] }
+
+        [[mapping.rules]]
+        query = "pos"
+        target = 1
+        anno = "factors_pos"
+        value = { factorize = 1 }
+        "#,
+        );
+        assert!(m.is_ok(), "Error deserializing: {:?}", m.err().unwrap());
+        let module = m.unwrap();
+        let r = module.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            StepID {
+                module_name: "test_manip".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(r.is_ok(), "Error applying map: {:?}", r.err().unwrap());
+
+        let export: Result<GraphMLExporter, _> = toml::from_str("stable_order = true");
+        assert!(export.is_ok());
+        assert_snapshot!(export_to_string(&graph, export.unwrap()).unwrap());
     }
 
     fn source_graph(on_disk: bool) -> Result<AnnotationGraph, Box<dyn std::error::Error>> {
