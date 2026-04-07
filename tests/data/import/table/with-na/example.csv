@@ -1,0 +1,23 @@
+norm	pos	lemma
+Feigenblatt	NN	Feigenblatt
+
+Die	ART	die
+Jugendlichen	NN	Jugendliche
+in	APPR	in
+Zossen	NE	Zossen
+wollen	VMFIN	wollen
+ein	ART	ein
+Musikcafé	NN	Musikcafé
+.	$.	_
+
+Das	PDS	das
+forderten	VVFIN	fordern
+sie	PPER	sie
+bei	APPR	bei
+der	ART	der
+ersten	ADJA	erste
+Zossener	ADJA	Zossen
+Runde	NN	Runde
+am	APPRART	an
+Dienstagabend	NN	Dienstagabend
+.	$.	_

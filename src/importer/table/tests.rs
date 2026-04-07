@@ -41,6 +41,7 @@ fn serialize_custom() {
                 "".into(),
             )),
         }),
+        na: None,
     };
     let serialization = toml::to_string(&module);
     assert!(
@@ -77,6 +78,20 @@ fn table_custom_span_component() {
     let m: ImportTable =
         toml::from_str(r#"empty_line_group = {anno="sentence", component = {ctype="Dominance", layer="test", name="sent"}}"#).unwrap();
     let actual = import_as_graphml_string(m, Path::new("tests/data/import/table/simple/"), None);
+    assert!(actual.is_ok());
+    assert_snapshot!(actual.unwrap());
+}
+
+#[test]
+fn table_skip_na() {
+    let m: ImportTable = toml::from_str(
+        r#"
+        delimiter = "\t"
+        na = "_"        
+        "#,
+    )
+    .unwrap();
+    let actual = import_as_graphml_string(m, Path::new("tests/data/import/table/with-na/"), None);
     assert!(actual.is_ok());
     assert_snapshot!(actual.unwrap());
 }

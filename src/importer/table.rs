@@ -76,6 +76,21 @@ pub struct ImportTable {
     ///
     #[serde(default)]
     empty_line_group: Option<EmptyLineGroup>,
+    /// Null entries can be skipped by providing an explicit na-value.
+    ///
+    /// Example:
+    /// ```toml
+    /// [[import]]
+    /// format = "table"
+    /// path = "..."
+    ///
+    /// [import.config]
+    /// na = "_"
+    /// ```
+    ///
+    /// If provided, for all values matching the `na` value, no annotation is created.
+    #[serde(default)]
+    na: Option<String>,
 }
 
 fn default_delimiter() -> char {
@@ -89,6 +104,7 @@ impl Default for ImportTable {
             quote_char: Default::default(),
             delimiter: default_delimiter(),
             empty_line_group: Default::default(),
+            na: None,
         }
     }
 }
@@ -288,6 +304,11 @@ impl ImportTable {
             // Add all columns as token annotations
             for (i, name) in column_names.iter().enumerate() {
                 if let Some(val) = record.get(i) {
+                    if let Some(na_val) = &self.na
+                        && na_val == val.trim()
+                    {
+                        continue;
+                    }
                     let (ns, name) = split_qname(name);
                     update.add_event(UpdateEvent::AddNodeLabel {
                         node_name: node_name.clone(),
