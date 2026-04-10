@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.51.0] - 2026-04-10
+
 ### Added
 
 - import `conllu` parsing errors: Add file name to error message
