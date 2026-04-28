@@ -281,10 +281,15 @@ impl Importer for GraphMLImporter {
         &self,
         path: &Path,
         step_id: StepID,
-        _config: GenericImportConfiguration,
+        config: GenericImportConfiguration,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let reporter = ProgressReporter::new(tx, step_id, 2)?;
+
+        if config != self.default_configuration() {
+            reporter
+                .warn("Generic configuration keys are currently ignored for GraphML imports.")?;
+        }
 
         // TODO: support multiple GraphML and connected binary files
         // TODO: refactor the graphannis_core create to expose the needed functionality directly
@@ -314,11 +319,15 @@ impl Importer for GraphMLImporter {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::{path::Path, sync::mpsc};
 
     use insta::assert_snapshot;
+    use itertools::Itertools;
 
-    use crate::{importer::graphml::GraphMLImporter, test_util::import_as_graphml_string};
+    use crate::{
+        importer::{GenericImportConfiguration, Importer, graphml::GraphMLImporter},
+        test_util::import_as_graphml_string,
+    };
 
     #[test]
     fn single_sentence() {
@@ -330,5 +339,30 @@ mod tests {
         .unwrap();
 
         assert_snapshot!(actual);
+    }
+
+    #[test]
+    fn generic_config_warning() {
+        let input_path = Path::new("tests/data/import/graphml/single_sentence.graphml");
+        let import = GraphMLImporter::default();
+        let (tx, rx) = mpsc::channel();
+        let import = import.import_corpus(
+            input_path,
+            crate::StepID {
+                module_name: "test_import".to_string(),
+                path: None,
+            },
+            GenericImportConfiguration::new_with_root_name("custom_root".to_string()),
+            Some(tx),
+        );
+        assert!(import.is_ok());
+        assert_snapshot!(
+            rx.into_iter()
+                .map(|m| match m {
+                    crate::workflow::StatusMessage::Warning(w) => w,
+                    _ => "".to_string(),
+                })
+                .join("\n")
+        );
     }
 }
