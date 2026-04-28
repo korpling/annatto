@@ -163,42 +163,38 @@ fn read_graphml<R: std::io::BufRead>(
                 level += 1;
 
                 match e.name().0 {
-                    b"graph"
-                        if level == 2 => {
-                            in_graph = true;
-                        }
-                    b"key"
-                        if level == 2 => {
-                            add_annotation_key(&mut keys, e.attributes())?;
-                        }
-                    b"node"
-                        if in_graph && level == 3 => {
-                            // Get the ID of this node
-                            for att in e.attributes() {
-                                let att = att?;
-                                if att.key.0 == b"id" {
-                                    current_node_id =
-                                        Some(String::from_utf8_lossy(&att.value).to_string());
-                                }
+                    b"graph" if level == 2 => {
+                        in_graph = true;
+                    }
+                    b"key" if level == 2 => {
+                        add_annotation_key(&mut keys, e.attributes())?;
+                    }
+                    b"node" if in_graph && level == 3 => {
+                        // Get the ID of this node
+                        for att in e.attributes() {
+                            let att = att?;
+                            if att.key.0 == b"id" {
+                                current_node_id =
+                                    Some(String::from_utf8_lossy(&att.value).to_string());
                             }
                         }
-                    b"edge"
-                        if in_graph && level == 3 => {
-                            // Get the source and target node IDs
-                            for att in e.attributes() {
-                                let att = att?;
-                                if att.key.0 == b"source" {
-                                    current_source_id =
-                                        Some(String::from_utf8_lossy(&att.value).to_string());
-                                } else if att.key.0 == b"target" {
-                                    current_target_id =
-                                        Some(String::from_utf8_lossy(&att.value).to_string());
-                                } else if att.key.0 == b"label" {
-                                    current_component =
-                                        Some(String::from_utf8_lossy(&att.value).to_string());
-                                }
+                    }
+                    b"edge" if in_graph && level == 3 => {
+                        // Get the source and target node IDs
+                        for att in e.attributes() {
+                            let att = att?;
+                            if att.key.0 == b"source" {
+                                current_source_id =
+                                    Some(String::from_utf8_lossy(&att.value).to_string());
+                            } else if att.key.0 == b"target" {
+                                current_target_id =
+                                    Some(String::from_utf8_lossy(&att.value).to_string());
+                            } else if att.key.0 == b"label" {
+                                current_component =
+                                    Some(String::from_utf8_lossy(&att.value).to_string());
                             }
                         }
+                    }
                     b"data" => {
                         for att in e.attributes() {
                             let att = att?;
