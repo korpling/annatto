@@ -246,7 +246,7 @@ impl DocumentMapper<'_> {
             }
             let mut token_ids = Vec::new();
             let mut result = BTreeMap::new();
-            for (counter, (time_range, token_text)) in (1..).zip(token_sorted_by_time.into_iter()) {
+            for (counter, (time_range, token_text)) in (1..).zip(token_sorted_by_time) {
                 let id = map_token(
                     u,
                     &NodeInfo::new(&counter.to_string(), &self.doc_path, &self.text_node_name),
