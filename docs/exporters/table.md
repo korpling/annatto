@@ -36,7 +36,7 @@ all values will be quoted.
 Example:
 ```toml
 [export.config]
-quote_char = "\""
+quote_char = """
 ```
 
 ###  no_value
