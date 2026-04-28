@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - import `graphml`: When generic config attributes are used, such as `extensions`, which the importer has to ignore, a warning is displayed
 
+### Changed
+
+- internal library for documentation generation had changed, as it also changed in graphannis
+
 ## [0.51.0] - 2026-04-10
 
 ### Added
