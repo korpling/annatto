@@ -57,7 +57,7 @@ pub struct ExportTable {
     /// Example:
     /// ```toml
     /// [export.config]
-    /// quote_char = "\""
+    /// quote_char = '"'
     /// ```
     #[serde(default)]
     quote_char: Option<char>,
