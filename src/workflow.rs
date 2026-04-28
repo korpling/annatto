@@ -457,8 +457,7 @@ impl Workflow {
         }
         // Execute all manipulators in sequence
         if let Some(ref manipulators) = self.graph_op {
-            let mut graph_op_position = 1;
-            for desc in manipulators.iter() {
+            for (graph_op_position, desc) in (1..).zip(manipulators.iter()) {
                 let step_id = StepID::from_graphop_step(desc, graph_op_position);
                 let workflow_directory = &desc.workflow_directory;
                 desc.execute(
@@ -473,7 +472,6 @@ impl Workflow {
                     reason: reason.to_string(),
                     manipulator: step_id.to_string(),
                 })?;
-                graph_op_position += 1;
 
                 if let Some(ref tx) = tx {
                     tx.send(crate::workflow::StatusMessage::StepDone { id: step_id })?;

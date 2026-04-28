@@ -314,7 +314,7 @@ impl ExportTable {
                     let mut prefixes = sources.iter().map(|_| "in").collect_vec();
                     prefixes.extend(targets.iter().map(|_| "out"));
                     for ((connected_node_name, component, mut edge_annotations), prefix) in
-                        sources.into_iter().chain(targets.into_iter()).zip(prefixes)
+                        sources.into_iter().chain(targets).zip(prefixes)
                     {
                         let qualified_name = [
                             prefix,

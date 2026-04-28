@@ -163,43 +163,35 @@ fn read_graphml<R: std::io::BufRead>(
                 level += 1;
 
                 match e.name().0 {
-                    b"graph" => {
-                        if level == 2 {
-                            in_graph = true;
-                        }
+                    b"graph" if level == 2 => {
+                        in_graph = true;
                     }
-                    b"key" => {
-                        if level == 2 {
-                            add_annotation_key(&mut keys, e.attributes())?;
-                        }
+                    b"key" if level == 2 => {
+                        add_annotation_key(&mut keys, e.attributes())?;
                     }
-                    b"node" => {
-                        if in_graph && level == 3 {
-                            // Get the ID of this node
-                            for att in e.attributes() {
-                                let att = att?;
-                                if att.key.0 == b"id" {
-                                    current_node_id =
-                                        Some(String::from_utf8_lossy(&att.value).to_string());
-                                }
+                    b"node" if in_graph && level == 3 => {
+                        // Get the ID of this node
+                        for att in e.attributes() {
+                            let att = att?;
+                            if att.key.0 == b"id" {
+                                current_node_id =
+                                    Some(String::from_utf8_lossy(&att.value).to_string());
                             }
                         }
                     }
-                    b"edge" => {
-                        if in_graph && level == 3 {
-                            // Get the source and target node IDs
-                            for att in e.attributes() {
-                                let att = att?;
-                                if att.key.0 == b"source" {
-                                    current_source_id =
-                                        Some(String::from_utf8_lossy(&att.value).to_string());
-                                } else if att.key.0 == b"target" {
-                                    current_target_id =
-                                        Some(String::from_utf8_lossy(&att.value).to_string());
-                                } else if att.key.0 == b"label" {
-                                    current_component =
-                                        Some(String::from_utf8_lossy(&att.value).to_string());
-                                }
+                    b"edge" if in_graph && level == 3 => {
+                        // Get the source and target node IDs
+                        for att in e.attributes() {
+                            let att = att?;
+                            if att.key.0 == b"source" {
+                                current_source_id =
+                                    Some(String::from_utf8_lossy(&att.value).to_string());
+                            } else if att.key.0 == b"target" {
+                                current_target_id =
+                                    Some(String::from_utf8_lossy(&att.value).to_string());
+                            } else if att.key.0 == b"label" {
+                                current_component =
+                                    Some(String::from_utf8_lossy(&att.value).to_string());
                             }
                         }
                     }
@@ -281,10 +273,15 @@ impl Importer for GraphMLImporter {
         &self,
         path: &Path,
         step_id: StepID,
-        _config: GenericImportConfiguration,
+        config: GenericImportConfiguration,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let reporter = ProgressReporter::new(tx, step_id, 2)?;
+
+        if config != self.default_configuration() {
+            reporter
+                .warn("Generic configuration keys are currently ignored for GraphML imports.")?;
+        }
 
         // TODO: support multiple GraphML and connected binary files
         // TODO: refactor the graphannis_core create to expose the needed functionality directly
@@ -314,11 +311,15 @@ impl Importer for GraphMLImporter {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::{path::Path, sync::mpsc};
 
     use insta::assert_snapshot;
+    use itertools::Itertools;
 
-    use crate::{importer::graphml::GraphMLImporter, test_util::import_as_graphml_string};
+    use crate::{
+        importer::{GenericImportConfiguration, Importer, graphml::GraphMLImporter},
+        test_util::import_as_graphml_string,
+    };
 
     #[test]
     fn single_sentence() {
@@ -330,5 +331,30 @@ mod tests {
         .unwrap();
 
         assert_snapshot!(actual);
+    }
+
+    #[test]
+    fn generic_config_warning() {
+        let input_path = Path::new("tests/data/import/graphml/single_sentence.graphml");
+        let import = GraphMLImporter::default();
+        let (tx, rx) = mpsc::channel();
+        let import = import.import_corpus(
+            input_path,
+            crate::StepID {
+                module_name: "test_import".to_string(),
+                path: None,
+            },
+            GenericImportConfiguration::new_with_root_name("custom_root".to_string()),
+            Some(tx),
+        );
+        assert!(import.is_ok());
+        assert_snapshot!(
+            rx.into_iter()
+                .map(|m| match m {
+                    crate::workflow::StatusMessage::Warning(w) => w,
+                    _ => "".to_string(),
+                })
+                .join("\n")
+        );
     }
 }

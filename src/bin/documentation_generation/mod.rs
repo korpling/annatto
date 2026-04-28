@@ -36,7 +36,7 @@ fn write_module_list_table(
         importers
             .iter()
             .map(|m| {
-                let module_name = m.name.to_lowercase();
+                let module_name = m.effective_name().to_lowercase();
                 let file_stem = module_name.replace("unstable:", "");
                 format!("[{module_name}](importers/{file_stem}.md)")
             })
@@ -49,7 +49,7 @@ fn write_module_list_table(
         exporters
             .iter()
             .map(|m| {
-                let module_name = m.name.to_lowercase();
+                let module_name = m.effective_name().to_lowercase();
                 let file_stem = module_name.replace("unstable:", "");
                 format!("[{module_name}](exporters/{file_stem}.md)")
             })
@@ -62,7 +62,7 @@ fn write_module_list_table(
         graph_ops
             .iter()
             .map(|m| {
-                let module_name = m.name.to_lowercase();
+                let module_name = m.effective_name().to_lowercase();
                 let file_stem = module_name.replace("unstable:", "");
                 format!("[{module_name}](graph_ops/{file_stem}.md)")
             })

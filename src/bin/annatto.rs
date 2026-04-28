@@ -244,7 +244,7 @@ fn list_modules() {
         peek_enum_variants(ReadFrom::SHAPE)
             .unwrap_or_default()
             .iter()
-            .map(|v| v.name.to_lowercase())
+            .map(|v| v.effective_name().to_lowercase())
             .join(", "),
     ];
     table_builder.push_record(import_row);
@@ -254,7 +254,7 @@ fn list_modules() {
         peek_enum_variants(WriteAs::SHAPE)
             .unwrap_or_default()
             .iter()
-            .map(|v| v.name.to_lowercase())
+            .map(|v| v.effective_name().to_lowercase())
             .join(", "),
     ];
     table_builder.push_record(export_row);
@@ -264,7 +264,7 @@ fn list_modules() {
         peek_enum_variants(GraphOp::SHAPE)
             .unwrap_or_default()
             .iter()
-            .map(|v| v.name.to_lowercase())
+            .map(|v| v.effective_name().to_lowercase())
             .join(", "),
     ];
     table_builder.push_record(graph_op_row);
@@ -288,18 +288,18 @@ fn module_info(name: &str) {
     let matching_importers: Vec<_> = peek_enum_variants(ReadFrom::SHAPE)
         .unwrap_or_default()
         .iter()
-        .filter(|m| m.name.to_lowercase() == name.to_lowercase())
+        .filter(|m| m.effective_name().to_lowercase() == name.to_lowercase())
         .collect();
     let matching_exporters: Vec<_> = peek_enum_variants(WriteAs::SHAPE)
         .unwrap_or_default()
         .iter()
-        .filter(|m| m.name.to_lowercase() == name.to_lowercase())
+        .filter(|m| m.effective_name().to_lowercase() == name.to_lowercase())
         .collect();
 
     let matching_graph_ops: Vec<_> = peek_enum_variants(GraphOp::SHAPE)
         .unwrap_or_default()
         .iter()
-        .filter(|m| m.name.to_lowercase() == name.to_lowercase())
+        .filter(|m| m.effective_name().to_lowercase() == name.to_lowercase())
         .collect();
 
     if matching_importers.is_empty()
@@ -333,7 +333,7 @@ fn module_info(name: &str) {
         print_markdown("# Graph operations\n\n");
         for m in matching_graph_ops {
             // The name of the module is taken from the wrapper enum
-            let module_name = m.name.to_lowercase();
+            let module_name = m.effective_name().to_lowercase();
             // Get the inner type wrapped by the graph operations enum and use
             // its documentation and fields
             if let Some(inner_field) = m.data.fields.first().map(|m| m.shape())
@@ -349,7 +349,7 @@ fn module_info(name: &str) {
                     .fields
                     .iter()
                     .map(|f| ModuleConfiguration {
-                        name: f.name.to_lowercase(),
+                        name: f.effective_name().to_lowercase(),
                         description: documentation::clean_string(f.doc),
                     })
                     .collect();
