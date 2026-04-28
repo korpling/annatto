@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- import `graphml`: When generic config attributes are used, such as `extensions`, which the importer has to ignore, a warning is displayed
+
 ## [0.51.0] - 2026-04-10
 
 ### Added
