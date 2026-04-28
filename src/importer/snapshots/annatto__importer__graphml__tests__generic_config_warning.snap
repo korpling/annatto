@@ -1,6 +1,5 @@
 ---
 source: src/importer/graphml.rs
-assertion_line: 359
 expression: "rx.into_iter().map(|m| match m\n{\n    crate::workflow::StatusMessage::Warning(w) => w, _ => \"\".to_string(),\n}).join(\"\\n\")"
 ---
 Generic configuration keys are currently ignored for GraphML imports.
