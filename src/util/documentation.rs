@@ -78,7 +78,7 @@ impl From<&Variant> for ModuleInfo {
             let shape = m.shape();
             if let Some(inner) = shape.inner {
                 // This can be a boxed type
-                inner()
+                inner
             } else {
                 shape
             }
