@@ -5,6 +5,7 @@ accepted = [
   "BSD-3-Clause",
   "BSD-2-Clause",
   "BSL-1.0",
+  "bzip2-1.0.6",
   "MPL-2.0",
   "NCSA",
   "CC0-1.0",
