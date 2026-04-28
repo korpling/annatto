@@ -66,7 +66,7 @@ pub struct ModuleInfo {
 impl From<&Variant> for ModuleInfo {
     fn from(module: &Variant) -> Self {
         // The name of the module is taken from the wrapper enum
-        let module_name = module.name.to_lowercase();
+        let module_name = module.effective_name().to_lowercase();
         // Get the inner type wrapped by the graph operations enum and use
         // its documentation and fields
         let mut result = Self {
@@ -93,7 +93,7 @@ impl From<&Variant> for ModuleInfo {
                 .fields
                 .iter()
                 .map(|f| ModuleConfiguration {
-                    name: f.name.to_lowercase(),
+                    name: f.effective_name().to_lowercase(),
                     description: clean_string(f.doc),
                 })
                 .collect();
