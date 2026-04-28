@@ -22,7 +22,7 @@ use super::Exporter;
 #[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ExportSequence {
-    /// This influences the way the output is shaped. The default value is '\n', that means each annotation value
+    /// This influences the way the output is shaped. The default value is '\\n', that means each annotation value
     /// for the configured annotation key will be in a new line. Setting this to a single whitespace (' ') will lead
     /// to one line per group (see groupby configuration). Setting this to the empty string can be useful for corpora,
     /// in which each token corresponds to a character.
