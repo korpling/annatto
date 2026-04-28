@@ -246,8 +246,7 @@ impl DocumentMapper<'_> {
             }
             let mut token_ids = Vec::new();
             let mut result = BTreeMap::new();
-            let mut counter = 1;
-            for (time_range, token_text) in token_sorted_by_time {
+            for (counter, (time_range, token_text)) in (1..).zip(token_sorted_by_time.into_iter()) {
                 let id = map_token(
                     u,
                     &NodeInfo::new(&counter.to_string(), &self.doc_path, &self.text_node_name),
@@ -261,7 +260,6 @@ impl DocumentMapper<'_> {
                 token_ids.push(id.clone());
                 result.insert(time_range.0, id.clone());
                 result.insert(time_range.1, id);
-                counter += 1;
             }
             add_order_relations(u, &token_ids, None)?;
 

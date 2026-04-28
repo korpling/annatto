@@ -163,18 +163,16 @@ fn read_graphml<R: std::io::BufRead>(
                 level += 1;
 
                 match e.name().0 {
-                    b"graph" => {
-                        if level == 2 {
+                    b"graph"
+                        if level == 2 => {
                             in_graph = true;
                         }
-                    }
-                    b"key" => {
-                        if level == 2 {
+                    b"key"
+                        if level == 2 => {
                             add_annotation_key(&mut keys, e.attributes())?;
                         }
-                    }
-                    b"node" => {
-                        if in_graph && level == 3 {
+                    b"node"
+                        if in_graph && level == 3 => {
                             // Get the ID of this node
                             for att in e.attributes() {
                                 let att = att?;
@@ -184,9 +182,8 @@ fn read_graphml<R: std::io::BufRead>(
                                 }
                             }
                         }
-                    }
-                    b"edge" => {
-                        if in_graph && level == 3 {
+                    b"edge"
+                        if in_graph && level == 3 => {
                             // Get the source and target node IDs
                             for att in e.attributes() {
                                 let att = att?;
@@ -202,7 +199,6 @@ fn read_graphml<R: std::io::BufRead>(
                                 }
                             }
                         }
-                    }
                     b"data" => {
                         for att in e.attributes() {
                             let att = att?;

@@ -315,11 +315,10 @@ impl ImportToolBox {
                         };
                     }
                 }
-                (Rule::spaces, _) => {
-                    if build_joint {
+                (Rule::spaces, _)
+                    if build_joint => {
                         join_list.push(entry_or_space.as_str());
                     }
-                }
                 (Rule::null, false) => {
                     timeline_id += 1;
                 }

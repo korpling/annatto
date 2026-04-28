@@ -325,7 +325,7 @@ impl TreeTaggerTokenizer {
                         }
                     }
                     result.push(Token::new_val(current_token));
-                    result.extend(suffix.into_iter());
+                    result.extend(suffix);
                 }
             }
         }
