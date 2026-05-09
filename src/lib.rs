@@ -45,7 +45,10 @@ use workflow::StatusSender;
 
 use crate::{
     exporter::treetagger::ExportTreeTagger,
-    importer::{GenericImportConfiguration, git::ImportGitMetadata, text::ImportText},
+    importer::{
+        GenericImportConfiguration, git::ImportGitMetadata, paulaxml::ImportPaulaXml,
+        text::ImportText,
+    },
     manipulator::{
         diff::DiffSubgraphs, divide::DivideSegments, edit::EditGraph, span::CreateSpans,
     },
@@ -116,6 +119,7 @@ pub enum ReadFrom {
     None(#[serde(default)] CreateEmptyCorpus),
     Opus(#[serde(default)] ImportOpusLinks),
     Path(#[serde(default)] CreateFileNodes),
+    PaulaXml(#[serde(default)] ImportPaulaXml),
     PTB(#[serde(default)] ImportPTB),
     RelAnnis(#[serde(default)] ImportRelAnnis),
     SaltXml(#[serde(default)] ImportSaltXml),
@@ -147,6 +151,7 @@ impl ReadFrom {
             ReadFrom::None(m) => m,
             ReadFrom::Opus(m) => m,
             ReadFrom::Path(m) => m,
+            ReadFrom::PaulaXml(m) => m,
             ReadFrom::PTB(m) => m,
             ReadFrom::RelAnnis(m) => m,
             ReadFrom::SaltXml(m) => m,

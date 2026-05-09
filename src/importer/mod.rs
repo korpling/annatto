@@ -7,6 +7,7 @@ pub mod graphml;
 pub mod meta;
 pub mod none;
 pub mod opus;
+pub mod paulaxml;
 pub mod ptb;
 pub mod relannis;
 pub mod saltxml;
