@@ -36,6 +36,7 @@ use super::Manipulator;
 #[serde(deny_unknown_fields)]
 pub struct EnumerateMatches {
     /// A list of queries to find the nodes that are to be enumerated.
+    #[serde(deserialize_with = "crate::estarde::query::in_sequence::deserialize_and_check")]
     queries: Vec<String>,
     /// The target node in the query that is assigned the numeric annotation.
     /// Holds for all queries. This is a 1-based index and counts by mention in the query.

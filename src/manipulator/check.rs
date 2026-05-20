@@ -722,6 +722,7 @@ impl From<&Test> for Vec<AQLTest> {
 #[repr(u8)]
 enum Test {
     QueryTest {
+        #[serde(deserialize_with = "crate::estarde::query::deserialize_and_check")]
         query: String,
         expected: QueryResult,
         description: String,
@@ -799,14 +800,27 @@ struct TestTableEntry {
 #[repr(u8)]
 enum QueryResult {
     Numeric(usize),
-    Query(String),
+    Query(#[serde(deserialize_with = "crate::estarde::query::deserialize_and_check")] String),
     ClosedInterval(usize, usize),
-    ClosedLQueryInterval(String, usize),
-    ClosedRQueryInterval(usize, String),
-    ClosedQueryInterval(String, String),
+    ClosedLQueryInterval(
+        #[serde(deserialize_with = "crate::estarde::query::deserialize_and_check")] String,
+        usize,
+    ),
+    ClosedRQueryInterval(
+        usize,
+        #[serde(deserialize_with = "crate::estarde::query::deserialize_and_check")] String,
+    ),
+    ClosedQueryInterval(
+        #[serde(deserialize_with = "crate::estarde::query::deserialize_and_check")] String,
+        #[serde(deserialize_with = "crate::estarde::query::deserialize_and_check")] String,
+    ),
     SemiOpenInterval(usize, f64),
     SemiOpenQueryInterval(String, f64),
-    CorpusQuery(PathBuf, String, String), // db_dir, corpus name, query
+    CorpusQuery(
+        PathBuf,
+        String,
+        #[serde(deserialize_with = "crate::estarde::query::deserialize_and_check")] String,
+    ), // db_dir, corpus name, query
 }
 
 #[cfg(test)]

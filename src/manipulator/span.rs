@@ -27,6 +27,7 @@ use crate::{manipulator::Manipulator, util::update_graph_silent};
 pub struct CreateSpans {
     /// The query for retrieving the relevant annotation values and
     /// nodes for the spans to be created.
+    #[serde(deserialize_with = "crate::estarde::query::deserialize_and_check")]
     query: String,
     /// The node index (starting at 1) to pick the target node for the new span.
     /// Note, that the new span will not directly point to the target node, but

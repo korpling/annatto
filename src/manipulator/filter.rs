@@ -38,6 +38,7 @@ pub struct FilterNodes {
     /// [graph_op.config]
     /// query = "pos=/NOUN/"
     /// ```
+    #[serde(deserialize_with = "crate::estarde::query::deserialize_and_check")]
     query: String,
     /// If this is set to true, all matching nodes, that are not coverage terminals ("real tokens"), are deleted. If false (default),
     /// the matching nodes and all real tokens are preserved, all other nodes are deleted.

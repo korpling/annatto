@@ -391,6 +391,7 @@ fn default_value_delimiter() -> String {
 #[derive(Facet, Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 struct Rule {
+    #[serde(deserialize_with = "crate::estarde::query::deserialize_and_check")]
     query: String,
     target: TargetRef,
     #[serde(with = "crate::estarde::anno_key")]

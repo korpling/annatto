@@ -172,6 +172,7 @@ pub struct Revise {
 #[serde(deny_unknown_fields)]
 struct RemoveMatch {
     /// The query to obtain the results.
+    #[serde(deserialize_with = "crate::estarde::query::deserialize_and_check")]
     query: String,
     /// The node indices (starting at 1) from the query of nodes to be removed.
     remove: Vec<RemoveTarget>,

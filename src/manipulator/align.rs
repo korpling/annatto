@@ -108,6 +108,7 @@ impl Manipulator for AlignNodes {
 
 #[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 struct NodeGroup {
+    #[serde(deserialize_with = "crate::estarde::query::deserialize_and_check")]
     query: String,
     link: usize,
     groupby: usize,

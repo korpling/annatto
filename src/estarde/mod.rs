@@ -1,6 +1,7 @@
 pub(crate) mod anno_key;
 pub(crate) mod annotation_component;
 pub(crate) mod importer_step;
+pub(crate) mod query;
 pub(crate) mod update_event;
 
 pub trait IntoInner {
