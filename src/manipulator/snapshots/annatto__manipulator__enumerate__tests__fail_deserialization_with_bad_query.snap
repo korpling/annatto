@@ -1,0 +1,9 @@
+---
+source: src/manipulator/enumerate.rs
+expression: enmatches.err().unwrap()
+---
+TOML parse error at line 2, column 19
+  |
+2 |         queries = ["tok", "annis:tok @* doc"]
+  |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[0:7-0:9] Unexpected token in query. Expected one of: ID

@@ -285,6 +285,22 @@ mod tests {
     }
 
     #[test]
+    fn fail_deserialization_with_bad_query() {
+        let create_spans: Result<CreateSpans, _> = toml::from_str(
+            r#"
+        adjacent = true
+        query = "speaker !_=_ tok"  # query error intended
+        node = 2
+        value = [1]
+        anno = "speaker_span"
+        component = { ctype = "Dominance", layer = "annis", name = "" }
+        "#,
+        );
+        assert!(create_spans.is_err());
+        assert_snapshot!(create_spans.err().unwrap());
+    }
+
+    #[test]
     fn serialize_custom() {
         let module = CreateSpans {
             adjacent: true,

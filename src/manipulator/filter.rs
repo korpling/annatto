@@ -166,6 +166,13 @@ mod tests {
     }
 
     #[test]
+    fn fail_deserialization_with_bad_query() {
+        let filter_nodes: Result<FilterNodes, _> = toml::from_str(r#"query = "annis:tok @* doc""#);
+        assert!(filter_nodes.is_err());
+        assert_snapshot!(filter_nodes.err().unwrap());
+    }
+
+    #[test]
     fn graph_statistics() {
         let g = AnnotationGraph::with_default_graphstorages(false);
         assert!(g.is_ok());

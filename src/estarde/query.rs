@@ -1,12 +1,21 @@
+use std::borrow::Cow;
+
 use graphannis::aql;
 use serde::{Deserialize, Deserializer};
+
+use crate::error::AnnattoError;
 
 pub(crate) fn deserialize_and_check<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<String, D::Error> {
-    let query = String::deserialize(deserializer)?;
-    aql::parse(&query, false).map_err(serde::de::Error::custom)?;
-    Ok(query)
+    let query = Cow::<str>::deserialize(deserializer)?;
+    check_deserialized_query(&query).map_err(serde::de::Error::custom)?;
+    Ok(query.to_string())
+}
+
+pub(crate) fn check_deserialized_query(query: &str) -> Result<(), AnnattoError> {
+    aql::parse(query, false).map_err(|e| AnnattoError::InvalidQuery(query.to_string(), e))?;
+    Ok(())
 }
 
 pub(crate) mod in_sequence {
@@ -17,7 +26,7 @@ pub(crate) mod in_sequence {
     ) -> Result<T, D::Error> {
         let queries = Vec::<String>::deserialize(deserializer)?;
         queries.iter().try_for_each(|query| {
-            aql::parse(&query, false).map_err(serde::de::Error::custom)?;
+            aql::parse(query, false).map_err(serde::de::Error::custom)?;
             Ok(())
         })?;
         Ok(queries.into_iter().collect())

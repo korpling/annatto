@@ -893,6 +893,18 @@ mod tests {
     }
 
     #[test]
+    fn fail_deserialization_with_bad_query() {
+        let remove_match_def: std::result::Result<RemoveMatch, _> = toml::from_str(
+            r#"
+        query = "annis:tok @* doc"
+        remove = [1]
+        "#,
+        );
+        assert!(remove_match_def.is_err());
+        assert_snapshot!(remove_match_def.err().unwrap());
+    }
+
+    #[test]
     fn graph_statistics() {
         let g = AnnotationGraph::with_default_graphstorages(false);
         assert!(g.is_ok());

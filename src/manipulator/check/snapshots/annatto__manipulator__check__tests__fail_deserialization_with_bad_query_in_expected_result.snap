@@ -1,0 +1,7 @@
+---
+source: src/manipulator/check/tests.rs
+expression: test.err().unwrap()
+---
+Error with
+query: `annis:tok`
+error: [0:7-0:9] Unexpected token in query. Expected one of: ID

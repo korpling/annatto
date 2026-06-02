@@ -325,6 +325,23 @@ mod tests {
     }
 
     #[test]
+    fn fail_deserialization_with_bad_query() {
+        let link_nodes: Result<LinkNodes, _> = toml::from_str(
+            r#"
+        source_query = "annis:tok @* doc"
+        source_node = 1
+        source_value = [1]
+        target_query = "tok"
+        target_node = 1
+        target_value = [1]
+        component = { ctype = "Pointing", layer = "", name = "ref" }
+        "#,
+        );
+        assert!(link_nodes.is_err());
+        assert_snapshot!(link_nodes.err().unwrap());
+    }
+
+    #[test]
     fn graph_statistics() {
         let g = AnnotationGraph::with_default_graphstorages(false);
         assert!(g.is_ok());

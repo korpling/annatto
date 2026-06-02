@@ -399,6 +399,19 @@ mod tests {
     }
 
     #[test]
+    fn fail_deserialization_with_bad_query() {
+        let enmatches: Result<EnumerateMatches, _> = toml::from_str(
+            r#"
+        queries = ["tok", "annis:tok @* doc"]
+        target = 1
+        label = "id"
+        "#,
+        );
+        assert!(enmatches.is_err());
+        assert_snapshot!(enmatches.err().unwrap());
+    }
+
+    #[test]
     fn graph_statistics() {
         let g = AnnotationGraph::with_default_graphstorages(false);
         assert!(g.is_ok());

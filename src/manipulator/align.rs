@@ -287,6 +287,19 @@ mod tests {
     }
 
     #[test]
+    fn fail_deserialization_with_bad_query() {
+        let group: Result<NodeGroup, _> = toml::from_str(
+            r#"
+        query = "annis:tok @* doc"
+        link = 1
+        groupby = 2
+        "#,
+        );
+        assert!(group.is_err());
+        assert_snapshot!(group.err().unwrap());
+    }
+
+    #[test]
     fn graph_statistics() {
         let g = AnnotationGraph::with_default_graphstorages(false);
         assert!(g.is_ok());
