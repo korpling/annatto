@@ -15,7 +15,7 @@ use graphannis_core::{
     graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE},
 };
 use itertools::Itertools;
-use serde::{Serialize};
+use serde::Serialize;
 use serde_derive::Deserialize;
 use tabled::{Table, Tabled};
 
@@ -718,6 +718,11 @@ impl From<&Test> for Vec<AQLTest> {
     }
 }
 
+// This type is needed for deserializing `Test` structs and properly evaluating
+// queries for parse errors. As `Test` is an untagged enum, raising an error regarding
+// the syntax or semantics of a query directly in deserialization of the respective `Test`
+// variant's field will be interpreted as "this is not the right variant" by serde, as there
+// is no other clue due to the missing tag (which we need to be that way for more human-readable workflows).
 #[derive(Deserialize)]
 #[serde(untagged, deny_unknown_fields)]
 enum UncheckedTest {
