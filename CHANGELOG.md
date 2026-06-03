@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - import `graphml`: When generic config attributes are used, such as `extensions`, which the importer has to ignore, a warning is displayed
+- queries in configurations are now evaluated directly during deserialization to avoid having long workflows fail very late and thus to reduce frustration
 
 ### Changed
 
