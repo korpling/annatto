@@ -77,6 +77,7 @@ use std::{collections::BTreeMap, ops::Deref};
 #[serde(deny_unknown_fields)]
 pub struct LinkNodes {
     /// The AQL query to find all source node annotations. Source and target nodes are then paired by equal value for their query match.
+    #[serde(deserialize_with = "crate::estarde::query::deserialize_and_check")]
     source_query: String,
     /// The 1-based index selecting the value providing node in the AQL source query.
     source_node: usize,
@@ -86,6 +87,7 @@ pub struct LinkNodes {
     #[serde(default)]
     source_to_edge: Vec<usize>,
     /// The AQL query to find all target node annotations.
+    #[serde(deserialize_with = "crate::estarde::query::deserialize_and_check")]
     target_query: String,
     /// The 1-based index selecting the value providing node in the AQL target query.
     target_node: usize,
@@ -320,6 +322,23 @@ mod tests {
             serialization.err()
         );
         assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn fail_deserialization_with_bad_query() {
+        let link_nodes: Result<LinkNodes, _> = toml::from_str(
+            r#"
+        source_query = "annis:tok @* doc"
+        source_node = 1
+        source_value = [1]
+        target_query = "tok"
+        target_node = 1
+        target_value = [1]
+        component = { ctype = "Pointing", layer = "", name = "ref" }
+        "#,
+        );
+        assert!(link_nodes.is_err());
+        assert_snapshot!(link_nodes.err().unwrap());
     }
 
     #[test]

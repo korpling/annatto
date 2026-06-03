@@ -391,6 +391,7 @@ fn default_value_delimiter() -> String {
 #[derive(Facet, Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 struct Rule {
+    #[serde(deserialize_with = "crate::estarde::query::deserialize_and_check")]
     query: String,
     target: TargetRef,
     #[serde(with = "crate::estarde::anno_key")]
@@ -782,6 +783,20 @@ mod tests {
             serialization.err()
         );
         assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn fail_deserialization_with_bad_query() {
+        let rule: Result<Rule, _> = toml::from_str(
+            r#"
+        query = "annis:tok @* doc"
+        target = 1
+        anno = "new::anno"
+        value = "new_value"
+        "#,
+        );
+        assert!(rule.is_err());
+        assert_snapshot!(rule.err().unwrap());
     }
 
     #[test]

@@ -108,6 +108,7 @@ impl Manipulator for AlignNodes {
 
 #[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 struct NodeGroup {
+    #[serde(deserialize_with = "crate::estarde::query::deserialize_and_check")]
     query: String,
     link: usize,
     groupby: usize,
@@ -283,6 +284,19 @@ mod tests {
             serialization.err()
         );
         assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn fail_deserialization_with_bad_query() {
+        let group: Result<NodeGroup, _> = toml::from_str(
+            r#"
+        query = "annis:tok @* doc"
+        link = 1
+        groupby = 2
+        "#,
+        );
+        assert!(group.is_err());
+        assert_snapshot!(group.err().unwrap());
     }
 
     #[test]

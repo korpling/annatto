@@ -38,6 +38,7 @@ pub struct FilterNodes {
     /// [graph_op.config]
     /// query = "pos=/NOUN/"
     /// ```
+    #[serde(deserialize_with = "crate::estarde::query::deserialize_and_check")]
     query: String,
     /// If this is set to true, all matching nodes, that are not coverage terminals ("real tokens"), are deleted. If false (default),
     /// the matching nodes and all real tokens are preserved, all other nodes are deleted.
@@ -162,6 +163,13 @@ mod tests {
             serialization.err()
         );
         assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn fail_deserialization_with_bad_query() {
+        let filter_nodes: Result<FilterNodes, _> = toml::from_str(r#"query = "annis:tok @* doc""#);
+        assert!(filter_nodes.is_err());
+        assert_snapshot!(filter_nodes.err().unwrap());
     }
 
     #[test]

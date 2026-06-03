@@ -27,6 +27,7 @@ use crate::{manipulator::Manipulator, util::update_graph_silent};
 pub struct CreateSpans {
     /// The query for retrieving the relevant annotation values and
     /// nodes for the spans to be created.
+    #[serde(deserialize_with = "crate::estarde::query::deserialize_and_check")]
     query: String,
     /// The node index (starting at 1) to pick the target node for the new span.
     /// Note, that the new span will not directly point to the target node, but
@@ -281,6 +282,22 @@ mod tests {
         "#,
         );
         assert!(module.is_ok());
+    }
+
+    #[test]
+    fn fail_deserialization_with_bad_query() {
+        let create_spans: Result<CreateSpans, _> = toml::from_str(
+            r#"
+        adjacent = true
+        query = "speaker !_=_ pos"  # query error intended
+        node = 2
+        value = [1]
+        anno = "speaker_span"
+        component = { ctype = "Dominance", layer = "annis", name = "" }
+        "#,
+        );
+        assert!(create_spans.is_err());
+        assert_snapshot!(create_spans.err().unwrap());
     }
 
     #[test]
