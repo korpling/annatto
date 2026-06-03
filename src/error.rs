@@ -1,5 +1,6 @@
 use std::{io::BufWriter, path::PathBuf, string::FromUtf8Error, sync::mpsc::SendError};
 
+use anyhow::anyhow;
 use graphannis::errors::GraphAnnisError;
 use graphannis_core::errors::GraphAnnisCoreError;
 use itertools::Itertools;
@@ -86,8 +87,10 @@ pub enum AnnattoError {
     FacetVariantError(#[from] facet_reflect::VariantError),
     #[error(transparent)]
     Anyhow(#[from] anyhow::Error),
-    #[error("Error with query `{0}`:\n{1}")]
-    InvalidQuery(String, GraphAnnisError),
+    #[error("Error with query:\n{0}")]
+    InvalidQuery(GraphAnnisError),
+    #[error("Error with query {0}: {1}")]
+    InvalidQueryInSequence(u16, GraphAnnisError),
 }
 
 impl<T> From<std::sync::PoisonError<T>> for AnnattoError {
@@ -119,5 +122,16 @@ impl From<glob::GlobError> for AnnattoError {
 impl From<glob::PatternError> for AnnattoError {
     fn from(value: glob::PatternError) -> Self {
         AnnattoError::GlobError(value.msg.to_string())
+    }
+}
+
+impl AnnattoError {
+    pub(crate) fn with_index(self, index: u16) -> Result<AnnattoError> {
+        match self {
+            AnnattoError::InvalidQuery(e) => Ok(AnnattoError::InvalidQueryInSequence(index, e)),
+            _ => Err(AnnattoError::Anyhow(anyhow!(
+                "Could not inject index {index} into {self}"
+            ))),
+        }
     }
 }

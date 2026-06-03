@@ -22,12 +22,11 @@ pub(crate) fn deserialize_and_check<'de, D: Deserializer<'de>>(
 
 pub(crate) fn check_deserialized_query(query: &str) -> Result<(), AnnattoError> {
     // checks syntax
-    let dj =
-        aql::parse(query, false).map_err(|e| AnnattoError::InvalidQuery(query.to_string(), e))?;
+    let dj = aql::parse(query, false).map_err(AnnattoError::InvalidQuery)?;
     // checks semantics
     if let Ok(graph) = &*empty_graph {
         aql::execute_query_on_graph(graph, &dj, true, None)
-            .map_err(|e| AnnattoError::InvalidQuery(query.to_string(), e))?
+            .map_err(AnnattoError::InvalidQuery)?
             .next();
     }
     Ok(())
@@ -42,7 +41,13 @@ pub(crate) mod in_sequence {
         let queries = Vec::<String>::deserialize(deserializer)?;
         queries
             .iter()
-            .try_for_each(|query| check_deserialized_query(query))
+            .enumerate()
+            .try_for_each(|(i, query)| {
+                check_deserialized_query(query).map_err(|e| match e.with_index(i as u16 + 1u16) {
+                    Ok(e) => e,
+                    Err(e) => e,
+                })
+            })
             .map_err(serde::de::Error::custom)?;
         Ok(queries.into_iter().collect())
     }
