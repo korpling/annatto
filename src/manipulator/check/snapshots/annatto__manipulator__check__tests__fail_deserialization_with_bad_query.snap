@@ -2,6 +2,5 @@
 source: src/manipulator/check/tests.rs
 expression: test.err().unwrap()
 ---
-Error with
-query: `annis:tok @* doc`
-error: [0:7-0:9] Unexpected token in query. Expected one of: ID
+Error with query `annis:tok @* doc`:
+[0:7-0:9] Unexpected token in query. Expected one of: ID

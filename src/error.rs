@@ -86,7 +86,7 @@ pub enum AnnattoError {
     FacetVariantError(#[from] facet_reflect::VariantError),
     #[error(transparent)]
     Anyhow(#[from] anyhow::Error),
-    #[error("Error with\nquery: `{0}`\nerror: {1}")]
+    #[error("Error with query `{0}`:\n{1}")]
     InvalidQuery(String, GraphAnnisError),
 }
 

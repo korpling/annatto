@@ -289,7 +289,7 @@ mod tests {
         let create_spans: Result<CreateSpans, _> = toml::from_str(
             r#"
         adjacent = true
-        query = "speaker !_=_ tok"  # query error intended
+        query = "speaker !_=_ pos"  # query error intended
         node = 2
         value = [1]
         anno = "speaker_span"

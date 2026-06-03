@@ -1,0 +1,10 @@
+---
+source: src/manipulator/span.rs
+expression: create_spans.err().unwrap()
+---
+TOML parse error at line 3, column 17
+  |
+3 |         query = "speaker !_=_ pos"  # query error intended
+  |                 ^^^^^^^^^^^^^^^^^^
+Error with query `speaker !_=_ pos`:
+[0:14-0:17] Variable "#2" not bound (use linguistic operators)

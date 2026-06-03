@@ -1,9 +1,16 @@
 use std::borrow::Cow;
 
-use graphannis::aql;
+use graphannis::{AnnotationGraph, aql};
+use graphannis_core::errors::GraphAnnisCoreError;
+use lazy_static::lazy_static;
 use serde::{Deserialize, Deserializer};
 
 use crate::error::AnnattoError;
+
+lazy_static! {
+    static ref empty_graph: Result<AnnotationGraph, GraphAnnisCoreError> =
+        AnnotationGraph::new(false);
+}
 
 pub(crate) fn deserialize_and_check<'de, D: Deserializer<'de>>(
     deserializer: D,
@@ -14,7 +21,15 @@ pub(crate) fn deserialize_and_check<'de, D: Deserializer<'de>>(
 }
 
 pub(crate) fn check_deserialized_query(query: &str) -> Result<(), AnnattoError> {
-    aql::parse(query, false).map_err(|e| AnnattoError::InvalidQuery(query.to_string(), e))?;
+    // checks syntax
+    let dj =
+        aql::parse(query, false).map_err(|e| AnnattoError::InvalidQuery(query.to_string(), e))?;
+    // checks semantics
+    if let Ok(graph) = &*empty_graph {
+        aql::execute_query_on_graph(graph, &dj, true, None)
+            .map_err(|e| AnnattoError::InvalidQuery(query.to_string(), e))?
+            .next();
+    }
     Ok(())
 }
 
@@ -25,10 +40,10 @@ pub(crate) mod in_sequence {
         deserializer: D,
     ) -> Result<T, D::Error> {
         let queries = Vec::<String>::deserialize(deserializer)?;
-        queries.iter().try_for_each(|query| {
-            aql::parse(query, false).map_err(serde::de::Error::custom)?;
-            Ok(())
-        })?;
+        queries
+            .iter()
+            .try_for_each(|query| check_deserialized_query(query))
+            .map_err(serde::de::Error::custom)?;
         Ok(queries.into_iter().collect())
     }
 }
