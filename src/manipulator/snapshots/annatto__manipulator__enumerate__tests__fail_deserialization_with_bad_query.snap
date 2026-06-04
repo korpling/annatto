@@ -6,4 +6,5 @@ TOML parse error at line 2, column 19
   |
 2 |         queries = ["tok", "annis:tok @* doc"]
   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error with query 2: [0:7-0:9] Unexpected token in query. Expected one of: ID
+Error in query 2:
+[0:7-0:9] Unexpected token in query. Expected one of: ID

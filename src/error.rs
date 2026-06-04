@@ -1,6 +1,5 @@
 use std::{io::BufWriter, path::PathBuf, string::FromUtf8Error, sync::mpsc::SendError};
 
-use anyhow::anyhow;
 use graphannis::errors::GraphAnnisError;
 use graphannis_core::errors::GraphAnnisCoreError;
 use itertools::Itertools;
@@ -87,10 +86,11 @@ pub enum AnnattoError {
     FacetVariantError(#[from] facet_reflect::VariantError),
     #[error(transparent)]
     Anyhow(#[from] anyhow::Error),
-    #[error("Error with query:\n{0}")]
-    InvalidQuery(GraphAnnisError),
-    #[error("Error with query {0}: {1}")]
-    InvalidQueryInSequence(u16, GraphAnnisError),
+    #[error("Error in query{}:\n{error}", if let Some(i) = index { format!(" {i}") } else { "".to_string() })]
+    InvalidQuery {
+        index: Option<u16>,
+        error: GraphAnnisError,
+    },
 }
 
 impl<T> From<std::sync::PoisonError<T>> for AnnattoError {
@@ -126,12 +126,7 @@ impl From<glob::PatternError> for AnnattoError {
 }
 
 impl AnnattoError {
-    pub(crate) fn with_index(self, index: u16) -> Result<AnnattoError> {
-        match self {
-            AnnattoError::InvalidQuery(e) => Ok(AnnattoError::InvalidQueryInSequence(index, e)),
-            _ => Err(AnnattoError::Anyhow(anyhow!(
-                "Could not inject index {index} into {self}"
-            ))),
-        }
+    pub(crate) fn invalid_query(error: GraphAnnisError) -> AnnattoError {
+        AnnattoError::InvalidQuery { index: None, error }
     }
 }
