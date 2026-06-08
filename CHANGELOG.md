@@ -5,14 +5,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- import `xlsx`: Sheets can be imported as subdocuments
+
 ## [0.53.0] - 2026-06-03
+
+### Added
+
+- queries in configurations are now evaluated directly during deserialization to avoid having long workflows fail very late and thus to reduce frustration
 
 ## [0.52.0] - 2026-04-28
 
 ### Added
 
 - import `graphml`: When generic config attributes are used, such as `extensions`, which the importer has to ignore, a warning is displayed
-- queries in configurations are now evaluated directly during deserialization to avoid having long workflows fail very late and thus to reduce frustration
 
 ### Changed
 
