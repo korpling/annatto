@@ -1338,4 +1338,33 @@ norm = ["pos", "lemma"]
         let module = m.unwrap();
         assert_snapshot!(export_to_string(&graph, module).unwrap());
     }
+
+    #[test]
+    fn multisheet() {
+        let import: ImportSpreadsheet = toml::from_str(
+            r#"
+        data = ["data", "appendix"]
+        metadata = "meta"
+        [column_map]
+        dipl = ["sentence", "seg"]
+        norm = ["pos", "lemma"]
+        "#,
+        )
+        .unwrap();
+        let u = import.import_corpus(
+            Path::new("tests/data/import/xlsx/multisheet/"),
+            StepID {
+                module_name: "test_import_multisheet".to_string(),
+                path: None,
+            },
+            import.default_configuration(),
+            None,
+        );
+        assert!(u.is_ok());
+        let mut update = u.unwrap();
+        let mut graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        assert!(graph.apply_update(&mut update, |_| {}).is_ok());
+        let export: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        assert_snapshot!(export_to_string(&graph, export).unwrap());
+    }
 }
