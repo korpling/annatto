@@ -2,6 +2,7 @@
 source: src/importer/xlsx.rs
 expression: serialization.unwrap()
 ---
+data = 0
 metasheet_skip_rows = 0
 token_annos = []
 evaluate = false
