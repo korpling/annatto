@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - import `xlsx`: Sheets can be imported as subdocuments
+- export `xlsx`: data can be exported into different sheets of xlsx files
+
+### Changed
+
+- export `xlsx`: discontinued `update_datasheet`
 
 ## [0.53.0] - 2026-06-03
 
