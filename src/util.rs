@@ -10,7 +10,7 @@ use graphannis::{
 };
 
 use crate::{progress::ProgressReporter, workflow::StatusSender};
-use anyhow::Context;
+use anyhow::{Context, anyhow};
 
 use graphannis_core::{
     annostorage::ValueSearch,
@@ -22,6 +22,7 @@ use graphannis_core::{
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use std::{
+    borrow::Cow,
     collections::BTreeSet,
     path::{Path, PathBuf},
     sync::Arc,
@@ -297,6 +298,13 @@ impl EdgeContainer for CorpusGraphHelper<'_> {
             .flat_map(move |gs| gs.source_nodes());
         Box::new(it)
     }
+}
+
+pub(crate) fn node_name<'a>(graph: &'a AnnotationGraph, node: NodeID) -> Result<Cow<'a, str>> {
+    graph
+        .get_node_annos()
+        .get_value_for_item(&node, &NODE_NAME_KEY)?
+        .ok_or(anyhow!("Node {} has no name.", node).into())
 }
 
 #[cfg(test)]
