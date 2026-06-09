@@ -205,7 +205,7 @@ impl ExportXlsx {
         );
         let ordering_gs = g.get_graphstorage_as_ref(&ordering_component);
 
-        let partitioned_token_roots = find_token_roots(
+        let token_roots_by_sheet = find_token_roots(
             g,
             doc_name,
             &self.document_key,
@@ -214,9 +214,9 @@ impl ExportXlsx {
             ordering_gs,
         )?;
 
-        for (sheet_name, token_roots) in partitioned_token_roots {
+        for (sheet_name, token_roots) in token_roots_by_sheet {
             let worksheet = workbook
-                .new_sheet(sheet_name.unwrap_or("data".to_string()))
+                .new_sheet(sheet_name.unwrap_or("Sheet1".to_string()))
                 .map_err(|s| anyhow!(s))?;
             let (token_to_row, has_only_empty_token) =
                 self.create_token_colum(g, &token_roots, doc_node_id, worksheet)?;
