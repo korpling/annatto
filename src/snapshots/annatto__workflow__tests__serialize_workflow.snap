@@ -8,6 +8,7 @@ path = "xlsx/"
 extensions = ["xlsx"]
 
 [import.config]
+data = 0
 metasheet_skip_rows = 0
 token_annos = []
 evaluate = false

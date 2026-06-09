@@ -18,7 +18,6 @@ use tempfile::NamedTempFile;
 use umya_spreadsheet::{Cell, NumberingFormat};
 
 use crate::{
-    importer::xlsx::SheetAddress,
     progress::ProgressReporter,
     util::token_helper::{TOKEN_KEY, TokenHelper},
 };
@@ -27,7 +26,7 @@ use super::Exporter;
 
 /// Exports Excel Spreadsheets where each line is a token, the other columns are
 /// spans and merged cells can be used for spans that cover more than one token.
-#[derive(Facet, Default, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ExportXlsx {
     /// If `true`, include the annotation namespace in the column header.
@@ -57,18 +56,62 @@ pub struct ExportXlsx {
     /// Set this to a sheet index or name to only update the data (not metadata)
     /// in an existing workbook and not write a completely new file. If no target
     /// file exists, a new workbook is created.
-    #[serde(default)]
-    update_datasheet: Option<SheetAddress>,
+    #[serde(default = "default_doc_anno", with = "crate::estarde::anno_key")]
+    document_key: AnnoKey,
+    /// The lowest corpus nodes can be interpreted as providing sheet instead of file data.
+    /// This requires the sheet nodes to point to nodes in the PartOf component, that hold
+    /// the document key (directly or indirectly). If no document key node is found, the export
+    /// will fail.
+    #[serde(default, with = "crate::estarde::anno_key::as_option")]
+    sheet_key: Option<AnnoKey>,
 }
+
+impl Default for ExportXlsx {
+    fn default() -> Self {
+        Self {
+            include_namespace: Default::default(),
+            annotation_order: Default::default(),
+            skip_unchanged_files: Default::default(),
+            document_key: default_doc_anno(),
+            sheet_key: Default::default(),
+        }
+    }
+}
+
+fn default_doc_anno() -> AnnoKey {
+    AnnoKey {
+        name: "doc".into(),
+        ns: ANNIS_NS.into(),
+    }
+}
+
+type RootData = HashMap<Option<String>, HashSet<NodeID>>;
 
 fn find_token_roots(
     g: &graphannis::AnnotationGraph,
     doc_node_name: &str,
+    document_key: &AnnoKey,
+    sheet_key: &Option<AnnoKey>,
     token_helper: &TokenHelper,
     ordering_gs: Option<&dyn GraphStorage>,
-) -> anyhow::Result<HashSet<NodeID>> {
-    let mut roots: HashSet<_> = HashSet::new();
-    let query = aql::parse(&format!("tok @* annis:doc=/{doc_node_name}/"), false)?;
+) -> anyhow::Result<RootData> {
+    let mut roots: RootData = RootData::default();
+    let aql_doc_k = if document_key.ns.is_empty() {
+        document_key.name.to_string()
+    } else {
+        format!("{}:{}", document_key.ns, document_key.name)
+    };
+    let query_str = if let Some(k) = sheet_key {
+        let aql_sheet_k = if k.ns.is_empty() {
+            k.name.to_string()
+        } else {
+            format!("{}:{}", k.ns, k.name)
+        };
+        format!("tok @* {aql_sheet_k} @* {aql_doc_k}=/{doc_node_name}/")
+    } else {
+        format!("tok @* {aql_doc_k}=/{doc_node_name}/")
+    };
+    let query = aql::parse(&query_str, false)?;
     for m in aql::execute_query_on_graph(g, &query, true, None)?.flatten() {
         // Check that this is an actual token and there are no outgoing coverage edges
         if let Some(n) = m.first()
@@ -76,7 +119,22 @@ fn find_token_roots(
             && (ordering_gs.is_none()
                 || ordering_gs.is_some_and(|gs| !gs.has_ingoing_edges(n.node).unwrap_or_default()))
         {
-            roots.insert(n.node);
+            if m.len() == 2 {
+                // default mode without sheet nodes
+                roots.entry(None).or_default().insert(n.node);
+            } else if m.len() == 3 {
+                let sheet_node_match = m.get(1).ok_or(anyhow!(
+                    "Unexpected: No second node in match group providing a sheet name."
+                ))?;
+                let sheet_name = g
+                    .get_node_annos()
+                    .get_value_for_item(&sheet_node_match.node, &sheet_node_match.anno_key)?
+                    .ok_or(anyhow!("Sheet name could not be retrieved from graph."))?;
+                roots
+                    .entry(Some(sheet_name.to_string()))
+                    .or_default()
+                    .insert(n.node);
+            }
         }
     }
     Ok(roots)
@@ -132,32 +190,8 @@ impl ExportXlsx {
         progress: &ProgressReporter,
     ) -> Result<(), anyhow::Error> {
         let output_path = output_path.join(format!("{doc_name}.xlsx"));
-        let mut workbook = if output_path.exists() && self.update_datasheet.is_some() {
-            umya_spreadsheet::reader::xlsx::read(&output_path)?
-        } else {
-            umya_spreadsheet::new_file()
-        };
-        let worksheet = if let Some(addr) = &self.update_datasheet {
-            match addr {
-                SheetAddress::Numeric(i) => {
-                    workbook.remove_sheet(*i - 1).map_err(|e| anyhow!(e))?;
-                }
-                SheetAddress::Name(s) => {
-                    workbook.remove_sheet_by_name(s).map_err(|e| anyhow!(e))?;
-                }
-            }
-            let sheet_name = format!(
-                "{doc_name}-{}",
-                chrono::Local::now().format("%Y-%m-%d-%H-%M-%S-%9f")
-            );
-            workbook
-                .new_sheet(&sheet_name)
-                .map_err(|e| anyhow!("Could not create new sheet with name `{sheet_name}`: {e}"))?
-        } else {
-            workbook
-                .get_sheet_mut(&0)
-                .ok_or(anyhow!("Could not obtain blank sheet."))?
-        };
+        let mut workbook = umya_spreadsheet::new_file();
+        workbook.remove_sheet(0).map_err(|s| anyhow!(s))?;
 
         let token_helper = TokenHelper::new(g)?;
         let ordering_component = Component::new(
@@ -167,31 +201,43 @@ impl ExportXlsx {
         );
         let ordering_gs = g.get_graphstorage_as_ref(&ordering_component);
 
-        let token_roots = find_token_roots(g, doc_name, &token_helper, ordering_gs)?;
-
-        let (token_to_row, has_only_empty_token) =
-            self.create_token_colum(g, &token_roots, doc_node_id, worksheet)?;
-
-        let column_offset = if !has_only_empty_token {
-            set_cell_value(worksheet.get_cell_mut((1, 1)), "tok");
-            1
-        } else {
-            0
-        };
-        // Output all spans
-        let name_to_column = self.get_span_columns(g, &token_helper, column_offset)?;
-        self.create_span_columns(
+        let token_roots_by_sheet = find_token_roots(
             g,
-            &name_to_column,
-            token_to_row,
+            doc_name,
+            &self.document_key,
+            &self.sheet_key,
             &token_helper,
-            worksheet,
-            progress,
+            ordering_gs,
         )?;
+
+        for (sheet_name, token_roots) in token_roots_by_sheet {
+            let worksheet = workbook
+                .new_sheet(sheet_name.unwrap_or("Sheet1".to_string()))
+                .map_err(|s| anyhow!(s))?;
+            let (token_to_row, has_only_empty_token) =
+                self.create_token_colum(g, &token_roots, doc_node_id, worksheet)?;
+
+            let column_offset = if !has_only_empty_token {
+                set_cell_value(worksheet.get_cell_mut((1, 1)), "tok");
+                1
+            } else {
+                0
+            };
+            // Output all spans
+            let name_to_column = self.get_span_columns(g, &token_helper, column_offset)?;
+            self.create_span_columns(
+                g,
+                &name_to_column,
+                token_to_row,
+                &token_helper,
+                worksheet,
+                progress,
+            )?;
+        }
 
         // Add meta data sheet
         let meta_annos = g.get_node_annos().get_annotations_for_item(&doc_node_id)?;
-        if !meta_annos.is_empty() && self.update_datasheet.is_none() {
+        if !meta_annos.is_empty() {
             let meta_sheet = workbook.new_sheet("meta").map_err(|s| anyhow!(s))?;
             set_cell_value(meta_sheet.get_cell_mut((1, 1)), "Name");
             set_cell_value(meta_sheet.get_cell_mut((2, 1)), "Value");
@@ -452,8 +498,12 @@ impl Exporter for ExportXlsx {
     ) -> Result<(), Box<dyn std::error::Error>> {
         // Find all documents in the graph
         let doc_annos = graph.get_node_annos().exact_anno_search(
-            Some(ANNIS_NS),
-            "doc",
+            if self.document_key.ns.is_empty() {
+                None
+            } else {
+                Some(&self.document_key.ns)
+            },
+            &self.document_key.name,
             graphannis_core::annostorage::ValueSearch::Any,
         );
 
@@ -492,7 +542,7 @@ impl Exporter for ExportXlsx {
 #[cfg(test)]
 mod tests {
     use std::{
-        fs::{self, File},
+        fs::File,
         path::{Path, PathBuf},
     };
 
@@ -503,7 +553,7 @@ mod tests {
 
     use crate::{
         ExporterStep, ImporterStep, ReadFrom, WriteAs,
-        importer::{GenericImportConfiguration, Importer, xlsx::ImportSpreadsheet},
+        importer::{Importer, xlsx::ImportSpreadsheet},
         test_util::compare_graphs,
         util::example_generator,
     };
@@ -537,7 +587,11 @@ mod tests {
             ],
             include_namespace: true,
             skip_unchanged_files: false,
-            update_datasheet: None,
+            document_key: default_doc_anno(),
+            sheet_key: Some(AnnoKey {
+                ns: "xlsx".into(),
+                name: "sheet".into(),
+            }),
         };
         let serialization = toml::to_string(&module);
         assert!(
@@ -996,42 +1050,44 @@ mod tests {
     }
 
     #[test]
-    fn manipulate_sheet_in_existing_book() {
-        let test_path = Path::new("./tests/data/export/xlsx/existing/existing.xlsx");
-        let importer: ImportSpreadsheet = toml::from_str(
+    fn with_sheets() {
+        let import_path = Path::new("tests/data/import/xlsx/multisheet/");
+        let import: ImportSpreadsheet = toml::from_str(
             r#"
-        column_map = { "tok" = ["sentence"] }
-        datasheet = 1
+        data = ["data", "appendix"]
+        metadata = "meta"
+
+        [column_map]
+        dipl = ["sentence", "seg"]
+        norm = ["pos", "lemma"]
         "#,
         )
         .unwrap();
-        let exporter: ExportXlsx = toml::from_str(
-            r#"
-        update_datasheet = 1
-        "#,
-        )
-        .unwrap();
-        let mut graph = AnnotationGraph::with_default_graphstorages(true).unwrap();
-        let mut update = importer
-            .import_corpus(
-                test_path.parent().unwrap(),
-                crate::StepID {
-                    module_name: "test_import".to_string(),
-                    path: None,
-                },
-                GenericImportConfiguration::new_with_default_extensions(&importer),
-                None,
-            )
-            .unwrap();
+        let mut graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        let u = import.import_corpus(
+            import_path,
+            crate::StepID {
+                module_name: "test_import".to_string(),
+                path: None,
+            },
+            import.default_configuration(),
+            None,
+        );
+        assert!(u.is_ok());
+        let mut update = u.unwrap();
         assert!(graph.apply_update(&mut update, |_| {}).is_ok());
-        let test_dir = tempdir().unwrap();
-        let test_target = &test_dir.path().join("existing.xlsx");
-        assert!(fs::copy(&test_path, &test_target).is_ok());
+        let export: ExportXlsx = toml::from_str(
+            r#"
+        sheet_key = "xlsx::sheet"
+        "#,
+        )
+        .unwrap();
+        let actual_dir = tempdir().unwrap();
         assert!(
-            exporter
+            export
                 .export_corpus(
                     &graph,
-                    test_dir.path(),
+                    actual_dir.path(),
                     crate::StepID {
                         module_name: "test_export".to_string(),
                         path: None
@@ -1040,28 +1096,15 @@ mod tests {
                 )
                 .is_ok()
         );
-        let wb = umya_spreadsheet::reader::xlsx::read(test_target);
-        assert!(wb.is_ok());
-        let book = wb.unwrap();
-        let sheet = book.get_sheet(&0).unwrap();
-        let merge_cells = sheet.get_merge_cells();
-        assert_eq!(1, merge_cells.len());
-        let merge_cell = merge_cells.get(0);
-        assert!(merge_cell.is_some());
-        let merge_cell = merge_cell.unwrap();
-        assert_eq!("C4:E7", &merge_cell.get_range());
-        let c = merge_cell.get_coordinate_start_col().unwrap().get_num();
-        let r = merge_cell.get_coordinate_start_row().unwrap().get_num();
-        let cell = &sheet.get_cell((c, r)).unwrap();
-        assert_eq!("EXACTLY", cell.get_formatted_value());
-        let bg = cell.get_style().get_background_color().unwrap();
-        let fnt = cell.get_style().get_font().unwrap();
-        assert_snapshot!(format!(
-            "{}\n{}\n{}",
-            bg.get_argb(),
-            fnt.get_color().get_argb(),
-            fnt.get_bold()
-        ));
+        assert!(
+            sheets_diff::core::diff::Diff::new(
+                "tests/data/export/xlsx/multisheet/target/test_file.xlsx",
+                &actual_dir.path().join("test_file.xlsx").to_string_lossy()
+            )
+            .diff()
+            .cell_diffs
+            .is_empty()
+        );
     }
 
     #[test]
