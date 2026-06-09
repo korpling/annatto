@@ -586,40 +586,41 @@ impl WorkbookMapper<'_> {
                 }
             }
             Sheets::Multi(items) => {
-                for item in items.iter().map(|a| sheet_from_address(&book, &a)) {
-                    if let Some(sheet) = item {
-                        let sheet_name = format!("{}/{}", self.doc_node_name, sheet.get_name());
-                        update.add_event(UpdateEvent::AddNode {
-                            node_name: sheet_name.to_string(),
-                            node_type: "corpus".to_string(),
-                        })?;
-                        update.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: sheet_name.to_string(),
-                            anno_ns: "xlsx".to_string(),
-                            anno_name: "sheet".to_string(),
-                            anno_value: sheet.get_name().to_string(),
-                        })?;
-                        update.add_event(UpdateEvent::AddEdge {
-                            source_node: sheet_name.to_string(),
-                            target_node: self.doc_node_name.to_string(),
-                            layer: ANNIS_NS.to_string(),
-                            component_type: AnnotationComponentType::PartOf.to_string(),
-                            component_name: "".to_string(),
-                        })?;
-                        DatasheetMapper::new(
-                            sheet,
-                            self.column_map,
-                            &reverse_col_map,
-                            self.fallback.clone(),
-                            self.token_annos,
-                            evaluate_formulas,
-                        )?
-                        .import_datasheet(
-                            &sheet_name,
-                            update,
-                            self.progress,
-                        )?;
-                    }
+                for sheet in items.iter().filter_map(|a| {
+                    sheet_from_address(&book, a).or_else(|| {
+                        self.progress
+                            .warn(format!("Sheet {a} not found in {}", self.doc_node_name))
+                            .unwrap_or_default();
+                        None
+                    })
+                }) {
+                    let sheet_name = format!("{}/{}", self.doc_node_name, sheet.get_name());
+                    update.add_event(UpdateEvent::AddNode {
+                        node_name: sheet_name.to_string(),
+                        node_type: "corpus".to_string(),
+                    })?;
+                    update.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: sheet_name.to_string(),
+                        anno_ns: "xlsx".to_string(),
+                        anno_name: "sheet".to_string(),
+                        anno_value: sheet.get_name().to_string(),
+                    })?;
+                    update.add_event(UpdateEvent::AddEdge {
+                        source_node: sheet_name.to_string(),
+                        target_node: self.doc_node_name.to_string(),
+                        layer: ANNIS_NS.to_string(),
+                        component_type: AnnotationComponentType::PartOf.to_string(),
+                        component_name: "".to_string(),
+                    })?;
+                    DatasheetMapper::new(
+                        sheet,
+                        self.column_map,
+                        &reverse_col_map,
+                        self.fallback.clone(),
+                        self.token_annos,
+                        evaluate_formulas,
+                    )?
+                    .import_datasheet(&sheet_name, update, self.progress)?;
                 }
             }
         }

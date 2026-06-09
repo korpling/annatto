@@ -121,11 +121,7 @@ fn find_token_roots(
         {
             if m.len() == 2 {
                 // default mode without sheet nodes
-                roots
-                    .get_mut(&None)
-                    .get_or_insert(&mut HashSet::new())
-                    .insert(n.node);
-                roots.entry(None).or_insert(HashSet::new()).insert(n.node);
+                roots.entry(None).or_default().insert(n.node);
             } else if m.len() == 3 {
                 let sheet_node_match = m.get(1).ok_or(anyhow!(
                     "Unexpected: No second node in match group providing a sheet name."
@@ -136,7 +132,7 @@ fn find_token_roots(
                     .ok_or(anyhow!("Sheet name could not be retrieved from graph."))?;
                 roots
                     .entry(Some(sheet_name.to_string()))
-                    .or_insert(HashSet::new())
+                    .or_default()
                     .insert(n.node);
             }
         }
