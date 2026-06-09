@@ -32,9 +32,16 @@ version control systems because the binary files will be different. When
 this configuration value is set, the existing file will read and
 compared to the file that will be generated before overwriting it.
 
-###  update_datasheet
+###  document_key
 
 Set this to a sheet index or name to only update the data (not metadata)
 in an existing workbook and not write a completely new file. If no target
 file exists, a new workbook is created.
+
+###  sheet_key
+
+The lowest corpus nodes can be interpreted as providing sheet instead of file data.
+This requires the sheet nodes to point to nodes in the PartOf component, that hold
+the document key (directly or indirectly). If no document key node is found, the export
+will fail.
 
