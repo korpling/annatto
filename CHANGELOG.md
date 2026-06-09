@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - import `xlsx`: Sheets can be imported as subdocuments
 - export `xlsx`: data can be exported into different sheets of xlsx files
+- graph op `move`: move annotations from edges to nodes and vice versa
 
 ### Changed
 

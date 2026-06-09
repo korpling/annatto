@@ -10,6 +10,7 @@ pub mod enumerate;
 pub mod filter;
 pub mod link;
 pub mod map;
+pub mod mv;
 pub mod no_op;
 pub mod re;
 pub mod sleep;
