@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.54.0] - 2026-06-09
+
 ### Added
 
 - import `xlsx`: Sheets can be imported as subdocuments
