@@ -5,3 +5,4 @@ expression: serialization.unwrap()
 include_namespace = false
 annotation_order = []
 skip_unchanged_files = false
+document_key = "annis::doc"

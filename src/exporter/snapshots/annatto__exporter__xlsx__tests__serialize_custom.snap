@@ -5,3 +5,8 @@ expression: serialization.unwrap()
 include_namespace = true
 annotation_order = ["text::text", "edition::edition"]
 skip_unchanged_files = false
+document_key = "annis::doc"
+
+[sheet_key]
+name = "sheet"
+ns = "xlsx"
