@@ -89,7 +89,7 @@ pub enum AnnattoError {
     #[error("Error in query:\n`{query}`\n{error}")]
     InvalidQuery {
         query: String,
-        error: GraphAnnisError,
+        error: String,
     },
 }
 

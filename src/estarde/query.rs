@@ -24,14 +24,14 @@ pub(crate) fn check_deserialized_query(query: &str) -> Result<(), AnnattoError> 
     // checks syntax
     let dj = aql::parse(query, false).map_err(|error| AnnattoError::InvalidQuery {
         query: query.to_string(),
-        error,
+        error: error.to_string(),
     })?;
     // checks semantics
     if let Ok(graph) = &*empty_graph {
         aql::execute_query_on_graph(graph, &dj, true, None)
             .map_err(|error| AnnattoError::InvalidQuery {
                 query: query.to_string(),
-                error,
+                error: error.to_string(),
             })?
             .next();
     }
