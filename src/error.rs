@@ -86,9 +86,9 @@ pub enum AnnattoError {
     FacetVariantError(#[from] facet_reflect::VariantError),
     #[error(transparent)]
     Anyhow(#[from] anyhow::Error),
-    #[error("Error in query{}:\n{error}", if let Some(i) = index { format!(" {i}") } else { "".to_string() })]
+    #[error("Error in query:\n`{query}`\n{error}")]
     InvalidQuery {
-        index: Option<u16>,
+        query: String,
         error: GraphAnnisError,
     },
 }
@@ -122,11 +122,5 @@ impl From<glob::GlobError> for AnnattoError {
 impl From<glob::PatternError> for AnnattoError {
     fn from(value: glob::PatternError) -> Self {
         AnnattoError::GlobError(value.msg.to_string())
-    }
-}
-
-impl AnnattoError {
-    pub(crate) fn invalid_query(error: GraphAnnisError) -> AnnattoError {
-        AnnattoError::InvalidQuery { index: None, error }
     }
 }
