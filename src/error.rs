@@ -87,10 +87,7 @@ pub enum AnnattoError {
     #[error(transparent)]
     Anyhow(#[from] anyhow::Error),
     #[error("Error in query:\n`{query}`\n{error}")]
-    InvalidQuery {
-        query: String,
-        error: String,
-    },
+    InvalidQuery { query: String, error: String },
 }
 
 impl<T> From<std::sync::PoisonError<T>> for AnnattoError {
