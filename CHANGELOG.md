@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - import `xlsx`: A detailled error message provides sheet name and file path, when a potentially empty sheet makes processing impossible.
 
+### Changed
+
+- import `xlsx`: When a sheet is not found, only a warning is raised. This is more desirable for batch processing.
+
 ## [0.54.0] - 2026-06-09
 
 ### Added
