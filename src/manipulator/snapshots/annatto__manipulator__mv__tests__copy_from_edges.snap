@@ -1,0 +1,56 @@
+---
+source: src/manipulator/mv.rs
+expression: "export_to_string(&graph, graphml_export).unwrap()"
+---
+---- corpus.graphml:
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>
+    <key id="k1" for="node" attr.name="default_ns::lemma" attr.type="string"/>
+    <key id="k2" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k3" for="node" attr.name="default_ns::ref_type" attr.type="string"/>
+    <key id="k4" for="node" attr.name="annis::tok" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <data key="k0"><![CDATA[
+# configure visualizations here
+]]></data>
+        <node id="corpus">
+            <data key="k2">corpus</data>
+        </node>
+        <node id="corpus#t1">
+            <data key="k1">this</data>
+            <data key="k2">node</data>
+            <data key="k4">This</data>
+        </node>
+        <node id="corpus#t2">
+            <data key="k1">be</data>
+            <data key="k2">node</data>
+            <data key="k4">is</data>
+        </node>
+        <node id="corpus#t3">
+            <data key="k1">the</data>
+            <data key="k2">node</data>
+            <data key="k4">the</data>
+        </node>
+        <node id="corpus#t4">
+            <data key="k1">test</data>
+            <data key="k2">node</data>
+            <data key="k3">anaphoric,coref</data>
+            <data key="k4">test</data>
+        </node>
+        <edge id="e0" source="corpus#t1" target="corpus#t4" label="Pointing//ref">
+            <data key="k3">anaphoric</data>
+        </edge>
+        <edge id="e1" source="corpus#t3" target="corpus#t4" label="Pointing//ref">
+            <data key="k3">coref</data>
+        </edge>
+        <edge id="e2" source="corpus#t1" target="corpus" label="PartOf/annis/">
+        </edge>
+        <edge id="e3" source="corpus#t2" target="corpus" label="PartOf/annis/">
+        </edge>
+        <edge id="e4" source="corpus#t3" target="corpus" label="PartOf/annis/">
+        </edge>
+        <edge id="e5" source="corpus#t4" target="corpus" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>

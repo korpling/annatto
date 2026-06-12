@@ -38,36 +38,53 @@ The annotation key of the annotation to be moved.
 ###  direction
 
 The direction of move. Potential values are "source",
-"target", "in", and "out".
+"target", "in", and "out". `source` and `target` imply
+that annotations are retrieved from edges of the given
+`component` and applied to the source or target node,
+respectively. In this use case, you can specify what
+should happen when multiple annotations are to be
+applied to the same node via attribute `multi`.
+There are currently three multi-value modes:
+
+- `naive` (default): Each new annotation overwrites the last
+one applied. This can be safely used when you either do not
+care or know that no node is the target or source of more
+than one edge.
+- `index`: The namespace of the annotations will be replaced
+with an index (starting at 0). The maximum index for a node
+indicates how many annotations were applied to it. Searching
+the annotations without a namespace later will safely return
+values.
+- `delim`: By providing `multi = { delim = "," }` all values will
+be concatenated using the delimiter (a comma in this example).
+
+Directions `in` and `out` search for annotations on nodes and apply
+them to in/out-going edges of the given component.
+
+Examples:
+
+Move all dependency relation annotations from the edges to their
+unique target nodes (therefore `multi` can be omitted and defaults
+to `naive`):
+```toml
+[graph_op.config]
+component = { ctype = "Pointing", layer = "", name = "dep" }
+anno = "deprel"
+direction = "target"
+```
+
+Move all "ref_type"-annotations from coreference
+edges onto targets and delimit multiple values by "|":
+```toml
+[graph_op.config]
+component = { ctype = "Pointing", layer = "", name = "coref" }
+anno = "ref_type"
+direction = "target"
+multi = { delim = "|" }
+```
 
 ###  copy
 
 Setting this to `true` keeps the original annotation.
 Default is `false`.
-
-###  multi
-
-In case that a node (only for directions `source` and `target`)
-receives multiple annotations, this case needs to be dealt with.
-Mode "naive" (default) ignores and potentially overwrites annotations
-created earlier in the process. Providing a delimiter joins all applicable
-values:
-```toml
-[graph_op.config]
-multi = { delimiter = "," }
-```
-
-Instead of joining nodes, they can also be distributed across multiple
-annotations on the same node. In this case, the namespace will be
-used as an index. You thus lose control over the maximal index used,
-but you can still retrieve annotations with the bare annotation
-name (e. g. for deletion down the line):
-```toml
-[graph_op.config]
-multi = "index"
-```
-Note that index mode leads to loss of the namespace for all annotations,
-i. e., nodes, that only carry one value, will still have namespace "0"
-for their annotation.
-
 
