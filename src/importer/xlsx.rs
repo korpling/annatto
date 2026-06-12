@@ -1,7 +1,7 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
     fmt::Display,
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use anyhow::{anyhow, bail};
@@ -152,38 +152,8 @@ fn sheet_from_address<'a>(
     }
 }
 
-/// We implement our own max row function as sheet.get_highest_row() is unreliable
-/// and usually outputs a too low number
-fn max_row(sheet: &umya_spreadsheet::Worksheet) -> Result<u32, anyhow::Error> {
-    sheet
-        .get_row_dimensions()
-        .iter()
-        .map(|r| *r.get_row_num())
-        .max()
-        .ok_or(anyhow!("Could not determine highest row number."))
-}
-
-/// As highest column is computed the same way as highest row by umya_spreadsheet,
-/// we play it safe by using our own function to compute the highest column and
-/// only do it for the first row, as this is the header
-fn max_column(sheet: &umya_spreadsheet::Worksheet) -> Result<u32, anyhow::Error> {
-    sheet
-        .get_cell_collection()
-        .iter()
-        .map(|c| c.get_coordinate())
-        .filter_map(|xy| {
-            if *xy.get_row_num() == 1 {
-                Some(*xy.get_col_num())
-            } else {
-                None
-            }
-        })
-        .max()
-        .ok_or(anyhow!("Could not determine highest column number."))
-}
-
 struct MetasheetMapper<'a> {
-    sheet: &'a umya_spreadsheet::Worksheet,
+    sheet_ref: SheetRef<'a>,
     skip_rows: usize,
     max_row: u32,
     evaluate_formulas: bool,
@@ -191,14 +161,15 @@ struct MetasheetMapper<'a> {
 
 impl<'a> MetasheetMapper<'a> {
     fn new(
-        sheet: &'a umya_spreadsheet::Worksheet,
+        sheet_ref: SheetRef<'a>,
         skip_rows: usize,
         evaluate_formulas: bool,
     ) -> Result<MetasheetMapper<'a>, anyhow::Error> {
+        let max_row = sheet_ref.max_row()?;
         Ok(MetasheetMapper {
-            sheet,
+            sheet_ref,
             skip_rows,
-            max_row: max_row(sheet)?,
+            max_row,
             evaluate_formulas,
         })
     }
@@ -210,7 +181,10 @@ impl<'a> MetasheetMapper<'a> {
     ) -> Result<(), AnnattoError> {
         let max_row_num = self.max_row as usize; // 1-based
         for row_num in (self.skip_rows + 1)..max_row_num + 1 {
-            let entries = self.sheet.get_collection_by_row(&(row_num as u32)); // sorting not necessarily by col number
+            let entries = self
+                .sheet_ref
+                .sheet
+                .get_collection_by_row(&(row_num as u32)); // sorting not necessarily by col number
             let entry_map = entries
                 .into_iter()
                 .map(|c| (*c.get_coordinate().get_col_num(), c))
@@ -242,7 +216,7 @@ impl<'a> MetasheetMapper<'a> {
 }
 
 struct DatasheetMapper<'a> {
-    sheet: &'a umya_spreadsheet::Worksheet,
+    sheet_ref: SheetRef<'a>,
     max_row: u32,
     max_col: u32,
     column_map: &'a BTreeMap<String, BTreeSet<String>>,
@@ -254,17 +228,19 @@ struct DatasheetMapper<'a> {
 
 impl<'a> DatasheetMapper<'a> {
     fn new(
-        sheet: &'a umya_spreadsheet::Worksheet,
+        sheet_ref: SheetRef<'a>,
         column_map: &'a BTreeMap<String, BTreeSet<String>>,
         reverse_col_map: &'a BTreeMap<String, String>,
         fallback: Option<String>,
         token_annos: &'a [String],
         evaluate_formulas: bool,
     ) -> Result<DatasheetMapper<'a>, anyhow::Error> {
+        let max_row = sheet_ref.max_row()?;
+        let max_col = sheet_ref.max_column()?;
         Ok(DatasheetMapper {
-            sheet,
-            max_row: max_row(sheet)?,
-            max_col: max_column(sheet)?,
+            sheet_ref,
+            max_row,
+            max_col,
             column_map,
             reverse_col_map,
             fallback,
@@ -311,7 +287,7 @@ impl<'a> DatasheetMapper<'a> {
         progress: &ProgressReporter,
     ) -> Result<(), anyhow::Error> {
         let merge_members: BTreeSet<u32> = merged_cells.iter().flat_map(|(s, e)| *s..=*e).collect();
-        let col_name_opt = self.sheet.get_cell((col_num, 1));
+        let col_name_opt = self.sheet_ref.sheet.get_cell((col_num, 1));
         let col_name = if let Some(name) = col_name_opt {
             name.get_raw_value().to_string()
         } else {
@@ -362,6 +338,7 @@ impl<'a> DatasheetMapper<'a> {
                 &base_tokens[start..start + 1]
             };
             let cell_value = if let Some(cell) = self
+                .sheet_ref
                 .sheet
                 .get_cell((col_num, row_num))
                 .filter(|c| !c.get_raw_value().is_empty())
@@ -508,7 +485,7 @@ impl<'a> DatasheetMapper<'a> {
         progress: &ProgressReporter,
     ) -> Result<BTreeMap<u32, Vec<(u32, u32)>>, anyhow::Error> {
         let mut cell_map: BTreeMap<u32, Vec<(u32, u32)>> = BTreeMap::default();
-        for rng in self.sheet.get_merge_cells() {
+        for rng in self.sheet_ref.sheet.get_merge_cells() {
             if let Some(start_col) = rng.get_coordinate_start_col()
                 && let Some(end_col) = rng.get_coordinate_end_col()
                 && let Some(start_row) = rng.get_coordinate_start_row()
@@ -516,7 +493,7 @@ impl<'a> DatasheetMapper<'a> {
             {
                 if start_col != end_col {
                     if (*start_col.get_num()..=*end_col.get_num()).any(|c| {
-                        if let Some(cell) = self.sheet.get_cell((c, 1)) {
+                        if let Some(cell) = self.sheet_ref.sheet.get_cell((c, 1)) {
                             col_names.contains(&cell.get_raw_value().to_string().trim())
                         } else {
                             false
@@ -559,6 +536,55 @@ struct WorkbookMapper<'a> {
     doc_node_name: String,
 }
 
+struct SheetRef<'a> {
+    sheet: &'a umya_spreadsheet::Worksheet,
+    path: &'a Path,
+}
+
+impl<'a> SheetRef<'a> {
+    fn new(sheet: &'a umya_spreadsheet::Worksheet, path: &'a Path) -> Self {
+        SheetRef { sheet, path }
+    }
+
+    /// We implement our own max row function as sheet.get_highest_row() is unreliable
+    /// and usually outputs a too low number
+    fn max_row(&'a self) -> Result<u32, anyhow::Error> {
+        self.sheet
+            .get_row_dimensions()
+            .iter()
+            .map(|r| *r.get_row_num())
+            .max()
+            .ok_or(anyhow!(
+                "Could not determine highest row number in sheet {} from workbook {}. This could mean the sheet is empty.",
+                self.sheet.get_name(),
+                self.path.to_string_lossy()
+            ))
+    }
+
+    /// As highest column is computed the same way as highest row by umya_spreadsheet,
+    /// we play it safe by using our own function to compute the highest column and
+    /// only do it for the first row, as this is the header
+    fn max_column(&'a self) -> Result<u32, anyhow::Error> {
+        self.sheet
+            .get_cell_collection()
+            .iter()
+            .map(|c| c.get_coordinate())
+            .filter_map(|xy| {
+                if *xy.get_row_num() == 1 {
+                    Some(*xy.get_col_num())
+                } else {
+                    None
+                }
+            })
+            .max()
+            .ok_or(anyhow!(
+                "Could not determine highest column number in sheet {} from workbook {}. This could mean the sheet is empty.",
+                self.sheet.get_name(),
+                self.path.to_string_lossy()
+            ))
+    }
+}
+
 impl WorkbookMapper<'_> {
     fn import_workbook(
         self,
@@ -574,8 +600,9 @@ impl WorkbookMapper<'_> {
         match &self.datasheets {
             Sheets::Single(sheet_address) => {
                 if let Some(sheet) = sheet_from_address(&book, sheet_address) {
+                    let sheet_ref = SheetRef::new(sheet, &self.path);
                     let mapper = DatasheetMapper::new(
-                        sheet,
+                        sheet_ref,
                         self.column_map,
                         &reverse_col_map,
                         self.fallback.clone(),
@@ -613,7 +640,7 @@ impl WorkbookMapper<'_> {
                         component_name: "".to_string(),
                     })?;
                     DatasheetMapper::new(
-                        sheet,
+                        SheetRef::new(sheet, &self.path),
                         self.column_map,
                         &reverse_col_map,
                         self.fallback.clone(),
@@ -630,7 +657,11 @@ impl WorkbookMapper<'_> {
                 &self.doc_node_name
             ))?
         {
-            let mapper = MetasheetMapper::new(sheet, self.metasheet_skip_rows, evaluate_formulas)?;
+            let mapper = MetasheetMapper::new(
+                SheetRef::new(sheet, &self.path),
+                self.metasheet_skip_rows,
+                evaluate_formulas,
+            )?;
             mapper.import_as_metadata(&self.doc_node_name, update)?;
         }
         self.progress.worked(1)?;
@@ -1394,5 +1425,37 @@ norm = ["pos", "lemma"]
         assert!(graph.apply_update(&mut update, |_| {}).is_ok());
         let export: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
         assert_snapshot!(export_to_string(&graph, export).unwrap());
+    }
+
+    #[test]
+    fn empty_sheet() {
+        let import: ImportSpreadsheet = toml::from_str(
+            r#"
+        data = "Sheet1"
+        fallback = "whatever"
+        "#,
+        )
+        .unwrap();
+        let u = import.import_corpus(
+            Path::new("tests/data/import/xlsx/empty/"),
+            StepID {
+                module_name: "test_import_multisheet".to_string(),
+                path: None,
+            },
+            import.default_configuration(),
+            None,
+        );
+        assert!(u.is_err());
+        assert_snapshot!(u.err().unwrap().to_string());
+    }
+
+    #[test]
+    fn empty_sheet_column_err() {
+        let wb_path = Path::new("tests/data/import/xlsx/empty/empty_file.xlsx");
+        let wb = umya_spreadsheet::reader::xlsx::read(wb_path).unwrap();
+        let sheet = wb.get_sheet(&0).unwrap();
+        let r = SheetRef::new(sheet, wb_path).max_column();
+        assert!(r.is_err());
+        assert_snapshot!(r.err().unwrap().to_string());
     }
 }
