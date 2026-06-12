@@ -57,36 +57,56 @@ pub struct MoveAnnos {
     #[serde(with = "crate::estarde::anno_key")]
     anno: AnnoKey,
     /// The direction of move. Potential values are "source",
-    /// "target", "in", and "out".
+    /// "target", "in", and "out". `source` and `target` imply
+    /// that annotations are retrieved from edges of the given
+    /// `component` and applied to the source or target node,
+    /// respectively. In this use case, you can specify what
+    /// should happen when multiple annotations are to be
+    /// applied to the same node via attribute `multi`.
+    /// There are currently three multi-value modes:
+    ///
+    /// - `naive` (default): Each new annotation overwrites the last
+    ///   one applied. This can be safely used when you either do not
+    ///   care or know that no node is the target or source of more
+    ///   than one edge.
+    /// - `index`: The namespace of the annotations will be replaced
+    ///   with an index (starting at 0). The maximum index for a node
+    ///   indicates how many annotations were applied to it. Searching
+    ///   the annotations without a namespace later will safely return
+    ///   values.
+    /// - `delim`: By providing `multi = { delim = "," }` all values will
+    ///   be concatenated using the delimiter (a comma in this example).
+    ///
+    /// Directions `in` and `out` search for annotations on nodes and apply
+    /// them to in/out-going edges of the given component.
+    ///
+    /// Examples:
+    ///
+    /// Move all dependency relation annotations from the edges to their
+    /// unique target nodes (therefore `multi` can be omitted and defaults
+    /// to `naive`):
+    /// ```toml
+    /// [graph_op.config]
+    /// component = { ctype = "Pointing", layer = "", name = "dep" }
+    /// anno = "deprel"
+    /// direction = "target"
+    /// ```
+    ///
+    /// Move all "ref_type"-annotations from coreference
+    /// edges onto targets and delimit multiple values by "|":
+    /// ```toml
+    /// [graph_op.config]
+    /// component = { ctype = "Pointing", layer = "", name = "coref" }
+    /// anno = "ref_type"
+    /// direction = "target"
+    /// multi = { delim = "|" }
+    /// ```
     #[serde(flatten)]
-    dir: MoveDirection,
+    direction: MoveDirection,
     /// Setting this to `true` keeps the original annotation.
     /// Default is `false`.
     #[serde(default)]
     copy: bool,
-    /*  In case that a node (only for directions `source` and `target`)
-    / receives multiple annotations, this case needs to be dealt with.
-    / Mode "naive" (default) ignores and potentially overwrites annotations
-    / created earlier in the process. Providing a delimiter joins all applicable
-    / values:
-    / ```toml
-    / [graph_op.config]
-    / multi = { delimiter = "," }
-    / ```
-    /
-    / Instead of joining nodes, they can also be distributed across multiple
-    / annotations on the same node. In this case, the namespace will be
-    / used as an index. You thus lose control over the maximal index used,
-    / but you can still retrieve annotations with the bare annotation
-    / name (e. g. for deletion down the line):
-    / ```toml
-    / [graph_op.config]
-    / multi = "index"
-    / ```
-    / Note that index mode leads to loss of the namespace for all annotations,
-    / i. e., nodes, that only carry one value, will still have namespace "0"
-    / for their annotation.
-    */
 }
 
 #[derive(Clone, Deserialize, Facet, PartialEq, Serialize)]
@@ -145,7 +165,7 @@ impl Manipulator for MoveAnnos {
             {
                 let source_name = node_name(graph, source)?;
                 let target_name = node_name(graph, target)?;
-                match &self.dir {
+                match &self.direction {
                     MoveDirection::Source { .. } | MoveDirection::Target { .. } => {
                         if let Some(anno_value) = gs
                             .get_anno_storage()
@@ -162,11 +182,12 @@ impl Manipulator for MoveAnnos {
                                     anno_name: self.anno.name.to_string(),
                                 })?;
                             }
-                            let insert_node = if matches!(&self.dir, MoveDirection::Source { .. }) {
-                                source
-                            } else {
-                                target
-                            };
+                            let insert_node =
+                                if matches!(&self.direction, MoveDirection::Source { .. }) {
+                                    source
+                                } else {
+                                    target
+                                };
                             // for this case we need to collect for later concatenation / listing
                             node_values
                                 .entry(insert_node)
@@ -175,41 +196,39 @@ impl Manipulator for MoveAnnos {
                         }
                     }
                     MoveDirection::In | MoveDirection::Out => {
-                        if !self.copy {
-                            let node_of_interest = if matches!(&self.dir, MoveDirection::In) {
-                                target
-                            } else {
-                                source
-                            };
-                            if let Some(anno_value) = graph
-                                .get_node_annos()
-                                .get_value_for_item(&node_of_interest, &self.anno)?
-                            {
-                                if !self.copy {
-                                    update.add_event(UpdateEvent::DeleteNodeLabel {
-                                        node_name: node_name(graph, node_of_interest)?.to_string(),
-                                        anno_ns: self.anno.ns.to_string(),
-                                        anno_name: self.anno.name.to_string(),
-                                    })?;
-                                }
-                                update.add_event(UpdateEvent::AddEdgeLabel {
-                                    source_node: source_name.to_string(),
-                                    target_node: target_name.to_string(),
-                                    layer: self.component.layer.to_string(),
-                                    component_type: self.component.get_type().to_string(),
-                                    component_name: self.component.name.to_string(),
+                        let node_of_interest = if matches!(&self.direction, MoveDirection::In) {
+                            target
+                        } else {
+                            source
+                        };
+                        if let Some(anno_value) = graph
+                            .get_node_annos()
+                            .get_value_for_item(&node_of_interest, &self.anno)?
+                        {
+                            if !self.copy {
+                                update.add_event(UpdateEvent::DeleteNodeLabel {
+                                    node_name: node_name(graph, node_of_interest)?.to_string(),
                                     anno_ns: self.anno.ns.to_string(),
                                     anno_name: self.anno.name.to_string(),
-                                    anno_value: anno_value.to_string(),
                                 })?;
                             }
+                            update.add_event(UpdateEvent::AddEdgeLabel {
+                                source_node: source_name.to_string(),
+                                target_node: target_name.to_string(),
+                                layer: self.component.layer.to_string(),
+                                component_type: self.component.get_type().to_string(),
+                                component_name: self.component.name.to_string(),
+                                anno_ns: self.anno.ns.to_string(),
+                                anno_name: self.anno.name.to_string(),
+                                anno_value: anno_value.to_string(),
+                            })?;
                         }
                     }
                 };
                 progress.worked(1)?;
             }
         }
-        if let MoveDirection::Source { multi } | MoveDirection::Target { multi } = &self.dir {
+        if let MoveDirection::Source { multi } | MoveDirection::Target { multi } = &self.direction {
             for (node, values) in node_values {
                 let node_name = node_name(graph, node)?;
                 match multi {
@@ -291,7 +310,7 @@ mod tests {
                 name: "deprel".to_string(),
             },
             copy: true,
-            dir: MoveDirection::Target {
+            direction: MoveDirection::Target {
                 multi: MultiValueMode::Index,
             },
         };
@@ -612,6 +631,73 @@ mod tests {
         anno = "default_ns::lemma"
         direction = "out"
         multi = { delimiter = "," }
+        "#,
+        );
+        assert!(m.is_ok(), "Err deserializing: {:?}", m.err().unwrap());
+        let module = m.unwrap();
+        let exec = module.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_manipulation".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(
+            exec.is_ok(),
+            "Err executing move: {:?}",
+            exec.err().unwrap()
+        );
+        let graphml_export: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        assert_snapshot!(export_to_string(&graph, graphml_export).unwrap());
+    }
+
+    #[test]
+    fn copy_from_edges() {
+        let g = test_graph();
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let m: Result<MoveAnnos, _> = toml::from_str(
+            r#"
+        component = { ctype = "Pointing", layer = "", name = "ref" }
+        anno = "default_ns::ref_type"
+        direction = "target"
+        multi = { delimiter = "," }
+        copy = true
+        "#,
+        );
+        assert!(m.is_ok(), "Err deserializing: {:?}", m.err().unwrap());
+        let module = m.unwrap();
+        let exec = module.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_manipulation".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(
+            exec.is_ok(),
+            "Err executing move: {:?}",
+            exec.err().unwrap()
+        );
+        let graphml_export: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        assert_snapshot!(export_to_string(&graph, graphml_export).unwrap());
+    }
+
+    #[test]
+    fn copy_to_edges() {
+        let g = test_graph();
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let m: Result<MoveAnnos, _> = toml::from_str(
+            r#"
+        component = { ctype = "Pointing", layer = "", name = "ref" }
+        anno = "default_ns::lemma"
+        direction = "out"
+        copy = true
         "#,
         );
         assert!(m.is_ok(), "Err deserializing: {:?}", m.err().unwrap());
