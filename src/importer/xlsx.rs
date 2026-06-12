@@ -610,6 +610,11 @@ impl WorkbookMapper<'_> {
                         evaluate_formulas,
                     )?;
                     mapper.import_datasheet(&self.doc_node_name, update, self.progress)?;
+                } else {
+                    self.progress.warn(format!(
+                        "Sheet {sheet_address} not found in {}",
+                        self.doc_node_name
+                    ))?;
                 }
             }
             Sheets::Multi(items) => {
@@ -652,10 +657,15 @@ impl WorkbookMapper<'_> {
             }
         }
         if let Some(address) = &self.metasheet
-            && let sheet = sheet_from_address(&book, address).ok_or(anyhow!(
-                "Could not retrieve meta sheet in {}",
-                &self.doc_node_name
-            ))?
+            && let Some(sheet) = sheet_from_address(&book, address).or_else(|| {
+                self.progress
+                    .warn(format!(
+                        "Sheet {address} not found in {}",
+                        self.doc_node_name
+                    ))
+                    .unwrap_or_default();
+                None
+            })
         {
             let mapper = MetasheetMapper::new(
                 SheetRef::new(sheet, &self.path),
@@ -1457,5 +1467,59 @@ norm = ["pos", "lemma"]
         let r = SheetRef::new(sheet, wb_path).max_column();
         assert!(r.is_err());
         assert_snapshot!(r.err().unwrap().to_string());
+    }
+
+    #[test]
+    fn warn_missing_sheet() {
+        let import: ImportSpreadsheet = toml::from_str(
+            r#"
+        data = ["data-typo", "appendix-typo"]
+        metadata = "meta-typo"
+        [column_map]
+        dipl = ["sentence", "seg"]
+        norm = ["pos", "lemma"]
+        "#,
+        )
+        .unwrap();
+        let (tx, rx) = mpsc::channel();
+        let u = import.import_corpus(
+            Path::new("tests/data/import/xlsx/multisheet/"),
+            StepID {
+                module_name: "test_import_multisheet".to_string(),
+                path: None,
+            },
+            import.default_configuration(),
+            Some(tx.clone()),
+        );
+        assert!(u.is_ok());
+        let import: ImportSpreadsheet = toml::from_str(
+            r#"
+        data = "wrong-sheet-name"
+        metadata = "meta-typo"
+        [column_map]
+        dipl = ["sentence", "seg"]
+        norm = ["pos", "lemma"]
+        "#,
+        )
+        .unwrap();
+        let u = import.import_corpus(
+            Path::new("tests/data/import/xlsx/multisheet/"),
+            StepID {
+                module_name: "test_import_multisheet".to_string(),
+                path: None,
+            },
+            import.default_configuration(),
+            Some(tx),
+        );
+        assert!(u.is_ok());
+        let warnings = rx
+            .into_iter()
+            .map(|m| match m {
+                StatusMessage::Info(m) => m,
+                StatusMessage::Warning(w) => w,
+                _ => "".to_string(),
+            })
+            .join("\n");
+        assert_snapshot!(warnings);
     }
 }
