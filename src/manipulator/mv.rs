@@ -44,7 +44,10 @@ use crate::{
 /// direction = "in"
 /// ```
 #[derive(Clone, Deserialize, Facet, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
+// note: This struct cannot be attributed with serde(deny_unknown_fields), as this is incompatible with
+// MoveDirection being internally-tagged and flattened. Nevertheless, unknown fields are denied via
+// MoveDirection, which automatically becomes the deserialization target for everything that does not
+// match a field name of MoveAnnos. See also here: https://github.com/serde-rs/serde/issues/1358
 pub struct MoveAnnos {
     /// The annotation component the involved edges are
     /// contained in.
@@ -55,48 +58,59 @@ pub struct MoveAnnos {
     anno: AnnoKey,
     /// The direction of move. Potential values are "source",
     /// "target", "in", and "out".
-    #[serde(default)]
-    direction: MoveDirection,
+    #[serde(flatten)]
+    dir: MoveDirection,
     /// Setting this to `true` keeps the original annotation.
     /// Default is `false`.
     #[serde(default)]
     copy: bool,
-    /// In case that a node (only for directions `source` and `target`)
-    /// receives multiple annotations, this case needs to be dealt with.
-    /// Mode "naive" (default) ignores and potentially overwrites annotations
-    /// created earlier in the process. Providing a delimiter joins all applicable
-    /// values:
-    /// ```toml
-    /// [graph_op.config]
-    /// multi = { delimiter = "," }
-    /// ```
-    ///
-    /// Instead of joining nodes, they can also be distributed across multiple
-    /// annotations on the same node. In this case, the namespace will be
-    /// used as an index. You thus lose control over the maximal index used,
-    /// but you can still retrieve annotations with the bare annotation
-    /// name (e. g. for deletion down the line):
-    /// ```toml
-    /// [graph_op.config]
-    /// multi = "index"
-    /// ```
-    /// Note that index mode leads to loss of the namespace for all annotations,
-    /// i. e., nodes, that only carry one value, will still have namespace "0"
-    /// for their annotation.
-    ///
-    #[serde(default)]
-    multi: MultiValueMode,
+    /*  In case that a node (only for directions `source` and `target`)
+    / receives multiple annotations, this case needs to be dealt with.
+    / Mode "naive" (default) ignores and potentially overwrites annotations
+    / created earlier in the process. Providing a delimiter joins all applicable
+    / values:
+    / ```toml
+    / [graph_op.config]
+    / multi = { delimiter = "," }
+    / ```
+    /
+    / Instead of joining nodes, they can also be distributed across multiple
+    / annotations on the same node. In this case, the namespace will be
+    / used as an index. You thus lose control over the maximal index used,
+    / but you can still retrieve annotations with the bare annotation
+    / name (e. g. for deletion down the line):
+    / ```toml
+    / [graph_op.config]
+    / multi = "index"
+    / ```
+    / Note that index mode leads to loss of the namespace for all annotations,
+    / i. e., nodes, that only carry one value, will still have namespace "0"
+    / for their annotation.
+    */
 }
 
-#[derive(Clone, Default, Deserialize, Facet, PartialEq, Serialize)]
-#[serde(rename_all = "lowercase")]
+#[derive(Clone, Deserialize, Facet, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase", tag = "direction", deny_unknown_fields)]
 #[repr(u8)]
 enum MoveDirection {
-    Source,
-    #[default]
-    Target,
+    Source {
+        #[serde(default)]
+        multi: MultiValueMode,
+    },
+    Target {
+        #[serde(default)]
+        multi: MultiValueMode,
+    },
     In,
     Out,
+}
+
+impl Default for MoveDirection {
+    fn default() -> Self {
+        Self::Target {
+            multi: MultiValueMode::default(),
+        }
+    }
 }
 
 #[derive(Clone, Default, Deserialize, Facet, PartialEq, Serialize)]
@@ -122,25 +136,17 @@ impl Manipulator for MoveAnnos {
             .get_graphstorage_as_ref(&self.component)
             .ok_or(anyhow!("Could not get component storage."))?;
         let mut node_values: BTreeMap<NodeID, BTreeSet<Cow<str>>> = BTreeMap::default();
-        let progress = ProgressReporter::new_unknown_total_work(tx, step_id)?;
-        if matches!(&self.multi, MultiValueMode::Index)
-            && matches!(&self.direction, MoveDirection::In | MoveDirection::Out)
-        {
-            progress.warn(
-                "You are using multi value mode `index` with an edge-related move direction. 
-            Edges can never inherit a value from more than one source or target node. 
-            The multi value mode will thus be ignored.",
-            )?;
-        }
-        for source in gs.source_nodes().flatten() {
+        let source_nodes = gs.source_nodes();
+        let progress = ProgressReporter::new(tx, step_id, source_nodes.size_hint().0 + 1)?;
+        for source in source_nodes.flatten() {
             for target in gs
                 .find_connected(source, 1, std::ops::Bound::Included(1))
                 .flatten()
             {
                 let source_name = node_name(graph, source)?;
                 let target_name = node_name(graph, target)?;
-                match &self.direction {
-                    MoveDirection::Source | MoveDirection::Target => {
+                match &self.dir {
+                    MoveDirection::Source { .. } | MoveDirection::Target { .. } => {
                         if let Some(anno_value) = gs
                             .get_anno_storage()
                             .get_value_for_item(&Edge { source, target }, &self.anno)?
@@ -156,7 +162,7 @@ impl Manipulator for MoveAnnos {
                                     anno_name: self.anno.name.to_string(),
                                 })?;
                             }
-                            let insert_node = if matches!(&self.direction, MoveDirection::Source) {
+                            let insert_node = if matches!(&self.dir, MoveDirection::Source { .. }) {
                                 source
                             } else {
                                 target
@@ -170,7 +176,7 @@ impl Manipulator for MoveAnnos {
                     }
                     MoveDirection::In | MoveDirection::Out => {
                         if !self.copy {
-                            let node_of_interest = if matches!(&self.direction, MoveDirection::In) {
+                            let node_of_interest = if matches!(&self.dir, MoveDirection::In) {
                                 target
                             } else {
                                 source
@@ -200,43 +206,47 @@ impl Manipulator for MoveAnnos {
                         }
                     }
                 };
+                progress.worked(1)?;
             }
         }
-        for (node, values) in node_values {
-            let node_name = node_name(graph, node)?;
-            match &self.multi {
-                MultiValueMode::Delimiter(delim) => {
-                    let joint_value = values.iter().join(delim);
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: self.anno.ns.to_string(),
-                        anno_name: self.anno.name.to_string(),
-                        anno_value: joint_value,
-                    })?;
-                }
-                MultiValueMode::Index => {
-                    for (index, value) in values.iter().enumerate() {
-                        update.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: node_name.to_string(),
-                            anno_ns: index.to_string(),
-                            anno_name: self.anno.name.to_string(),
-                            anno_value: value.to_string(),
-                        })?;
-                    }
-                }
-                MultiValueMode::Naive => {
-                    for value in values {
+        if let MoveDirection::Source { multi } | MoveDirection::Target { multi } = &self.dir {
+            for (node, values) in node_values {
+                let node_name = node_name(graph, node)?;
+                match multi {
+                    MultiValueMode::Delimiter(delim) => {
+                        let joint_value = values.iter().join(delim);
                         update.add_event(UpdateEvent::AddNodeLabel {
                             node_name: node_name.to_string(),
                             anno_ns: self.anno.ns.to_string(),
                             anno_name: self.anno.name.to_string(),
-                            anno_value: value.to_string(),
+                            anno_value: joint_value,
                         })?;
+                    }
+                    MultiValueMode::Index => {
+                        for (index, value) in values.iter().enumerate() {
+                            update.add_event(UpdateEvent::AddNodeLabel {
+                                node_name: node_name.to_string(),
+                                anno_ns: index.to_string(),
+                                anno_name: self.anno.name.to_string(),
+                                anno_value: value.to_string(),
+                            })?;
+                        }
+                    }
+                    MultiValueMode::Naive => {
+                        for value in values {
+                            update.add_event(UpdateEvent::AddNodeLabel {
+                                node_name: node_name.to_string(),
+                                anno_ns: self.anno.ns.to_string(),
+                                anno_name: self.anno.name.to_string(),
+                                anno_value: value.to_string(),
+                            })?;
+                        }
                     }
                 }
             }
         }
         update_graph_silent(graph, &mut update)?;
+        progress.worked(1)?;
         Ok(())
     }
 
@@ -252,7 +262,8 @@ mod tests {
     use graphannis::{
         AnnotationGraph,
         errors::GraphAnnisError,
-        model::AnnotationComponentType,
+        graph::AnnoKey,
+        model::{AnnotationComponent, AnnotationComponentType},
         update::{GraphUpdate, UpdateEvent},
     };
     use graphannis_core::graph::ANNIS_NS;
@@ -260,9 +271,38 @@ mod tests {
 
     use crate::{
         exporter::graphml::GraphMLExporter,
-        manipulator::{Manipulator, mv::MoveAnnos},
+        manipulator::{
+            Manipulator,
+            mv::{MoveAnnos, MoveDirection, MultiValueMode},
+        },
         test_util::export_to_string,
     };
+
+    #[test]
+    fn serialize_custom() {
+        let module = MoveAnnos {
+            component: AnnotationComponent::new(
+                AnnotationComponentType::Pointing,
+                "".to_string(),
+                "dep".to_string(),
+            ),
+            anno: AnnoKey {
+                ns: "".to_string(),
+                name: "deprel".to_string(),
+            },
+            copy: true,
+            dir: MoveDirection::Target {
+                multi: MultiValueMode::Index,
+            },
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
 
     #[test]
     fn naive_in() {

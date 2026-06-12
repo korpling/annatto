@@ -1,0 +1,13 @@
+---
+source: src/manipulator/mv.rs
+expression: serialization.unwrap()
+---
+anno = "deprel"
+direction = "target"
+multi = "index"
+copy = true
+
+[component]
+ctype = "Pointing"
+layer = ""
+name = "dep"
