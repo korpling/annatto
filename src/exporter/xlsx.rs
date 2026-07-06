@@ -140,28 +140,23 @@ fn find_token_roots(
     Ok(roots)
 }
 
-fn is_span_column(
+fn exists_on_anno_nodes(
     anno_key: &AnnoKey,
     node_annos: &dyn NodeAnnotationStorage,
-    token_helper: &TokenHelper,
 ) -> anyhow::Result<bool> {
     // Check that none of the nodes having this key are token and that there is at least one non-corpus node.
     // Document meta data and annotations inside documents could share the same
     // annotation names, but we only want to include the ones that are used as
     // annotations in a document.
-    let mut has_non_corpus_match = false;
     for m in node_annos.exact_anno_search(Some(&anno_key.ns), &anno_key.name, ValueSearch::Any) {
         let m = m?;
-        if token_helper.is_token(m.node)? {
-            return Ok(false);
-        }
         if let Some(node_type) = node_annos.get_value_for_item(&m.node, &NODE_TYPE_KEY)?
             && node_type == "node"
         {
-            has_non_corpus_match = true;
+            return Ok(true);
         }
     }
-    Ok(has_non_corpus_match)
+    Ok(false)
 }
 
 fn overwritten_position_for_key(
@@ -224,8 +219,8 @@ impl ExportXlsx {
                 0
             };
             // Output all spans
-            let name_to_column = self.get_span_columns(g, &token_helper, column_offset)?;
-            self.create_span_columns(
+            let name_to_column = self.get_span_columns(g, column_offset)?;
+            self.create_annotation_columns(
                 g,
                 &name_to_column,
                 token_to_row,
@@ -283,7 +278,6 @@ impl ExportXlsx {
     fn get_span_columns(
         &self,
         g: &AnnotationGraph,
-        token_helper: &TokenHelper,
         column_offset: u32,
     ) -> anyhow::Result<LinkedHashMap<AnnoKey, u32>> {
         // create a hash map from the configuration value
@@ -321,7 +315,7 @@ impl ExportXlsx {
 
         let mut column_index = column_offset + 1;
         for anno_key in all_anno_keys {
-            if anno_key.ns != ANNIS_NS && is_span_column(&anno_key, node_annos, token_helper)? {
+            if anno_key.ns != ANNIS_NS && exists_on_anno_nodes(&anno_key, node_annos)? {
                 result.insert(anno_key, column_index);
                 column_index += 1;
             }
@@ -393,7 +387,7 @@ impl ExportXlsx {
         }
     }
 
-    fn create_span_columns(
+    fn create_annotation_columns(
         &self,
         g: &AnnotationGraph,
         name_to_column: &LinkedHashMap<AnnoKey, u32>,
@@ -436,6 +430,10 @@ impl ExportXlsx {
                                 spanned_rows.insert(*row);
                             }
                         }
+                    }
+                    // in case the anno is directly attached to a token
+                    if let Some(r) = token_to_row.get(&span.node) {
+                        spanned_rows.insert(*r);
                     }
                     let first_row = spanned_rows.first();
                     let last_row = spanned_rows.last();
@@ -553,7 +551,7 @@ mod tests {
 
     use crate::{
         ExporterStep, ImporterStep, ReadFrom, WriteAs,
-        importer::{Importer, xlsx::ImportSpreadsheet},
+        importer::{Importer, conllu::ImportCoNLLU, xlsx::ImportSpreadsheet},
         test_util::compare_graphs,
         util::example_generator,
     };
@@ -1010,6 +1008,7 @@ mod tests {
         let importer: ImportSpreadsheet = toml::from_str(
             r#"
         column_map = {"tok" = ["lb"]}
+        data = 1
         metasheet = "meta"
         metasheet_skip_rows = 1
             "#,
@@ -1146,6 +1145,52 @@ mod tests {
             sheets_diff::core::diff::Diff::new(
                 "./tests/data/export/xlsx/span-target/doc1.xlsx",
                 &target_dir.path().join("doc1.xlsx").to_string_lossy()
+            )
+            .diff()
+            .cell_diffs
+            .is_empty()
+        );
+    }
+
+    #[test]
+    fn tok_annos() {
+        let import: ImportCoNLLU = toml::from_str("").unwrap();
+        let u = import.import_corpus(
+            Path::new("tests/data/export/xlsx/tok-annos/in/"),
+            crate::StepID {
+                module_name: "test_import".to_string(),
+                path: None,
+            },
+            import.default_configuration(),
+            None,
+        );
+        assert!(u.is_ok(), "Err: {:?}", u.err().unwrap());
+        let mut graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        assert!(graph.apply_update(&mut u.unwrap(), |_| {}).is_ok());
+        let export: ExportXlsx = toml::from_str(
+            r#"
+        annotation_order = ["tok", "lemma", "upos", "sent_id", "text"]
+        "#,
+        )
+        .unwrap();
+        let tmp_export_path = tempdir().unwrap();
+        assert!(
+            export
+                .export_corpus(
+                    &graph,
+                    tmp_export_path.path(),
+                    crate::StepID {
+                        module_name: "test_export".to_string(),
+                        path: None
+                    },
+                    None
+                )
+                .is_ok()
+        );
+        assert!(
+            sheets_diff::core::diff::Diff::new(
+                "./tests/data/export/xlsx/tok-annos/out/test.xlsx",
+                &tmp_export_path.path().join("test.xlsx").to_string_lossy()
             )
             .diff()
             .cell_diffs
