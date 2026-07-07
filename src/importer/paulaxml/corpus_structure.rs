@@ -6,7 +6,7 @@ use graphannis::{
 use graphannis_core::graph::ANNIS_NS;
 use std::path::{Path, PathBuf};
 
-use crate::util::graphupdate::root_corpus_from_path;
+use crate::importer::GenericImportConfiguration;
 
 pub(super) struct CorpusMapper {}
 impl CorpusMapper {
@@ -17,9 +17,10 @@ impl CorpusMapper {
     pub(super) fn map_corpus_structure<P: AsRef<Path>>(
         &self,
         root_path: P,
+        config: &GenericImportConfiguration,
         updates: &mut GraphUpdate,
     ) -> Result<Vec<(PathBuf, String)>> {
-        let mut path_tuples = add_subcorpora(updates, root_path.as_ref(), None)?;
+        let mut path_tuples = add_subcorpora(updates, root_path.as_ref(), config, None)?;
         path_tuples.sort();
         Ok(path_tuples)
     }
@@ -28,6 +29,7 @@ impl CorpusMapper {
 fn add_subcorpora(
     u: &mut GraphUpdate,
     file_path: &Path,
+    config: &GenericImportConfiguration,
     parent_corpus: Option<&str>,
 ) -> Result<Vec<(PathBuf, String)>> {
     let mut result = Vec::new();
@@ -79,7 +81,11 @@ fn add_subcorpora(
         let node_name = if let Some(parent_corpus) = parent_corpus {
             format!("{parent_corpus}/{corpus_name}")
         } else {
-            corpus_name
+            if let Some(overwritten_root_corpus_name) = &config.root_as {
+                overwritten_root_corpus_name.clone()
+            } else {
+                corpus_name
+            }
         };
 
         u.add_event(UpdateEvent::AddNode {
@@ -96,7 +102,7 @@ fn add_subcorpora(
             })?;
         }
         for entry in subdirs {
-            result.extend(add_subcorpora(u, &entry.path(), Some(&node_name))?);
+            result.extend(add_subcorpora(u, &entry.path(), config, Some(&node_name))?);
         }
         Ok(result)
     }
@@ -116,7 +122,11 @@ mod tests {
         let mut updates = GraphUpdate::new();
         let corpus_mapper = CorpusMapper::new();
         let path_to_node_name = corpus_mapper
-            .map_corpus_structure("tests/data/import/paulaxml/rootCorpus", &mut updates)
+            .map_corpus_structure(
+                "tests/data/import/paulaxml/rootCorpus",
+                &GenericImportConfiguration::default(),
+                &mut updates,
+            )
             .unwrap();
 
         assert_eq!(4, path_to_node_name.len());
