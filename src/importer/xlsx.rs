@@ -1,7 +1,7 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
     fmt::Display,
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use anyhow::{anyhow, bail};
@@ -64,13 +64,40 @@ pub struct ImportSpreadsheet {
     #[serde(default)]
     fallback: Option<String>,
     /// Optional value of the Excel sheet that contains the data. If not given,
-    /// the first sheet is used.
-    #[serde(default)]
-    datasheet: Option<SheetAddress>,
+    /// the first sheet is used. Instead of providing a string or index, a sequence
+    /// of strings or indices can be provided. Even if the sequence is of length 1,
+    /// the corpus graph will contain sub-document nodes to which the referring
+    /// sheet data is attached.
+    ///
+    /// The lowest corpus nodes are corresponding to xlsx files. Only the sheet with
+    /// name "data" is imported:
+    /// ```toml
+    /// data = "data"
+    /// ```
+    ///
+    /// The lowest corpus nodes are corresponding to xlsx files. Only the third sheet
+    /// will be imported:
+    /// ```toml
+    /// data = 3
+    /// ```
+    ///
+    /// The lowest corpus nodes refer to sheets in xlsx files attached to file nodes.
+    /// Three sheets will be imported (if they exist):
+    /// ```toml
+    /// data = ["data", 0, "additional_data"]
+    /// ```
+    ///
+    /// The lowest corpus nodes refer to sheets in xlsx files attached to file nodes.
+    /// Only one subdocument will be created (if the sheet "data" exists):
+    /// ```toml
+    /// data = ["data"]
+    /// ```
+    #[serde(default, alias = "datasheet")]
+    data: Sheets,
     /// Optional value of the Excel sheet that contains the metadata table. If
     /// no metadata is imported.
-    #[serde(default)]
-    metasheet: Option<SheetAddress>,
+    #[serde(default, alias = "metasheet")]
+    metadata: Option<SheetAddress>,
     /// Skip the first given rows in the meta data sheet.
     #[serde(default)]
     metasheet_skip_rows: usize,
@@ -91,6 +118,20 @@ pub(crate) enum SheetAddress {
     Name(String),
 }
 
+#[derive(Facet, Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[repr(u8)]
+#[serde(untagged)]
+pub(crate) enum Sheets {
+    Single(SheetAddress),
+    Multi(Vec<SheetAddress>),
+}
+
+impl Default for Sheets {
+    fn default() -> Self {
+        Self::Single(SheetAddress::Numeric(0))
+    }
+}
+
 impl Display for SheetAddress {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let v = match self {
@@ -103,53 +144,16 @@ impl Display for SheetAddress {
 
 fn sheet_from_address<'a>(
     book: &'a umya_spreadsheet::Spreadsheet,
-    address: &Option<SheetAddress>,
-    default: Option<usize>,
+    address: &SheetAddress,
 ) -> Option<&'a umya_spreadsheet::Worksheet> {
-    if let Some(addr) = &address {
-        match addr {
-            SheetAddress::Numeric(n) => book.get_sheet(n),
-            SheetAddress::Name(s) => book.get_sheet_by_name(s),
-        }
-    } else if let Some(default_addr) = &default {
-        book.get_sheet(default_addr)
-    } else {
-        None
+    match address {
+        SheetAddress::Numeric(n) => book.get_sheet(n),
+        SheetAddress::Name(s) => book.get_sheet_by_name(s),
     }
 }
 
-/// We implement our own max row function as sheet.get_highest_row() is unreliable
-/// and usually outputs a too low number
-fn max_row(sheet: &umya_spreadsheet::Worksheet) -> Result<u32, anyhow::Error> {
-    sheet
-        .get_row_dimensions()
-        .iter()
-        .map(|r| *r.get_row_num())
-        .max()
-        .ok_or(anyhow!("Could not determine highest row number."))
-}
-
-/// As highest column is computed the same way as highest row by umya_spreadsheet,
-/// we play it safe by using our own function to compute the highest column and
-/// only do it for the first row, as this is the header
-fn max_column(sheet: &umya_spreadsheet::Worksheet) -> Result<u32, anyhow::Error> {
-    sheet
-        .get_cell_collection()
-        .iter()
-        .map(|c| c.get_coordinate())
-        .filter_map(|xy| {
-            if *xy.get_row_num() == 1 {
-                Some(*xy.get_col_num())
-            } else {
-                None
-            }
-        })
-        .max()
-        .ok_or(anyhow!("Could not determine highest column number."))
-}
-
 struct MetasheetMapper<'a> {
-    sheet: &'a umya_spreadsheet::Worksheet,
+    sheet_ref: SheetRef<'a>,
     skip_rows: usize,
     max_row: u32,
     evaluate_formulas: bool,
@@ -157,14 +161,15 @@ struct MetasheetMapper<'a> {
 
 impl<'a> MetasheetMapper<'a> {
     fn new(
-        sheet: &'a umya_spreadsheet::Worksheet,
+        sheet_ref: SheetRef<'a>,
         skip_rows: usize,
         evaluate_formulas: bool,
     ) -> Result<MetasheetMapper<'a>, anyhow::Error> {
+        let max_row = sheet_ref.max_row()?;
         Ok(MetasheetMapper {
-            sheet,
+            sheet_ref,
             skip_rows,
-            max_row: max_row(sheet)?,
+            max_row,
             evaluate_formulas,
         })
     }
@@ -176,7 +181,10 @@ impl<'a> MetasheetMapper<'a> {
     ) -> Result<(), AnnattoError> {
         let max_row_num = self.max_row as usize; // 1-based
         for row_num in (self.skip_rows + 1)..max_row_num + 1 {
-            let entries = self.sheet.get_collection_by_row(&(row_num as u32)); // sorting not necessarily by col number
+            let entries = self
+                .sheet_ref
+                .sheet
+                .get_collection_by_row(&(row_num as u32)); // sorting not necessarily by col number
             let entry_map = entries
                 .into_iter()
                 .map(|c| (*c.get_coordinate().get_col_num(), c))
@@ -208,7 +216,7 @@ impl<'a> MetasheetMapper<'a> {
 }
 
 struct DatasheetMapper<'a> {
-    sheet: &'a umya_spreadsheet::Worksheet,
+    sheet_ref: SheetRef<'a>,
     max_row: u32,
     max_col: u32,
     column_map: &'a BTreeMap<String, BTreeSet<String>>,
@@ -220,17 +228,19 @@ struct DatasheetMapper<'a> {
 
 impl<'a> DatasheetMapper<'a> {
     fn new(
-        sheet: &'a umya_spreadsheet::Worksheet,
+        sheet_ref: SheetRef<'a>,
         column_map: &'a BTreeMap<String, BTreeSet<String>>,
         reverse_col_map: &'a BTreeMap<String, String>,
         fallback: Option<String>,
         token_annos: &'a [String],
         evaluate_formulas: bool,
     ) -> Result<DatasheetMapper<'a>, anyhow::Error> {
+        let max_row = sheet_ref.max_row()?;
+        let max_col = sheet_ref.max_column()?;
         Ok(DatasheetMapper {
-            sheet,
-            max_row: max_row(sheet)?,
-            max_col: max_column(sheet)?,
+            sheet_ref,
+            max_row,
+            max_col,
             column_map,
             reverse_col_map,
             fallback,
@@ -277,7 +287,7 @@ impl<'a> DatasheetMapper<'a> {
         progress: &ProgressReporter,
     ) -> Result<(), anyhow::Error> {
         let merge_members: BTreeSet<u32> = merged_cells.iter().flat_map(|(s, e)| *s..=*e).collect();
-        let col_name_opt = self.sheet.get_cell((col_num, 1));
+        let col_name_opt = self.sheet_ref.sheet.get_cell((col_num, 1));
         let col_name = if let Some(name) = col_name_opt {
             name.get_raw_value().to_string()
         } else {
@@ -328,6 +338,7 @@ impl<'a> DatasheetMapper<'a> {
                 &base_tokens[start..start + 1]
             };
             let cell_value = if let Some(cell) = self
+                .sheet_ref
                 .sheet
                 .get_cell((col_num, row_num))
                 .filter(|c| !c.get_raw_value().is_empty())
@@ -474,7 +485,7 @@ impl<'a> DatasheetMapper<'a> {
         progress: &ProgressReporter,
     ) -> Result<BTreeMap<u32, Vec<(u32, u32)>>, anyhow::Error> {
         let mut cell_map: BTreeMap<u32, Vec<(u32, u32)>> = BTreeMap::default();
-        for rng in self.sheet.get_merge_cells() {
+        for rng in self.sheet_ref.sheet.get_merge_cells() {
             if let Some(start_col) = rng.get_coordinate_start_col()
                 && let Some(end_col) = rng.get_coordinate_end_col()
                 && let Some(start_row) = rng.get_coordinate_start_row()
@@ -482,7 +493,7 @@ impl<'a> DatasheetMapper<'a> {
             {
                 if start_col != end_col {
                     if (*start_col.get_num()..=*end_col.get_num()).any(|c| {
-                        if let Some(cell) = self.sheet.get_cell((c, 1)) {
+                        if let Some(cell) = self.sheet_ref.sheet.get_cell((c, 1)) {
                             col_names.contains(&cell.get_raw_value().to_string().trim())
                         } else {
                             false
@@ -517,12 +528,61 @@ struct WorkbookMapper<'a> {
     progress: &'a ProgressReporter,
     path: PathBuf,
     column_map: &'a BTreeMap<String, BTreeSet<String>>,
-    datasheet: Option<SheetAddress>,
+    datasheets: Sheets,
     metasheet: Option<SheetAddress>,
     metasheet_skip_rows: usize,
     fallback: Option<String>,
     token_annos: &'a [String],
     doc_node_name: String,
+}
+
+struct SheetRef<'a> {
+    sheet: &'a umya_spreadsheet::Worksheet,
+    path: &'a Path,
+}
+
+impl<'a> SheetRef<'a> {
+    fn new(sheet: &'a umya_spreadsheet::Worksheet, path: &'a Path) -> Self {
+        SheetRef { sheet, path }
+    }
+
+    /// We implement our own max row function as sheet.get_highest_row() is unreliable
+    /// and usually outputs a too low number
+    fn max_row(&'a self) -> Result<u32, anyhow::Error> {
+        self.sheet
+            .get_row_dimensions()
+            .iter()
+            .map(|r| *r.get_row_num())
+            .max()
+            .ok_or(anyhow!(
+                "Could not determine highest row number in sheet {} from workbook {}. This could mean the sheet is empty.",
+                self.sheet.get_name(),
+                self.path.to_string_lossy()
+            ))
+    }
+
+    /// As highest column is computed the same way as highest row by umya_spreadsheet,
+    /// we play it safe by using our own function to compute the highest column and
+    /// only do it for the first row, as this is the header
+    fn max_column(&'a self) -> Result<u32, anyhow::Error> {
+        self.sheet
+            .get_cell_collection()
+            .iter()
+            .map(|c| c.get_coordinate())
+            .filter_map(|xy| {
+                if *xy.get_row_num() == 1 {
+                    Some(*xy.get_col_num())
+                } else {
+                    None
+                }
+            })
+            .max()
+            .ok_or(anyhow!(
+                "Could not determine highest column number in sheet {} from workbook {}. This could mean the sheet is empty.",
+                self.sheet.get_name(),
+                self.path.to_string_lossy()
+            ))
+    }
 }
 
 impl WorkbookMapper<'_> {
@@ -537,19 +597,81 @@ impl WorkbookMapper<'_> {
             .iter()
             .flat_map(|(k, v)| v.iter().map(move |vv| (vv.to_string(), k.to_string())))
             .collect();
-        if let Some(sheet) = sheet_from_address(&book, &self.datasheet, Some(0)) {
-            let mapper = DatasheetMapper::new(
-                sheet,
-                self.column_map,
-                &reverse_col_map,
-                self.fallback.clone(),
-                self.token_annos,
+        match &self.datasheets {
+            Sheets::Single(sheet_address) => {
+                if let Some(sheet) = sheet_from_address(&book, sheet_address) {
+                    let sheet_ref = SheetRef::new(sheet, &self.path);
+                    let mapper = DatasheetMapper::new(
+                        sheet_ref,
+                        self.column_map,
+                        &reverse_col_map,
+                        self.fallback.clone(),
+                        self.token_annos,
+                        evaluate_formulas,
+                    )?;
+                    mapper.import_datasheet(&self.doc_node_name, update, self.progress)?;
+                } else {
+                    self.progress.warn(format!(
+                        "Sheet {sheet_address} not found in {}",
+                        self.doc_node_name
+                    ))?;
+                }
+            }
+            Sheets::Multi(items) => {
+                for sheet in items.iter().filter_map(|a| {
+                    sheet_from_address(&book, a).or_else(|| {
+                        self.progress
+                            .warn(format!("Sheet {a} not found in {}", self.doc_node_name))
+                            .unwrap_or_default();
+                        None
+                    })
+                }) {
+                    let sheet_name = format!("{}/{}", self.doc_node_name, sheet.get_name());
+                    update.add_event(UpdateEvent::AddNode {
+                        node_name: sheet_name.to_string(),
+                        node_type: "corpus".to_string(),
+                    })?;
+                    update.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: sheet_name.to_string(),
+                        anno_ns: "xlsx".to_string(),
+                        anno_name: "sheet".to_string(),
+                        anno_value: sheet.get_name().to_string(),
+                    })?;
+                    update.add_event(UpdateEvent::AddEdge {
+                        source_node: sheet_name.to_string(),
+                        target_node: self.doc_node_name.to_string(),
+                        layer: ANNIS_NS.to_string(),
+                        component_type: AnnotationComponentType::PartOf.to_string(),
+                        component_name: "".to_string(),
+                    })?;
+                    DatasheetMapper::new(
+                        SheetRef::new(sheet, &self.path),
+                        self.column_map,
+                        &reverse_col_map,
+                        self.fallback.clone(),
+                        self.token_annos,
+                        evaluate_formulas,
+                    )?
+                    .import_datasheet(&sheet_name, update, self.progress)?;
+                }
+            }
+        }
+        if let Some(address) = &self.metasheet
+            && let Some(sheet) = sheet_from_address(&book, address).or_else(|| {
+                self.progress
+                    .warn(format!(
+                        "Sheet {address} not found in {}",
+                        self.doc_node_name
+                    ))
+                    .unwrap_or_default();
+                None
+            })
+        {
+            let mapper = MetasheetMapper::new(
+                SheetRef::new(sheet, &self.path),
+                self.metasheet_skip_rows,
                 evaluate_formulas,
             )?;
-            mapper.import_datasheet(&self.doc_node_name, update, self.progress)?;
-        }
-        if let Some(sheet) = sheet_from_address(&book, &self.metasheet, None) {
-            let mapper = MetasheetMapper::new(sheet, self.metasheet_skip_rows, evaluate_formulas)?;
             mapper.import_as_metadata(&self.doc_node_name, update)?;
         }
         self.progress.worked(1)?;
@@ -609,8 +731,8 @@ impl Importer for ImportSpreadsheet {
                         progress: &reporter,
                         path: p.to_path_buf(),
                         column_map: &self.column_map,
-                        datasheet: self.datasheet.clone(),
-                        metasheet: self.metasheet.clone(),
+                        datasheets: self.data.clone(),
+                        metasheet: self.metadata.clone(),
                         metasheet_skip_rows: self.metasheet_skip_rows,
                         fallback: self.fallback.clone(),
                         token_annos: &self.token_annos,
@@ -685,8 +807,8 @@ mod tests {
             ]
             .into_iter()
             .collect(),
-            datasheet: Some(SheetAddress::Name("data".to_string())),
-            metasheet: Some(SheetAddress::Numeric(2)),
+            data: Sheets::Single(SheetAddress::Name("data".to_string())),
+            metadata: Some(SheetAddress::Numeric(2)),
             fallback: Some("dipl".to_string()),
             metasheet_skip_rows: 1,
             token_annos: vec!["pos".to_string(), "lemma".to_string()],
@@ -821,8 +943,8 @@ mod tests {
         let importer = ImportSpreadsheet {
             column_map: col_map,
             fallback: fallback.clone(),
-            datasheet: None,
-            metasheet: None,
+            data: Default::default(),
+            metadata: None,
             token_annos: vec![],
             metasheet_skip_rows: 0,
             evaluate: false,
@@ -936,8 +1058,8 @@ mod tests {
         let importer = ImportSpreadsheet {
             column_map: col_map,
             fallback: None,
-            datasheet: None,
-            metasheet: None,
+            data: Default::default(),
+            metadata: None,
             token_annos: vec![],
             metasheet_skip_rows: 0,
             evaluate: false,
@@ -974,8 +1096,8 @@ mod tests {
         let importer = ImportSpreadsheet {
             column_map: col_map,
             fallback: None,
-            datasheet: Some(SheetAddress::Name("Sheet1".to_string())),
-            metasheet: None,
+            data: Sheets::Single(SheetAddress::Name("Sheet1".to_string())),
+            metadata: None,
             token_annos: vec![],
             metasheet_skip_rows: 0,
             evaluate: false,
@@ -1056,8 +1178,8 @@ mod tests {
         let importer = ImportSpreadsheet {
             column_map: col_map,
             fallback: Some("tok".to_string()),
-            datasheet: None,
-            metasheet: None,
+            data: Default::default(),
+            metadata: None,
             token_annos: vec![],
             metasheet_skip_rows: 0,
             evaluate: false,
@@ -1076,13 +1198,8 @@ mod tests {
         assert_ne!(receiver.into_iter().count(), 0);
     }
 
-    fn test_with_address(
-        book: &umya_spreadsheet::Spreadsheet,
-        addr: Option<SheetAddress>,
-        default: Option<usize>,
-        delivers: bool,
-    ) {
-        let sh = sheet_from_address(&book, &addr, default);
+    fn test_with_address(book: &umya_spreadsheet::Spreadsheet, addr: SheetAddress, delivers: bool) {
+        let sh = sheet_from_address(&book, &addr);
         assert_eq!(sh.is_some(), delivers);
     }
 
@@ -1092,21 +1209,9 @@ mod tests {
         let book = umya_spreadsheet::reader::xlsx::read::<&Path>(path);
         assert!(book.is_ok());
         let b = book.unwrap();
-        test_with_address(&b, Some(SheetAddress::Name("data".to_string())), None, true);
-        test_with_address(&b, None, Some(0), true);
-        test_with_address(
-            &b,
-            Some(SheetAddress::Name("data_".to_string())),
-            Some(0),
-            false,
-        );
-        test_with_address(
-            &b,
-            Some(SheetAddress::Name("data_".to_string())),
-            None,
-            false,
-        );
-        test_with_address(&b, None, None, false);
+        test_with_address(&b, SheetAddress::Name("data".to_string()), true);
+        test_with_address(&b, SheetAddress::Name("data_".to_string()), false);
+        test_with_address(&b, SheetAddress::Name("data_".to_string()), false);
     }
 
     #[test]
@@ -1115,11 +1220,9 @@ mod tests {
         let book = umya_spreadsheet::reader::xlsx::read::<&Path>(path);
         assert!(book.is_ok());
         let b = book.unwrap();
-        test_with_address(&b, Some(SheetAddress::Numeric(0)), None, true);
-        test_with_address(&b, None, Some(0), true);
-        test_with_address(&b, Some(SheetAddress::Numeric(4)), None, false);
-        test_with_address(&b, Some(SheetAddress::Numeric(4)), Some(0), false);
-        test_with_address(&b, None, Some(4), false);
+        test_with_address(&b, SheetAddress::Numeric(0), true);
+        test_with_address(&b, SheetAddress::Numeric(4), false);
+        test_with_address(&b, SheetAddress::Numeric(4), false);
     }
 
     #[test]
@@ -1151,8 +1254,8 @@ mod tests {
         let importer = ImportSpreadsheet {
             column_map: col_map,
             fallback: None,
-            datasheet: None,
-            metasheet: Some(SheetAddress::Name("meta".to_string())),
+            data: Default::default(),
+            metadata: Some(SheetAddress::Name("meta".to_string())),
             token_annos: vec![],
             metasheet_skip_rows: 0,
             evaluate: false,
@@ -1216,10 +1319,10 @@ edition = ["chapter"]
         assert!(matches!(import_steps[0].module, ReadFrom::Xlsx(..)));
         if let ReadFrom::Xlsx(importer) = &import_steps[0].module {
             assert_eq!(
-                importer.metasheet,
+                importer.metadata,
                 Some(SheetAddress::Name("meta".to_string()))
             );
-            assert_eq!(importer.datasheet, Some(SheetAddress::Numeric(2)));
+            assert_eq!(importer.data, Sheets::Single(SheetAddress::Numeric(2)));
         }
     }
 
@@ -1303,5 +1406,120 @@ norm = ["pos", "lemma"]
         assert!(m.is_ok());
         let module = m.unwrap();
         assert_snapshot!(export_to_string(&graph, module).unwrap());
+    }
+
+    #[test]
+    fn multisheet() {
+        let import: ImportSpreadsheet = toml::from_str(
+            r#"
+        data = ["data", "appendix"]
+        metadata = "meta"
+        [column_map]
+        dipl = ["sentence", "seg"]
+        norm = ["pos", "lemma"]
+        "#,
+        )
+        .unwrap();
+        let u = import.import_corpus(
+            Path::new("tests/data/import/xlsx/multisheet/"),
+            StepID {
+                module_name: "test_import_multisheet".to_string(),
+                path: None,
+            },
+            import.default_configuration(),
+            None,
+        );
+        assert!(u.is_ok());
+        let mut update = u.unwrap();
+        let mut graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
+        assert!(graph.apply_update(&mut update, |_| {}).is_ok());
+        let export: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        assert_snapshot!(export_to_string(&graph, export).unwrap());
+    }
+
+    #[test]
+    fn empty_sheet() {
+        let import: ImportSpreadsheet = toml::from_str(
+            r#"
+        data = "Sheet1"
+        fallback = "whatever"
+        "#,
+        )
+        .unwrap();
+        let u = import.import_corpus(
+            Path::new("tests/data/import/xlsx/empty/"),
+            StepID {
+                module_name: "test_import_multisheet".to_string(),
+                path: None,
+            },
+            import.default_configuration(),
+            None,
+        );
+        assert!(u.is_err());
+        assert_snapshot!(u.err().unwrap().to_string());
+    }
+
+    #[test]
+    fn empty_sheet_column_err() {
+        let wb_path = Path::new("tests/data/import/xlsx/empty/empty_file.xlsx");
+        let wb = umya_spreadsheet::reader::xlsx::read(wb_path).unwrap();
+        let sheet = wb.get_sheet(&0).unwrap();
+        let r = SheetRef::new(sheet, wb_path).max_column();
+        assert!(r.is_err());
+        assert_snapshot!(r.err().unwrap().to_string());
+    }
+
+    #[test]
+    fn warn_missing_sheet() {
+        let import: ImportSpreadsheet = toml::from_str(
+            r#"
+        data = ["data-typo", "appendix-typo"]
+        metadata = "meta-typo"
+        [column_map]
+        dipl = ["sentence", "seg"]
+        norm = ["pos", "lemma"]
+        "#,
+        )
+        .unwrap();
+        let (tx, rx) = mpsc::channel();
+        let u = import.import_corpus(
+            Path::new("tests/data/import/xlsx/multisheet/"),
+            StepID {
+                module_name: "test_import_multisheet".to_string(),
+                path: None,
+            },
+            import.default_configuration(),
+            Some(tx.clone()),
+        );
+        assert!(u.is_ok());
+        let import: ImportSpreadsheet = toml::from_str(
+            r#"
+        data = "wrong-sheet-name"
+        metadata = "meta-typo"
+        [column_map]
+        dipl = ["sentence", "seg"]
+        norm = ["pos", "lemma"]
+        "#,
+        )
+        .unwrap();
+        let u = import.import_corpus(
+            Path::new("tests/data/import/xlsx/multisheet/"),
+            StepID {
+                module_name: "test_import_multisheet".to_string(),
+                path: None,
+            },
+            import.default_configuration(),
+            Some(tx),
+        );
+        assert!(u.is_ok());
+        let warnings = rx
+            .into_iter()
+            .map(|m| match m {
+                StatusMessage::Info(m) => m,
+                StatusMessage::Warning(w) => w,
+                _ => "".to_string(),
+            })
+            .join("\n");
+        assert_snapshot!(warnings);
     }
 }

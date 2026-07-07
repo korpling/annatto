@@ -1,0 +1,11 @@
+---
+source: src/importer/xlsx.rs
+expression: warnings
+---
+Sheet data-typo not found in multisheet/test_file
+Sheet appendix-typo not found in multisheet/test_file
+Sheet meta-typo not found in multisheet/test_file
+
+
+Sheet wrong-sheet-name not found in multisheet/test_file
+Sheet meta-typo not found in multisheet/test_file

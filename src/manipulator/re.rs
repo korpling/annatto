@@ -172,6 +172,7 @@ pub struct Revise {
 #[serde(deny_unknown_fields)]
 struct RemoveMatch {
     /// The query to obtain the results.
+    #[serde(deserialize_with = "crate::estarde::query::deserialize_and_check")]
     query: String,
     /// The node indices (starting at 1) from the query of nodes to be removed.
     remove: Vec<RemoveTarget>,
@@ -889,6 +890,18 @@ mod tests {
             serialization.err()
         );
         assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn fail_deserialization_with_bad_query() {
+        let remove_match_def: std::result::Result<RemoveMatch, _> = toml::from_str(
+            r#"
+        query = "annis:tok @* doc"
+        remove = [1]
+        "#,
+        );
+        assert!(remove_match_def.is_err());
+        assert_snapshot!(remove_match_def.err().unwrap());
     }
 
     #[test]

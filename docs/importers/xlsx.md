@@ -35,12 +35,39 @@ column_map = {"dipl" = [], "norm" = ["pos", "lemma"]}
 fallback = "dipl"
 ```
 
-###  datasheet
+###  data
 
 Optional value of the Excel sheet that contains the data. If not given,
-the first sheet is used.
+the first sheet is used. Instead of providing a string or index, a sequence
+of strings or indices can be provided. Even if the sequence is of length 1,
+the corpus graph will contain sub-document nodes to which the referring
+sheet data is attached.
 
-###  metasheet
+The lowest corpus nodes are corresponding to xlsx files. Only the sheet with
+name "data" is imported:
+```toml
+data = "data"
+```
+
+The lowest corpus nodes are corresponding to xlsx files. Only the third sheet
+will be imported:
+```toml
+data = 3
+```
+
+The lowest corpus nodes refer to sheets in xlsx files attached to file nodes.
+Three sheets will be imported (if they exist):
+```toml
+data = ["data", 0, "additional_data"]
+```
+
+The lowest corpus nodes refer to sheets in xlsx files attached to file nodes.
+Only one subdocument will be created (if the sheet "data" exists):
+```toml
+data = ["data"]
+```
+
+###  metadata
 
 Optional value of the Excel sheet that contains the metadata table. If
 no metadata is imported.

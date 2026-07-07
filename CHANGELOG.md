@@ -5,6 +5,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- import `xlsx`: A detailled error message provides sheet name and file path, when a potentially empty sheet makes processing impossible.
+
+### Changed
+
+- import `xlsx`: When a sheet is not found, only a warning is raised. This is more desirable for batch processing.
+- uses graphannis 4.1.5
+
+### Fixed
+
+- export `xlsx`: Node annotations on tokens are exported as well.
+
+## [0.54.0] - 2026-06-09
+
+### Added
+
+- import `xlsx`: Sheets can be imported as subdocuments
+- export `xlsx`: data can be exported into different sheets of xlsx files
+- graph op `move`: move annotations from edges to nodes and vice versa
+
+### Changed
+
+- export `xlsx`: discontinued `update_datasheet`
+
+## [0.53.0] - 2026-06-03
+
+### Added
+
+- queries in configurations are now evaluated directly during deserialization to avoid having long workflows fail very late and thus to reduce frustration
+
 ## [0.52.0] - 2026-04-28
 
 ### Added

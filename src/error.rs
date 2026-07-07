@@ -86,6 +86,8 @@ pub enum AnnattoError {
     FacetVariantError(#[from] facet_reflect::VariantError),
     #[error(transparent)]
     Anyhow(#[from] anyhow::Error),
+    #[error("Error in query:\n`{query}`\n{error}")]
+    InvalidQuery { query: String, error: String },
 }
 
 impl<T> From<std::sync::PoisonError<T>> for AnnattoError {

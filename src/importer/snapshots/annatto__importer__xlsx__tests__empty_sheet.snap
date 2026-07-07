@@ -1,0 +1,5 @@
+---
+source: src/importer/xlsx.rs
+expression: u.err().unwrap().to_string()
+---
+Could not determine highest row number in sheet Sheet1 from workbook tests/data/import/xlsx/empty/empty_file.xlsx. This could mean the sheet is empty.

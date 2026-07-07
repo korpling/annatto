@@ -22,7 +22,3 @@ query = "sentence"
 expected = 0
 description = "There are no sentences"
 
-[[tests]]
-query = "sentence _=_"
-expected = [ 4, inf ]
-description = "This is an invalid query."

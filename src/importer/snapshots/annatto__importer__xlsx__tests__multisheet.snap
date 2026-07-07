@@ -1,0 +1,476 @@
+---
+source: src/importer/xlsx.rs
+expression: "export_to_string(&graph, export).unwrap()"
+---
+---- multisheet.graphml:
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>
+    <key id="k1" for="node" attr.name="author" attr.type="string"/>
+    <key id="k2" for="node" attr.name="date" attr.type="string"/>
+    <key id="k3" for="node" attr.name="dipl::dipl" attr.type="string"/>
+    <key id="k4" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k5" for="node" attr.name="key" attr.type="string"/>
+    <key id="k6" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k7" for="node" attr.name="norm::lemma" attr.type="string"/>
+    <key id="k8" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k9" for="node" attr.name="norm::norm" attr.type="string"/>
+    <key id="k10" for="node" attr.name="norm::pos" attr.type="string"/>
+    <key id="k11" for="node" attr.name="dipl::seg" attr.type="string"/>
+    <key id="k12" for="node" attr.name="dipl::sentence" attr.type="string"/>
+    <key id="k13" for="node" attr.name="xlsx::sheet" attr.type="string"/>
+    <key id="k14" for="node" attr.name="annis::tok" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <data key="k0"><![CDATA[
+# configure visualizations here
+]]></data>
+        <node id="multisheet">
+            <data key="k8">corpus</data>
+        </node>
+        <node id="multisheet/test_file">
+            <data key="k1">me</data>
+            <data key="k2">today</data>
+            <data key="k4">test_file</data>
+            <data key="k5">value</data>
+            <data key="k8">corpus</data>
+        </node>
+        <node id="multisheet/test_file/data">
+            <data key="k13">data</data>
+            <data key="k8">corpus</data>
+        </node>
+        <node id="multisheet/test_file/data#row2">
+            <data key="k14"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/data#row3">
+            <data key="k14"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/data#row4">
+            <data key="k14"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/data#row5">
+            <data key="k14"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/data#row6">
+            <data key="k14"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/data#row7">
+            <data key="k14"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/data#dipl_2-4">
+            <data key="k3">I&apos;m</data>
+            <data key="k6">dipl</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/data#dipl_5-6">
+            <data key="k3">in</data>
+            <data key="k6">dipl</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/data#dipl_6-7">
+            <data key="k3">New</data>
+            <data key="k6">dipl</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/data#dipl_7-8">
+            <data key="k3">York</data>
+            <data key="k6">dipl</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/data#norm_2-3">
+            <data key="k6">norm</data>
+            <data key="k8">node</data>
+            <data key="k9">I</data>
+        </node>
+        <node id="multisheet/test_file/data#norm_3-4">
+            <data key="k6">norm</data>
+            <data key="k8">node</data>
+            <data key="k9">am</data>
+        </node>
+        <node id="multisheet/test_file/data#norm_5-6">
+            <data key="k6">norm</data>
+            <data key="k8">node</data>
+            <data key="k9">in</data>
+        </node>
+        <node id="multisheet/test_file/data#norm_6-8">
+            <data key="k6">norm</data>
+            <data key="k8">node</data>
+            <data key="k9">New York</data>
+        </node>
+        <node id="multisheet/test_file/data#span_pos_2-3">
+            <data key="k10">PRON</data>
+            <data key="k6">norm</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/data#span_pos_3-4">
+            <data key="k10">VERB</data>
+            <data key="k6">norm</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/data#span_pos_5-6">
+            <data key="k10">ADP</data>
+            <data key="k6">norm</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/data#span_pos_6-8">
+            <data key="k10">PROPN</data>
+            <data key="k6">norm</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/data#span_lemma_2-3">
+            <data key="k6">norm</data>
+            <data key="k7">I</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/data#span_lemma_3-4">
+            <data key="k6">norm</data>
+            <data key="k7">be</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/data#span_lemma_5-6">
+            <data key="k6">norm</data>
+            <data key="k7">in</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/data#span_lemma_6-8">
+            <data key="k6">norm</data>
+            <data key="k7">New York</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/data#span_sentence_2-8">
+            <data key="k12">1</data>
+            <data key="k6">dipl</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/data#span_seg_2-4">
+            <data key="k11">VP</data>
+            <data key="k6">dipl</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/data#span_seg_5-8">
+            <data key="k11">PP</data>
+            <data key="k6">dipl</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/appendix">
+            <data key="k13">appendix</data>
+            <data key="k8">corpus</data>
+        </node>
+        <node id="multisheet/test_file/appendix#row2">
+            <data key="k14"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/appendix#row3">
+            <data key="k14"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/appendix#row4">
+            <data key="k14"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/appendix#row5">
+            <data key="k14"> </data>
+            <data key="k6">default_layer</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/appendix#dipl_2-4">
+            <data key="k3">4real</data>
+            <data key="k6">dipl</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/appendix#dipl_4-5">
+            <data key="k3">!</data>
+            <data key="k6">dipl</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/appendix#norm_2-3">
+            <data key="k6">norm</data>
+            <data key="k8">node</data>
+            <data key="k9">for</data>
+        </node>
+        <node id="multisheet/test_file/appendix#norm_3-4">
+            <data key="k6">norm</data>
+            <data key="k8">node</data>
+            <data key="k9">real</data>
+        </node>
+        <node id="multisheet/test_file/appendix#norm_4-5">
+            <data key="k6">norm</data>
+            <data key="k8">node</data>
+            <data key="k9">!</data>
+        </node>
+        <node id="multisheet/test_file/appendix#span_pos_2-3">
+            <data key="k10">ADP</data>
+            <data key="k6">norm</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/appendix#span_pos_3-4">
+            <data key="k10">ADJ</data>
+            <data key="k6">norm</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/appendix#span_pos_4-5">
+            <data key="k10">PUNCT</data>
+            <data key="k6">norm</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/appendix#span_lemma_2-3">
+            <data key="k6">norm</data>
+            <data key="k7">for</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/appendix#span_lemma_3-4">
+            <data key="k6">norm</data>
+            <data key="k7">real</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/appendix#span_lemma_4-5">
+            <data key="k6">norm</data>
+            <data key="k7">.</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/appendix#span_sentence_2-5">
+            <data key="k12">a1</data>
+            <data key="k6">dipl</data>
+            <data key="k8">node</data>
+        </node>
+        <node id="multisheet/test_file/appendix#span_seg_2-4">
+            <data key="k11">ADP</data>
+            <data key="k6">dipl</data>
+            <data key="k8">node</data>
+        </node>
+        <edge id="e0" source="multisheet/test_file/data#dipl_2-4" target="multisheet/test_file/data#row2" label="Coverage/annis/">
+        </edge>
+        <edge id="e1" source="multisheet/test_file/data#dipl_2-4" target="multisheet/test_file/data#row3" label="Coverage/annis/">
+        </edge>
+        <edge id="e2" source="multisheet/test_file/data#dipl_5-6" target="multisheet/test_file/data#row5" label="Coverage/annis/">
+        </edge>
+        <edge id="e3" source="multisheet/test_file/data#dipl_6-7" target="multisheet/test_file/data#row6" label="Coverage/annis/">
+        </edge>
+        <edge id="e4" source="multisheet/test_file/data#dipl_7-8" target="multisheet/test_file/data#row7" label="Coverage/annis/">
+        </edge>
+        <edge id="e5" source="multisheet/test_file/data#norm_2-3" target="multisheet/test_file/data#row2" label="Coverage/annis/">
+        </edge>
+        <edge id="e6" source="multisheet/test_file/data#norm_3-4" target="multisheet/test_file/data#row3" label="Coverage/annis/">
+        </edge>
+        <edge id="e7" source="multisheet/test_file/data#norm_5-6" target="multisheet/test_file/data#row5" label="Coverage/annis/">
+        </edge>
+        <edge id="e8" source="multisheet/test_file/data#norm_6-8" target="multisheet/test_file/data#row6" label="Coverage/annis/">
+        </edge>
+        <edge id="e9" source="multisheet/test_file/data#norm_6-8" target="multisheet/test_file/data#row7" label="Coverage/annis/">
+        </edge>
+        <edge id="e10" source="multisheet/test_file/data#span_pos_2-3" target="multisheet/test_file/data#row2" label="Coverage/annis/">
+        </edge>
+        <edge id="e11" source="multisheet/test_file/data#span_pos_3-4" target="multisheet/test_file/data#row3" label="Coverage/annis/">
+        </edge>
+        <edge id="e12" source="multisheet/test_file/data#span_pos_5-6" target="multisheet/test_file/data#row5" label="Coverage/annis/">
+        </edge>
+        <edge id="e13" source="multisheet/test_file/data#span_pos_6-8" target="multisheet/test_file/data#row6" label="Coverage/annis/">
+        </edge>
+        <edge id="e14" source="multisheet/test_file/data#span_pos_6-8" target="multisheet/test_file/data#row7" label="Coverage/annis/">
+        </edge>
+        <edge id="e15" source="multisheet/test_file/data#span_lemma_2-3" target="multisheet/test_file/data#row2" label="Coverage/annis/">
+        </edge>
+        <edge id="e16" source="multisheet/test_file/data#span_lemma_3-4" target="multisheet/test_file/data#row3" label="Coverage/annis/">
+        </edge>
+        <edge id="e17" source="multisheet/test_file/data#span_lemma_5-6" target="multisheet/test_file/data#row5" label="Coverage/annis/">
+        </edge>
+        <edge id="e18" source="multisheet/test_file/data#span_lemma_6-8" target="multisheet/test_file/data#row6" label="Coverage/annis/">
+        </edge>
+        <edge id="e19" source="multisheet/test_file/data#span_lemma_6-8" target="multisheet/test_file/data#row7" label="Coverage/annis/">
+        </edge>
+        <edge id="e20" source="multisheet/test_file/data#span_sentence_2-8" target="multisheet/test_file/data#row2" label="Coverage/annis/">
+        </edge>
+        <edge id="e21" source="multisheet/test_file/data#span_sentence_2-8" target="multisheet/test_file/data#row3" label="Coverage/annis/">
+        </edge>
+        <edge id="e22" source="multisheet/test_file/data#span_sentence_2-8" target="multisheet/test_file/data#row4" label="Coverage/annis/">
+        </edge>
+        <edge id="e23" source="multisheet/test_file/data#span_sentence_2-8" target="multisheet/test_file/data#row5" label="Coverage/annis/">
+        </edge>
+        <edge id="e24" source="multisheet/test_file/data#span_sentence_2-8" target="multisheet/test_file/data#row6" label="Coverage/annis/">
+        </edge>
+        <edge id="e25" source="multisheet/test_file/data#span_sentence_2-8" target="multisheet/test_file/data#row7" label="Coverage/annis/">
+        </edge>
+        <edge id="e26" source="multisheet/test_file/data#span_seg_2-4" target="multisheet/test_file/data#row2" label="Coverage/annis/">
+        </edge>
+        <edge id="e27" source="multisheet/test_file/data#span_seg_2-4" target="multisheet/test_file/data#row3" label="Coverage/annis/">
+        </edge>
+        <edge id="e28" source="multisheet/test_file/data#span_seg_5-8" target="multisheet/test_file/data#row5" label="Coverage/annis/">
+        </edge>
+        <edge id="e29" source="multisheet/test_file/data#span_seg_5-8" target="multisheet/test_file/data#row6" label="Coverage/annis/">
+        </edge>
+        <edge id="e30" source="multisheet/test_file/data#span_seg_5-8" target="multisheet/test_file/data#row7" label="Coverage/annis/">
+        </edge>
+        <edge id="e31" source="multisheet/test_file/appendix#dipl_2-4" target="multisheet/test_file/appendix#row2" label="Coverage/annis/">
+        </edge>
+        <edge id="e32" source="multisheet/test_file/appendix#dipl_2-4" target="multisheet/test_file/appendix#row3" label="Coverage/annis/">
+        </edge>
+        <edge id="e33" source="multisheet/test_file/appendix#dipl_4-5" target="multisheet/test_file/appendix#row4" label="Coverage/annis/">
+        </edge>
+        <edge id="e34" source="multisheet/test_file/appendix#norm_2-3" target="multisheet/test_file/appendix#row2" label="Coverage/annis/">
+        </edge>
+        <edge id="e35" source="multisheet/test_file/appendix#norm_3-4" target="multisheet/test_file/appendix#row3" label="Coverage/annis/">
+        </edge>
+        <edge id="e36" source="multisheet/test_file/appendix#norm_4-5" target="multisheet/test_file/appendix#row4" label="Coverage/annis/">
+        </edge>
+        <edge id="e37" source="multisheet/test_file/appendix#span_pos_2-3" target="multisheet/test_file/appendix#row2" label="Coverage/annis/">
+        </edge>
+        <edge id="e38" source="multisheet/test_file/appendix#span_pos_3-4" target="multisheet/test_file/appendix#row3" label="Coverage/annis/">
+        </edge>
+        <edge id="e39" source="multisheet/test_file/appendix#span_pos_4-5" target="multisheet/test_file/appendix#row4" label="Coverage/annis/">
+        </edge>
+        <edge id="e40" source="multisheet/test_file/appendix#span_lemma_2-3" target="multisheet/test_file/appendix#row2" label="Coverage/annis/">
+        </edge>
+        <edge id="e41" source="multisheet/test_file/appendix#span_lemma_3-4" target="multisheet/test_file/appendix#row3" label="Coverage/annis/">
+        </edge>
+        <edge id="e42" source="multisheet/test_file/appendix#span_lemma_4-5" target="multisheet/test_file/appendix#row4" label="Coverage/annis/">
+        </edge>
+        <edge id="e43" source="multisheet/test_file/appendix#span_sentence_2-5" target="multisheet/test_file/appendix#row2" label="Coverage/annis/">
+        </edge>
+        <edge id="e44" source="multisheet/test_file/appendix#span_sentence_2-5" target="multisheet/test_file/appendix#row3" label="Coverage/annis/">
+        </edge>
+        <edge id="e45" source="multisheet/test_file/appendix#span_sentence_2-5" target="multisheet/test_file/appendix#row4" label="Coverage/annis/">
+        </edge>
+        <edge id="e46" source="multisheet/test_file/appendix#span_seg_2-4" target="multisheet/test_file/appendix#row2" label="Coverage/annis/">
+        </edge>
+        <edge id="e47" source="multisheet/test_file/appendix#span_seg_2-4" target="multisheet/test_file/appendix#row3" label="Coverage/annis/">
+        </edge>
+        <edge id="e48" source="multisheet/test_file/data#row2" target="multisheet/test_file/data#row3" label="Ordering/annis/">
+        </edge>
+        <edge id="e49" source="multisheet/test_file/data#row3" target="multisheet/test_file/data#row4" label="Ordering/annis/">
+        </edge>
+        <edge id="e50" source="multisheet/test_file/data#row4" target="multisheet/test_file/data#row5" label="Ordering/annis/">
+        </edge>
+        <edge id="e51" source="multisheet/test_file/data#row5" target="multisheet/test_file/data#row6" label="Ordering/annis/">
+        </edge>
+        <edge id="e52" source="multisheet/test_file/data#row6" target="multisheet/test_file/data#row7" label="Ordering/annis/">
+        </edge>
+        <edge id="e53" source="multisheet/test_file/appendix#row2" target="multisheet/test_file/appendix#row3" label="Ordering/annis/">
+        </edge>
+        <edge id="e54" source="multisheet/test_file/appendix#row3" target="multisheet/test_file/appendix#row4" label="Ordering/annis/">
+        </edge>
+        <edge id="e55" source="multisheet/test_file/appendix#row4" target="multisheet/test_file/appendix#row5" label="Ordering/annis/">
+        </edge>
+        <edge id="e56" source="multisheet/test_file/data#dipl_2-4" target="multisheet/test_file/data#dipl_5-6" label="Ordering/default_ns/dipl">
+        </edge>
+        <edge id="e57" source="multisheet/test_file/data#dipl_5-6" target="multisheet/test_file/data#dipl_6-7" label="Ordering/default_ns/dipl">
+        </edge>
+        <edge id="e58" source="multisheet/test_file/data#dipl_6-7" target="multisheet/test_file/data#dipl_7-8" label="Ordering/default_ns/dipl">
+        </edge>
+        <edge id="e59" source="multisheet/test_file/appendix#dipl_2-4" target="multisheet/test_file/appendix#dipl_4-5" label="Ordering/default_ns/dipl">
+        </edge>
+        <edge id="e60" source="multisheet/test_file/data#norm_2-3" target="multisheet/test_file/data#norm_3-4" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e61" source="multisheet/test_file/data#norm_3-4" target="multisheet/test_file/data#norm_5-6" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e62" source="multisheet/test_file/data#norm_5-6" target="multisheet/test_file/data#norm_6-8" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e63" source="multisheet/test_file/appendix#norm_2-3" target="multisheet/test_file/appendix#norm_3-4" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e64" source="multisheet/test_file/appendix#norm_3-4" target="multisheet/test_file/appendix#norm_4-5" label="Ordering/default_ns/norm">
+        </edge>
+        <edge id="e65" source="multisheet/test_file" target="multisheet" label="PartOf/annis/">
+        </edge>
+        <edge id="e66" source="multisheet/test_file/data" target="multisheet/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e67" source="multisheet/test_file/data#row2" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e68" source="multisheet/test_file/data#row3" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e69" source="multisheet/test_file/data#row4" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e70" source="multisheet/test_file/data#row5" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e71" source="multisheet/test_file/data#row6" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e72" source="multisheet/test_file/data#row7" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e73" source="multisheet/test_file/data#dipl_2-4" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e74" source="multisheet/test_file/data#dipl_5-6" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e75" source="multisheet/test_file/data#dipl_6-7" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e76" source="multisheet/test_file/data#dipl_7-8" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e77" source="multisheet/test_file/data#norm_2-3" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e78" source="multisheet/test_file/data#norm_3-4" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e79" source="multisheet/test_file/data#norm_5-6" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e80" source="multisheet/test_file/data#norm_6-8" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e81" source="multisheet/test_file/data#span_pos_2-3" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e82" source="multisheet/test_file/data#span_pos_3-4" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e83" source="multisheet/test_file/data#span_pos_5-6" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e84" source="multisheet/test_file/data#span_pos_6-8" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e85" source="multisheet/test_file/data#span_lemma_2-3" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e86" source="multisheet/test_file/data#span_lemma_3-4" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e87" source="multisheet/test_file/data#span_lemma_5-6" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e88" source="multisheet/test_file/data#span_lemma_6-8" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e89" source="multisheet/test_file/data#span_sentence_2-8" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e90" source="multisheet/test_file/data#span_seg_2-4" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e91" source="multisheet/test_file/data#span_seg_5-8" target="multisheet/test_file/data" label="PartOf/annis/">
+        </edge>
+        <edge id="e92" source="multisheet/test_file/appendix" target="multisheet/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e93" source="multisheet/test_file/appendix#row2" target="multisheet/test_file/appendix" label="PartOf/annis/">
+        </edge>
+        <edge id="e94" source="multisheet/test_file/appendix#row3" target="multisheet/test_file/appendix" label="PartOf/annis/">
+        </edge>
+        <edge id="e95" source="multisheet/test_file/appendix#row4" target="multisheet/test_file/appendix" label="PartOf/annis/">
+        </edge>
+        <edge id="e96" source="multisheet/test_file/appendix#row5" target="multisheet/test_file/appendix" label="PartOf/annis/">
+        </edge>
+        <edge id="e97" source="multisheet/test_file/appendix#dipl_2-4" target="multisheet/test_file/appendix" label="PartOf/annis/">
+        </edge>
+        <edge id="e98" source="multisheet/test_file/appendix#dipl_4-5" target="multisheet/test_file/appendix" label="PartOf/annis/">
+        </edge>
+        <edge id="e99" source="multisheet/test_file/appendix#norm_2-3" target="multisheet/test_file/appendix" label="PartOf/annis/">
+        </edge>
+        <edge id="e100" source="multisheet/test_file/appendix#norm_3-4" target="multisheet/test_file/appendix" label="PartOf/annis/">
+        </edge>
+        <edge id="e101" source="multisheet/test_file/appendix#norm_4-5" target="multisheet/test_file/appendix" label="PartOf/annis/">
+        </edge>
+        <edge id="e102" source="multisheet/test_file/appendix#span_pos_2-3" target="multisheet/test_file/appendix" label="PartOf/annis/">
+        </edge>
+        <edge id="e103" source="multisheet/test_file/appendix#span_pos_3-4" target="multisheet/test_file/appendix" label="PartOf/annis/">
+        </edge>
+        <edge id="e104" source="multisheet/test_file/appendix#span_pos_4-5" target="multisheet/test_file/appendix" label="PartOf/annis/">
+        </edge>
+        <edge id="e105" source="multisheet/test_file/appendix#span_lemma_2-3" target="multisheet/test_file/appendix" label="PartOf/annis/">
+        </edge>
+        <edge id="e106" source="multisheet/test_file/appendix#span_lemma_3-4" target="multisheet/test_file/appendix" label="PartOf/annis/">
+        </edge>
+        <edge id="e107" source="multisheet/test_file/appendix#span_lemma_4-5" target="multisheet/test_file/appendix" label="PartOf/annis/">
+        </edge>
+        <edge id="e108" source="multisheet/test_file/appendix#span_sentence_2-5" target="multisheet/test_file/appendix" label="PartOf/annis/">
+        </edge>
+        <edge id="e109" source="multisheet/test_file/appendix#span_seg_2-4" target="multisheet/test_file/appendix" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>

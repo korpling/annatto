@@ -1,0 +1,855 @@
+use std::{
+    borrow::Cow,
+    collections::{BTreeMap, BTreeSet},
+};
+
+use anyhow::anyhow;
+use facet::Facet;
+use graphannis::{
+    AnnotationGraph,
+    graph::{AnnoKey, Edge, NodeID},
+    model::AnnotationComponent,
+    update::{GraphUpdate, UpdateEvent},
+};
+use itertools::Itertools;
+use serde::{Deserialize, Serialize};
+
+use crate::{
+    manipulator::Manipulator,
+    progress::ProgressReporter,
+    util::{node_name, update_graph_silent},
+};
+
+/// Annotation can be moved from edges of a component
+/// to the source or target node, but also from nodes
+/// to edges going out of or into the carrying node.
+///
+/// The following moves annotations from the edge to the
+/// target node of the edge:
+/// ```toml
+/// [graph_op.config]
+/// component = { ctype = "Pointing", layer = "", name = "dep" }
+/// anno = "default_ns::deprel"
+/// direction = "target"
+/// ```
+///
+/// Moving to the target is the default and does not need
+/// to be explicated.
+///
+/// This moves an annotation from nodes to ingoing edges:
+/// ```toml
+/// [graph_op.config]
+/// component = { ctype = "Pointing", layer = "", name = "dep" }
+/// anno = "default_ns::pos"
+/// direction = "in"
+/// ```
+#[derive(Clone, Deserialize, Facet, PartialEq, Serialize)]
+// note: This struct cannot be attributed with serde(deny_unknown_fields), as this is incompatible with
+// MoveDirection being internally-tagged and flattened. Nevertheless, unknown fields are denied via
+// MoveDirection, which automatically becomes the deserialization target for everything that does not
+// match a field name of MoveAnnos. See also here: https://github.com/serde-rs/serde/issues/1358
+pub struct MoveAnnos {
+    /// The annotation component the involved edges are
+    /// contained in.
+    #[serde(with = "crate::estarde::annotation_component")]
+    component: AnnotationComponent,
+    /// The annotation key of the annotation to be moved.
+    #[serde(with = "crate::estarde::anno_key")]
+    anno: AnnoKey,
+    /// The direction of move. Potential values are "source",
+    /// "target", "in", and "out". `source` and `target` imply
+    /// that annotations are retrieved from edges of the given
+    /// `component` and applied to the source or target node,
+    /// respectively. In this use case, you can specify what
+    /// should happen when multiple annotations are to be
+    /// applied to the same node via attribute `multi`.
+    /// There are currently three multi-value modes:
+    ///
+    /// - `naive` (default): Each new annotation overwrites the last
+    ///   one applied. This can be safely used when you either do not
+    ///   care or know that no node is the target or source of more
+    ///   than one edge.
+    /// - `index`: The namespace of the annotations will be replaced
+    ///   with an index (starting at 0). The maximum index for a node
+    ///   indicates how many annotations were applied to it. Searching
+    ///   the annotations without a namespace later will safely return
+    ///   values.
+    /// - `delim`: By providing `multi = { delim = "," }` all values will
+    ///   be concatenated using the delimiter (a comma in this example).
+    ///
+    /// Directions `in` and `out` search for annotations on nodes and apply
+    /// them to in/out-going edges of the given component.
+    ///
+    /// Examples:
+    ///
+    /// Move all dependency relation annotations from the edges to their
+    /// unique target nodes (therefore `multi` can be omitted and defaults
+    /// to `naive`):
+    /// ```toml
+    /// [graph_op.config]
+    /// component = { ctype = "Pointing", layer = "", name = "dep" }
+    /// anno = "deprel"
+    /// direction = "target"
+    /// ```
+    ///
+    /// Move all "ref_type"-annotations from coreference
+    /// edges onto targets and delimit multiple values by "|":
+    /// ```toml
+    /// [graph_op.config]
+    /// component = { ctype = "Pointing", layer = "", name = "coref" }
+    /// anno = "ref_type"
+    /// direction = "target"
+    /// multi = { delim = "|" }
+    /// ```
+    #[serde(flatten)]
+    direction: MoveDirection,
+    /// Setting this to `true` keeps the original annotation.
+    /// Default is `false`.
+    #[serde(default)]
+    copy: bool,
+}
+
+#[derive(Clone, Deserialize, Facet, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase", tag = "direction", deny_unknown_fields)]
+#[repr(u8)]
+enum MoveDirection {
+    Source {
+        #[serde(default)]
+        multi: MultiValueMode,
+    },
+    Target {
+        #[serde(default)]
+        multi: MultiValueMode,
+    },
+    In,
+    Out,
+}
+
+impl Default for MoveDirection {
+    fn default() -> Self {
+        Self::Target {
+            multi: MultiValueMode::default(),
+        }
+    }
+}
+
+#[derive(Clone, Default, Deserialize, Facet, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+#[repr(u8)]
+enum MultiValueMode {
+    Delimiter(String),
+    Index,
+    #[default]
+    Naive,
+}
+
+impl Manipulator for MoveAnnos {
+    fn manipulate_corpus(
+        &self,
+        graph: &mut AnnotationGraph,
+        _workflow_directory: &std::path::Path,
+        step_id: crate::StepID,
+        tx: Option<crate::workflow::StatusSender>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let mut update = GraphUpdate::default();
+        let gs = graph
+            .get_graphstorage_as_ref(&self.component)
+            .ok_or(anyhow!("Could not get component storage."))?;
+        let mut node_values: BTreeMap<NodeID, BTreeSet<Cow<str>>> = BTreeMap::default();
+        let source_nodes = gs.source_nodes();
+        let progress = ProgressReporter::new(tx, step_id, source_nodes.size_hint().0 + 1)?;
+        for source in source_nodes.flatten() {
+            for target in gs
+                .find_connected(source, 1, std::ops::Bound::Included(1))
+                .flatten()
+            {
+                let source_name = node_name(graph, source)?;
+                let target_name = node_name(graph, target)?;
+                match &self.direction {
+                    MoveDirection::Source { .. } | MoveDirection::Target { .. } => {
+                        if let Some(anno_value) = gs
+                            .get_anno_storage()
+                            .get_value_for_item(&Edge { source, target }, &self.anno)?
+                        {
+                            if !self.copy {
+                                update.add_event(UpdateEvent::DeleteEdgeLabel {
+                                    source_node: source_name.to_string(),
+                                    target_node: target_name.to_string(),
+                                    layer: self.component.layer.to_string(),
+                                    component_type: self.component.get_type().to_string(),
+                                    component_name: self.component.name.to_string(),
+                                    anno_ns: self.anno.ns.to_string(),
+                                    anno_name: self.anno.name.to_string(),
+                                })?;
+                            }
+                            let insert_node =
+                                if matches!(&self.direction, MoveDirection::Source { .. }) {
+                                    source
+                                } else {
+                                    target
+                                };
+                            // for this case we need to collect for later concatenation / listing
+                            node_values
+                                .entry(insert_node)
+                                .or_default()
+                                .insert(anno_value);
+                        }
+                    }
+                    MoveDirection::In | MoveDirection::Out => {
+                        let node_of_interest = if matches!(&self.direction, MoveDirection::In) {
+                            target
+                        } else {
+                            source
+                        };
+                        if let Some(anno_value) = graph
+                            .get_node_annos()
+                            .get_value_for_item(&node_of_interest, &self.anno)?
+                        {
+                            if !self.copy {
+                                update.add_event(UpdateEvent::DeleteNodeLabel {
+                                    node_name: node_name(graph, node_of_interest)?.to_string(),
+                                    anno_ns: self.anno.ns.to_string(),
+                                    anno_name: self.anno.name.to_string(),
+                                })?;
+                            }
+                            update.add_event(UpdateEvent::AddEdgeLabel {
+                                source_node: source_name.to_string(),
+                                target_node: target_name.to_string(),
+                                layer: self.component.layer.to_string(),
+                                component_type: self.component.get_type().to_string(),
+                                component_name: self.component.name.to_string(),
+                                anno_ns: self.anno.ns.to_string(),
+                                anno_name: self.anno.name.to_string(),
+                                anno_value: anno_value.to_string(),
+                            })?;
+                        }
+                    }
+                };
+                progress.worked(1)?;
+            }
+        }
+        if let MoveDirection::Source { multi } | MoveDirection::Target { multi } = &self.direction {
+            for (node, values) in node_values {
+                let node_name = node_name(graph, node)?;
+                match multi {
+                    MultiValueMode::Delimiter(delim) => {
+                        let joint_value = values.iter().join(delim);
+                        update.add_event(UpdateEvent::AddNodeLabel {
+                            node_name: node_name.to_string(),
+                            anno_ns: self.anno.ns.to_string(),
+                            anno_name: self.anno.name.to_string(),
+                            anno_value: joint_value,
+                        })?;
+                    }
+                    MultiValueMode::Index => {
+                        for (index, value) in values.iter().enumerate() {
+                            update.add_event(UpdateEvent::AddNodeLabel {
+                                node_name: node_name.to_string(),
+                                anno_ns: index.to_string(),
+                                anno_name: self.anno.name.to_string(),
+                                anno_value: value.to_string(),
+                            })?;
+                        }
+                    }
+                    MultiValueMode::Naive => {
+                        for value in values {
+                            update.add_event(UpdateEvent::AddNodeLabel {
+                                node_name: node_name.to_string(),
+                                anno_ns: self.anno.ns.to_string(),
+                                anno_name: self.anno.name.to_string(),
+                                anno_value: value.to_string(),
+                            })?;
+                        }
+                    }
+                }
+            }
+        }
+        update_graph_silent(graph, &mut update)?;
+        progress.worked(1)?;
+        Ok(())
+    }
+
+    fn requires_statistics(&self) -> bool {
+        false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use graphannis::{
+        AnnotationGraph,
+        errors::GraphAnnisError,
+        graph::AnnoKey,
+        model::{AnnotationComponent, AnnotationComponentType},
+        update::{GraphUpdate, UpdateEvent},
+    };
+    use graphannis_core::graph::ANNIS_NS;
+    use insta::assert_snapshot;
+
+    use crate::{
+        exporter::graphml::GraphMLExporter,
+        manipulator::{
+            Manipulator,
+            mv::{MoveAnnos, MoveDirection, MultiValueMode},
+        },
+        test_util::export_to_string,
+    };
+
+    #[test]
+    fn serialize_custom() {
+        let module = MoveAnnos {
+            component: AnnotationComponent::new(
+                AnnotationComponentType::Pointing,
+                "".to_string(),
+                "dep".to_string(),
+            ),
+            anno: AnnoKey {
+                ns: "".to_string(),
+                name: "deprel".to_string(),
+            },
+            copy: true,
+            direction: MoveDirection::Target {
+                multi: MultiValueMode::Index,
+            },
+        };
+        let serialization = toml::to_string(&module);
+        assert!(
+            serialization.is_ok(),
+            "Serialization failed: {:?}",
+            serialization.err()
+        );
+        assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn naive_in() {
+        let g = test_graph();
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let m: Result<MoveAnnos, _> = toml::from_str(
+            r#"
+        component = { ctype = "Pointing", layer = "", name = "ref" }
+        anno = "default_ns::lemma"
+        direction = "in"
+        multi = "naive"
+        "#,
+        );
+        assert!(m.is_ok(), "Err deserializing: {:?}", m.err().unwrap());
+        let module = m.unwrap();
+        let exec = module.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_manipulation".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(
+            exec.is_ok(),
+            "Err executing move: {:?}",
+            exec.err().unwrap()
+        );
+        let graphml_export: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        assert_snapshot!(export_to_string(&graph, graphml_export).unwrap());
+    }
+
+    #[test]
+    fn naive_out() {
+        let g = test_graph();
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let m: Result<MoveAnnos, _> = toml::from_str(
+            r#"
+        component = { ctype = "Pointing", layer = "", name = "ref" }
+        anno = "default_ns::lemma"
+        direction = "out"
+        multi = "naive"
+        "#,
+        );
+        assert!(m.is_ok(), "Err deserializing: {:?}", m.err().unwrap());
+        let module = m.unwrap();
+        let exec = module.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_manipulation".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(
+            exec.is_ok(),
+            "Err executing move: {:?}",
+            exec.err().unwrap()
+        );
+        let graphml_export: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        assert_snapshot!(export_to_string(&graph, graphml_export).unwrap());
+    }
+
+    #[test]
+    fn naive_source() {
+        let g = test_graph();
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let m: Result<MoveAnnos, _> = toml::from_str(
+            r#"
+        component = { ctype = "Pointing", layer = "", name = "ref" }
+        anno = "default_ns::ref_type"
+        direction = "source"
+        multi = "naive"
+        "#,
+        );
+        assert!(m.is_ok(), "Err deserializing: {:?}", m.err().unwrap());
+        let module = m.unwrap();
+        let exec = module.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_manipulation".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(
+            exec.is_ok(),
+            "Err executing move: {:?}",
+            exec.err().unwrap()
+        );
+        let graphml_export: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        assert_snapshot!(export_to_string(&graph, graphml_export).unwrap());
+    }
+
+    #[test]
+    fn naive_target() {
+        let g = test_graph();
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let m: Result<MoveAnnos, _> = toml::from_str(
+            r#"
+        component = { ctype = "Pointing", layer = "", name = "ref" }
+        anno = "default_ns::ref_type"
+        direction = "target"
+        multi = "naive"
+        "#,
+        );
+        assert!(m.is_ok(), "Err deserializing: {:?}", m.err().unwrap());
+        let module = m.unwrap();
+        let exec = module.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_manipulation".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(
+            exec.is_ok(),
+            "Err executing move: {:?}",
+            exec.err().unwrap()
+        );
+        let graphml_export: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        assert_snapshot!(export_to_string(&graph, graphml_export).unwrap());
+    }
+
+    #[test]
+    fn index_in() {
+        let g = test_graph();
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let m: Result<MoveAnnos, _> = toml::from_str(
+            r#"
+        component = { ctype = "Pointing", layer = "", name = "ref" }
+        anno = "default_ns::lemma"
+        direction = "in"
+        multi = "index"
+        "#,
+        );
+        assert!(m.is_ok(), "Err deserializing: {:?}", m.err().unwrap());
+        let module = m.unwrap();
+        let exec = module.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_manipulation".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(
+            exec.is_ok(),
+            "Err executing move: {:?}",
+            exec.err().unwrap()
+        );
+        let graphml_export: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        assert_snapshot!(export_to_string(&graph, graphml_export).unwrap());
+    }
+
+    #[test]
+    fn index_out() {
+        let g = test_graph();
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let m: Result<MoveAnnos, _> = toml::from_str(
+            r#"
+        component = { ctype = "Pointing", layer = "", name = "ref" }
+        anno = "default_ns::lemma"
+        direction = "out"
+        multi = "index"
+        "#,
+        );
+        assert!(m.is_ok(), "Err deserializing: {:?}", m.err().unwrap());
+        let module = m.unwrap();
+        let exec = module.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_manipulation".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(
+            exec.is_ok(),
+            "Err executing move: {:?}",
+            exec.err().unwrap()
+        );
+        let graphml_export: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        assert_snapshot!(export_to_string(&graph, graphml_export).unwrap());
+    }
+
+    #[test]
+    fn index_source() {
+        let g = test_graph();
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let m: Result<MoveAnnos, _> = toml::from_str(
+            r#"
+        component = { ctype = "Pointing", layer = "", name = "ref" }
+        anno = "default_ns::ref_type"
+        direction = "source"
+        multi = "index"
+        "#,
+        );
+        assert!(m.is_ok(), "Err deserializing: {:?}", m.err().unwrap());
+        let module = m.unwrap();
+        let exec = module.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_manipulation".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(
+            exec.is_ok(),
+            "Err executing move: {:?}",
+            exec.err().unwrap()
+        );
+        let graphml_export: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        assert_snapshot!(export_to_string(&graph, graphml_export).unwrap());
+    }
+
+    #[test]
+    fn index_target() {
+        let g = test_graph();
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let m: Result<MoveAnnos, _> = toml::from_str(
+            r#"
+        component = { ctype = "Pointing", layer = "", name = "ref" }
+        anno = "default_ns::ref_type"
+        direction = "target"
+        multi = "index"
+        "#,
+        );
+        assert!(m.is_ok(), "Err deserializing: {:?}", m.err().unwrap());
+        let module = m.unwrap();
+        let exec = module.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_manipulation".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(
+            exec.is_ok(),
+            "Err executing move: {:?}",
+            exec.err().unwrap()
+        );
+        let graphml_export: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        assert_snapshot!(export_to_string(&graph, graphml_export).unwrap());
+    }
+
+    #[test]
+    fn delim_in() {
+        let g = test_graph();
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let m: Result<MoveAnnos, _> = toml::from_str(
+            r#"
+        component = { ctype = "Pointing", layer = "", name = "ref" }
+        anno = "default_ns::lemma"
+        direction = "in"
+        multi = { delimiter = "," }
+        "#,
+        );
+        assert!(m.is_ok(), "Err deserializing: {:?}", m.err().unwrap());
+        let module = m.unwrap();
+        let exec = module.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_manipulation".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(
+            exec.is_ok(),
+            "Err executing move: {:?}",
+            exec.err().unwrap()
+        );
+        let graphml_export: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        assert_snapshot!(export_to_string(&graph, graphml_export).unwrap());
+    }
+
+    #[test]
+    fn delim_out() {
+        let g = test_graph();
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let m: Result<MoveAnnos, _> = toml::from_str(
+            r#"
+        component = { ctype = "Pointing", layer = "", name = "ref" }
+        anno = "default_ns::lemma"
+        direction = "out"
+        multi = { delimiter = "," }
+        "#,
+        );
+        assert!(m.is_ok(), "Err deserializing: {:?}", m.err().unwrap());
+        let module = m.unwrap();
+        let exec = module.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_manipulation".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(
+            exec.is_ok(),
+            "Err executing move: {:?}",
+            exec.err().unwrap()
+        );
+        let graphml_export: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        assert_snapshot!(export_to_string(&graph, graphml_export).unwrap());
+    }
+
+    #[test]
+    fn copy_from_edges() {
+        let g = test_graph();
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let m: Result<MoveAnnos, _> = toml::from_str(
+            r#"
+        component = { ctype = "Pointing", layer = "", name = "ref" }
+        anno = "default_ns::ref_type"
+        direction = "target"
+        multi = { delimiter = "," }
+        copy = true
+        "#,
+        );
+        assert!(m.is_ok(), "Err deserializing: {:?}", m.err().unwrap());
+        let module = m.unwrap();
+        let exec = module.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_manipulation".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(
+            exec.is_ok(),
+            "Err executing move: {:?}",
+            exec.err().unwrap()
+        );
+        let graphml_export: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        assert_snapshot!(export_to_string(&graph, graphml_export).unwrap());
+    }
+
+    #[test]
+    fn copy_to_edges() {
+        let g = test_graph();
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let m: Result<MoveAnnos, _> = toml::from_str(
+            r#"
+        component = { ctype = "Pointing", layer = "", name = "ref" }
+        anno = "default_ns::lemma"
+        direction = "out"
+        copy = true
+        "#,
+        );
+        assert!(m.is_ok(), "Err deserializing: {:?}", m.err().unwrap());
+        let module = m.unwrap();
+        let exec = module.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_manipulation".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(
+            exec.is_ok(),
+            "Err executing move: {:?}",
+            exec.err().unwrap()
+        );
+        let graphml_export: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        assert_snapshot!(export_to_string(&graph, graphml_export).unwrap());
+    }
+
+    #[test]
+    fn delim_source() {
+        let g = test_graph();
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let m: Result<MoveAnnos, _> = toml::from_str(
+            r#"
+        component = { ctype = "Pointing", layer = "", name = "ref" }
+        anno = "default_ns::ref_type"
+        direction = "source"
+        multi = { delimiter = "," }
+        "#,
+        );
+        assert!(m.is_ok(), "Err deserializing: {:?}", m.err().unwrap());
+        let module = m.unwrap();
+        let exec = module.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_manipulation".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(
+            exec.is_ok(),
+            "Err executing move: {:?}",
+            exec.err().unwrap()
+        );
+        let graphml_export: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        assert_snapshot!(export_to_string(&graph, graphml_export).unwrap());
+    }
+
+    #[test]
+    fn delim_target() {
+        let g = test_graph();
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        let m: Result<MoveAnnos, _> = toml::from_str(
+            r#"
+        component = { ctype = "Pointing", layer = "", name = "ref" }
+        anno = "default_ns::ref_type"
+        direction = "target"
+        multi = { delimiter = "," }
+        "#,
+        );
+        assert!(m.is_ok(), "Err deserializing: {:?}", m.err().unwrap());
+        let module = m.unwrap();
+        let exec = module.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_manipulation".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(
+            exec.is_ok(),
+            "Err executing move: {:?}",
+            exec.err().unwrap()
+        );
+        let graphml_export: GraphMLExporter = toml::from_str("stable_order = true").unwrap();
+        assert_snapshot!(export_to_string(&graph, graphml_export).unwrap());
+    }
+
+    fn test_graph() -> Result<AnnotationGraph, GraphAnnisError> {
+        let mut graph = AnnotationGraph::with_default_graphstorages(false)?;
+        let mut update = GraphUpdate::default();
+        update.add_event(UpdateEvent::AddNode {
+            node_name: "corpus".to_string(),
+            node_type: "corpus".to_string(),
+        })?;
+        let data = [
+            ("This", "this", 4, "anaphoric"),
+            ("is", "be", 0, ""),
+            ("the", "the", 4, "coref"),
+            ("test", "test", 0, ""),
+        ];
+        for i in 1..data.len() + 1 {
+            let name = format!("corpus#t{i}");
+            update.add_event(UpdateEvent::AddNode {
+                node_name: name.to_string(),
+                node_type: "node".to_string(),
+            })?;
+            update.add_event(UpdateEvent::AddEdge {
+                source_node: name,
+                target_node: "corpus".to_string(),
+                layer: ANNIS_NS.to_string(),
+                component_type: AnnotationComponentType::PartOf.to_string(),
+                component_name: "".to_string(),
+            })?;
+        }
+        for (i, (tok, lemma, points_to, edge_value)) in data.iter().enumerate() {
+            let index = i + 1;
+            let source = format!("corpus#t{index}");
+            let target = format!("corpus#t{points_to}");
+            if *points_to > 0i32 {
+                update.add_event(UpdateEvent::AddEdge {
+                    source_node: source.to_string(),
+                    target_node: target.to_string(),
+                    layer: "".to_string(),
+                    component_type: AnnotationComponentType::Pointing.to_string(),
+                    component_name: "ref".to_string(),
+                })?;
+                update.add_event(UpdateEvent::AddEdgeLabel {
+                    source_node: source.to_string(),
+                    target_node: target.to_string(),
+                    layer: "".to_string(),
+                    component_type: AnnotationComponentType::Pointing.to_string(),
+                    component_name: "ref".to_string(),
+                    anno_ns: "default_ns".to_string(),
+                    anno_name: "ref_type".to_string(),
+                    anno_value: edge_value.to_string(),
+                })?;
+            }
+            update.add_event(UpdateEvent::AddNodeLabel {
+                node_name: source.to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "tok".to_string(),
+                anno_value: tok.to_string(),
+            })?;
+            update.add_event(UpdateEvent::AddNodeLabel {
+                node_name: source.to_string(),
+                anno_ns: "default_ns".to_string(),
+                anno_name: "lemma".to_string(),
+                anno_value: lemma.to_string(),
+            })?;
+        }
+        graph.apply_update(&mut update, |_| {})?;
+        Ok(graph)
+    }
+}

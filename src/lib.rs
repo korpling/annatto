@@ -50,7 +50,8 @@ use crate::{
         text::ImportText,
     },
     manipulator::{
-        diff::DiffSubgraphs, divide::DivideSegments, edit::EditGraph, span::CreateSpans,
+        diff::DiffSubgraphs, divide::DivideSegments, edit::EditGraph, mv::MoveAnnos,
+        span::CreateSpans,
     },
 };
 
@@ -191,8 +192,9 @@ pub enum GraphOp {
     Filter(FilterNodes),
     Visualize(#[serde(default)] Visualize),
     Enumerate(#[serde(default)] EnumerateMatches),
-    Link(LinkNodes),                  // no default, has required attributes
-    Map(MapAnnos),                    // no default, has a (required) path attribute
+    Link(LinkNodes), // no default, has required attributes
+    Map(MapAnnos),   // no default, has a (required) path attribute
+    Move(MoveAnnos),
     Revise(#[serde(default)] Revise), // does nothing on default
     Span(CreateSpans),
     Time(#[serde(default)] Filltime),
@@ -230,6 +232,7 @@ impl GraphOp {
             GraphOp::Edit(m) => m,
             GraphOp::Span(m) => m,
             GraphOp::Divide(m) => m,
+            GraphOp::Move(m) => m,
         }
     }
 

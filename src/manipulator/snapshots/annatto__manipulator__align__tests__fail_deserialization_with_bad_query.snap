@@ -1,0 +1,11 @@
+---
+source: src/manipulator/align.rs
+expression: group.err().unwrap()
+---
+TOML parse error at line 2, column 17
+  |
+2 |         query = "annis:tok @* doc"
+  |                 ^^^^^^^^^^^^^^^^^^
+Error in query:
+`annis:tok @* doc`
+[0:7-0:9] Unexpected token in query. Expected one of: ID
