@@ -1,0 +1,48 @@
+---
+source: src/importer/paulaxml/corpus_structure.rs
+expression: actual
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k1" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <node id="rootCorpus">
+            <data key="k1">corpus</data>
+        </node>
+        <node id="rootCorpus/subCorpus1">
+            <data key="k1">corpus</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc1">
+            <data key="k0">doc1</data>
+            <data key="k1">corpus</data>
+        </node>
+        <node id="rootCorpus/subCorpus1/doc2">
+            <data key="k0">doc2</data>
+            <data key="k1">corpus</data>
+        </node>
+        <node id="rootCorpus/subCorpus2">
+            <data key="k1">corpus</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc3">
+            <data key="k0">doc3</data>
+            <data key="k1">corpus</data>
+        </node>
+        <node id="rootCorpus/subCorpus2/doc4">
+            <data key="k0">doc4</data>
+            <data key="k1">corpus</data>
+        </node>
+        <edge id="e0" source="rootCorpus/subCorpus1" target="rootCorpus" label="PartOf/annis/">
+        </edge>
+        <edge id="e1" source="rootCorpus/subCorpus1/doc1" target="rootCorpus/subCorpus1" label="PartOf/annis/">
+        </edge>
+        <edge id="e2" source="rootCorpus/subCorpus1/doc2" target="rootCorpus/subCorpus1" label="PartOf/annis/">
+        </edge>
+        <edge id="e3" source="rootCorpus/subCorpus2" target="rootCorpus" label="PartOf/annis/">
+        </edge>
+        <edge id="e4" source="rootCorpus/subCorpus2/doc3" target="rootCorpus/subCorpus2" label="PartOf/annis/">
+        </edge>
+        <edge id="e5" source="rootCorpus/subCorpus2/doc4" target="rootCorpus/subCorpus2" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>

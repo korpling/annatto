@@ -1,7 +1,8 @@
 use facet::Facet;
+use graphannis::update::GraphUpdate;
 use serde::{Deserialize, Serialize};
 
-use crate::importer::Importer;
+use crate::importer::{Importer, paulaxml::corpus_structure::CorpusMapper};
 
 mod corpus_structure;
 mod document;
@@ -14,11 +15,15 @@ pub struct ImportPaulaXml {}
 impl Importer for ImportPaulaXml {
     fn import_corpus(
         &self,
-        _input_path: &std::path::Path,
+        input_path: &std::path::Path,
         _step_id: crate::StepID,
         _config: super::GenericImportConfiguration,
         _tx: Option<crate::workflow::StatusSender>,
-    ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
+    ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
+        let mut updates = GraphUpdate::new();
+        let corpus_mapper = CorpusMapper::new();
+        let path_to_node_name = corpus_mapper.map_corpus_structure(input_path, &mut updates)?;
+
         todo!()
     }
 
