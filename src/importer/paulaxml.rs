@@ -6,7 +6,7 @@ use std::{
 use anyhow::{Result, bail};
 use facet::Facet;
 use graphannis::update::GraphUpdate;
-use roxmltree::{Document, ParsingOptions};
+use roxmltree::{Document, Node, ParsingOptions};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -120,4 +120,26 @@ impl<'input> PaulaDocument<'input> {
         }
         Ok(result)
     }
+
+    fn by_paula_id(&self, id: &str) -> Option<&Document<'input>> {
+        self.document_by_id.get(id)
+    }
+
+    /// Get all documents that have the given type in the header
+    fn by_header_type(&self, paula_type: &str) -> Vec<&Document<'input>> {
+        self.document_by_id
+            .values()
+            .filter(|d| {
+                d.root_element().children().any(|n| {
+                    n.is_element()
+                        && n.has_tag_name("header")
+                        && n.attribute("type")
+                            .is_some_and(|v| v.to_lowercase() == paula_type)
+                })
+            })
+            .collect()
+    }
 }
+
+#[cfg(test)]
+mod tests;
