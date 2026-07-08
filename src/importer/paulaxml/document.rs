@@ -3,28 +3,28 @@ use std::path::Path;
 use anyhow::Result;
 use graphannis::update::GraphUpdate;
 
+use crate::importer::paulaxml::{PaulaDirectory, PaulaDocument};
+
 pub(super) struct DocumentMapper {}
 
-impl<'input> DocumentMapper {
+impl DocumentMapper {
     pub(super) fn read_document(
-        _input_directory: &Path,
+        input_directory: &Path,
         _doc_node_name: &str,
-        _updates: &mut GraphUpdate,
+        updates: &mut GraphUpdate,
     ) -> Result<()> {
-        // let doc = roxmltree::Document::parse(input)?;
-        // let root = doc.root_element();
-        // if root.tag_name().name() != "paula" {
-        //     bail!("PAULA XML document file must start with <paula> tag");
-        // }
+        let paula_dir = PaulaDirectory::open_directory(input_directory)?;
+        let paula_doc = PaulaDocument::from_directory(&paula_dir)?;
 
-        // let nodes = doc
-        //     .root_element()
-        //     .children()
-        //     .filter(|n| n.tag_name().name() == "nodes")
-        //     .collect_vec();
+        let mapper = DocumentMapper {};
+        mapper.map_tokens(&paula_doc, updates)?;
+        // TODO: map structs
+        // TODO: map pointers
+        // TODO: map document metadata
+        Ok(())
+    }
 
-        let _mapper = DocumentMapper {};
-
+    fn map_tokens(&self, _paula_doc: &PaulaDocument, _updates: &mut GraphUpdate) -> Result<()> {
         todo!()
     }
 }
