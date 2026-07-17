@@ -61,14 +61,14 @@ impl Importer for ImportPaulaXml {
 #[derive(Default)]
 struct PaulaDirectory {
     /// Maps a file with the path to the raw XML content
-    xml_by_path: HashMap<PathBuf, String>,
+    xml_content_by_path: HashMap<PathBuf, String>,
 }
 
 /// Represents the parsed XML files of a PAULA document.
 /// Must be used in conjunction with [`PaulaDirectory`].
 struct PaulaDocument<'input> {
     /// Maps a file with the given PAULA ID to the parsed XML content
-    document_by_id: HashMap<String, Document<'input>>,
+    xml_document_by_id: HashMap<String, Document<'input>>,
 }
 
 impl PaulaDirectory {
@@ -82,7 +82,7 @@ impl PaulaDirectory {
                 && (ext == "paula" || ext == "xml")
             {
                 let content = std::fs::read_to_string(entry.path())?;
-                result.xml_by_path.insert(entry.path(), content);
+                result.xml_content_by_path.insert(entry.path(), content);
             }
         }
 
@@ -93,9 +93,9 @@ impl PaulaDirectory {
 impl<'input> PaulaDocument<'input> {
     fn from_directory(dir: &'input PaulaDirectory) -> Result<Self> {
         let mut result = PaulaDocument {
-            document_by_id: HashMap::new(),
+            xml_document_by_id: HashMap::new(),
         };
-        for (path, content) in &dir.xml_by_path {
+        for (path, content) in &dir.xml_content_by_path {
             let mut parsing_options = ParsingOptions::default();
             parsing_options.allow_dtd = true;
 
@@ -116,18 +116,22 @@ impl<'input> PaulaDocument<'input> {
             } else {
                 bail!("Invalid PAULA XML: no paula_id attribute in element <header>");
             };
-            result.document_by_id.insert(paula_id, doc);
+            result.xml_document_by_id.insert(paula_id, doc);
         }
         Ok(result)
     }
 
     fn by_paula_id(&self, id: &str) -> Option<&Document<'input>> {
-        self.document_by_id.get(id)
+        self.xml_document_by_id.get(id)
+    }
+
+    fn by_file_name(&self, id: &str) -> Option<&Document<'input>> {
+        self.xml_document_by_id.get(id)
     }
 
     /// Get all documents that have the given type in the header
     fn by_header_type(&self, paula_type: &str) -> Vec<&Document<'input>> {
-        self.document_by_id
+        self.xml_document_by_id
             .values()
             .filter(|d| {
                 d.root_element().children().any(|n| {
