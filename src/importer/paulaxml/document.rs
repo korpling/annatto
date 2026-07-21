@@ -42,9 +42,8 @@ impl DocumentMapper {
                 })
                 .next()
                 && let Some(base_uri) = tok_list.attribute((NS_XML_URI, "base"))
+                && let Some(base_doc) = paula_doc.by_file_name(base_uri)
             {
-                dbg!(base_uri);
-
                 let markables: Vec<_> = tok_list
                     .children()
                     .filter(|n| n.tag_name().name() == "mark")
