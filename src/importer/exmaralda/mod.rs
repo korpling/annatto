@@ -169,7 +169,7 @@ impl ImportEXMARaLDA {
                                         let msg = format!(
                                             "Linked file {} could not be found to be linked in document {}",
                                             audio_path.as_path().to_string_lossy(),
-                                            &doc_node_name
+                                            doc_node_name
                                         );
                                         progress.warn(&msg)?;
                                     }
@@ -281,7 +281,7 @@ impl ImportEXMARaLDA {
                             }
                             // build empty toks
                             for (tli_id, time_opt) in &tlis {
-                                let node_name = format!("{}#{}", &doc_node_name, tli_id);
+                                let node_name = format!("{}#{}", doc_node_name, tli_id);
                                 update.add_event(UpdateEvent::AddNode {
                                     node_name: node_name.to_string(),
                                     node_type: "node".to_string(),
@@ -372,7 +372,7 @@ impl ImportEXMARaLDA {
                             } else {
                                 let msg = format!(
                                     "Could not determine tier type for {}::{}. Tier will be treated as annotation tier.",
-                                    &speaker_id, &anno_name
+                                    speaker_id, anno_name
                                 );
                                 progress.warn(&msg)?;
                                 "a"
@@ -450,7 +450,7 @@ impl ImportEXMARaLDA {
                                 if let Some(sender) = tx {
                                     let msg = format!(
                                         "Event {}::{}:{}-{} does not cover any tokens and will be skipped.",
-                                        &speaker_id, &anno_name, &start_id, &end_id
+                                        speaker_id, anno_name, start_id, end_id
                                     );
                                     sender.send(StatusMessage::Warning(msg))?;
                                 }
@@ -498,7 +498,7 @@ impl ImportEXMARaLDA {
                                     if let Some(sender) = tx {
                                         let msg = format!(
                                             "Could not determine end time of event {}::{}:{}-{}. Event will be skipped.",
-                                            &speaker_id, &anno_name, &start_id, &end_id
+                                            speaker_id, anno_name, start_id, end_id
                                         );
                                         sender.send(StatusMessage::Info(msg))?;
                                     }

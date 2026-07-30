@@ -354,7 +354,7 @@ impl<'a> DatasheetMapper<'a> {
             let node_name = if is_segmentation {
                 format!(
                     "{doc_node_name}#{}_{}-{}",
-                    &col_name.replace("::", "_"),
+                    col_name.replace("::", "_"),
                     row_num,
                     row_num as usize + covered_tokens.len()
                 )

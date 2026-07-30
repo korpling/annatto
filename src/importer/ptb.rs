@@ -328,7 +328,7 @@ impl Importer for ImportPTB {
 
             match PtbParser::parse(Rule::ptb, file_content.trim()) {
                 Ok(ptb) => {
-                    let text_node_name = format!("{}#text", &doc_path);
+                    let text_node_name = format!("{doc_path}#text");
 
                     let mut doc_mapper = DocumentMapper {
                         doc_path,

@@ -140,7 +140,7 @@ struct TextfileMapper<'a> {
 impl<'a> TextfileMapper<'a> {
     fn import_textfile(&self, update: &mut GraphUpdate) -> anyhow::Result<()> {
         self.progress
-            .info(format!("Processing {}", &self.path.to_string_lossy()))?;
+            .info(format!("Processing {}", self.path.to_string_lossy()))?;
 
         let prefix = format!("{}#", self.doc_node_name);
 

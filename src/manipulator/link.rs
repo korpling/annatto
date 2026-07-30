@@ -199,7 +199,7 @@ fn gather_link_data(
                     return Err(AnnattoError::Manipulator {
                         reason: format!(
                             "Could not extract node with value index {value_index} from query `{}`",
-                            &query
+                            query
                         ),
                         manipulator: step_id.module_name.to_string(),
                     }
@@ -222,7 +222,7 @@ fn gather_link_data(
             return Err(AnnattoError::Manipulator {
                 reason: format!(
                     "Could not extract node with node index {node_index} from query `{}`",
-                    &query
+                    query
                 ),
                 manipulator: step_id.module_name.to_string(),
             }

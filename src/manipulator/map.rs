@@ -493,7 +493,7 @@ impl MapperImpl {
         let mut updates = GraphUpdate::default();
         for rule in self.config.rules.clone() {
             let query = graphannis::aql::parse(&rule.query, false)
-                .with_context(|| format!("could not parse query '{}'", &rule.query))?;
+                .with_context(|| format!("could not parse query '{}'", rule.query))?;
             let result_it = graphannis::aql::execute_query_on_graph(graph, &query, true, None)?;
             let mut n = 0;
             let mut factors = BTreeMap::default();
@@ -556,7 +556,7 @@ impl MapperImpl {
             if let Some(p) = &self.progress {
                 p.info(format!(
                     "Rule with query `{}` matched {n} time(s).",
-                    &rule.query
+                    rule.query
                 ))?;
             }
         }

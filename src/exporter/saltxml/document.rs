@@ -618,7 +618,7 @@ impl SaltDocumentGraphMapper {
 
             // Write an alignment edge from the actual SToken (not timeline items) to all known media sources
             if !features.is_empty() {
-                for (ds, _path) in self.media_ds_node_names.iter() {
+                for ds in self.media_ds_node_names.keys() {
                     salt_writer.write_edge(
                         NodeType::Id(t.source_token),
                         NodeType::Custom(ds.to_string()),

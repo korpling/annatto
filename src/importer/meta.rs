@@ -86,7 +86,7 @@ fn read_annotations(
         } else {
             progress.warn(format!(
                 "Could not read data `{}` in file {}",
-                &line,
+                line,
                 path.display()
             ))?;
         }

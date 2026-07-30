@@ -310,7 +310,7 @@ impl Manipulator for EnumerateMatches {
                         return Err(Box::new(AnnattoError::Manipulator {
                             reason: format!(
                                 "No matching node with index {} for query {query_s}",
-                                &self.target
+                                self.target
                             ),
                             manipulator: step_id.module_name.clone(),
                         }));

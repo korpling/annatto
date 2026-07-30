@@ -416,7 +416,7 @@ impl Importer for ImportTreeTagger {
         };
 
         for (file_path, doc_path) in documents {
-            reporter.info(format!("Processing {}", &file_path.to_string_lossy()))?;
+            reporter.info(format!("Processing {}", file_path.to_string_lossy()))?;
 
             let f = std::fs::File::open(&file_path)?;
             let mut file_content = String::new();
@@ -427,7 +427,7 @@ impl Importer for ImportTreeTagger {
 
             let tt: Pairs<Rule> = TreeTaggerParser::parse(Rule::treetagger, &file_content)?;
 
-            let text_node_name = format!("{}#text", &doc_path);
+            let text_node_name = format!("{doc_path}#text");
 
             let mut doc_mapper = DocumentMapper {
                 doc_path,
