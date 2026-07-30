@@ -36,13 +36,13 @@ fn serialize_custom() {
     let module = Check {
             policy: FailurePolicy::Warn,
             tests: vec![
-                Test::QueryTest {
+                Test::Queries {
                     query: "tok @* doc=/largest-doc/".into(),
                     expected: QueryResult::SemiOpenInterval(1, f64::INFINITY),
                     description: "I expect a lot of tokens".to_string(),
                     policy: None
                 },
-                Test::QueryTest {
+                Test::Queries {
                     query: "pos".into(),
                     expected: QueryResult::ClosedQueryInterval(
                         "norm".into(),
@@ -51,25 +51,25 @@ fn serialize_custom() {
                     description: "Plausible number of pos annotations.".to_string(),
                     policy: None
                 },
-                Test::QueryTest {
+                Test::Queries {
                     query: "sentence".into(),
                     expected: QueryResult::ClosedLQueryInterval("doc".into(), 400),
                     description: "Plausible distribution of sentence annotations.".to_string(),
                     policy: None
                 },
-                Test::QueryTest {
+                Test::Queries {
                     query: "doc _ident_ author=/William Shakespeare/".into(),
                     expected: QueryResult::ClosedRQueryInterval(1, "doc".into()),
                     description: "At least one document in the corpus was written by Shakespeare, hopefully all of them!".to_string(),
                     policy: None
                 },
-                Test::QueryTest {
+                Test::Queries {
                     query: "lemma=/hello/".into(),
                     expected: QueryResult::SemiOpenQueryInterval("doc".into(), f64::INFINITY),
                     description: "There are at least as many hellos as there are documents.".to_string(),
                     policy: None
                 },
-                Test::LayerTest {
+                Test::LayerDefinitions {
                     layers: vec![(
                         "Reflexive".to_string(),
                         vec!["yes".to_string(), "no".to_string()]
@@ -433,7 +433,7 @@ fn test_layer_test_to_aql_test() {
         "layer3".to_string(),
         vec!["v1".to_string(), "v2".to_string(), "v3".to_string()],
     );
-    let aql_tests: Vec<AQLTest> = (&Test::LayerTest {
+    let aql_tests: Vec<AQLTest> = (&Test::LayerDefinitions {
         layers,
         edge: None,
         optional: false,
@@ -447,7 +447,7 @@ fn test_append_report() {
     let g = input_graph(false, "corpus");
     assert!(g.is_ok());
     let mut graph = g.unwrap();
-    let tests = vec![Test::QueryTest {
+    let tests = vec![Test::Queries {
         query: "tok".into(),
         expected: QueryResult::Numeric(4),
         description: "Correct number of tokens".to_string(),
@@ -475,7 +475,7 @@ fn test_append_report() {
     assert!(report_path.exists());
     let another_check = Check {
         policy: FailurePolicy::Fail,
-        tests: vec![Test::QueryTest {
+        tests: vec![Test::Queries {
             query: "tok".into(),
             expected: QueryResult::Numeric(4),
             description: "Correct number of tokens".to_string(),
@@ -511,7 +511,7 @@ fn test_overwrite_report() {
     let g = input_graph(false, "corpus");
     assert!(g.is_ok());
     let mut graph = g.unwrap();
-    let tests = vec![Test::QueryTest {
+    let tests = vec![Test::Queries {
         query: "tok".into(),
         expected: QueryResult::Numeric(4),
         description: "Correct number of tokens".to_string(),
@@ -539,7 +539,7 @@ fn test_overwrite_report() {
     assert!(report_path.exists());
     let another_check = Check {
         policy: FailurePolicy::Fail,
-        tests: vec![Test::QueryTest {
+        tests: vec![Test::Queries {
             query: "tok".into(),
             expected: QueryResult::Numeric(4),
             description: "Correct number of tokens".to_string(),
@@ -576,31 +576,31 @@ fn test_write_report_verbose() {
     assert!(g.is_ok());
     let mut graph = g.unwrap();
     let tests = vec![
-        Test::QueryTest {
+        Test::Queries {
             query: "tok".into(),
             expected: QueryResult::Numeric(4),
             description: "Correct number of tokens is 4".to_string(),
             policy: None,
         },
-        Test::QueryTest {
+        Test::Queries {
             query: "tok".into(),
             expected: QueryResult::Numeric(2),
             description: "Correct number of tokens is 2".to_string(),
             policy: None,
         },
-        Test::QueryTest {
+        Test::Queries {
             query: "tok".into(),
             expected: QueryResult::Numeric(3),
             description: "Correct number of tokens is 3".to_string(),
             policy: None,
         },
-        Test::QueryTest {
+        Test::Queries {
             query: "tok".into(),
             expected: QueryResult::Numeric(1),
             description: "Correct number of tokens is 1".to_string(),
             policy: None,
         },
-        Test::LayerTest {
+        Test::LayerDefinitions {
             layers: vec![(
                 "pos".to_string(),
                 vec!["DET".to_string(), "NOUN".to_string()],
@@ -644,13 +644,13 @@ fn with_external_corpus() {
     let check = Check {
         policy: FailurePolicy::Fail,
         tests: vec![
-            Test::QueryTest {
+            Test::Queries {
                 query: query.into(),
                 expected: QueryResult::Numeric(1),
                 description: "Control test to make sure the query actually works".to_string(),
                 policy: None,
             },
-            Test::QueryTest {
+            Test::Queries {
                 description: "Query sequence.".to_string(),
                 query: query.into(),
                 expected: QueryResult::CorpusQuery(
@@ -660,7 +660,7 @@ fn with_external_corpus() {
                 ),
                 policy: None,
             },
-            Test::QueryTest {
+            Test::Queries {
                 description: "Query nodes.".to_string(),
                 query: "node".into(),
                 expected: QueryResult::CorpusQuery(
@@ -694,13 +694,13 @@ fn failed_only() {
         failed_only: true,
         report: Some(ReportLevel::Verbose),
         tests: vec![
-            Test::QueryTest {
+            Test::Queries {
                 query: "tok".into(),
                 expected: QueryResult::SemiOpenInterval(1, f64::INFINITY),
                 description: "gimme some tokens, please".to_string(),
                 policy: None,
             },
-            Test::QueryTest {
+            Test::Queries {
                 query: "weird_anno_name".into(),
                 expected: QueryResult::Numeric(1),
                 description: "I want that".to_string(),
@@ -732,6 +732,108 @@ fn failed_only() {
         })
         .join("\n");
     assert_snapshot!(output);
+}
+
+#[test]
+fn exhaustive() {
+    let m = r#"
+    report = "list"
+
+    [[tests]]
+    scope = "node"
+    annos = ["sentence", "pos", "cat"]
+
+    [[tests]]
+    scope = "corpus"
+    annos = []
+
+    [[tests]]
+    scope = "edge"
+    annos = ["deprel", "func"]
+    "#;
+
+    let module: Result<Check, _> = toml::from_str(m);
+    assert!(module.is_ok(), "Err: {:?}", module.err().unwrap());
+    let check = module.unwrap();
+    let g = input_graph(false, "exhaustive");
+    assert!(g.is_ok());
+    let mut graph = g.unwrap();
+    let (tx, rx) = mpsc::channel();
+    assert!(
+        check
+            .manipulate_corpus(
+                &mut graph,
+                Path::new("./"),
+                StepID {
+                    module_name: "test_check".to_string(),
+                    path: None
+                },
+                Some(tx)
+            )
+            .is_ok()
+    );
+    let report = rx
+        .into_iter()
+        .map(|m| match m {
+            StatusMessage::StepsCreated(_) => "".to_string(),
+            StatusMessage::Info(msg) => msg.to_string(),
+            StatusMessage::Warning(_) => "".to_string(),
+            StatusMessage::Progress { .. } => "".to_string(),
+            StatusMessage::StepDone { .. } => "".to_string(),
+        })
+        .join("\n");
+    assert_snapshot!(report);
+}
+
+#[test]
+fn fail_exhaustive() {
+    let m = r#"
+    report = "verbose"
+
+    [[tests]]
+    scope = "node"
+    annos = ["pos", "cat"]
+
+    [[tests]]
+    scope = "corpus"
+    annos = ["missing::anno"]  # this should cause trouble as well!
+
+    [[tests]]
+    scope = "edge"
+    annos = ["deprel", "never::annotated"]
+    "#;
+
+    let module: Result<Check, _> = toml::from_str(m);
+    assert!(module.is_ok(), "Err: {:?}", module.err().unwrap());
+    let check = module.unwrap();
+    let g = input_graph(false, "exhaustive");
+    assert!(g.is_ok());
+    let mut graph = g.unwrap();
+    let (tx, rx) = mpsc::channel();
+    assert!(
+        check
+            .manipulate_corpus(
+                &mut graph,
+                Path::new("./"),
+                StepID {
+                    module_name: "test_check".to_string(),
+                    path: None
+                },
+                Some(tx)
+            )
+            .is_err()
+    );
+    let report = rx
+        .into_iter()
+        .map(|m| match m {
+            StatusMessage::StepsCreated(_) => "".to_string(),
+            StatusMessage::Info(msg) => msg.to_string(),
+            StatusMessage::Warning(_) => "".to_string(),
+            StatusMessage::Progress { .. } => "".to_string(),
+            StatusMessage::StepDone { .. } => "".to_string(),
+        })
+        .join("\n");
+    assert_snapshot!(report);
 }
 
 fn input_graph(
