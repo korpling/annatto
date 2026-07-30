@@ -199,7 +199,27 @@ use crate::{
 /// [graph.config.tests.layers]
 /// ref_type = ["a", "k"]
 /// ```
+/// Additionally, a corpus graph can be tested for mandatory and exclusively
+/// existing annotations. The scope is either "node", "corpus", or "edge".
+/// The first two distinguish note types, the latter tests all components.
+/// Use "corpus" when defining metadata. The tests also allow to set a local
+/// policy as above. Note that multiple tests for the same scope are
+/// bound to fail if their configurations are distinct.
 ///
+/// ```toml
+/// [[graph_op.config.tests]]
+/// scope = "node"
+/// annos = ["pos", "lemma", "sentence"]
+///
+/// [[graph_op.config.tests]]
+/// scope = "corpus"
+/// annos = ["author", "date"]
+/// policy = "warn"
+///
+/// [[graph_op.config.tests]]
+/// scope = "edge"
+/// annos = ["deprel"]
+/// ```
 #[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Check {
