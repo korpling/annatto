@@ -243,21 +243,21 @@ impl TreeTaggerTokenizer {
                             // Separate following preceding parentheses
                             suffix.insert(0, Token::new_val(m.get(2).map_or("", |m| m.as_str())));
                         } else if let Some(m) = substitute(
-                            &format!("^([{}])(.)", &self.config.p_char),
+                            &format!("^([{}])(.)", self.config.p_char),
                             "$2",
                             &mut current_token,
                         )? {
                             // Separate preceding punctuation
                             result.push(Token::new_val(m.get(1).map_or("", |m| m.as_str())));
                         } else if let Some(m) = substitute(
-                            &format!("(.)([{}])$", &self.config.f_char),
+                            &format!("(.)([{}])$", self.config.f_char),
                             "$1",
                             &mut current_token,
                         )? {
                             // Separate trailing punctuation
                             suffix.insert(0, Token::new_val(m.get(2).map_or("", |m| m.as_str())));
                         } else if let Some(m) = substitute(
-                            &format!("([{}]|\\))\\.$", &self.config.f_char),
+                            &format!("([{}]|\\))\\.$", self.config.f_char),
                             "",
                             &mut current_token,
                         )? {

@@ -196,7 +196,7 @@ impl Collapse {
                             node_name: node_name.to_string(),
                         })?;
                     } else {
-                        return Err(AnnattoError::Manipulator {
+                        Err(AnnattoError::Manipulator {
                             reason: format!(
                                 "Node {m} has no node name or it cannot be retrieved, this can lead to an invalid result."
                             ),
@@ -371,7 +371,7 @@ impl Collapse {
             }
             Ok(())
         } else {
-            Err(anyhow!("Could not obtain storage of component {:?}, which is required to determine node status.", &self.component).into())
+            Err(anyhow!("Could not obtain storage of component {:?}, which is required to determine node status.", self.component).into())
         }
     }
 

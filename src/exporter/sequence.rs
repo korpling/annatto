@@ -208,7 +208,7 @@ impl ExportSequence {
             graph
                 .get_graphstorage(&self.component)
                 .ok_or(AnnattoError::Export {
-                    reason: format!("Source component undefined: {}", &self.component),
+                    reason: format!("Source component undefined: {}", self.component),
                     exporter: step_id.module_name.to_string(),
                     path: Path::new("./").to_path_buf(),
                 })?;

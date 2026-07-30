@@ -1,18 +1,18 @@
 use std::{
-    collections::{BTreeMap, btree_map::Entry},
-    fmt::Display,
+    collections::{BTreeMap, BTreeSet, btree_map::Entry},
+    fmt::{Display, Write},
     fs,
-    io::Write,
     path::{Path, PathBuf},
     sync::mpsc,
 };
 
 use anyhow::anyhow;
 use facet::Facet;
-use graphannis::{AnnotationGraph, aql, errors::GraphAnnisError};
+use graphannis::{AnnotationGraph, aql, errors::GraphAnnisError, graph::AnnoKey};
 use graphannis_core::{
     errors::GraphAnnisCoreError,
     graph::{ANNIS_NS, NODE_NAME_KEY, NODE_TYPE},
+    util::join_qname,
 };
 use itertools::Itertools;
 use serde::Serialize;
@@ -199,7 +199,27 @@ use crate::{
 /// [graph.config.tests.layers]
 /// ref_type = ["a", "k"]
 /// ```
+/// Additionally, a corpus graph can be tested for mandatory and exclusively
+/// existing annotations. The scope is either "node", "corpus", or "edge".
+/// The first two distinguish note types, the latter tests all components.
+/// Use "corpus" when defining metadata. The tests also allow to set a local
+/// policy as above. Note that multiple tests for the same scope are
+/// bound to fail if their configurations are distinct.
 ///
+/// ```toml
+/// [[graph_op.config.tests]]
+/// scope = "node"
+/// annos = ["pos", "lemma", "sentence"]
+///
+/// [[graph_op.config.tests]]
+/// scope = "corpus"
+/// annos = ["author", "date"]
+/// policy = "warn"
+///
+/// [[graph_op.config.tests]]
+/// scope = "edge"
+/// annos = ["deprel"]
+/// ```
 #[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Check {
@@ -291,9 +311,9 @@ impl Manipulator for Check {
                     } else {
                         fs::OpenOptions::new().append(true).open(target_path)?
                     };
-                    f.write_all("\n\n".as_bytes())?;
-                    f.write_all(color_free.as_bytes())?;
-                    f.flush()?;
+                    std::io::Write::write_all(&mut f, "\n\n".as_bytes())?;
+                    std::io::Write::write_all(&mut f, color_free.as_bytes())?;
+                    std::io::Write::flush(&mut f)?;
                 } else {
                     fs::write(target_path, color_free)?;
                 }
@@ -442,8 +462,144 @@ impl Check {
                 ));
                 policies.push(aql_test.policy);
             }
+            if let Test::Exhaustive {
+                scope,
+                annos,
+                policy,
+            } = test
+            {
+                match scope {
+                    ExhaustiveScope::Node | ExhaustiveScope::Corpus => {
+                        results.push((
+                            format!("Annotations on node type `{}`", scope),
+                            Check::run_exhaustive_node_test(graph, scope, annos)?,
+                        ));
+                    }
+                    ExhaustiveScope::Edge => {
+                        results.push((
+                            "Annotations on edges".to_string(),
+                            Check::run_exhaustive_edge_test(graph, annos)?,
+                        ));
+                    }
+                };
+                policies.push(policy.clone());
+            }
         }
         Ok((results, policies))
+    }
+
+    fn run_exhaustive_edge_test(
+        g: &AnnotationGraph,
+        allow_list: &BTreeSet<AnnoKey>,
+    ) -> Result<TestResult, anyhow::Error> {
+        let mut forbidden_keys = Vec::new();
+        let mut missing_keys: BTreeSet<AnnoKey> = allow_list.iter().cloned().collect();
+        for c in g.get_all_components(None, None) {
+            let gs = g
+                .get_graphstorage_as_ref(&c)
+                .ok_or(anyhow!("Could not get storage of component {:?}", c))?;
+            let existing_edge_annos = gs.get_anno_storage().annotation_keys()?;
+            forbidden_keys.extend(existing_edge_annos.into_iter().filter(|k| {
+                missing_keys.remove(k);
+                k.ns != ANNIS_NS && !allow_list.contains(k)
+            }));
+        }
+        Ok(Check::evaluate_allow_list_crit(
+            forbidden_keys,
+            missing_keys,
+        )?)
+    }
+
+    fn evaluate_allow_list_crit(
+        forbidden: Vec<AnnoKey>,
+        missing: BTreeSet<AnnoKey>,
+    ) -> Result<TestResult, std::fmt::Error> {
+        if forbidden.is_empty() && missing.is_empty() {
+            Ok(TestResult::Passed)
+        } else {
+            let mut reported_result =
+                Vec::with_capacity(!forbidden.is_empty() as usize + !missing.is_empty() as usize);
+            let key_delim = ", ";
+            if !forbidden.is_empty() {
+                let prefix = "Forbidden keys: ";
+                let keys_as_str = forbidden
+                    .into_iter()
+                    .map(|k| join_qname(&k.ns, &k.name))
+                    .collect_vec();
+                let mut forbidden_str = String::with_capacity(
+                    prefix.len()
+                        + keys_as_str.iter().map(|s| 2 + s.len()).sum::<usize>()
+                        + key_delim.len() * (keys_as_str.len() - 1),
+                );
+                write!(&mut forbidden_str, "{prefix}")?;
+                for k in keys_as_str {
+                    if forbidden_str.len() > prefix.len() {
+                        write!(&mut forbidden_str, "{key_delim}")?;
+                    }
+                    write!(&mut forbidden_str, "{k}")?;
+                }
+                reported_result.push(forbidden_str);
+            }
+            if !missing.is_empty() {
+                let prefix = "Missing keys: ";
+                let keys_as_str = missing
+                    .into_iter()
+                    .map(|k| join_qname(&k.ns, &k.name))
+                    .collect_vec();
+                let mut missing_str = String::with_capacity(
+                    prefix.len()
+                        + keys_as_str.iter().map(|s| 2 + s.len()).sum::<usize>()
+                        + key_delim.len() * (keys_as_str.len() - 1),
+                );
+                write!(&mut missing_str, "{prefix}")?;
+                for k in keys_as_str {
+                    if missing_str.len() > prefix.len() {
+                        write!(&mut missing_str, "{key_delim}")?;
+                    }
+                    write!(&mut missing_str, "{k}")?;
+                }
+                reported_result.push(missing_str);
+            }
+            Ok(TestResult::Failed {
+                query: "(annotation keys do not match the given list)".to_string(),
+                expected: QueryResult::StringResult("(list)".to_string()),
+                is: reported_result,
+            })
+        }
+    }
+
+    fn run_exhaustive_node_test(
+        g: &AnnotationGraph,
+        scope: &ExhaustiveScope,
+        allow_list: &BTreeSet<AnnoKey>,
+    ) -> Result<TestResult, anyhow::Error> {
+        let node_query_str = format!("node_type=/{}/", scope);
+        let dj = aql::parse(&node_query_str, false)?;
+        let available_nodes_of_type = aql::execute_query_on_graph(g, &dj, true, None)?.flatten();
+        let mut forbidden_keys = Vec::with_capacity(g.get_node_annos().annotation_keys()?.len());
+        let mut missing_keys: BTreeSet<AnnoKey> = allow_list.iter().cloned().collect();
+        for mg in available_nodes_of_type {
+            let node = mg
+                .first()
+                .ok_or(anyhow!("Invalid match of size zero."))?
+                .node;
+            let keys_on_node = g
+                .get_node_annos()
+                .get_all_keys_for_item(&node, None, None)?;
+            forbidden_keys.extend(
+                keys_on_node
+                    .into_iter()
+                    .filter(|k| {
+                        missing_keys.remove(k);
+                        k.ns != ANNIS_NS && !allow_list.contains(k)
+                    })
+                    .map(|ak| (*ak).clone()),
+            );
+        }
+        Ok(Check::evaluate_allow_list_crit(
+            forbidden_keys,
+            missing_keys,
+        )?)
     }
 
     fn run_test(
@@ -582,6 +738,13 @@ impl Check {
                             Err(error) => return TestResult::ProcessingError { error },
                         }
                     }
+                    QueryResult::StringResult(_) => {
+                        return TestResult::ProcessingError {
+                            error: GraphAnnisError::ImpossibleSearch(
+                                "Cannot search exhaustively".to_string(),
+                            ),
+                        };
+                    }
                 };
                 if passes {
                     TestResult::Passed
@@ -645,7 +808,7 @@ struct AQLTest {
 impl From<&Test> for Vec<AQLTest> {
     fn from(value: &Test) -> Self {
         match value {
-            Test::QueryTest {
+            Test::Queries {
                 query,
                 expected,
                 description,
@@ -672,11 +835,12 @@ impl From<&Test> for Vec<AQLTest> {
                     QueryResult::SemiOpenQueryInterval(q, b) => {
                         QueryResult::SemiOpenQueryInterval(q.clone(), *b)
                     }
+                    QueryResult::StringResult(_) => QueryResult::Numeric(0), // this never happens
                 },
                 description: description.to_string(),
                 policy: (*policy).clone(),
             }],
-            Test::LayerTest {
+            Test::LayerDefinitions {
                 layers,
                 edge: target,
                 optional,
@@ -714,6 +878,9 @@ impl From<&Test> for Vec<AQLTest> {
                 }
                 tests
             }
+            Test::Exhaustive { .. } => {
+                vec![]
+            }
         }
     }
 }
@@ -726,19 +893,26 @@ impl From<&Test> for Vec<AQLTest> {
 #[derive(Deserialize)]
 #[serde(untagged, deny_unknown_fields)]
 enum UncheckedTest {
-    QueryTest {
+    Query {
         query: String,
         expected: UncheckedQueryResult,
         description: String,
         #[serde(default)]
         policy: Option<FailurePolicy>, // is option, such that the global policy can override the local
     },
-    LayerTest {
+    LayerDefinitions {
         layers: BTreeMap<String, Vec<String>>,
         #[serde(default)]
         edge: Option<String>,
         #[serde(default)]
         optional: bool,
+    },
+    Exhaustive {
+        #[serde(default)]
+        scope: ExhaustiveScope,
+        #[serde(with = "crate::estarde::anno_key::in_sequence")]
+        annos: BTreeSet<AnnoKey>,
+        policy: Option<FailurePolicy>,
     },
 }
 
@@ -747,28 +921,37 @@ impl TryFrom<UncheckedTest> for Test {
 
     fn try_from(value: UncheckedTest) -> Result<Self, Self::Error> {
         match value {
-            UncheckedTest::QueryTest {
+            UncheckedTest::Query {
                 query,
                 expected,
                 description,
                 policy,
             } => {
                 check_deserialized_query(&query)?;
-                Ok(Test::QueryTest {
+                Ok(Test::Queries {
                     query,
                     expected: QueryResult::try_from(expected)?,
                     description,
                     policy,
                 })
             }
-            UncheckedTest::LayerTest {
+            UncheckedTest::LayerDefinitions {
                 layers,
                 edge,
                 optional,
-            } => Ok(Test::LayerTest {
+            } => Ok(Test::LayerDefinitions {
                 layers,
                 edge,
                 optional,
+            }),
+            UncheckedTest::Exhaustive {
+                scope,
+                annos,
+                policy,
+            } => Ok(Test::Exhaustive {
+                scope,
+                annos,
+                policy,
             }),
         }
     }
@@ -778,20 +961,48 @@ impl TryFrom<UncheckedTest> for Test {
 #[serde(untagged, deny_unknown_fields, try_from = "UncheckedTest")]
 #[repr(u8)]
 enum Test {
-    QueryTest {
+    Queries {
         query: String,
         expected: QueryResult,
         description: String,
         #[serde(default)]
         policy: Option<FailurePolicy>, // is option, such that the global policy can override the local
     },
-    LayerTest {
+    LayerDefinitions {
         layers: BTreeMap<String, Vec<String>>,
         #[serde(default)]
         edge: Option<String>,
         #[serde(default)]
         optional: bool,
     },
+    Exhaustive {
+        #[serde(default)]
+        scope: ExhaustiveScope,
+        #[serde(with = "crate::estarde::anno_key::in_sequence")]
+        annos: BTreeSet<AnnoKey>,
+        policy: Option<FailurePolicy>,
+    },
+}
+
+#[derive(Clone, Deserialize, Default, Eq, Facet, PartialEq, PartialOrd, Ord, Serialize)]
+#[repr(u8)]
+#[serde(rename_all = "lowercase")]
+enum ExhaustiveScope {
+    #[default]
+    Node,
+    Corpus,
+    Edge,
+}
+
+impl Display for ExhaustiveScope {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let v = match self {
+            ExhaustiveScope::Node => "node",
+            ExhaustiveScope::Corpus => "corpus",
+            ExhaustiveScope::Edge => "edge",
+        };
+        write!(f, "{v}")
+    }
 }
 
 enum TestResult {
@@ -916,6 +1127,7 @@ enum QueryResult {
     SemiOpenInterval(usize, f64),
     SemiOpenQueryInterval(String, f64),
     CorpusQuery(PathBuf, String, String), // db_dir, corpus name, query
+    StringResult(String), // as this does not get deserialized directly, having a second variant with a single string field is no problem
 }
 
 #[cfg(test)]

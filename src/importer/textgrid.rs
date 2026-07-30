@@ -438,7 +438,7 @@ impl Importer for ImportTextgrid {
         let documents = import_corpus_graph_from_files(&mut u, input_path, &config)?;
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
         for (file_path, doc_path) in documents {
-            reporter.info(format!("Processing {}", &file_path.to_string_lossy()))?;
+            reporter.info(format!("Processing {}", file_path.to_string_lossy()))?;
 
             // Some TextGrid files are not UTF-8, but UTF-16, so use a reader
             // that uses the BOM and can transcode the file content if
@@ -450,7 +450,7 @@ impl Importer for ImportTextgrid {
 
             let textgrid = TextGrid::parse(&file_content)?;
 
-            let text_node_name = format!("{}#text", &doc_path);
+            let text_node_name = format!("{doc_path}#text");
             let root_corpus = root_corpus_from_path(input_path)?;
 
             let mut doc_mapper = DocumentMapper {
@@ -489,18 +489,15 @@ fn best_matching_start_end(
                 OrderedFloat(interval.xmin)
             })
         {
-            if let Some(upper_candidate) = parent_tier_intervals.get(insertion_idx) {
-                start = upper_candidate.xmin;
-                if let Some(lower_candidate) = parent_tier_intervals.get(insertion_idx - 1) {
-                    // Decide based on which candidate is nearer
-                    if (orig_interval.xmin - lower_candidate.xmin).abs()
-                        < (orig_interval.xmin - upper_candidate.xmin).abs()
-                    {
-                        start = lower_candidate.xmin;
-                    }
+            let upper_candidate = parent_tier_intervals.get(insertion_idx)?;
+            start = upper_candidate.xmin;
+            if let Some(lower_candidate) = parent_tier_intervals.get(insertion_idx - 1) {
+                // Decide based on which candidate is nearer
+                if (orig_interval.xmin - lower_candidate.xmin).abs()
+                    < (orig_interval.xmin - upper_candidate.xmin).abs()
+                {
+                    start = lower_candidate.xmin;
                 }
-            } else {
-                return None;
             }
         }
         if let Err(insertion_idx) = parent_tier_intervals
@@ -508,18 +505,15 @@ fn best_matching_start_end(
                 OrderedFloat(interval.xmax)
             })
         {
-            if let Some(upper_candidate) = parent_tier_intervals.get(insertion_idx) {
-                end = upper_candidate.xmax;
-                if let Some(lower_candidate) = parent_tier_intervals.get(insertion_idx - 1) {
-                    // Decide based on which candidate is nearer
-                    if (orig_interval.xmax - lower_candidate.xmax).abs()
-                        < (orig_interval.xmax - upper_candidate.xmax).abs()
-                    {
-                        end = lower_candidate.xmax;
-                    }
+            let upper_candidate = parent_tier_intervals.get(insertion_idx)?;
+            end = upper_candidate.xmax;
+            if let Some(lower_candidate) = parent_tier_intervals.get(insertion_idx - 1) {
+                // Decide based on which candidate is nearer
+                if (orig_interval.xmax - lower_candidate.xmax).abs()
+                    < (orig_interval.xmax - upper_candidate.xmax).abs()
+                {
+                    end = lower_candidate.xmax;
                 }
-            } else {
-                return None;
             }
         }
     }

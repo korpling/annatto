@@ -1,0 +1,13 @@
+---
+source: src/manipulator/check/tests.rs
+expression: report
+---
++-----------------------------------+--------+
+| description                       | result |
++-----------------------------------+--------+
+| Annotations on node type `node`   | [32mpassed[0m |
++-----------------------------------+--------+
+| Annotations on node type `corpus` | [32mpassed[0m |
++-----------------------------------+--------+
+| Annotations on edges              | [32mpassed[0m |
++-----------------------------------+--------+

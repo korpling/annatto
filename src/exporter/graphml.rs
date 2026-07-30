@@ -589,7 +589,7 @@ impl Exporter for GraphMLExporter {
             vis_str
         };
         let vis_str = format!("\n{vis}\n");
-        reporter.info(format!("Starting export to {}", &output_file_path.display()).as_str())?;
+        reporter.info(format!("Starting export to {}", output_file_path.display()).as_str())?;
 
         let zip_options =
             zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Deflated);

@@ -182,7 +182,7 @@ fn convert(
                 multi_bar.println(msg)?;
             }
             StatusMessage::Warning(msg) => {
-                let msg = format!("[WARNING] {}", &msg);
+                let msg = format!("[WARNING] {msg}");
                 if *USE_ANSI_COLORS {
                     multi_bar.println(console::style(msg).red().to_string())?;
                 } else {

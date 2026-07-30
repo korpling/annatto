@@ -208,7 +208,7 @@ impl ImportWebAnnoTSV {
                             "Missing column entry {}::{} for token {}",
                             key.ns,
                             key.name,
-                            &token_name
+                            token_name
                         ))?;
                         let value = entry
                             .into_inner()
@@ -235,7 +235,7 @@ impl ImportWebAnnoTSV {
                         .next()
                         .ok_or(anyhow!(
                             "Could not reach vector column {ns} for token {}",
-                            &token_name
+                            token_name
                         ))?
                         .into_inner()
                         .next()
