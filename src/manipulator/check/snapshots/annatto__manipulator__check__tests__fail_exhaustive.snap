@@ -1,0 +1,31 @@
+---
+source: src/manipulator/check/tests.rs
+expression: report
+---
++-----------------------------------------------+--------+
+| description                                   | result |
++-----------------------------------------------+--------+
+| Annotations on node type `node`               | [31m1[0m      |
+| (annotation keys do not match the given list) |        |
++-----------------------------------------------+--------+
+Matches for query of test `Annotations on node type `node``:
+Forbidden keys: sentence
+
++-----------------------------------------------+--------+
+| description                                   | result |
++-----------------------------------------------+--------+
+| Annotations on node type `corpus`             | [31m1[0m      |
+| (annotation keys do not match the given list) |        |
++-----------------------------------------------+--------+
+Matches for query of test `Annotations on node type `corpus``:
+Missing keys: missing::anno
+
++-----------------------------------------------+--------+
+| description                                   | result |
++-----------------------------------------------+--------+
+| Annotations on edges                          | [31m2[0m      |
+| (annotation keys do not match the given list) |        |
++-----------------------------------------------+--------+
+Matches for query of test `Annotations on edges`:
+Forbidden keys: func
+Missing keys: never::annotated
