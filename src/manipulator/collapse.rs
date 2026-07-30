@@ -371,7 +371,7 @@ impl Collapse {
             }
             Ok(())
         } else {
-            Err(anyhow!("Could not obtain storage of component {:?}, which is required to determine node status.", &self.component).into())
+            Err(anyhow!("Could not obtain storage of component {:?}, which is required to determine node status.", self.component).into())
         }
     }
 

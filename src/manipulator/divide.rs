@@ -170,7 +170,7 @@ impl Manipulator for DivideSegments {
         {
             let source_gs = graph
                 .get_graphstorage(&self.horizontal.source)
-                .ok_or(anyhow!("No such component: {}", &self.horizontal.source))?;
+                .ok_or(anyhow!("No such component: {}", self.horizontal.source))?;
             let source_node_sequences = {
                 let roots = source_gs
                     .source_nodes()
@@ -186,7 +186,7 @@ impl Manipulator for DivideSegments {
             graph.get_or_create_writable(&self.horizontal.minimal)?;
             let minimal_gs = graph
                 .get_graphstorage(&self.horizontal.minimal)
-                .ok_or(anyhow!("No such component: {}", &self.horizontal.minimal))?;
+                .ok_or(anyhow!("No such component: {}", self.horizontal.minimal))?;
             let minimal_is_new = minimal_gs.as_edgecontainer().source_nodes().count() == 0;
 
             let vertical_gss = self

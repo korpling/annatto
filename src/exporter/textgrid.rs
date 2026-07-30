@@ -171,7 +171,7 @@ impl Exporter for ExportTextGrid {
             } else {
                 return Err(anyhow!(
                     "Could not determine file name from annotations with file key {:?}.",
-                    &mtch.anno_key
+                    mtch.anno_key
                 )
                 .into());
             }

@@ -476,7 +476,7 @@ fn replace_edge_annos(
             let component_storage = if let Some(strg) = graph.get_graphstorage(&component) {
                 strg
             } else {
-                return Err(anyhow!("Could not obtain storage of component {}", &component).into());
+                return Err(anyhow!("Could not obtain storage of component {}", component).into());
             };
             let edge_annos = component_storage.get_anno_storage();
             for r in edge_annos.exact_anno_search(
@@ -571,7 +571,7 @@ fn replace_namespaces(
         let storage = if let Some(strg) = graph.get_graphstorage(&component) {
             strg
         } else {
-            return Err(anyhow!("Could not obtain component storage: {}", &component).into());
+            return Err(anyhow!("Could not obtain component storage: {}", component).into());
         };
         for (old_namespace, new_namespace_opt) in renamings.iter() {
             let new_ns = match new_namespace_opt {
