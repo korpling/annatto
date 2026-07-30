@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - import `xlsx`: A detailled error message provides sheet name and file path, when a potentially empty sheet makes processing impossible.
+- graph op `check`: Allow to configure exhaustive annotation name test, i. e., prescribe which annotations are allowed to exist and have to exist, with scopes "edge", "node", and "corpus".
 
 ### Changed
 
