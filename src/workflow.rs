@@ -274,6 +274,7 @@ pub fn execute_from_file(
         Path::new("")
     };
     // End of workaround
+    wf.check_and_make_paths(parent_dir)?;
     let result = wf.execute(tx, parent_dir, in_memory);
     if let Some(save_path) = save_workflow {
         wf.footer.success = result.is_ok();
@@ -560,6 +561,40 @@ impl Workflow {
 
     pub fn graph_op_steps(&self) -> Option<&Vec<ManipulatorStep>> {
         self.graph_op.as_ref()
+    }
+
+    pub fn check_and_make_paths(&self, parent_dir: &Path) -> Result<()> {
+        if let Some(import_steps) = self.import_steps() {
+            for import in import_steps {
+                let import_path = if import.path.is_relative() {
+                    parent_dir.join(import.path.as_path())
+                } else {
+                    import.path.to_path_buf()
+                };
+                if !import_path.exists() {
+                    return Err(anyhow!(
+                        "Import path does not exist: {}",
+                        import_path.to_string_lossy()
+                    )
+                    .into());
+                }
+            }
+        }
+        if let Some(export_steps) = self.export_steps() {
+            // we need to build the export paths now to catch a building error
+            //before a lot of time goes wasted
+            for export in export_steps {
+                let export_path = if export.path.is_relative() {
+                    parent_dir.join(export.path.as_path())
+                } else {
+                    export.path.to_path_buf()
+                };
+                if !export_path.exists() {
+                    fs::create_dir_all(export_path)?;
+                }
+            }
+        }
+        Ok(())
     }
 
     fn execute_single_importer(
@@ -1059,5 +1094,38 @@ mod tests {
         workflow.footer.annatto_version.clear();
         let toml_str = toml::to_string(&workflow);
         assert_snapshot!(toml_str.unwrap());
+    }
+
+    #[test]
+    fn check_paths() {
+        let workflow: std::result::Result<Workflow, _> = toml::from_str(
+            r#"
+        [[import]]
+        format = "xlsx"
+        path = "data/xlsx"
+
+        [import.config]
+        
+        [[import]]
+        format = "conllu"
+        path = "data/conllu"
+
+        [import.config]
+
+        [[export]]
+        path = "data/output"
+        format = "graphml"
+
+        [export.config]
+        "#,
+        );
+
+        assert!(workflow.is_ok());
+        let workflow = workflow.unwrap();
+        let tmp_dir = tempdir().unwrap();
+        assert!(workflow.check_and_make_paths(tmp_dir.path()).is_err());
+        assert!(fs::create_dir_all(tmp_dir.path().join("data").join("xlsx")).is_ok());
+        assert!(fs::create_dir(tmp_dir.path().join("data").join("conllu")).is_ok());
+        assert!(workflow.check_and_make_paths(tmp_dir.path()).is_ok());
     }
 }

@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - import `xlsx`: When a sheet is not found, only a warning is raised. This is more desirable for batch processing.
 - uses graphannis 4.1.5
+- import paths are checked before starting imports.
+- export paths are created before imports start if possible.
 
 ### Fixed
 
