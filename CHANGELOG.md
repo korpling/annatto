@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.55.0] - 2026-08-03
+
 ### Added
 
 - import `xlsx`: A detailled error message provides sheet name and file path, when a potentially empty sheet makes processing impossible.
