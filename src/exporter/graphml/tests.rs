@@ -34,6 +34,7 @@ fn serialize_custom() {
         stable_order: true,
         zip: true,
         zip_copy_from: Some("copy/path/".into()),
+        partition_by_node_label: None,
     };
     let serialization = toml::to_string(&module);
     assert!(
