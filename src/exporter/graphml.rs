@@ -14,6 +14,7 @@ use facet::Facet;
 use graphannis::{
     AnnotationGraph,
     graph::{Edge, NodeID},
+    model::AnnotationComponent,
 };
 use graphannis::{graph::AnnoKey, model::AnnotationComponentType};
 use graphannis_core::{
@@ -22,8 +23,10 @@ use graphannis_core::{
     graph::{
         ANNIS_NS, NODE_NAME_KEY, NODE_TYPE, NODE_TYPE_KEY, storage::union::UnionEdgeContainer,
     },
+    util::disk_collections::{DiskMap, EvictionStrategy},
 };
 use itertools::Itertools;
+use roxmltree::NodeId;
 use serde_derive::{Deserialize, Serialize};
 use zip::ZipWriter;
 
@@ -280,6 +283,8 @@ impl Exporter for GraphMLExporter {
             }
             // TODO: merge partitions with a possible parent partition
 
+            let mut copied_nodes: DiskMap<NodeID, NodeID> = DiskMap::default();
+
             let all_components = graph.get_all_components(None, None);
             let part_of_storages = graph
                 .get_all_components(Some(AnnotationComponentType::PartOf), None)
@@ -298,37 +303,11 @@ impl Exporter for GraphMLExporter {
                     CycleSafeDFS::new_inverse(&part_of_container, *partition_root, 0, usize::MAX);
                 for partition_node in dfs {
                     let partition_node = partition_node?.node;
-                    // Copy all labels/annotations for this graph
-                    for anno in graph
-                        .get_node_annos()
-                        .get_annotations_for_item(&partition_node)?
-                    {
-                        partition_graph
-                            .get_node_annos_mut()
-                            .insert(partition_node, anno)?;
-                    }
-                    // Copy all outgoing edges for all components of this node
-                    for c in &all_components {
-                        if let Some(gs) = graph.get_graphstorage_as_ref(c)
-                            && gs.has_outgoing_edges(partition_node)?
-                        {
-                            let partition_gs = partition_graph.get_or_create_writable(&c)?;
-                            for target in gs.get_outgoing_edges(partition_node) {
-                                let target = target?;
-                                let edge = Edge {
-                                    source: partition_node,
-                                    target,
-                                };
-
-                                partition_gs.add_edge(edge.clone())?;
-                                for anno in gs.get_anno_storage().get_annotations_for_item(&edge)? {
-                                    partition_gs.add_edge_annotation(edge.clone(), anno)?;
-                                }
-                            }
-                        }
-                    }
+                    copy_node(partition_node, &all_components, graph, partition_graph)?;
+                    copied_nodes.insert(partition_node, *partition_root)?;
                 }
             }
+            // TODO: fill the remaining graph with all nodes not in any of the partitions
 
             todo!("Write out each partition to each file")
         } else {
@@ -389,6 +368,44 @@ impl Exporter for GraphMLExporter {
     fn file_extension(&self) -> &str {
         if self.zip { "zip" } else { "graphml" }
     }
+}
+
+fn copy_node(
+    partition_node: NodeID,
+    all_components: &[AnnotationComponent],
+    graph: &AnnotationGraph,
+    partition_graph: &mut AnnotationGraph,
+) -> anyhow::Result<()> {
+    // Copy all labels/annotations for this graph
+    for anno in graph
+        .get_node_annos()
+        .get_annotations_for_item(&partition_node)?
+    {
+        partition_graph
+            .get_node_annos_mut()
+            .insert(partition_node, anno)?;
+    }
+    // Copy all outgoing edges for all components of this node
+    for c in all_components {
+        if let Some(gs) = graph.get_graphstorage_as_ref(c)
+            && gs.has_outgoing_edges(partition_node)?
+        {
+            let partition_gs = partition_graph.get_or_create_writable(&c)?;
+            for target in gs.get_outgoing_edges(partition_node) {
+                let target = target?;
+                let edge = Edge {
+                    source: partition_node,
+                    target,
+                };
+
+                partition_gs.add_edge(edge.clone())?;
+                for anno in gs.get_anno_storage().get_annotations_for_item(&edge)? {
+                    partition_gs.add_edge_annotation(edge.clone(), anno)?;
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 mod guess_vis;
