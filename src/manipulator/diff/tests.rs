@@ -2,14 +2,22 @@ mod merge;
 
 use std::path::Path;
 
-use graphannis::AnnotationGraph;
+use graphannis::{
+    AnnotationGraph,
+    graph::AnnoKey,
+    model::{AnnotationComponent, AnnotationComponentType},
+};
+use graphannis_core::graph::ANNIS_NS;
 use insta::assert_snapshot;
 
 use crate::{
     StepID,
     exporter::graphml::GraphMLExporter,
     importer::{GenericImportConfiguration, Importer, exmaralda::ImportEXMARaLDA},
-    manipulator::{Manipulator, diff::DiffSubgraphs},
+    manipulator::{
+        Manipulator,
+        diff::{DiffAlgorithm, DiffMode, DiffSubgraphs},
+    },
     test_util::export_to_string,
     util::update_graph_silent,
 };
@@ -29,6 +37,46 @@ fn deserialize_serialize() {
     let r: Result<DiffSubgraphs, _> = toml::from_str(toml_str);
     assert!(r.is_ok(), "Could not deserialize: {:?}", r.err().unwrap());
     let diff = r.unwrap();
+    assert_snapshot!(toml::to_string(&diff).unwrap());
+}
+
+#[test]
+fn serialize() {
+    let diff = DiffSubgraphs {
+        by: AnnoKey {
+            ns: ANNIS_NS.to_string(),
+            name: "doc".to_string(),
+        },
+        source_parent: "corpus/subcorpora/a".to_string(),
+        source_component: AnnotationComponent::new(
+            AnnotationComponentType::Ordering,
+            "default_ns".to_string(),
+            "norm".to_string(),
+        ),
+        source_key: AnnoKey {
+            ns: "norm".to_string(),
+            name: "norm".to_string(),
+        },
+        target_parent: "corpus/subcorpora/b".to_string(),
+        target_component: AnnotationComponent::new(
+            AnnotationComponentType::Ordering,
+            "default_ns".to_string(),
+            "txt".to_string(),
+        ),
+        target_key: AnnoKey {
+            ns: "txt".to_string(),
+            name: "txt".to_string(),
+        },
+        algorithm: DiffAlgorithm::Lcs,
+        mode: Some(DiffMode::Merge {
+            keep: [AnnoKey {
+                ns: "norm".to_string(),
+                name: "sentence".to_string(),
+            }]
+            .into_iter()
+            .collect(),
+        }),
+    };
     assert_snapshot!(toml::to_string(&diff).unwrap());
 }
 

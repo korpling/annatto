@@ -2,12 +2,14 @@
 source: src/manipulator/diff/tests.rs
 expression: "toml::to_string(&diff).unwrap()"
 ---
-by = "namespace::alternative_key"
+by = "annis::doc"
 source_parent = "corpus/subcorpora/a"
 source_key = "norm::norm"
 target_parent = "corpus/subcorpora/b"
 target_key = "txt::txt"
 algorithm = "lcs"
+mode = "merge"
+keep = ["norm::sentence"]
 
 [source_component]
 ctype = "Ordering"

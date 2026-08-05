@@ -46,7 +46,7 @@ fn with_data() {
         source_parent = "merge/a"
         source_component = { ctype = "Ordering", layer = "annis", name = "norm" }
         source_key = "norm::norm"
-        merge = true
+        mode = "merge"
         "#,
     );
     assert!(d.is_ok());
@@ -87,6 +87,15 @@ fn with_data() {
 
 #[test]
 fn single_tok() {
+    assert_snapshot!(single_tok_configurable(""));
+}
+
+#[test]
+fn single_tok_with_keep() {
+    assert_snapshot!(single_tok_configurable("keep = [\"annis::node_name\"]"));
+}
+
+fn single_tok_configurable(mode_config: &str) -> String {
     let mut graph = AnnotationGraph::with_default_graphstorages(true).unwrap();
     let mut update = GraphUpdate::default();
     assert!(
@@ -316,17 +325,25 @@ fn single_tok() {
         }
     }
     assert!(graph.apply_update(&mut update, |_| {}).is_ok());
-    let toml_str = r#"
+    let toml_str = format!(
+        r#"
         target_parent = "corpus/b"
-        target_component = { ctype = "Ordering", layer = "annis", name = "" }
+        target_component = {{ ctype = "Ordering", layer = "annis", name = "" }}
         target_key = "annis::tok"
         source_parent = "corpus/a"
-        source_component = { ctype = "Ordering", layer = "annis", name = "" }
+        source_component = {{ ctype = "Ordering", layer = "annis", name = "" }}
         source_key = "annis::tok"
-        merge = true
-    "#;
-    let m: Result<DiffSubgraphs, _> = toml::from_str(toml_str);
-    assert!(m.is_ok());
+        mode = "merge"
+        {mode_config}
+    "#
+    );
+
+    let m: Result<DiffSubgraphs, _> = toml::from_str(&toml_str);
+    assert!(
+        m.is_ok(),
+        "Error when deserializing: {:?}",
+        m.err().unwrap()
+    );
     let module = m.unwrap();
     let run = module.manipulate_corpus(
         &mut graph,
@@ -346,7 +363,7 @@ fn single_tok() {
         &graph,
         toml::from_str::<GraphMLExporter>("stable_order = true").unwrap(),
     );
-    assert_snapshot!(actual.unwrap());
+    return actual.unwrap();
 }
 
 #[test]
@@ -763,7 +780,7 @@ fn multiple_segmentations() {
         source_parent = "corpus/a"
         source_component = { ctype = "Ordering", layer = "default_ns", name = "norm" }
         source_key = "default_ns::norm"
-        merge = true
+        mode = "merge"
     "#;
     let m: Result<DiffSubgraphs, _> = toml::from_str(toml_str);
     assert!(m.is_ok());
