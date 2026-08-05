@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- some importers support filtering by document names and paths (without extension) in generic config using key `documents`.
+
 ### Fixed
 
 - graph op `unstable:diff`: annotations in the source can be kept in merge mode.
