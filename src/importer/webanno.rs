@@ -13,9 +13,7 @@ use pest::{Parser, iterators::Pair};
 use pest_derive::Parser;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    importer::GenericImportConfiguration, progress::ProgressReporter,
-};
+use crate::{importer::GenericImportConfiguration, progress::ProgressReporter};
 
 use super::Importer;
 
