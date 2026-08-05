@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- graph op `unstable:diff`: annotations in the source can be kept in merge mode.
+
 ## [0.55.0] - 2026-08-03
 
 ### Added
