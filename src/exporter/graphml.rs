@@ -29,7 +29,7 @@ use graphannis_core::{
 };
 use itertools::Itertools;
 use serde_derive::{Deserialize, Serialize};
-use zip::ZipWriter;
+use zip::{ZipWriter, write::FileOptions};
 
 /// Exports files as [GraphML](http://graphml.graphdrawing.org/) files which
 /// conform to the [graphANNIS data model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
@@ -89,9 +89,9 @@ pub struct GraphMLExporter {
     /// Output more than one GraphML-file. The given annotation key is used to
     /// determine partitions that each get its own file. Any node having an
     /// annotation with this key is used as the parent node for a partitioned
-    /// file. E.g. by specificing `annis:doc` you would get a GraphML-file for
+    /// file. E.g. by specificing `annis::doc` you would get a GraphML-file for
     /// each document.
-    #[serde(default)]
+    #[serde(default, with = "crate::estarde::anno_key::as_option")]
     partition_by_node_label: Option<AnnoKey>,
 }
 
@@ -113,41 +113,6 @@ struct Visualization {
 }
 
 impl GraphMLExporter {
-    /// Find all nodes of the type "file" and return an iterator
-    /// over a tuple of the node name and path of the linked file as it is given in the annotation.
-    fn get_linked_files<'a>(
-        &'a self,
-        graph: &'a AnnotationGraph,
-    ) -> anyhow::Result<impl Iterator<Item = anyhow::Result<PathBuf>> + 'a> {
-        let linked_file_key = AnnoKey {
-            ns: ANNIS_NS.into(),
-            name: "file".into(),
-        };
-        // Find all nodes of the type "file"
-        let node_annos: &dyn NodeAnnotationStorage = graph.get_node_annos();
-        let it = node_annos
-            .exact_anno_search(Some(ANNIS_NS), NODE_TYPE, ValueSearch::Some("file"))
-            // Get the linked file for this node
-            .map(move |m| match m {
-                Ok(m) => node_annos
-                    .get_value_for_item(&m.node, &NODE_NAME_KEY)
-                    .map(|node_name| (m, node_name)),
-                Err(e) => Err(e),
-            })
-            .map(move |result| match result {
-                Ok((m, _node_name)) => node_annos.get_value_for_item(&m.node, &linked_file_key),
-                Err(e) => Err(e),
-            })
-            .filter_map_ok(move |file_path_value| {
-                if let Some(file_path_value) = file_path_value {
-                    return Some(PathBuf::from(file_path_value.as_ref()));
-                }
-                None
-            })
-            .map(|item| item.map_err(anyhow::Error::from));
-        Ok(it)
-    }
-
     fn write_graphml_file(
         &self,
         graph: &AnnotationGraph,
@@ -185,6 +150,35 @@ impl GraphMLExporter {
         }
         Ok(())
     }
+}
+
+fn write_linked_files(
+    zip_file: Option<&mut ZipWriter<File>>,
+    zip_options: FileOptions,
+    zip_copy_from: Option<PathBuf>,
+    graph: &AnnotationGraph,
+) -> anyhow::Result<()> {
+    if let Some(mut zip_file) = zip_file {
+        // Insert all linked files with a *relative* path into the ZIP file.
+        // We can't rewrite the links in the GraphML at this point and have
+        // to assume that when unpacking it again, the absolute file paths
+        // should point to the original files. But when relative files are
+        // used, we can store them in the ZIP file itself and the when
+        // unpacked, the paths are still valid regardless of whether they
+        // existed in the first place on the target system.
+        for file_path in get_linked_files(graph)? {
+            let original_path = zip_copy_from.clone().unwrap_or_default().join(file_path?);
+
+            if original_path.is_relative() {
+                zip_file.start_file(original_path.to_string_lossy(), zip_options)?;
+            }
+            let file_to_copy = File::open(original_path)?;
+            let mut reader = BufReader::new(file_to_copy);
+            std::io::copy(&mut reader, &mut zip_file)?;
+        }
+    }
+
+    Ok(())
 }
 
 fn get_corpus_root(
@@ -258,17 +252,14 @@ impl Exporter for GraphMLExporter {
 
         let zip_options =
             zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
-        let mut zip_file = if self.zip {
+        let mut zip_writer = if self.zip {
             // Create a ZIP file at the given location
             let file_name = format!("{toplevel_corpus_name}.{extension}");
 
             let output_file_path = output_path.join(file_name);
 
             let output_file = File::create(output_file_path.clone())?;
-            let mut zip = zip::ZipWriter::new(output_file);
-
-            // Create an entry in the ZIP file and write the GraphML to this file entry
-            zip.start_file(format!("{toplevel_corpus_name}.graphml"), zip_options)?;
+            let zip = zip::ZipWriter::new(output_file);
             Some(zip)
         } else {
             None
@@ -291,6 +282,7 @@ impl Exporter for GraphMLExporter {
         let vis_str = format!("\n{vis}\n");
 
         if let Some(partition_by) = &self.partition_by_node_label {
+            reporter.info("Partitioning the corpus")?;
             let (remaining_graph, partitions) = create_partitions(partition_by, graph)?;
 
             //  Write out the "root" file with all nodes that are not part of the partition
@@ -298,12 +290,24 @@ impl Exporter for GraphMLExporter {
             let output_file_path = output_path.join(file_name);
 
             reporter.info(format!("Starting export to {}", output_file_path.display()).as_str())?;
+            if let Some(zip) = zip_writer.as_mut() {
+                // Create an entry in the ZIP file and write the GraphML to this file entry
+                zip.start_file(format!("{toplevel_corpus_name}.graphml"), zip_options)?;
+            };
+
             self.write_graphml_file(
                 &remaining_graph,
                 &output_file_path,
-                zip_file.as_mut(),
+                zip_writer.as_mut(),
                 &vis_str,
                 &reporter,
+            )?;
+
+            write_linked_files(
+                zip_writer.as_mut(),
+                zip_options,
+                self.zip_copy_from.clone(),
+                graph,
             )?;
 
             //  Write out each partition to each file
@@ -312,15 +316,20 @@ impl Exporter for GraphMLExporter {
                     .get_node_annos()
                     .get_value_for_item(n, &NODE_NAME_KEY)?
                     .ok_or_else(|| anyhow!("No node name for node with ID {n}"))?;
-                let file_name = format!("{node_name}.{extension}");
+                let file_name = format!("{node_name}.graphml");
                 let output_file_path = output_path.join(file_name);
+
+                if let Some(zip) = zip_writer.as_mut() {
+                    // Create an entry in the ZIP file and write the GraphML to this file entry
+                    zip.start_file(format!("{node_name}.graphml"), zip_options)?;
+                };
 
                 reporter
                     .info(format!("Starting export to {}", output_file_path.display()).as_str())?;
                 self.write_graphml_file(
-                    &remaining_graph,
+                    &partition_graph,
                     &output_file_path,
-                    zip_file.as_mut(),
+                    zip_writer.as_mut(),
                     &vis_str,
                     &reporter,
                 )?;
@@ -329,46 +338,68 @@ impl Exporter for GraphMLExporter {
             let file_name = format!("{toplevel_corpus_name}.{extension}");
             let output_file_path = output_path.join(file_name);
 
+            if let Some(zip) = zip_writer.as_mut() {
+                // Create an entry in the ZIP file and write the GraphML to this file entry
+                zip.start_file(format!("{toplevel_corpus_name}.graphml"), zip_options)?;
+            };
+
             reporter.info(format!("Starting export to {}", output_file_path.display()).as_str())?;
 
             self.write_graphml_file(
                 graph,
                 &output_file_path,
-                zip_file.as_mut(),
+                zip_writer.as_mut(),
                 &vis_str,
                 &reporter,
             )?;
+
+            write_linked_files(
+                zip_writer.as_mut(),
+                zip_options,
+                self.zip_copy_from.clone(),
+                graph,
+            )?;
         }
 
-        if let Some(mut zip_file) = zip_file {
-            // Insert all linked files with a *relative* path into the ZIP file.
-            // We can't rewrite the links in the GraphML at this point and have
-            // to assume that when unpacking it again, the absolute file paths
-            // should point to the original files. But when relative files are
-            // used, we can store them in the ZIP file itself and the when
-            // unpacked, the paths are still valid regardless of whether they
-            // existed in the first place on the target system.
-            for file_path in self.get_linked_files(graph)? {
-                let original_path = self
-                    .zip_copy_from
-                    .clone()
-                    .unwrap_or_default()
-                    .join(file_path?);
-
-                if original_path.is_relative() {
-                    zip_file.start_file(original_path.to_string_lossy(), zip_options)?;
-                }
-                let file_to_copy = File::open(original_path)?;
-                let mut reader = BufReader::new(file_to_copy);
-                std::io::copy(&mut reader, &mut zip_file)?;
-            }
-        }
         Ok(())
     }
 
     fn file_extension(&self) -> &str {
         if self.zip { "zip" } else { "graphml" }
     }
+}
+/// Find all nodes of the type "file" and return an iterator
+/// over a tuple of the node name and path of the linked file as it is given in the annotation.
+fn get_linked_files<'a>(
+    graph: &'a AnnotationGraph,
+) -> anyhow::Result<impl Iterator<Item = anyhow::Result<PathBuf>> + 'a> {
+    let linked_file_key = AnnoKey {
+        ns: ANNIS_NS.into(),
+        name: "file".into(),
+    };
+    // Find all nodes of the type "file"
+    let node_annos: &dyn NodeAnnotationStorage = graph.get_node_annos();
+    let it = node_annos
+        .exact_anno_search(Some(ANNIS_NS), NODE_TYPE, ValueSearch::Some("file"))
+        // Get the linked file for this node
+        .map(move |m| match m {
+            Ok(m) => node_annos
+                .get_value_for_item(&m.node, &NODE_NAME_KEY)
+                .map(|node_name| (m, node_name)),
+            Err(e) => Err(e),
+        })
+        .map(move |result| match result {
+            Ok((m, _node_name)) => node_annos.get_value_for_item(&m.node, &linked_file_key),
+            Err(e) => Err(e),
+        })
+        .filter_map_ok(move |file_path_value| {
+            if let Some(file_path_value) = file_path_value {
+                return Some(PathBuf::from(file_path_value.as_ref()));
+            }
+            None
+        })
+        .map(|item| item.map_err(anyhow::Error::from));
+    Ok(it)
 }
 
 fn create_partitions(
