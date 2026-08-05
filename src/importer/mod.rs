@@ -20,11 +20,14 @@ pub mod whisper;
 pub mod xlsx;
 pub mod xml;
 
-use crate::{StepID, workflow::StatusSender};
+use crate::{StepID, util::graphupdate::import_corpus_graph_from_files, workflow::StatusSender};
 use graphannis::update::GraphUpdate;
 use percent_encoding::{AsciiSet, CONTROLS};
 use serde::{Deserialize, Serialize};
-use std::path::Path;
+use std::{
+    collections::BTreeSet,
+    path::{Path, PathBuf},
+};
 
 /// An importer is a module that takes a path and produces a list of graph update events.
 /// Using the graph update event list allows to execute several importers in parallel and join them to a single annotation graph.
@@ -56,6 +59,7 @@ pub trait Importer: Sync {
                 .iter()
                 .map(<&str>::to_string)
                 .collect(),
+            documents: None,
         }
     }
 }
@@ -86,7 +90,11 @@ pub struct GenericImportConfiguration {
     #[serde(alias = "as", default)]
     pub(crate) root_as: Option<String>,
     #[serde(default)]
-    pub(crate) extensions: Vec<String>,
+    pub(crate) extensions: Vec<String>, // this is a vec for smoother interoperability with the internal api, semantically this behaves like a set down the line
+    /// This is a document filter. If none provided, all documents will be imported. If provided, only documents matching the document stem or path will be imported.
+    /// Extension is optional.
+    #[serde(default)]
+    pub(crate) documents: Option<BTreeSet<String>>, // this is an option to have strictly linear semantics on the set: more entries mean more documents starting at 0 meaning 0 documents (not a sensible use-case, but could be used for building subcorpus structure from paths, i. e., to license a corpus hack)
 }
 
 impl<'a> GenericImportConfiguration {
@@ -103,6 +111,7 @@ impl<'a> GenericImportConfiguration {
         GenericImportConfiguration {
             root_as: Some(root_name),
             extensions: vec![],
+            documents: None,
         }
     }
 
@@ -111,6 +120,7 @@ impl<'a> GenericImportConfiguration {
         GenericImportConfiguration {
             root_as: None,
             extensions,
+            documents: None,
         }
     }
 
@@ -125,6 +135,7 @@ impl<'a> GenericImportConfiguration {
                 .iter()
                 .map(<&str>::to_string)
                 .collect_vec(),
+            documents: None,
         }
     }
 
@@ -133,6 +144,46 @@ impl<'a> GenericImportConfiguration {
         GenericImportConfiguration {
             root_as: self.root_as,
             extensions,
+            documents: self.documents,
         }
+    }
+
+    // importers do not need to use this, but it implements the default case.
+    pub fn derive_corpus_graph(
+        &self,
+        import_path: &Path,
+        update: &mut GraphUpdate,
+    ) -> crate::error::Result<NamedPaths> {
+        Ok(NamedPaths(import_corpus_graph_from_files(
+            update,
+            import_path,
+            self,
+        )?))
+    }
+}
+
+pub type NamedPath = (PathBuf, String);
+
+pub struct NamedPaths(Vec<NamedPath>);
+
+impl IntoIterator for NamedPaths {
+    type Item = NamedPath;
+
+    type IntoIter = <Vec<NamedPath> as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+impl NamedPaths {
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+impl AsRef<Vec<NamedPath>> for NamedPaths {
+    fn as_ref(&self) -> &Vec<NamedPath> {
+        &self.0
     }
 }

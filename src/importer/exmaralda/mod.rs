@@ -18,12 +18,8 @@ use xml::{EventReader, ParserConfig, attribute::OwnedAttribute, reader::XmlEvent
 
 use super::Importer;
 use crate::{
-    StepID,
-    error::AnnattoError,
-    importer::GenericImportConfiguration,
-    progress::ProgressReporter,
-    util::graphupdate::{import_corpus_graph_from_files, map_audio_source},
-    workflow::StatusMessage,
+    StepID, error::AnnattoError, importer::GenericImportConfiguration, progress::ProgressReporter,
+    util::graphupdate::map_audio_source, workflow::StatusMessage,
 };
 
 /// Import [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
@@ -60,7 +56,7 @@ impl Importer for ImportEXMARaLDA {
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let all_files = import_corpus_graph_from_files(&mut update, input_path, &config)?;
+        let all_files = config.derive_corpus_graph(input_path, &mut update)?;
         let progress = ProgressReporter::new(tx.clone(), step_id.clone(), all_files.len())?;
         let document_status: Result<Vec<()>, AnnattoError> = all_files
             .into_iter()

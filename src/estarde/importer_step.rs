@@ -20,6 +20,7 @@ pub mod optional_sequence {
                     let resolved_config = if let Some(GenericImportConfiguration {
                         root_as,
                         extensions,
+                        documents
                     }) = generic_config
                     {
                         let resolved_extensions = if extensions.is_empty() {
@@ -35,6 +36,7 @@ pub mod optional_sequence {
                         Some(GenericImportConfiguration {
                             root_as,
                             extensions: resolved_extensions,
+                            documents
                         })
                     } else {
                         None
