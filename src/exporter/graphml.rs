@@ -10,6 +10,7 @@ use crate::{
     StepID, error::AnnattoError, exporter::Exporter, progress::ProgressReporter,
     workflow::StatusSender,
 };
+use anyhow::anyhow;
 use facet::Facet;
 use graphannis::{
     AnnotationGraph,
@@ -21,12 +22,12 @@ use graphannis_core::{
     annostorage::{NodeAnnotationStorage, ValueSearch},
     dfs::CycleSafeDFS,
     graph::{
-        ANNIS_NS, NODE_NAME_KEY, NODE_TYPE, NODE_TYPE_KEY, storage::union::UnionEdgeContainer,
+        ANNIS_NS, NODE_NAME, NODE_NAME_KEY, NODE_TYPE, NODE_TYPE_KEY,
+        storage::union::UnionEdgeContainer,
     },
-    util::disk_collections::{DiskMap, EvictionStrategy},
+    util::disk_collections::DiskMap,
 };
 use itertools::Itertools;
-use roxmltree::NodeId;
 use serde_derive::{Deserialize, Serialize};
 use zip::ZipWriter;
 
@@ -85,6 +86,11 @@ pub struct GraphMLExporter {
     /// ```
     #[serde(default)]
     zip_copy_from: Option<PathBuf>, // we use an option here as a default path with value "" is irritating (serialization)
+    /// Output more than one GraphML-file. The given annotation key is used to
+    /// determine partitions that each get its own file. Any node having an
+    /// annotation with this key is used as the parent node for a partitioned
+    /// file. E.g. by specificing `annis:doc` you would get a GraphML-file for
+    /// each document.
     #[serde(default)]
     partition_by_node_label: Option<AnnoKey>,
 }
@@ -268,67 +274,61 @@ impl Exporter for GraphMLExporter {
             None
         };
 
+        let infered_vis = if self.guess_vis {
+            Some(guess_vis::vis_from_graph(graph)?)
+        } else {
+            None
+        };
+        let vis_str = match self.add_vis {
+            None => DEFAULT_VIS_STR.to_string(),
+            Some(ref visualisations) => visualisations.to_string(),
+        };
+        let vis = if let Some(vis_cfg) = infered_vis {
+            [vis_str, vis_cfg].join("\n\n")
+        } else {
+            vis_str
+        };
+        let vis_str = format!("\n{vis}\n");
+
         if let Some(partition_by) = &self.partition_by_node_label {
-            let mut remaining_graph = AnnotationGraph::new(true)?;
-            // Create new annotation graphs for each node that is the root of the partition
-            let mut partitions: BTreeMap<NodeID, AnnotationGraph> = BTreeMap::new();
+            let (remaining_graph, partitions) = create_partitions(partition_by, graph)?;
 
-            for n in graph.get_node_annos().exact_anno_search(
-                Some(&partition_by.ns),
-                &partition_by.name,
-                ValueSearch::Any,
-            ) {
-                let n = n?.node;
-                partitions.insert(n, AnnotationGraph::new(true)?);
+            //  Write out the "root" file with all nodes that are not part of the partition
+            let file_name = format!("{toplevel_corpus_name}.{extension}");
+            let output_file_path = output_path.join(file_name);
+
+            reporter.info(format!("Starting export to {}", output_file_path.display()).as_str())?;
+            self.write_graphml_file(
+                &remaining_graph,
+                &output_file_path,
+                zip_file.as_mut(),
+                &vis_str,
+                &reporter,
+            )?;
+
+            //  Write out each partition to each file
+            for (n, partition_graph) in &partitions {
+                let node_name = partition_graph
+                    .get_node_annos()
+                    .get_value_for_item(n, &NODE_NAME_KEY)?
+                    .ok_or_else(|| anyhow!("No node name for node with ID {n}"))?;
+                let file_name = format!("{node_name}.{extension}");
+                let output_file_path = output_path.join(file_name);
+
+                reporter
+                    .info(format!("Starting export to {}", output_file_path.display()).as_str())?;
+                self.write_graphml_file(
+                    &remaining_graph,
+                    &output_file_path,
+                    zip_file.as_mut(),
+                    &vis_str,
+                    &reporter,
+                )?;
             }
-            // TODO: merge partitions with a possible parent partition
-
-            let mut copied_nodes: DiskMap<NodeID, NodeID> = DiskMap::default();
-
-            let all_components = graph.get_all_components(None, None);
-            let part_of_storages = graph
-                .get_all_components(Some(AnnotationComponentType::PartOf), None)
-                .iter()
-                .filter_map(|c| graph.get_graphstorage(c))
-                .collect_vec();
-            let part_of_container = UnionEdgeContainer::new(
-                part_of_storages
-                    .iter()
-                    .map(|gs| gs.as_edgecontainer())
-                    .collect(),
-            );
-
-            for (partition_root, partition_graph) in &mut partitions {
-                let dfs =
-                    CycleSafeDFS::new_inverse(&part_of_container, *partition_root, 0, usize::MAX);
-                for partition_node in dfs {
-                    let partition_node = partition_node?.node;
-                    copy_node(partition_node, &all_components, graph, partition_graph)?;
-                    copied_nodes.insert(partition_node, *partition_root)?;
-                }
-            }
-            // TODO: fill the remaining graph with all nodes not in any of the partitions
-
-            todo!("Write out each partition to each file")
         } else {
             let file_name = format!("{toplevel_corpus_name}.{extension}");
             let output_file_path = output_path.join(file_name);
 
-            let infered_vis = if self.guess_vis {
-                Some(guess_vis::vis_from_graph(graph)?)
-            } else {
-                None
-            };
-            let vis_str = match self.add_vis {
-                None => DEFAULT_VIS_STR.to_string(),
-                Some(ref visualisations) => visualisations.to_string(),
-            };
-            let vis = if let Some(vis_cfg) = infered_vis {
-                [vis_str, vis_cfg].join("\n\n")
-            } else {
-                vis_str
-            };
-            let vis_str = format!("\n{vis}\n");
             reporter.info(format!("Starting export to {}", output_file_path.display()).as_str())?;
 
             self.write_graphml_file(
@@ -339,6 +339,7 @@ impl Exporter for GraphMLExporter {
                 &reporter,
             )?;
         }
+
         if let Some(mut zip_file) = zip_file {
             // Insert all linked files with a *relative* path into the ZIP file.
             // We can't rewrite the links in the GraphML at this point and have
@@ -368,6 +369,61 @@ impl Exporter for GraphMLExporter {
     fn file_extension(&self) -> &str {
         if self.zip { "zip" } else { "graphml" }
     }
+}
+
+fn create_partitions(
+    partition_by: &AnnoKey,
+    graph: &AnnotationGraph,
+) -> anyhow::Result<(AnnotationGraph, BTreeMap<NodeID, AnnotationGraph>)> {
+    let mut remaining_graph = AnnotationGraph::new(true)?;
+    // Create new annotation graphs for each node that is the root of the partition
+    let mut partitions: BTreeMap<NodeID, AnnotationGraph> = BTreeMap::new();
+
+    for n in graph.get_node_annos().exact_anno_search(
+        Some(&partition_by.ns),
+        &partition_by.name,
+        ValueSearch::Any,
+    ) {
+        let n = n?.node;
+        partitions.insert(n, AnnotationGraph::new(true)?);
+    }
+    // TODO: merge partitions with a possible parent partition
+
+    let mut copied_nodes: DiskMap<NodeID, NodeID> = DiskMap::default();
+
+    let all_components = graph.get_all_components(None, None);
+    let part_of_storages = graph
+        .get_all_components(Some(AnnotationComponentType::PartOf), None)
+        .iter()
+        .filter_map(|c| graph.get_graphstorage(c))
+        .collect_vec();
+    let part_of_container = UnionEdgeContainer::new(
+        part_of_storages
+            .iter()
+            .map(|gs| gs.as_edgecontainer())
+            .collect(),
+    );
+
+    for (partition_root, partition_graph) in &mut partitions {
+        let dfs = CycleSafeDFS::new_inverse(&part_of_container, *partition_root, 0, usize::MAX);
+        for partition_node in dfs {
+            let partition_node = partition_node?.node;
+            copy_node(partition_node, &all_components, graph, partition_graph)?;
+            copied_nodes.insert(partition_node, *partition_root)?;
+        }
+    }
+    // fill the remaining graph with all nodes not in any of the partitions
+    for n in graph
+        .get_node_annos()
+        .exact_anno_search(Some(ANNIS_NS), NODE_NAME, ValueSearch::Any)
+    {
+        let n = n?.node;
+        if !copied_nodes.contains_key(&n)? {
+            copy_node(n, &all_components, graph, &mut remaining_graph)?;
+        }
+    }
+
+    Ok((remaining_graph, partitions))
 }
 
 fn copy_node(
