@@ -14,7 +14,6 @@ use crate::{
         text::tokenizer::{Token, TreeTaggerTokenizer},
     },
     progress::ProgressReporter,
-    util,
 };
 
 mod tokenizer;
@@ -99,8 +98,7 @@ impl Importer for ImportText {
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
 
-        let all_files =
-            util::graphupdate::import_corpus_graph_from_files(&mut update, input_path, &config)?;
+        let all_files = config.derive_corpus_graph(input_path, &mut update)?;
 
         let tokenizer = match &self.tokenizer {
             Tokenizer::Treetagger { language } => TreeTaggerTokenizer::new(language.into())?,

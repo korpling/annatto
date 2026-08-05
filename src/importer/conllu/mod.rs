@@ -30,7 +30,7 @@ use serde_derive::Deserialize;
 use super::Importer;
 use crate::{
     StepID, error::AnnattoError, importer::GenericImportConfiguration, progress::ProgressReporter,
-    util::graphupdate::import_corpus_graph_from_files, workflow::StatusSender,
+    workflow::StatusSender,
 };
 
 /// Import files in the [CONLL-U format](https://universaldependencies.org/format.html)
@@ -81,8 +81,7 @@ impl Importer for ImportCoNLLU {
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let paths_and_node_names =
-            import_corpus_graph_from_files(&mut update, input_path, &config)?;
+        let paths_and_node_names = config.derive_corpus_graph(input_path, &mut update)?;
         let progress =
             ProgressReporter::new(tx.clone(), step_id.clone(), paths_and_node_names.len())?;
         for (pathbuf, doc_node_name) in paths_and_node_names {

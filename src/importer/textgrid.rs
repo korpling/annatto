@@ -10,8 +10,8 @@ use crate::importer::GenericImportConfiguration;
 use crate::models::textgrid::{Interval, TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{
-    NodeInfo, add_order_relations, import_corpus_graph_from_files, map_annotations,
-    map_audio_source, map_token, root_corpus_from_path,
+    NodeInfo, add_order_relations, map_annotations, map_audio_source, map_token,
+    root_corpus_from_path,
 };
 use anyhow::{Result, anyhow};
 use encoding_rs_io::DecodeReaderBytes;
@@ -435,7 +435,7 @@ impl Importer for ImportTextgrid {
             audio_extension: self.audio_extension.as_str(),
         };
 
-        let documents = import_corpus_graph_from_files(&mut u, input_path, &config)?;
+        let documents = config.derive_corpus_graph(input_path, &mut u)?;
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
         for (file_path, doc_path) in documents {
             reporter.info(format!("Processing {}", file_path.to_string_lossy()))?;

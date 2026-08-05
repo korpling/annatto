@@ -88,13 +88,25 @@ pub(crate) mod token_helper;
 pub fn get_all_files(
     corpus_root_dir: &Path,
     file_extensions: &[&str],
+    document_filter: Option<BTreeSet<String>>,
 ) -> std::result::Result<Vec<PathBuf>, AnnattoError> {
     let mut paths = Vec::new();
     let flex_path = corpus_root_dir.join("**");
     for ext in file_extensions {
         let ext_path = flex_path.join(format!("*.{ext}"));
         for file_opt in glob::glob(&ext_path.to_string_lossy())? {
-            paths.push(file_opt?)
+            if let Some(name_filter) = &document_filter {
+                let fpath = file_opt?;
+                if let Some(stem) = fpath.file_stem()
+                    && name_filter.contains(&*stem.to_string_lossy())
+                {
+                    paths.push(fpath);
+                } else if name_filter.contains(&*fpath.to_string_lossy()) {
+                    paths.push(fpath);
+                }
+            } else {
+                paths.push(file_opt?)
+            }
         }
     }
     Ok(paths)

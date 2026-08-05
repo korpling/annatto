@@ -1,0 +1,16 @@
+[[import]]
+format = "text"
+path = "./"
+documents = ["a", "corpus/subcorpus/b"]
+
+[import.config]
+
+[[export]]
+path = "./"
+format = "graphml"
+
+[export.config]
+stable_order = true
+
+[footer]
+annatto_version = ""
