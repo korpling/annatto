@@ -1,0 +1,21 @@
+---
+source: src/exporter/graphml/tests.rs
+expression: anotherdocument
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="graph" attr.name="configuration" attr.type="string"/>
+    <key id="k1" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k2" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k3" for="node" attr.name="default_ns::visible_description" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <data key="k0"><![CDATA[
+# configure visualizations here
+]]></data>
+        <node id="single_sentence/subcorpus1/anotherdocument">
+            <data key="k1">anotherdocument</data>
+            <data key="k2">corpus</data>
+            <data key="k3">This is a document without content.</data>
+        </node>
+    </graph>
+</graphml>
