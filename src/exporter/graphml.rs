@@ -268,7 +268,7 @@ impl Exporter for GraphMLExporter {
                 }
 
                 self.write_graphml_file(
-                    &partition_graph,
+                    partition_graph,
                     &output_file_path,
                     zip_writer.as_mut(),
                     None,
@@ -521,7 +521,7 @@ fn copy_node(
         if let Some(gs) = graph.get_graphstorage_as_ref(c)
             && gs.has_outgoing_edges(partition_node)?
         {
-            let partition_gs = partition_graph.get_or_create_writable(&c)?;
+            let partition_gs = partition_graph.get_or_create_writable(c)?;
             for target in gs.get_outgoing_edges(partition_node) {
                 let target = target?;
                 let edge = Edge {
