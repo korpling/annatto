@@ -118,7 +118,7 @@ impl GraphMLExporter {
         graph: &AnnotationGraph,
         output_file_path: &Path,
         zip_file: Option<&mut ZipWriter<File>>,
-        vis_str: &str,
+        vis_str: Option<&str>,
         reporter: &ProgressReporter,
     ) -> anyhow::Result<()> {
         let mut writer: Box<dyn std::io::Write> = if let Some(zip_file) = zip_file {
@@ -132,7 +132,7 @@ impl GraphMLExporter {
         if self.stable_order {
             graphannis_core::graph::serialization::graphml::export_stable_order(
                 graph,
-                Some(vis_str),
+                vis_str,
                 &mut writer,
                 |msg| {
                     reporter.info(msg).expect("Could not send status message");
@@ -141,7 +141,7 @@ impl GraphMLExporter {
         } else {
             graphannis_core::graph::serialization::graphml::export(
                 graph,
-                Some(vis_str),
+                vis_str,
                 &mut writer,
                 |msg| {
                     reporter.info(msg).expect("Could not send status message");
@@ -224,7 +224,7 @@ impl Exporter for GraphMLExporter {
                 &remaining_graph,
                 &output_file_path,
                 zip_writer.as_mut(),
-                &vis_str,
+                Some(&vis_str),
                 &reporter,
             )?;
 
@@ -271,7 +271,7 @@ impl Exporter for GraphMLExporter {
                     &partition_graph,
                     &output_file_path,
                     zip_writer.as_mut(),
-                    &vis_str,
+                    None,
                     &reporter,
                 )?;
             }
@@ -290,7 +290,7 @@ impl Exporter for GraphMLExporter {
                 graph,
                 &output_file_path,
                 zip_writer.as_mut(),
-                &vis_str,
+                Some(&vis_str),
                 &reporter,
             )?;
 

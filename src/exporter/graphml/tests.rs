@@ -204,7 +204,7 @@ fn export_graphml_with_partition() {
         ns: ANNIS_NS.to_string(),
     });
 
-    exporter.guess_vis = false;
+    exporter.guess_vis = true;
     exporter.stable_order = true;
 
     let output_path = TempDir::new().unwrap();
