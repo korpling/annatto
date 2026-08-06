@@ -154,7 +154,7 @@ impl<'a> GenericImportConfiguration {
         import_path: &Path,
         update: &mut GraphUpdate,
     ) -> crate::error::Result<NamedPaths> {
-        Ok(import_corpus_graph_from_files(update, import_path, self)?)
+        import_corpus_graph_from_files(update, import_path, self)
     }
 }
 
