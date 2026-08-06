@@ -15,7 +15,7 @@ use facet::Facet;
 use graphannis::{
     AnnotationGraph,
     graph::{Edge, NodeID},
-    model::AnnotationComponent,
+    model::{AnnotationComponent, AnnotationComponentType::PartOf},
 };
 use graphannis::{graph::AnnoKey, model::AnnotationComponentType};
 use graphannis_core::{
@@ -92,7 +92,7 @@ pub struct GraphMLExporter {
     /// file. E.g. by specificing `annis::doc` you would get a GraphML-file for
     /// each document.
     #[serde(default, with = "crate::estarde::anno_key::as_option")]
-    partition_by_node_label: Option<AnnoKey>,
+    partition_by: Option<AnnoKey>,
 }
 
 const DEFAULT_VIS_STR: &str = "# configure visualizations here";
@@ -152,81 +152,6 @@ impl GraphMLExporter {
     }
 }
 
-fn write_linked_files(
-    zip_file: Option<&mut ZipWriter<File>>,
-    zip_options: FileOptions,
-    zip_copy_from: Option<PathBuf>,
-    graph: &AnnotationGraph,
-) -> anyhow::Result<()> {
-    if let Some(mut zip_file) = zip_file {
-        // Insert all linked files with a *relative* path into the ZIP file.
-        // We can't rewrite the links in the GraphML at this point and have
-        // to assume that when unpacking it again, the absolute file paths
-        // should point to the original files. But when relative files are
-        // used, we can store them in the ZIP file itself and the when
-        // unpacked, the paths are still valid regardless of whether they
-        // existed in the first place on the target system.
-        for file_path in get_linked_files(graph)? {
-            let original_path = zip_copy_from.clone().unwrap_or_default().join(file_path?);
-
-            if original_path.is_relative() {
-                zip_file.start_file(original_path.to_string_lossy(), zip_options)?;
-            }
-            let file_to_copy = File::open(original_path)?;
-            let mut reader = BufReader::new(file_to_copy);
-            std::io::copy(&mut reader, &mut zip_file)?;
-        }
-    }
-
-    Ok(())
-}
-
-fn get_corpus_root(
-    graph: &AnnotationGraph,
-    output_path: &Path,
-    step_id: StepID,
-) -> Result<NodeID, Box<dyn std::error::Error>> {
-    // Get the toplevel corpus name from the corpus structure
-    let part_of_c = graph
-        .get_all_components(Some(AnnotationComponentType::PartOf), None)
-        .first()
-        .cloned()
-        .ok_or_else(|| AnnattoError::Export {
-            reason: "Could not determine file name for graphML.".into(),
-            exporter: step_id.module_name.clone(),
-            path: output_path.to_path_buf(),
-        })?;
-
-    let corpus_nodes = graph.get_node_annos().exact_anno_search(
-        Some(NODE_TYPE_KEY.ns.as_str()),
-        NODE_TYPE_KEY.name.as_str(),
-        ValueSearch::Some("corpus"),
-    );
-    let corpus_root_opt = if let Some(part_of_storage) = graph.get_graphstorage(&part_of_c) {
-        corpus_nodes.into_iter().find(|n| {
-            if let Ok(mtch) = n {
-                !part_of_storage
-                    .has_outgoing_edges(mtch.node)
-                    .unwrap_or(true) // use true to not output unprobed node
-            } else {
-                false
-            }
-        })
-    } else {
-        None
-    };
-    let corpus_root = if let Some(corpus_root_r) = corpus_root_opt {
-        corpus_root_r?.node
-    } else {
-        return Err(Box::new(AnnattoError::Export {
-            reason: "No corpus root could be determined.".to_string(),
-            exporter: step_id.module_name.to_string(),
-            path: output_path.to_path_buf(),
-        }));
-    };
-    Ok(corpus_root)
-}
-
 impl Exporter for GraphMLExporter {
     fn export_corpus(
         &self,
@@ -281,7 +206,7 @@ impl Exporter for GraphMLExporter {
         };
         let vis_str = format!("\n{vis}\n");
 
-        if let Some(partition_by) = &self.partition_by_node_label {
+        if let Some(partition_by) = &self.partition_by {
             reporter.info("Partitioning the corpus")?;
             let (remaining_graph, partitions) = create_partitions(partition_by, graph)?;
 
@@ -322,10 +247,26 @@ impl Exporter for GraphMLExporter {
                 if let Some(zip) = zip_writer.as_mut() {
                     // Create an entry in the ZIP file and write the GraphML to this file entry
                     zip.start_file(format!("{node_name}.graphml"), zip_options)?;
+                    reporter.info(
+                        format!(
+                            "Starting export {node_name}.graphml to {}",
+                            output_file_path.display()
+                        )
+                        .as_str(),
+                    )?;
+                } else {
+                    reporter.info(
+                        format!("Starting export to {}", output_file_path.display()).as_str(),
+                    )?;
                 };
 
-                reporter
-                    .info(format!("Starting export to {}", output_file_path.display()).as_str())?;
+                if zip_writer.is_none()
+                    && let Some(parent_dir) = output_file_path.parent()
+                    && !parent_dir.exists()
+                {
+                    create_dir_all(parent_dir)?;
+                }
+
                 self.write_graphml_file(
                     &partition_graph,
                     &output_file_path,
@@ -368,6 +309,36 @@ impl Exporter for GraphMLExporter {
         if self.zip { "zip" } else { "graphml" }
     }
 }
+
+fn write_linked_files(
+    zip_file: Option<&mut ZipWriter<File>>,
+    zip_options: FileOptions,
+    zip_copy_from: Option<PathBuf>,
+    graph: &AnnotationGraph,
+) -> anyhow::Result<()> {
+    if let Some(mut zip_file) = zip_file {
+        // Insert all linked files with a *relative* path into the ZIP file.
+        // We can't rewrite the links in the GraphML at this point and have
+        // to assume that when unpacking it again, the absolute file paths
+        // should point to the original files. But when relative files are
+        // used, we can store them in the ZIP file itself and the when
+        // unpacked, the paths are still valid regardless of whether they
+        // existed in the first place on the target system.
+        for file_path in get_linked_files(graph)? {
+            let original_path = zip_copy_from.clone().unwrap_or_default().join(file_path?);
+
+            if original_path.is_relative() {
+                zip_file.start_file(original_path.to_string_lossy(), zip_options)?;
+            }
+            let file_to_copy = File::open(original_path)?;
+            let mut reader = BufReader::new(file_to_copy);
+            std::io::copy(&mut reader, &mut zip_file)?;
+        }
+    }
+
+    Ok(())
+}
+
 /// Find all nodes of the type "file" and return an iterator
 /// over a tuple of the node name and path of the linked file as it is given in the annotation.
 fn get_linked_files<'a>(
@@ -402,6 +373,52 @@ fn get_linked_files<'a>(
     Ok(it)
 }
 
+fn get_corpus_root(
+    graph: &AnnotationGraph,
+    output_path: &Path,
+    step_id: StepID,
+) -> Result<NodeID, Box<dyn std::error::Error>> {
+    // Get the toplevel corpus name from the corpus structure
+    let part_of_c = graph
+        .get_all_components(Some(AnnotationComponentType::PartOf), None)
+        .first()
+        .cloned()
+        .ok_or_else(|| AnnattoError::Export {
+            reason: "Could not determine file name for graphML.".into(),
+            exporter: step_id.module_name.clone(),
+            path: output_path.to_path_buf(),
+        })?;
+
+    let corpus_nodes = graph.get_node_annos().exact_anno_search(
+        Some(NODE_TYPE_KEY.ns.as_str()),
+        NODE_TYPE_KEY.name.as_str(),
+        ValueSearch::Some("corpus"),
+    );
+    let corpus_root_opt = if let Some(part_of_storage) = graph.get_graphstorage(&part_of_c) {
+        corpus_nodes.into_iter().find(|n| {
+            if let Ok(mtch) = n {
+                !part_of_storage
+                    .has_outgoing_edges(mtch.node)
+                    .unwrap_or(true) // use true to not output unprobed node
+            } else {
+                false
+            }
+        })
+    } else {
+        None
+    };
+    let corpus_root = if let Some(corpus_root_r) = corpus_root_opt {
+        corpus_root_r?.node
+    } else {
+        return Err(Box::new(AnnattoError::Export {
+            reason: "No corpus root could be determined.".to_string(),
+            exporter: step_id.module_name.to_string(),
+            path: output_path.to_path_buf(),
+        }));
+    };
+    Ok(corpus_root)
+}
+
 fn create_partitions(
     partition_by: &AnnoKey,
     graph: &AnnotationGraph,
@@ -423,6 +440,7 @@ fn create_partitions(
     let mut copied_nodes: DiskMap<NodeID, NodeID> = DiskMap::default();
 
     let all_components = graph.get_all_components(None, None);
+    let part_of_components = graph.get_all_components(Some(PartOf), None);
     let part_of_storages = graph
         .get_all_components(Some(AnnotationComponentType::PartOf), None)
         .iter()
@@ -436,10 +454,24 @@ fn create_partitions(
     );
 
     for (partition_root, partition_graph) in &mut partitions {
-        let dfs = CycleSafeDFS::new_inverse(&part_of_container, *partition_root, 0, usize::MAX);
+        copy_node(
+            *partition_root,
+            graph,
+            &all_components,
+            false,
+            partition_graph,
+        )?;
+        copied_nodes.insert(*partition_root, *partition_root)?;
+        let dfs = CycleSafeDFS::new_inverse(&part_of_container, *partition_root, 1, usize::MAX);
         for partition_node in dfs {
             let partition_node = partition_node?.node;
-            copy_node(partition_node, &all_components, graph, partition_graph)?;
+            copy_node(
+                partition_node,
+                graph,
+                &all_components,
+                false,
+                partition_graph,
+            )?;
             copied_nodes.insert(partition_node, *partition_root)?;
         }
     }
@@ -449,8 +481,17 @@ fn create_partitions(
         .exact_anno_search(Some(ANNIS_NS), NODE_NAME, ValueSearch::Any)
     {
         let n = n?.node;
+
         if !copied_nodes.contains_key(&n)? {
-            copy_node(n, &all_components, graph, &mut remaining_graph)?;
+            // Make a full copy with all labels for nodes that are not part of any partition yet
+            copy_node(n, graph, &all_components, false, &mut remaining_graph)?;
+        } else if let Some(ctype) = graph
+            .get_node_annos()
+            .get_value_for_item(&n, &NODE_TYPE_KEY)?
+            && ctype == "corpus"
+        {
+            // Copy the node name and type for all nodes that are part of the corpus graph
+            copy_node(n, graph, &part_of_components, true, &mut remaining_graph)?;
         }
     }
 
@@ -459,8 +500,9 @@ fn create_partitions(
 
 fn copy_node(
     partition_node: NodeID,
-    all_components: &[AnnotationComponent],
     graph: &AnnotationGraph,
+    components_to_copy: &[AnnotationComponent],
+    annis_node_labels_only: bool,
     partition_graph: &mut AnnotationGraph,
 ) -> anyhow::Result<()> {
     // Copy all labels/annotations for this graph
@@ -468,12 +510,14 @@ fn copy_node(
         .get_node_annos()
         .get_annotations_for_item(&partition_node)?
     {
-        partition_graph
-            .get_node_annos_mut()
-            .insert(partition_node, anno)?;
+        if !annis_node_labels_only || anno.key.ns == ANNIS_NS {
+            partition_graph
+                .get_node_annos_mut()
+                .insert(partition_node, anno)?;
+        }
     }
-    // Copy all outgoing edges for all components of this node
-    for c in all_components {
+    // Copy all ingoing edges for all components of this node
+    for c in components_to_copy {
         if let Some(gs) = graph.get_graphstorage_as_ref(c)
             && gs.has_outgoing_edges(partition_node)?
         {
