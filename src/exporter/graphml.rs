@@ -423,7 +423,7 @@ fn create_partitions(
     partition_by: &AnnoKey,
     graph: &AnnotationGraph,
 ) -> anyhow::Result<(AnnotationGraph, BTreeMap<NodeID, AnnotationGraph>)> {
-    let mut remaining_graph = AnnotationGraph::new(true)?;
+    let mut remaining_graph = AnnotationGraph::new(graph.is_disk_based())?;
     // Create new annotation graphs for each node that is the root of the partition
     let mut partitions: BTreeMap<NodeID, AnnotationGraph> = BTreeMap::new();
 
@@ -433,7 +433,7 @@ fn create_partitions(
         ValueSearch::Any,
     ) {
         let n = n?.node;
-        partitions.insert(n, AnnotationGraph::new(true)?);
+        partitions.insert(n, AnnotationGraph::new(graph.is_disk_based())?);
     }
     // TODO: merge partitions with a possible parent partition
 
