@@ -1,0 +1,7 @@
+data = { SOI ~ block+ }
+block = { line+ ~ (EOI | NEWLINE*) }
+line = { "\\" ~ marker ~ " " ~ line_data? ~ NEWLINE? }
+marker = { marker_digit* }
+marker_digit = { !(" ") ~ ANY }
+line_data = { line_digit* }
+line_digit = { !NEWLINE ~ ANY }
