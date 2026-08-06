@@ -154,36 +154,10 @@ impl<'a> GenericImportConfiguration {
         import_path: &Path,
         update: &mut GraphUpdate,
     ) -> crate::error::Result<NamedPaths> {
-        Ok(NamedPaths(import_corpus_graph_from_files(
-            update,
-            import_path,
-            self,
-        )?))
+        Ok(import_corpus_graph_from_files(update, import_path, self)?)
     }
 }
 
 pub type NamedPath = (PathBuf, String);
 
-pub struct NamedPaths(Vec<NamedPath>);
-
-impl IntoIterator for NamedPaths {
-    type Item = NamedPath;
-
-    type IntoIter = <Vec<NamedPath> as IntoIterator>::IntoIter;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
-
-impl NamedPaths {
-    fn len(&self) -> usize {
-        self.0.len()
-    }
-}
-
-impl AsRef<Vec<NamedPath>> for NamedPaths {
-    fn as_ref(&self) -> &Vec<NamedPath> {
-        &self.0
-    }
-}
+pub type NamedPaths = Vec<NamedPath>;
