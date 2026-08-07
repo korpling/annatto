@@ -4,6 +4,7 @@ use std::{
     fs::{File, create_dir_all},
     io::BufReader,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use crate::{
@@ -28,8 +29,16 @@ use graphannis_core::{
     util::disk_collections::DiskMap,
 };
 use itertools::Itertools;
+use lazy_static::lazy_static;
 use serde_derive::{Deserialize, Serialize};
 use zip::{ZipWriter, write::FileOptions};
+
+lazy_static! {
+    pub static ref DOC_KEY: Arc<AnnoKey> = Arc::from(AnnoKey {
+        ns: ANNIS_NS.into(),
+        name: "doc".into(),
+    });
+}
 
 /// Exports files as [GraphML](http://graphml.graphdrawing.org/) files which
 /// conform to the [graphANNIS data model](https://korpling.github.io/graphANNIS/docs/v2/data-model.html).
@@ -162,19 +171,29 @@ impl Exporter for GraphMLExporter {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let reporter = ProgressReporter::new_unknown_total_work(tx, step_id.clone())?;
 
-        let corpus_root = get_corpus_root(graph, output_path, step_id)?;
-        let toplevel_corpus_name = graph
-            .get_node_annos()
-            .get_value_for_item(&corpus_root, &NODE_NAME_KEY)?
-            .unwrap_or(Cow::Borrowed("corpus"));
-
         if !output_path.exists() {
-            if output_path.extension().is_none() {
-                create_dir_all(output_path)?;
-            } else if let Some(parent_dir) = output_path.parent() {
-                create_dir_all(parent_dir)?;
-            }
+            create_dir_all(output_path)?;
         }
+
+        let corpus_root = get_corpus_root(graph, output_path, step_id)?;
+
+        // In case we are only exporting a single partioned document, use the
+        // document name as base for the file names. Otherwise get the toplevel
+        // corpus name from the node name of the root corpus.
+        let output_is_document = graph
+            .get_node_annos()
+            .has_value_for_item(&corpus_root, &DOC_KEY)?;
+        let toplevel_corpus_name = if output_is_document {
+            graph
+                .get_node_annos()
+                .get_value_for_item(&corpus_root, &DOC_KEY)?
+                .unwrap_or(Cow::Borrowed("document"))
+        } else {
+            graph
+                .get_node_annos()
+                .get_value_for_item(&corpus_root, &NODE_NAME_KEY)?
+                .unwrap_or(Cow::Borrowed("corpus"))
+        };
 
         // Use the corpus name to determine the file name
         let extension = self.file_extension();
@@ -283,18 +302,24 @@ impl Exporter for GraphMLExporter {
             let file_name = format!("{toplevel_corpus_name}.{extension}");
             let output_file_path = output_path.join(file_name);
 
+            reporter.info(format!("Starting export to {}", output_file_path.display()).as_str())?;
+
             if let Some(zip) = zip_writer.as_mut() {
                 // Create an entry in the ZIP file and write the GraphML to this file entry
                 zip.start_file(format!("{toplevel_corpus_name}.graphml"), zip_options)?;
             };
 
-            reporter.info(format!("Starting export to {}", output_file_path.display()).as_str())?;
+            let vis = if output_is_document {
+                None
+            } else {
+                Some(vis_str.as_str())
+            };
 
             self.write_graphml_file(
                 graph,
                 &output_file_path,
                 zip_writer.as_mut(),
-                Some(&vis_str),
+                vis,
                 &reporter,
             )?;
 
