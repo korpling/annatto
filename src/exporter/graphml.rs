@@ -169,7 +169,11 @@ impl Exporter for GraphMLExporter {
             .unwrap_or(Cow::Borrowed("corpus"));
 
         if !output_path.exists() {
-            create_dir_all(output_path)?;
+            if output_path.extension().is_none() {
+                create_dir_all(output_path)?;
+            } else if let Some(parent_dir) = output_path.parent() {
+                create_dir_all(parent_dir)?;
+            }
         }
 
         // Use the corpus name to determine the file name
