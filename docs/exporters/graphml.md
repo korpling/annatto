@@ -60,3 +60,11 @@ zip_copy_from = "configuration/"
 
 ```
 
+###  partition_by
+
+Output more than one GraphML-file. The given annotation key is used to
+determine partitions that each get its own file. Any node having an
+annotation with this key is used as the parent node for a partitioned
+file. E.g. by specificing `annis::doc` you would get a GraphML-file for
+each document.
+

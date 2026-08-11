@@ -48,15 +48,27 @@ This annotation key determines the values in the target sequence.
 
 Define the diff algorithm. Options are `lcs`, `myers`, and `patience` (default).
 
-###  merge
+###  mode
 
 Directly merge the two subgraphs instead of creating diff annotations.
 Example:
 
 ```toml
 [graph_op.config]
-merge = true
+mode = "merge"
 ```
 
-Default is `false`.
+Default is `default`, so differences are annotated, not merged.
+
+In merge mode, spans with specific annotations in the old graph can (partially) be kept:
+Example:
+
+```toml
+[graph_op.config]
+mode = "merge"
+keep = ["norm::sentence", "norm::clause"]
+```
+This tries to integrate new elements into existing spans. It is not recommended for cases,
+in which the annotation names exist in the target graph as well, as this creates overlapping
+duplicates. Also, ordered nodes are discarded, only unordered spans are considered.
 
