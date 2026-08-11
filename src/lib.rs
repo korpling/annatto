@@ -430,10 +430,11 @@ impl Step for ManipulatorStep {}
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    use std::{fs, path::Path};
 
     use insta::assert_snapshot;
     use serde::de::DeserializeOwned;
+    use tempfile::tempdir;
 
     use crate::{GraphOp, ReadFrom, WriteAs, workflow::Workflow};
 
@@ -500,5 +501,35 @@ mod tests {
             &["xml"]
         );
         assert_snapshot!(toml::to_string(&workflow).unwrap());
+    }
+
+    #[test]
+    fn generic_document_filter() {
+        let d = deserialize_toml::<Workflow>(
+            "tests/data/import/workflow-with-generic-config-document-filter.toml",
+        );
+        assert!(d.is_ok());
+        let mut workflow = d.unwrap();
+        let tmpdir = tempdir().unwrap();
+        if let Some(import_steps) = workflow.import_steps_mut()
+            && let Some(import_step) = import_steps.first_mut()
+        {
+            import_step.path = tmpdir.path().join("corpus").to_path_buf();
+        }
+        let dir_path = tmpdir.path().join("corpus").join("subcorpus");
+        assert!(fs::create_dir_all(&dir_path).is_ok());
+        assert!(fs::write(dir_path.join("a.txt"), "This is a test.".as_bytes()).is_ok());
+        assert!(fs::write(dir_path.join("b.txt"), "Also, this is a test.".as_bytes()).is_ok());
+        assert!(fs::write(dir_path.join("c.txt"), "An excluded file (test)".as_bytes()).is_ok());
+        if let Some(export_steps) = workflow.export_steps_mut()
+            && let Some(export_step) = export_steps.first_mut()
+        {
+            export_step.path = tmpdir.path().to_path_buf();
+        }
+        let run = workflow.execute(None, Path::new("tests/data/import/"), true);
+        assert!(run.is_ok(), "Err: {:?}", run.err().unwrap());
+        let graphml = fs::read_to_string(tmpdir.path().join("corpus.graphml"));
+        assert!(graphml.is_ok(), "Err: {:?}", graphml.err().unwrap());
+        assert_snapshot!(graphml.unwrap());
     }
 }

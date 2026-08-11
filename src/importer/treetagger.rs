@@ -1,9 +1,6 @@
 use std::{collections::HashMap, io::Read, path::Path};
 
-use crate::{
-    StepID, importer::GenericImportConfiguration, progress::ProgressReporter,
-    util::graphupdate::import_corpus_graph_from_files,
-};
+use crate::{StepID, importer::GenericImportConfiguration, progress::ProgressReporter};
 
 use super::Importer;
 use encoding_rs::Encoding;
@@ -398,7 +395,7 @@ impl Importer for ImportTreeTagger {
     ) -> std::result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut u = GraphUpdate::default();
 
-        let documents = import_corpus_graph_from_files(&mut u, input_path, &config)?;
+        let documents = config.derive_corpus_graph(input_path, &mut u)?;
 
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
 

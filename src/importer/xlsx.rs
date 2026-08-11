@@ -27,7 +27,6 @@ use crate::{
     error::AnnattoError,
     importer::{GenericImportConfiguration, NODE_NAME_ENCODE_SET},
     progress::ProgressReporter,
-    util,
 };
 
 /// Imports Excel Spreadsheets where each line is a token, the other columns are
@@ -713,10 +712,9 @@ impl Importer for ImportSpreadsheet {
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
 
-        let all_files =
-            util::graphupdate::import_corpus_graph_from_files(&mut update, input_path, &config)?;
+        let all_files = config.derive_corpus_graph(input_path, &mut update)?;
         // figure out which files are backup data and should not be imported
-        let ignore_docs = invalid_doc_nodes(&all_files);
+        let ignore_docs = invalid_doc_nodes(all_files.as_ref());
         // ignore the number of backup files for progress reporting, as these will be skipped
         let number_of_files = all_files.len() - ignore_docs.len();
         // Each file is a work step
@@ -1329,7 +1327,7 @@ edition = ["chapter"]
     #[test]
     fn file_filter() {
         let mut update = GraphUpdate::default();
-        let files_with_names = util::graphupdate::import_corpus_graph_from_files(
+        let files_with_names = crate::util::graphupdate::import_corpus_graph_from_files(
             &mut update,
             Path::new("tests/data/import/xlsx/with_backup/xlsx/"),
             &GenericImportConfiguration::new_with_extensions(

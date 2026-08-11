@@ -555,8 +555,18 @@ impl Workflow {
         self.import.as_ref()
     }
 
+    #[cfg(test)]
+    pub fn import_steps_mut(&mut self) -> Option<&mut Vec<ImporterStep>> {
+        self.import.as_mut()
+    }
+
     pub fn export_steps(&self) -> Option<&Vec<ExporterStep>> {
         self.export.as_ref()
+    }
+
+    #[cfg(test)]
+    pub fn export_steps_mut(&mut self) -> Option<&mut Vec<ExporterStep>> {
+        self.export.as_mut()
     }
 
     pub fn graph_op_steps(&self) -> Option<&Vec<ManipulatorStep>> {

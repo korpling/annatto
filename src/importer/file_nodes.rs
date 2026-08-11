@@ -25,11 +25,12 @@ impl Importer for CreateFileNodes {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        _config: GenericImportConfiguration,
+        config: GenericImportConfiguration,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
         let base_dir = input_path.normalize()?;
+        let GenericImportConfiguration { documents, .. } = config;
         if let Some(base_dir_name) = base_dir.file_name() {
             let start_index = base_dir.as_path().to_string_lossy().len() - base_dir_name.len();
             if let Some(link_target) = &self.corpus_name {
@@ -43,6 +44,13 @@ impl Importer for CreateFileNodes {
             {
                 let path = path_r?;
                 let node_name = path.to_string_lossy()[start_index..].to_string();
+                if documents
+                    .as_ref()
+                    .map(|d| !d.contains(&*path.to_string_lossy()) && !d.contains(&node_name))
+                    .unwrap_or_default()
+                {
+                    continue;
+                }
                 if path.is_file() {
                     update.add_event(UpdateEvent::AddNode {
                         node_name: node_name.to_string(),

@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- some importers support filtering by document names and paths (without extension) in generic config using key `documents`.
 - The GraphML exporter can partition the output files by a node label (like
   `annis:doc` for documents) using the `partition_by` parameter. The GraphML
   importer has also been updated to support such partioned corpora.
@@ -27,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   deserialization fails. This causes issues in Artemesia, because the egui
   framework uses ron to store the applications state which included the module
   configs.
+- graph op `unstable:diff`: annotations in the source can be kept in merge mode.
+
 
 ## [0.55.0] - 2026-08-03
 

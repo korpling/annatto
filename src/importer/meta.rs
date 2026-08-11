@@ -105,8 +105,13 @@ impl Importer for AnnotateCorpus {
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let file_extensions = config.extensions().iter().map(String::as_str).collect_vec();
-        let all_files = get_all_files(input_path, &file_extensions)?;
+        let GenericImportConfiguration {
+            extensions,
+            documents,
+            ..
+        } = config;
+        let file_extensions = extensions.iter().map(String::as_str).collect_vec();
+        let all_files = get_all_files(input_path, &file_extensions, documents)?;
         let progress = ProgressReporter::new(tx, step_id, all_files.len())?;
         let start_index = input_path.to_string_lossy().len() + 1;
         for file_path in all_files.into_iter().filter(|p| p.is_file()) {

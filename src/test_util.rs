@@ -104,7 +104,7 @@ where
             path: output_path.as_ref().to_path_buf(),
         })?;
     let mut buffer = String::new();
-    for path in get_all_files(output_path.as_ref(), &[exporter.file_extension()])? {
+    for path in get_all_files(output_path.as_ref(), &[exporter.file_extension()], None)? {
         let path_str = if let Some(file_name) = path.file_name() {
             file_name.to_string_lossy().to_string()
         } else {

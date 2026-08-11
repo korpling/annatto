@@ -21,7 +21,6 @@ use crate::{
     error::{AnnattoError, Result},
     importer::GenericImportConfiguration,
     progress::ProgressReporter,
-    util::graphupdate::import_corpus_graph_from_files,
 };
 
 use super::Importer;
@@ -56,8 +55,7 @@ impl Importer for ImportToolBox {
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let paths_and_node_names =
-            import_corpus_graph_from_files(&mut update, input_path, &config)?;
+        let paths_and_node_names = config.derive_corpus_graph(input_path, &mut update)?;
         let progress = ProgressReporter::new(tx, step_id.clone(), paths_and_node_names.len())?;
         for (path, doc_node_name) in paths_and_node_names {
             self.map_document(path.as_path(), &doc_node_name, &mut update, &step_id)?;

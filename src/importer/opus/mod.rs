@@ -14,7 +14,6 @@ use crate::{
     error::{AnnattoError, Result},
     importer::GenericImportConfiguration,
     progress::ProgressReporter,
-    util::graphupdate::import_corpus_graph_from_files,
 };
 
 use super::Importer;
@@ -68,7 +67,7 @@ impl Importer for ImportOpusLinks {
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let all_files = import_corpus_graph_from_files(&mut update, input_path, &config)?;
+        let all_files = config.derive_corpus_graph(input_path, &mut update)?;
         let progress = ProgressReporter::new(tx, step_id.clone(), all_files.len())?;
         all_files.into_iter().try_for_each(|(p, d)| {
             if let Err(e) =

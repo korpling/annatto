@@ -30,7 +30,7 @@ use crate::{
 /// Compare to sub graphs, derive a patch from one towards the other,
 /// and apply it.
 #[derive(Clone, Deserialize, Facet, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
+//#[serde(deny_unknown_fields)]
 pub struct DiffSubgraphs {
     /// Provide an annotation key that distinguishes relevant sub graphs to match
     /// differences between. Default is `annis::doc`, which means that diffs are
@@ -70,12 +70,24 @@ pub struct DiffSubgraphs {
     ///
     /// ```toml
     /// [graph_op.config]
-    /// merge = true
+    /// mode = "merge"
     /// ```
     ///
-    /// Default is `false`.
-    #[serde(default)]
-    merge: bool,
+    /// Default is `default`, so differences are annotated, not merged.
+    ///
+    /// In merge mode, spans with specific annotations in the old graph can (partially) be kept:
+    /// Example:
+    ///
+    /// ```toml
+    /// [graph_op.config]
+    /// mode = "merge"
+    /// keep = ["norm::sentence", "norm::clause"]
+    /// ```
+    /// This tries to integrate new elements into existing spans. It is not recommended for cases,
+    /// in which the annotation names exist in the target graph as well, as this creates overlapping
+    /// duplicates. Also, ordered nodes are discarded, only unordered spans are considered.
+    #[serde(default, flatten)]
+    mode: Option<DiffMode>, // this is wrapped in an option due to a serde bug with flattened representations: https://github.com/serde-rs/serde/issues/1626
 }
 
 fn default_by_key() -> AnnoKey {
@@ -87,8 +99,20 @@ fn default_by_key() -> AnnoKey {
 
 #[derive(Clone, Default, Deserialize, Facet, PartialEq, Serialize)]
 #[repr(u8)]
+#[serde(rename_all = "lowercase", tag = "mode")]
+pub(crate) enum DiffMode {
+    #[default]
+    Default, // technically this is unnecessary for now, but keep for the time https://github.com/serde-rs/serde/issues/1626 is fixed
+    Merge {
+        #[serde(default, with = "crate::estarde::anno_key::in_sequence")]
+        keep: BTreeSet<AnnoKey>,
+    },
+}
+
+#[derive(Clone, Default, Deserialize, Facet, PartialEq, Serialize)]
+#[repr(u8)]
 #[serde(rename_all = "lowercase", deny_unknown_fields)]
-enum DiffAlgorithm {
+pub(crate) enum DiffAlgorithm {
     Lcs,
     Myers,
     #[default]
@@ -142,18 +166,22 @@ impl Manipulator for DiffSubgraphs {
             .get_all_components(Some(AnnotationComponentType::Ordering), None);
         let mut licensed_tok_nodes: LinkedHashSet<NodeID> = LinkedHashSet::new();
         for (pair, diff) in pairs.into_iter().zip_eq(diffs) {
-            if self.merge {
-                licensed_tok_nodes.extend(&pair.merge_diff(
-                    &mut graph_helper,
-                    diff,
-                    &mut update,
-                    &progress,
-                )?);
-            } else {
-                pair.annotate_diff(&mut graph_helper, &mut update, diff, &progress)?;
+            match &self.mode {
+                Some(DiffMode::Merge { keep }) => {
+                    licensed_tok_nodes.extend(&pair.merge_diff(
+                        &mut graph_helper,
+                        diff,
+                        keep,
+                        &mut update,
+                        &progress,
+                    )?);
+                }
+                Some(DiffMode::Default) | None => {
+                    pair.annotate_diff(&mut graph_helper, &mut update, diff, &progress)?;
+                }
             }
         }
-        if self.merge {
+        if let Some(DiffMode::Merge { .. }) = &self.mode {
             for oc in orderings_existing_before {
                 let gs = graph_helper.graph.get_or_create_writable(&oc)?;
                 gs.clear()?;
@@ -554,6 +582,7 @@ impl SequencePair {
         self,
         helper: &mut GraphDiffHelper,
         diff: Vec<DiffOp>,
+        keep_with_name: &BTreeSet<AnnoKey>,
         update: &mut GraphUpdate,
         progress: &ProgressReporter,
     ) -> Result<LinkedHashSet<NodeID>, anyhow::Error> {
@@ -602,6 +631,18 @@ impl SequencePair {
         vertical_storages.extend(dominance_storages);
         let vertical_container = UnionEdgeContainer::new(
             vertical_storages
+                .iter()
+                .map(|gs| gs.as_edgecontainer())
+                .collect_vec(),
+        );
+        let ordering_storages = helper
+            .graph()
+            .get_all_components(Some(AnnotationComponentType::Ordering), None)
+            .into_iter()
+            .filter_map(|c| helper.graph().get_graphstorage(&c))
+            .collect_vec();
+        let any_ordering = UnionEdgeContainer::new(
+            ordering_storages
                 .iter()
                 .map(|gs| gs.as_edgecontainer())
                 .collect_vec(),
@@ -707,7 +748,9 @@ impl SequencePair {
                     }
                 }
                 DiffOp::Insert {
-                    new_index, new_len, ..
+                    new_index,
+                    new_len,
+                    old_index,
                 } => {
                     let start_node = l_gs
                         .find_connected(self.target_nodes[new_index], 0, std::ops::Bound::Unbounded)
@@ -746,6 +789,42 @@ impl SequencePair {
                         component_type: AnnotationComponentType::PartOf.to_string(),
                         component_name: "".to_string(),
                     })?;
+                    let mut old_spans: Vec<NodeID> = Vec::default();
+                    if let Some(old_start_id) = self.source_nodes.get(old_index) {
+                        for DFSStep {
+                            node: downward_reachable,
+                            ..
+                        } in
+                            CycleSafeDFS::new(&vertical_container, *old_start_id, 0, usize::MAX)
+                                .flatten()
+                        // start from 0 in case we have a real tokenization
+                        {
+                            CycleSafeDFS::new_inverse(
+                                &vertical_container,
+                                downward_reachable,
+                                1,
+                                usize::MAX,
+                            )
+                            .flatten()
+                            .filter_map(|DFSStep { node, .. }| {
+                                if !any_ordering.has_ingoing_edges(node).unwrap_or_default()
+                                    && !any_ordering.has_outgoing_edges(node).unwrap_or_default()
+                                    && keep_with_name.iter().any(|k| {
+                                        helper
+                                            .graph()
+                                            .get_node_annos()
+                                            .has_value_for_item(&node, k)
+                                            .unwrap_or_default()
+                                    })
+                                {
+                                    Some(node)
+                                } else {
+                                    None
+                                }
+                            })
+                            .for_each(|n| old_spans.push(n));
+                        }
+                    }
                     for node_id in order_it {
                         new_tok_order.insert(node_id);
                         update.add_event(UpdateEvent::AddEdge {
@@ -755,6 +834,15 @@ impl SequencePair {
                             component_type: AnnotationComponentType::Coverage.to_string(),
                             component_name: "".to_string(),
                         })?;
+                        for span in &old_spans {
+                            update.add_event(UpdateEvent::AddEdge {
+                                source_node: helper.node_name(*span)?,
+                                target_node: helper.node_name(node_id)?,
+                                layer: ANNIS_NS.to_string(),
+                                component_type: AnnotationComponentType::Coverage.to_string(),
+                                component_name: "".to_string(),
+                            })?;
+                        }
                         for DFSStep { node, .. } in
                             CycleSafeDFS::new_inverse(&vertical_container, node_id, 1, usize::MAX)
                                 .flatten()
@@ -817,6 +905,43 @@ impl SequencePair {
                         component_type: AnnotationComponentType::PartOf.to_string(),
                         component_name: "".to_string(),
                     })?;
+
+                    let mut old_spans: Vec<NodeID> = Vec::default();
+                    if let Some(old_start_id) = self.source_nodes.get(old_index) {
+                        for DFSStep {
+                            node: downward_reachable,
+                            ..
+                        } in
+                            CycleSafeDFS::new(&vertical_container, *old_start_id, 0, usize::MAX)
+                                .flatten()
+                        // start from 0 in case we have a real tokenization
+                        {
+                            CycleSafeDFS::new_inverse(
+                                &vertical_container,
+                                downward_reachable,
+                                1,
+                                usize::MAX,
+                            )
+                            .flatten()
+                            .filter_map(|DFSStep { node, .. }| {
+                                if !any_ordering.has_ingoing_edges(node).unwrap_or_default()
+                                    && !any_ordering.has_outgoing_edges(node).unwrap_or_default()
+                                    && keep_with_name.iter().any(|k| {
+                                        helper
+                                            .graph()
+                                            .get_node_annos()
+                                            .has_value_for_item(&node, k)
+                                            .unwrap_or_default()
+                                    })
+                                {
+                                    Some(node)
+                                } else {
+                                    None
+                                }
+                            })
+                            .for_each(|n| old_spans.push(n));
+                        }
+                    }
                     for node_id in order_it {
                         new_tok_order.insert(node_id);
                         update.add_event(UpdateEvent::AddEdge {
@@ -826,6 +951,15 @@ impl SequencePair {
                             component_type: AnnotationComponentType::Coverage.to_string(),
                             component_name: "".to_string(),
                         })?;
+                        for span in &old_spans {
+                            update.add_event(UpdateEvent::AddEdge {
+                                source_node: helper.node_name(*span)?,
+                                target_node: helper.node_name(node_id)?,
+                                layer: ANNIS_NS.to_string(),
+                                component_type: AnnotationComponentType::Coverage.to_string(),
+                                component_name: "".to_string(),
+                            })?;
+                        }
                         if node_id == end_node {
                             break;
                         }
