@@ -9,7 +9,7 @@ use zip::ZipArchive;
 use crate::{
     importer::{
         GenericImportConfiguration, Importer, exmaralda::ImportEXMARaLDA,
-        file_nodes::CreateFileNodes, xlsx::ImportSpreadsheet,
+        file_nodes::CreateFileNodes, graphml::GraphMLImporter, xlsx::ImportSpreadsheet,
     },
     util::update_graph_silent,
 };
@@ -34,6 +34,7 @@ fn serialize_custom() {
         stable_order: true,
         zip: true,
         zip_copy_from: Some("copy/path/".into()),
+        partition_by: None,
     };
     let serialization = toml::to_string(&module);
     assert!(
@@ -176,4 +177,121 @@ fn zip_with_linked_files_custom() {
     let archive = a.unwrap();
     assert_snapshot!(archive.file_names().sorted().join("\n"));
     assert!(fs::remove_file(zip_path).is_ok());
+}
+
+#[test]
+fn export_graphml_with_partition() {
+    let step_id = StepID {
+        module_name: "export_graphml".to_string(),
+        path: None,
+    };
+    let importer = GraphMLImporter::default();
+    let mut updates = importer
+        .import_corpus(
+            Path::new("tests/data/import/graphml/single_sentence_two_documents.graphml"),
+            step_id.clone(),
+            GenericImportConfiguration::new_with_default_extensions(&importer),
+            None,
+        )
+        .unwrap();
+    let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+    g.apply_update(&mut updates, |_| {}).unwrap();
+
+    // Export the annotation graph
+    let mut exporter = GraphMLExporter::default();
+    exporter.partition_by = Some(AnnoKey {
+        name: "doc".to_string(),
+        ns: ANNIS_NS.to_string(),
+    });
+
+    exporter.guess_vis = true;
+    exporter.stable_order = true;
+
+    let output_path = TempDir::new().unwrap();
+
+    exporter
+        .export_corpus(&g, output_path.path(), step_id, None)
+        .unwrap();
+
+    // Compare that the correct files have been generated
+    let root_file =
+        std::fs::read_to_string(output_path.path().join("single_sentence.graphml")).unwrap();
+    assert_snapshot!("single_sentence.graphml", root_file);
+
+    let zossen =
+        std::fs::read_to_string(output_path.path().join("single_sentence/zossen.graphml")).unwrap();
+    assert_snapshot!("single_sentence/zossen.graphml", zossen);
+
+    let anotherdocument = std::fs::read_to_string(
+        output_path
+            .path()
+            .join("single_sentence/subcorpus1/anotherdocument.graphml"),
+    )
+    .unwrap();
+    assert_snapshot!(
+        "single_sentence/subcorpus1/anotherdocument.graphml",
+        anotherdocument
+    );
+}
+
+#[test]
+fn expor_zip_graphml_with_partition() {
+    let step_id = StepID {
+        module_name: "export_graphml".to_string(),
+        path: None,
+    };
+    let importer = GraphMLImporter::default();
+    let mut updates = importer
+        .import_corpus(
+            Path::new("tests/data/import/graphml/single_sentence_two_documents.graphml"),
+            step_id.clone(),
+            GenericImportConfiguration::new_with_default_extensions(&importer),
+            None,
+        )
+        .unwrap();
+    let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+    g.apply_update(&mut updates, |_| {}).unwrap();
+
+    // Export the annotation graph
+    let mut exporter = GraphMLExporter::default();
+    exporter.partition_by = Some(AnnoKey {
+        name: "doc".to_string(),
+        ns: ANNIS_NS.to_string(),
+    });
+    exporter.zip = true;
+
+    exporter.guess_vis = true;
+    exporter.stable_order = true;
+
+    let zip_parent_dir = TempDir::new().unwrap();
+
+    exporter
+        .export_corpus(&g, zip_parent_dir.path(), step_id, None)
+        .unwrap();
+
+    // Extract the ZIP file and check its contents
+    let extracted_dir = TempDir::new().unwrap();
+    let zip_file = std::fs::File::open(zip_parent_dir.path().join("single_sentence.zip")).unwrap();
+    let mut zip = zip::ZipArchive::new(zip_file).unwrap();
+    zip.extract(extracted_dir.path()).unwrap();
+
+    let root_file =
+        std::fs::read_to_string(extracted_dir.path().join("single_sentence.graphml")).unwrap();
+    assert_snapshot!("single_sentence.graphml", root_file);
+
+    let zossen =
+        std::fs::read_to_string(extracted_dir.path().join("single_sentence/zossen.graphml"))
+            .unwrap();
+    assert_snapshot!("single_sentence/zossen.graphml", zossen);
+
+    let anotherdocument = std::fs::read_to_string(
+        extracted_dir
+            .path()
+            .join("single_sentence/subcorpus1/anotherdocument.graphml"),
+    )
+    .unwrap();
+    assert_snapshot!(
+        "single_sentence/subcorpus1/anotherdocument.graphml",
+        anotherdocument
+    );
 }

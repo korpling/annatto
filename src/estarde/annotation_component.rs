@@ -49,7 +49,7 @@ pub fn serialize<S: Serializer>(
 
 pub(crate) mod as_option {
     use graphannis::model::AnnotationComponent;
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+    use serde::{Deserialize, Deserializer, Serializer};
 
     use crate::estarde::IntoInner;
 
@@ -68,7 +68,7 @@ pub(crate) mod as_option {
     ) -> Result<S::Ok, S::Error> {
         if let Some(component) = value {
             let serializable = SerdeComponent::from(component);
-            serializable.serialize(serializer)
+            serializer.serialize_some(&serializable)
         } else {
             serializer.serialize_none()
         }

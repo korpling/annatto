@@ -42,7 +42,7 @@ pub(crate) fn serialize<S: Serializer>(value: &AnnoKey, serializer: S) -> Result
 pub(crate) mod as_option {
     use graphannis::graph::AnnoKey;
     use graphannis_core::util::join_qname;
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+    use serde::{Deserialize, Deserializer, Serializer};
 
     use crate::estarde::IntoInner;
 
@@ -61,7 +61,7 @@ pub(crate) mod as_option {
     ) -> Result<S::Ok, S::Error> {
         if let Some(key) = value {
             let serializable = join_qname(&key.ns, &key.name);
-            serializable.serialize(serializer)
+            serializer.serialize_some(&serializable)
         } else {
             serializer.serialize_none()
         }
