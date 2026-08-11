@@ -11,6 +11,8 @@ jobs:
   merge-request-checks:
     name: Run verify.sh
     runs-on: ubuntu-24.04
+    env:
+      RUST_BACKTRACE: 0
     steps:
       - uses: actions/checkout@v4
         with:
