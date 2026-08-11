@@ -202,12 +202,19 @@ We recommend installing the following Cargo subcommands for developing annis-web
 ### Execute tests
 
 You can run the tests with the default `cargo test` command.
-To calculate the code coverage, you can use `cargo-llvm-cov`:
+
+To run all checks that have to pass for a merge requests locally, first make sure you have the `diff-cover` and `cargo-llvm-cov` tools installed.
 
 ```bash
-cargo llvm-cov --open --all-features --ignore-filename-regex 'tests?\.rs'
+cargo install cargo-llvm-cov
+pipx install diff_cover
 ```
 
+Then, run the following command to run all checks including code coverage:
+
+```bash
+./verify.sh
+```
 
 ### Performing a release
 
