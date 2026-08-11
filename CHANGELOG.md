@@ -5,6 +5,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The GraphML exporter can partition the output files by a node label (like
+  `annis:doc` for documents) using the `partition_by` parameter. The GraphML
+  importer has also been updated to support such partioned corpora.
+
+### Changed
+
+- uses graphANNIS 4.2.0
+
+### Fixed
+
+- Fix serialization of Some() values for AnnoKey and AnnotationComponent. For
+  the TOML serializer, it does not make a difference if we write the `value` or
+  `Some(value)` because on deserialization the existence of the field implies
+  `Some(value). But other serializers like [ron](https://github.com/ron-rs/ron)
+  have an explicit "Optional" type
+  (<https://github.com/ron-rs/ron#ron-syntax-overview>). If you serialize the
+  value and then try to deserialize it, they expect an optional type and
+  deserialization fails. This causes issues in Artemesia, because the egui
+  framework uses ron to store the applications state which included the module
+  configs.
+
 ## [0.55.0] - 2026-08-03
 
 ### Added
