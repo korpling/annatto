@@ -1,0 +1,1054 @@
+---
+source: src/importer/fltb/tests.rs
+expression: graphml_is.unwrap()
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml>
+    <key id="k0" for="node" attr.name="PoS" attr.type="string"/>
+    <key id="k1" for="node" attr.name="annis::doc" attr.type="string"/>
+    <key id="k2" for="node" attr.name="id" attr.type="string"/>
+    <key id="k3" for="node" attr.name="inline_comment" attr.type="string"/>
+    <key id="k4" for="node" attr.name="annis::layer" attr.type="string"/>
+    <key id="k5" for="node" attr.name="mrph" attr.type="string"/>
+    <key id="k6" for="node" attr.name="annis::node_type" attr.type="string"/>
+    <key id="k7" for="node" attr.name="ref" attr.type="string"/>
+    <key id="k8" for="node" attr.name="std" attr.type="string"/>
+    <key id="k9" for="node" attr.name="syl" attr.type="string"/>
+    <key id="k10" for="node" attr.name="annis::tok" attr.type="string"/>
+    <key id="k11" for="node" attr.name="tx" attr.type="string"/>
+    <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
+        <node id="toolbox">
+            <data key="k6">corpus</data>
+        </node>
+        <node id="toolbox/test_file">
+            <data key="k1">test_file</data>
+            <data key="k6">corpus</data>
+        </node>
+        <node id="toolbox/test_file#s5">
+            <data key="k2">Testdatei erstellt für diesen Test</data>
+            <data key="k6">node</data>
+            <data key="k7">Testsatz 1</data>
+        </node>
+        <node id="toolbox/test_file#t5_0">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t5_7">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t5_14">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t5_21">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t5_27">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t5_32">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t5_39">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx_5_0">
+            <data key="k11">Das</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx_5_7">
+            <data key="k11">ist</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx_5_14">
+            <data key="k11">ein</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx_5_21">
+            <data key="k11">Testbeispiel</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx_5_39">
+            <data key="k11">.</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS_5_0">
+            <data key="k0">PRON</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS_5_7">
+            <data key="k0">VERB</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS_5_14">
+            <data key="k0">DET</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS_5_21">
+            <data key="k0">NOUN</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS_5_39">
+            <data key="k0">PUNCT</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#syl_5_0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">das</data>
+        </node>
+        <node id="toolbox/test_file#syl_5_7">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">ist</data>
+        </node>
+        <node id="toolbox/test_file#syl_5_14">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">ein</data>
+        </node>
+        <node id="toolbox/test_file#syl_5_21">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">test</data>
+        </node>
+        <node id="toolbox/test_file#syl_5_27">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">-bei</data>
+        </node>
+        <node id="toolbox/test_file#syl_5_32">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">-spiel</data>
+        </node>
+        <node id="toolbox/test_file#syl_5_39">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph_5_0">
+            <data key="k4">default_layer</data>
+            <data key="k5">das</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph_5_7">
+            <data key="k4">default_layer</data>
+            <data key="k5">ist</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph_5_14">
+            <data key="k4">default_layer</data>
+            <data key="k5">ein</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph_5_21">
+            <data key="k4">default_layer</data>
+            <data key="k5">test-</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph_5_27">
+            <data key="k4">default_layer</data>
+            <data key="k5">beispiel</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph_5_39">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#s13">
+            <data key="k2">Testdatei erstellt für diesen Test</data>
+            <data key="k3"> dies ist ein von Toolbox
+umgebrochener Multi-Line-Comment und der sollte
+im Ganzen importiert werden
+</data>
+            <data key="k6">node</data>
+            <data key="k7">Testsatz 2 </data>
+        </node>
+        <node id="toolbox/test_file#t13_0">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t13_3">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t13_9">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t13_14">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t13_19">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t13_25">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t13_28">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t13_34">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t13_39">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t13_44">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx_13_0">
+            <data key="k11">Damit</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx_13_9">
+            <data key="k11">lassen</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx_13_19">
+            <data key="k11">sich</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx_13_25">
+            <data key="k11">Sachen</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx_13_34">
+            <data key="k11">testen</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx_13_44">
+            <data key="k11">.</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS_13_0">
+            <data key="k0">ADV</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS_13_9">
+            <data key="k0">AUX</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS_13_19">
+            <data key="k0">PRON</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS_13_25">
+            <data key="k0">NOUN</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS_13_34">
+            <data key="k0">VERB</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#PoS_13_44">
+            <data key="k0">.</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#syl_13_0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">da</data>
+        </node>
+        <node id="toolbox/test_file#syl_13_3">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">-mit</data>
+        </node>
+        <node id="toolbox/test_file#syl_13_9">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">las</data>
+        </node>
+        <node id="toolbox/test_file#syl_13_14">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">-sen</data>
+        </node>
+        <node id="toolbox/test_file#syl_13_19">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">sich</data>
+        </node>
+        <node id="toolbox/test_file#syl_13_25">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">sa</data>
+        </node>
+        <node id="toolbox/test_file#syl_13_28">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">-chen</data>
+        </node>
+        <node id="toolbox/test_file#syl_13_34">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">tes</data>
+        </node>
+        <node id="toolbox/test_file#syl_13_39">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k9">-ten</data>
+        </node>
+        <node id="toolbox/test_file#syl_13_44">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph_13_0">
+            <data key="k4">default_layer</data>
+            <data key="k5">damit</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph_13_9">
+            <data key="k4">default_layer</data>
+            <data key="k5">lass</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph_13_14">
+            <data key="k4">default_layer</data>
+            <data key="k5">-en</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph_13_19">
+            <data key="k4">default_layer</data>
+            <data key="k5">sich</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph_13_25">
+            <data key="k4">default_layer</data>
+            <data key="k5">sachen</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph_13_34">
+            <data key="k4">default_layer</data>
+            <data key="k5">test</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph_13_39">
+            <data key="k4">default_layer</data>
+            <data key="k5">-en</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph_13_44">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#s23">
+            <data key="k2">Testdatei erstellt für diesen Test</data>
+            <data key="k6">node</data>
+            <data key="k7">Testsatz 3</data>
+        </node>
+        <node id="toolbox/test_file#t23_0">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t23_11">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t23_21">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t23_32">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx_23_0">
+            <data key="k11">mana</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx_23_11">
+            <data key="k11">Galw...</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx_23_21">
+            <data key="k11">atties</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx_23_32">
+            <data key="k11">.</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#std_23_0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">mano-man..</data>
+        </node>
+        <node id="toolbox/test_file#std_23_11">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">galv..</data>
+        </node>
+        <node id="toolbox/test_file#std_23_21">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">atties</data>
+        </node>
+        <node id="toolbox/test_file#std_23_32">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">$</data>
+        </node>
+        <node id="toolbox/test_file#mrph_23_0">
+            <data key="k4">default_layer</data>
+            <data key="k5">-/a.sg.f.</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph_23_11">
+            <data key="k4">default_layer</data>
+            <data key="k5">a.sg.</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph_23_21">
+            <data key="k4">default_layer</data>
+            <data key="k5">3.ft.</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph_23_32">
+            <data key="k4">default_layer</data>
+            <data key="k5">$</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#s34">
+            <data key="k2">Testdatei erstellt für diesen Test</data>
+            <data key="k6">node</data>
+            <data key="k7">Testsatz 3 nochmal</data>
+        </node>
+        <node id="toolbox/test_file#t34_0">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t34_11">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t34_21">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#t34_32">
+            <data key="k10"> </data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx_34_0">
+            <data key="k11">mana</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx_34_11">
+            <data key="k11">Galw...</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx_34_21">
+            <data key="k11">atties</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#tx_34_32">
+            <data key="k11">.</data>
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#std_34_0">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">mano-man..</data>
+        </node>
+        <node id="toolbox/test_file#std_34_11">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">galv..</data>
+        </node>
+        <node id="toolbox/test_file#std_34_21">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">atties</data>
+        </node>
+        <node id="toolbox/test_file#std_34_32">
+            <data key="k4">default_layer</data>
+            <data key="k6">node</data>
+            <data key="k8">$</data>
+        </node>
+        <node id="toolbox/test_file#mrph_34_0">
+            <data key="k4">default_layer</data>
+            <data key="k5">-/a.sg.f.</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph_34_11">
+            <data key="k4">default_layer</data>
+            <data key="k5">a.sg.</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph_34_21">
+            <data key="k4">default_layer</data>
+            <data key="k5">3.ft.</data>
+            <data key="k6">node</data>
+        </node>
+        <node id="toolbox/test_file#mrph_34_32">
+            <data key="k4">default_layer</data>
+            <data key="k5">$</data>
+            <data key="k6">node</data>
+        </node>
+        <edge id="e0" source="toolbox/test_file#s5" target="toolbox/test_file#t5_0" label="Coverage/annis/">
+        </edge>
+        <edge id="e1" source="toolbox/test_file#s5" target="toolbox/test_file#t5_7" label="Coverage/annis/">
+        </edge>
+        <edge id="e2" source="toolbox/test_file#s5" target="toolbox/test_file#t5_14" label="Coverage/annis/">
+        </edge>
+        <edge id="e3" source="toolbox/test_file#s5" target="toolbox/test_file#t5_21" label="Coverage/annis/">
+        </edge>
+        <edge id="e4" source="toolbox/test_file#s5" target="toolbox/test_file#t5_27" label="Coverage/annis/">
+        </edge>
+        <edge id="e5" source="toolbox/test_file#s5" target="toolbox/test_file#t5_32" label="Coverage/annis/">
+        </edge>
+        <edge id="e6" source="toolbox/test_file#s5" target="toolbox/test_file#t5_39" label="Coverage/annis/">
+        </edge>
+        <edge id="e7" source="toolbox/test_file#tx_5_0" target="toolbox/test_file#t5_0" label="Coverage/annis/">
+        </edge>
+        <edge id="e8" source="toolbox/test_file#tx_5_7" target="toolbox/test_file#t5_7" label="Coverage/annis/">
+        </edge>
+        <edge id="e9" source="toolbox/test_file#tx_5_14" target="toolbox/test_file#t5_14" label="Coverage/annis/">
+        </edge>
+        <edge id="e10" source="toolbox/test_file#tx_5_21" target="toolbox/test_file#t5_21" label="Coverage/annis/">
+        </edge>
+        <edge id="e11" source="toolbox/test_file#tx_5_21" target="toolbox/test_file#t5_27" label="Coverage/annis/">
+        </edge>
+        <edge id="e12" source="toolbox/test_file#tx_5_21" target="toolbox/test_file#t5_32" label="Coverage/annis/">
+        </edge>
+        <edge id="e13" source="toolbox/test_file#tx_5_39" target="toolbox/test_file#t5_39" label="Coverage/annis/">
+        </edge>
+        <edge id="e14" source="toolbox/test_file#PoS_5_0" target="toolbox/test_file#t5_0" label="Coverage/annis/">
+        </edge>
+        <edge id="e15" source="toolbox/test_file#PoS_5_7" target="toolbox/test_file#t5_7" label="Coverage/annis/">
+        </edge>
+        <edge id="e16" source="toolbox/test_file#PoS_5_14" target="toolbox/test_file#t5_14" label="Coverage/annis/">
+        </edge>
+        <edge id="e17" source="toolbox/test_file#PoS_5_21" target="toolbox/test_file#t5_21" label="Coverage/annis/">
+        </edge>
+        <edge id="e18" source="toolbox/test_file#PoS_5_21" target="toolbox/test_file#t5_27" label="Coverage/annis/">
+        </edge>
+        <edge id="e19" source="toolbox/test_file#PoS_5_21" target="toolbox/test_file#t5_32" label="Coverage/annis/">
+        </edge>
+        <edge id="e20" source="toolbox/test_file#PoS_5_39" target="toolbox/test_file#t5_39" label="Coverage/annis/">
+        </edge>
+        <edge id="e21" source="toolbox/test_file#syl_5_0" target="toolbox/test_file#t5_0" label="Coverage/annis/">
+        </edge>
+        <edge id="e22" source="toolbox/test_file#syl_5_7" target="toolbox/test_file#t5_7" label="Coverage/annis/">
+        </edge>
+        <edge id="e23" source="toolbox/test_file#syl_5_14" target="toolbox/test_file#t5_14" label="Coverage/annis/">
+        </edge>
+        <edge id="e24" source="toolbox/test_file#syl_5_21" target="toolbox/test_file#t5_21" label="Coverage/annis/">
+        </edge>
+        <edge id="e25" source="toolbox/test_file#syl_5_27" target="toolbox/test_file#t5_27" label="Coverage/annis/">
+        </edge>
+        <edge id="e26" source="toolbox/test_file#syl_5_32" target="toolbox/test_file#t5_32" label="Coverage/annis/">
+        </edge>
+        <edge id="e27" source="toolbox/test_file#syl_5_39" target="toolbox/test_file#t5_39" label="Coverage/annis/">
+        </edge>
+        <edge id="e28" source="toolbox/test_file#mrph_5_0" target="toolbox/test_file#t5_0" label="Coverage/annis/">
+        </edge>
+        <edge id="e29" source="toolbox/test_file#mrph_5_7" target="toolbox/test_file#t5_7" label="Coverage/annis/">
+        </edge>
+        <edge id="e30" source="toolbox/test_file#mrph_5_14" target="toolbox/test_file#t5_14" label="Coverage/annis/">
+        </edge>
+        <edge id="e31" source="toolbox/test_file#mrph_5_21" target="toolbox/test_file#t5_21" label="Coverage/annis/">
+        </edge>
+        <edge id="e32" source="toolbox/test_file#mrph_5_27" target="toolbox/test_file#t5_27" label="Coverage/annis/">
+        </edge>
+        <edge id="e33" source="toolbox/test_file#mrph_5_27" target="toolbox/test_file#t5_32" label="Coverage/annis/">
+        </edge>
+        <edge id="e34" source="toolbox/test_file#mrph_5_39" target="toolbox/test_file#t5_39" label="Coverage/annis/">
+        </edge>
+        <edge id="e35" source="toolbox/test_file#s13" target="toolbox/test_file#t13_0" label="Coverage/annis/">
+        </edge>
+        <edge id="e36" source="toolbox/test_file#s13" target="toolbox/test_file#t13_3" label="Coverage/annis/">
+        </edge>
+        <edge id="e37" source="toolbox/test_file#s13" target="toolbox/test_file#t13_9" label="Coverage/annis/">
+        </edge>
+        <edge id="e38" source="toolbox/test_file#s13" target="toolbox/test_file#t13_14" label="Coverage/annis/">
+        </edge>
+        <edge id="e39" source="toolbox/test_file#s13" target="toolbox/test_file#t13_19" label="Coverage/annis/">
+        </edge>
+        <edge id="e40" source="toolbox/test_file#s13" target="toolbox/test_file#t13_25" label="Coverage/annis/">
+        </edge>
+        <edge id="e41" source="toolbox/test_file#s13" target="toolbox/test_file#t13_28" label="Coverage/annis/">
+        </edge>
+        <edge id="e42" source="toolbox/test_file#s13" target="toolbox/test_file#t13_34" label="Coverage/annis/">
+        </edge>
+        <edge id="e43" source="toolbox/test_file#s13" target="toolbox/test_file#t13_39" label="Coverage/annis/">
+        </edge>
+        <edge id="e44" source="toolbox/test_file#s13" target="toolbox/test_file#t13_44" label="Coverage/annis/">
+        </edge>
+        <edge id="e45" source="toolbox/test_file#tx_13_0" target="toolbox/test_file#t13_0" label="Coverage/annis/">
+        </edge>
+        <edge id="e46" source="toolbox/test_file#tx_13_0" target="toolbox/test_file#t13_3" label="Coverage/annis/">
+        </edge>
+        <edge id="e47" source="toolbox/test_file#tx_13_9" target="toolbox/test_file#t13_9" label="Coverage/annis/">
+        </edge>
+        <edge id="e48" source="toolbox/test_file#tx_13_9" target="toolbox/test_file#t13_14" label="Coverage/annis/">
+        </edge>
+        <edge id="e49" source="toolbox/test_file#tx_13_19" target="toolbox/test_file#t13_19" label="Coverage/annis/">
+        </edge>
+        <edge id="e50" source="toolbox/test_file#tx_13_25" target="toolbox/test_file#t13_25" label="Coverage/annis/">
+        </edge>
+        <edge id="e51" source="toolbox/test_file#tx_13_25" target="toolbox/test_file#t13_28" label="Coverage/annis/">
+        </edge>
+        <edge id="e52" source="toolbox/test_file#tx_13_34" target="toolbox/test_file#t13_34" label="Coverage/annis/">
+        </edge>
+        <edge id="e53" source="toolbox/test_file#tx_13_34" target="toolbox/test_file#t13_39" label="Coverage/annis/">
+        </edge>
+        <edge id="e54" source="toolbox/test_file#tx_13_44" target="toolbox/test_file#t13_44" label="Coverage/annis/">
+        </edge>
+        <edge id="e55" source="toolbox/test_file#PoS_13_0" target="toolbox/test_file#t13_0" label="Coverage/annis/">
+        </edge>
+        <edge id="e56" source="toolbox/test_file#PoS_13_0" target="toolbox/test_file#t13_3" label="Coverage/annis/">
+        </edge>
+        <edge id="e57" source="toolbox/test_file#PoS_13_9" target="toolbox/test_file#t13_9" label="Coverage/annis/">
+        </edge>
+        <edge id="e58" source="toolbox/test_file#PoS_13_9" target="toolbox/test_file#t13_14" label="Coverage/annis/">
+        </edge>
+        <edge id="e59" source="toolbox/test_file#PoS_13_19" target="toolbox/test_file#t13_19" label="Coverage/annis/">
+        </edge>
+        <edge id="e60" source="toolbox/test_file#PoS_13_25" target="toolbox/test_file#t13_25" label="Coverage/annis/">
+        </edge>
+        <edge id="e61" source="toolbox/test_file#PoS_13_25" target="toolbox/test_file#t13_28" label="Coverage/annis/">
+        </edge>
+        <edge id="e62" source="toolbox/test_file#PoS_13_34" target="toolbox/test_file#t13_34" label="Coverage/annis/">
+        </edge>
+        <edge id="e63" source="toolbox/test_file#PoS_13_34" target="toolbox/test_file#t13_39" label="Coverage/annis/">
+        </edge>
+        <edge id="e64" source="toolbox/test_file#PoS_13_44" target="toolbox/test_file#t13_44" label="Coverage/annis/">
+        </edge>
+        <edge id="e65" source="toolbox/test_file#syl_13_0" target="toolbox/test_file#t13_0" label="Coverage/annis/">
+        </edge>
+        <edge id="e66" source="toolbox/test_file#syl_13_3" target="toolbox/test_file#t13_3" label="Coverage/annis/">
+        </edge>
+        <edge id="e67" source="toolbox/test_file#syl_13_9" target="toolbox/test_file#t13_9" label="Coverage/annis/">
+        </edge>
+        <edge id="e68" source="toolbox/test_file#syl_13_14" target="toolbox/test_file#t13_14" label="Coverage/annis/">
+        </edge>
+        <edge id="e69" source="toolbox/test_file#syl_13_19" target="toolbox/test_file#t13_19" label="Coverage/annis/">
+        </edge>
+        <edge id="e70" source="toolbox/test_file#syl_13_25" target="toolbox/test_file#t13_25" label="Coverage/annis/">
+        </edge>
+        <edge id="e71" source="toolbox/test_file#syl_13_28" target="toolbox/test_file#t13_28" label="Coverage/annis/">
+        </edge>
+        <edge id="e72" source="toolbox/test_file#syl_13_34" target="toolbox/test_file#t13_34" label="Coverage/annis/">
+        </edge>
+        <edge id="e73" source="toolbox/test_file#syl_13_39" target="toolbox/test_file#t13_39" label="Coverage/annis/">
+        </edge>
+        <edge id="e74" source="toolbox/test_file#syl_13_44" target="toolbox/test_file#t13_44" label="Coverage/annis/">
+        </edge>
+        <edge id="e75" source="toolbox/test_file#mrph_13_0" target="toolbox/test_file#t13_0" label="Coverage/annis/">
+        </edge>
+        <edge id="e76" source="toolbox/test_file#mrph_13_0" target="toolbox/test_file#t13_3" label="Coverage/annis/">
+        </edge>
+        <edge id="e77" source="toolbox/test_file#mrph_13_9" target="toolbox/test_file#t13_9" label="Coverage/annis/">
+        </edge>
+        <edge id="e78" source="toolbox/test_file#mrph_13_14" target="toolbox/test_file#t13_14" label="Coverage/annis/">
+        </edge>
+        <edge id="e79" source="toolbox/test_file#mrph_13_19" target="toolbox/test_file#t13_19" label="Coverage/annis/">
+        </edge>
+        <edge id="e80" source="toolbox/test_file#mrph_13_25" target="toolbox/test_file#t13_25" label="Coverage/annis/">
+        </edge>
+        <edge id="e81" source="toolbox/test_file#mrph_13_25" target="toolbox/test_file#t13_28" label="Coverage/annis/">
+        </edge>
+        <edge id="e82" source="toolbox/test_file#mrph_13_34" target="toolbox/test_file#t13_34" label="Coverage/annis/">
+        </edge>
+        <edge id="e83" source="toolbox/test_file#mrph_13_39" target="toolbox/test_file#t13_39" label="Coverage/annis/">
+        </edge>
+        <edge id="e84" source="toolbox/test_file#mrph_13_44" target="toolbox/test_file#t13_44" label="Coverage/annis/">
+        </edge>
+        <edge id="e85" source="toolbox/test_file#s23" target="toolbox/test_file#t23_0" label="Coverage/annis/">
+        </edge>
+        <edge id="e86" source="toolbox/test_file#s23" target="toolbox/test_file#t23_11" label="Coverage/annis/">
+        </edge>
+        <edge id="e87" source="toolbox/test_file#s23" target="toolbox/test_file#t23_21" label="Coverage/annis/">
+        </edge>
+        <edge id="e88" source="toolbox/test_file#s23" target="toolbox/test_file#t23_32" label="Coverage/annis/">
+        </edge>
+        <edge id="e89" source="toolbox/test_file#tx_23_0" target="toolbox/test_file#t23_0" label="Coverage/annis/">
+        </edge>
+        <edge id="e90" source="toolbox/test_file#tx_23_11" target="toolbox/test_file#t23_11" label="Coverage/annis/">
+        </edge>
+        <edge id="e91" source="toolbox/test_file#tx_23_21" target="toolbox/test_file#t23_21" label="Coverage/annis/">
+        </edge>
+        <edge id="e92" source="toolbox/test_file#tx_23_32" target="toolbox/test_file#t23_32" label="Coverage/annis/">
+        </edge>
+        <edge id="e93" source="toolbox/test_file#std_23_0" target="toolbox/test_file#t23_0" label="Coverage/annis/">
+        </edge>
+        <edge id="e94" source="toolbox/test_file#std_23_11" target="toolbox/test_file#t23_11" label="Coverage/annis/">
+        </edge>
+        <edge id="e95" source="toolbox/test_file#std_23_21" target="toolbox/test_file#t23_21" label="Coverage/annis/">
+        </edge>
+        <edge id="e96" source="toolbox/test_file#std_23_32" target="toolbox/test_file#t23_32" label="Coverage/annis/">
+        </edge>
+        <edge id="e97" source="toolbox/test_file#mrph_23_0" target="toolbox/test_file#t23_0" label="Coverage/annis/">
+        </edge>
+        <edge id="e98" source="toolbox/test_file#mrph_23_11" target="toolbox/test_file#t23_11" label="Coverage/annis/">
+        </edge>
+        <edge id="e99" source="toolbox/test_file#mrph_23_21" target="toolbox/test_file#t23_21" label="Coverage/annis/">
+        </edge>
+        <edge id="e100" source="toolbox/test_file#mrph_23_32" target="toolbox/test_file#t23_32" label="Coverage/annis/">
+        </edge>
+        <edge id="e101" source="toolbox/test_file#s34" target="toolbox/test_file#t34_0" label="Coverage/annis/">
+        </edge>
+        <edge id="e102" source="toolbox/test_file#s34" target="toolbox/test_file#t34_11" label="Coverage/annis/">
+        </edge>
+        <edge id="e103" source="toolbox/test_file#s34" target="toolbox/test_file#t34_21" label="Coverage/annis/">
+        </edge>
+        <edge id="e104" source="toolbox/test_file#s34" target="toolbox/test_file#t34_32" label="Coverage/annis/">
+        </edge>
+        <edge id="e105" source="toolbox/test_file#tx_34_0" target="toolbox/test_file#t34_0" label="Coverage/annis/">
+        </edge>
+        <edge id="e106" source="toolbox/test_file#tx_34_11" target="toolbox/test_file#t34_11" label="Coverage/annis/">
+        </edge>
+        <edge id="e107" source="toolbox/test_file#tx_34_21" target="toolbox/test_file#t34_21" label="Coverage/annis/">
+        </edge>
+        <edge id="e108" source="toolbox/test_file#tx_34_32" target="toolbox/test_file#t34_32" label="Coverage/annis/">
+        </edge>
+        <edge id="e109" source="toolbox/test_file#std_34_0" target="toolbox/test_file#t34_0" label="Coverage/annis/">
+        </edge>
+        <edge id="e110" source="toolbox/test_file#std_34_11" target="toolbox/test_file#t34_11" label="Coverage/annis/">
+        </edge>
+        <edge id="e111" source="toolbox/test_file#std_34_21" target="toolbox/test_file#t34_21" label="Coverage/annis/">
+        </edge>
+        <edge id="e112" source="toolbox/test_file#std_34_32" target="toolbox/test_file#t34_32" label="Coverage/annis/">
+        </edge>
+        <edge id="e113" source="toolbox/test_file#mrph_34_0" target="toolbox/test_file#t34_0" label="Coverage/annis/">
+        </edge>
+        <edge id="e114" source="toolbox/test_file#mrph_34_11" target="toolbox/test_file#t34_11" label="Coverage/annis/">
+        </edge>
+        <edge id="e115" source="toolbox/test_file#mrph_34_21" target="toolbox/test_file#t34_21" label="Coverage/annis/">
+        </edge>
+        <edge id="e116" source="toolbox/test_file#mrph_34_32" target="toolbox/test_file#t34_32" label="Coverage/annis/">
+        </edge>
+        <edge id="e117" source="toolbox/test_file#t5_0" target="toolbox/test_file#t5_7" label="Ordering/annis/">
+        </edge>
+        <edge id="e118" source="toolbox/test_file#t5_7" target="toolbox/test_file#t5_14" label="Ordering/annis/">
+        </edge>
+        <edge id="e119" source="toolbox/test_file#t5_14" target="toolbox/test_file#t5_21" label="Ordering/annis/">
+        </edge>
+        <edge id="e120" source="toolbox/test_file#t5_21" target="toolbox/test_file#t5_27" label="Ordering/annis/">
+        </edge>
+        <edge id="e121" source="toolbox/test_file#t5_27" target="toolbox/test_file#t5_32" label="Ordering/annis/">
+        </edge>
+        <edge id="e122" source="toolbox/test_file#t5_32" target="toolbox/test_file#t5_39" label="Ordering/annis/">
+        </edge>
+        <edge id="e123" source="toolbox/test_file#t5_39" target="toolbox/test_file#t13_0" label="Ordering/annis/">
+        </edge>
+        <edge id="e124" source="toolbox/test_file#t13_0" target="toolbox/test_file#t13_3" label="Ordering/annis/">
+        </edge>
+        <edge id="e125" source="toolbox/test_file#t13_3" target="toolbox/test_file#t13_9" label="Ordering/annis/">
+        </edge>
+        <edge id="e126" source="toolbox/test_file#t13_9" target="toolbox/test_file#t13_14" label="Ordering/annis/">
+        </edge>
+        <edge id="e127" source="toolbox/test_file#t13_14" target="toolbox/test_file#t13_19" label="Ordering/annis/">
+        </edge>
+        <edge id="e128" source="toolbox/test_file#t13_19" target="toolbox/test_file#t13_25" label="Ordering/annis/">
+        </edge>
+        <edge id="e129" source="toolbox/test_file#t13_25" target="toolbox/test_file#t13_28" label="Ordering/annis/">
+        </edge>
+        <edge id="e130" source="toolbox/test_file#t13_28" target="toolbox/test_file#t13_34" label="Ordering/annis/">
+        </edge>
+        <edge id="e131" source="toolbox/test_file#t13_34" target="toolbox/test_file#t13_39" label="Ordering/annis/">
+        </edge>
+        <edge id="e132" source="toolbox/test_file#t13_39" target="toolbox/test_file#t13_44" label="Ordering/annis/">
+        </edge>
+        <edge id="e133" source="toolbox/test_file#t13_44" target="toolbox/test_file#t23_0" label="Ordering/annis/">
+        </edge>
+        <edge id="e134" source="toolbox/test_file#t23_0" target="toolbox/test_file#t23_11" label="Ordering/annis/">
+        </edge>
+        <edge id="e135" source="toolbox/test_file#t23_11" target="toolbox/test_file#t23_21" label="Ordering/annis/">
+        </edge>
+        <edge id="e136" source="toolbox/test_file#t23_21" target="toolbox/test_file#t23_32" label="Ordering/annis/">
+        </edge>
+        <edge id="e137" source="toolbox/test_file#t23_32" target="toolbox/test_file#t34_0" label="Ordering/annis/">
+        </edge>
+        <edge id="e138" source="toolbox/test_file#t34_0" target="toolbox/test_file#t34_11" label="Ordering/annis/">
+        </edge>
+        <edge id="e139" source="toolbox/test_file#t34_11" target="toolbox/test_file#t34_21" label="Ordering/annis/">
+        </edge>
+        <edge id="e140" source="toolbox/test_file#t34_21" target="toolbox/test_file#t34_32" label="Ordering/annis/">
+        </edge>
+        <edge id="e141" source="toolbox/test_file" target="toolbox" label="PartOf/annis/">
+        </edge>
+        <edge id="e142" source="toolbox/test_file#s5" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e143" source="toolbox/test_file#t5_0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e144" source="toolbox/test_file#t5_7" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e145" source="toolbox/test_file#t5_14" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e146" source="toolbox/test_file#t5_21" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e147" source="toolbox/test_file#t5_27" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e148" source="toolbox/test_file#t5_32" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e149" source="toolbox/test_file#t5_39" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e150" source="toolbox/test_file#tx_5_0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e151" source="toolbox/test_file#tx_5_7" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e152" source="toolbox/test_file#tx_5_14" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e153" source="toolbox/test_file#tx_5_21" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e154" source="toolbox/test_file#tx_5_39" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e155" source="toolbox/test_file#PoS_5_0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e156" source="toolbox/test_file#PoS_5_7" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e157" source="toolbox/test_file#PoS_5_14" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e158" source="toolbox/test_file#PoS_5_21" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e159" source="toolbox/test_file#PoS_5_39" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e160" source="toolbox/test_file#syl_5_0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e161" source="toolbox/test_file#syl_5_7" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e162" source="toolbox/test_file#syl_5_14" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e163" source="toolbox/test_file#syl_5_21" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e164" source="toolbox/test_file#syl_5_27" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e165" source="toolbox/test_file#syl_5_32" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e166" source="toolbox/test_file#syl_5_39" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e167" source="toolbox/test_file#mrph_5_0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e168" source="toolbox/test_file#mrph_5_7" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e169" source="toolbox/test_file#mrph_5_14" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e170" source="toolbox/test_file#mrph_5_21" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e171" source="toolbox/test_file#mrph_5_27" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e172" source="toolbox/test_file#mrph_5_39" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e173" source="toolbox/test_file#s13" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e174" source="toolbox/test_file#t13_0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e175" source="toolbox/test_file#t13_3" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e176" source="toolbox/test_file#t13_9" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e177" source="toolbox/test_file#t13_14" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e178" source="toolbox/test_file#t13_19" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e179" source="toolbox/test_file#t13_25" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e180" source="toolbox/test_file#t13_28" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e181" source="toolbox/test_file#t13_34" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e182" source="toolbox/test_file#t13_39" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e183" source="toolbox/test_file#t13_44" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e184" source="toolbox/test_file#tx_13_0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e185" source="toolbox/test_file#tx_13_9" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e186" source="toolbox/test_file#tx_13_19" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e187" source="toolbox/test_file#tx_13_25" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e188" source="toolbox/test_file#tx_13_34" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e189" source="toolbox/test_file#tx_13_44" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e190" source="toolbox/test_file#PoS_13_0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e191" source="toolbox/test_file#PoS_13_9" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e192" source="toolbox/test_file#PoS_13_19" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e193" source="toolbox/test_file#PoS_13_25" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e194" source="toolbox/test_file#PoS_13_34" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e195" source="toolbox/test_file#PoS_13_44" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e196" source="toolbox/test_file#syl_13_0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e197" source="toolbox/test_file#syl_13_3" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e198" source="toolbox/test_file#syl_13_9" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e199" source="toolbox/test_file#syl_13_14" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e200" source="toolbox/test_file#syl_13_19" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e201" source="toolbox/test_file#syl_13_25" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e202" source="toolbox/test_file#syl_13_28" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e203" source="toolbox/test_file#syl_13_34" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e204" source="toolbox/test_file#syl_13_39" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e205" source="toolbox/test_file#syl_13_44" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e206" source="toolbox/test_file#mrph_13_0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e207" source="toolbox/test_file#mrph_13_9" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e208" source="toolbox/test_file#mrph_13_14" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e209" source="toolbox/test_file#mrph_13_19" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e210" source="toolbox/test_file#mrph_13_25" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e211" source="toolbox/test_file#mrph_13_34" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e212" source="toolbox/test_file#mrph_13_39" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e213" source="toolbox/test_file#mrph_13_44" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e214" source="toolbox/test_file#s23" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e215" source="toolbox/test_file#t23_0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e216" source="toolbox/test_file#t23_11" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e217" source="toolbox/test_file#t23_21" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e218" source="toolbox/test_file#t23_32" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e219" source="toolbox/test_file#tx_23_0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e220" source="toolbox/test_file#tx_23_11" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e221" source="toolbox/test_file#tx_23_21" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e222" source="toolbox/test_file#tx_23_32" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e223" source="toolbox/test_file#std_23_0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e224" source="toolbox/test_file#std_23_11" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e225" source="toolbox/test_file#std_23_21" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e226" source="toolbox/test_file#std_23_32" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e227" source="toolbox/test_file#mrph_23_0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e228" source="toolbox/test_file#mrph_23_11" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e229" source="toolbox/test_file#mrph_23_21" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e230" source="toolbox/test_file#mrph_23_32" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e231" source="toolbox/test_file#s34" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e232" source="toolbox/test_file#t34_0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e233" source="toolbox/test_file#t34_11" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e234" source="toolbox/test_file#t34_21" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e235" source="toolbox/test_file#t34_32" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e236" source="toolbox/test_file#tx_34_0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e237" source="toolbox/test_file#tx_34_11" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e238" source="toolbox/test_file#tx_34_21" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e239" source="toolbox/test_file#tx_34_32" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e240" source="toolbox/test_file#std_34_0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e241" source="toolbox/test_file#std_34_11" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e242" source="toolbox/test_file#std_34_21" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e243" source="toolbox/test_file#std_34_32" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e244" source="toolbox/test_file#mrph_34_0" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e245" source="toolbox/test_file#mrph_34_11" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e246" source="toolbox/test_file#mrph_34_21" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+        <edge id="e247" source="toolbox/test_file#mrph_34_32" target="toolbox/test_file" label="PartOf/annis/">
+        </edge>
+    </graph>
+</graphml>
