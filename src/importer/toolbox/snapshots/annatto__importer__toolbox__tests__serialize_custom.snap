@@ -1,0 +1,8 @@
+---
+source: src/importer/toolbox/tests.rs
+expression: serialization.unwrap()
+---
+globals = ["id"]
+span = ["clause", "sentence"]
+ignore = ["comment"]
+explicit_null = false

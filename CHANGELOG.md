@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- import `toolbox` has been re-implemented and now follows the formats original byte-alignment logic and produces a purely coverage-based model
+
 ## [0.56.0] - 2026-08-11
 
 ### Added

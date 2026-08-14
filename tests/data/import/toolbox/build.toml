@@ -1,2 +1,3 @@
-target = "tx"
-span = ["ref", "id"]
+span = ["ref"]
+globals = ["id"]
+ignore = ["comment"]
