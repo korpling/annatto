@@ -355,7 +355,6 @@ impl FLToolbox {
                 slots,
                 bytes,
             },
-            comment,
         }))
     }
 }
@@ -363,7 +362,6 @@ impl FLToolbox {
 enum LineContent {
     GridMember {
         grid_line: ByteGridLine,
-        comment: Vec<u8>,
     },
     Span {
         marker: String,
