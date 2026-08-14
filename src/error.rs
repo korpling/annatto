@@ -1,4 +1,6 @@
-use std::{io::BufWriter, path::PathBuf, string::FromUtf8Error, sync::mpsc::SendError};
+use std::{
+    io::BufWriter, path::PathBuf, str::Utf8Error, string::FromUtf8Error, sync::mpsc::SendError,
+};
 
 use graphannis::errors::GraphAnnisError;
 use graphannis_core::errors::GraphAnnisCoreError;
@@ -72,6 +74,8 @@ pub enum AnnattoError {
     ConvertBufWriterAsByteVector(#[from] std::io::IntoInnerError<BufWriter<Vec<u8>>>),
     #[error(transparent)]
     InvalidUtf8(#[from] FromUtf8Error),
+    #[error(transparent)]
+    InvalidUtf8FromBytes(#[from] Utf8Error),
     #[error("Could not parse TOML workflow file: {error}")]
     TOMLError { error: String },
     #[error("Could not read XSLS file: {0}")]
@@ -88,6 +92,8 @@ pub enum AnnattoError {
     Anyhow(#[from] anyhow::Error),
     #[error("Error in query:\n`{query}`\n{error}")]
     InvalidQuery { query: String, error: String },
+    #[error("Error parsing {file_path}: {error}")]
+    PestParsingError { file_path: PathBuf, error: String },
 }
 
 impl<T> From<std::sync::PoisonError<T>> for AnnattoError {
