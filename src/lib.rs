@@ -30,7 +30,7 @@ use importer::{
     Importer, conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA, file_nodes::CreateFileNodes,
     graphml::GraphMLImporter, meta::AnnotateCorpus, none::CreateEmptyCorpus, opus::ImportOpusLinks,
     ptb::ImportPTB, relannis::ImportRelAnnis, saltxml::ImportSaltXml, table::ImportTable,
-    textgrid::ImportTextgrid, toolbox::ImportToolBox, treetagger::ImportTreeTagger,
+    textgrid::ImportTextgrid, toolbox::ImportFLToolbox, treetagger::ImportTreeTagger,
     webanno::ImportWebAnnoTSV, whisper::ImportWhisper, xlsx::ImportSpreadsheet, xml::ImportXML,
 };
 use manipulator::{
@@ -123,7 +123,8 @@ pub enum ReadFrom {
     Table(#[serde(default)] ImportTable),
     Text(#[serde(default)] ImportText),
     TextGrid(#[serde(default)] ImportTextgrid),
-    Toolbox(#[serde(default)] ImportToolBox),
+    #[serde(rename = "toolbox")]
+    ByteAlignedToolBox(ImportFLToolbox),
     TreeTagger(#[serde(default)] ImportTreeTagger),
     Webanno(#[serde(default)] ImportWebAnnoTSV),
     Whisper(#[serde(default)] ImportWhisper),
@@ -154,13 +155,13 @@ impl ReadFrom {
             ReadFrom::Table(m) => m,
             ReadFrom::Text(m) => m,
             ReadFrom::TextGrid(m) => m,
-            ReadFrom::Toolbox(m) => m,
             ReadFrom::TreeTagger(m) => m,
             ReadFrom::Whisper(m) => m,
             ReadFrom::Xlsx(m) => m,
             ReadFrom::Xml(m) => m,
             ReadFrom::Webanno(m) => m,
             ReadFrom::Git(m) => m,
+            ReadFrom::ByteAlignedToolBox(m) => m,
         }
     }
 

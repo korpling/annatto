@@ -2,11 +2,11 @@ use std::{fs, path::Path};
 
 use insta::assert_snapshot;
 
-use crate::importer::fltb::FLToolbox;
+use crate::importer::toolbox::ImportFLToolbox;
 
 #[test]
 fn serialize_custom() {
-    let module = FLToolbox {
+    let module = ImportFLToolbox {
         span: ["sentence".to_string(), "clause".to_string()]
             .into_iter()
             .collect(),
@@ -28,7 +28,7 @@ fn core_functionality() {
     let ts = fs::read_to_string("tests/data/import/toolbox/build.toml");
     assert!(ts.is_ok(), "Could not read workflow: {:?}", ts.err());
     let toml_str = ts.unwrap();
-    let imp: Result<FLToolbox, _> = toml::from_str(toml_str.as_str());
+    let imp: Result<ImportFLToolbox, _> = toml::from_str(toml_str.as_str());
     assert!(imp.is_ok(), "Error occurred: {:?}", imp.err());
     let importer = imp.unwrap();
     let graphml_is = crate::test_util::import_as_graphml_string(
@@ -49,7 +49,7 @@ fn explicit_null() {
     let ts = fs::read_to_string("tests/data/import/toolbox/build-explicit-null.toml");
     assert!(ts.is_ok(), "Could not read workflow: {:?}", ts.err());
     let toml_str = ts.unwrap();
-    let imp: Result<FLToolbox, _> = toml::from_str(toml_str.as_str());
+    let imp: Result<ImportFLToolbox, _> = toml::from_str(toml_str.as_str());
     assert!(imp.is_ok(), "Error occurred: {:?}", imp.err());
     let importer = imp.unwrap();
     let graphml_is = crate::test_util::import_as_graphml_string(

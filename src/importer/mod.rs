@@ -2,7 +2,6 @@
 pub mod conllu;
 pub mod exmaralda;
 pub mod file_nodes;
-pub mod fltb;
 pub mod git;
 pub mod graphml;
 pub mod meta;
