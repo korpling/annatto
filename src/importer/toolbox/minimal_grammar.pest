@@ -1,0 +1,10 @@
+data = { SOI ~ block+ }
+block = { line+ ~ NEWLINE* }
+line = { "\\" ~ marker ~ (" " ~ line_data? ~ comment?)?  ~ NEWLINE?}
+marker = @{ marker_char* }
+marker_char = { !(" " | NEWLINE) ~ ANY }
+line_data = @{ line_char* }
+line_char = { !(NEWLINE | comment_marker ) ~ ANY }
+comment_marker = { "###" }
+comment = @{" "? ~ comment_marker ~ comment_char* }
+comment_char = { !("\\") ~ ANY }

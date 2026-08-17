@@ -3,38 +3,35 @@
 \id Testdatei erstellt für diesen Test
 
 \ref Testsatz 1
-\tx  Das    ist    ein    Testbeispiel    .
-\PoS PRON   VERB   DET    NOUN            PUNCT
-\syl das    ist    ein    test -bei -spiel -
-\mrph das   ist    ein    test- beispiel  -
+\tx Das    ist    ein    Testbeispiel      .
+\PoS PRON   VERB   DET    NOUN              PUNCT
+\syl das    ist    ein    test  -bei -spiel -
+\mrph das    ist    ein    test- beispiel    -
 
-\comment  Dieser Kommentar sollte nicht im Zielgraph erscheinen.
+\comment Dieser Kommentar sollte nicht im Zielgraph erscheinen.
 
-\ref  Testsatz 2 ### dies ist ein von Toolbox
+\ref Testsatz 2 ### dies ist ein von Toolbox
 umgebrochener Multi-Line-Comment und der sollte
 im Ganzen importiert werden
-\tx   Damit    lassen   sich  Sachen   testen   .
-\PoS  ADV      AUX      PRON  NOUN     VERB     .
-\syl  da -mit  las -sen sich  sa -chen tes -ten -
-\mrph damit    lass -en sich  sachen   test -en -
+\tx Damit    lassen    sich  Sachen   testen    .
+\PoS ADV      AUX       PRON  NOUN     VERB      .
+\syl da -mit  las  -sen sich  sa -chen tes  -ten -
+\mrph damit    lass -en  sich  sachen   test -en  -
 
 \comment Hier noch eins mit Reduplikation
 
 \ref Testsatz 3
-\tx mana       Galwạ atties     .
-\std mano-maną galvą  atties     $
-\mrph -/a.sg.f.  a.sg.   3.ft.      $
+\tx mana       Galw...   atties     .
+\std mano-man.. galv..    atties     $
+\mrph -/a.sg.f.  a.sg.     3.ft.      $
 
 \ref
-ignore this line please
 \tx
 \PoS
 \syl
 \mrph
 
 \ref Testsatz 3 nochmal
-\tx mana       Galwạ atties     .
-ignore this line as well
-it's to be ignored
-\std mano-maną galvą  atties     $
-\mrph -/a.sg.f.  a.sg.   3.ft.      $
+\tx mana       Galw...   atties     .
+\std mano-man.. galv..    atties     $
+\mrph -/a.sg.f.  a.sg.     3.ft.      $
