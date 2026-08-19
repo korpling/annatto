@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, BufReader, Read};
 use std::sync::{LazyLock, Mutex};
 
-pub(super) enum Language {
+pub(crate) enum Language {
     Unknown,
     English,
     Romanian,
@@ -89,7 +89,7 @@ where
 }
 
 #[derive(Clone)]
-struct LanguageConfig {
+pub(crate) struct LanguageConfig {
     /// Punctuation characters to cut of at a beginning of a word. Must be in a
     /// form that can be inserted into a Regex character class `[p_char]`.
     p_char: String,
@@ -135,7 +135,7 @@ fn cached_regex_case_insensitive(p: &str) -> crate::error::Result<Regex> {
 }
 
 #[derive(Clone)]
-pub(super) struct TreeTaggerTokenizer {
+pub(crate) struct TreeTaggerTokenizer {
     config: LanguageConfig,
 }
 

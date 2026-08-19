@@ -16,7 +16,7 @@ use crate::{
     progress::ProgressReporter,
 };
 
-mod tokenizer;
+pub(crate) mod tokenizer;
 
 /// Importer for plain text files.
 ///
