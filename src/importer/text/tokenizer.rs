@@ -161,7 +161,7 @@ impl TreeTaggerTokenizer {
     }
 
     /// Returns a list of token and the possible whitespace that comes after each token
-    pub(super) fn tokenize<R: Read>(&self, reader: R) -> anyhow::Result<Vec<Token>> {
+    pub(crate) fn tokenize<R: Read>(&self, reader: R) -> anyhow::Result<Vec<Token>> {
         let mut result = Vec::new();
 
         let mut buffered_reader = BufReader::new(reader);
