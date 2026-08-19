@@ -155,7 +155,7 @@ impl Token {
 }
 
 impl TreeTaggerTokenizer {
-    pub(super) fn new(language: Language) -> anyhow::Result<Self> {
+    pub(crate) fn new(language: Language) -> anyhow::Result<Self> {
         let config: LanguageConfig = language.into();
         Ok(Self { config })
     }
