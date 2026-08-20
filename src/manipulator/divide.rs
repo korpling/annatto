@@ -546,7 +546,7 @@ impl Manipulator for DivideSegments {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::{path::Path, sync::mpsc};
 
     use graphannis::AnnotationGraph;
     use insta::assert_snapshot;
@@ -556,6 +556,7 @@ mod tests {
         importer::{Importer, treetagger::ImportTreeTagger, xlsx::ImportSpreadsheet},
         manipulator::{Manipulator, divide::DivideSegments},
         test_util::export_to_string,
+        workflow::StatusMessage,
     };
 
     #[test]
@@ -802,6 +803,7 @@ mod tests {
             manip.err().unwrap()
         );
         let manip = manip.unwrap();
+        let (sender, receiver) = mpsc::channel();
         let appl = manip.manipulate_corpus(
             &mut graph,
             Path::new("./"),
@@ -809,9 +811,14 @@ mod tests {
                 module_name: "test_divide".to_string(),
                 path: None,
             },
-            None,
+            Some(sender),
         );
-        assert!(appl.is_err());
+        assert!(appl.is_ok());
+        assert!(
+            receiver
+                .into_iter()
+                .any(|m| matches!(m, StatusMessage::Warning(_)))
+        );
     }
 
     #[test]
