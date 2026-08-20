@@ -40,6 +40,8 @@ pub enum AnnattoError {
     },
     #[error("IO error: {0}")]
     IO(#[from] std::io::Error),
+    #[error("FMT error: {0}")]
+    FMT(#[from] std::fmt::Error),
     #[error("No module with name {0} found")]
     NoSuchModule(String),
     #[error("Cannot read workflow file: {0}")]

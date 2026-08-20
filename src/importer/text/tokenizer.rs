@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, BufReader, Read};
 use std::sync::{LazyLock, Mutex};
 
-pub(super) enum Language {
+pub(crate) enum Language {
     Unknown,
     English,
     Romanian,
@@ -89,7 +89,7 @@ where
 }
 
 #[derive(Clone)]
-struct LanguageConfig {
+pub(crate) struct LanguageConfig {
     /// Punctuation characters to cut of at a beginning of a word. Must be in a
     /// form that can be inserted into a Regex character class `[p_char]`.
     p_char: String,
@@ -135,12 +135,12 @@ fn cached_regex_case_insensitive(p: &str) -> crate::error::Result<Regex> {
 }
 
 #[derive(Clone)]
-pub(super) struct TreeTaggerTokenizer {
+pub(crate) struct TreeTaggerTokenizer {
     config: LanguageConfig,
 }
 
 #[derive(Clone)]
-pub(super) struct Token {
+pub(crate) struct Token {
     pub value: String,
     pub whitespace_after: Option<String>,
 }
@@ -155,13 +155,13 @@ impl Token {
 }
 
 impl TreeTaggerTokenizer {
-    pub(super) fn new(language: Language) -> anyhow::Result<Self> {
+    pub(crate) fn new(language: Language) -> anyhow::Result<Self> {
         let config: LanguageConfig = language.into();
         Ok(Self { config })
     }
 
     /// Returns a list of token and the possible whitespace that comes after each token
-    pub(super) fn tokenize<R: Read>(&self, reader: R) -> anyhow::Result<Vec<Token>> {
+    pub(crate) fn tokenize<R: Read>(&self, reader: R) -> anyhow::Result<Vec<Token>> {
         let mut result = Vec::new();
 
         let mut buffered_reader = BufReader::new(reader);

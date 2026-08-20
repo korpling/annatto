@@ -115,10 +115,11 @@ impl ImportFLToolbox {
         &self,
         block: Pairs<Rule>,
         doc_node_name: &str,
-        mut continue_ordering_at: Option<String>,
+        continue_ordering_at: Option<String>,
         global_values: &mut BTreeMap<String, Vec<u8>>,
         update: &mut GraphUpdate,
     ) -> crate::error::Result<Option<String>> {
+        let mut continue_ordering_at = continue_ordering_at;
         let mut byte_grid = Vec::with_capacity(6); // to find 4 tiers only is unlikely
         let mut all_slots = LinkedHashSet::<usize>::default(); // for sanity check
         let line_n = block.peek().map(|l| l.line_col().0).unwrap_or_default();
