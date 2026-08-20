@@ -5,9 +5,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- graph op `divide` has additional modes `split` and `tokenize` for splitting segments by a delimiter or even tokenizing them.
+
+### Fixed
+
+- graph op `diff`: graph is only cleaned after merge, not after diff mark up.
+
 ### Changed
 
-- import `toolbox` has been re-implemented and now follows the formats original byte-alignment logic and produces a purely coverage-based model
+- import `toolbox` has been re-implemented and now follows the formats original byte-alignment logic and produces a purely coverage-based model.
 
 ## [0.56.0] - 2026-08-11
 
