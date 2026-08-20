@@ -126,9 +126,9 @@ impl<'a> From<&'a str> for ReadableValue<'a> {
 impl std::io::Read for ReadableValue<'_> {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         // read all
-        for i in 0..buf.len() {
+        for (i, slot) in buf.iter_mut().enumerate() {
             if let Some(b) = self.value.next() {
-                buf[i] = b;
+                *slot = b;
             } else {
                 return Ok(i);
             }
@@ -356,18 +356,12 @@ impl Manipulator for DivideSegments {
                                             1,
                                             std::ops::Bound::Unbounded,
                                         )
-                                        .into_iter()
                                         .flatten()
-                                        .filter_map(|n| {
-                                            if !source_gs.has_ingoing_edges(n).unwrap_or_default()
+                                        .filter(|n| {
+                                            !source_gs.has_ingoing_edges(*n).unwrap_or_default()
                                                 && !source_gs
-                                                    .has_outgoing_edges(n)
+                                                    .has_outgoing_edges(*n)
                                                     .unwrap_or_default()
-                                            {
-                                                Some(n)
-                                            } else {
-                                                None
-                                            }
                                         })
                                         .collect::<BTreeSet<NodeID>>();
                                     for n in ordered_nodes.iter().skip(1) {
@@ -377,20 +371,12 @@ impl Manipulator for DivideSegments {
                                                 1,
                                                 std::ops::Bound::Unbounded,
                                             )
-                                            .into_iter()
                                             .flatten()
-                                            .filter_map(|n| {
-                                                if !source_gs
-                                                    .has_ingoing_edges(n)
-                                                    .unwrap_or_default()
+                                            .filter(|n| {
+                                                !source_gs.has_ingoing_edges(*n).unwrap_or_default()
                                                     && !source_gs
-                                                        .has_outgoing_edges(n)
+                                                        .has_outgoing_edges(*n)
                                                         .unwrap_or_default()
-                                                {
-                                                    Some(n)
-                                                } else {
-                                                    None
-                                                }
                                             })
                                             .collect::<BTreeSet<NodeID>>();
                                         node_set = node_set
