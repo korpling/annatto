@@ -140,7 +140,7 @@ pub(crate) struct TreeTaggerTokenizer {
 }
 
 #[derive(Clone)]
-pub(super) struct Token {
+pub(crate) struct Token {
     pub value: String,
     pub whitespace_after: Option<String>,
 }
