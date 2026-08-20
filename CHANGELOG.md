@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - import `toolbox` has been re-implemented and now follows the formats original byte-alignment logic and produces a purely coverage-based model.
+- graph op `divide` operates on multiple tokenizations with multi-tok graph and raises a warning instead of failing.
 
 ## [0.56.0] - 2026-08-11
 
