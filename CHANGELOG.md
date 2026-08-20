@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - graph op `diff`: graph is only cleaned after merge, not after diff mark up.
+- graph op `divide`: non-ordered spans are recovered.
 
 ### Changed
 
