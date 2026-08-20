@@ -190,28 +190,34 @@ impl Manipulator for DiffSubgraphs {
         progress.info("Applying first update ...")?;
         update_graph(graph_helper.graph, &mut update, Some(step_id), tx)?;
         graph_helper.graph.calculate_all_statistics()?;
-        progress.info("Cleaning up ...")?;
-        update = GraphUpdate::default();
-        let query = aql::parse("node_type=/node/ !@* node_type=/corpus/?", false)?;
-        for m in aql::execute_query_on_graph(graph_helper.graph(), &query, true, None)?.flatten() {
-            if let Some(Match { node, .. }) = m.first() {
-                update.add_event(UpdateEvent::DeleteNode {
-                    node_name: graph_helper.node_name(*node)?,
-                })?;
-            }
-        }
-        let query = aql::parse("tok", false)?;
-        for m in aql::execute_query_on_graph(graph_helper.graph(), &query, true, None)?.flatten() {
-            if let Some(Match { node, .. }) = m.first()
-                && !licensed_tok_nodes.contains(node)
+        if let Some(DiffMode::Merge { .. }) = self.mode {
+            progress.info("Cleaning up ...")?;
+            update = GraphUpdate::default();
+            let query = aql::parse("node_type=/node/ !@* node_type=/corpus/?", false)?;
+            for m in
+                aql::execute_query_on_graph(graph_helper.graph(), &query, true, None)?.flatten()
             {
-                update.add_event(UpdateEvent::DeleteNode {
-                    node_name: graph_helper.node_name(*node)?,
-                })?;
+                if let Some(Match { node, .. }) = m.first() {
+                    update.add_event(UpdateEvent::DeleteNode {
+                        node_name: graph_helper.node_name(*node)?,
+                    })?;
+                }
             }
+            let query = aql::parse("tok", false)?;
+            for m in
+                aql::execute_query_on_graph(graph_helper.graph(), &query, true, None)?.flatten()
+            {
+                if let Some(Match { node, .. }) = m.first()
+                    && !licensed_tok_nodes.contains(node)
+                {
+                    update.add_event(UpdateEvent::DeleteNode {
+                        node_name: graph_helper.node_name(*node)?,
+                    })?;
+                }
+            }
+            progress.info(format!("Clean-up update has size {}", update.len()?))?;
+            update_graph_silent(graph_helper.graph, &mut update)?;
         }
-        progress.info(format!("Clean-up update has size {}", update.len()?))?;
-        update_graph_silent(graph_helper.graph, &mut update)?;
         Ok(())
     }
 

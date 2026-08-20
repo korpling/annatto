@@ -1,4 +1,5 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
+use std::str::Bytes;
 
 use anyhow::anyhow;
 use facet::Facet;
@@ -15,7 +16,13 @@ use graphannis_core::{
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{manipulator::Manipulator, progress::ProgressReporter, util::update_graph_silent};
+use crate::{
+    error::AnnattoError,
+    importer::text::tokenizer::{Language, Token, TreeTaggerTokenizer},
+    manipulator::Manipulator,
+    progress::ProgressReporter,
+    util::update_graph_silent,
+};
 
 /// This graph op can be used to split segment values into multiple sub nodes holding a character
 /// or a predefined value.
@@ -85,6 +92,13 @@ enum DivideMode {
     #[default]
     #[serde(rename = "char")]
     Char,
+    #[serde(rename = "tokenize", untagged)]
+    Tokenize {
+        #[serde(rename = "tokenize")]
+        language: String,
+    },
+    #[serde(untagged)]
+    Split { delimiter: String },
     #[serde(untagged)]
     Num {
         n: usize,
@@ -97,11 +111,49 @@ fn default_segment_value() -> String {
     " ".to_string()
 }
 
+struct ReadableValue<'a> {
+    value: Bytes<'a>,
+}
+
+impl<'a> From<&'a str> for ReadableValue<'a> {
+    fn from(value: &'a str) -> Self {
+        ReadableValue {
+            value: value.bytes(),
+        }
+    }
+}
+
+impl std::io::Read for ReadableValue<'_> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        // read all
+        for (i, slot) in buf.iter_mut().enumerate() {
+            if let Some(b) = self.value.next() {
+                *slot = b;
+            } else {
+                return Ok(i);
+            }
+        }
+        Ok(buf.len())
+    }
+}
+
 impl DivideMode {
-    fn resolve(&self, value: &str) -> Vec<String> {
+    fn resolve(&self, value: &str) -> crate::error::Result<Vec<String>> {
         match self {
-            DivideMode::Char => value.chars().map(|c| c.to_string()).collect(),
-            DivideMode::Num { n, value } => vec![value.to_string(); *n],
+            DivideMode::Char => Ok(value.chars().map(|c| c.to_string()).collect()),
+            DivideMode::Num { n, value } => Ok(vec![value.to_string(); *n]),
+            DivideMode::Split { delimiter } => {
+                Ok(value.split(delimiter).map(str::to_string).collect())
+            }
+            DivideMode::Tokenize { language } => {
+                let tokenizer = TreeTaggerTokenizer::new(Language::from(language))?;
+                let s_value = ReadableValue::from(value);
+                let tokens = tokenizer.tokenize(s_value)?;
+                Ok(tokens
+                    .into_iter()
+                    .map(|Token { value, .. }| value)
+                    .collect())
+            }
         }
     }
 }
@@ -127,7 +179,7 @@ fn default_minimal() -> AnnotationComponent {
 }
 
 #[derive(Clone, Deserialize, Facet, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, untagged)]
 #[repr(u8)]
 enum VerticalTarget {
     Ctype(AnnotationComponentType),
@@ -240,19 +292,23 @@ impl Manipulator for DivideSegments {
                     };
 
                     if let Some(value) = &anno_value {
-                        let new_values = self.mode.resolve(value);
+                        let new_values = self.mode.resolve(value)?;
                         let names = new_values.iter().enumerate().map(|(i, v)| {
                             format!("{parent_name}#divide_{node_name_stem}_{i}_{v}")
                                 .trim()
                                 .to_string()
                         });
                         let mut is_tok = false;
-                        let (left_most, right_most) = if !vertical_container
+                        let (left_most, right_most, recover_spans) = if !vertical_container
                             .has_outgoing_edges(node)?
                         {
                             is_tok = true;
-                            (node, node)
+                            (node, node, vec![])
                         } else {
+                            if minimal_is_new {
+                                return Err(anyhow!("You cannot use a new minimal component in a multiple segmentation graph.
+                                Reconfigure for an existing minimal component and retry.").into());
+                            }
                             let vertically_reachable =
                                 CycleSafeDFS::new(&vertical_container, node, 1, usize::MAX)
                                     .flatten()
@@ -290,15 +346,59 @@ impl Manipulator for DivideSegments {
                             )
                             .into());
                             }
-                            (ordered_nodes[0], ordered_nodes[ordered_nodes.len() - 1])
+                            let recoverable_spans = {
+                                let mut node_sets = BTreeMap::default();
+                                let vertical_components = self.vertical.components(graph);
+                                for (c, gs) in vertical_components.into_iter().zip(&vertical_gss) {
+                                    let mut node_set = gs
+                                        .find_connected_inverse(
+                                            ordered_nodes[0],
+                                            1,
+                                            std::ops::Bound::Unbounded,
+                                        )
+                                        .flatten()
+                                        .filter(|n| {
+                                            !source_gs.has_ingoing_edges(*n).unwrap_or_default()
+                                                && !source_gs
+                                                    .has_outgoing_edges(*n)
+                                                    .unwrap_or_default()
+                                        })
+                                        .collect::<BTreeSet<NodeID>>();
+                                    for n in ordered_nodes.iter().skip(1) {
+                                        let further = gs
+                                            .find_connected_inverse(
+                                                *n,
+                                                1,
+                                                std::ops::Bound::Unbounded,
+                                            )
+                                            .flatten()
+                                            .filter(|n| {
+                                                !source_gs.has_ingoing_edges(*n).unwrap_or_default()
+                                                    && !source_gs
+                                                        .has_outgoing_edges(*n)
+                                                        .unwrap_or_default()
+                                            })
+                                            .collect::<BTreeSet<NodeID>>();
+                                        node_set = node_set
+                                            .intersection(&further)
+                                            .copied()
+                                            .collect::<BTreeSet<NodeID>>();
+                                    }
+                                    node_sets.insert(c, node_set);
+                                }
+                                node_sets
+                            };
+                            (
+                                ordered_nodes[0],
+                                ordered_nodes[ordered_nodes.len() - 1],
+                                recoverable_spans.into_iter().collect_vec(),
+                            )
                         };
                         if left_most != right_most {
                             // problematic case, especially in "char" mode
-                            return Err(anyhow!(
-                            "This graph op currently does not support the provided graph structure."
-                        )
-                        .into());
-                        } else {
+                            progress.warn("There are already sequences of minimal nodes below the target annotation's granularity. Operating with `divide` may result in an invalid graph. Proceeding ...")?;
+                        } // there used to be an `else` here, this requires debugging
+                        {
                             previous = if minimal_is_new && let Some(prev_id) = previous {
                                 Some(prev_id)
                             } else if let Some(prev_id) = minimal_gs
@@ -354,6 +454,23 @@ impl Manipulator for DivideSegments {
                                     component_type: AnnotationComponentType::Coverage.to_string(),
                                     component_name: "".to_string(),
                                 })?;
+                                for (c, nodes) in &recover_spans {
+                                    for recovered_src in nodes {
+                                        let recover_name = graph
+                                            .get_node_annos()
+                                            .get_value_for_item(recovered_src, &NODE_NAME_KEY)?
+                                            .ok_or::<AnnattoError>(
+                                                anyhow!("Node has no name.").into(),
+                                            )?;
+                                        update.add_event(UpdateEvent::AddEdge {
+                                            source_node: recover_name.to_string(),
+                                            target_node: new_node.to_string(),
+                                            layer: c.layer.to_string(),
+                                            component_type: c.get_type().to_string(),
+                                            component_name: c.name.to_string(),
+                                        })?;
+                                    }
+                                }
                                 previous = Some(new_node);
                             }
                             if let Some(name) = &previous
@@ -396,7 +513,7 @@ impl Manipulator for DivideSegments {
                         }
                     } else {
                         progress.warn(format!(
-                            "Source node {horizontal_node_name} has no value for key {}:{}",
+                            "Source node {horizontal_node_name} has no value for key {}::{}",
                             self.source_anno.ns, self.source_anno.name
                         ))?;
                         continue;
@@ -415,7 +532,7 @@ impl Manipulator for DivideSegments {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::{path::Path, sync::mpsc};
 
     use graphannis::AnnotationGraph;
     use insta::assert_snapshot;
@@ -425,7 +542,35 @@ mod tests {
         importer::{Importer, treetagger::ImportTreeTagger, xlsx::ImportSpreadsheet},
         manipulator::{Manipulator, divide::DivideSegments},
         test_util::export_to_string,
+        workflow::StatusMessage,
     };
+
+    #[test]
+    fn deserialize_custom() {
+        let toml_str = r#"
+        source_anno = "norm::norm"
+        target_anno = "subnorm"
+        mode = { delimiter = " " }
+        vertical = "Coverage"
+        [horizontal]
+        minimal = { ctype = "Ordering", layer = "annis", name = "" }
+        source =  { ctype = "Ordering", layer = "default_ns", name = "norm" }
+        "#;
+        let dvd: Result<DivideSegments, _> = toml::from_str(toml_str);
+        assert!(dvd.is_ok(), "Could not deserialize: {}", dvd.err().unwrap());
+
+        let toml_str = r#"
+        source_anno = "norm::norm"
+        target_anno = "subnorm"
+        mode = { delimiter = " " }
+        vertical = [{ ctype = "Coverage", layer = "annis", name = "" }, { ctype = "Dominance", layer = "annis", name = "" }]
+        [horizontal]
+        minimal = { ctype = "Ordering", layer = "annis", name = "" }
+        source =  { ctype = "Ordering", layer = "default_ns", name = "norm" }
+        "#;
+        let dvd: Result<DivideSegments, _> = toml::from_str(toml_str);
+        assert!(dvd.is_ok(), "Could not deserialize: {}", dvd.err().unwrap());
+    }
 
     #[test]
     fn single_tok() {
@@ -644,7 +789,66 @@ mod tests {
             manip.err().unwrap()
         );
         let manip = manip.unwrap();
+        let (sender, receiver) = mpsc::channel();
         let appl = manip.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_divide".to_string(),
+                path: None,
+            },
+            Some(sender),
+        );
+        assert!(appl.is_ok());
+        assert!(
+            receiver
+                .into_iter()
+                .any(|m| matches!(m, StatusMessage::Warning(_)))
+        );
+    }
+
+    #[test]
+    fn split_toks() {
+        let data_path = Path::new("tests/data/graph_op/divide/split/corpus");
+        let mprt: Result<ImportTreeTagger, _> = toml::from_str(r#"column_names = ["annis::tok"]"#);
+        assert!(
+            mprt.is_ok(),
+            "Could not deserialize treetagger import: {:?}",
+            mprt.err().unwrap()
+        );
+        let import = mprt.unwrap();
+        let u = import.import_corpus(
+            data_path,
+            crate::StepID {
+                module_name: "test_import".to_string(),
+                path: Some(data_path.to_path_buf()),
+            },
+            import.default_configuration(),
+            None,
+        );
+        assert!(
+            u.is_ok(),
+            "Could not import treetagger data: {:?}",
+            u.err().unwrap()
+        );
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut u.unwrap(), |_| {}).is_ok());
+        let dvd: Result<DivideSegments, _> = toml::from_str(
+            r#"
+        source_anno = "annis::tok"
+        target_anno = "annis::tok"
+        mode = { delimiter = " " }
+        vertical = "Coverage"
+        [horizontal]
+        minimal = { ctype = "Ordering", layer = "annis", name = "new" }
+        source =  { ctype = "Ordering", layer = "annis", name = "" }
+        "#,
+        );
+        assert!(dvd.is_ok(), "Could not deserialize: {}", dvd.err().unwrap());
+        let divide = dvd.unwrap();
+        let application = divide.manipulate_corpus(
             &mut graph,
             Path::new("./"),
             crate::StepID {
@@ -653,6 +857,135 @@ mod tests {
             },
             None,
         );
-        assert!(appl.is_err());
+        assert!(
+            application.is_ok(),
+            "Failed to apply `divide`: {}",
+            application.err().unwrap()
+        );
+        let export: Result<GraphMLExporter, _> = toml::from_str("stable_order = true");
+        assert_snapshot!(export_to_string(&graph, export.unwrap()).unwrap());
+    }
+
+    #[test]
+    fn split_virtual_toks() {
+        let data_path = Path::new("tests/data/graph_op/divide/split/corpus");
+        let mprt: Result<ImportSpreadsheet, _> =
+            toml::from_str(r#"column_map =  { norm = ["pos"] }"#);
+        assert!(
+            mprt.is_ok(),
+            "Could not deserialize treetagger import: {:?}",
+            mprt.err().unwrap()
+        );
+        let import = mprt.unwrap();
+        let u = import.import_corpus(
+            data_path,
+            crate::StepID {
+                module_name: "test_import".to_string(),
+                path: Some(data_path.to_path_buf()),
+            },
+            import.default_configuration(),
+            None,
+        );
+        assert!(
+            u.is_ok(),
+            "Could not import xlsx data: {:?}",
+            u.err().unwrap()
+        );
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut u.unwrap(), |_| {}).is_ok());
+        let dvd: Result<DivideSegments, _> = toml::from_str(
+            r#"
+        source_anno = "norm::norm"
+        target_anno = "subnorm::norm"
+        mode = { delimiter = " " }
+        vertical = "Coverage"
+        [horizontal]
+        minimal = { ctype = "Ordering", layer = "annis", name = "" }
+        source =  { ctype = "Ordering", layer = "default_ns", name = "norm" }
+        "#,
+        );
+        assert!(dvd.is_ok(), "Could not deserialize: {}", dvd.err().unwrap());
+        let divide = dvd.unwrap();
+        let application = divide.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_divide".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(
+            application.is_ok(),
+            "Failed to apply `divide`: {}",
+            application.err().unwrap()
+        );
+        let export: Result<GraphMLExporter, _> = toml::from_str("stable_order = true");
+        assert_snapshot!(export_to_string(&graph, export.unwrap()).unwrap());
+    }
+
+    #[test]
+    fn tokenize() {
+        let data_path = Path::new("tests/data/graph_op/divide/tokenize");
+        let mprt: Result<ImportSpreadsheet, _> = toml::from_str(
+            r#"
+            column_map =  { norm = ["pos"] }
+            "#,
+        );
+        assert!(
+            mprt.is_ok(),
+            "Could not deserialize treetagger import: {}",
+            mprt.err().unwrap()
+        );
+        let import = mprt.unwrap();
+        let u = import.import_corpus(
+            data_path,
+            crate::StepID {
+                module_name: "test_import".to_string(),
+                path: Some(data_path.to_path_buf()),
+            },
+            import.default_configuration(),
+            None,
+        );
+        assert!(
+            u.is_ok(),
+            "Could not import xlsx data: {:?}",
+            u.err().unwrap()
+        );
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut u.unwrap(), |_| {}).is_ok());
+        let dvd: Result<DivideSegments, _> = toml::from_str(
+            r#"
+        source_anno = "norm::norm"
+        target_anno = "subnorm::norm"
+        mode = { tokenize = "en" }
+        vertical = "Coverage"
+        [horizontal]
+        minimal = { ctype = "Ordering", layer = "annis", name = "" }
+        source =  { ctype = "Ordering", layer = "default_ns", name = "norm" }
+        "#,
+        );
+        assert!(dvd.is_ok(), "Could not deserialize: {}", dvd.err().unwrap());
+        let divide = dvd.unwrap();
+        let application = divide.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_divide".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(
+            application.is_ok(),
+            "Failed to apply `divide`: {}",
+            application.err().unwrap()
+        );
+        let export: Result<GraphMLExporter, _> = toml::from_str("stable_order = true");
+        assert_snapshot!(export_to_string(&graph, export.unwrap()).unwrap());
     }
 }
