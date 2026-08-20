@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::str::Bytes;
 
 use anyhow::anyhow;
 use facet::Facet;
@@ -16,7 +17,10 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    error::AnnattoError, manipulator::Manipulator, progress::ProgressReporter,
+    error::AnnattoError,
+    importer::text::tokenizer::{Language, Token, TreeTaggerTokenizer},
+    manipulator::Manipulator,
+    progress::ProgressReporter,
     util::update_graph_silent,
 };
 
@@ -88,6 +92,11 @@ enum DivideMode {
     #[default]
     #[serde(rename = "char")]
     Char,
+    #[serde(rename = "tokenize", untagged)]
+    Tokenize {
+        #[serde(rename = "tokenize")]
+        language: String,
+    },
     #[serde(untagged)]
     Split { delimiter: String },
     #[serde(untagged)]
@@ -102,12 +111,49 @@ fn default_segment_value() -> String {
     " ".to_string()
 }
 
+struct ReadableValue<'a> {
+    value: Bytes<'a>,
+}
+
+impl<'a> From<&'a str> for ReadableValue<'a> {
+    fn from(value: &'a str) -> Self {
+        ReadableValue {
+            value: value.bytes(),
+        }
+    }
+}
+
+impl std::io::Read for ReadableValue<'_> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        // read all
+        for i in 0..buf.len() {
+            if let Some(b) = self.value.next() {
+                buf[i] = b;
+            } else {
+                return Ok(i);
+            }
+        }
+        Ok(buf.len())
+    }
+}
+
 impl DivideMode {
-    fn resolve(&self, value: &str) -> Vec<String> {
+    fn resolve(&self, value: &str) -> crate::error::Result<Vec<String>> {
         match self {
-            DivideMode::Char => value.chars().map(|c| c.to_string()).collect(),
-            DivideMode::Num { n, value } => vec![value.to_string(); *n],
-            DivideMode::Split { delimiter } => value.split(delimiter).map(str::to_string).collect(),
+            DivideMode::Char => Ok(value.chars().map(|c| c.to_string()).collect()),
+            DivideMode::Num { n, value } => Ok(vec![value.to_string(); *n]),
+            DivideMode::Split { delimiter } => {
+                Ok(value.split(delimiter).map(str::to_string).collect())
+            }
+            DivideMode::Tokenize { language } => {
+                let tokenizer = TreeTaggerTokenizer::new(Language::from(language))?;
+                let s_value = ReadableValue::from(value);
+                let tokens = tokenizer.tokenize(s_value)?;
+                Ok(tokens
+                    .into_iter()
+                    .map(|Token { value, .. }| value)
+                    .collect())
+            }
         }
     }
 }
@@ -246,7 +292,7 @@ impl Manipulator for DivideSegments {
                     };
 
                     if let Some(value) = &anno_value {
-                        let new_values = self.mode.resolve(value);
+                        let new_values = self.mode.resolve(value)?;
                         let names = new_values.iter().enumerate().map(|(i, v)| {
                             format!("{parent_name}#divide_{node_name_stem}_{i}_{v}")
                                 .trim()
@@ -481,7 +527,7 @@ impl Manipulator for DivideSegments {
                         }
                     } else {
                         progress.warn(format!(
-                            "Source node {horizontal_node_name} has no value for key {}:{}",
+                            "Source node {horizontal_node_name} has no value for key {}::{}",
                             self.source_anno.ns, self.source_anno.name
                         ))?;
                         continue;
@@ -861,6 +907,69 @@ mod tests {
         source_anno = "norm::norm"
         target_anno = "subnorm::norm"
         mode = { delimiter = " " }
+        vertical = "Coverage"
+        [horizontal]
+        minimal = { ctype = "Ordering", layer = "annis", name = "" }
+        source =  { ctype = "Ordering", layer = "default_ns", name = "norm" }
+        "#,
+        );
+        assert!(dvd.is_ok(), "Could not deserialize: {}", dvd.err().unwrap());
+        let divide = dvd.unwrap();
+        let application = divide.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            crate::StepID {
+                module_name: "test_divide".to_string(),
+                path: None,
+            },
+            None,
+        );
+        assert!(
+            application.is_ok(),
+            "Failed to apply `divide`: {}",
+            application.err().unwrap()
+        );
+        let export: Result<GraphMLExporter, _> = toml::from_str("stable_order = true");
+        assert_snapshot!(export_to_string(&graph, export.unwrap()).unwrap());
+    }
+
+    #[test]
+    fn tokenize() {
+        let data_path = Path::new("tests/data/graph_op/divide/tokenize");
+        let mprt: Result<ImportSpreadsheet, _> = toml::from_str(
+            r#"
+            column_map =  { norm = ["pos"] }
+            "#,
+        );
+        assert!(
+            mprt.is_ok(),
+            "Could not deserialize treetagger import: {}",
+            mprt.err().unwrap()
+        );
+        let import = mprt.unwrap();
+        let u = import.import_corpus(
+            data_path,
+            crate::StepID {
+                module_name: "test_import".to_string(),
+                path: Some(data_path.to_path_buf()),
+            },
+            import.default_configuration(),
+            None,
+        );
+        assert!(
+            u.is_ok(),
+            "Could not import xlsx data: {:?}",
+            u.err().unwrap()
+        );
+        let g = AnnotationGraph::with_default_graphstorages(false);
+        assert!(g.is_ok());
+        let mut graph = g.unwrap();
+        assert!(graph.apply_update(&mut u.unwrap(), |_| {}).is_ok());
+        let dvd: Result<DivideSegments, _> = toml::from_str(
+            r#"
+        source_anno = "norm::norm"
+        target_anno = "subnorm::norm"
+        mode = { tokenize = "en" }
         vertical = "Coverage"
         [horizontal]
         minimal = { ctype = "Ordering", layer = "annis", name = "" }
