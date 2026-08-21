@@ -1,5 +1,6 @@
 //! Importer modules allow importing files from different formats.
 pub mod conllu;
+pub mod elan;
 pub mod exmaralda;
 pub mod file_nodes;
 pub mod git;
