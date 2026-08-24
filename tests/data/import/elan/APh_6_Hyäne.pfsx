@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<preferences version="1.1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.mpi.nl/tools/elan/Prefs_v1.1.xsd">
+    <prefList key="CommentViewer.Columns.Order">
+        <String>Start Time</String>
+        <String>End Time</String>
+        <String>Tier</String>
+        <String>Initials</String>
+        <String>Comment</String>
+        <String>Thread</String>
+        <String>Sender</String>
+        <String>Recipient</String>
+        <String>Creation Date</String>
+        <String>Modification Date</String>
+    </prefList>
+    <pref key="FrameSize">
+        <Object class="java.awt.Dimension">2490,1413</Object>
+    </pref>
+    <pref key="FrameLocation">
+        <Object class="java.awt.Point">70,27</Object>
+    </pref>
+    <pref key="LayoutManager.SelectedTabIndex">
+        <Int>6</Int>
+    </pref>
+    <pref key="LayoutManager.VisibleMultiTierViewer">
+        <String>mpi.eudico.client.annotator.viewer.TimeLineViewer</String>
+    </pref>
+    <pref key="SelectionBeginTime">
+        <Long>0</Long>
+    </pref>
+    <pref key="MultiTierViewer.ActiveTierName">
+        <String>Manuskript B</String>
+    </pref>
+    <pref key="TimeScaleBeginTime">
+        <Long>0</Long>
+    </pref>
+    <pref key="MediaTime">
+        <Long>0</Long>
+    </pref>
+    <pref key="SelectionEndTime">
+        <Long>0</Long>
+    </pref>
+    <prefGroup key="TierColors">
+        <pref key="S2 Stammbaum">
+            <Object class="java.awt.Color">90,0,160</Object>
+        </pref>
+        <pref key="Identifizierer">
+            <Object class="java.awt.Color">90,90,160</Object>
+        </pref>
+        <pref key="Tg1a Kapitel">
+            <Object class="java.awt.Color">0,160,90</Object>
+        </pref>
+        <pref key="Referenztext W">
+            <Object class="java.awt.Color">90,160,90</Object>
+        </pref>
+        <pref key="S1a Satz">
+            <Object class="java.awt.Color">160,160,90</Object>
+        </pref>
+        <pref key="Tg2a Vers">
+            <Object class="java.awt.Color">90,90,0</Object>
+        </pref>
+        <pref key="S1b Hierarchie">
+            <Object class="java.awt.Color">160,160,0</Object>
+        </pref>
+        <pref key="Ms1 Seite">
+            <Object class="java.awt.Color">160,90,90</Object>
+        </pref>
+        <pref key="Referenz">
+            <Object class="java.awt.Color">0,160,0</Object>
+        </pref>
+        <pref key="Ts1 Seite Ed.1">
+            <Object class="java.awt.Color">160,0,0</Object>
+        </pref>
+        <pref key="Ts1 Seite Ed.2">
+            <Object class="java.awt.Color">90,160,160</Object>
+        </pref>
+        <pref key="Ts1 Seite Ed.3">
+            <Object class="java.awt.Color">90,0,0</Object>
+        </pref>
+        <pref key="Tg Kommentar">
+            <Object class="java.awt.Color">160,90,0</Object>
+        </pref>
+    </prefGroup>
+    <prefList key="MultiTierViewer.TierOrder">
+        <String>Manuskript B</String>
+        <String>Manuskript R</String>
+        <String>Manuskript W</String>
+        <String>Referenztext B</String>
+        <String>Referenztext R</String>
+        <String>Referenztext W</String>
+        <String>Standard B</String>
+        <String>Standard W</String>
+        <String>Lemma</String>
+        <String>Übersetzung</String>
+        <String>Sprache</String>
+        <String>M1a DDDTS Lemma</String>
+        <String>M1b DDDTS Beleg</String>
+        <String>M2a Flexion Lemma</String>
+        <String>M2b Flexion Beleg 1</String>
+        <String>M2c Flexion Beleg 2</String>
+        <String>R Reim</String>
+        <String>R Kommentar</String>
+        <String>S1a Satz</String>
+        <String>S1b Hierarchie</String>
+        <String>S2 Stammbaum</String>
+        <String>Tg1a Kapitel</String>
+        <String>Tg1b Unterkapitel</String>
+        <String>Tg2a Vers</String>
+        <String>Tg2b Halbvers</String>
+        <String>Tg Kommentar</String>
+        <String>Ts1 Seite Ed.1</String>
+        <String>Ts2 Zeile Ed.1</String>
+        <String>Ts1 Seite Ed.2</String>
+        <String>Ts2 Zeile Ed.2</String>
+        <String>Ts1 Seite Ed.3</String>
+        <String>Ts2 Zeile Ed.3</String>
+        <String>Ms1 Seite</String>
+        <String>Ms2 Zeile</String>
+        <String>Referenz</String>
+        <String>Identifizierer</String>
+    </prefList>
+    <pref key="LayoutManager.SplitPaneDividerLocation">
+        <Int>1</Int>
+    </pref>
+    <pref key="LayoutManager.CurrentMode">
+        <Int>1</Int>
+    </pref>
+    <prefGroup key="CommentViewer.Columns">
+        <pref key="Sender">
+            <Int>0</Int>
+        </pref>
+        <pref key="Comment">
+            <Int>75</Int>
+        </pref>
+        <pref key="Creation Date">
+            <Int>75</Int>
+        </pref>
+        <pref key="Tier">
+            <Int>75</Int>
+        </pref>
+        <pref key="Modification Date">
+            <Int>75</Int>
+        </pref>
+        <pref key="Recipient">
+            <Int>0</Int>
+        </pref>
+        <pref key="Start Time">
+            <Int>75</Int>
+        </pref>
+        <pref key="Initials">
+            <Int>75</Int>
+        </pref>
+        <pref key="End Time">
+            <Int>75</Int>
+        </pref>
+        <pref key="Thread">
+            <Int>75</Int>
+        </pref>
+    </prefGroup>
+    <prefList key="CommentViewer.Columns.Hidden">
+        <String>Sender</String>
+        <String>Recipient</String>
+    </prefList>
+</preferences>

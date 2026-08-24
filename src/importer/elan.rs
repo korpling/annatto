@@ -7,7 +7,7 @@ use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
 };
-use graphannis_core::graph::ANNIS_NS;
+use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use linked_hash_map::LinkedHashMap;
 
 use crate::{error::AnnattoError, importer::Importer, progress::ProgressReporter};
@@ -64,13 +64,11 @@ struct Timeline {
 }
 
 impl<'a> Timeline {
-    fn slice(&'a self, start: &str, end_inclusive: &str) -> Option<&'a [String]> {
-        let start_index = self.id_to_index.get(start);
-        let end_index = self.id_to_index.get(end_inclusive);
-        if let Some(l) = start_index
-            && let Some(r) = end_index
+    fn slice(&'a self, start: &str, end_excl: &str) -> Option<&'a [String]> {
+        if let Some(l) = self.id_to_index.get(start)
+            && let Some(r) = self.id_to_index.get(end_excl)
         {
-            let seq = &self.node_sequence[*l..*r + 1];
+            let seq = &self.node_sequence[*l..*r];
             Some(seq)
         } else {
             None
@@ -95,11 +93,38 @@ impl<'a> ELANMapper<'a> {
         let mut node_sequence = Vec::with_capacity(self.data.timeline().len());
         let mut predecessor: Option<String> = None;
         let mut previous_time = None;
+        let mut time_to_node_name = BTreeMap::default();
         for time_slot in self.data.timeline() {
             let node_name = format!("{}#{}", self.doc_node_name, time_slot.time_slot_id);
+            // Elan allows for having several time slots for the same time, so make sure that
+            // for each time value, there is only one node
+            if let Some(time_val) = &time_slot.time_value {
+                if let Some(exisiting_time_slot) = time_to_node_name.get(time_val)
+                    && let Some(index) = id_to_index.get(exisiting_time_slot)
+                {
+                    id_to_index.insert(time_slot.time_slot_id.to_string(), *index);
+                    continue;
+                } else {
+                    time_to_node_name.insert(*time_val, time_slot.time_slot_id.to_string());
+                }
+            }
+            id_to_index.insert(time_slot.time_slot_id.to_string(), node_sequence.len());
+            node_sequence.push(node_name.to_string());
             update.add_event(UpdateEvent::AddNode {
                 node_name: node_name.to_string(),
                 node_type: "node".to_string(),
+            })?;
+            update.add_event(UpdateEvent::AddNodeLabel {
+                node_name: node_name.to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "tok".to_string(),
+                anno_value: " ".to_string(),
+            })?;
+            update.add_event(UpdateEvent::AddNodeLabel {
+                node_name: node_name.to_string(),
+                anno_ns: ANNIS_NS.to_string(),
+                anno_name: "layer".to_string(),
+                anno_value: "default_layer".to_string(),
             })?;
             update.add_event(UpdateEvent::AddEdge {
                 source_node: node_name.to_string(),
@@ -108,8 +133,6 @@ impl<'a> ELANMapper<'a> {
                 component_type: AnnotationComponentType::PartOf.to_string(),
                 component_name: "".to_string(),
             })?;
-            id_to_index.insert(time_slot.time_slot_id.to_string(), node_sequence.len());
-            node_sequence.push(node_name.to_string());
 
             if let Some(preceeding_node) = predecessor {
                 update.add_event(UpdateEvent::AddEdge {
@@ -128,8 +151,8 @@ impl<'a> ELANMapper<'a> {
                                 anno_name: "time".to_string(),
                                 anno_value: format!(
                                     "{}-{}",
-                                    time_val / 1000,
-                                    current_time_val / 1000
+                                    time_val as f64 / 1000f64,
+                                    current_time_val as f64 / 1000f64
                                 ),
                             })?;
                         }
@@ -147,7 +170,7 @@ impl<'a> ELANMapper<'a> {
                 node_name,
                 anno_ns: ANNIS_NS.to_string(),
                 anno_name: "time".to_string(),
-                anno_value: format!("{}-", time / 1000),
+                anno_value: format!("{}-", time as f64 / 1000f64),
             })?;
         }
         Ok(Timeline {
@@ -194,9 +217,15 @@ impl<'a> ELANMapper<'a> {
                         })?;
                         update.add_event(UpdateEvent::AddNodeLabel {
                             node_name: annotation_node_name.to_string(),
-                            anno_ns: "".to_string(),
+                            anno_ns: DEFAULT_NS.to_string(),
                             anno_name: tier_id.to_string(),
                             anno_value: annotation_value.to_string(),
+                        })?;
+                        update.add_event(UpdateEvent::AddNodeLabel {
+                            node_name: annotation_node_name.to_string(),
+                            anno_ns: ANNIS_NS.to_string(),
+                            anno_name: "layer".to_string(),
+                            anno_value: "default_layer".to_string(),
                         })?;
                         for target in targets {
                             update.add_event(UpdateEvent::AddEdge {
