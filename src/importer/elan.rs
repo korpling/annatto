@@ -15,7 +15,8 @@ use serde::{Deserialize, Serialize};
 use crate::{error::AnnattoError, importer::Importer, progress::ProgressReporter};
 
 #[derive(Clone, Deserialize, Facet, PartialEq, Serialize)]
-pub struct ImportELAN {}
+/// This importer reads ELAN files.
+pub struct ImportELAN;
 
 const DEFAULT_FILE_EXTENSIONS: [&str; 2] = ["eaf", "xml"];
 
