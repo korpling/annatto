@@ -3,15 +3,18 @@ mod model;
 use std::{collections::BTreeMap, path::Path};
 
 use anyhow::anyhow;
+use facet::Facet;
 use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use linked_hash_map::LinkedHashMap;
+use serde::{Deserialize, Serialize};
 
 use crate::{error::AnnattoError, importer::Importer, progress::ProgressReporter};
 
+#[derive(Clone, Deserialize, Facet, PartialEq, Serialize)]
 pub struct ImportELAN {}
 
 const DEFAULT_FILE_EXTENSIONS: [&str; 2] = ["eaf", "xml"];
@@ -52,7 +55,7 @@ impl ImportELAN {
             serde_xml_rs::from_str(&file_contents).map_err(|e| anyhow!(e.to_string()))?;
         ELANMapper {
             data: elan_data,
-            doc_node_name: &doc_node_name,
+            doc_node_name,
         }
         .map(update)
     }
@@ -143,19 +146,19 @@ impl<'a> ELANMapper<'a> {
                     component_name: "".to_string(),
                 })?;
                 if let Some(current_time_val) = time_slot.time_value {
-                    if let Some(time_val) = previous_time {
-                        if let model::TimeUnits::Milliseconds = self.data.time_units() {
-                            update.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: preceeding_node,
-                                anno_ns: ANNIS_NS.to_string(),
-                                anno_name: "time".to_string(),
-                                anno_value: format!(
-                                    "{}-{}",
-                                    time_val as f64 / 1000f64,
-                                    current_time_val as f64 / 1000f64
-                                ),
-                            })?;
-                        }
+                    if let Some(time_val) = previous_time
+                        && let model::TimeUnits::Milliseconds = self.data.time_units()
+                    {
+                        update.add_event(UpdateEvent::AddNodeLabel {
+                            node_name: preceeding_node,
+                            anno_ns: ANNIS_NS.to_string(),
+                            anno_name: "time".to_string(),
+                            anno_value: format!(
+                                "{}-{}",
+                                time_val as f64 / 1000f64,
+                                current_time_val as f64 / 1000f64
+                            ),
+                        })?;
                     }
                     previous_time = Some(current_time_val);
                 }
