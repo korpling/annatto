@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, collections::BTreeMap, fmt::Debug, ops::Index, path::PathBuf};
+use std::{cmp::Ordering, collections::BTreeMap, fmt::Debug, path::PathBuf};
 
 use itertools::Itertools;
 use serde::Deserialize;
@@ -6,33 +6,33 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub(super) struct AnnotationDocument {
-    license: Option<License>,
+    _license: Option<License>,
     header: Header,
     time_order: TimeOrder,
     #[serde(rename = "TIER")]
     tiers: Vec<Tier>,
     #[serde(default)]
-    linguistic_types: Vec<LinguisticType>,
+    _linguistic_types: Vec<LinguisticType>,
     #[serde(default)]
-    locales: Vec<Locale>,
+    _locales: Vec<Locale>,
     #[serde(default)]
-    languages: Vec<Language>,
+    _languages: Vec<Language>,
     #[serde(default)]
-    constraints: Vec<Constraint>,
+    _constraints: Vec<Constraint>,
     #[serde(default)]
-    controlled_vocabularies: Vec<ControlledVocabulary>,
+    _controlled_vocabularies: Vec<ControlledVocabulary>,
     #[serde(default)]
-    lexicon_refs: Vec<LexiconRef>,
+    _lexicon_refs: Vec<LexiconRef>,
     #[serde(default)]
-    external_refs: Vec<ExternalRef>,
+    _external_refs: Vec<ExternalRef>,
     #[serde(rename = "@DATE")]
-    date: String,
+    _date: String,
     #[serde(rename = "@AUTHOR")]
-    author: String,
+    _author: String,
     #[serde(rename = "@VERSION")]
-    version: String,
+    _version: String,
     #[serde(rename = "@FORMAT")]
-    format: Option<String>,
+    _format: Option<String>,
     #[serde(skip, default)]
     is_sorted: bool,
 }
@@ -42,7 +42,7 @@ struct RecursiveLookupCmp<'a> {
 }
 
 impl<'a> RecursiveLookupCmp<'a> {
-    fn new(tier_vec: &'a Vec<Tier>) -> Self {
+    fn new(tier_vec: &'a [Tier]) -> Self {
         let tier_lookup = tier_vec.iter().map(|t| (t.id(), t)).collect();
         RecursiveLookupCmp { tier_lookup }
     }
@@ -111,18 +111,18 @@ impl AnnotationDocument {
 #[derive(Deserialize)]
 struct License {
     #[serde(rename = "@LICENSE_URL")]
-    license_url: Option<String>,
+    _license_url: Option<String>,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub(super) struct Header {
     #[serde(default)]
-    media_descriptors: Vec<MediaDescriptor>,
+    _media_descriptors: Vec<MediaDescriptor>,
     #[serde(default)]
-    linked_file_descriptors: Vec<LinkedFileDescriptor>,
+    _linked_file_descriptors: Vec<LinkedFileDescriptor>,
     #[serde(default)]
-    properties: Vec<Property>,
+    _properties: Vec<Property>,
     #[serde(rename = "@MEDIA_FILE", default)]
     _media_file: Option<PathBuf>,
     #[serde(rename = "@TIME_UNITS", default)]
@@ -144,37 +144,37 @@ pub(super) enum TimeUnits {
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 struct MediaDescriptor {
     #[serde(rename = "@MEDIA_URL")]
-    media_url: PathBuf,
+    _media_url: PathBuf,
     #[serde(rename = "@RELATIVE_MEDIA_URL", default)]
-    relative_media_url: Option<PathBuf>,
+    _relative_media_url: Option<PathBuf>,
     #[serde(rename = "@MIME_TYPE")]
-    mime_type: String,
+    _mime_type: String,
     #[serde(rename = "@TIME_ORIGIN")]
-    time_origin: Option<String>,
+    _time_origin: Option<String>,
     #[serde(rename = "@EXTRACTED_FROM")]
-    extracted_from: Option<String>,
+    _extracted_from: Option<String>,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 struct LinkedFileDescriptor {
     #[serde(rename = "@LINK_URL")]
-    link_url: PathBuf,
+    _link_url: PathBuf,
     #[serde(rename = "@RELATIVE_LINK_URL")]
-    relative_link_url: Option<PathBuf>,
+    _relative_link_url: Option<PathBuf>,
     #[serde(rename = "@MIME_TYPE")]
-    mime_type: String,
+    _mime_type: String,
     #[serde(rename = "@TIME_ORIGIN")]
-    time_origin: Option<String>,
+    _time_origin: Option<String>,
     #[serde(rename = "@ASSOCIATED_WITH")]
-    associated_with: Option<String>,
+    _associated_with: Option<String>,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 struct Property {
     #[serde(rename = "@NAME")]
-    name: Option<String>,
+    _name: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -227,7 +227,7 @@ impl Tier {
     }
 
     pub(super) fn parent_ref(&self) -> Option<&str> {
-        self.parent_ref.as_ref().map(String::as_str)
+        self.parent_ref.as_deref()
     }
 
     pub(super) fn annotations(&self) -> Vec<&Annotation> {
@@ -252,15 +252,15 @@ pub(super) enum Annotation {
         #[serde(rename = "@TIME_SLOT_REF2")]
         time_slot_ref2: String,
         #[serde(rename = "@SVG_REF")]
-        svg_ref: Option<String>,
+        _svg_ref: Option<String>,
         #[serde(rename = "@ANNOTATION_ID")]
         annotation_id: String,
         #[serde(rename = "@EXT_REF")]
-        ext_ref: Option<String>,
+        _ext_ref: Option<String>,
         #[serde(rename = "@LANG_REF")]
-        lang_ref: Option<String>,
+        _lang_ref: Option<String>,
         #[serde(rename = "@CVE_REF")]
-        cve_ref: Option<String>,
+        _cve_ref: Option<String>,
     },
     RefAnnotation {
         #[serde(rename = "ANNOTATION_VALUE")]
@@ -268,15 +268,15 @@ pub(super) enum Annotation {
         #[serde(rename = "@ANNOTATION_REF")]
         annotation_ref: String,
         #[serde(rename = "@PREVIOUS_ANNOTATION")]
-        svg_ref: Option<String>,
+        _svg_ref: Option<String>,
         #[serde(rename = "@ANNOTATION_ID")]
         annotation_id: String,
         #[serde(rename = "@EXT_REF")]
-        ext_ref: Option<String>,
+        _ext_ref: Option<String>,
         #[serde(rename = "@LANG_REF")]
-        lang_ref: Option<String>,
+        _lang_ref: Option<String>,
         #[serde(rename = "@CVE_REF")]
-        cve_ref: Option<String>,
+        _cve_ref: Option<String>,
     },
 }
 
@@ -284,119 +284,119 @@ pub(super) enum Annotation {
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 struct LinguisticType {
     #[serde(rename = "@LINGUISTIC_TYPE_ID")]
-    linguistic_type_id: String,
+    _linguistic_type_id: String,
     #[serde(rename = "@TIME_ALIGNABLE")]
-    time_alignable: Option<bool>,
+    _time_alignable: Option<bool>,
     #[serde(rename = "@CONSTRAINTS")]
-    constraints: Option<String>,
+    _constraints: Option<String>,
     #[serde(rename = "@GRAPHIC_REFERENCES")]
-    graphic_references: Option<bool>,
+    _graphic_references: Option<bool>,
     #[serde(rename = "@CONTROLLED_VOCABULARY_REF")]
-    controlled_vocabulary_ref: Option<String>,
+    _controlled_vocabulary_ref: Option<String>,
     #[serde(rename = "@EXT_REF")]
-    ext_ref: Option<String>,
+    _ext_ref: Option<String>,
     #[serde(rename = "@LEXICON_REF")]
-    lexicon_ref: Option<String>,
+    _lexicon_ref: Option<String>,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 struct Locale {
     #[serde(rename = "@LANGUAGE_CODE")]
-    language_code: String,
+    _language_code: String,
     #[serde(rename = "@COUNTRY_CODE")]
-    country_code: Option<String>,
+    _country_code: Option<String>,
     #[serde(rename = "@VARIANT")]
-    variant: Option<String>,
+    _variant: Option<String>,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 struct Language {
     #[serde(rename = "@LANG_ID")]
-    lang_id: String,
+    _lang_id: String,
     #[serde(rename = "@LANG_DEF", default)]
-    lang_def: Option<String>,
+    _lang_def: Option<String>,
     #[serde(rename = "@LANG_LABEL", default)]
-    lang_label: Option<String>,
+    _lang_label: Option<String>,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 struct Constraint {
     #[serde(rename = "@STEREOTYPE")]
-    stereotype: String,
+    _stereotype: String,
     #[serde(rename = "@DESCRIPTION")]
-    description: Option<String>,
+    _description: Option<String>,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 struct ControlledVocabulary {
-    description: Vec<Description>,
-    cv_entries: Vec<CVEntryML>,
+    _description: Vec<Description>,
+    _cv_entries: Vec<CVEntryML>,
     #[serde(rename = "@CV_ID")]
-    cv_id: String,
+    _cv_id: String,
     #[serde(rename = "@EXT_REF")]
-    ext_ref: Option<String>,
+    _ext_ref: Option<String>,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 struct Description {
     #[serde(rename = "#content")]
-    description: String,
+    _description: String,
     #[serde(rename = "@LANG_REF")]
-    lang_ref: String,
+    _lang_ref: String,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 struct CVEntryML {
-    cve_value: Vec<CVEValue>,
+    _cve_value: Vec<CVEValue>,
     #[serde(rename = "@CVE_ID")]
-    cve_id: String,
+    _cve_id: String,
     #[serde(rename = "@EXT_REF")]
-    ext_ref: Option<String>,
+    _ext_ref: Option<String>,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 struct CVEValue {
     #[serde(rename = "@LANG_REF")]
-    lang_ref: String,
+    _lang_ref: String,
     #[serde(rename = "@DESCRIPTION")]
-    description: Option<String>,
+    _description: Option<String>,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 struct LexiconRef {
     #[serde(rename = "@LEX_REF_ID")]
-    lex_ref_id: String,
+    _lex_ref_id: String,
     #[serde(rename = "@NAME")]
-    name: String,
+    _name: String,
     #[serde(rename = "@TYPE")]
-    letype: String,
+    _letype: String,
     #[serde(rename = "@URL")]
-    url: String,
+    _url: String,
     #[serde(rename = "@LEXICON_ID")]
-    lexicon_id: String,
+    _lexicon_id: String,
     #[serde(rename = "@LEXICON_NAME")]
-    lexicon_name: String,
+    _lexicon_name: String,
     #[serde(rename = "@DATCAT_ID", default)]
-    datcat_id: Option<String>,
+    _datcat_id: Option<String>,
     #[serde(rename = "@DATCAT_NAME", default)]
-    datcat_name: Option<String>,
+    _datcat_name: Option<String>,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 struct ExternalRef {
     #[serde(rename = "@EXT_REF_ID")]
-    ext_ref_id: String,
+    _ext_ref_id: String,
     #[serde(rename = "@TYPE")]
-    rtype: String,
+    _rtype: String,
     #[serde(rename = "@VALUE")]
-    value: String,
+    _value: String,
 }
