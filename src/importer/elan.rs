@@ -192,7 +192,6 @@ impl<'a> ELANMapper<'a> {
         // map alignment tiers
         for tier in self.data.tiers() {
             let tier_id = tier.id().replace(" ", "_");
-            dbg!(&tier_id);
             for anno in tier.annotations() {
                 match anno {
                     model::Annotation::AlignableAnnotation {
