@@ -45,7 +45,9 @@ use workflow::StatusSender;
 
 use crate::{
     exporter::treetagger::ExportTreeTagger,
-    importer::{GenericImportConfiguration, git::ImportGitMetadata, text::ImportText},
+    importer::{
+        GenericImportConfiguration, elan::ImportELAN, git::ImportGitMetadata, text::ImportText,
+    },
     manipulator::{
         diff::DiffSubgraphs, divide::DivideSegments, edit::EditGraph, mv::MoveAnnos,
         span::CreateSpans,
@@ -110,6 +112,7 @@ impl WriteAs {
 #[repr(u16)]
 pub enum ReadFrom {
     CoNLLU(#[serde(default)] ImportCoNLLU),
+    Elan(ImportELAN),
     EXMARaLDA(#[serde(default)] ImportEXMARaLDA),
     Git(ImportGitMetadata),
     GraphML(#[serde(default)] GraphMLImporter),
@@ -162,6 +165,7 @@ impl ReadFrom {
             ReadFrom::Webanno(m) => m,
             ReadFrom::Git(m) => m,
             ReadFrom::ByteAlignedToolBox(m) => m,
+            ReadFrom::Elan(m) => m,
         }
     }
 
