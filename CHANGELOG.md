@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - graph op `divide` has additional modes `split` and `tokenize` for splitting segments by a delimiter or even tokenizing them.
+- Add import `elan`. The import implements generic configuration attributes as well.
 
 ### Fixed
 
