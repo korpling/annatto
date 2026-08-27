@@ -5,6 +5,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- import `elan`: Allow to treat annotation layers as segmentations.
+
+### Fixed
+
+- import `elan`: add `annis::layer` annotation to each node.
+
 ## [0.57.0] - 2026-08-24
 
 ### Added

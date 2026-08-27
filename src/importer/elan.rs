@@ -1,6 +1,9 @@
 mod model;
 
-use std::{collections::BTreeMap, path::Path};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::Path,
+};
 
 use anyhow::anyhow;
 use facet::Facet;
@@ -14,9 +17,19 @@ use serde::{Deserialize, Serialize};
 
 use crate::{error::AnnattoError, importer::Importer, progress::ProgressReporter};
 
-#[derive(Clone, Deserialize, Facet, PartialEq, Serialize)]
+#[derive(Clone, Default, Deserialize, Facet, PartialEq, Serialize)]
 /// This importer reads ELAN files.
-pub struct ImportELAN;
+pub struct ImportELAN {
+    /// The listed annotation names will be treated as segmentations (in the graphANNIS sense)
+    /// and be equipped with an ordering `Ordering/default_ns/{tier_name}`. A segmentation in
+    /// this sense would in other contexts be called a "tokenization". Sentence spans, on the
+    /// other hand, are usually not segmentations in the graphANNIS sense, unless you strictly
+    /// need them to be.
+    ///
+    /// If your annotation names contain spaces, replace these with "_".
+    #[serde(default)]
+    segmentations: BTreeSet<String>,
+}
 
 const DEFAULT_FILE_EXTENSIONS: [&str; 2] = ["eaf", "xml"];
 
@@ -57,6 +70,7 @@ impl ImportELAN {
         ELANMapper {
             data: elan_data,
             doc_node_name,
+            segmentations: &self.segmentations,
         }
         .map(update)
     }
@@ -83,6 +97,7 @@ impl<'a> Timeline {
 struct ELANMapper<'a> {
     data: model::AnnotationDocument,
     doc_node_name: &'a str,
+    segmentations: &'a BTreeSet<String>,
 }
 
 impl<'a> ELANMapper<'a> {
@@ -192,8 +207,9 @@ impl<'a> ELANMapper<'a> {
         // map alignment tiers
         for tier in self.data.tiers() {
             let tier_id = tier.id().replace(" ", "_");
+            let mut previous_node = None;
             for anno in tier.annotations() {
-                match anno {
+                let (annotated_node, annotated_value) = match anno {
                     model::Annotation::AlignableAnnotation {
                         annotation_value,
                         time_slot_ref1,
@@ -239,6 +255,7 @@ impl<'a> ELANMapper<'a> {
                                 component_name: "".to_string(),
                             })?;
                         }
+                        (annotation_node_name, annotation_value.to_string())
                     }
                     model::Annotation::RefAnnotation {
                         annotation_value,
@@ -277,6 +294,7 @@ impl<'a> ELANMapper<'a> {
                             }
                             tier_data.insert(annotation_ref, targets);
                             tier_data.insert(annotation_id, targets);
+                            (annotation_node_name, annotation_value.to_string())
                         } else {
                             return Err(AnnattoError::Import {
                                 reason: format!(
@@ -288,6 +306,38 @@ impl<'a> ELANMapper<'a> {
                             });
                         }
                     }
+                };
+
+                if self.segmentations.contains(&tier_id) {
+                    update.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: annotated_node.to_string(),
+                        anno_ns: ANNIS_NS.to_string(),
+                        anno_name: "tok".to_string(),
+                        anno_value: annotated_value,
+                    })?;
+                    update.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: annotated_node.to_string(),
+                        anno_ns: ANNIS_NS.to_string(),
+                        anno_name: "layer".to_string(),
+                        anno_value: tier_id.to_string(),
+                    })?;
+                    if let Some(preceeding_node) = previous_node {
+                        update.add_event(UpdateEvent::AddEdge {
+                            source_node: preceeding_node,
+                            target_node: annotated_node.to_string(),
+                            layer: DEFAULT_NS.to_string(),
+                            component_type: AnnotationComponentType::Ordering.to_string(),
+                            component_name: tier_id.to_string(),
+                        })?;
+                    }
+                    previous_node = Some(annotated_node);
+                } else {
+                    update.add_event(UpdateEvent::AddNodeLabel {
+                        node_name: annotated_node,
+                        anno_ns: ANNIS_NS.to_string(),
+                        anno_name: "layer".to_string(),
+                        anno_value: "default_layer".to_string(),
+                    })?;
                 }
             }
         }
