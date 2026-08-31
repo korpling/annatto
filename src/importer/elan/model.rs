@@ -268,7 +268,7 @@ pub(super) enum Annotation {
         #[serde(rename = "@ANNOTATION_REF")]
         annotation_ref: String,
         #[serde(rename = "@PREVIOUS_ANNOTATION")]
-        _svg_ref: Option<String>,
+        previous_annotation: Option<String>,
         #[serde(rename = "@ANNOTATION_ID")]
         annotation_id: String,
         #[serde(rename = "@EXT_REF")]
