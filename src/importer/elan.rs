@@ -110,8 +110,6 @@ impl<'a> ELANMapper<'a> {
     fn map_timeline(&self, update: &mut GraphUpdate) -> crate::error::Result<Timeline> {
         let mut id_to_index = LinkedHashMap::default();
         let mut node_sequence = Vec::with_capacity(self.data.timeline().len());
-        let mut predecessor: Option<String> = None;
-        let mut previous_time = None;
         let mut time_to_node_name = BTreeMap::default();
         for time_slot in self.data.timeline() {
             let node_name = format!("{}#{}", self.doc_node_name, time_slot.time_slot_id);
@@ -151,45 +149,6 @@ impl<'a> ELANMapper<'a> {
                 layer: ANNIS_NS.to_string(),
                 component_type: AnnotationComponentType::PartOf.to_string(),
                 component_name: "".to_string(),
-            })?;
-
-            if let Some(preceeding_node) = predecessor {
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: preceeding_node.to_string(),
-                    target_node: node_name.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: "".to_string(),
-                })?;
-                if let Some(current_time_val) = time_slot.time_value {
-                    if let Some(time_val) = previous_time
-                        && let model::TimeUnits::Milliseconds = self.data.time_units()
-                    {
-                        update.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: preceeding_node,
-                            anno_ns: ANNIS_NS.to_string(),
-                            anno_name: "time".to_string(),
-                            anno_value: format!(
-                                "{}-{}",
-                                time_val as f64 / 1000f64,
-                                current_time_val as f64 / 1000f64
-                            ),
-                        })?;
-                    }
-                    previous_time = Some(current_time_val);
-                }
-            }
-            predecessor = Some(node_name);
-        }
-        if let Some(node_name) = predecessor
-            && let Some(time) = previous_time
-            && let model::TimeUnits::Milliseconds = self.data.time_units()
-        {
-            update.add_event(UpdateEvent::AddNodeLabel {
-                node_name,
-                anno_ns: ANNIS_NS.to_string(),
-                anno_name: "time".to_string(),
-                anno_value: format!("{}-", time as f64 / 1000f64),
             })?;
         }
         Ok(Timeline {
