@@ -80,7 +80,10 @@ impl AnnotationDocument {
         &self.header.time_units
     }
 
-    fn sort_tiers(&mut self) {
+    pub(super) fn sort_tiers(&mut self) {
+        if self.is_sorted {
+            return;
+        }
         let recursive_search = RecursiveLookupCmp::new(&self.tiers);
         let reordered = self
             .tiers
@@ -100,10 +103,7 @@ impl AnnotationDocument {
         self.is_sorted = true;
     }
 
-    pub(super) fn tiers(&mut self) -> &Vec<Tier> {
-        if !self.is_sorted {
-            self.sort_tiers();
-        }
+    pub(super) fn tiers(&self) -> &Vec<Tier> {
         &self.tiers
     }
 }
@@ -226,6 +226,10 @@ impl Tier {
         &self.tier_id
     }
 
+    pub(super) fn clean_id(&self) -> String {
+        self.tier_id.replace(" ", "_")
+    }
+
     pub(super) fn parent_ref(&self) -> Option<&str> {
         self.parent_ref.as_deref()
     }
@@ -241,7 +245,7 @@ impl Tier {
 #[derive(Deserialize)]
 struct OuterAnnotation(Annotation);
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub(super) enum Annotation {
     AlignableAnnotation {
@@ -278,6 +282,26 @@ pub(super) enum Annotation {
         #[serde(rename = "@CVE_REF")]
         _cve_ref: Option<String>,
     },
+}
+
+impl Annotation {
+    pub(super) fn id(&self) -> &String {
+        match self {
+            Annotation::AlignableAnnotation { annotation_id, .. }
+            | Annotation::RefAnnotation { annotation_id, .. } => annotation_id,
+        }
+    }
+
+    pub(super) fn value(&self) -> &String {
+        match self {
+            Annotation::AlignableAnnotation {
+                annotation_value, ..
+            }
+            | Annotation::RefAnnotation {
+                annotation_value, ..
+            } => annotation_value,
+        }
+    }
 }
 
 #[derive(Deserialize)]
