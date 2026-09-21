@@ -1,9 +1,6 @@
 mod model;
 
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    path::Path,
-};
+use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::anyhow;
 use facet::Facet;
@@ -14,10 +11,9 @@ use graphannis::{
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use itertools::Itertools;
 use linked_hash_map::LinkedHashMap;
-use linked_hash_set::LinkedHashSet;
 use serde::{Deserialize, Serialize};
 
-use crate::{error::AnnattoError, importer::Importer, progress::ProgressReporter};
+use crate::{importer::Importer, progress::ProgressReporter};
 
 #[derive(Clone, Default, Deserialize, Facet, PartialEq, Serialize)]
 /// This importer reads ELAN files.
@@ -99,11 +95,7 @@ impl<'a> Timeline {
     /// There can be more than one timelot slot per time value.
     /// This is unified to a single id.
     fn unified_timeslot_id(&'a self, ts_id: &'a String) -> &'a String {
-        if let Some(normalized_name) = self.synonyms.get(ts_id) {
-            normalized_name
-        } else {
-            ts_id
-        }
+        self.synonyms.get(ts_id).unwrap_or(ts_id)
     }
 
     fn new(node_sequence: Vec<String>, id_to_index: LinkedHashMap<String, usize>) -> Self {
@@ -193,12 +185,13 @@ impl<'a> ELANMapper<'a> {
     }
 
     fn scan_tiers(&'a self, timeline: &Timeline) -> crate::error::Result<DocumentScan<'a>> {
-        //let mut starting_at = BTreeMap::<String, BTreeSet<&String>>::default();
-        //let mut ending_at_excl = BTreeMap::<String, BTreeSet<&String>>::default();
         let mut anno_id_to_interval = BTreeMap::<&String, (String, String)>::default();
         let mut anno_id_to_value = BTreeMap::default();
         let mut subslots = BTreeMap::<String, Vec<String>>::default();
         let mut layers = BTreeMap::default();
+        for slot in timeline.id_to_index.keys() {
+            subslots.insert(slot.to_string(), vec![format!("{slot}_0")]);
+        }
         for tier in self.data.tiers() {
             let tier_id = tier.clean_id();
             let mut anno_ids = Vec::with_capacity(tier.annotations().len());
@@ -212,22 +205,6 @@ impl<'a> ELANMapper<'a> {
                         annotation_id,
                         ..
                     } => {
-                        // match starting_at.entry(time_slot_ref1.to_string()) {
-                        //     std::collections::btree_map::Entry::Vacant(vacant_entry) => {
-                        //         vacant_entry.insert(BTreeSet::from([annotation_id]));
-                        //     }
-                        //     std::collections::btree_map::Entry::Occupied(mut occupied_entry) => {
-                        //         occupied_entry.get_mut().insert(annotation_id);
-                        //     }
-                        // };
-                        // match ending_at_excl.entry(time_slot_ref2.to_string()) {
-                        //     std::collections::btree_map::Entry::Vacant(vacant_entry) => {
-                        //         vacant_entry.insert(BTreeSet::from([annotation_id]));
-                        //     }
-                        //     std::collections::btree_map::Entry::Occupied(mut occupied_entry) => {
-                        //         occupied_entry.get_mut().insert(annotation_id);
-                        //     }
-                        // }
                         // normalization of timeslots only needs to happen here when timeslots are actually used
                         let time_slot_ref1 = timeline.unified_timeslot_id(time_slot_ref1);
                         let time_slot_ref2 = timeline.unified_timeslot_id(time_slot_ref2);
@@ -236,10 +213,6 @@ impl<'a> ELANMapper<'a> {
                             annotation_id,
                             (time_slot_ref1.to_string(), time_slot_ref2.to_string()),
                         );
-                        subslots
-                            .insert(time_slot_ref1.to_string(), vec![time_slot_ref1.to_string()]);
-                        subslots
-                            .insert(time_slot_ref2.to_string(), vec![time_slot_ref2.to_string()]);
                         anno_ids.push(annotation_id);
                     }
                     model::Annotation::RefAnnotation {
@@ -280,18 +253,6 @@ impl<'a> ELANMapper<'a> {
                                 let (time_slot_ref1, time_slot_ref2) = interval;
                                 {
                                     // handle first chain member
-                                    // match starting_at.entry(time_slot_ref1.to_string()) {
-                                    //     std::collections::btree_map::Entry::Vacant(
-                                    //         vacant_entry,
-                                    //     ) => {
-                                    //         vacant_entry.insert(BTreeSet::from([annotation_id]));
-                                    //     }
-                                    //     std::collections::btree_map::Entry::Occupied(
-                                    //         mut occupied_entry,
-                                    //     ) => {
-                                    //         occupied_entry.get_mut().insert(annotation_id);
-                                    //     }
-                                    // };
                                     anno_id_to_value.insert(annotation_id, annotation_value);
                                     anno_ids.push(annotation_id);
                                 }
@@ -346,22 +307,6 @@ impl<'a> ELANMapper<'a> {
                                         return Err(anyhow!("Granularity mismatch for {time_slot_ref1} on tier {tier_id}").into());
                                     };
                                     {
-                                        // finish handling of first chain member
-                                        // let end_excl_slot_name =
-                                        // format!("{time_slot_ref1}_{}", use_n_per_anno + 1); // TODO check if correct
-                                        // match ending_at_excl.entry(end_excl_slot_name) {
-                                        //     std::collections::btree_map::Entry::Vacant(
-                                        //         vacant_entry,
-                                        //     ) => {
-                                        //         vacant_entry
-                                        //             .insert(BTreeSet::from([annotation_id]));
-                                        //     }
-                                        //     std::collections::btree_map::Entry::Occupied(
-                                        //         mut occupied_entry,
-                                        //     ) => {
-                                        //         occupied_entry.get_mut().insert(annotation_id);
-                                        //     }
-                                        // }
                                         anno_id_to_interval.insert(
                                             annotation_id,
                                             (
@@ -369,35 +314,6 @@ impl<'a> ELANMapper<'a> {
                                                 real_slots[use_n_per_anno].to_string(),
                                             ),
                                         );
-                                    }
-                                    if annotation_id == "a898" {
-                                        dbg!(&time_slot_ref1);
-                                        dbg!(&time_slot_ref2);
-                                        dbg!(&tail);
-                                        dbg!(&real_slots);
-                                        dbg!(&use_n_per_anno);
-                                    }
-                                    // handle tail
-
-                                    if annotation_id == "a898" {
-                                        dbg!(&time_slot_ref1);
-                                        dbg!(&tail);
-                                        dbg!(&real_slots);
-                                        dbg!(&use_n_per_anno);
-                                        let available_start_slots = real_slots
-                                            .iter()
-                                            .dropping(use_n_per_anno)
-                                            .step_by(use_n_per_anno);
-                                        let available_end_slots = real_slots
-                                            .iter()
-                                            .chain([&time_slot_ref2])
-                                            .dropping(2 * use_n_per_anno) // make sure the last interval can be built
-                                            .step_by(use_n_per_anno);
-                                        if annotation_id == "a898" {
-                                            dbg!(available_start_slots.cloned().collect_vec());
-                                            dbg!(available_end_slots.cloned().collect_vec());
-                                            dbg!(tail.iter().cloned().collect_vec());
-                                        }
                                     }
                                     let time_anno_tuples = real_slots
                                         .iter()
@@ -410,36 +326,8 @@ impl<'a> ELANMapper<'a> {
                                                 .dropping(2 * use_n_per_anno) // make sure the last interval can be built
                                                 .step_by(use_n_per_anno),
                                         )
-                                        .zip(tail)
-                                        .collect_vec();
+                                        .zip(tail);
                                     for ((start_slot, end_slot_excl), anno) in time_anno_tuples {
-                                        // match starting_at.entry(start_slot.to_string()) {
-                                        //     std::collections::btree_map::Entry::Vacant(
-                                        //         vacant_entry,
-                                        //     ) => {
-                                        //         vacant_entry.insert(BTreeSet::from([anno.id()]));
-                                        //     }
-                                        //     std::collections::btree_map::Entry::Occupied(
-                                        //         mut occupied_entry,
-                                        //     ) => {
-                                        //         occupied_entry.get_mut().insert(anno.id());
-                                        //     }
-                                        // };
-                                        // match ending_at_excl.entry(end_slot_excl.to_string()) {
-                                        //     std::collections::btree_map::Entry::Vacant(
-                                        //         vacant_entry,
-                                        //     ) => {
-                                        //         vacant_entry.insert(BTreeSet::from([anno.id()]));
-                                        //     }
-                                        //     std::collections::btree_map::Entry::Occupied(
-                                        //         mut occupied_entry,
-                                        //     ) => {
-                                        //         occupied_entry.get_mut().insert(anno.id());
-                                        //     }
-                                        // }
-                                        if annotation_id == "a898" {
-                                            dbg!(anno.id(), &start_slot, &end_slot_excl);
-                                        }
                                         anno_id_to_value.insert(anno.id(), anno.value());
                                         anno_id_to_interval.insert(
                                             anno.id(),
@@ -463,31 +351,7 @@ impl<'a> ELANMapper<'a> {
                             anno_ids.push(annotation_id);
                             if let Some(interval) = anno_id_to_interval.get(annotation_ref).cloned()
                             {
-                                if annotation_id == "a1615" {
-                                    dbg!(&interval);
-                                }
-                                // let (time_slot_ref1, time_slot_ref2) = interval.clone();
                                 anno_id_to_interval.insert(annotation_id, interval);
-                                // match starting_at.entry(time_slot_ref1.to_string()) {
-                                //     std::collections::btree_map::Entry::Vacant(vacant_entry) => {
-                                //         vacant_entry.insert(BTreeSet::from([annotation_id]));
-                                //     }
-                                //     std::collections::btree_map::Entry::Occupied(
-                                //         mut occupied_entry,
-                                //     ) => {
-                                //         occupied_entry.get_mut().insert(annotation_id);
-                                //     }
-                                // };
-                                // match ending_at_excl.entry(time_slot_ref2.to_string()) {
-                                //     std::collections::btree_map::Entry::Vacant(vacant_entry) => {
-                                //         vacant_entry.insert(BTreeSet::from([annotation_id]));
-                                //     }
-                                //     std::collections::btree_map::Entry::Occupied(
-                                //         mut occupied_entry,
-                                //     ) => {
-                                //         occupied_entry.get_mut().insert(annotation_id);
-                                //     }
-                                // }
                             } else {
                                 return Err(anyhow!(
                                     "Unknown annotation reference: {}",
@@ -517,8 +381,8 @@ impl<'a> ELANMapper<'a> {
     ) -> crate::error::Result<()> {
         // build time line
         let mut ts_id_to_node_name: LinkedHashMap<String, String> = LinkedHashMap::default();
-        let mut predecessor;
         let mut used_timeslots = BTreeSet::default();
+        let mut predecessor = None;
         for (ts_id, index) in &timeline.id_to_index {
             let ts_id = timeline.unified_timeslot_id(ts_id);
             if used_timeslots.contains(ts_id) {
@@ -550,7 +414,21 @@ impl<'a> ELANMapper<'a> {
                     component_name: "".to_string(),
                 })?;
                 ts_id_to_node_name.insert(ts_id.to_string(), first_node.to_string());
-                first_node.to_string()
+                if let Some(slot_list) = scan.slot_nodes.get(ts_id)
+                    && let Some(pseudonym) = slot_list.get(0)
+                {
+                    ts_id_to_node_name.insert(pseudonym.to_string(), first_node.to_string());
+                }
+                if let Some(prenode) = predecessor {
+                    update.add_event(UpdateEvent::AddEdge {
+                        source_node: prenode,
+                        target_node: first_node.to_string(),
+                        layer: ANNIS_NS.to_string(),
+                        component_type: AnnotationComponentType::Ordering.to_string(),
+                        component_name: "".to_string(),
+                    })?;
+                }
+                Some(first_node.to_string())
             } else {
                 return Err(anyhow!("Unknown time slot: {ts_id}").into());
             };
@@ -558,20 +436,24 @@ impl<'a> ELANMapper<'a> {
                 .slot_nodes
                 .get(ts_id)
                 .ok_or(anyhow!("Unknown slot id: {ts_id}"))?
+                .iter()
+                .dropping(1)
             {
                 let subnode_name = format!("{}#{subnode_id}", self.doc_node_name);
                 update.add_event(UpdateEvent::AddNode {
                     node_name: subnode_name.to_string(),
                     node_type: "node".to_string(),
                 })?;
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: predecessor,
-                    target_node: subnode_name.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: "".to_string(),
-                })?;
-                predecessor = subnode_name.to_string();
+                if let Some(prenode) = predecessor {
+                    update.add_event(UpdateEvent::AddEdge {
+                        source_node: prenode,
+                        target_node: subnode_name.to_string(),
+                        layer: ANNIS_NS.to_string(),
+                        component_type: AnnotationComponentType::Ordering.to_string(),
+                        component_name: "".to_string(),
+                    })?;
+                }
+                predecessor = Some(subnode_name.to_string());
                 update.add_event(UpdateEvent::AddNodeLabel {
                     node_name: subnode_name.to_string(),
                     anno_ns: ANNIS_NS.to_string(),
@@ -610,7 +492,9 @@ impl<'a> ELANMapper<'a> {
             synonyms: BTreeMap::default(), // from now on there are only valid timeslot ids, so a mapping can pass through it's input
         };
         // map layers onto timeline
+        let mut last_ordered_element = None;
         for (anno_name, anno_ids) in scan.anno_layers {
+            let build_ordering = self.segmentations.contains(&anno_name);
             for anno_id in anno_ids {
                 let (start, end_excl) = scan
                     .anno_intervals
@@ -654,9 +538,21 @@ impl<'a> ELANMapper<'a> {
                             component_name: "".to_string(),
                         })?;
                     }
+                    if build_ordering {
+                        if let Some(previous_node) = last_ordered_element {
+                            update.add_event(UpdateEvent::AddEdge {
+                                source_node: previous_node,
+                                target_node: node_name.to_string(),
+                                layer: DEFAULT_NS.to_string(),
+                                component_type: AnnotationComponentType::Ordering.to_string(),
+                                component_name: anno_name.to_string(),
+                            })?;
+                        }
+                        last_ordered_element = Some(node_name);
+                    }
                 } else {
                     return Err(anyhow!(
-                        "Could not determine timeline targets for annotation {anno_id}."
+                        "Could not determine timeline targets for annotation {anno_id} in interval [{start}, {end_excl})."
                     )
                     .into());
                 }
