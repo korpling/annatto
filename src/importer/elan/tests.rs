@@ -37,6 +37,7 @@ fn with_segmentations() {
     let path = Path::new("tests/data/import/elan/");
     let import = ImportELAN {
         segmentations: ["Referenztext_W".to_string()].into_iter().collect(),
+        ..Default::default()
     };
     let u = import.import_corpus(
         path,

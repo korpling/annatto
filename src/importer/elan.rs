@@ -27,9 +27,13 @@ pub struct ImportELAN {
     /// If your annotation names contain spaces, replace these with "_".
     #[serde(default)]
     segmentations: BTreeSet<String>,
+    /// Setting this to `true` suppresses the creation of time annotations. In the default case,
+    /// these are created when the time unit in the ELAN file is milliseconds.
+    #[serde(default)]
+    skip_time: bool,
 }
 
-const DEFAULT_FILE_EXTENSIONS: [&str; 2] = ["eaf", "xml"];
+const DEFAULT_FILE_EXTENSIONS: [&str; 1] = ["eaf"];
 
 impl Importer for ImportELAN {
     fn import_corpus(
@@ -69,6 +73,7 @@ impl ImportELAN {
             data: elan_data,
             doc_node_name,
             segmentations: &self.segmentations,
+            skip_time: self.skip_time,
         }
         .map(update)
     }
@@ -77,6 +82,7 @@ impl ImportELAN {
 struct Timeline {
     node_sequence: Vec<String>,
     id_to_index: LinkedHashMap<String, usize>,
+    id_to_time: BTreeMap<String, f64>,
     synonyms: BTreeMap<String, String>,
 }
 
@@ -98,7 +104,11 @@ impl<'a> Timeline {
         self.synonyms.get(ts_id).unwrap_or(ts_id)
     }
 
-    fn new(node_sequence: Vec<String>, id_to_index: LinkedHashMap<String, usize>) -> Self {
+    fn new(
+        node_sequence: Vec<String>,
+        id_to_index: LinkedHashMap<String, usize>,
+        time_values: BTreeMap<String, f64>,
+    ) -> Self {
         let mut synonyms = BTreeMap::default();
         let mut used_indices = BTreeMap::<usize, &String>::default();
         for (ts_id, index) in &id_to_index {
@@ -112,6 +122,7 @@ impl<'a> Timeline {
         Timeline {
             node_sequence,
             id_to_index,
+            id_to_time: time_values,
             synonyms,
         }
     }
@@ -149,6 +160,7 @@ struct ELANMapper<'a> {
     data: model::AnnotationDocument,
     doc_node_name: &'a str,
     segmentations: &'a BTreeSet<String>,
+    skip_time: bool,
 }
 
 impl<'a> ELANMapper<'a> {
@@ -164,11 +176,18 @@ impl<'a> ELANMapper<'a> {
         let mut id_to_index = LinkedHashMap::default();
         let mut node_sequence = Vec::with_capacity(self.data.timeline().len());
         let mut time_to_node_name = BTreeMap::default();
+        let mut id_to_time = BTreeMap::default();
         for time_slot in self.data.timeline() {
             let node_name = format!("{}#{}", self.doc_node_name, time_slot.time_slot_id);
             // Elan allows for having several time slots for the same time, so make sure that
             // for each time value, there is only one node
             if let Some(time_val) = &time_slot.time_value {
+                if let model::TimeUnits::Milliseconds = self.data.time_units() {
+                    id_to_time.insert(
+                        time_slot.time_slot_id.to_string(),
+                        (*time_val as f64) / 1000f64,
+                    );
+                }
                 if let Some(existing_time_slot) = time_to_node_name.get(time_val)
                     && let Some(index) = id_to_index.get(existing_time_slot)
                 {
@@ -181,7 +200,7 @@ impl<'a> ELANMapper<'a> {
             id_to_index.insert(time_slot.time_slot_id.to_string(), node_sequence.len());
             node_sequence.push(node_name.to_string());
         }
-        Ok(Timeline::new(node_sequence, id_to_index))
+        Ok(Timeline::new(node_sequence, id_to_index, id_to_time))
     }
 
     fn scan_tiers(&'a self, timeline: &Timeline) -> crate::error::Result<DocumentScan<'a>> {
@@ -489,12 +508,13 @@ impl<'a> ELANMapper<'a> {
         let full_timeline = Timeline {
             node_sequence: new_node_sequence,
             id_to_index: new_index_map,
+            id_to_time: timeline.id_to_time,
             synonyms: BTreeMap::default(), // from now on there are only valid timeslot ids, so a mapping can pass through it's input
         };
         // map layers onto timeline
-        let mut last_ordered_element = None;
         for (anno_name, anno_ids) in scan.anno_layers {
             let build_ordering = self.segmentations.contains(&anno_name);
+            let mut last_ordered_element = None;
             for anno_id in anno_ids {
                 let (start, end_excl) = scan
                     .anno_intervals
@@ -506,6 +526,17 @@ impl<'a> ELANMapper<'a> {
                         node_name: node_name.to_string(),
                         node_type: "node".to_string(),
                     })?;
+                    if !self.skip_time
+                        && let Some(start_time) = full_timeline.id_to_time.get(start)
+                        && let Some(end_time) = full_timeline.id_to_time.get(end_excl)
+                    {
+                        update.add_event(UpdateEvent::AddNodeLabel {
+                            node_name: node_name.to_string(),
+                            anno_ns: ANNIS_NS.to_string(),
+                            anno_name: "time".to_string(),
+                            anno_value: format!("{start_time}-{end_time}"),
+                        })?;
+                    }
                     update.add_event(UpdateEvent::AddEdge {
                         source_node: node_name.to_string(),
                         target_node: self.doc_node_name.to_string(),
