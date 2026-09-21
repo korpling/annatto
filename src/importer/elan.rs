@@ -434,7 +434,7 @@ impl<'a> ELANMapper<'a> {
                 })?;
                 ts_id_to_node_name.insert(ts_id.to_string(), first_node.to_string());
                 if let Some(slot_list) = scan.slot_nodes.get(ts_id)
-                    && let Some(pseudonym) = slot_list.get(0)
+                    && let Some(pseudonym) = slot_list.first()
                 {
                     ts_id_to_node_name.insert(pseudonym.to_string(), first_node.to_string());
                 }
@@ -520,7 +520,7 @@ impl<'a> ELANMapper<'a> {
                     .anno_intervals
                     .get(anno_id)
                     .ok_or(anyhow!("No interval specified for {anno_id}"))?;
-                if let Some(targets) = full_timeline.slice(&start, &end_excl) {
+                if let Some(targets) = full_timeline.slice(start, end_excl) {
                     let node_name = format!("{}#{anno_id}", self.doc_node_name);
                     update.add_event(UpdateEvent::AddNode {
                         node_name: node_name.to_string(),
