@@ -14,3 +14,8 @@ need them to be.
 
 If your annotation names contain spaces, replace these with "_".
 
+###  skip_time
+
+Setting this to `true` suppresses the creation of time annotations. In the default case,
+these are created when the time unit in the ELAN file is milliseconds.
+
