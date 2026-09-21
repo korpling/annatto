@@ -5,6 +5,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- import `elan`: allow to skip importing time values by using `skip_time`.
+
+### Changed
+
+- import `elan`: time values are not attached to timeline tokens, but to annotated nodes.
+
+### Fixed
+
+- import `elan`: properly handle annotation chains.
+
 ## [0.58.0] - 2026-08-27
 
 ### Added
