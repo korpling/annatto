@@ -26,7 +26,7 @@ impl DefaultImportConfiguration for GraphMLImporter {
         &FILE_EXTENSIONS
     }
 
-    fn default_namespace(&self) -> Option<&str> {
+    fn preset_default_namespace(&self) -> Option<&str> {
         None
     }
 }

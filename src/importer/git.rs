@@ -27,7 +27,7 @@ impl DefaultImportConfiguration for ImportGitMetadata {
         &FILE_EXTENSIONS
     }
 
-    fn default_namespace(&self) -> Option<&str> {
+    fn preset_default_namespace(&self) -> Option<&str> {
         Some(GIT_NS)
     }
 }

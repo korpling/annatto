@@ -37,7 +37,7 @@ impl DefaultImportConfiguration for CreateEmptyCorpus {
         &[]
     }
 
-    fn default_namespace(&self) -> Option<&str> {
+    fn preset_default_namespace(&self) -> Option<&str> {
         // nothing is being annotated
         None
     }

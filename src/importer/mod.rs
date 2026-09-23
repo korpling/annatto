@@ -61,25 +61,24 @@ pub trait DefaultImportConfiguration {
                 .map(<&str>::to_string)
                 .collect(),
             documents: None, // default document list does not need to be trait derived, there is no meaningful alternative to None
-            default_ns: self.default_namespace().map(ToString::to_string),
+            default_ns: self.preset_default_namespace().map(ToString::to_string),
         }
     }
 
     fn default_file_extensions(&self) -> &[&str];
 
-    /// This method returns an optional default namespace. Each module
-    /// implementation is free to choose how to use it, but should use
+    /// This method returns an optional default setting for the default namespace.
+    /// Each module implementation is free to choose how to use it, but should use
     /// this method for future modifications and maintenance.
     ///
-    /// This is an option, as returning `None` indicates that a default
-    /// namespace is not a useful concept for the particular module.
-    /// For example for data that provide fully qualified annotation
-    /// names already and a default namespace cannot be used or would
-    /// have to overwrite existing namespaces, which is usually
-    /// undesired behaviour.
+    /// This is an option, as returning `None` indicates that a default namespace
+    /// is not a useful concept for the particular module. For example, for data,
+    /// that provide fully qualified annotation names already and a default
+    /// namespace cannot be used or would have to overwrite existing namespaces,
+    /// which is usually undesired behaviour.
     ///
     /// For the empty namespace, `Some("")` should be returned.
-    fn default_namespace(&self) -> Option<&str>;
+    fn preset_default_namespace(&self) -> Option<&str>;
 }
 
 /// An encoding set for node names.
@@ -116,7 +115,7 @@ pub struct GenericImportConfiguration {
     /// There is a general namespace, that each module uses, that can be set here.
     /// The default value depends on the implementation and the format model.
     #[serde(default)]
-    pub(crate) default_ns: Option<String>,
+    pub(crate) default_ns: Option<String>, // This is an option only for the simple reason that we need to distinguish whether the user SET an empty value or did not set a value (so deserialization forces this upon us). Therefore, this field should never be read directly, there is a method extracting the value.
 }
 
 impl<'a> GenericImportConfiguration {
@@ -134,7 +133,7 @@ impl<'a> GenericImportConfiguration {
             root_as: Some(root_name),
             extensions: vec![],
             documents: None,
-            default_ns: None,
+            default_ns: Default::default(),
         }
     }
 
@@ -144,7 +143,7 @@ impl<'a> GenericImportConfiguration {
             root_as: None,
             extensions,
             documents: None,
-            default_ns: None,
+            default_ns: Default::default(),
         }
     }
 
@@ -162,7 +161,7 @@ impl<'a> GenericImportConfiguration {
                 .map(<&str>::to_string)
                 .collect_vec(),
             documents: None,
-            default_ns: None,
+            default_ns: Default::default(),
         }
     }
 
@@ -172,7 +171,7 @@ impl<'a> GenericImportConfiguration {
             root_as: self.root_as,
             extensions,
             documents: self.documents,
-            default_ns: None,
+            default_ns: Default::default(),
         }
     }
 
@@ -185,8 +184,14 @@ impl<'a> GenericImportConfiguration {
         import_corpus_graph_from_files(update, import_path, self)
     }
 
-    pub fn default_namespace(&self) -> Option<&String> {
-        self.default_ns.as_ref()
+    const EMPTY_NS: &'a str = "";
+
+    pub fn default_namespace(&self) -> &str {
+        if let Some(v) = &self.default_ns {
+            v.as_str()
+        } else {
+            GenericImportConfiguration::EMPTY_NS
+        }
     }
 }
 

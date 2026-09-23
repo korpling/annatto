@@ -35,7 +35,7 @@ pub mod optional_sequence {
                             extensions
                         };
                         let resolved_ns = if default_ns.is_none() {
-                            module.reader().default_namespace().map(ToString::to_string)
+                            module.reader().preset_default_namespace().map(ToString::to_string)
                         } else {
                             default_ns
                         };

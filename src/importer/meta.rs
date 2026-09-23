@@ -104,7 +104,7 @@ impl DefaultImportConfiguration for AnnotateCorpus {
         &FILE_EXTENSIONS
     }
 
-    fn default_namespace(&self) -> Option<&str> {
+    fn preset_default_namespace(&self) -> Option<&str> {
         Some("")
     }
 }

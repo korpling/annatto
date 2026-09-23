@@ -97,7 +97,7 @@ impl DefaultImportConfiguration for ImportWhisper {
         &FILE_EXTENSIONS
     }
 
-    fn default_namespace(&self) -> Option<&str> {
+    fn preset_default_namespace(&self) -> Option<&str> {
         Some(WHISPER_NS)
     }
 }

@@ -87,7 +87,7 @@ impl DefaultImportConfiguration for ImportOpusLinks {
         &FILE_EXTENSIONS
     }
 
-    fn default_namespace(&self) -> Option<&str> {
+    fn preset_default_namespace(&self) -> Option<&str> {
         // this module creates no node labels,
         // thus a default namespace is irrelevant
         None

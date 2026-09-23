@@ -128,7 +128,7 @@ impl DefaultImportConfiguration for ImportText {
         &["txt"]
     }
 
-    fn default_namespace(&self) -> Option<&str> {
+    fn preset_default_namespace(&self) -> Option<&str> {
         // this module currently does not require a namespace
         // as it is only creating tokens (which enforces ANNIS_NS)
         None

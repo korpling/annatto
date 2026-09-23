@@ -476,7 +476,7 @@ impl DefaultImportConfiguration for ImportTextgrid {
         &FILE_ENDINGS
     }
 
-    fn default_namespace(&self) -> Option<&str> {
+    fn preset_default_namespace(&self) -> Option<&str> {
         Some("")
     }
 }

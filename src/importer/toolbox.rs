@@ -68,7 +68,7 @@ impl DefaultImportConfiguration for ImportFLToolbox {
         &ImportFLToolbox::DEFAULT_FILE_EXTENSIONS
     }
 
-    fn default_namespace(&self) -> Option<&str> {
+    fn preset_default_namespace(&self) -> Option<&str> {
         Some("")
     }
 }

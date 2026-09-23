@@ -31,11 +31,8 @@ use super::Importer;
 use crate::{
     StepID,
     error::AnnattoError,
-    importer::{
-        DefaultImportConfiguration, GenericImportConfiguration,
-    },
+    importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
-    workflow::StatusSender,
 };
 
 /// Import files in the [CONLL-U format](https://universaldependencies.org/format.html)
@@ -78,7 +75,7 @@ fn default_comment_key() -> AnnoKey {
 const FILE_EXTENSIONS: [&str; 2] = ["conll", "conllu"];
 
 impl DefaultImportConfiguration for ImportCoNLLU {
-    fn default_namespace(&self) -> Option<&str> {
+    fn preset_default_namespace(&self) -> Option<&str> {
         Some("")
     }
     fn default_file_extensions(&self) -> &[&str] {
@@ -99,7 +96,13 @@ impl Importer for ImportCoNLLU {
         let progress =
             ProgressReporter::new(tx.clone(), step_id.clone(), paths_and_node_names.len())?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
-            self.import_document(&step_id, &mut update, pathbuf.as_path(), doc_node_name, &tx)?;
+            self.import_document(
+                &config,
+                &step_id,
+                &mut update,
+                pathbuf.as_path(),
+                doc_node_name,
+            )?;
             progress.worked(1)?;
         }
         Ok(update)
@@ -125,11 +128,11 @@ type DepSpec = LinkedHashSet<(usize, Option<String>)>;
 impl ImportCoNLLU {
     fn import_document(
         &self,
+        config: &GenericImportConfiguration,
         step_id: &StepID,
         update: &mut GraphUpdate,
         document_path: &Path,
         document_node_name: String,
-        tx: &Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let f = std::fs::File::open(document_path)?;
         let mut decoder = DecodeReaderBytes::new(f);
@@ -137,17 +140,17 @@ impl ImportCoNLLU {
         decoder.read_to_string(&mut file_content)?; // TODO this needs to be buffered. UD Files can be very large
         let conllu: Pairs<Rule> = CoNLLUParser::parse(Rule::conllu, &file_content)
             .map_err(|e| anyhow!("Could not parse {document_path:?}:\n{e}"))?;
-        self.map_document(step_id, update, document_node_name, conllu, tx)?;
+        self.map_document(config, step_id, update, document_node_name, conllu)?;
         Ok(())
     }
 
     fn map_document(
         &self,
+        config: &GenericImportConfiguration,
         step_id: &StepID,
         update: &mut GraphUpdate,
         document_node_name: String,
         mut conllu: Pairs<Rule>,
-        tx: &Option<StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut token_names = Vec::new();
         if let Some(pair) = conllu.next()
@@ -157,11 +160,11 @@ impl ImportCoNLLU {
                 // iterate over sentences
                 if sentence.as_rule() == Rule::sentence {
                     token_names.extend(self.map_sentence(
+                        config,
                         step_id,
                         update,
                         document_node_name.as_str(),
                         sentence,
-                        tx,
                     )?);
                 }
             }
@@ -188,11 +191,11 @@ impl ImportCoNLLU {
 
     fn map_sentence(
         &self,
+        config: &GenericImportConfiguration,
         step_id: &StepID,
         update: &mut GraphUpdate,
         document_node_name: &str,
         sentence: Pair<Rule>,
-        tx: &Option<StatusSender>,
     ) -> anyhow::Result<Vec<String>> {
         let mut id_to_tok_name = BTreeMap::new();
         let mut dependencies = Vec::new();
@@ -204,12 +207,12 @@ impl ImportCoNLLU {
             match member.as_rule() {
                 Rule::token => {
                     let (tok_name, tok_id, mut deps) = self.map_token(
+                        config,
                         step_id,
                         update,
                         document_node_name,
                         member,
                         &multi_tok,
-                        tx,
                     )?;
 
                     id_to_tok_name.insert(tok_id, tok_name.to_string());
@@ -366,12 +369,12 @@ impl ImportCoNLLU {
 
     fn map_token(
         &self,
+        config: &GenericImportConfiguration,
         step_id: &StepID,
         update: &mut GraphUpdate,
         document_node_name: &str,
         token: Pair<Rule>,
         multi_token: &Option<(usize, usize, String)>,
-        _tx: &Option<StatusSender>,
     ) -> anyhow::Result<(String, usize, DepSpec)> {
         let (l, _) = token.line_col();
         let line = token.as_str().to_string();
@@ -451,7 +454,7 @@ impl ImportCoNLLU {
                     let anno_name = rule.to_string();
                     update.add_event(UpdateEvent::AddNodeLabel {
                         node_name: node_name.to_string(),
-                        anno_ns: "".to_string(),
+                        anno_ns: config.default_namespace().to_string(),
                         anno_name: anno_name.to_string(),
                         anno_value: member.as_str().to_string(),
                     })?;
@@ -473,7 +476,9 @@ impl ImportCoNLLU {
                                 {
                                     update.add_event(UpdateEvent::AddNodeLabel {
                                         node_name: node_name.to_string(),
-                                        anno_ns: "".to_string(),
+                                        anno_ns: config
+                                            .default_namespace()
+                                            .to_string(),
                                         anno_name: n.trim().to_string(),
                                         anno_value: v.trim().to_string(),
                                     })?;

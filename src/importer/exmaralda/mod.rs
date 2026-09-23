@@ -86,7 +86,7 @@ impl DefaultImportConfiguration for ImportEXMARaLDA {
         &FILE_EXTENSIONS
     }
 
-    fn default_namespace(&self) -> Option<&str> {
+    fn preset_default_namespace(&self) -> Option<&str> {
         // namespaces are derived from speaker abbreviations
         None
     }

@@ -4,7 +4,8 @@ use graphannis::{graph::AnnoKey, update::GraphUpdate};
 use insta::assert_snapshot;
 
 use crate::{
-    ImporterStep, ReadFrom, StepID, importer::conllu::default_comment_key,
+    ImporterStep, ReadFrom, StepID,
+    importer::{DefaultImportConfiguration, conllu::default_comment_key},
     test_util::import_as_graphml_string,
 };
 
@@ -59,12 +60,13 @@ fn test_conll_fail_invalid() {
     let mut u = GraphUpdate::default();
     let import = ImportCoNLLU::default();
     let step_id = StepID::from_importer_step(&import_step);
+    let config = import.default_configuration();
     let run = import.import_document(
+        &config,
         &step_id,
         &mut u,
         import_path.join("test_file.conllu").as_path(),
         import_path.join("test_file").to_str().unwrap().to_string(),
-        &None,
     );
     assert!(run.is_err());
     assert_snapshot!(run.err().unwrap());

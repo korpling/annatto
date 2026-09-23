@@ -755,7 +755,7 @@ impl DefaultImportConfiguration for ImportSpreadsheet {
         &FILE_EXTENSIONS
     }
 
-    fn default_namespace(&self) -> Option<&str> {
+    fn preset_default_namespace(&self) -> Option<&str> {
         // for this module, this is relevant for the
         // segmentation tiers ("independent tiers")
         Some(DEFAULT_NS)

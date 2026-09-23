@@ -39,7 +39,7 @@ pub struct ImportELAN {
 const DEFAULT_FILE_EXTENSIONS: [&str; 1] = ["eaf"];
 
 impl DefaultImportConfiguration for ImportELAN {
-    fn default_namespace(&self) -> Option<&str> {
+    fn preset_default_namespace(&self) -> Option<&str> {
         Some("elan")
     }
 
