@@ -40,7 +40,7 @@ impl Importer for ImportWebAnnoTSV {
         let progress =
             ProgressReporter::new(tx.clone(), step_id.clone(), paths_and_node_names.len())?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
-            self.import_document(pathbuf.as_path(), doc_node_name, &mut update)?;
+            self.import_document(pathbuf.as_path(), doc_node_name, &config, &mut update)?;
             progress.worked(1)?;
         }
         Ok(update)
@@ -62,6 +62,7 @@ impl ImportWebAnnoTSV {
         &self,
         path: &Path,
         doc_node_name: String,
+        config: &GenericImportConfiguration,
         update: &mut GraphUpdate,
     ) -> Result<(), anyhow::Error> {
         let data = fs::read_to_string(path)?;
@@ -74,7 +75,7 @@ impl ImportWebAnnoTSV {
             .ok_or(anyhow!("Could not retrieve header"))
             .map(Self::consume_header)??;
         if let Some(body) = parse_data.next() {
-            Self::process_body(body, doc_node_name, &column_spec, update)?;
+            Self::process_body(body, doc_node_name, &column_spec, config, update)?;
         } else {
             bail!("Missing body in document {doc_node_name}");
         }
@@ -85,12 +86,19 @@ impl ImportWebAnnoTSV {
         data: Pair<Rule>,
         doc_node_name: String,
         columns: &[AnnotationGroup],
+        config: &GenericImportConfiguration,
         update: &mut GraphUpdate,
     ) -> Result<(), anyhow::Error> {
         let mut ordering_node = None;
         for sentence in data.into_inner() {
-            ordering_node =
-                Self::map_sentence(sentence, &doc_node_name, columns, update, ordering_node)?;
+            ordering_node = Self::map_sentence(
+                sentence,
+                &doc_node_name,
+                columns,
+                config,
+                update,
+                ordering_node,
+            )?;
         }
         Ok(())
     }
@@ -99,6 +107,7 @@ impl ImportWebAnnoTSV {
         sentence: Pair<Rule>,
         doc_node_name: &str,
         columns: &[AnnotationGroup],
+        config: &GenericImportConfiguration,
         update: &mut GraphUpdate,
         mut previous_token: Option<String>,
     ) -> Result<Option<String>, anyhow::Error> {
@@ -129,7 +138,7 @@ impl ImportWebAnnoTSV {
                     if let (Some(name), Some(value)) = (anno_name, anno_value) {
                         update.add_event(UpdateEvent::AddNodeLabel {
                             node_name: sentence_node_name.to_string(),
-                            anno_ns: "".to_string(),
+                            anno_ns: config.default_namespace().to_string(),
                             anno_name: name.as_str().trim().to_string(),
                             anno_value: value.as_str().trim().to_string(),
                         })?;

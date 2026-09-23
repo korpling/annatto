@@ -102,20 +102,21 @@ pub const NODE_NAME_ENCODE_SET: &AsciiSet = &CONTROLS
     .add(b'?')
     .add(b'*');
 
+// NOTE: fields of this should be private; if you require access please write some sort of getter
 #[derive(Clone, Default, Deserialize, PartialEq, Serialize)]
 pub struct GenericImportConfiguration {
     #[serde(alias = "as", default)]
-    pub(crate) root_as: Option<String>,
+    root_as: Option<String>,
     #[serde(default)]
-    pub(crate) extensions: Vec<String>, // this is a vec for smoother interoperability with the internal api, semantically this behaves like a set down the line
+    extensions: Vec<String>, // this is a vec for smoother interoperability with the internal api, semantically this behaves like a set down the line
     /// This is a document filter. If none provided, all documents will be imported. If provided, only documents matching the document stem or path will be imported.
     /// Extension is optional.
     #[serde(default)]
-    pub(crate) documents: Option<BTreeSet<String>>, // this is an option to have strictly linear semantics on the set: more entries mean more documents starting at 0 meaning 0 documents (not a sensible use-case, but could be used for building subcorpus structure from paths, i. e., to license a corpus hack)
+    documents: Option<BTreeSet<String>>, // this is an option to have strictly linear semantics on the set: more entries mean more documents starting at 0 meaning 0 documents (not a sensible use-case, but could be used for building subcorpus structure from paths, i. e., to license a corpus hack)
     /// There is a general namespace, that each module uses, that can be set here.
     /// The default value depends on the implementation and the format model.
     #[serde(default)]
-    pub(crate) default_ns: Option<String>, // This is an option only for the simple reason that we need to distinguish whether the user SET an empty value or did not set a value (so deserialization forces this upon us). Therefore, this field should never be read directly, there is a method extracting the value.
+    default_ns: Option<String>, // This is an option only for the simple reason that we need to distinguish whether the user SET an empty value or did not set a value (so deserialization forces this upon us). Therefore, this field should never be read directly, there is a method extracting the value.
 }
 
 impl<'a> GenericImportConfiguration {
@@ -125,6 +126,10 @@ impl<'a> GenericImportConfiguration {
 
     pub fn extensions(&'a self) -> &'a Vec<String> {
         self.extensions.as_ref()
+    }
+
+    pub fn document_list(&self) -> Option<&BTreeSet<String>> {
+        self.documents.as_ref()
     }
 
     #[cfg(test)]

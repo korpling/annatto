@@ -88,6 +88,8 @@ impl DefaultImportConfiguration for ImportEXMARaLDA {
 
     fn preset_default_namespace(&self) -> Option<&str> {
         // namespaces are derived from speaker abbreviations
+        // this also implies that the import module does not
+        // use this generic config feature
         None
     }
 }

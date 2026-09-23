@@ -125,7 +125,7 @@ impl Importer for ImportTable {
         let progress =
             ProgressReporter::new(tx.clone(), step_id.clone(), paths_and_node_names.len())?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
-            self.import_document(&mut update, pathbuf.as_path(), doc_node_name)?;
+            self.import_document(&config, &mut update, pathbuf.as_path(), doc_node_name)?;
             progress.worked(1)?;
         }
         Ok(update)
@@ -145,6 +145,7 @@ impl DefaultImportConfiguration for ImportTable {
 impl ImportTable {
     fn import_document(
         &self,
+        config: &GenericImportConfiguration,
         update: &mut GraphUpdate,
         document_path: &Path,
         document_node_name: String,
@@ -165,7 +166,7 @@ impl ImportTable {
         }
         let reader = reader_builder.from_path(document_path)?;
 
-        self.map_token(update, &document_node_name, reader)?;
+        self.map_token(config, update, &document_node_name, reader)?;
 
         if let Some(empty_line_group) = &self.empty_line_group {
             // Go trough the file and find empty lines
@@ -266,6 +267,7 @@ impl ImportTable {
 
     fn map_token<R>(
         &self,
+        config: &GenericImportConfiguration,
         update: &mut GraphUpdate,
         document_node_name: &str,
         mut reader: Reader<R>,
@@ -319,7 +321,7 @@ impl ImportTable {
                     let (ns, name) = split_qname(name);
                     update.add_event(UpdateEvent::AddNodeLabel {
                         node_name: node_name.clone(),
-                        anno_ns: ns.unwrap_or_default().to_string(),
+                        anno_ns: ns.unwrap_or(config.default_namespace()).to_string(),
                         anno_name: name.to_string(),
                         anno_value: val.to_string(),
                     })?;

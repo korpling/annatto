@@ -42,6 +42,7 @@ impl DefaultImportConfiguration for ImportSaltXml {
     }
 
     fn preset_default_namespace(&self) -> Option<&str> {
+        // namespaces always come from the data
         None
     }
 }

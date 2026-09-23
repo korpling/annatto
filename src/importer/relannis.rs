@@ -36,6 +36,7 @@ impl DefaultImportConfiguration for ImportRelAnnis {
     }
 
     fn preset_default_namespace(&self) -> Option<&str> {
+        // namespaces ALWAYS come from the data
         None
     }
 }

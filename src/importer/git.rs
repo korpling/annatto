@@ -37,7 +37,7 @@ impl Importer for ImportGitMetadata {
         &self,
         input_path: &std::path::Path,
         _step_id: crate::StepID,
-        _config: GenericImportConfiguration,
+        config: GenericImportConfiguration,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
@@ -78,7 +78,7 @@ impl Importer for ImportGitMetadata {
         })?;
         update.add_event(UpdateEvent::AddNodeLabel {
             node_name: corpus_root.to_string(),
-            anno_ns: GIT_NS.to_string(),
+            anno_ns: config.default_namespace().to_string(),
             anno_name: "revision".to_string(),
             anno_value: head_sha.to_string(),
         })?;

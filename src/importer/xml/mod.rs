@@ -50,7 +50,7 @@ impl Importer for ImportXML {
         let all_files = config.derive_corpus_graph(input_path, &mut update)?;
         let progress = ProgressReporter::new(tx.clone(), step_id.clone(), all_files.len())?;
         all_files.into_iter().try_for_each(|(p, d)| {
-            self.import_document(&step_id, p.as_path(), d, &mut update, &progress)
+            self.import_document(&config, &step_id, p.as_path(), d, &mut update, &progress)
         })?;
         Ok(update)
     }
@@ -71,6 +71,7 @@ const GENERIC_NS: &str = "xml";
 impl ImportXML {
     fn import_document(
         &self,
+        config: &GenericImportConfiguration,
         step_id: &StepID,
         path: &Path,
         doc_node_name: String,
@@ -133,6 +134,7 @@ impl ImportXML {
                             let token_text_from_attr = &attr.value;
                             for t in token_text_from_attr.chars() {
                                 build_token(
+                                    config,
                                     update,
                                     &doc_node_name,
                                     t.to_string(),
@@ -151,7 +153,7 @@ impl ImportXML {
                         if let Some(last_string) = value_stack.pop() {
                             update.add_event(UpdateEvent::AddNodeLabel {
                                 node_name: node_name.to_string(),
-                                anno_ns: GENERIC_NS.to_string(),
+                                anno_ns: config.default_namespace().to_string(),
                                 anno_name: name.local_name.to_string(),
                                 anno_value: last_string.to_string(),
                             })?;
@@ -162,6 +164,7 @@ impl ImportXML {
                         if !self.closing_default.is_empty() {
                             for t in self.closing_default.chars() {
                                 build_token(
+                                    config,
                                     update,
                                     &doc_node_name,
                                     t.to_string(),
@@ -176,6 +179,7 @@ impl ImportXML {
                 xml::reader::XmlEvent::Characters(chars) | xml::reader::XmlEvent::CData(chars) => {
                     for token in chars.chars() {
                         build_token(
+                            config,
                             update,
                             &doc_node_name,
                             token.to_string(),
@@ -202,6 +206,7 @@ fn token_name(doc_node_name: &str, n: usize) -> String {
 }
 
 fn build_token(
+    config: &GenericImportConfiguration,
     update: &mut GraphUpdate,
     doc_node_name: &str,
     token_value: String,
@@ -219,7 +224,7 @@ fn build_token(
         None
     };
     add_node(update, doc_node_name, &node_name, order_data)?;
-    integrate_token(update, &node_name, token_value, node_stack)?;
+    integrate_token(config, update, &node_name, token_value, node_stack)?;
     Ok(())
 }
 
@@ -259,6 +264,7 @@ fn add_node(
 }
 
 fn integrate_token(
+    config: &GenericImportConfiguration,
     update: &mut GraphUpdate,
     token_name: &str,
     value: String,
@@ -274,7 +280,7 @@ fn integrate_token(
         update.add_event(UpdateEvent::AddEdge {
             source_node: cov_node_name.to_string(),
             target_node: token_name.to_string(),
-            layer: GENERIC_NS.to_string(),
+            layer: config.default_namespace().to_string(),
             component_type: AnnotationComponentType::Coverage.to_string(),
             component_name: "".to_string(),
         })?;
