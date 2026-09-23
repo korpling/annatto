@@ -13,7 +13,10 @@ use pest::{Parser, iterators::Pair};
 use pest_derive::Parser;
 use serde::{Deserialize, Serialize};
 
-use crate::{importer::GenericImportConfiguration, progress::ProgressReporter};
+use crate::{
+    importer::{DefaultConfiguration, GenericImportConfiguration},
+    progress::ProgressReporter,
+};
 
 use super::Importer;
 
@@ -42,9 +45,15 @@ impl Importer for ImportWebAnnoTSV {
         }
         Ok(update)
     }
+}
 
+impl DefaultConfiguration for ImportWebAnnoTSV {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
+    }
+
+    fn default_namespace(&self) -> Option<&str> {
+        Some("")
     }
 }
 

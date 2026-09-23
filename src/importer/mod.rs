@@ -32,7 +32,7 @@ use std::{
 
 /// An importer is a module that takes a path and produces a list of graph update events.
 /// Using the graph update event list allows to execute several importers in parallel and join them to a single annotation graph.
-pub trait Importer: Sync {
+pub trait Importer: Sync + DefaultConfiguration {
     /// Returns a list of graph update events for a single corpus.
     ///
     /// # Arguments
@@ -49,20 +49,37 @@ pub trait Importer: Sync {
         config: GenericImportConfiguration,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>>;
+}
 
-    fn default_file_extensions(&self) -> &[&str];
-
+pub trait DefaultConfiguration {
     fn default_configuration(&self) -> GenericImportConfiguration {
         GenericImportConfiguration {
-            root_as: None,
+            root_as: None, // default root name does not need to be trait derived, there is no meaningful alternative to None
             extensions: self
                 .default_file_extensions()
                 .iter()
                 .map(<&str>::to_string)
                 .collect(),
-            documents: None,
+            documents: None, // default document list does not need to be trait derived, there is no meaningful alternative to None
+            default_ns: self.default_namespace().map(ToString::to_string),
         }
     }
+
+    fn default_file_extensions(&self) -> &[&str];
+
+    /// This method returns an optional default namespace. Each module
+    /// implementation is free to choose how to use it, but should use
+    /// this method for future modifications and maintenance.
+    ///
+    /// This is an option, as returning `None` indicates that a default
+    /// namespace is not a useful concept for the particular module.
+    /// For example for data that provide fully qualified annotation
+    /// names already and a default namespace cannot be used or would
+    /// have to overwrite existing namespaces, which is usually
+    /// undesired behaviour.
+    ///
+    /// For the empty namespace, `Some("")` should be returned.
+    fn default_namespace(&self) -> Option<&str>;
 }
 
 /// An encoding set for node names.
@@ -96,6 +113,10 @@ pub struct GenericImportConfiguration {
     /// Extension is optional.
     #[serde(default)]
     pub(crate) documents: Option<BTreeSet<String>>, // this is an option to have strictly linear semantics on the set: more entries mean more documents starting at 0 meaning 0 documents (not a sensible use-case, but could be used for building subcorpus structure from paths, i. e., to license a corpus hack)
+    /// There is a general namespace, that each module uses, that can be set here.
+    /// The default value depends on the implementation and the format model.
+    #[serde(default)]
+    pub(crate) default_ns: Option<String>,
 }
 
 impl<'a> GenericImportConfiguration {
@@ -113,6 +134,7 @@ impl<'a> GenericImportConfiguration {
             root_as: Some(root_name),
             extensions: vec![],
             documents: None,
+            default_ns: None,
         }
     }
 
@@ -122,11 +144,14 @@ impl<'a> GenericImportConfiguration {
             root_as: None,
             extensions,
             documents: None,
+            default_ns: None,
         }
     }
 
     #[cfg(test)]
-    pub fn new_with_default_extensions(importer: &dyn Importer) -> GenericImportConfiguration {
+    pub fn new_with_default_extensions(
+        importer: &dyn DefaultConfiguration,
+    ) -> GenericImportConfiguration {
         use itertools::Itertools;
 
         GenericImportConfiguration {
@@ -137,6 +162,7 @@ impl<'a> GenericImportConfiguration {
                 .map(<&str>::to_string)
                 .collect_vec(),
             documents: None,
+            default_ns: None,
         }
     }
 
@@ -146,6 +172,7 @@ impl<'a> GenericImportConfiguration {
             root_as: self.root_as,
             extensions,
             documents: self.documents,
+            default_ns: None,
         }
     }
 

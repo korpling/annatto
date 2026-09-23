@@ -21,6 +21,7 @@ pub mod optional_sequence {
                         root_as,
                         extensions,
                         documents,
+                        default_ns,
                     }) = generic_config
                     {
                         let resolved_extensions = if extensions.is_empty() {
@@ -33,10 +34,16 @@ pub mod optional_sequence {
                         } else {
                             extensions
                         };
+                        let resolved_ns = if default_ns.is_none() {
+                            module.reader().default_namespace().map(ToString::to_string)
+                        } else {
+                            default_ns
+                        };
                         Some(GenericImportConfiguration {
                             root_as,
                             extensions: resolved_extensions,
                             documents,
+                            default_ns: resolved_ns,
                         })
                     } else {
                         None

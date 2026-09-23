@@ -17,7 +17,10 @@ use pest::{Parser, iterators::Pairs};
 use pest_derive::Parser;
 use serde::{Deserialize, Serialize};
 
-use crate::{error::AnnattoError, importer::Importer};
+use crate::{
+    error::AnnattoError,
+    importer::{DefaultConfiguration, Importer},
+};
 
 /// Import annotations provided in the fieldlinguist's toolbox text format.
 #[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
@@ -58,9 +61,15 @@ impl Importer for ImportFLToolbox {
             .try_for_each(|(p, d)| self.import_document(&p, &d, &mut update))?;
         Ok(update)
     }
+}
 
+impl DefaultConfiguration for ImportFLToolbox {
     fn default_file_extensions(&self) -> &[&str] {
         &ImportFLToolbox::DEFAULT_FILE_EXTENSIONS
+    }
+
+    fn default_namespace(&self) -> Option<&str> {
+        Some("")
     }
 }
 

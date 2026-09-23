@@ -6,7 +6,7 @@ use std::*;
 
 use super::Importer;
 use crate::StepID;
-use crate::importer::GenericImportConfiguration;
+use crate::importer::{DefaultConfiguration, GenericImportConfiguration};
 use crate::models::textgrid::{Interval, TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{
@@ -46,7 +46,7 @@ pub struct ImportTextgrid {
     #[serde(default)]
     skip_time_annotations: bool,
     /// Provide an optional audio extension.
-    #[serde(default = "default_extension")]
+    #[serde(default = "default_audio_extension")]
     audio_extension: String,
 }
 
@@ -57,12 +57,12 @@ impl Default for ImportTextgrid {
             skip_timeline_generation: Default::default(),
             skip_audio: Default::default(),
             skip_time_annotations: Default::default(),
-            audio_extension: default_extension(),
+            audio_extension: default_audio_extension(),
         }
     }
 }
 
-fn default_extension() -> String {
+fn default_audio_extension() -> String {
     "wav".to_string()
 }
 
@@ -469,9 +469,15 @@ impl Importer for ImportTextgrid {
         }
         Ok(u)
     }
+}
 
+impl DefaultConfiguration for ImportTextgrid {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_ENDINGS
+    }
+
+    fn default_namespace(&self) -> Option<&str> {
+        Some("")
     }
 }
 

@@ -4,7 +4,10 @@ use graphannis::update::GraphUpdate;
 use roxmltree::Node;
 use serde::{Deserialize, Serialize};
 
-use crate::{importer::GenericImportConfiguration, progress::ProgressReporter};
+use crate::{
+    importer::{DefaultConfiguration, GenericImportConfiguration},
+    progress::ProgressReporter,
+};
 
 use super::Importer;
 
@@ -31,6 +34,16 @@ impl Default for ImportSaltXml {
 
 fn default_missing_anno_ns_from_layer() -> bool {
     true
+}
+
+impl DefaultConfiguration for ImportSaltXml {
+    fn default_file_extensions(&self) -> &[&str] {
+        &[]
+    }
+
+    fn default_namespace(&self) -> Option<&str> {
+        None
+    }
 }
 
 impl Importer for ImportSaltXml {
@@ -71,10 +84,6 @@ impl Importer for ImportSaltXml {
         }
 
         Ok(updates)
-    }
-
-    fn default_file_extensions(&self) -> &[&str] {
-        &[]
     }
 }
 

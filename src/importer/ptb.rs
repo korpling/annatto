@@ -16,7 +16,11 @@ use serde::Serialize;
 use serde_derive::Deserialize;
 use std::{io::Read, path::Path};
 
-use crate::{StepID, importer::GenericImportConfiguration, progress::ProgressReporter};
+use crate::{
+    StepID,
+    importer::{DefaultConfiguration, GenericImportConfiguration},
+    progress::ProgressReporter,
+};
 
 use super::Importer;
 
@@ -301,6 +305,16 @@ pub struct ImportPTB {
 
 const FILE_EXTENSIONS: [&str; 1] = ["ptb"];
 
+impl DefaultConfiguration for ImportPTB {
+    fn default_file_extensions(&self) -> &[&str] {
+        &FILE_EXTENSIONS
+    }
+
+    fn default_namespace(&self) -> Option<&str> {
+        Some("syntax")
+    }
+}
+
 impl Importer for ImportPTB {
     fn import_corpus(
         &self,
@@ -351,10 +365,6 @@ impl Importer for ImportPTB {
         } else {
             Ok(u)
         }
-    }
-
-    fn default_file_extensions(&self) -> &[&str] {
-        &FILE_EXTENSIONS
     }
 }
 

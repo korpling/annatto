@@ -12,7 +12,7 @@ use xml::{EventReader, ParserConfig};
 
 use crate::{
     error::{AnnattoError, Result},
-    importer::GenericImportConfiguration,
+    importer::{DefaultConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
 };
 
@@ -80,9 +80,17 @@ impl Importer for ImportOpusLinks {
         })?;
         Ok(update)
     }
+}
 
+impl DefaultConfiguration for ImportOpusLinks {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
+    }
+
+    fn default_namespace(&self) -> Option<&str> {
+        // this module creates no node labels,
+        // thus a default namespace is irrelevant
+        None
     }
 }
 

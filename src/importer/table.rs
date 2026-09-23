@@ -17,7 +17,11 @@ use serde::Serialize;
 use serde_derive::Deserialize;
 
 use super::Importer;
-use crate::{StepID, importer::GenericImportConfiguration, progress::ProgressReporter};
+use crate::{
+    StepID,
+    importer::{DefaultConfiguration, GenericImportConfiguration},
+    progress::ProgressReporter,
+};
 
 #[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -126,11 +130,18 @@ impl Importer for ImportTable {
         }
         Ok(update)
     }
+}
 
+impl DefaultConfiguration for ImportTable {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_ENDINGS
     }
+
+    fn default_namespace(&self) -> Option<&str> {
+        Some("")
+    }
 }
+
 impl ImportTable {
     fn import_document(
         &self,

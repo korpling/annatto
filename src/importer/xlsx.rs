@@ -25,7 +25,7 @@ use super::Importer;
 use crate::{
     StepID,
     error::AnnattoError,
-    importer::{GenericImportConfiguration, NODE_NAME_ENCODE_SET},
+    importer::{DefaultConfiguration, GenericImportConfiguration, NODE_NAME_ENCODE_SET},
     progress::ProgressReporter,
 };
 
@@ -748,9 +748,17 @@ impl Importer for ImportSpreadsheet {
             .try_for_each(|node_name| update.add_event(UpdateEvent::DeleteNode { node_name }))?;
         Ok(update)
     }
+}
 
+impl DefaultConfiguration for ImportSpreadsheet {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
+    }
+
+    fn default_namespace(&self) -> Option<&str> {
+        // for this module, this is relevant for the
+        // segmentation tiers ("independent tiers")
+        Some(DEFAULT_NS)
     }
 }
 

@@ -29,7 +29,12 @@ use serde_derive::Deserialize;
 
 use super::Importer;
 use crate::{
-    StepID, error::AnnattoError, importer::GenericImportConfiguration, progress::ProgressReporter,
+    StepID,
+    error::AnnattoError,
+    importer::{
+        DefaultConfiguration, GenericImportConfiguration,
+    },
+    progress::ProgressReporter,
     workflow::StatusSender,
 };
 
@@ -72,6 +77,15 @@ fn default_comment_key() -> AnnoKey {
 
 const FILE_EXTENSIONS: [&str; 2] = ["conll", "conllu"];
 
+impl DefaultConfiguration for ImportCoNLLU {
+    fn default_namespace(&self) -> Option<&str> {
+        Some("")
+    }
+    fn default_file_extensions(&self) -> &[&str] {
+        &FILE_EXTENSIONS
+    }
+}
+
 impl Importer for ImportCoNLLU {
     fn import_corpus(
         &self,
@@ -89,10 +103,6 @@ impl Importer for ImportCoNLLU {
             progress.worked(1)?;
         }
         Ok(update)
-    }
-
-    fn default_file_extensions(&self) -> &[&str] {
-        &FILE_EXTENSIONS
     }
 }
 

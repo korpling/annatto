@@ -9,7 +9,10 @@ use graphannis::{
 use graphannis_core::graph::ANNIS_NS;
 use serde::{Deserialize, Serialize};
 
-use crate::{importer::GenericImportConfiguration, progress::ProgressReporter};
+use crate::{
+    importer::{DefaultConfiguration, GenericImportConfiguration},
+    progress::ProgressReporter,
+};
 
 use super::Importer;
 
@@ -87,9 +90,15 @@ impl Importer for ImportWhisper {
         }
         Ok(update)
     }
+}
 
+impl DefaultConfiguration for ImportWhisper {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
+    }
+
+    fn default_namespace(&self) -> Option<&str> {
+        Some(WHISPER_NS)
     }
 }
 

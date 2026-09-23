@@ -20,7 +20,10 @@ use serde::Serialize;
 use serde_derive::Deserialize;
 
 use crate::{
-    StepID, importer::GenericImportConfiguration, progress::ProgressReporter, util::get_all_files,
+    StepID,
+    importer::{DefaultConfiguration, GenericImportConfiguration},
+    progress::ProgressReporter,
+    util::get_all_files,
 };
 
 use super::Importer;
@@ -96,6 +99,16 @@ fn read_annotations(
 
 const FILE_EXTENSIONS: [&str; 2] = ["meta", "csv"];
 
+impl DefaultConfiguration for AnnotateCorpus {
+    fn default_file_extensions(&self) -> &[&str] {
+        &FILE_EXTENSIONS
+    }
+
+    fn default_namespace(&self) -> Option<&str> {
+        Some("")
+    }
+}
+
 impl Importer for AnnotateCorpus {
     fn import_corpus(
         &self,
@@ -154,10 +167,6 @@ impl Importer for AnnotateCorpus {
             progress.worked(1)?;
         }
         Ok(update)
-    }
-
-    fn default_file_extensions(&self) -> &[&str] {
-        &FILE_EXTENSIONS
     }
 }
 

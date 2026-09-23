@@ -13,7 +13,10 @@ use itertools::Itertools;
 use linked_hash_map::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 
-use crate::{importer::Importer, progress::ProgressReporter};
+use crate::{
+    importer::{DefaultConfiguration, Importer},
+    progress::ProgressReporter,
+};
 
 #[derive(Clone, Default, Deserialize, Facet, PartialEq, Serialize)]
 /// This importer reads ELAN files.
@@ -35,6 +38,16 @@ pub struct ImportELAN {
 
 const DEFAULT_FILE_EXTENSIONS: [&str; 1] = ["eaf"];
 
+impl DefaultConfiguration for ImportELAN {
+    fn default_namespace(&self) -> Option<&str> {
+        Some("elan")
+    }
+
+    fn default_file_extensions(&self) -> &[&str] {
+        &DEFAULT_FILE_EXTENSIONS
+    }
+}
+
 impl Importer for ImportELAN {
     fn import_corpus(
         &self,
@@ -50,10 +63,6 @@ impl Importer for ImportELAN {
             .into_iter()
             .try_for_each(|(p, d)| self.import_document(&p, &d, &mut update, &progress))?;
         Ok(update)
-    }
-
-    fn default_file_extensions(&self) -> &[&str] {
-        &DEFAULT_FILE_EXTENSIONS
     }
 }
 
