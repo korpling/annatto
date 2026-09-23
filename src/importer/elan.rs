@@ -14,7 +14,7 @@ use linked_hash_map::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    importer::{DefaultConfiguration, Importer},
+    importer::{DefaultImportConfiguration, Importer},
     progress::ProgressReporter,
 };
 
@@ -38,7 +38,7 @@ pub struct ImportELAN {
 
 const DEFAULT_FILE_EXTENSIONS: [&str; 1] = ["eaf"];
 
-impl DefaultConfiguration for ImportELAN {
+impl DefaultImportConfiguration for ImportELAN {
     fn default_namespace(&self) -> Option<&str> {
         Some("elan")
     }

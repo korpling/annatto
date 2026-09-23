@@ -3,7 +3,7 @@ use std::path::Path;
 use super::Importer;
 use crate::{
     StepID,
-    importer::{DefaultConfiguration, GenericImportConfiguration},
+    importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
     workflow::StatusSender,
 };
@@ -32,7 +32,7 @@ impl Importer for CreateEmptyCorpus {
     }
 }
 
-impl DefaultConfiguration for CreateEmptyCorpus {
+impl DefaultImportConfiguration for CreateEmptyCorpus {
     fn default_file_extensions(&self) -> &[&str] {
         &[]
     }

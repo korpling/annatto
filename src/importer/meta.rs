@@ -21,7 +21,7 @@ use serde_derive::Deserialize;
 
 use crate::{
     StepID,
-    importer::{DefaultConfiguration, GenericImportConfiguration},
+    importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
     util::get_all_files,
 };
@@ -99,7 +99,7 @@ fn read_annotations(
 
 const FILE_EXTENSIONS: [&str; 2] = ["meta", "csv"];
 
-impl DefaultConfiguration for AnnotateCorpus {
+impl DefaultImportConfiguration for AnnotateCorpus {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
     }

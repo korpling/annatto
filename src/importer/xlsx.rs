@@ -25,7 +25,7 @@ use super::Importer;
 use crate::{
     StepID,
     error::AnnattoError,
-    importer::{DefaultConfiguration, GenericImportConfiguration, NODE_NAME_ENCODE_SET},
+    importer::{DefaultImportConfiguration, GenericImportConfiguration, NODE_NAME_ENCODE_SET},
     progress::ProgressReporter,
 };
 
@@ -750,7 +750,7 @@ impl Importer for ImportSpreadsheet {
     }
 }
 
-impl DefaultConfiguration for ImportSpreadsheet {
+impl DefaultImportConfiguration for ImportSpreadsheet {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
     }

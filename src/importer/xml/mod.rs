@@ -11,7 +11,7 @@ use serde_derive::Deserialize;
 use xml::{EventReader, ParserConfig};
 
 use crate::{
-    StepID, error::{AnnattoError, Result}, importer::{DefaultConfiguration, GenericImportConfiguration}, progress::ProgressReporter,
+    StepID, error::{AnnattoError, Result}, importer::{DefaultImportConfiguration, GenericImportConfiguration}, progress::ProgressReporter,
 };
 
 use super::Importer;
@@ -53,7 +53,7 @@ impl Importer for ImportXML {
     }
 }
 
-impl DefaultConfiguration for ImportXML {
+impl DefaultImportConfiguration for ImportXML {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
     }

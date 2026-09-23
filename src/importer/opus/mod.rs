@@ -12,7 +12,7 @@ use xml::{EventReader, ParserConfig};
 
 use crate::{
     error::{AnnattoError, Result},
-    importer::{DefaultConfiguration, GenericImportConfiguration},
+    importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
 };
 
@@ -82,7 +82,7 @@ impl Importer for ImportOpusLinks {
     }
 }
 
-impl DefaultConfiguration for ImportOpusLinks {
+impl DefaultImportConfiguration for ImportOpusLinks {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
     }

@@ -2,7 +2,7 @@ use std::{collections::HashMap, io::Read, path::Path};
 
 use crate::{
     StepID,
-    importer::{DefaultConfiguration, GenericImportConfiguration},
+    importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
 };
 
@@ -447,11 +447,11 @@ impl Importer for ImportTreeTagger {
     }
 }
 
-impl DefaultConfiguration for ImportTreeTagger {
+impl DefaultImportConfiguration for ImportTreeTagger {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_ENDINGS
     }
-    
+
     fn default_namespace(&self) -> Option<&str> {
         Some(DEFAULT_NS)
     }

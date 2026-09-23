@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     importer::{
-        DefaultConfiguration, GenericImportConfiguration, Importer,
+        DefaultImportConfiguration, GenericImportConfiguration, Importer,
         text::tokenizer::{Token, TreeTaggerTokenizer},
     },
     progress::ProgressReporter,
@@ -123,7 +123,7 @@ impl Importer for ImportText {
     }
 }
 
-impl DefaultConfiguration for ImportText {
+impl DefaultImportConfiguration for ImportText {
     fn default_file_extensions(&self) -> &[&str] {
         &["txt"]
     }

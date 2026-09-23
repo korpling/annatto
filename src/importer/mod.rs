@@ -32,7 +32,7 @@ use std::{
 
 /// An importer is a module that takes a path and produces a list of graph update events.
 /// Using the graph update event list allows to execute several importers in parallel and join them to a single annotation graph.
-pub trait Importer: Sync + DefaultConfiguration {
+pub trait Importer: Sync + DefaultImportConfiguration {
     /// Returns a list of graph update events for a single corpus.
     ///
     /// # Arguments
@@ -51,7 +51,7 @@ pub trait Importer: Sync + DefaultConfiguration {
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>>;
 }
 
-pub trait DefaultConfiguration {
+pub trait DefaultImportConfiguration {
     fn default_configuration(&self) -> GenericImportConfiguration {
         GenericImportConfiguration {
             root_as: None, // default root name does not need to be trait derived, there is no meaningful alternative to None
@@ -150,7 +150,7 @@ impl<'a> GenericImportConfiguration {
 
     #[cfg(test)]
     pub fn new_with_default_extensions(
-        importer: &dyn DefaultConfiguration,
+        importer: &dyn DefaultImportConfiguration,
     ) -> GenericImportConfiguration {
         use itertools::Itertools;
 

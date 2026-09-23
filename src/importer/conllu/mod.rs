@@ -32,7 +32,7 @@ use crate::{
     StepID,
     error::AnnattoError,
     importer::{
-        DefaultConfiguration, GenericImportConfiguration,
+        DefaultImportConfiguration, GenericImportConfiguration,
     },
     progress::ProgressReporter,
     workflow::StatusSender,
@@ -77,7 +77,7 @@ fn default_comment_key() -> AnnoKey {
 
 const FILE_EXTENSIONS: [&str; 2] = ["conll", "conllu"];
 
-impl DefaultConfiguration for ImportCoNLLU {
+impl DefaultImportConfiguration for ImportCoNLLU {
     fn default_namespace(&self) -> Option<&str> {
         Some("")
     }

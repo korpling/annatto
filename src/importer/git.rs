@@ -7,7 +7,7 @@ use graphannis::update::{GraphUpdate, UpdateEvent};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::importer::{DefaultConfiguration, GenericImportConfiguration, Importer};
+use crate::importer::{DefaultImportConfiguration, GenericImportConfiguration, Importer};
 
 /// This importer can enrich a corpus with commit metadata. The import path needs
 /// to be the root directory of the local git repository.
@@ -22,7 +22,7 @@ pub struct ImportGitMetadata {
 const FILE_EXTENSIONS: [&str; 0] = [];
 const GIT_NS: &str = "git";
 
-impl DefaultConfiguration for ImportGitMetadata {
+impl DefaultImportConfiguration for ImportGitMetadata {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
     }

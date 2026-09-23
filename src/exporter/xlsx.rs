@@ -550,7 +550,7 @@ mod tests {
     use tempfile::{TempDir, tempdir};
 
     use crate::{
-        ExporterStep, ImporterStep, ReadFrom, WriteAs, importer::{DefaultConfiguration, Importer, conllu::ImportCoNLLU, xlsx::ImportSpreadsheet}, test_util::compare_graphs, util::example_generator,
+        ExporterStep, ImporterStep, ReadFrom, WriteAs, importer::{DefaultImportConfiguration, Importer, conllu::ImportCoNLLU, xlsx::ImportSpreadsheet}, test_util::compare_graphs, util::example_generator,
     };
 
     use super::*;

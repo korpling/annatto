@@ -18,7 +18,7 @@ use std::{io::Read, path::Path};
 
 use crate::{
     StepID,
-    importer::{DefaultConfiguration, GenericImportConfiguration},
+    importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
 };
 
@@ -305,7 +305,7 @@ pub struct ImportPTB {
 
 const FILE_EXTENSIONS: [&str; 1] = ["ptb"];
 
-impl DefaultConfiguration for ImportPTB {
+impl DefaultImportConfiguration for ImportPTB {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
     }

@@ -10,7 +10,7 @@ use graphannis_core::graph::ANNIS_NS;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    importer::{DefaultConfiguration, GenericImportConfiguration},
+    importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
 };
 
@@ -92,7 +92,7 @@ impl Importer for ImportWhisper {
     }
 }
 
-impl DefaultConfiguration for ImportWhisper {
+impl DefaultImportConfiguration for ImportWhisper {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
     }

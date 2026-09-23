@@ -1,4 +1,4 @@
-use crate::importer::{DefaultConfiguration, GenericImportConfiguration};
+use crate::importer::{DefaultImportConfiguration, GenericImportConfiguration};
 use crate::progress::ProgressReporter;
 
 use super::{Importer, NODE_NAME_ENCODE_SET};
@@ -30,7 +30,7 @@ lazy_static! {
     static ref INVALID_STRING: String = std::char::MAX.to_string();
 }
 
-impl DefaultConfiguration for ImportRelAnnis {
+impl DefaultImportConfiguration for ImportRelAnnis {
     fn default_file_extensions(&self) -> &[&str] {
         &[]
     }

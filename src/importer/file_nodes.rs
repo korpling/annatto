@@ -1,6 +1,6 @@
 use crate::{
     error::AnnattoError,
-    importer::{DefaultConfiguration, GenericImportConfiguration},
+    importer::{DefaultImportConfiguration, GenericImportConfiguration},
 };
 
 use super::Importer;
@@ -23,7 +23,7 @@ pub struct CreateFileNodes {
     corpus_name: Option<String>,
 }
 
-impl DefaultConfiguration for CreateFileNodes {
+impl DefaultImportConfiguration for CreateFileNodes {
     fn default_file_extensions(&self) -> &[&str] {
         // meaningless
         &[]

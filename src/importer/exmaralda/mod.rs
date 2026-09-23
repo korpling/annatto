@@ -20,7 +20,7 @@ use super::Importer;
 use crate::{
     StepID,
     error::AnnattoError,
-    importer::{DefaultConfiguration, GenericImportConfiguration},
+    importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
     util::graphupdate::map_audio_source,
     workflow::StatusMessage,
@@ -81,7 +81,7 @@ impl Importer for ImportEXMARaLDA {
     }
 }
 
-impl DefaultConfiguration for ImportEXMARaLDA {
+impl DefaultImportConfiguration for ImportEXMARaLDA {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
     }

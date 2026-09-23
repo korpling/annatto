@@ -4,7 +4,7 @@ use graphannis::AnnotationGraph;
 use insta::assert_snapshot;
 
 use crate::{
-    exporter::graphml::GraphMLExporter, importer::{DefaultConfiguration, Importer, elan::ImportELAN}, test_util::export_to_string,
+    exporter::graphml::GraphMLExporter, importer::{DefaultImportConfiguration, Importer, elan::ImportELAN}, test_util::export_to_string,
 };
 
 #[test]

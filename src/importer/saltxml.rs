@@ -5,7 +5,7 @@ use roxmltree::Node;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    importer::{DefaultConfiguration, GenericImportConfiguration},
+    importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
 };
 
@@ -36,7 +36,7 @@ fn default_missing_anno_ns_from_layer() -> bool {
     true
 }
 
-impl DefaultConfiguration for ImportSaltXml {
+impl DefaultImportConfiguration for ImportSaltXml {
     fn default_file_extensions(&self) -> &[&str] {
         &[]
     }

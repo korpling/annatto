@@ -14,7 +14,7 @@ use pest_derive::Parser;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    importer::{DefaultConfiguration, GenericImportConfiguration},
+    importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
 };
 
@@ -47,7 +47,7 @@ impl Importer for ImportWebAnnoTSV {
     }
 }
 
-impl DefaultConfiguration for ImportWebAnnoTSV {
+impl DefaultImportConfiguration for ImportWebAnnoTSV {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
     }

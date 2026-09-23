@@ -6,7 +6,7 @@ use std::*;
 
 use super::Importer;
 use crate::StepID;
-use crate::importer::{DefaultConfiguration, GenericImportConfiguration};
+use crate::importer::{DefaultImportConfiguration, GenericImportConfiguration};
 use crate::models::textgrid::{Interval, TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{
@@ -471,7 +471,7 @@ impl Importer for ImportTextgrid {
     }
 }
 
-impl DefaultConfiguration for ImportTextgrid {
+impl DefaultImportConfiguration for ImportTextgrid {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_ENDINGS
     }

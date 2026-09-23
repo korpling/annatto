@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::AnnattoError,
-    importer::{DefaultConfiguration, Importer},
+    importer::{DefaultImportConfiguration, Importer},
 };
 
 /// Import annotations provided in the fieldlinguist's toolbox text format.
@@ -63,7 +63,7 @@ impl Importer for ImportFLToolbox {
     }
 }
 
-impl DefaultConfiguration for ImportFLToolbox {
+impl DefaultImportConfiguration for ImportFLToolbox {
     fn default_file_extensions(&self) -> &[&str] {
         &ImportFLToolbox::DEFAULT_FILE_EXTENSIONS
     }

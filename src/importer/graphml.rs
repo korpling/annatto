@@ -4,7 +4,7 @@ use graphannis_core::graph::serialization;
 
 use crate::{
     StepID,
-    importer::{DefaultConfiguration, GenericImportConfiguration, Importer},
+    importer::{DefaultImportConfiguration, GenericImportConfiguration, Importer},
     progress::ProgressReporter,
     workflow::StatusSender,
 };
@@ -21,7 +21,7 @@ pub struct GraphMLImporter {}
 
 const FILE_EXTENSIONS: [&str; 1] = ["graphml"];
 
-impl DefaultConfiguration for GraphMLImporter {
+impl DefaultImportConfiguration for GraphMLImporter {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
     }

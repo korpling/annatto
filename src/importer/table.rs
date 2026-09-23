@@ -19,7 +19,7 @@ use serde_derive::Deserialize;
 use super::Importer;
 use crate::{
     StepID,
-    importer::{DefaultConfiguration, GenericImportConfiguration},
+    importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
 };
 
@@ -132,7 +132,7 @@ impl Importer for ImportTable {
     }
 }
 
-impl DefaultConfiguration for ImportTable {
+impl DefaultImportConfiguration for ImportTable {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_ENDINGS
     }
