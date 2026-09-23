@@ -102,7 +102,7 @@ pub const NODE_NAME_ENCODE_SET: &AsciiSet = &CONTROLS
     .add(b'?')
     .add(b'*');
 
-// NOTE: fields of this should be private; if you require access please write some sort of getter
+// NOTE: fields of this should never be read directly; if you require access please write and use some sort of getter
 #[derive(Clone, Default, Deserialize, PartialEq, Serialize)]
 pub struct GenericImportConfiguration {
     #[serde(alias = "as", default)]
@@ -130,6 +130,20 @@ impl<'a> GenericImportConfiguration {
 
     pub fn document_list(&self) -> Option<&BTreeSet<String>> {
         self.documents.as_ref()
+    }
+
+    pub fn new(
+        root_as: Option<String>,
+        extensions: Vec<String>,
+        documents: Option<BTreeSet<String>>,
+        default_ns: Option<String>,
+    ) -> Self {
+        GenericImportConfiguration {
+            root_as,
+            extensions,
+            documents,
+            default_ns,
+        }
     }
 
     #[cfg(test)]
@@ -197,6 +211,10 @@ impl<'a> GenericImportConfiguration {
         } else {
             GenericImportConfiguration::EMPTY_NS
         }
+    }
+
+    pub fn customizes_default_namespace(&self) -> bool {
+        self.default_ns.is_some()
     }
 }
 
