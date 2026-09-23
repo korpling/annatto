@@ -57,7 +57,7 @@ tabled = { version = "0.15", features = ["ansi"] }
 tempfile = "3"
 termimad = "0.30"
 text-splitter = "0.6.3"
-thiserror = "1.0"
+thiserror = "2.0"
 time = "0.3.44"
 tokenizations = "0.4.2"
 toml = "0.8.0"
