@@ -184,6 +184,10 @@ impl<'a> GenericImportConfiguration {
     ) -> crate::error::Result<NamedPaths> {
         import_corpus_graph_from_files(update, import_path, self)
     }
+
+    pub fn default_namespace(&self) -> Option<&String> {
+        self.default_ns.as_ref()
+    }
 }
 
 pub type NamedPath = (PathBuf, String);
