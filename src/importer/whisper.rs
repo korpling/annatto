@@ -9,7 +9,10 @@ use graphannis::{
 use graphannis_core::graph::ANNIS_NS;
 use serde::{Deserialize, Serialize};
 
-use crate::{importer::GenericImportConfiguration, progress::ProgressReporter};
+use crate::{
+    importer::{DefaultImportConfiguration, GenericImportConfiguration},
+    progress::ProgressReporter,
+};
 
 use super::Importer;
 
@@ -82,14 +85,20 @@ impl Importer for ImportWhisper {
         let progress =
             ProgressReporter::new(tx.clone(), step_id.clone(), paths_and_node_names.len())?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
-            self.import_document(&mut update, pathbuf.as_path(), &doc_node_name)?;
+            self.import_document(&config, &mut update, pathbuf.as_path(), &doc_node_name)?;
             progress.worked(1)?;
         }
         Ok(update)
     }
+}
 
+impl DefaultImportConfiguration for ImportWhisper {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
+    }
+
+    fn preset_default_namespace(&self) -> Option<&str> {
+        Some(WHISPER_NS)
     }
 }
 
@@ -98,6 +107,7 @@ const WHISPER_NS: &str = "whisper";
 impl ImportWhisper {
     fn import_document(
         &self,
+        config: &GenericImportConfiguration,
         update: &mut GraphUpdate,
         path: &Path,
         node_name: &str,
@@ -105,7 +115,7 @@ impl ImportWhisper {
         let data = load_json(path)?;
         update.add_event(UpdateEvent::AddNodeLabel {
             node_name: node_name.to_string(),
-            anno_ns: WHISPER_NS.to_string(),
+            anno_ns: config.default_namespace().to_string(),
             anno_name: "language".to_string(),
             anno_value: data.language.to_string(),
         })?;
@@ -117,7 +127,7 @@ impl ImportWhisper {
         if let Some(text) = &data.text {
             update.add_event(UpdateEvent::AddNodeLabel {
                 node_name: ds.to_string(),
-                anno_ns: WHISPER_NS.to_string(),
+                anno_ns: config.default_namespace().to_string(),
                 anno_name: "text".to_string(),
                 anno_value: text.trim().to_string(),
             })?;
@@ -132,12 +142,13 @@ impl ImportWhisper {
         if self.skip_tokens {
             self.import_segments_only(update, data, node_name)
         } else {
-            self.import_with_tokens(update, data, node_name)
+            self.import_with_tokens(config, update, data, node_name)
         }
     }
 
     fn import_with_tokens(
         &self,
+        config: &GenericImportConfiguration,
         update: &mut GraphUpdate,
         data: WhisperJSON,
         node_name: &str,
@@ -151,14 +162,14 @@ impl ImportWhisper {
             })?;
             update.add_event(UpdateEvent::AddNodeLabel {
                 node_name: span.to_string(),
-                anno_ns: WHISPER_NS.to_string(),
+                anno_ns: config.default_namespace().to_string(),
                 anno_name: "segment".to_string(),
                 anno_value: segment.text.trim().to_string(),
             })?;
             if let Some(id_val) = &segment.id {
                 update.add_event(UpdateEvent::AddNodeLabel {
                     node_name: span.to_string(),
-                    anno_ns: WHISPER_NS.to_string(),
+                    anno_ns: config.default_namespace().to_string(),
                     anno_name: "segment_id".to_string(),
                     anno_value: id_val.to_string(),
                 })?;
@@ -166,7 +177,7 @@ impl ImportWhisper {
             if let Some(seek) = &segment.seek {
                 update.add_event(UpdateEvent::AddNodeLabel {
                     node_name: span.to_string(),
-                    anno_ns: WHISPER_NS.to_string(),
+                    anno_ns: config.default_namespace().to_string(),
                     anno_name: "seek".to_string(),
                     anno_value: seek.to_string(),
                 })?;
@@ -180,7 +191,7 @@ impl ImportWhisper {
             if let Some(temperature) = &segment.temperature {
                 update.add_event(UpdateEvent::AddNodeLabel {
                     node_name: span.to_string(),
-                    anno_ns: WHISPER_NS.to_string(),
+                    anno_ns: config.default_namespace().to_string(),
                     anno_name: "temperature".to_string(),
                     anno_value: temperature.to_string(),
                 })?;
@@ -188,7 +199,7 @@ impl ImportWhisper {
             if let Some(avg_logprob) = &segment.avg_logprob {
                 update.add_event(UpdateEvent::AddNodeLabel {
                     node_name: span.to_string(),
-                    anno_ns: WHISPER_NS.to_string(),
+                    anno_ns: config.default_namespace().to_string(),
                     anno_name: "avg_logprob".to_string(),
                     anno_value: avg_logprob.to_string(),
                 })?;
@@ -196,7 +207,7 @@ impl ImportWhisper {
             if let Some(compression_ratio) = segment.compression_ratio {
                 update.add_event(UpdateEvent::AddNodeLabel {
                     node_name: span.to_string(),
-                    anno_ns: WHISPER_NS.to_string(),
+                    anno_ns: config.default_namespace().to_string(),
                     anno_name: "compression_ratio".to_string(),
                     anno_value: compression_ratio.to_string(),
                 })?;
@@ -204,7 +215,7 @@ impl ImportWhisper {
             if let Some(no_speech_prob) = &segment.no_speech_prob {
                 update.add_event(UpdateEvent::AddNodeLabel {
                     node_name: span.to_string(),
-                    anno_ns: WHISPER_NS.to_string(),
+                    anno_ns: config.default_namespace().to_string(),
                     anno_name: "no_speech_prob".to_string(),
                     anno_value: no_speech_prob.to_string(),
                 })?;
@@ -256,7 +267,7 @@ impl ImportWhisper {
                             if let Some(score_val) = score {
                                 update.add_event(UpdateEvent::AddNodeLabel {
                                     node_name: tok_name.to_string(),
-                                    anno_ns: WHISPER_NS.to_string(),
+                                    anno_ns: config.default_namespace().to_string(),
                                     anno_name: "score".to_string(),
                                     anno_value: score_val.to_string(),
                                 })?;
@@ -370,7 +381,7 @@ mod tests {
 
     use crate::{
         exporter::graphml::GraphMLExporter,
-        importer::{GenericImportConfiguration, Importer},
+        importer::{DefaultImportConfiguration, Importer},
         test_util::export_to_string,
     };
 
@@ -417,6 +428,7 @@ mod tests {
     fn run_test(serialization: &str) -> Result<String, anyhow::Error> {
         let module: ImportWhisper = toml::from_str(serialization)?;
         let path = std::path::Path::new("./tests/data/import/whisper/whisper/");
+        let config = module.default_configuration();
         let mut u = module
             .import_corpus(
                 path,
@@ -424,7 +436,7 @@ mod tests {
                     module_name: "test_whisper".to_string(),
                     path: Some(path.to_path_buf()),
                 },
-                GenericImportConfiguration::new_with_default_extensions(&module),
+                config,
                 None,
             )
             .map_err(|e| anyhow!("An error occured: {:?}", e))?;
@@ -448,7 +460,7 @@ mod tests {
                     module_name: "test_whisper".to_string(),
                     path: Some(path.to_path_buf()),
                 },
-                GenericImportConfiguration::new_with_default_extensions(&module),
+                module.default_configuration(),
                 None,
             )
             .map_err(|e| anyhow!("An error occured: {:?}", e));

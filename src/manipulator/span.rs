@@ -248,7 +248,7 @@ mod tests {
 
     use crate::{
         exporter::graphml::GraphMLExporter,
-        importer::{Importer, treetagger::ImportTreeTagger},
+        importer::{DefaultImportConfiguration, Importer, treetagger::ImportTreeTagger},
         manipulator::{
             Manipulator,
             span::{CreateSpans, default_component},

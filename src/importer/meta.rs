@@ -20,7 +20,10 @@ use serde::Serialize;
 use serde_derive::Deserialize;
 
 use crate::{
-    StepID, importer::GenericImportConfiguration, progress::ProgressReporter, util::get_all_files,
+    StepID,
+    importer::{DefaultImportConfiguration, GenericImportConfiguration},
+    progress::ProgressReporter,
+    util::get_all_files,
 };
 
 use super::Importer;
@@ -96,6 +99,16 @@ fn read_annotations(
 
 const FILE_EXTENSIONS: [&str; 2] = ["meta", "csv"];
 
+impl DefaultImportConfiguration for AnnotateCorpus {
+    fn default_file_extensions(&self) -> &[&str] {
+        &FILE_EXTENSIONS
+    }
+
+    fn preset_default_namespace(&self) -> Option<&str> {
+        Some("")
+    }
+}
+
 impl Importer for AnnotateCorpus {
     fn import_corpus(
         &self,
@@ -105,11 +118,9 @@ impl Importer for AnnotateCorpus {
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
-        let GenericImportConfiguration {
-            extensions,
-            documents,
-            ..
-        } = config;
+        let extensions = config.extensions();
+        let documents = config.document_list();
+        let default_ns = config.default_namespace();
         let file_extensions = extensions.iter().map(String::as_str).collect_vec();
         let all_files = get_all_files(input_path, &file_extensions, documents)?;
         let progress = ProgressReporter::new(tx, step_id, all_files.len())?;
@@ -145,7 +156,7 @@ impl Importer for AnnotateCorpus {
                     let (anno_ns, anno_name) = split_qname(&k);
                     update.add_event(UpdateEvent::AddNodeLabel {
                         node_name: node_name.to_string(),
-                        anno_ns: anno_ns.unwrap_or_default().trim().to_string(),
+                        anno_ns: anno_ns.unwrap_or(default_ns).trim().to_string(),
                         anno_name: anno_name.trim().to_string(),
                         anno_value: v.trim().to_string(),
                     })?;
@@ -154,10 +165,6 @@ impl Importer for AnnotateCorpus {
             progress.worked(1)?;
         }
         Ok(update)
-    }
-
-    fn default_file_extensions(&self) -> &[&str] {
-        &FILE_EXTENSIONS
     }
 }
 

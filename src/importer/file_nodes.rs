@@ -1,4 +1,7 @@
-use crate::{error::AnnattoError, importer::GenericImportConfiguration};
+use crate::{
+    error::AnnattoError,
+    importer::{DefaultImportConfiguration, GenericImportConfiguration},
+};
 
 use super::Importer;
 use facet::Facet;
@@ -18,6 +21,18 @@ pub struct CreateFileNodes {
     /// The name of the corpus root node.
     #[serde(default)]
     corpus_name: Option<String>,
+}
+
+impl DefaultImportConfiguration for CreateFileNodes {
+    fn default_file_extensions(&self) -> &[&str] {
+        // meaningless
+        &[]
+    }
+
+    fn preset_default_namespace(&self) -> Option<&str> {
+        // meaningless
+        None
+    }
 }
 
 impl Importer for CreateFileNodes {
@@ -81,10 +96,6 @@ impl Importer for CreateFileNodes {
                 path: input_path.to_path_buf(),
             }))
         }
-    }
-
-    fn default_file_extensions(&self) -> &[&str] {
-        &[]
     }
 }
 

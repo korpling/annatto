@@ -8,8 +8,11 @@ use graphannis_core::graph::ANNIS_NS;
 use insta::assert_snapshot;
 
 use crate::{
-    importer::table::{EmptyLineGroup, ImportTable},
-    test_util::import_as_graphml_string,
+    importer::{
+        GenericImportConfiguration,
+        table::{EmptyLineGroup, ImportTable},
+    },
+    test_util::{import_as_graphml_string, import_as_graphml_string_with_custom_config},
 };
 
 #[test]
@@ -92,6 +95,30 @@ fn table_skip_na() {
     )
     .unwrap();
     let actual = import_as_graphml_string(m, Path::new("tests/data/import/table/with-na/"), None);
+    assert!(actual.is_ok());
+    assert_snapshot!(actual.unwrap());
+}
+
+#[test]
+fn custom_generic_config() {
+    let m: ImportTable = toml::from_str(
+        r#"
+        delimiter = "\t"
+        na = "_"        
+        "#,
+    )
+    .unwrap();
+    let actual = import_as_graphml_string_with_custom_config(
+        m,
+        Path::new("tests/data/import/table/with-na/"),
+        None,
+        GenericImportConfiguration::new(
+            Some("custom_root".to_string()),
+            vec!["csv".to_string(), "tsv".to_string(), "txt".to_string()],
+            None,
+            Some("custom_ns".to_string()),
+        ),
+    );
     assert!(actual.is_ok());
     assert_snapshot!(actual.unwrap());
 }

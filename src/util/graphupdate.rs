@@ -198,7 +198,7 @@ pub fn import_corpus_graph_from_files(
         root_path,
         &root_name,
         &file_endings,
-        config.documents.as_ref(),
+        config.document_list(),
     )?;
     path_tuples.sort();
     Ok(path_tuples)

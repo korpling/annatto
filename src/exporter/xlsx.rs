@@ -551,7 +551,9 @@ mod tests {
 
     use crate::{
         ExporterStep, ImporterStep, ReadFrom, WriteAs,
-        importer::{Importer, conllu::ImportCoNLLU, xlsx::ImportSpreadsheet},
+        importer::{
+            DefaultImportConfiguration, Importer, conllu::ImportCoNLLU, xlsx::ImportSpreadsheet,
+        },
         test_util::compare_graphs,
         util::example_generator,
     };

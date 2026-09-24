@@ -1,4 +1,4 @@
-use crate::importer::GenericImportConfiguration;
+use crate::importer::{DefaultImportConfiguration, GenericImportConfiguration};
 use crate::progress::ProgressReporter;
 
 use super::{Importer, NODE_NAME_ENCODE_SET};
@@ -28,6 +28,17 @@ use std::path::{Path, PathBuf};
 
 lazy_static! {
     static ref INVALID_STRING: String = std::char::MAX.to_string();
+}
+
+impl DefaultImportConfiguration for ImportRelAnnis {
+    fn default_file_extensions(&self) -> &[&str] {
+        &[]
+    }
+
+    fn preset_default_namespace(&self) -> Option<&str> {
+        // namespaces ALWAYS come from the data
+        None
+    }
 }
 
 /// Importer the legacy (rel)ANNIS import format (<http://korpling.github.io/ANNIS/3.7/developer-guide/annisimportformat.html>).
@@ -82,10 +93,6 @@ impl Importer for ImportRelAnnis {
         } else {
             Err(anyhow!("directory {} not found", input_path.to_string_lossy()).into())
         }
-    }
-
-    fn default_file_extensions(&self) -> &[&str] {
-        &[]
     }
 }
 

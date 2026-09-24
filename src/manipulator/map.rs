@@ -737,7 +737,7 @@ mod tests {
     use crate::{
         StepID,
         exporter::graphml::GraphMLExporter,
-        importer::{Importer, treetagger::ImportTreeTagger},
+        importer::{DefaultImportConfiguration, Importer, treetagger::ImportTreeTagger},
         manipulator::Manipulator,
         test_util,
         util::example_generator,

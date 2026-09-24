@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- imports whose model allows for it to be considered can be configured for a `default_namespace` to be used for the created annotations.
+
 ### Fixed
 
 - more specific error message when export to `graphml` fails because a linked file does not exist

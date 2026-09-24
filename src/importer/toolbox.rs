@@ -17,7 +17,10 @@ use pest::{Parser, iterators::Pairs};
 use pest_derive::Parser;
 use serde::{Deserialize, Serialize};
 
-use crate::{error::AnnattoError, importer::Importer};
+use crate::{
+    error::AnnattoError,
+    importer::{DefaultImportConfiguration, GenericImportConfiguration, Importer},
+};
 
 /// Import annotations provided in the fieldlinguist's toolbox text format.
 #[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
@@ -55,12 +58,18 @@ impl Importer for ImportFLToolbox {
         let named_paths = config.derive_corpus_graph(input_path, &mut update)?;
         named_paths
             .into_iter()
-            .try_for_each(|(p, d)| self.import_document(&p, &d, &mut update))?;
+            .try_for_each(|(p, d)| self.import_document(&p, &d, &config, &mut update))?;
         Ok(update)
     }
+}
 
+impl DefaultImportConfiguration for ImportFLToolbox {
     fn default_file_extensions(&self) -> &[&str] {
         &ImportFLToolbox::DEFAULT_FILE_EXTENSIONS
+    }
+
+    fn preset_default_namespace(&self) -> Option<&str> {
+        Some("")
     }
 }
 
@@ -71,6 +80,7 @@ impl ImportFLToolbox {
         &self,
         path: &Path,
         doc_node_name: &str,
+        config: &GenericImportConfiguration,
         update: &mut GraphUpdate,
     ) -> crate::error::Result<()> {
         let content = fs::read_to_string(path)?;
@@ -86,6 +96,7 @@ impl ImportFLToolbox {
                 .ok_or::<AnnattoError>(anyhow!("Parsing error").into())?
                 .into_inner(),
             doc_node_name,
+            config,
             update,
         )?;
         Ok(())
@@ -95,6 +106,7 @@ impl ImportFLToolbox {
         &self,
         data: Pairs<Rule>,
         doc_node_name: &str,
+        config: &GenericImportConfiguration,
         update: &mut GraphUpdate,
     ) -> crate::error::Result<()> {
         let mut order_from = None;
@@ -105,6 +117,7 @@ impl ImportFLToolbox {
                 doc_node_name,
                 order_from,
                 &mut global_values,
+                config,
                 update,
             )?;
         }
@@ -117,6 +130,7 @@ impl ImportFLToolbox {
         doc_node_name: &str,
         continue_ordering_at: Option<String>,
         global_values: &mut BTreeMap<String, Vec<u8>>,
+        config: &GenericImportConfiguration,
         update: &mut GraphUpdate,
     ) -> crate::error::Result<Option<String>> {
         let mut continue_ordering_at = continue_ordering_at;
@@ -171,7 +185,7 @@ impl ImportFLToolbox {
             for (k, v) in span_values {
                 update.add_event(UpdateEvent::AddNodeLabel {
                     node_name: span.to_string(),
-                    anno_ns: "".to_string(),
+                    anno_ns: config.default_namespace().to_string(),
                     anno_name: k,
                     anno_value: str::from_utf8(&v)?.to_string(),
                 })?;
@@ -179,7 +193,7 @@ impl ImportFLToolbox {
             for (k, v) in global_values {
                 update.add_event(UpdateEvent::AddNodeLabel {
                     node_name: span.to_string(),
-                    anno_ns: "".to_string(),
+                    anno_ns: config.default_namespace().to_string(),
                     anno_name: k.to_string(),
                     anno_value: str::from_utf8(v)?.to_string(),
                 })?;
@@ -265,7 +279,7 @@ impl ImportFLToolbox {
                     if anno_value != "-" || self.explicit_null {
                         update.add_event(UpdateEvent::AddNodeLabel {
                             node_name: name.to_string(),
-                            anno_ns: "".to_string(),
+                            anno_ns: config.default_namespace().to_string(),
                             anno_name: grid_line.marker.to_string(),
                             anno_value: anno_value.to_string(),
                         })?;
