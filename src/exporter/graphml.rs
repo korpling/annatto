@@ -391,7 +391,7 @@ fn write_linked_files(
                 std::io::copy(&mut reader, &mut zip_file)?;
             } else {
                 bail!(
-                    "\"{}\" is not a relative path to an existing file.",
+                    "Linked file \"{}\" does not exist or is not linked using a relative path.",
                     original_path.to_string_lossy()
                 )
             }
