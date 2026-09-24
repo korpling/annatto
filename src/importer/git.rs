@@ -98,7 +98,7 @@ mod tests {
     use crate::{
         StepID,
         exporter::graphml::GraphMLExporter,
-        importer::{GenericImportConfiguration, Importer, git::ImportGitMetadata},
+        importer::{DefaultImportConfiguration, Importer, git::ImportGitMetadata},
         test_util::export_to_string,
     };
 
@@ -154,7 +154,7 @@ mod tests {
                 module_name: "test_git".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::default(),
+            gitmeta.default_configuration(),
             None,
         );
         assert_eq!(u.is_ok(), commit, "Result: {:?}", u.err());

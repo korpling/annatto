@@ -381,7 +381,7 @@ mod tests {
 
     use crate::{
         exporter::graphml::GraphMLExporter,
-        importer::{GenericImportConfiguration, Importer},
+        importer::{DefaultImportConfiguration, Importer},
         test_util::export_to_string,
     };
 
@@ -428,6 +428,7 @@ mod tests {
     fn run_test(serialization: &str) -> Result<String, anyhow::Error> {
         let module: ImportWhisper = toml::from_str(serialization)?;
         let path = std::path::Path::new("./tests/data/import/whisper/whisper/");
+        let config = module.default_configuration();
         let mut u = module
             .import_corpus(
                 path,
@@ -435,7 +436,7 @@ mod tests {
                     module_name: "test_whisper".to_string(),
                     path: Some(path.to_path_buf()),
                 },
-                GenericImportConfiguration::new_with_default_extensions(&module),
+                config,
                 None,
             )
             .map_err(|e| anyhow!("An error occured: {:?}", e))?;
@@ -459,7 +460,7 @@ mod tests {
                     module_name: "test_whisper".to_string(),
                     path: Some(path.to_path_buf()),
                 },
-                GenericImportConfiguration::new_with_default_extensions(&module),
+                module.default_configuration(),
                 None,
             )
             .map_err(|e| anyhow!("An error occured: {:?}", e));
