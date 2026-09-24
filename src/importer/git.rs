@@ -7,7 +7,7 @@ use graphannis::update::{GraphUpdate, UpdateEvent};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::importer::{GenericImportConfiguration, Importer};
+use crate::importer::{DefaultImportConfiguration, GenericImportConfiguration, Importer};
 
 /// This importer can enrich a corpus with commit metadata. The import path needs
 /// to be the root directory of the local git repository.
@@ -22,12 +22,22 @@ pub struct ImportGitMetadata {
 const FILE_EXTENSIONS: [&str; 0] = [];
 const GIT_NS: &str = "git";
 
+impl DefaultImportConfiguration for ImportGitMetadata {
+    fn default_file_extensions(&self) -> &[&str] {
+        &FILE_EXTENSIONS
+    }
+
+    fn preset_default_namespace(&self) -> Option<&str> {
+        Some(GIT_NS)
+    }
+}
+
 impl Importer for ImportGitMetadata {
     fn import_corpus(
         &self,
         input_path: &std::path::Path,
         _step_id: crate::StepID,
-        _config: GenericImportConfiguration,
+        config: GenericImportConfiguration,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
@@ -68,15 +78,11 @@ impl Importer for ImportGitMetadata {
         })?;
         update.add_event(UpdateEvent::AddNodeLabel {
             node_name: corpus_root.to_string(),
-            anno_ns: GIT_NS.to_string(),
+            anno_ns: config.default_namespace().to_string(),
             anno_name: "revision".to_string(),
             anno_value: head_sha.to_string(),
         })?;
         Ok(update)
-    }
-
-    fn default_file_extensions(&self) -> &[&str] {
-        &FILE_EXTENSIONS
     }
 }
 
@@ -92,7 +98,7 @@ mod tests {
     use crate::{
         StepID,
         exporter::graphml::GraphMLExporter,
-        importer::{GenericImportConfiguration, Importer, git::ImportGitMetadata},
+        importer::{DefaultImportConfiguration, Importer, git::ImportGitMetadata},
         test_util::export_to_string,
     };
 
@@ -148,7 +154,7 @@ mod tests {
                 module_name: "test_git".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::default(),
+            gitmeta.default_configuration(),
             None,
         );
         assert_eq!(u.is_ok(), commit, "Result: {:?}", u.err());

@@ -56,6 +56,7 @@ fn import_salt_sample_relannis() {
         visibility = "hidden"
         "#,
         ),
+        ImportRelAnnis::default().default_configuration(),
         false,
         None,
     )
@@ -86,6 +87,7 @@ fn import_order_relation() {
         visibility = "permanent"
         "#,
         ),
+        ImportRelAnnis::default().default_configuration(),
         false,
         None,
     )
@@ -119,6 +121,7 @@ fn import_legacy_format() {
             hide_tok = "true"
         "#,
         ),
+        ImportRelAnnis::default().default_configuration(),
         false,
         None,
     )
@@ -162,6 +165,7 @@ fn import_corpus_with_border_cases() {
             visibility = "hidden"
         "#,
         ),
+        ImportRelAnnis::default().default_configuration(),
         false,
         None,
     )
@@ -186,6 +190,7 @@ fn import_corpus_with_duplicated_document() {
         ImportRelAnnis::default(),
         corpus_path,
         None,
+        ImportRelAnnis::default().default_configuration(),
         false,
         Some(sender),
     )

@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     importer::{
-        GenericImportConfiguration, Importer,
+        DefaultImportConfiguration, GenericImportConfiguration, Importer,
         text::tokenizer::{Token, TreeTaggerTokenizer},
     },
     progress::ProgressReporter,
@@ -121,9 +121,17 @@ impl Importer for ImportText {
             .try_for_each(|m| m.import_textfile(&mut update))?;
         Ok(update)
     }
+}
 
+impl DefaultImportConfiguration for ImportText {
     fn default_file_extensions(&self) -> &[&str] {
         &["txt"]
+    }
+
+    fn preset_default_namespace(&self) -> Option<&str> {
+        // this module currently does not require a namespace
+        // as it is only creating tokens (which enforces ANNIS_NS)
+        None
     }
 }
 

@@ -32,7 +32,7 @@ use std::{
 
 /// An importer is a module that takes a path and produces a list of graph update events.
 /// Using the graph update event list allows to execute several importers in parallel and join them to a single annotation graph.
-pub trait Importer: Sync {
+pub trait Importer: Sync + DefaultImportConfiguration {
     /// Returns a list of graph update events for a single corpus.
     ///
     /// # Arguments
@@ -49,20 +49,36 @@ pub trait Importer: Sync {
         config: GenericImportConfiguration,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>>;
+}
 
-    fn default_file_extensions(&self) -> &[&str];
-
+pub trait DefaultImportConfiguration {
     fn default_configuration(&self) -> GenericImportConfiguration {
         GenericImportConfiguration {
-            root_as: None,
+            root_as: None, // default root name does not need to be trait derived, there is no meaningful alternative to None
             extensions: self
                 .default_file_extensions()
                 .iter()
                 .map(<&str>::to_string)
                 .collect(),
-            documents: None,
+            documents: None, // default document list does not need to be trait derived, there is no meaningful alternative to None
+            default_ns: self.preset_default_namespace().map(ToString::to_string),
         }
     }
+
+    fn default_file_extensions(&self) -> &[&str];
+
+    /// This method returns an optional default setting for the default namespace.
+    /// Each module implementation is free to choose how to use it, but should use
+    /// this method for future modifications and maintenance.
+    ///
+    /// This is an option, as returning `None` indicates that a default namespace
+    /// is not a useful concept for the particular module. For example, for data,
+    /// that provide fully qualified annotation names already and a default
+    /// namespace cannot be used or would have to overwrite existing namespaces,
+    /// which is usually undesired behaviour.
+    ///
+    /// For the empty namespace, `Some("")` should be returned.
+    fn preset_default_namespace(&self) -> Option<&str>;
 }
 
 /// An encoding set for node names.
@@ -86,16 +102,21 @@ pub const NODE_NAME_ENCODE_SET: &AsciiSet = &CONTROLS
     .add(b'?')
     .add(b'*');
 
+// NOTE: fields of this should never be read directly; if you require access please write and use some sort of getter
 #[derive(Clone, Default, Deserialize, PartialEq, Serialize)]
 pub struct GenericImportConfiguration {
     #[serde(alias = "as", default)]
-    pub(crate) root_as: Option<String>,
+    root_as: Option<String>,
     #[serde(default)]
-    pub(crate) extensions: Vec<String>, // this is a vec for smoother interoperability with the internal api, semantically this behaves like a set down the line
+    extensions: Vec<String>, // this is a vec for smoother interoperability with the internal api, semantically this behaves like a set down the line
     /// This is a document filter. If none provided, all documents will be imported. If provided, only documents matching the document stem or path will be imported.
     /// Extension is optional.
     #[serde(default)]
-    pub(crate) documents: Option<BTreeSet<String>>, // this is an option to have strictly linear semantics on the set: more entries mean more documents starting at 0 meaning 0 documents (not a sensible use-case, but could be used for building subcorpus structure from paths, i. e., to license a corpus hack)
+    documents: Option<BTreeSet<String>>, // this is an option to have strictly linear semantics on the set: more entries mean more documents starting at 0 meaning 0 documents (not a sensible use-case, but could be used for building subcorpus structure from paths, i. e., to license a corpus hack)
+    /// There is a general namespace, that each module uses, that can be set here.
+    /// The default value depends on the implementation and the format model.
+    #[serde(default)]
+    default_ns: Option<String>, // This is an option only for the simple reason that we need to distinguish whether the user SET an empty value or did not set a value (so deserialization forces this upon us). Therefore, this field should never be read directly, there is a method extracting the value.
 }
 
 impl<'a> GenericImportConfiguration {
@@ -107,12 +128,31 @@ impl<'a> GenericImportConfiguration {
         self.extensions.as_ref()
     }
 
+    pub fn document_list(&self) -> Option<&BTreeSet<String>> {
+        self.documents.as_ref()
+    }
+
+    pub fn new(
+        root_as: Option<String>,
+        extensions: Vec<String>,
+        documents: Option<BTreeSet<String>>,
+        default_ns: Option<String>,
+    ) -> Self {
+        GenericImportConfiguration {
+            root_as,
+            extensions,
+            documents,
+            default_ns,
+        }
+    }
+
     #[cfg(test)]
     pub fn new_with_root_name(root_name: String) -> GenericImportConfiguration {
         GenericImportConfiguration {
             root_as: Some(root_name),
             extensions: vec![],
             documents: None,
+            default_ns: Default::default(),
         }
     }
 
@@ -122,11 +162,14 @@ impl<'a> GenericImportConfiguration {
             root_as: None,
             extensions,
             documents: None,
+            default_ns: Default::default(),
         }
     }
 
     #[cfg(test)]
-    pub fn new_with_default_extensions(importer: &dyn Importer) -> GenericImportConfiguration {
+    pub fn new_with_default_extensions(
+        importer: &dyn DefaultImportConfiguration,
+    ) -> GenericImportConfiguration {
         use itertools::Itertools;
 
         GenericImportConfiguration {
@@ -137,6 +180,7 @@ impl<'a> GenericImportConfiguration {
                 .map(<&str>::to_string)
                 .collect_vec(),
             documents: None,
+            default_ns: Default::default(),
         }
     }
 
@@ -146,6 +190,7 @@ impl<'a> GenericImportConfiguration {
             root_as: self.root_as,
             extensions,
             documents: self.documents,
+            default_ns: Default::default(),
         }
     }
 
@@ -156,6 +201,20 @@ impl<'a> GenericImportConfiguration {
         update: &mut GraphUpdate,
     ) -> crate::error::Result<NamedPaths> {
         import_corpus_graph_from_files(update, import_path, self)
+    }
+
+    const EMPTY_NS: &'a str = "";
+
+    pub fn default_namespace(&self) -> &str {
+        if let Some(v) = &self.default_ns {
+            v.as_str()
+        } else {
+            GenericImportConfiguration::EMPTY_NS
+        }
+    }
+
+    pub fn customizes_default_namespace(&self) -> bool {
+        self.default_ns.is_some()
     }
 }
 

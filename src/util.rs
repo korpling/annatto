@@ -88,7 +88,7 @@ pub(crate) mod token_helper;
 pub fn get_all_files(
     corpus_root_dir: &Path,
     file_extensions: &[&str],
-    document_filter: Option<BTreeSet<String>>,
+    document_filter: Option<&BTreeSet<String>>,
 ) -> std::result::Result<Vec<PathBuf>, AnnattoError> {
     let mut paths = Vec::new();
     let flex_path = corpus_root_dir.join("**");

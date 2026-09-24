@@ -6,7 +6,7 @@ use std::*;
 
 use super::Importer;
 use crate::StepID;
-use crate::importer::GenericImportConfiguration;
+use crate::importer::{DefaultImportConfiguration, GenericImportConfiguration};
 use crate::models::textgrid::{Interval, TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{
@@ -46,7 +46,7 @@ pub struct ImportTextgrid {
     #[serde(default)]
     skip_time_annotations: bool,
     /// Provide an optional audio extension.
-    #[serde(default = "default_extension")]
+    #[serde(default = "default_audio_extension")]
     audio_extension: String,
 }
 
@@ -57,12 +57,12 @@ impl Default for ImportTextgrid {
             skip_timeline_generation: Default::default(),
             skip_audio: Default::default(),
             skip_time_annotations: Default::default(),
-            audio_extension: default_extension(),
+            audio_extension: default_audio_extension(),
         }
     }
 }
 
-fn default_extension() -> String {
+fn default_audio_extension() -> String {
     "wav".to_string()
 }
 
@@ -86,7 +86,7 @@ struct DocumentMapper<'a> {
 }
 
 impl DocumentMapper<'_> {
-    fn map(&mut self, u: &mut GraphUpdate) -> Result<()> {
+    fn map(&mut self, config: &GenericImportConfiguration, u: &mut GraphUpdate) -> Result<()> {
         // Add a subcorpus like node for the text
         u.add_event(UpdateEvent::AddNode {
             node_name: self.text_node_name.clone(),
@@ -134,6 +134,7 @@ impl DocumentMapper<'_> {
 
         for tok_tier_name in self.params.tier_groups.keys() {
             self.map_tier_group(
+                config,
                 u,
                 tok_tier_name,
                 &mut time_to_id,
@@ -273,6 +274,7 @@ impl DocumentMapper<'_> {
 
     fn map_tier_group(
         &mut self,
+        config: &GenericImportConfiguration,
         u: &mut GraphUpdate,
         tok_tier_name: &str,
         time_to_id: &mut BTreeMap<OrderedFloat<f64>, String>,
@@ -280,14 +282,14 @@ impl DocumentMapper<'_> {
     ) -> Result<()> {
         if map_token_tier {
             let segmentation_span_ids =
-                self.map_annotation_tier(u, tok_tier_name, None, true, time_to_id)?;
+                self.map_annotation_tier(config, u, tok_tier_name, None, true, time_to_id)?;
 
             add_order_relations(u, &segmentation_span_ids, Some(tok_tier_name))?;
         }
 
         if let Some(dependent_tier_names) = self.params.tier_groups.get(tok_tier_name) {
             for tier in dependent_tier_names {
-                self.map_annotation_tier(u, tier, Some(tok_tier_name), false, time_to_id)?;
+                self.map_annotation_tier(config, u, tier, Some(tok_tier_name), false, time_to_id)?;
             }
         }
         Ok(())
@@ -295,6 +297,7 @@ impl DocumentMapper<'_> {
 
     fn map_annotation_tier(
         &mut self,
+        config: &GenericImportConfiguration,
         u: &mut GraphUpdate,
         tier_name: &str,
         parent_tier_name: Option<&str>,
@@ -335,7 +338,7 @@ impl DocumentMapper<'_> {
                             let (start, end) = best_matching_start_end(i, &parent_tier_intervals).ok_or(anyhow!("{}: Could not determine token interval for value \"{}\" from {} to {} on tier {tier_name}", self.doc_path, i.text, i.xmin, i.xmax))?;
 
                             let span_id =
-                                self.add_span(u, name, &i.text, start, end, time_to_id)?;
+                                self.add_span(config, u, (name, &i.text, start, end), time_to_id)?;
                             if is_segmentation {
                                 u.add_event(UpdateEvent::AddNodeLabel {
                                     node_name: span_id.clone(),
@@ -362,7 +365,7 @@ impl DocumentMapper<'_> {
                                     &self.doc_path,
                                     &self.text_node_name,
                                 ),
-                                None,
+                                Some(config.default_namespace()),
                                 Some(name),
                                 Some(&p.mark),
                                 &overlapped,
@@ -383,13 +386,12 @@ impl DocumentMapper<'_> {
 
     fn add_span(
         &self,
+        config: &GenericImportConfiguration,
         u: &mut GraphUpdate,
-        anno_name: &str,
-        anno_value: &str,
-        start_time: f64,
-        end_time: f64,
+        anno_tuple: (&str, &str, f64, f64),
         time_to_token_id: &BTreeMap<OrderedFloat<f64>, String>,
     ) -> Result<String> {
+        let (anno_name, anno_value, start_time, end_time) = anno_tuple;
         let start_time = OrderedFloat(start_time);
         let end_time = OrderedFloat(end_time);
 
@@ -404,7 +406,7 @@ impl DocumentMapper<'_> {
                 &self.doc_path,
                 &self.text_node_name,
             ),
-            None,
+            Some(config.default_namespace()),
             Some(anno_name),
             Some(anno_value),
             &overlapped,
@@ -464,14 +466,20 @@ impl Importer for ImportTextgrid {
                 text_node_name,
             };
 
-            doc_mapper.map(&mut u)?;
+            doc_mapper.map(&config, &mut u)?;
             reporter.worked(1)?;
         }
         Ok(u)
     }
+}
 
+impl DefaultImportConfiguration for ImportTextgrid {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_ENDINGS
+    }
+
+    fn preset_default_namespace(&self) -> Option<&str> {
+        Some("")
     }
 }
 

@@ -27,6 +27,24 @@ Example:
 column_names = ["tok", "norm::custom_pos", "norm::custom_lemma"]
 ```
 
+Note that if you do NOT provide column names and rely on the default names,
+configuring the generic attribute `default_namespace` on parent level will
+have no effect. In fact, `default_namespace` will only work for column names
+that have no namespace, so is merely a facilitator for this module, as you
+do not have to provide the same namespace multiple times, e. g.:
+
+```toml
+[[import]]
+path = "..."
+format = "treetagger"
+default_namespace = "custom_namespace"
+
+[import.config]
+column_names = ["form", "pos", "lemma"]
+```
+The given configuration will create annotations "custom_namespace::form",
+"custom_namespace::pos", and "custom_namespace::lemma".
+
 ## Configuration
 
 ###  column_names

@@ -539,7 +539,10 @@ mod tests {
 
     use crate::{
         exporter::graphml::GraphMLExporter,
-        importer::{Importer, treetagger::ImportTreeTagger, xlsx::ImportSpreadsheet},
+        importer::{
+            DefaultImportConfiguration, Importer, treetagger::ImportTreeTagger,
+            xlsx::ImportSpreadsheet,
+        },
         manipulator::{Manipulator, divide::DivideSegments},
         test_util::export_to_string,
         workflow::StatusMessage,

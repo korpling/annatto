@@ -2,7 +2,9 @@ use std::path::Path;
 
 use super::Importer;
 use crate::{
-    StepID, importer::GenericImportConfiguration, progress::ProgressReporter,
+    StepID,
+    importer::{DefaultImportConfiguration, GenericImportConfiguration},
+    progress::ProgressReporter,
     workflow::StatusSender,
 };
 use facet::Facet;
@@ -28,9 +30,16 @@ impl Importer for CreateEmptyCorpus {
         progress_reporter.worked(1)?;
         Ok(graph_update)
     }
+}
 
+impl DefaultImportConfiguration for CreateEmptyCorpus {
     fn default_file_extensions(&self) -> &[&str] {
         &[]
+    }
+
+    fn preset_default_namespace(&self) -> Option<&str> {
+        // nothing is being annotated
+        None
     }
 }
 

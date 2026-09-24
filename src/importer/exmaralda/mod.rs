@@ -18,8 +18,12 @@ use xml::{EventReader, ParserConfig, attribute::OwnedAttribute, reader::XmlEvent
 
 use super::Importer;
 use crate::{
-    StepID, error::AnnattoError, importer::GenericImportConfiguration, progress::ProgressReporter,
-    util::graphupdate::map_audio_source, workflow::StatusMessage,
+    StepID,
+    error::AnnattoError,
+    importer::{DefaultImportConfiguration, GenericImportConfiguration},
+    progress::ProgressReporter,
+    util::graphupdate::map_audio_source,
+    workflow::StatusMessage,
 };
 
 /// Import [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
@@ -75,9 +79,18 @@ impl Importer for ImportEXMARaLDA {
         document_status?;
         Ok(update)
     }
+}
 
+impl DefaultImportConfiguration for ImportEXMARaLDA {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
+    }
+
+    fn preset_default_namespace(&self) -> Option<&str> {
+        // namespaces are derived from speaker abbreviations
+        // this also implies that the import module does not
+        // use this generic config feature
+        None
     }
 }
 

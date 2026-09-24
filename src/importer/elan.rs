@@ -13,7 +13,10 @@ use itertools::Itertools;
 use linked_hash_map::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 
-use crate::{importer::Importer, progress::ProgressReporter};
+use crate::{
+    importer::{DefaultImportConfiguration, GenericImportConfiguration, Importer},
+    progress::ProgressReporter,
+};
 
 #[derive(Clone, Default, Deserialize, Facet, PartialEq, Serialize)]
 /// This importer reads ELAN files.
@@ -35,6 +38,16 @@ pub struct ImportELAN {
 
 const DEFAULT_FILE_EXTENSIONS: [&str; 1] = ["eaf"];
 
+impl DefaultImportConfiguration for ImportELAN {
+    fn preset_default_namespace(&self) -> Option<&str> {
+        Some("elan")
+    }
+
+    fn default_file_extensions(&self) -> &[&str] {
+        &DEFAULT_FILE_EXTENSIONS
+    }
+}
+
 impl Importer for ImportELAN {
     fn import_corpus(
         &self,
@@ -48,12 +61,8 @@ impl Importer for ImportELAN {
         let progress = ProgressReporter::new(tx, step_id, named_paths.len())?;
         named_paths
             .into_iter()
-            .try_for_each(|(p, d)| self.import_document(&p, &d, &mut update, &progress))?;
+            .try_for_each(|(p, d)| self.import_document(&p, &d, &config, &mut update, &progress))?;
         Ok(update)
-    }
-
-    fn default_file_extensions(&self) -> &[&str] {
-        &DEFAULT_FILE_EXTENSIONS
     }
 }
 
@@ -62,6 +71,7 @@ impl ImportELAN {
         &self,
         path: &std::path::Path,
         doc_node_name: &str,
+        config: &GenericImportConfiguration,
         update: &mut GraphUpdate,
         progress: &ProgressReporter,
     ) -> crate::error::Result<()> {
@@ -75,7 +85,7 @@ impl ImportELAN {
             segmentations: &self.segmentations,
             skip_time: self.skip_time,
         }
-        .map(update)
+        .map(config, update)
     }
 }
 
@@ -164,11 +174,15 @@ struct ELANMapper<'a> {
 }
 
 impl<'a> ELANMapper<'a> {
-    fn map(&mut self, update: &mut GraphUpdate) -> crate::error::Result<()> {
+    fn map(
+        &mut self,
+        config: &GenericImportConfiguration,
+        update: &mut GraphUpdate,
+    ) -> crate::error::Result<()> {
         let timeline = self.scan_timeline()?;
         self.data.sort_tiers();
         let scan = self.scan_tiers(&timeline)?;
-        self.build(timeline, scan, update)?;
+        self.build(timeline, scan, config, update)?;
         Ok(())
     }
 
@@ -396,6 +410,7 @@ impl<'a> ELANMapper<'a> {
         &self,
         timeline: Timeline,
         scan: DocumentScan,
+        config: &GenericImportConfiguration,
         update: &mut GraphUpdate,
     ) -> crate::error::Result<()> {
         // build time line
@@ -547,7 +562,7 @@ impl<'a> ELANMapper<'a> {
                     if let Some(anno_value) = scan.anno_values.get(anno_id) {
                         update.add_event(UpdateEvent::AddNodeLabel {
                             node_name: node_name.to_string(),
-                            anno_ns: "elan".to_string(),
+                            anno_ns: config.default_namespace().to_string(),
                             anno_name: anno_name.to_string(),
                             anno_value: anno_value.to_string(),
                         })?

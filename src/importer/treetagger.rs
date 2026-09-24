@@ -1,6 +1,10 @@
 use std::{collections::HashMap, io::Read, path::Path};
 
-use crate::{StepID, importer::GenericImportConfiguration, progress::ProgressReporter};
+use crate::{
+    StepID,
+    importer::{DefaultImportConfiguration, GenericImportConfiguration},
+    progress::ProgressReporter,
+};
 
 use super::Importer;
 use encoding_rs::Encoding;
@@ -49,7 +53,12 @@ struct DocumentMapper<'a> {
 }
 
 impl<'a> DocumentMapper<'a> {
-    fn map(&mut self, u: &mut GraphUpdate, mut tt: Pairs<'a, Rule>) -> anyhow::Result<()> {
+    fn map(
+        &mut self,
+        config: &GenericImportConfiguration,
+        u: &mut GraphUpdate,
+        mut tt: Pairs<'a, Rule>,
+    ) -> anyhow::Result<()> {
         // Add a subcorpus like node for the text
         u.add_event(UpdateEvent::AddNode {
             node_name: self.text_node_name.clone(),
@@ -67,18 +76,23 @@ impl<'a> DocumentMapper<'a> {
             && tt.as_rule() == Rule::treetagger
         {
             let tt = tt.into_inner();
-            self.map_tt_rule(u, tt)?;
+            self.map_tt_rule(config, u, tt)?;
         }
         Ok(())
     }
 
-    fn map_tt_rule(&mut self, u: &mut GraphUpdate, mut tt: Pairs<'a, Rule>) -> anyhow::Result<()> {
+    fn map_tt_rule(
+        &mut self,
+        config: &GenericImportConfiguration,
+        u: &mut GraphUpdate,
+        mut tt: Pairs<'a, Rule>,
+    ) -> anyhow::Result<()> {
         let mut was_first_line = true;
         while let Some(line) = tt.next() {
             match line.as_rule() {
                 Rule::token_line => {
                     let token_line = line.into_inner();
-                    self.consume_token_line(u, token_line)?;
+                    self.consume_token_line(config, u, token_line)?;
                 }
                 Rule::start_tag => {
                     let start_tag = line.into_inner();
@@ -101,6 +115,7 @@ impl<'a> DocumentMapper<'a> {
 
     fn consume_token_line(
         &mut self,
+        config: &GenericImportConfiguration,
         u: &mut GraphUpdate,
         mut token_line: Pairs<'a, Rule>,
     ) -> anyhow::Result<()> {
@@ -164,7 +179,7 @@ impl<'a> DocumentMapper<'a> {
                     })?;
                 } else {
                     let ns = if column_key.ns.is_empty() {
-                        DEFAULT_NS
+                        config.default_namespace()
                     } else {
                         column_key.ns.as_str()
                     };
@@ -326,6 +341,24 @@ impl<'a> DocumentMapper<'a> {
 /// [import.config]
 /// column_names = ["tok", "norm::custom_pos", "norm::custom_lemma"]
 /// ```
+///
+/// Note that if you do NOT provide column names and rely on the default names,
+/// configuring the generic attribute `default_namespace` on parent level will
+/// have no effect. In fact, `default_namespace` will only work for column names
+/// that have no namespace, so is merely a facilitator for this module, as you
+/// do not have to provide the same namespace multiple times, e. g.:
+///
+/// ```toml
+/// [[import]]
+/// path = "..."
+/// format = "treetagger"
+/// default_namespace = "custom_namespace"
+///
+/// [import.config]
+/// column_names = ["form", "pos", "lemma"]
+/// ```
+/// The given configuration will create annotations "custom_namespace::form",
+/// "custom_namespace::pos", and "custom_namespace::lemma".
 #[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ImportTreeTagger {
@@ -357,13 +390,17 @@ fn default_column_names() -> Vec<AnnoKey> {
         },
         AnnoKey {
             name: "pos".into(),
-            ns: DEFAULT_NS.into(),
+            ns: default_namespace().into(),
         },
         AnnoKey {
             name: "lemma".into(),
-            ns: DEFAULT_NS.into(),
+            ns: default_namespace().into(),
         },
     ]
+}
+
+fn default_namespace() -> &'static str {
+    DEFAULT_NS
 }
 
 impl Default for ImportTreeTagger {
@@ -436,14 +473,20 @@ impl Importer for ImportTreeTagger {
                 tag_stack: Vec::new(),
             };
 
-            doc_mapper.map(&mut u, tt)?;
+            doc_mapper.map(&config, &mut u, tt)?;
             reporter.worked(1)?;
         }
         Ok(u)
     }
+}
 
+impl DefaultImportConfiguration for ImportTreeTagger {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_ENDINGS
+    }
+
+    fn preset_default_namespace(&self) -> Option<&str> {
+        Some(default_namespace())
     }
 }
 

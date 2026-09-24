@@ -17,12 +17,8 @@ pub mod optional_sequence {
                         description,
                         generic_config,
                     } = step;
-                    let resolved_config = if let Some(GenericImportConfiguration {
-                        root_as,
-                        extensions,
-                        documents,
-                    }) = generic_config
-                    {
+                    let resolved_config = if let Some(given_config) = generic_config {
+                        let extensions = given_config.extensions();
                         let resolved_extensions = if extensions.is_empty() {
                             module
                                 .reader()
@@ -31,13 +27,22 @@ pub mod optional_sequence {
                                 .map(<&str>::to_string)
                                 .collect()
                         } else {
-                            extensions
+                            extensions.clone()
                         };
-                        Some(GenericImportConfiguration {
-                            root_as,
-                            extensions: resolved_extensions,
-                            documents,
-                        })
+                        let resolved_ns = if given_config.customizes_default_namespace() {
+                            Some(given_config.default_namespace().to_string())
+                        } else {
+                            module
+                                .reader()
+                                .preset_default_namespace()
+                                .map(ToString::to_string)
+                        };
+                        Some(GenericImportConfiguration::new(
+                            given_config.custom_root_name(),
+                            resolved_extensions,
+                            given_config.document_list().cloned(),
+                            resolved_ns,
+                        ))
                     } else {
                         None
                     };
