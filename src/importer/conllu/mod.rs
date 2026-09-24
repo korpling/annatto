@@ -476,9 +476,7 @@ impl ImportCoNLLU {
                                 {
                                     update.add_event(UpdateEvent::AddNodeLabel {
                                         node_name: node_name.to_string(),
-                                        anno_ns: config
-                                            .default_namespace()
-                                            .to_string(),
+                                        anno_ns: config.default_namespace().to_string(),
                                         anno_name: n.trim().to_string(),
                                         anno_value: v.trim().to_string(),
                                     })?;

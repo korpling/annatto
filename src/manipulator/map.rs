@@ -735,7 +735,12 @@ mod tests {
     use tests::test_util::export_to_string;
 
     use crate::{
-        StepID, exporter::graphml::GraphMLExporter, importer::{DefaultImportConfiguration, Importer, treetagger::ImportTreeTagger}, manipulator::Manipulator, test_util, util::example_generator,
+        StepID,
+        exporter::graphml::GraphMLExporter,
+        importer::{DefaultImportConfiguration, Importer, treetagger::ImportTreeTagger},
+        manipulator::Manipulator,
+        test_util,
+        util::example_generator,
     };
 
     use super::*;

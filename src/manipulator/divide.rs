@@ -538,7 +538,14 @@ mod tests {
     use insta::assert_snapshot;
 
     use crate::{
-        exporter::graphml::GraphMLExporter, importer::{DefaultImportConfiguration, Importer, treetagger::ImportTreeTagger, xlsx::ImportSpreadsheet}, manipulator::{Manipulator, divide::DivideSegments}, test_util::export_to_string, workflow::StatusMessage,
+        exporter::graphml::GraphMLExporter,
+        importer::{
+            DefaultImportConfiguration, Importer, treetagger::ImportTreeTagger,
+            xlsx::ImportSpreadsheet,
+        },
+        manipulator::{Manipulator, divide::DivideSegments},
+        test_util::export_to_string,
+        workflow::StatusMessage,
     };
 
     #[test]
