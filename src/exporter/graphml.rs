@@ -318,13 +318,7 @@ impl Exporter for GraphMLExporter {
             let file_name = format!("{toplevel_corpus_name}.{extension}");
             let output_file_path = output_path.join(file_name);
 
-            reporter.info(
-                format!(
-                    "Starting export to {} (no partitions)",
-                    output_file_path.display()
-                )
-                .as_str(),
-            )?;
+            reporter.info(format!("Starting export to {}", output_file_path.display()).as_str())?;
 
             if let Some(zip) = zip_writer.as_mut() {
                 // Create an entry in the ZIP file and write the GraphML to this file entry
