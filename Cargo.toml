@@ -57,7 +57,7 @@ tabled = { version = "0.15", features = ["ansi"] }
 tempfile = "3"
 termimad = "0.30"
 text-splitter = "0.6.3"
-thiserror = "1.0"
+thiserror = "2.0"
 time = "0.3.44"
 tokenizations = "0.4.2"
 toml = "0.8.0"
@@ -65,7 +65,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 umya-spreadsheet = "2.3.3"
 url = "2.5.2"
 xml-rs = "0.8"
-zip = "0.6.6"
+zip = "8.6.0"
 
 [dev-dependencies]
 assert_cmd = "2.1"

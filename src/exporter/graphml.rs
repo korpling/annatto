@@ -11,7 +11,7 @@ use crate::{
     StepID, error::AnnattoError, exporter::Exporter, progress::ProgressReporter,
     workflow::StatusSender,
 };
-use anyhow::anyhow;
+use anyhow::{anyhow, bail};
 use facet::Facet;
 use graphannis::{
     AnnotationGraph,
@@ -26,12 +26,12 @@ use graphannis_core::{
         ANNIS_NS, NODE_NAME, NODE_NAME_KEY, NODE_TYPE, NODE_TYPE_KEY,
         storage::union::UnionEdgeContainer,
     },
-    util::disk_collections::DiskMap,
+    util::{disk_collections::DiskMap, join_qname},
 };
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use serde_derive::{Deserialize, Serialize};
-use zip::{ZipWriter, write::FileOptions};
+use zip::{ZipWriter, write::SimpleFileOptions};
 
 lazy_static! {
     pub static ref DOC_KEY: Arc<AnnoKey> = Arc::from(AnnoKey {
@@ -198,13 +198,19 @@ impl Exporter for GraphMLExporter {
         // Use the corpus name to determine the file name
         let extension = self.file_extension();
 
-        let zip_options =
-            zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+        let zip_options = SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated)
+            .large_file(true);
         let mut zip_writer = if self.zip {
             // Create a ZIP file at the given location
             let file_name = format!("{toplevel_corpus_name}.{extension}");
 
             let output_file_path = output_path.join(file_name);
+
+            reporter.info(format!(
+                "Creating ZIP file {}",
+                output_file_path.to_string_lossy()
+            ))?;
 
             let output_file = File::create(output_file_path.clone())?;
             let zip = zip::ZipWriter::new(output_file);
@@ -230,7 +236,10 @@ impl Exporter for GraphMLExporter {
         let vis_str = format!("\n{vis}\n");
 
         if let Some(partition_by) = &self.partition_by {
-            reporter.info("Partitioning the corpus")?;
+            reporter.info(format!(
+                "Partitioning the corpus by annotation key {}",
+                join_qname(&partition_by.ns, &partition_by.name)
+            ))?;
             let (remaining_graph, partitions) = create_partitions(partition_by, graph)?;
 
             //  Write out the "root" file with all nodes that are not part of the partition
@@ -240,9 +249,14 @@ impl Exporter for GraphMLExporter {
             reporter.info(format!("Starting export to {}", output_file_path.display()).as_str())?;
             if let Some(zip) = zip_writer.as_mut() {
                 // Create an entry in the ZIP file and write the GraphML to this file entry
-                zip.start_file(format!("{toplevel_corpus_name}.graphml"), zip_options)?;
+                let toplevel_file_name = format!("{toplevel_corpus_name}.graphml");
+                reporter.info(format!(
+                    "Adding top level corpus GraphML file {toplevel_file_name} to ZIP file."
+                ))?;
+                zip.start_file(toplevel_file_name, zip_options)?;
             };
 
+            reporter.info("Writing the GraphML file")?;
             self.write_graphml_file(
                 &remaining_graph,
                 &output_file_path,
@@ -256,6 +270,7 @@ impl Exporter for GraphMLExporter {
                 zip_options,
                 self.zip_copy_from.clone(),
                 graph,
+                &reporter,
             )?;
 
             //  Write out each partition to each file
@@ -299,6 +314,7 @@ impl Exporter for GraphMLExporter {
                 )?;
             }
         } else {
+            // No partitions, write all contennt to the same file
             let file_name = format!("{toplevel_corpus_name}.{extension}");
             let output_file_path = output_path.join(file_name);
 
@@ -328,6 +344,7 @@ impl Exporter for GraphMLExporter {
                 zip_options,
                 self.zip_copy_from.clone(),
                 graph,
+                &reporter,
             )?;
         }
 
@@ -341,11 +358,14 @@ impl Exporter for GraphMLExporter {
 
 fn write_linked_files(
     zip_file: Option<&mut ZipWriter<File>>,
-    zip_options: FileOptions,
+    zip_options: SimpleFileOptions,
     zip_copy_from: Option<PathBuf>,
     graph: &AnnotationGraph,
+    reporter: &ProgressReporter,
 ) -> anyhow::Result<()> {
     if let Some(mut zip_file) = zip_file {
+        reporter.info("Writing linked files to ZIP file")?;
+
         // Insert all linked files with a *relative* path into the ZIP file.
         // We can't rewrite the links in the GraphML at this point and have
         // to assume that when unpacking it again, the absolute file paths
@@ -354,14 +374,27 @@ fn write_linked_files(
         // unpacked, the paths are still valid regardless of whether they
         // existed in the first place on the target system.
         for file_path in get_linked_files(graph)? {
-            let original_path = zip_copy_from.clone().unwrap_or_default().join(file_path?);
+            let file_path = file_path?;
+            dbg!(&file_path);
+            let original_path = zip_copy_from.clone().unwrap_or_default().join(&file_path);
+            dbg!(&original_path);
 
-            if original_path.is_relative() {
+            if original_path.is_file() && original_path.is_relative() {
+                reporter.info(format!(
+                    "Copying linked file {}",
+                    original_path.to_string_lossy()
+                ))?;
+
                 zip_file.start_file(original_path.to_string_lossy(), zip_options)?;
+                let file_to_copy = File::open(original_path)?;
+                let mut reader = BufReader::new(file_to_copy);
+                std::io::copy(&mut reader, &mut zip_file)?;
+            } else {
+                bail!(
+                    "Linked file \"{}\" does not exist or is not linked using a relative path.",
+                    original_path.to_string_lossy()
+                )
             }
-            let file_to_copy = File::open(original_path)?;
-            let mut reader = BufReader::new(file_to_copy);
-            std::io::copy(&mut reader, &mut zip_file)?;
         }
     }
 
