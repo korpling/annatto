@@ -2,7 +2,7 @@ use crate::{
     StepID,
     error::{AnnattoError, Result},
     exporter::Exporter,
-    importer::Importer,
+    importer::{GenericImportConfiguration, Importer},
     util::get_all_files,
     workflow::StatusSender,
 };
@@ -27,13 +27,28 @@ where
     I: Importer,
     P: AsRef<Path>,
 {
-    import_as_graphml_string_2(importer, path, graph_configuration, true, None)
+    let config = importer.default_configuration();
+    import_as_graphml_string_2(importer, path, graph_configuration, config, true, None)
+}
+
+pub fn import_as_graphml_string_with_custom_config<I, P>(
+    importer: I,
+    path: P,
+    graph_configuration: Option<&str>,
+    config: GenericImportConfiguration,
+) -> Result<String>
+where
+    I: Importer,
+    P: AsRef<Path>,
+{
+    import_as_graphml_string_2(importer, path, graph_configuration, config, true, None)
 }
 
 pub fn import_as_graphml_string_2<I, P>(
     importer: I,
     path: P,
     graph_configuration: Option<&str>,
+    config: GenericImportConfiguration,
     disk_based: bool,
     tx: Option<StatusSender>,
 ) -> Result<String>
@@ -46,12 +61,7 @@ where
         path: None,
     };
     let mut u = importer
-        .import_corpus(
-            path.as_ref(),
-            step_id.clone(),
-            importer.default_configuration(),
-            tx,
-        )
+        .import_corpus(path.as_ref(), step_id.clone(), config, tx)
         .map_err(|e| AnnattoError::Import {
             reason: e.to_string(),
             importer: step_id.module_name.to_string(),

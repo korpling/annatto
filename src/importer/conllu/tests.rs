@@ -1,12 +1,14 @@
-use std::{path::Path, sync::mpsc};
+use std::{collections::BTreeSet, path::Path, sync::mpsc};
 
 use graphannis::{graph::AnnoKey, update::GraphUpdate};
 use insta::assert_snapshot;
 
 use crate::{
     ImporterStep, ReadFrom, StepID,
-    importer::{DefaultImportConfiguration, conllu::default_comment_key},
-    test_util::import_as_graphml_string,
+    importer::{
+        DefaultImportConfiguration, GenericImportConfiguration, conllu::default_comment_key,
+    },
+    test_util::{import_as_graphml_string, import_as_graphml_string_with_custom_config},
 };
 
 use super::ImportCoNLLU;
@@ -207,6 +209,25 @@ fn basic() {
         ImportCoNLLU::default(),
         Path::new("tests/data/import/conll/valid/"),
         None,
+    );
+    assert!(actual.is_ok());
+    assert_snapshot!(actual.unwrap());
+}
+
+#[test]
+fn customized_generic_config() {
+    let importer = ImportCoNLLU::default();
+    let config = GenericImportConfiguration::new(
+        Some("custom_root".to_string()),
+        vec!["conllu".to_string()],
+        Some(BTreeSet::from(["website_example".to_string()])),
+        Some("custom_ns".to_string()),
+    );
+    let actual = import_as_graphml_string_with_custom_config(
+        importer,
+        Path::new("tests/data/import/conll/valid/"),
+        None,
+        config,
     );
     assert!(actual.is_ok());
     assert_snapshot!(actual.unwrap());

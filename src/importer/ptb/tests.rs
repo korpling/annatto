@@ -1,6 +1,9 @@
 use std::path::Path;
 
-use crate::{importer::ptb::ImportPTB, test_util::import_as_graphml_string};
+use crate::{
+    importer::{GenericImportConfiguration, ptb::ImportPTB},
+    test_util::{import_as_graphml_string, import_as_graphml_string_with_custom_config},
+};
 use insta::assert_snapshot;
 
 const PTB_DEFAULT_VIS_CONFIG: &str = r#"
@@ -107,6 +110,26 @@ fn with_edge_functions() {
         },
         Path::new("tests/data/import/ptb/with_edge_functions"),
         None,
+    )
+    .unwrap();
+
+    assert_snapshot!(actual);
+}
+
+#[test]
+fn custom_generic_config() {
+    let actual = import_as_graphml_string_with_custom_config(
+        ImportPTB {
+            edge_delimiter: Some("-".to_string()),
+        },
+        Path::new("tests/data/import/ptb/with_edge_functions"),
+        None,
+        GenericImportConfiguration::new(
+            Some("custom_root".to_string()),
+            vec!["ptb".to_string(), "txt".to_string()],
+            None,
+            Some("custom_ns".to_string()),
+        ),
     )
     .unwrap();
 

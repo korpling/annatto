@@ -9,8 +9,8 @@ use insta::assert_snapshot;
 use itertools::Itertools;
 
 use crate::{
-    ImporterStep, StepID, progress::ProgressReporter, test_util::import_as_graphml_string_2,
-    workflow::StatusMessage,
+    ImporterStep, StepID, importer::DefaultImportConfiguration, progress::ProgressReporter,
+    test_util::import_as_graphml_string_2, workflow::StatusMessage,
 };
 
 use super::ImportEXMARaLDA;
@@ -288,6 +288,7 @@ fn merge_spans_disabled() {
             .unwrap()
             .join("tests/data/import/exmaralda/mergable_spans"),
         None,
+        ImportEXMARaLDA::default().default_configuration(),
         true,
         None,
     )
@@ -305,6 +306,7 @@ fn run_test(
         ImportEXMARaLDA::default(),
         env::current_dir()?.join(import_path), // IMPORTANT: test with absolute paths, this is what Annatto does at runtime
         None,
+        ImportEXMARaLDA::default().default_configuration(),
         true,
         Some(sender),
     )?;
