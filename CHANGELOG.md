@@ -7,8 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- export to `graphml` does not fail when a linked file does not exist, but
-  outputs a warning instead
+- more specific error message when export to `graphml` fails because a linked file does not exist
+
 
 ## [0.59.0] - 2026-09-21
 

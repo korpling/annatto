@@ -1,8 +1,8 @@
 use super::*;
 use std::{fs, path::Path};
 
-use graphannis::AnnotationGraph;
-use insta::assert_snapshot;
+use graphannis::{AnnotationGraph, update::UpdateEvent};
+use insta::{assert_debug_snapshot, assert_snapshot};
 use tempfile::TempDir;
 use zip::ZipArchive;
 
@@ -177,6 +177,62 @@ fn zip_with_linked_files_custom() {
     let archive = a.unwrap();
     assert_snapshot!(archive.file_names().sorted().join("\n"));
     assert!(fs::remove_file(zip_path).is_ok());
+}
+
+#[test]
+fn fail_on_non_existing_file() {
+    let step_id = StepID {
+        module_name: "export_graphml".to_string(),
+        path: None,
+    };
+    let importer = ImportEXMARaLDA::default();
+    let mut updates = importer
+        .import_corpus(
+            Path::new("tests/data/import/exmaralda/clean/import/exmaralda"),
+            step_id.clone(),
+            GenericImportConfiguration::new_with_default_extensions(&importer),
+            None,
+        )
+        .unwrap();
+    // Add link to a non-existing file
+    let node_name = "exmaralda/non-existing.wav".to_string();
+    updates
+        .add_event(UpdateEvent::AddNode {
+            node_name: node_name.clone(),
+            node_type: "file".to_string(),
+        })
+        .unwrap();
+    updates
+        .add_event(UpdateEvent::AddNodeLabel {
+            node_name: node_name.clone(),
+            anno_ns: ANNIS_NS.to_string(),
+            anno_name: "file".to_string(),
+            anno_value: "tests/data/import/exmaralda/clean/import/exmaralda/non-existing.wav"
+                .to_string(),
+        })
+        .unwrap();
+    updates
+        .add_event(UpdateEvent::AddEdge {
+            source_node: node_name.to_string(),
+            target_node: "exmaralda".to_string(),
+            layer: ANNIS_NS.to_string(),
+            component_type: AnnotationComponentType::PartOf.to_string(),
+            component_name: "".to_string(),
+        })
+        .unwrap();
+    let mut g = AnnotationGraph::with_default_graphstorages(false).unwrap();
+    g.apply_update(&mut updates, |_| {}).unwrap();
+
+    // Export the annotation graph, but zip the content
+    let mut exporter = GraphMLExporter::default();
+    exporter.zip = true;
+
+    let output_path = TempDir::new().unwrap();
+
+    let result = exporter.export_corpus(&g, output_path.path(), step_id, None);
+    assert_eq!(true, result.is_err());
+    let err = result.err().unwrap();
+    assert_debug_snapshot!(err);
 }
 
 #[test]

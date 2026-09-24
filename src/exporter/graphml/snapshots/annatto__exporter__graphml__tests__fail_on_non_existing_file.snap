@@ -1,0 +1,5 @@
+---
+source: src/exporter/graphml/tests.rs
+expression: err
+---
+"\"tests/data/import/exmaralda/clean/import/exmaralda/non-existing.wav\" is not a relative path to an existing file."

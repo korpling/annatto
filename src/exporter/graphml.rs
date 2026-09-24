@@ -11,7 +11,7 @@ use crate::{
     StepID, error::AnnattoError, exporter::Exporter, progress::ProgressReporter,
     workflow::StatusSender,
 };
-use anyhow::anyhow;
+use anyhow::{anyhow, bail};
 use facet::Facet;
 use graphannis::{
     AnnotationGraph,
@@ -375,23 +375,11 @@ fn write_linked_files(
         // existed in the first place on the target system.
         for file_path in get_linked_files(graph)? {
             let file_path = file_path?;
+            dbg!(&file_path);
             let original_path = zip_copy_from.clone().unwrap_or_default().join(&file_path);
+            dbg!(&original_path);
 
-            if !original_path.exists() {
-                reporter.warn(format!(
-                    "Linked file {} skipped because it does not exist.",
-                    original_path.to_string_lossy()
-                ))?;
-            } else if !original_path.is_file() {
-                reporter.warn(format!(
-                    "Linked file {} skipped because it is not a file.",
-                    original_path.to_string_lossy()
-                ))?;
-            } else if !original_path.is_relative() {
-                reporter.warn(
-                    format!("Linked file {} skipped because it has an absolute path. This is not supported yet.",
-                        original_path.to_string_lossy()))?;
-            } else {
+            if original_path.is_file() && original_path.is_relative() {
                 reporter.info(format!(
                     "Copying linked file {}",
                     original_path.to_string_lossy()
@@ -401,6 +389,11 @@ fn write_linked_files(
                 let file_to_copy = File::open(original_path)?;
                 let mut reader = BufReader::new(file_to_copy);
                 std::io::copy(&mut reader, &mut zip_file)?;
+            } else {
+                bail!(
+                    "\"{}\" is not a relative path to an existing file.",
+                    original_path.to_string_lossy()
+                )
             }
         }
     }
