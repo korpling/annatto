@@ -338,7 +338,7 @@ impl DocumentMapper<'_> {
                             let (start, end) = best_matching_start_end(i, &parent_tier_intervals).ok_or(anyhow!("{}: Could not determine token interval for value \"{}\" from {} to {} on tier {tier_name}", self.doc_path, i.text, i.xmin, i.xmax))?;
 
                             let span_id =
-                                self.add_span(config, u, name, &i.text, start, end, time_to_id)?;
+                                self.add_span(config, u, (name, &i.text, start, end), time_to_id)?;
                             if is_segmentation {
                                 u.add_event(UpdateEvent::AddNodeLabel {
                                     node_name: span_id.clone(),
@@ -388,12 +388,10 @@ impl DocumentMapper<'_> {
         &self,
         config: &GenericImportConfiguration,
         u: &mut GraphUpdate,
-        anno_name: &str,
-        anno_value: &str,
-        start_time: f64,
-        end_time: f64,
+        anno_tuple: (&str, &str, f64, f64),
         time_to_token_id: &BTreeMap<OrderedFloat<f64>, String>,
     ) -> Result<String> {
+        let (anno_name, anno_value, start_time, end_time) = anno_tuple;
         let start_time = OrderedFloat(start_time);
         let end_time = OrderedFloat(end_time);
 
