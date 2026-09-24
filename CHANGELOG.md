@@ -5,6 +5,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- export to `graphml` does not fail when a linked file does not exist, but
+  outputs a warning instead
+
 ## [0.59.0] - 2026-09-21
 
 ### Added
