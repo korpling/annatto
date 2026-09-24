@@ -6,6 +6,7 @@ expression: "Regex::new(r#\"[0-9]+\\.[0-9]+\\.[0-9]+\"#).unwrap().replace(&workf
 format = "conllu"
 path = "../import/conll/valid/"
 extensions = ["conll", "conllu"]
+default_ns = ""
 
 [import.config]
 comment_anno = "conll::comment"
