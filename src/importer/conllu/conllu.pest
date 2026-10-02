@@ -32,7 +32,7 @@ multi_token = ${ multi_id ~ whitespace
 ~ no_value ~ whitespace
 ~ no_value ~ whitespace
 ~ no_value ~ whitespace
-~ no_value ~ NEWLINE?}
+~ (no_value | misc) ~ NEWLINE?}
 empty_node = ${ empty_id ~ whitespace
 ~ form ~ whitespace
 ~ ( no_value | lemma ) ~ whitespace
