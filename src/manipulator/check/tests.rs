@@ -1,10 +1,8 @@
-use core::f64;
 use std::{
     collections::BTreeMap,
     fs,
     path::{Path, PathBuf},
     sync::mpsc,
-    usize,
 };
 
 use graphannis::{

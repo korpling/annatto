@@ -32,7 +32,7 @@ multi_token = ${ multi_id ~ whitespace
 ~ no_value ~ whitespace
 ~ no_value ~ whitespace
 ~ no_value ~ whitespace
-~ no_value ~ NEWLINE?}
+~ (no_value | misc) ~ NEWLINE?}
 empty_node = ${ empty_id ~ whitespace
 ~ form ~ whitespace
 ~ ( no_value | lemma ) ~ whitespace
@@ -57,7 +57,7 @@ xpos = ${ char+ }
 features = ${ (feature ~ ( delim ~ feature )* ) }
 feature = ${ name ~ equals ~ value } 
 name = @{ feat_char+ }
-value = @{ feat_char+ }
+value = @{ feat_value_char+ }
 head = @{ ASCII_DIGIT+ }
 deprel = ${ char+ }
 enhanced_deps = ${ enhanced_dep ~ (delim ~ enhanced_dep)* }
@@ -68,6 +68,7 @@ misc = ${ feature ~ ( delim ~ feature )* }
 
 char = _{ !(WHITESPACE | NEWLINE | EOI) ~ ANY }
 feat_char = { !(NEWLINE | WHITESPACE | space | equals | delim ) ~ ANY }
+feat_value_char = { !(NEWLINE | WHITESPACE | equals | delim ) ~ ANY }
 comment_char = { !(NEWLINE | equals ) ~ ANY }
 enhanced_char = _{ !(colon | delim | WHITESPACE | NEWLINE ) ~ ANY }
 colon = _{ ":" }
