@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - imports whose model allows for it to be considered can be configured for a `default_namespace` to be used for the created annotations.
+- import `conllu`: multi-tokens can have misc features.
+- import `conllu`: feature values are allowed to have simple whitespaces.
 
 ### Fixed
 
