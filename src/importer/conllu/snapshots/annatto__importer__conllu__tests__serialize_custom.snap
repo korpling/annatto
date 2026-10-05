@@ -4,3 +4,4 @@ expression: serialization.unwrap()
 ---
 comment_anno = "default_ns::metadata"
 multi_tok = "norm::norm"
+labeled_targets = true

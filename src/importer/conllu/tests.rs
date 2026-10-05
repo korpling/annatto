@@ -36,6 +36,7 @@ fn serialize_custom() {
             name: "norm".into(),
             ns: "norm".into(),
         }),
+        labeled_targets: true,
     };
     let serialization = toml::to_string(&module);
     assert!(
@@ -217,6 +218,28 @@ fn basic() {
 #[test]
 fn customized_generic_config() {
     let importer = ImportCoNLLU::default();
+    let config = GenericImportConfiguration::new(
+        Some("custom_root".to_string()),
+        vec!["conllu".to_string()],
+        Some(BTreeSet::from(["website_example".to_string()])),
+        Some("custom_ns".to_string()),
+    );
+    let actual = import_as_graphml_string_with_custom_config(
+        importer,
+        Path::new("tests/data/import/conll/valid/"),
+        None,
+        config,
+    );
+    assert!(actual.is_ok());
+    assert_snapshot!(actual.unwrap());
+}
+
+#[test]
+fn labeled_targets() {
+    let importer = ImportCoNLLU {
+        labeled_targets: true,
+        ..Default::default()
+    };
     let config = GenericImportConfiguration::new(
         Some("custom_root".to_string()),
         vec!["conllu".to_string()],
