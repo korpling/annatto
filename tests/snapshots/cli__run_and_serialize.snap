@@ -10,6 +10,7 @@ default_ns = ""
 
 [import.config]
 comment_anno = "conll::comment"
+labeled_targets = false
 
 [[graph_op]]
 action = "check"

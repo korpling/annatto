@@ -54,6 +54,9 @@ pub struct ImportCoNLLU {
     /// For importing multi-tokens, a mode can be set. By default, multi-tokens are skipped.
     #[serde(default, with = "crate::estarde::anno_key::as_option")]
     multi_tok: Option<AnnoKey>,
+    /// Setting this to `true` additionally adds the dependency edge label as a label on the edge's target node.
+    #[serde(default)]
+    labeled_targets: bool,
 }
 
 impl Default for ImportCoNLLU {
@@ -61,6 +64,7 @@ impl Default for ImportCoNLLU {
         Self {
             comment_anno: default_comment_key(),
             multi_tok: Default::default(),
+            labeled_targets: Default::default(),
         }
     }
 }
@@ -345,10 +349,22 @@ impl ImportCoNLLU {
                                 layer: clayer.to_string(),
                                 component_type: AnnotationComponentType::Pointing.to_string(),
                                 component_name: cname.to_string(),
-                                anno_ns: "".to_string(),
+                                anno_ns: config.default_namespace().to_string(),
                                 anno_name: "deprel".to_string(),
                                 anno_value: deprel_value.to_string(),
                             })?;
+                            if self.labeled_targets {
+                                update.add_event(UpdateEvent::AddNodeLabel {
+                                    node_name: target_node_name.to_string(),
+                                    anno_ns: if clayer.is_empty() {
+                                        config.default_namespace().to_string()
+                                    } else {
+                                        clayer.to_string()
+                                    },
+                                    anno_name: "deprel".to_string(),
+                                    anno_value: deprel_value.to_string(),
+                                })?;
+                            }
                         }
                     } else {
                         let msg = format!(
