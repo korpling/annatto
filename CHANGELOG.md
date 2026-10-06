@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.60.0] - 2026-10-06
+
 ### Added
 
 - imports whose model allows for it to be considered can be configured for a `default_namespace` to be used for the created annotations.

@@ -21,3 +21,7 @@ The field defaults to `{ ns = "conll", name = "comment" }`.
 
 For importing multi-tokens, a mode can be set. By default, multi-tokens are skipped.
 
+###  labeled_targets
+
+Setting this to `true` additionally adds the dependency edge label as a label on the edge's target node.
+
