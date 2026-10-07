@@ -406,15 +406,24 @@ impl Manipulator for Visualize {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let output = self.create_graph(
             graph,
-            ProgressReporter::new_unknown_total_work(tx, step_id)?,
+            ProgressReporter::new_unknown_total_work(tx.clone(), step_id.clone())?,
         )?;
+        let progress = ProgressReporter::new_unknown_total_work(tx, step_id)?;
 
         if let Some(file_path) = &self.output_dot {
+            progress.info(format!(
+                "writing visualizer output DOT file {}",
+                file_path.to_string_lossy()
+            ))?;
             let graph_dot = output.print(&mut PrinterContext::default());
             std::fs::write(workflow_directory.join(file_path), graph_dot)?;
         }
 
         if let Some(file_path) = &self.output_svg {
+            progress.info(format!(
+                "writing visualizer output SVG file {}",
+                file_path.to_string_lossy()
+            ))?;
             let graph_svg = exec(
                 output,
                 &mut PrinterContext::default(),
