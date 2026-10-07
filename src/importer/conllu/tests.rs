@@ -1,12 +1,18 @@
 use std::{collections::BTreeSet, path::Path, sync::mpsc};
 
-use graphannis::{graph::AnnoKey, update::GraphUpdate};
+use graphannis::{
+    graph::AnnoKey,
+    model::{AnnotationComponent, AnnotationComponentType},
+    update::GraphUpdate,
+};
+use graphannis_core::graph::DEFAULT_NS;
 use insta::assert_snapshot;
 
 use crate::{
     ImporterStep, ReadFrom, StepID,
     importer::{
-        DefaultImportConfiguration, GenericImportConfiguration, conllu::default_comment_key,
+        DefaultComponents, DefaultImportConfiguration, GenericImportConfiguration,
+        conllu::default_comment_key,
     },
     test_util::{import_as_graphml_string, import_as_graphml_string_with_custom_config},
 };
@@ -223,6 +229,25 @@ fn customized_generic_config() {
         vec!["conllu".to_string()],
         Some(BTreeSet::from(["website_example".to_string()])),
         Some("custom_ns".to_string()),
+        DefaultComponents::new(
+            None,
+            Some(AnnotationComponent::new(
+                AnnotationComponentType::Coverage,
+                DEFAULT_NS.to_string(),
+                "custom_cov".to_string(),
+            )),
+            Some(AnnotationComponent::new(
+                AnnotationComponentType::PartOf,
+                DEFAULT_NS.to_string(),
+                "custom_part_of".to_string(),
+            )),
+            None,
+            Some(AnnotationComponent::new(
+                AnnotationComponentType::Pointing,
+                DEFAULT_NS.to_string(),
+                "syntax".to_string(),
+            )),
+        ),
     );
     let actual = import_as_graphml_string_with_custom_config(
         importer,
@@ -245,6 +270,7 @@ fn labeled_targets() {
         vec!["conllu".to_string()],
         Some(BTreeSet::from(["website_example".to_string()])),
         Some("custom_ns".to_string()),
+        Default::default(),
     );
     let actual = import_as_graphml_string_with_custom_config(
         importer,

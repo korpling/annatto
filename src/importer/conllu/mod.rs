@@ -10,7 +10,7 @@ use encoding_rs_io::DecodeReaderBytes;
 use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
-    model::AnnotationComponentType,
+    model::{AnnotationComponent, AnnotationComponentType},
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::{
@@ -18,6 +18,7 @@ use graphannis_core::{
     util::{join_qname, split_qname},
 };
 use itertools::Itertools;
+use lazy_static::lazy_static;
 use linked_hash_set::LinkedHashSet;
 use pest::{
     Parser,
@@ -31,7 +32,10 @@ use super::Importer;
 use crate::{
     StepID,
     error::AnnattoError,
-    importer::{DefaultImportConfiguration, GenericImportConfiguration},
+    importer::{
+        DefaultImportConfiguration, GLOBAL_DEFAULT_COVERAGE, GLOBAL_DEFAULT_ORDERING,
+        GLOBAL_DEFAULT_PART_OF, GenericImportConfiguration,
+    },
     progress::ProgressReporter,
 };
 
@@ -78,12 +82,24 @@ fn default_comment_key() -> AnnoKey {
 
 const FILE_EXTENSIONS: [&str; 2] = ["conll", "conllu"];
 
+lazy_static! {
+    pub(crate) static ref DEFAULT_POINTING: AnnotationComponent = AnnotationComponent::new(
+        AnnotationComponentType::Pointing,
+        "".to_string(),
+        "dep".to_string()
+    );
+}
+
 impl DefaultImportConfiguration for ImportCoNLLU {
     fn preset_default_namespace(&self) -> Option<&str> {
         Some("")
     }
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
+    }
+
+    fn preset_default_pointing(&self) -> Option<&graphannis::model::AnnotationComponent> {
+        Some(&DEFAULT_POINTING)
     }
 }
 
@@ -185,9 +201,9 @@ impl ImportCoNLLU {
             update.add_event(UpdateEvent::AddEdge {
                 source_node: source.to_string(),
                 target_node: target.to_string(),
-                layer: ANNIS_NS.to_string(),
-                component_type: AnnotationComponentType::Ordering.to_string(),
-                component_name: "".to_string(),
+                layer: config.default_ordering().layer.to_string(),
+                component_type: config.default_ordering().get_type().to_string(),
+                component_name: config.default_ordering().name.to_string(),
             })?;
         }
         Ok(())
@@ -225,8 +241,8 @@ impl ImportCoNLLU {
                             tok_name.to_string(),
                             dependency.0,
                             dependency.1.clone(),
-                            "",
-                            "dep",
+                            config.default_pointing().layer.as_str(),
+                            &config.default_pointing().name,
                         ));
                     }
 
@@ -237,7 +253,13 @@ impl ImportCoNLLU {
                     }
 
                     for (h, r) in deps {
-                        dependencies.push((tok_name.to_string(), h, r, "enh", "dep"));
+                        dependencies.push((
+                            tok_name.to_string(),
+                            h,
+                            r,
+                            "enh",
+                            &config.default_pointing().name,
+                        ));
                     }
                 }
                 Rule::multi_token => {
@@ -309,9 +331,9 @@ impl ImportCoNLLU {
             update.add_event(UpdateEvent::AddEdge {
                 source_node: node_name.to_string(),
                 target_node: document_node_name.to_string(),
-                layer: ANNIS_NS.to_string(),
-                component_type: AnnotationComponentType::PartOf.to_string(),
-                component_name: "".to_string(),
+                layer: config.default_part_of().layer.to_string(),
+                component_type: config.default_part_of().get_type().to_string(),
+                component_name: config.default_part_of().name.to_string(),
             })?;
             for (anno_name, anno_values) in s_annos {
                 let (ns, name) = split_qname(&anno_name);
@@ -327,9 +349,9 @@ impl ImportCoNLLU {
                 update.add_event(UpdateEvent::AddEdge {
                     source_node: node_name.to_string(),
                     target_node: token_name.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Coverage.to_string(),
-                    component_name: "".to_string(),
+                    layer: config.default_coverage().layer.to_string(),
+                    component_type: config.default_coverage().get_type().to_string(),
+                    component_name: config.default_coverage().name.to_string(),
                 })?;
             }
             for (target_node_name, head_id, deprel, clayer, cname) in dependencies {
@@ -338,16 +360,16 @@ impl ImportCoNLLU {
                         update.add_event(UpdateEvent::AddEdge {
                             source_node: source_node_name.to_string(),
                             target_node: target_node_name.to_string(),
-                            layer: clayer.to_string(),
-                            component_type: AnnotationComponentType::Pointing.to_string(),
-                            component_name: cname.to_string(),
+                            layer: clayer.to_string(), // this is set by the config above
+                            component_type: config.default_pointing().get_type().to_string(),
+                            component_name: cname.to_string(), // this is set by the config above
                         })?;
                         if let Some(deprel_value) = deprel {
                             update.add_event(UpdateEvent::AddEdgeLabel {
                                 source_node: source_node_name.to_string(),
                                 target_node: target_node_name.to_string(),
                                 layer: clayer.to_string(),
-                                component_type: AnnotationComponentType::Pointing.to_string(),
+                                component_type: config.default_pointing().get_type().to_string(),
                                 component_name: cname.to_string(),
                                 anno_ns: config.default_namespace().to_string(),
                                 anno_name: "deprel".to_string(),
@@ -402,9 +424,9 @@ impl ImportCoNLLU {
         update.add_event(UpdateEvent::AddEdge {
             source_node: node_name.to_string(),
             target_node: document_node_name.to_string(),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::PartOf.to_string(),
-            component_name: "".to_string(),
+            layer: config.default_part_of().layer.to_string(),
+            component_type: config.default_part_of().get_type().to_string(),
+            component_name: config.default_part_of().name.to_string(),
         })?;
         update.add_event(UpdateEvent::AddNodeLabel {
             node_name: node_name.to_string(),
@@ -453,16 +475,16 @@ impl ImportCoNLLU {
                         update.add_event(UpdateEvent::AddEdge {
                             source_node: span_name.to_string(),
                             target_node: document_node_name.to_string(),
-                            layer: ANNIS_NS.to_string(),
-                            component_type: AnnotationComponentType::PartOf.to_string(),
-                            component_name: "".to_string(),
+                            layer: config.default_part_of().layer.to_string(),
+                            component_type: config.default_part_of().get_type().to_string(),
+                            component_name: config.default_part_of().name.to_string(),
                         })?;
                         update.add_event(UpdateEvent::AddEdge {
                             source_node: span_name.to_string(),
                             target_node: node_name.to_string(),
-                            layer: ANNIS_NS.to_string(),
-                            component_type: AnnotationComponentType::Coverage.to_string(),
-                            component_name: "".to_string(),
+                            layer: config.default_coverage().layer.to_string(),
+                            component_type: config.default_coverage().get_type().to_string(),
+                            component_name: config.default_coverage().name.to_string(),
                         })?;
                     }
                 }
