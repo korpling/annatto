@@ -177,19 +177,27 @@ impl Visualize {
 
         // Add all other nodes that are somehow connected to the included token and the document
         let all_components = graph.get_all_components(None, None);
-        let all_gs = all_components
+
+        let all_non_pointing_gs = all_components
             .iter()
+            .filter(|c| c.get_type() != AnnotationComponentType::Pointing)
             .filter_map(|c| graph.get_graphstorage(c))
             .collect_vec();
-        let all_edge_container =
-            UnionEdgeContainer::new(all_gs.iter().map(|gs| gs.as_edgecontainer()).collect_vec());
+
+        // Iterate over all non-pointing components to find connected nodes
+        let edge_container = UnionEdgeContainer::new(
+            all_non_pointing_gs
+                .iter()
+                .map(|gs| gs.as_edgecontainer())
+                .collect_vec(),
+        );
 
         let mut included_nodes = HashSet::new();
 
         progress = progress.with_total_work(included_token.len())?;
         for t in included_token {
             if included_nodes.insert(t) {
-                for step in dfs::CycleSafeDFS::new(&all_edge_container, t, 1, usize::MAX) {
+                for step in dfs::CycleSafeDFS::new(&edge_container, t, 1, usize::MAX) {
                     let step = step?;
                     let n = step.node;
 
@@ -197,7 +205,7 @@ impl Visualize {
                         output.add_stmt(self.create_node_stmt(n, graph)?);
                     }
                 }
-                for step in dfs::CycleSafeDFS::new_inverse(&all_edge_container, t, 1, usize::MAX) {
+                for step in dfs::CycleSafeDFS::new_inverse(&edge_container, t, 1, usize::MAX) {
                     let n = step?.node;
                     if !token_helper.is_token(n)? && included_nodes.insert(n) {
                         output.add_stmt(self.create_node_stmt(n, graph)?);
