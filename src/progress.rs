@@ -39,10 +39,7 @@ impl ProgressReporter {
 
     /// Converts an existing `ProgressReporter` to a new one with the given amount of total work.
     /// Any progress information is removed and the work starts at 0 again.
-    pub fn with_total_work(
-        self: Self,
-        total_work: usize,
-    ) -> Result<ProgressReporter, AnnattoError> {
+    pub fn with_total_work(self, total_work: usize) -> Result<ProgressReporter, AnnattoError> {
         let reporter = ProgressReporter {
             state: self.state,
             step_id: self.step_id,

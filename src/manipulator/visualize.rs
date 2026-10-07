@@ -301,7 +301,7 @@ impl Visualize {
 
         let mut displayed_annos = Vec::new();
         // if annis::tok is part of the annotations, put it at the beginning of the list
-        if let Some(tok_anno) = annos.iter().filter(|a| &a.key == TOKEN_KEY.as_ref()).next() {
+        if let Some(tok_anno) = annos.iter().find(|a| &a.key == TOKEN_KEY.as_ref()) {
             displayed_annos.push(tok_anno.clone());
         }
         // Add all remaining annotations
