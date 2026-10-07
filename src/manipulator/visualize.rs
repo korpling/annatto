@@ -2,7 +2,10 @@ use super::Manipulator;
 use crate::{
     StepID,
     progress::ProgressReporter,
-    util::{CorpusGraphHelper, token_helper::TokenHelper},
+    util::{
+        CorpusGraphHelper,
+        token_helper::{TOKEN_KEY, TokenHelper},
+    },
 };
 use anyhow::{Context, Result};
 use facet::Facet;
@@ -295,13 +298,21 @@ impl Visualize {
             .unwrap_or_else(|| Cow::Owned(n.to_string()));
 
         let annos = input.get_node_annos().get_annotations_for_item(&n)?;
-        let annos = annos
-            .into_iter()
-            .filter(|a| &a.key != NODE_NAME_KEY.as_ref())
-            .sorted()
-            .collect_vec();
 
-        let anno_string = annos
+        let mut displayed_annos = Vec::new();
+        // if annis::tok is part of the annotations, put it at the beginning of the list
+        if let Some(tok_anno) = annos.iter().filter(|a| &a.key == TOKEN_KEY.as_ref()).next() {
+            displayed_annos.push(tok_anno.clone());
+        }
+        // Add all remaining annotations
+        displayed_annos.extend(
+            annos
+                .into_iter()
+                .filter(|a| &a.key != NODE_NAME_KEY.as_ref() && &a.key != TOKEN_KEY.as_ref())
+                .sorted(),
+        );
+
+        let anno_string = displayed_annos
             .into_iter()
             .map(|a| {
                 format!(
