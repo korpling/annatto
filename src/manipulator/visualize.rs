@@ -1,7 +1,11 @@
 use super::Manipulator;
 use crate::{
     StepID,
-    util::{CorpusGraphHelper, token_helper::TokenHelper},
+    progress::ProgressReporter,
+    util::{
+        CorpusGraphHelper,
+        token_helper::{TOKEN_KEY, TokenHelper},
+    },
 };
 use anyhow::{Context, Result};
 use facet::Facet;
@@ -139,7 +143,11 @@ impl Default for Visualize {
 }
 
 impl Visualize {
-    fn create_graph(&self, graph: &AnnotationGraph) -> Result<Graph> {
+    fn create_graph(
+        &self,
+        graph: &AnnotationGraph,
+        mut progress: ProgressReporter,
+    ) -> Result<Graph> {
         let mut output = Graph::DiGraph {
             id: Id::Plain("G".to_string()),
             strict: false,
@@ -149,12 +157,17 @@ impl Visualize {
         let token_helper = TokenHelper::new(graph)?;
 
         let parent_id = self.get_root_node_name(graph)?;
+
         let all_token = token_helper.get_ordered_token(&parent_id, None)?;
         let included_token = if self.limit_tokens {
             all_token.into_iter().take(self.token_limit).collect_vec()
         } else {
             all_token
         };
+        progress.info(format!(
+            "visualizing {} token from {parent_id}",
+            included_token.len()
+        ))?;
 
         let mut subgraph = subgraph!("token"; attr!("rank", "same"));
         for t in included_token.iter() {
@@ -164,28 +177,43 @@ impl Visualize {
 
         // Add all other nodes that are somehow connected to the included token and the document
         let all_components = graph.get_all_components(None, None);
-        let all_gs = all_components
+
+        let all_non_pointing_gs = all_components
             .iter()
+            .filter(|c| c.get_type() != AnnotationComponentType::Pointing)
             .filter_map(|c| graph.get_graphstorage(c))
             .collect_vec();
-        let all_edge_container =
-            UnionEdgeContainer::new(all_gs.iter().map(|gs| gs.as_edgecontainer()).collect_vec());
 
-        let mut included_nodes: HashSet<graphannis_core::types::NodeID> =
-            included_token.iter().copied().collect();
+        // Iterate over all non-pointing components to find connected nodes
+        let edge_container = UnionEdgeContainer::new(
+            all_non_pointing_gs
+                .iter()
+                .map(|gs| gs.as_edgecontainer())
+                .collect_vec(),
+        );
+
+        let mut included_nodes = HashSet::new();
+
+        progress = progress.with_total_work(included_token.len())?;
         for t in included_token {
-            for step in dfs::CycleSafeDFS::new(&all_edge_container, t, 1, usize::MAX) {
-                let n = step?.node;
-                if !token_helper.is_token(n)? && included_nodes.insert(n) {
-                    output.add_stmt(self.create_node_stmt(n, graph)?);
+            if included_nodes.insert(t) {
+                for step in dfs::CycleSafeDFS::new(&edge_container, t, 1, usize::MAX) {
+                    let step = step?;
+                    let n = step.node;
+
+                    if !token_helper.is_token(n)? && included_nodes.insert(n) {
+                        output.add_stmt(self.create_node_stmt(n, graph)?);
+                    }
+                }
+                for step in dfs::CycleSafeDFS::new_inverse(&edge_container, t, 1, usize::MAX) {
+                    let n = step?.node;
+                    if !token_helper.is_token(n)? && included_nodes.insert(n) {
+                        output.add_stmt(self.create_node_stmt(n, graph)?);
+                    }
                 }
             }
-            for step in dfs::CycleSafeDFS::new_inverse(&all_edge_container, t, 1, usize::MAX) {
-                let n = step?.node;
-                if !token_helper.is_token(n)? && included_nodes.insert(n) {
-                    output.add_stmt(self.create_node_stmt(n, graph)?);
-                }
-            }
+
+            progress.worked(1)?;
         }
         // Add all datasource nodes if they are connected to the included documents have not been already added
         let part_of_gs = graph
@@ -268,15 +296,30 @@ impl Visualize {
             .unwrap_or_else(|| Cow::Owned(n.to_string()));
 
         let annos = input.get_node_annos().get_annotations_for_item(&n)?;
-        let annos = annos
-            .into_iter()
-            .filter(|a| &a.key != NODE_NAME_KEY.as_ref())
-            .sorted()
-            .collect_vec();
 
-        let anno_string = annos
+        let mut displayed_annos = Vec::new();
+        // if annis::tok is part of the annotations, put it at the beginning of the list
+        if let Some(tok_anno) = annos.iter().find(|a| &a.key == TOKEN_KEY.as_ref()) {
+            displayed_annos.push(tok_anno.clone());
+        }
+        // Add all remaining annotations
+        displayed_annos.extend(
+            annos
+                .into_iter()
+                .filter(|a| &a.key != NODE_NAME_KEY.as_ref() && &a.key != TOKEN_KEY.as_ref())
+                .sorted(),
+        );
+
+        let anno_string = displayed_annos
             .into_iter()
-            .map(|a| format!("{}:{}={}", a.key.ns, a.key.name, a.val))
+            .map(|a| {
+                format!(
+                    "{}:{}={}",
+                    a.key.ns,
+                    a.key.name,
+                    a.val.replace("\"", "\\\"")
+                )
+            })
             .join("\\n");
 
         let label = format!("\"{node_name}\\n \\n{anno_string}\"");
@@ -358,19 +401,29 @@ impl Manipulator for Visualize {
         &self,
         graph: &mut graphannis::AnnotationGraph,
         workflow_directory: &std::path::Path,
-        _step_id: StepID,
-        _tx: Option<crate::workflow::StatusSender>,
+        step_id: StepID,
+        tx: Option<crate::workflow::StatusSender>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        //        let progress = ProgressReporter::new_unknown_total_work(tx, step_id)?;
-
-        let output = self.create_graph(graph)?;
+        let output = self.create_graph(
+            graph,
+            ProgressReporter::new_unknown_total_work(tx.clone(), step_id.clone())?,
+        )?;
+        let progress = ProgressReporter::new_unknown_total_work(tx, step_id)?;
 
         if let Some(file_path) = &self.output_dot {
+            progress.info(format!(
+                "writing visualizer output DOT file {}",
+                file_path.to_string_lossy()
+            ))?;
             let graph_dot = output.print(&mut PrinterContext::default());
             std::fs::write(workflow_directory.join(file_path), graph_dot)?;
         }
 
         if let Some(file_path) = &self.output_svg {
+            progress.info(format!(
+                "writing visualizer output SVG file {}",
+                file_path.to_string_lossy()
+            ))?;
             let graph_svg = exec(
                 output,
                 &mut PrinterContext::default(),

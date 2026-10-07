@@ -37,6 +37,19 @@ impl ProgressReporter {
         Ok(reporter)
     }
 
+    /// Converts an existing `ProgressReporter` to a new one with the given amount of total work.
+    /// Any progress information is removed and the work starts at 0 again.
+    pub fn with_total_work(self, total_work: usize) -> Result<ProgressReporter, AnnattoError> {
+        let reporter = ProgressReporter {
+            state: self.state,
+            step_id: self.step_id,
+            total_work: Some(total_work),
+        };
+        // Send a first status report so any listener can get the total number of steps to perform
+        reporter.worked(0)?;
+        Ok(reporter)
+    }
+
     pub fn new_unknown_total_work(
         tx: Option<StatusSender>,
         step_id: StepID,
