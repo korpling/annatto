@@ -22,7 +22,12 @@ pub mod xlsx;
 pub mod xml;
 
 use crate::{StepID, util::graphupdate::import_corpus_graph_from_files, workflow::StatusSender};
-use graphannis::update::GraphUpdate;
+use graphannis::{
+    model::{AnnotationComponent, AnnotationComponentType},
+    update::GraphUpdate,
+};
+use graphannis_core::graph::ANNIS_NS;
+use lazy_static::lazy_static;
 use percent_encoding::{AsciiSet, CONTROLS};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -62,6 +67,13 @@ pub trait DefaultImportConfiguration {
                 .collect(),
             documents: None, // default document list does not need to be trait derived, there is no meaningful alternative to None
             default_ns: self.preset_default_namespace().map(ToString::to_string),
+            default_components: Some(DefaultComponents {
+                ordering: self.preset_default_ordering().cloned(),
+                coverage: self.preset_default_coverage().cloned(),
+                part_of: self.preset_default_part_of().cloned(),
+                dominance: self.preset_default_dominance().cloned(),
+                pointing: self.preset_default_pointing().cloned(),
+            }),
         }
     }
 
@@ -79,6 +91,61 @@ pub trait DefaultImportConfiguration {
     ///
     /// For the empty namespace, `Some("")` should be returned.
     fn preset_default_namespace(&self) -> Option<&str>;
+
+    /// Importers can define a default `Ordering` they use for ordering nodes.
+    /// This can be overwritten by the user (even with a different type).
+    /// If a preset is `None`, it either indicates that a default is meaningless
+    /// or that no `Ordering` is built.
+    ///
+    /// Only override this implementation if the module can set a meaningful
+    /// default value and uses it.
+    fn preset_default_ordering(&self) -> Option<&AnnotationComponent> {
+        None
+    }
+
+    /// Importers can define a default `Coverage` component they use.
+    /// This can be overwritten by the user (even with a different type).
+    /// If a preset is `None`, it either indicates that a default is
+    /// meaningless or that no `Coverage` edges are built.
+    ///
+    /// Only override this implementation if the module can set a meaningful
+    /// default value and uses it.
+    fn preset_default_coverage(&self) -> Option<&AnnotationComponent> {
+        None
+    }
+
+    /// Importers can define a default `Dominance` component they use.
+    /// This can be overwritten by the user (even with a different type).
+    /// If a preset is `None`, it either indicates that a default is
+    /// meaningless or that no `Dominance` edges are built.
+    ///
+    /// Only override this implementation if the module can set a meaningful
+    /// default value and uses it.
+    fn preset_default_dominance(&self) -> Option<&AnnotationComponent> {
+        None
+    }
+
+    /// Importers can define a default `PartOf` component they use.
+    /// This can be overwritten by the user (even with a different type).
+    /// If a preset is `None`, it either indicates that a default is
+    /// meaningless or that no `PartOf` edges are built.
+    ///
+    /// Only override this implementation if the module can set a meaningful
+    /// default value and uses it.
+    fn preset_default_part_of(&self) -> Option<&AnnotationComponent> {
+        None
+    }
+
+    /// Importers can define a default `Pointing` component they use.
+    /// This can be overwritten by the user (even with a different type).
+    ///  If a preset is `None`, it either indicates that a default is
+    /// meaningless or that no `Pointing` edges are built.
+    ///
+    /// Only override this implementation if the module can set a meaningful
+    /// default value and uses it.
+    fn preset_default_pointing(&self) -> Option<&AnnotationComponent> {
+        None
+    }
 }
 
 /// An encoding set for node names.
@@ -117,6 +184,92 @@ pub struct GenericImportConfiguration {
     /// The default value depends on the implementation and the format model.
     #[serde(default)]
     default_ns: Option<String>, // This is an option only for the simple reason that we need to distinguish whether the user SET an empty value or did not set a value (so deserialization forces this upon us). Therefore, this field should never be read directly, there is a method extracting the value.
+    /// Per component type one default component can be configured.
+    ///
+    /// Example:
+    /// ```toml
+    /// [import.default_components]
+    /// part_of = { layer = "alternative_layer", name = "alternative_name" }
+    /// pointing = { layer = "", name = "dependency" }
+    /// ...
+    /// ```
+    #[serde(default)]
+    default_components: Option<DefaultComponents>,
+}
+
+lazy_static! {
+    pub(crate) static ref GLOBAL_DEFAULT_ORDERING: AnnotationComponent = AnnotationComponent::new(
+        AnnotationComponentType::Ordering,
+        ANNIS_NS.to_string(),
+        "".to_string()
+    );
+    pub(crate) static ref GLOBAL_DEFAULT_COVERAGE: AnnotationComponent = AnnotationComponent::new(
+        AnnotationComponentType::Coverage,
+        ANNIS_NS.to_string(),
+        "".to_string()
+    );
+    pub(crate) static ref GLOBAL_DEFAULT_DOMINANCE: AnnotationComponent = AnnotationComponent::new(
+        AnnotationComponentType::Dominance,
+        ANNIS_NS.to_string(),
+        "".to_string()
+    );
+    pub(crate) static ref GLOBAL_DEFAULT_PART_OF: AnnotationComponent = AnnotationComponent::new(
+        AnnotationComponentType::PartOf,
+        ANNIS_NS.to_string(),
+        "".to_string()
+    );
+    pub(crate) static ref GLOBAL_DEFAULT_POINTING: AnnotationComponent = AnnotationComponent::new(
+        AnnotationComponentType::Pointing,
+        "".to_string(),
+        "point".to_string()
+    );
+}
+
+/// This object models the user interface, i. e., which components the user
+/// can and has to define (none). Actual default component values are taken
+/// from the individual import steps on deserialization.
+#[derive(Deserialize, Clone, PartialEq, Serialize)]
+pub struct DefaultComponents {
+    #[serde(with = "crate::estarde::annotation_component::as_option")]
+    pub(crate) ordering: Option<AnnotationComponent>,
+    #[serde(with = "crate::estarde::annotation_component::as_option")]
+    pub(crate) coverage: Option<AnnotationComponent>,
+    #[serde(with = "crate::estarde::annotation_component::as_option")]
+    pub(crate) part_of: Option<AnnotationComponent>,
+    #[serde(with = "crate::estarde::annotation_component::as_option")]
+    pub(crate) dominance: Option<AnnotationComponent>,
+    #[serde(with = "crate::estarde::annotation_component::as_option")]
+    pub(crate) pointing: Option<AnnotationComponent>,
+}
+
+impl Default for DefaultComponents {
+    fn default() -> Self {
+        Self {
+            ordering: None,
+            coverage: None,
+            part_of: None,
+            dominance: None,
+            pointing: None,
+        }
+    }
+}
+
+impl DefaultComponents {
+    fn new(
+        ordering: Option<AnnotationComponent>,
+        coverage: Option<AnnotationComponent>,
+        part_of: Option<AnnotationComponent>,
+        dominance: Option<AnnotationComponent>,
+        pointing: Option<AnnotationComponent>,
+    ) -> Self {
+        Self {
+            ordering,
+            coverage,
+            part_of,
+            dominance,
+            pointing,
+        }
+    }
 }
 
 impl<'a> GenericImportConfiguration {
@@ -137,12 +290,14 @@ impl<'a> GenericImportConfiguration {
         extensions: Vec<String>,
         documents: Option<BTreeSet<String>>,
         default_ns: Option<String>,
+        default_components: DefaultComponents,
     ) -> Self {
         GenericImportConfiguration {
             root_as,
             extensions,
             documents,
             default_ns,
+            default_components: Some(default_components),
         }
     }
 
@@ -153,6 +308,7 @@ impl<'a> GenericImportConfiguration {
             extensions: vec![],
             documents: None,
             default_ns: Default::default(),
+            default_components: Default::default(),
         }
     }
 
@@ -163,6 +319,7 @@ impl<'a> GenericImportConfiguration {
             extensions,
             documents: None,
             default_ns: Default::default(),
+            default_components: Default::default(),
         }
     }
 
@@ -181,6 +338,7 @@ impl<'a> GenericImportConfiguration {
                 .collect_vec(),
             documents: None,
             default_ns: Default::default(),
+            default_components: Default::default(),
         }
     }
 
@@ -191,6 +349,7 @@ impl<'a> GenericImportConfiguration {
             extensions,
             documents: self.documents,
             default_ns: Default::default(),
+            default_components: Default::default(),
         }
     }
 
@@ -215,6 +374,61 @@ impl<'a> GenericImportConfiguration {
 
     pub fn customizes_default_namespace(&self) -> bool {
         self.default_ns.is_some()
+    }
+
+    pub fn default_ordering(&self) -> &AnnotationComponent {
+        if let Some(default_components) = &self.default_components {
+            default_components
+                .ordering
+                .as_ref()
+                .unwrap_or(&GLOBAL_DEFAULT_ORDERING)
+        } else {
+            &GLOBAL_DEFAULT_ORDERING
+        }
+    }
+
+    pub fn default_coverage(&self) -> &AnnotationComponent {
+        if let Some(default_components) = &self.default_components {
+            default_components
+                .coverage
+                .as_ref()
+                .unwrap_or(&GLOBAL_DEFAULT_COVERAGE)
+        } else {
+            &GLOBAL_DEFAULT_COVERAGE
+        }
+    }
+
+    pub fn default_part_of(&self) -> &AnnotationComponent {
+        if let Some(default_components) = &self.default_components {
+            default_components
+                .part_of
+                .as_ref()
+                .unwrap_or(&GLOBAL_DEFAULT_PART_OF)
+        } else {
+            &GLOBAL_DEFAULT_PART_OF
+        }
+    }
+
+    pub fn default_dominance(&self) -> &AnnotationComponent {
+        if let Some(default_components) = &self.default_components {
+            default_components
+                .dominance
+                .as_ref()
+                .unwrap_or(&GLOBAL_DEFAULT_DOMINANCE)
+        } else {
+            &GLOBAL_DEFAULT_DOMINANCE
+        }
+    }
+
+    pub fn default_pointing(&self) -> &AnnotationComponent {
+        if let Some(default_components) = &self.default_components {
+            default_components
+                .pointing
+                .as_ref()
+                .unwrap_or(&GLOBAL_DEFAULT_POINTING)
+        } else {
+            &GLOBAL_DEFAULT_POINTING
+        }
     }
 }
 
