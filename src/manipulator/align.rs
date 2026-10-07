@@ -25,6 +25,7 @@ use super::Manipulator;
 
 /// Aligns nodes identified by queries with edges in the defined component.
 #[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct AlignNodes {
     /// Define node groups that should be aligned. Neighbouring node groups in the
     /// provided list are aligned, given common nodes can be identified. You can
