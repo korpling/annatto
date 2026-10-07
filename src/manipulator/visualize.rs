@@ -193,24 +193,14 @@ impl Visualize {
                     let step = step?;
                     let n = step.node;
 
-                    if included_nodes.insert(n) {
-                        if !token_helper.is_token(n)? {
-                            output.add_stmt(self.create_node_stmt(n, graph)?);
-                        }
-                    } else {
-                        // Abort the DFS, since we if we added this node already we also have seen all ancestor nodes of it
-                        break;
+                    if !token_helper.is_token(n)? && included_nodes.insert(n) {
+                        output.add_stmt(self.create_node_stmt(n, graph)?);
                     }
                 }
                 for step in dfs::CycleSafeDFS::new_inverse(&all_edge_container, t, 1, usize::MAX) {
                     let n = step?.node;
-                    if included_nodes.insert(n) {
-                        if !token_helper.is_token(n)? {
-                            output.add_stmt(self.create_node_stmt(n, graph)?);
-                        }
-                    } else {
-                        // Abort the DFS, since we if we added this node already we also have seen all ancestor nodes of it
-                        break;
+                    if !token_helper.is_token(n)? && included_nodes.insert(n) {
+                        output.add_stmt(self.create_node_stmt(n, graph)?);
                     }
                 }
             }
