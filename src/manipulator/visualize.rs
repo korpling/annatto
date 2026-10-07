@@ -530,7 +530,7 @@ mod tests {
         let visualizer_config_str = r#"
             limit_tokens = true
             token_limit = 10
-            root = {document = "GENTLE/GENTLE_legal_service"}
+            root = {document = "root/doc2"}
         "#;
         let op: Visualize = toml::from_str(visualizer_config_str).unwrap();
         assert_eq!(true, op.limit_tokens);
