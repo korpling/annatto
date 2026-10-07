@@ -32,10 +32,7 @@ use super::Importer;
 use crate::{
     StepID,
     error::AnnattoError,
-    importer::{
-        DefaultImportConfiguration, GLOBAL_DEFAULT_COVERAGE, GLOBAL_DEFAULT_ORDERING,
-        GLOBAL_DEFAULT_PART_OF, GenericImportConfiguration,
-    },
+    importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
 };
 
