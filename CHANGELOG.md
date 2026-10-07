@@ -5,6 +5,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- graph op `visualizer`: documentation for specifying a document as root was
+  wrong
+
 ## [0.60.0] - 2026-10-06
 
 ### Added

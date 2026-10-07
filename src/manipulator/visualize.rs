@@ -31,7 +31,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, collections::HashSet, path::PathBuf};
 
-#[derive(Facet, Default, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Facet, Default, Deserialize, Serialize, Clone, PartialEq, Debug)]
 #[serde(rename_all = "snake_case")]
 #[repr(u8)]
 pub(crate) enum Include {
@@ -101,10 +101,10 @@ pub struct Visualize {
     /// root = "first_document"
     /// ```
     ///
-    /// Alternativly it can be configured to include all documents (`root = "all"`) or you can give the ID of the document as argument.
+    /// Alternativly it can be configured to include all documents (`root = "all"`) or you can configure it select a document by its ID.
     /// ```toml
     /// [graph_op.config]
-    /// root = "mycorpus/subcorpus1/mydocument"
+    /// root = {document = "mycorpus/subcorpus1/mydocument"}
     /// ```
     #[serde(default)]
     root: Include,
@@ -400,7 +400,7 @@ mod tests {
         workflow::execute_from_file,
     };
 
-    use super::Visualize;
+    use super::*;
 
     #[test]
     fn serialize() {
@@ -523,5 +523,18 @@ mod tests {
             output_svg: None,
         };
         assert_eq!("root/doc1", op.get_root_node_name(&g).unwrap());
+    }
+
+    #[test]
+    fn deserialize_document_root_config() {
+        let visualizer_config_str = r#"
+            limit_tokens = true
+            token_limit = 10
+            root = {document = "GENTLE/GENTLE_legal_service"}
+        "#;
+        let op: Visualize = toml::from_str(visualizer_config_str).unwrap();
+        assert_eq!(true, op.limit_tokens);
+        assert_eq!(10, op.token_limit);
+        assert_eq!(Include::Document("root/doc2".to_string()), op.root);
     }
 }
