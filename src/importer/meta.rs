@@ -143,7 +143,12 @@ impl Importer for AnnotateCorpus {
                     .rfind(std::path::MAIN_SEPARATOR_STR)
                     .unwrap_or_default()
                     + 1;
-                self.import_from_csv(&file_path, &parent.to_string_lossy()[s_ix..], &mut update)?;
+                self.import_from_csv(
+                    &file_path,
+                    &parent.to_string_lossy()[s_ix..],
+                    &config,
+                    &mut update,
+                )?;
             } else {
                 let full_path = &parent.join(file_stem);
                 let node_name = &full_path.to_string_lossy()[start_index..];
@@ -173,6 +178,7 @@ impl AnnotateCorpus {
         &self,
         path: &Path,
         parent: &str,
+        config: &GenericImportConfiguration,
         update: &mut GraphUpdate,
     ) -> Result<(), anyhow::Error> {
         let node_column = if self.identifier.ns.is_empty() {
@@ -209,9 +215,9 @@ impl AnnotateCorpus {
                 update.add_event(UpdateEvent::AddEdge {
                     source_node: node_name.to_string(),
                     target_node: parent.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::PartOf.to_string(),
-                    component_name: "".to_string(),
+                    layer: config.default_part_of().layer.to_string(),
+                    component_type: config.default_part_of().get_type().to_string(),
+                    component_name: config.default_part_of().name.to_string(),
                 })?;
                 for (k, v) in annotations {
                     let (ns, name) = split_qname(&k);
