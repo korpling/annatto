@@ -8,7 +8,6 @@ use anyhow::anyhow;
 use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
-    model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::{
