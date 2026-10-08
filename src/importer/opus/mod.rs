@@ -5,7 +5,6 @@ use graphannis::{
     model::AnnotationComponentType,
     update::{GraphUpdate, UpdateEvent},
 };
-use graphannis_core::graph::ANNIS_NS;
 use serde::Serialize;
 use serde_derive::Deserialize;
 use xml::{EventReader, ParserConfig};
@@ -70,9 +69,13 @@ impl Importer for ImportOpusLinks {
         let all_files = config.derive_corpus_graph(input_path, &mut update)?;
         let progress = ProgressReporter::new(tx, step_id.clone(), all_files.len())?;
         all_files.into_iter().try_for_each(|(p, d)| {
-            if let Err(e) =
-                self.import_document(&step_id, p.as_path(), Path::new(d.as_str()), &mut update)
-            {
+            if let Err(e) = self.import_document(
+                &step_id,
+                p.as_path(),
+                Path::new(d.as_str()),
+                &config,
+                &mut update,
+            ) {
                 Err(e)
             } else {
                 progress.worked(1)
@@ -97,6 +100,7 @@ impl DefaultImportConfiguration for ImportOpusLinks {
 impl ImportOpusLinks {
     fn link(
         &self,
+        config: &GenericImportConfiguration,
         update: &mut GraphUpdate,
         source_doc_node_id: &str,
         target_doc_node_id: &str,
@@ -112,9 +116,9 @@ impl ImportOpusLinks {
         update.add_event(UpdateEvent::AddEdge {
             source_node: source_id.to_string(),
             target_node: source_doc_node_id.to_string(),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::PartOf.to_string(),
-            component_name: "".to_string(),
+            layer: config.default_part_of().layer.to_string(),
+            component_type: config.default_part_of().get_type().to_string(),
+            component_name: config.default_part_of().name.to_string(),
         })?;
         update.add_event(UpdateEvent::AddNode {
             node_name: target_id.to_string(),
@@ -123,9 +127,9 @@ impl ImportOpusLinks {
         update.add_event(UpdateEvent::AddEdge {
             source_node: target_id.to_string(),
             target_node: target_doc_node_id.to_string(),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::PartOf.to_string(),
-            component_name: "".to_string(),
+            layer: config.default_part_of().layer.to_string(),
+            component_type: config.default_part_of().get_type().to_string(),
+            component_name: config.default_part_of().name.to_string(),
         })?;
         update.add_event(UpdateEvent::AddEdge {
             source_node: source_id.to_string(),
@@ -151,6 +155,7 @@ impl ImportOpusLinks {
         step_id: &crate::StepID,
         path: &Path,
         corpus_node_path: &Path,
+        config: &GenericImportConfiguration,
         update: &mut GraphUpdate,
     ) -> Result<()> {
         // buffers
@@ -223,6 +228,7 @@ impl ImportOpusLinks {
                                 for single_source in source.split(' ') {
                                     for single_target in target.split(' ') {
                                         self.link(
+                                            config,
                                             update,
                                             source_doc_node_id.as_str(),
                                             target_doc_node_id.as_str(),
