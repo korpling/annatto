@@ -5,10 +5,7 @@ use crate::{
 
 use super::Importer;
 use facet::Facet;
-use graphannis::{
-    model::AnnotationComponentType,
-    update::{GraphUpdate, UpdateEvent},
-};
+use graphannis::update::{GraphUpdate, UpdateEvent};
 use graphannis_core::graph::ANNIS_NS;
 use normpath::PathExt;
 use serde::Serialize;
@@ -45,7 +42,6 @@ impl Importer for CreateFileNodes {
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
         let base_dir = input_path.normalize()?;
-        let GenericImportConfiguration { documents, .. } = config;
         if let Some(base_dir_name) = base_dir.file_name() {
             let start_index = base_dir.as_path().to_string_lossy().len() - base_dir_name.len();
             if let Some(link_target) = &self.corpus_name {
@@ -59,8 +55,8 @@ impl Importer for CreateFileNodes {
             {
                 let path = path_r?;
                 let node_name = path.to_string_lossy()[start_index..].to_string();
-                if documents
-                    .as_ref()
+                if config
+                    .document_list()
                     .map(|d| !d.contains(&*path.to_string_lossy()) && !d.contains(&node_name))
                     .unwrap_or_default()
                 {
@@ -81,9 +77,9 @@ impl Importer for CreateFileNodes {
                         update.add_event(UpdateEvent::AddEdge {
                             source_node: node_name,
                             target_node: link_target.to_string(),
-                            layer: ANNIS_NS.to_string(),
-                            component_type: AnnotationComponentType::PartOf.to_string(),
-                            component_name: "".to_string(),
+                            layer: config.default_part_of().layer.to_string(),
+                            component_type: config.default_part_of().get_type().to_string(),
+                            component_name: config.default_part_of().name.to_string(),
                         })?;
                     }
                 }
