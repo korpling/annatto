@@ -4,10 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::anyhow;
 use facet::Facet;
-use graphannis::{
-    model::AnnotationComponentType,
-    update::{GraphUpdate, UpdateEvent},
-};
+use graphannis::update::{GraphUpdate, UpdateEvent};
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use itertools::Itertools;
 use linked_hash_map::LinkedHashMap;
