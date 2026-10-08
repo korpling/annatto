@@ -4,13 +4,19 @@ use std::{
     sync::mpsc,
 };
 
-use graphannis::update::GraphUpdate;
+use graphannis::{
+    model::{AnnotationComponent, AnnotationComponentType},
+    update::GraphUpdate,
+};
 use insta::assert_snapshot;
 use itertools::Itertools;
 
 use crate::{
-    ImporterStep, StepID, importer::DefaultImportConfiguration, progress::ProgressReporter,
-    test_util::import_as_graphml_string_2, workflow::StatusMessage,
+    ImporterStep, StepID,
+    importer::{DefaultComponents, DefaultImportConfiguration, GenericImportConfiguration},
+    progress::ProgressReporter,
+    test_util::import_as_graphml_string_2,
+    workflow::StatusMessage,
 };
 
 use super::ImportEXMARaLDA;
@@ -52,6 +58,7 @@ fn timeline_fail() {
                 &step_id,
                 "import/test_doc",
                 Path::new(document_path),
+                &ImportEXMARaLDA::default().default_configuration(),
                 &mut u,
                 &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
                 &None,
@@ -85,6 +92,7 @@ fn category_fail() {
                 &step_id,
                 "fail-no_category/test_doc",
                 document_path.as_path(),
+                &ImportEXMARaLDA::default().default_configuration(),
                 &mut u,
                 &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
                 &None
@@ -123,6 +131,7 @@ fn undefined_speaker_fail() {
                 &step_id,
                 "fail-undefined_speaker/test_doc",
                 document_path.as_path(),
+                &ImportEXMARaLDA::default().default_configuration(),
                 &mut u,
                 &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
                 &None
@@ -156,6 +165,7 @@ fn unknown_tli_fail() {
                 &step_id,
                 "fail-unknown_tli/test_doc",
                 document_path.as_path(),
+                &ImportEXMARaLDA::default().default_configuration(),
                 &mut u,
                 &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
                 &None
@@ -189,6 +199,7 @@ fn bad_timevalue_fail() {
                 &step_id,
                 "fail-bad_timevalue/test_doc",
                 document_path.as_path(),
+                &ImportEXMARaLDA::default().default_configuration(),
                 &mut u,
                 &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
                 &None
@@ -239,6 +250,7 @@ fn invalid_fail() {
                 &step_id,
                 "import/test_doc_invalid",
                 Path::new(document_path),
+                &ImportEXMARaLDA::default().default_configuration(),
                 &mut u,
                 &ProgressReporter::new(None, step_id.clone(), 1).unwrap(),
                 &None
@@ -307,6 +319,52 @@ fn run_test(
         env::current_dir()?.join(import_path), // IMPORTANT: test with absolute paths, this is what Annatto does at runtime
         None,
         ImportEXMARaLDA::default().default_configuration(),
+        true,
+        Some(sender),
+    )?;
+    let warnings = receiver
+        .into_iter()
+        .filter(|m| matches!(m, StatusMessage::Warning(..)))
+        .collect_vec();
+    assert_eq!(
+        expected_warnings_count,
+        warnings.len(),
+        "Unexpected amount of warnings: {:?}",
+        warnings
+    );
+    Ok(actual)
+}
+
+fn custom_config(
+    import_path: &str,
+    expected_warnings_count: usize,
+) -> Result<String, Box<dyn std::error::Error>> {
+    let (sender, receiver) = mpsc::channel();
+    let actual = import_as_graphml_string_2(
+        ImportEXMARaLDA::default(),
+        env::current_dir()?.join(import_path), // IMPORTANT: test with absolute paths, this is what Annatto does at runtime
+        None,
+        GenericImportConfiguration {
+            default_components: Some(DefaultComponents {
+                ordering: Some(AnnotationComponent::new(
+                    AnnotationComponentType::Ordering,
+                    "custom-default-layer".to_string(),
+                    "with-name".to_string(),
+                )),
+                part_of: Some(AnnotationComponent::new(
+                    AnnotationComponentType::PartOf,
+                    "custom-part-of-layer".to_string(),
+                    "custom-part-of-name".to_string(),
+                )),
+                coverage: Some(AnnotationComponent::new(
+                    AnnotationComponentType::Coverage,
+                    "custom-cov".to_string(),
+                    "custom-cov-name".to_string(),
+                )),
+                ..Default::default()
+            }),
+            ..Default::default()
+        },
         true,
         Some(sender),
     )?;

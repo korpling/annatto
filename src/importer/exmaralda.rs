@@ -69,6 +69,7 @@ impl Importer for ImportEXMARaLDA {
                     &step_id,
                     &doc_node_name,
                     fp.as_path(),
+                    &config,
                     &mut update,
                     &progress,
                     &tx,
@@ -109,6 +110,7 @@ impl ImportEXMARaLDA {
         step_id: &StepID,
         doc_node_name: &str,
         document_path: &std::path::Path,
+        config: &GenericImportConfiguration,
         update: &mut GraphUpdate,
         progress: &ProgressReporter,
         tx: &Option<crate::workflow::StatusSender>,
@@ -308,9 +310,9 @@ impl ImportEXMARaLDA {
                                 update.add_event(UpdateEvent::AddEdge {
                                     source_node: node_name.to_string(),
                                     target_node: doc_node_name.to_string(),
-                                    layer: ANNIS_NS.to_string(),
-                                    component_type: AnnotationComponentType::PartOf.to_string(),
-                                    component_name: "".to_string(),
+                                    layer: config.default_part_of().layer.to_string(),
+                                    component_type: config.default_part_of().get_type().to_string(),
+                                    component_name: config.default_part_of().name.to_string(),
                                 })?;
                             }
                             // order timeline elements / empty toks
@@ -323,10 +325,12 @@ impl ImportEXMARaLDA {
                                     update.add_event(UpdateEvent::AddEdge {
                                         source_node: source.1.to_string(),
                                         target_node: target.1.to_string(),
-                                        layer: ANNIS_NS.to_string(),
-                                        component_type: AnnotationComponentType::Ordering
+                                        layer: config.default_ordering().layer.to_string(),
+                                        component_type: config
+                                            .default_ordering()
+                                            .get_type()
                                             .to_string(),
-                                        component_name: "".to_string(),
+                                        component_name: config.default_ordering().name.to_string(),
                                     })?;
                                 }
                             }
@@ -483,9 +487,9 @@ impl ImportEXMARaLDA {
                                 update.add_event(UpdateEvent::AddEdge {
                                     source_node: node_name.to_string(),
                                     target_node: doc_node_name.to_string(),
-                                    layer: ANNIS_NS.to_string(),
-                                    component_type: AnnotationComponentType::PartOf.to_string(),
-                                    component_name: "".to_string(),
+                                    layer: config.default_part_of().layer.to_string(),
+                                    component_type: config.default_part_of().get_type().to_string(),
+                                    component_name: config.default_part_of().name.to_string(),
                                 })?;
                                 // coverage
                                 for overlapped_id in overlapped {
@@ -493,10 +497,15 @@ impl ImportEXMARaLDA {
                                         update.add_event(UpdateEvent::AddEdge {
                                             source_node: node_name.to_string(),
                                             target_node: target_id.to_string(),
-                                            layer: ANNIS_NS.to_string(),
-                                            component_type: AnnotationComponentType::Coverage
+                                            layer: config.default_coverage().layer.to_string(),
+                                            component_type: config
+                                                .default_coverage()
+                                                .get_type()
                                                 .to_string(),
-                                            component_name: "".to_string(),
+                                            component_name: config
+                                                .default_coverage()
+                                                .name
+                                                .to_string(),
                                         })?;
                                     }
                                 }
@@ -602,8 +611,8 @@ impl ImportEXMARaLDA {
                     update.add_event(UpdateEvent::AddEdge {
                         source_node: source,
                         target_node: node_name.to_string(),
-                        layer: ANNIS_NS.to_string(),
-                        component_type: AnnotationComponentType::Ordering.to_string(),
+                        layer: ANNIS_NS.to_string(), // TODO switch to DEFAULT_NS
+                        component_type: config.default_ordering().get_type().to_string(),
                         component_name: name.to_string(),
                     })?;
                 }
