@@ -443,9 +443,9 @@ impl<'a> ELANMapper<'a> {
                 update.add_event(UpdateEvent::AddEdge {
                     source_node: first_node.to_string(),
                     target_node: self.doc_node_name.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::PartOf.to_string(),
-                    component_name: "".to_string(),
+                    layer: config.default_part_of().layer.to_string(),
+                    component_type: config.default_part_of().get_type().to_string(),
+                    component_name: config.default_part_of().name.to_string(),
                 })?;
                 ts_id_to_node_name.insert(ts_id.to_string(), first_node.to_string());
                 if let Some(slot_list) = scan.slot_nodes.get(ts_id)
@@ -457,9 +457,9 @@ impl<'a> ELANMapper<'a> {
                     update.add_event(UpdateEvent::AddEdge {
                         source_node: prenode,
                         target_node: first_node.to_string(),
-                        layer: ANNIS_NS.to_string(),
-                        component_type: AnnotationComponentType::Ordering.to_string(),
-                        component_name: "".to_string(),
+                        layer: config.default_ordering().layer.to_string(),
+                        component_type: config.default_ordering().get_type().to_string(),
+                        component_name: config.default_ordering().name.to_string(),
                     })?;
                 }
                 Some(first_node.to_string())
@@ -482,9 +482,9 @@ impl<'a> ELANMapper<'a> {
                     update.add_event(UpdateEvent::AddEdge {
                         source_node: prenode,
                         target_node: subnode_name.to_string(),
-                        layer: ANNIS_NS.to_string(),
-                        component_type: AnnotationComponentType::Ordering.to_string(),
-                        component_name: "".to_string(),
+                        layer: config.default_ordering().layer.to_string(),
+                        component_type: config.default_ordering().get_type().to_string(),
+                        component_name: config.default_ordering().name.to_string(),
                     })?;
                 }
                 predecessor = Some(subnode_name.to_string());
@@ -503,9 +503,9 @@ impl<'a> ELANMapper<'a> {
                 update.add_event(UpdateEvent::AddEdge {
                     source_node: subnode_name.to_string(),
                     target_node: self.doc_node_name.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::PartOf.to_string(),
-                    component_name: "".to_string(),
+                    layer: config.default_part_of().layer.to_string(),
+                    component_type: config.default_part_of().get_type().to_string(),
+                    component_name: config.default_part_of().name.to_string(),
                 })?;
                 ts_id_to_node_name.insert(subnode_id.to_string(), subnode_name);
             }
@@ -555,9 +555,9 @@ impl<'a> ELANMapper<'a> {
                     update.add_event(UpdateEvent::AddEdge {
                         source_node: node_name.to_string(),
                         target_node: self.doc_node_name.to_string(),
-                        layer: ANNIS_NS.to_string(),
-                        component_type: AnnotationComponentType::PartOf.to_string(),
-                        component_name: "".to_string(),
+                        layer: config.default_part_of().layer.to_string(),
+                        component_type: config.default_part_of().get_type().to_string(),
+                        component_name: config.default_part_of().name.to_string(),
                     })?;
                     if let Some(anno_value) = scan.anno_values.get(anno_id) {
                         update.add_event(UpdateEvent::AddNodeLabel {
@@ -579,9 +579,9 @@ impl<'a> ELANMapper<'a> {
                         update.add_event(UpdateEvent::AddEdge {
                             source_node: node_name.to_string(),
                             target_node: target.to_string(),
-                            layer: ANNIS_NS.to_string(),
-                            component_type: AnnotationComponentType::Coverage.to_string(),
-                            component_name: "".to_string(),
+                            layer: config.default_coverage().layer.to_string(),
+                            component_type: config.default_coverage().get_type().to_string(),
+                            component_name: config.default_coverage().name.to_string(),
                         })?;
                     }
                     if build_ordering {
@@ -590,7 +590,7 @@ impl<'a> ELANMapper<'a> {
                                 source_node: previous_node,
                                 target_node: node_name.to_string(),
                                 layer: DEFAULT_NS.to_string(),
-                                component_type: AnnotationComponentType::Ordering.to_string(),
+                                component_type: config.default_ordering().get_type().to_string(),
                                 component_name: anno_name.to_string(),
                             })?;
                         }

@@ -1,12 +1,16 @@
 use std::path::Path;
 
-use graphannis::AnnotationGraph;
+use graphannis::{
+    AnnotationGraph,
+    model::{AnnotationComponent, AnnotationComponentType},
+};
 use insta::assert_snapshot;
 
 use crate::{
     exporter::graphml::GraphMLExporter,
     importer::{
-        DefaultImportConfiguration, GenericImportConfiguration, Importer, elan::ImportELAN,
+        DefaultComponents, DefaultImportConfiguration, GenericImportConfiguration, Importer,
+        elan::ImportELAN,
     },
     test_util::export_to_string,
 };
@@ -73,6 +77,24 @@ fn customized_generic_config() {
             .collect(),
         None,
         Some("custom_ns".to_string()),
+        DefaultComponents {
+            ordering: Some(AnnotationComponent::new(
+                AnnotationComponentType::Ordering,
+                "custom-default".to_string(),
+                "custom-ord-name".to_string(),
+            )),
+            coverage: Some(AnnotationComponent::new(
+                AnnotationComponentType::Coverage,
+                "custom-cov".to_string(),
+                "custom-cov-name".to_string(),
+            )),
+            part_of: Some(AnnotationComponent::new(
+                AnnotationComponentType::PartOf,
+                "custom-part-of".to_string(),
+                "custom-part-of-name".to_string(),
+            )),
+            ..Default::default()
+        },
     );
     let u = import.import_corpus(
         path,
