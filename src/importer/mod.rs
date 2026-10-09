@@ -13,6 +13,7 @@ pub mod relannis;
 pub mod saltxml;
 pub mod table;
 pub mod text;
+#[allow(deprecated)] // TODO remove deprecated features from textgrid import in the future
 pub mod textgrid;
 pub mod toolbox;
 pub mod treetagger;
@@ -354,6 +355,7 @@ impl<'a> GenericImportConfiguration {
     }
 
     // importers do not need to use this, but it implements the default case.
+    #[deprecated]
     pub fn derive_corpus_graph(
         &self,
         import_path: &Path,

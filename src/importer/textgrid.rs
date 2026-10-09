@@ -10,13 +10,13 @@ use crate::importer::{DefaultImportConfiguration, GenericImportConfiguration};
 use crate::models::textgrid::{Interval, TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{
-    NodeInfo, add_order_relations, map_annotations, map_audio_source, map_token,
-    root_corpus_from_path,
+    ConfiguredUpdate, NodeInfo, add_order_relations, map_annotations, map_audio_source,
+    map_token_with_ds, root_corpus_from_path,
 };
 use anyhow::{Result, anyhow};
 use encoding_rs_io::DecodeReaderBytes;
 use facet::Facet;
-use graphannis::update::{GraphUpdate, UpdateEvent};
+use graphannis::update::GraphUpdate;
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
@@ -86,19 +86,10 @@ struct DocumentMapper<'a> {
 }
 
 impl DocumentMapper<'_> {
-    fn map(&mut self, config: &GenericImportConfiguration, u: &mut GraphUpdate) -> Result<()> {
+    fn map(&mut self, u: &mut ConfiguredUpdate) -> Result<()> {
         // Add a subcorpus like node for the text
-        u.add_event(UpdateEvent::AddNode {
-            node_name: self.text_node_name.clone(),
-            node_type: "datasource".to_string(),
-        })?;
-        u.add_event(UpdateEvent::AddEdge {
-            source_node: self.text_node_name.clone(),
-            target_node: self.doc_path.clone(),
-            layer: ANNIS_NS.to_string(),
-            component_type: "PartOf".to_string(),
-            component_name: "".to_string(),
-        })?;
+        u.node(self.text_node_name.clone(), "datasource".to_string())?;
+        u.part_of(self.text_node_name.clone(), self.doc_path.clone())?;
 
         if !self.params.skip_audio {
             // TODO: Check assumption that the audio file is always relative to the actual file
@@ -134,7 +125,6 @@ impl DocumentMapper<'_> {
 
         for tok_tier_name in self.params.tier_groups.keys() {
             self.map_tier_group(
-                config,
                 u,
                 tok_tier_name,
                 &mut time_to_id,
@@ -147,7 +137,7 @@ impl DocumentMapper<'_> {
 
     fn map_timeline_from_timecode(
         &self,
-        u: &mut GraphUpdate,
+        u: &mut ConfiguredUpdate,
         valid_tier_names: Option<&BTreeSet<String>>,
     ) -> Result<BTreeMap<OrderedFloat<f64>, String>> {
         // Collect all points of time based on the intervals and points.
@@ -198,7 +188,7 @@ impl DocumentMapper<'_> {
             {
                 end = Some(next_pot.0);
             }
-            let tli_id = map_token(
+            let tli_id = map_token_with_ds(
                 u,
                 &NodeInfo::new(&counter.to_string(), &self.doc_path, &self.text_node_name),
                 None,
@@ -218,7 +208,7 @@ impl DocumentMapper<'_> {
 
     fn map_timeline_from_token_tier(
         &self,
-        u: &mut GraphUpdate,
+        u: &mut ConfiguredUpdate,
     ) -> Result<BTreeMap<OrderedFloat<f64>, String>> {
         // One can only map without a timeline if there is a single token
         // layer explicitily defined by the tier_group property.
@@ -248,7 +238,7 @@ impl DocumentMapper<'_> {
             let mut token_ids = Vec::new();
             let mut result = BTreeMap::new();
             for (counter, (time_range, token_text)) in (1..).zip(token_sorted_by_time) {
-                let id = map_token(
+                let id = map_token_with_ds(
                     u,
                     &NodeInfo::new(&counter.to_string(), &self.doc_path, &self.text_node_name),
                     None,
@@ -274,22 +264,21 @@ impl DocumentMapper<'_> {
 
     fn map_tier_group(
         &mut self,
-        config: &GenericImportConfiguration,
-        u: &mut GraphUpdate,
+        u: &mut ConfiguredUpdate,
         tok_tier_name: &str,
         time_to_id: &mut BTreeMap<OrderedFloat<f64>, String>,
         map_token_tier: bool,
     ) -> Result<()> {
         if map_token_tier {
             let segmentation_span_ids =
-                self.map_annotation_tier(config, u, tok_tier_name, None, true, time_to_id)?;
+                self.map_annotation_tier(u, tok_tier_name, None, true, time_to_id)?;
 
             add_order_relations(u, &segmentation_span_ids, Some(tok_tier_name))?;
         }
 
         if let Some(dependent_tier_names) = self.params.tier_groups.get(tok_tier_name) {
             for tier in dependent_tier_names {
-                self.map_annotation_tier(config, u, tier, Some(tok_tier_name), false, time_to_id)?;
+                self.map_annotation_tier(u, tier, Some(tok_tier_name), false, time_to_id)?;
             }
         }
         Ok(())
@@ -297,8 +286,7 @@ impl DocumentMapper<'_> {
 
     fn map_annotation_tier(
         &mut self,
-        config: &GenericImportConfiguration,
-        u: &mut GraphUpdate,
+        u: &mut ConfiguredUpdate,
         tier_name: &str,
         parent_tier_name: Option<&str>,
         is_segmentation: bool,
@@ -338,14 +326,14 @@ impl DocumentMapper<'_> {
                             let (start, end) = best_matching_start_end(i, &parent_tier_intervals).ok_or(anyhow!("{}: Could not determine token interval for value \"{}\" from {} to {} on tier {tier_name}", self.doc_path, i.text, i.xmin, i.xmax))?;
 
                             let span_id =
-                                self.add_span(config, u, (name, &i.text, start, end), time_to_id)?;
+                                self.add_span(u, (name, &i.text, start, end), time_to_id)?;
                             if is_segmentation {
-                                u.add_event(UpdateEvent::AddNodeLabel {
-                                    node_name: span_id.clone(),
-                                    anno_ns: ANNIS_NS.to_string(),
-                                    anno_name: "tok".to_string(),
-                                    anno_value: i.text.clone(),
-                                })?;
+                                u.node_label(
+                                    span_id.clone(),
+                                    ANNIS_NS.to_string(),
+                                    "tok".to_string(),
+                                    i.text.clone(),
+                                )?;
                             }
                             node_ids_sorted.insert(OrderedFloat(i.xmin), span_id);
                             self.number_of_spans += 1;
@@ -358,6 +346,7 @@ impl DocumentMapper<'_> {
                             let time = OrderedFloat(p.number);
                             let overlapped: Vec<_> =
                                 time_to_id.range(time..=time).map(|(_k, v)| v).collect();
+                            let ns = u.config.default_namespace().to_string();
                             let span_id = map_annotations(
                                 u,
                                 &NodeInfo::new(
@@ -365,7 +354,7 @@ impl DocumentMapper<'_> {
                                     &self.doc_path,
                                     &self.text_node_name,
                                 ),
-                                Some(config.default_namespace()),
+                                Some(&ns),
                                 Some(name),
                                 Some(&p.mark),
                                 &overlapped,
@@ -386,8 +375,7 @@ impl DocumentMapper<'_> {
 
     fn add_span(
         &self,
-        config: &GenericImportConfiguration,
-        u: &mut GraphUpdate,
+        u: &mut ConfiguredUpdate,
         anno_tuple: (&str, &str, f64, f64),
         time_to_token_id: &BTreeMap<OrderedFloat<f64>, String>,
     ) -> Result<String> {
@@ -399,6 +387,7 @@ impl DocumentMapper<'_> {
             .range(start_time..end_time)
             .map(|(_k, v)| v)
             .collect();
+        let ns = u.config.default_namespace().to_string();
         let id = map_annotations(
             u,
             &NodeInfo::new(
@@ -406,7 +395,7 @@ impl DocumentMapper<'_> {
                 &self.doc_path,
                 &self.text_node_name,
             ),
-            Some(config.default_namespace()),
+            Some(&ns),
             Some(anno_name),
             Some(anno_value),
             &overlapped,
@@ -423,7 +412,7 @@ impl Importer for ImportTextgrid {
         config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> result::Result<GraphUpdate, Box<dyn std::error::Error>> {
-        let mut u = GraphUpdate::default();
+        let mut u = ConfiguredUpdate::from(config);
         let tier_groups = if let Some(ref tg) = self.tier_groups {
             tg.clone()
         } else {
@@ -437,7 +426,7 @@ impl Importer for ImportTextgrid {
             audio_extension: self.audio_extension.as_str(),
         };
 
-        let documents = config.derive_corpus_graph(input_path, &mut u)?;
+        let documents = u.build_corpus_graph(input_path)?;
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
         for (file_path, doc_path) in documents {
             reporter.info(format!("Processing {}", file_path.to_string_lossy()))?;
@@ -466,10 +455,10 @@ impl Importer for ImportTextgrid {
                 text_node_name,
             };
 
-            doc_mapper.map(&config, &mut u)?;
+            doc_mapper.map(&mut u)?;
             reporter.worked(1)?;
         }
-        Ok(u)
+        Ok(u.into())
     }
 }
 
