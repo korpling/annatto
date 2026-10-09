@@ -118,7 +118,7 @@ impl Importer for ImportText {
             .collect_vec();
         mapper_vec
             .into_iter()
-            .try_for_each(|m| m.import_textfile(&mut update))?;
+            .try_for_each(|m| m.import_textfile(&config, &mut update))?;
         Ok(update)
     }
 }
@@ -144,7 +144,11 @@ struct TextfileMapper<'a> {
 }
 
 impl<'a> TextfileMapper<'a> {
-    fn import_textfile(&self, update: &mut GraphUpdate) -> anyhow::Result<()> {
+    fn import_textfile(
+        &self,
+        config: &GenericImportConfiguration,
+        update: &mut GraphUpdate,
+    ) -> anyhow::Result<()> {
         self.progress
             .info(format!("Processing {}", self.path.to_string_lossy()))?;
 
@@ -167,6 +171,7 @@ impl<'a> TextfileMapper<'a> {
                 whitespace_after: ws,
             } = t;
             create_token_node(
+                config,
                 update,
                 &format!("{}tok{}", prefix, i),
                 t,
@@ -180,9 +185,9 @@ impl<'a> TextfileMapper<'a> {
             update.add_event(UpdateEvent::AddEdge {
                 source_node: format!("{}tok{}", prefix, i),
                 target_node: format!("{}tok{}", prefix, i + 1),
-                layer: ANNIS_NS.to_string(),
-                component_type: "Ordering".to_string(),
-                component_name: "".to_string(),
+                layer: config.default_ordering().layer.to_string(),
+                component_type: config.default_ordering().get_type().to_string(),
+                component_name: config.default_ordering().name.to_string(),
             })?;
         }
         Ok(())
@@ -190,6 +195,7 @@ impl<'a> TextfileMapper<'a> {
 }
 
 pub fn create_token_node(
+    config: &GenericImportConfiguration,
     update: &mut GraphUpdate,
     node_name: &str,
     token_value: &str,
@@ -220,9 +226,9 @@ pub fn create_token_node(
     update.add_event(UpdateEvent::AddEdge {
         source_node: node_name.to_string(),
         target_node: document_node.to_string(),
-        layer: ANNIS_NS.to_string(),
-        component_type: "PartOf".to_string(),
-        component_name: "".to_string(),
+        layer: config.default_part_of().layer.to_string(),
+        component_type: config.default_part_of().get_type().to_string(),
+        component_name: config.default_part_of().name.to_string(),
     })?;
 
     Ok(())
