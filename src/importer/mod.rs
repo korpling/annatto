@@ -22,7 +22,7 @@ pub mod whisper;
 pub mod xlsx;
 pub mod xml;
 
-use crate::{StepID, util::graphupdate::import_corpus_graph_from_files, workflow::StatusSender};
+use crate::{StepID, workflow::StatusSender};
 use graphannis::{
     model::{AnnotationComponent, AnnotationComponentType},
     update::GraphUpdate,
@@ -352,16 +352,6 @@ impl<'a> GenericImportConfiguration {
             default_ns: Default::default(),
             default_components: Default::default(),
         }
-    }
-
-    // importers do not need to use this, but it implements the default case.
-    #[deprecated]
-    pub fn derive_corpus_graph(
-        &self,
-        import_path: &Path,
-        update: &mut GraphUpdate,
-    ) -> crate::error::Result<NamedPaths> {
-        import_corpus_graph_from_files(update, import_path, self)
     }
 
     const EMPTY_NS: &'a str = "";
