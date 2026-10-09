@@ -2,11 +2,12 @@ use anyhow::anyhow;
 use encoding_rs_io::DecodeReaderBytes;
 use facet::Facet;
 use graphannis::{
-    model::AnnotationComponentType,
+    model::{AnnotationComponent, AnnotationComponentType},
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use itertools::Itertools;
+use lazy_static::lazy_static;
 use pest::{
     Parser,
     iterators::{Pair, Pairs},
@@ -87,16 +88,16 @@ impl DocumentMapper {
             u.add_event(UpdateEvent::AddEdge {
                 source_node: parent_node_name.to_string(),
                 target_node: target.to_string(),
-                layer: config.default_namespace().to_string(), // TODO draft layer from generic configuration
-                component_type: AnnotationComponentType::Dominance.to_string(),
-                component_name: "".to_string(),
+                layer: config.default_dominance().layer.to_string(),
+                component_type: config.default_dominance().get_type().to_string(),
+                component_name: config.default_dominance().name.to_string(),
             })?;
             u.add_event(UpdateEvent::AddEdge {
                 source_node: parent_node_name.clone(),
                 target_node: target.to_string(),
-                layer: config.default_namespace().to_string(), // TODO re-think that for the future by allowing to configure layers in Generic import configuration
-                component_type: AnnotationComponentType::Dominance.to_string(),
-                component_name: "edge".to_string(),
+                layer: config.default_dominance().layer.to_string(),
+                component_type: config.default_dominance().get_type().to_string(),
+                component_name: format!("{}edge", config.default_dominance().name),
             })?;
             if let Some(label) = edge_label
                 && !label.is_empty()
@@ -104,9 +105,9 @@ impl DocumentMapper {
                 u.add_event(UpdateEvent::AddEdgeLabel {
                     source_node: parent_node_name.to_string(),
                     target_node: target.to_string(),
-                    layer: config.default_namespace().to_string(), // TODO
-                    component_type: AnnotationComponentType::Dominance.to_string(),
-                    component_name: "".to_string(),
+                    layer: config.default_dominance().layer.to_string(),
+                    component_type: config.default_dominance().get_type().to_string(),
+                    component_name: config.default_dominance().name.to_string(),
                     anno_ns: config.default_namespace().to_string(),
                     anno_name: "func".to_string(),
                     anno_value: label.to_string(),
@@ -114,9 +115,9 @@ impl DocumentMapper {
                 u.add_event(UpdateEvent::AddEdgeLabel {
                     source_node: parent_node_name.to_string(),
                     target_node: target,
-                    layer: config.default_namespace().to_string(), // TODO
-                    component_type: AnnotationComponentType::Dominance.to_string(),
-                    component_name: "edge".to_string(),
+                    layer: config.default_dominance().layer.to_string(),
+                    component_type: config.default_dominance().get_type().to_string(),
+                    component_name: format!("{}edge", config.default_dominance().name),
                     anno_ns: config.default_namespace().to_string(),
                     anno_name: "func".to_string(),
                     anno_value: label.to_string(),
@@ -184,9 +185,9 @@ impl DocumentMapper {
                 u.add_event(UpdateEvent::AddEdge {
                     source_node: node_name.to_string(),
                     target_node: self.doc_path.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::PartOf.to_string(),
-                    component_name: "".to_string(),
+                    layer: config.default_part_of().layer.to_string(),
+                    component_type: config.default_part_of().get_type().to_string(),
+                    component_name: config.default_part_of().name.to_string(),
                 })?;
 
                 self.annotate_edge(config, u, parent, node_name.to_string(), edge_label)?;
@@ -235,9 +236,9 @@ impl DocumentMapper {
         u.add_event(UpdateEvent::AddEdge {
             source_node: tok_id.clone(),
             target_node: self.text_node_name.clone(),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::PartOf.to_string(),
-            component_name: "".to_string(),
+            layer: config.default_part_of().layer.to_string(),
+            component_type: config.default_part_of().get_type().to_string(),
+            component_name: config.default_part_of().name.to_string(),
         })?;
         self.annotate_edge(config, u, parent, tok_id.to_string(), edge_label)?;
         // TODO: allow to customize the token annotation name
@@ -257,9 +258,9 @@ impl DocumentMapper {
             u.add_event(UpdateEvent::AddEdge {
                 source_node: last_token_id.clone(),
                 target_node: tok_id.clone(),
-                layer: ANNIS_NS.to_string(),
-                component_type: AnnotationComponentType::Ordering.to_string(),
-                component_name: "".to_string(),
+                layer: config.default_ordering().layer.to_string(),
+                component_type: config.default_ordering().get_type().to_string(),
+                component_name: config.default_ordering().name.to_string(),
             })?;
         }
         self.number_of_token += 1;
@@ -314,6 +315,14 @@ pub struct ImportPTB {
 
 const FILE_EXTENSIONS: [&str; 1] = ["ptb"];
 
+lazy_static! {
+    static ref DEFAULT_DOMINANCE_COMPONENT: AnnotationComponent = AnnotationComponent::new(
+        AnnotationComponentType::Dominance,
+        "syntax".to_string(),
+        "".to_string()
+    );
+}
+
 impl DefaultImportConfiguration for ImportPTB {
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
@@ -321,6 +330,10 @@ impl DefaultImportConfiguration for ImportPTB {
 
     fn preset_default_namespace(&self) -> Option<&str> {
         Some("syntax")
+    }
+
+    fn preset_default_dominance(&self) -> Option<&AnnotationComponent> {
+        Some(&DEFAULT_DOMINANCE_COMPONENT)
     }
 }
 
