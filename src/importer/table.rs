@@ -8,10 +8,10 @@ use csv::Reader;
 use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
-    model::{AnnotationComponent, AnnotationComponentType},
+    model::AnnotationComponent,
     update::{GraphUpdate, UpdateEvent},
 };
-use graphannis_core::{graph::ANNIS_NS, util::split_qname};
+use graphannis_core::util::split_qname;
 
 use serde::Serialize;
 use serde_derive::Deserialize;
@@ -181,6 +181,7 @@ impl ImportTable {
 
                 if line.trim_ascii().is_empty() {
                     self.map_span(
+                        &config,
                         update,
                         group_start_token,
                         next_token_idx,
@@ -198,6 +199,7 @@ impl ImportTable {
             if next_token_idx > group_start_token {
                 // Map the last group as well
                 self.map_span(
+                    &config,
                     update,
                     group_start_token,
                     next_token_idx,
@@ -213,6 +215,7 @@ impl ImportTable {
 
     fn map_span(
         &self,
+        config: &GenericImportConfiguration,
         update: &mut GraphUpdate,
         group_start_token: u64,
         next_token_idx: u64,
@@ -238,9 +241,9 @@ impl ImportTable {
         update.add_event(UpdateEvent::AddEdge {
             source_node: group_span_name.clone(),
             target_node: document_node_name.to_string(),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::PartOf.to_string(),
-            component_name: "".to_string(),
+            layer: config.default_part_of().layer.to_string(),
+            component_type: config.default_part_of().get_type().to_string(),
+            component_name: config.default_part_of().name.to_string(),
         })?;
         // Add spanning relations for all covered token
         for t in group_start_token..next_token_idx {
@@ -256,9 +259,9 @@ impl ImportTable {
                 update.add_event(UpdateEvent::AddEdge {
                     source_node: group_span_name.clone(),
                     target_node: format!("{document_node_name}#t{t}"),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Coverage.to_string(),
-                    component_name: "".to_string(),
+                    layer: config.default_coverage().layer.to_string(),
+                    component_type: config.default_coverage().get_type().to_string(),
+                    component_name: config.default_coverage().name.to_string(),
                 })?;
             }
         }
@@ -295,18 +298,18 @@ impl ImportTable {
             update.add_event(UpdateEvent::AddEdge {
                 source_node: node_name.clone(),
                 target_node: document_node_name.to_string(),
-                layer: ANNIS_NS.to_string(),
-                component_type: AnnotationComponentType::PartOf.to_string(),
-                component_name: "".to_string(),
+                layer: config.default_part_of().layer.to_string(),
+                component_type: config.default_part_of().get_type().to_string(),
+                component_name: config.default_part_of().name.to_string(),
             })?;
             if token_idx > 0 {
                 let last_token_node_name = format!("{document_node_name}#t{}", token_idx - 1);
                 update.add_event(UpdateEvent::AddEdge {
                     source_node: last_token_node_name.clone(),
                     target_node: node_name.clone(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: "".to_string(),
+                    layer: config.default_ordering().layer.to_string(),
+                    component_type: config.default_ordering().get_type().to_string(),
+                    component_name: config.default_ordering().name.to_string(),
                 })?;
             }
 
