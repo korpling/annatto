@@ -16,7 +16,6 @@ use crate::util::graphupdate::{
 use anyhow::{Result, anyhow};
 use encoding_rs_io::DecodeReaderBytes;
 use facet::Facet;
-use graphannis::update::GraphUpdate;
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
@@ -411,7 +410,7 @@ impl Importer for ImportTextgrid {
         step_id: StepID,
         config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
-    ) -> result::Result<GraphUpdate, Box<dyn std::error::Error>> {
+    ) -> result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let mut u = ConfiguredUpdate::from(config);
         let tier_groups = if let Some(ref tg) = self.tier_groups {
             tg.clone()
