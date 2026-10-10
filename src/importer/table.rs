@@ -6,11 +6,7 @@ use std::{
 
 use csv::Reader;
 use facet::Facet;
-use graphannis::{
-    graph::AnnoKey,
-    model::AnnotationComponent,
-    update::{GraphUpdate, UpdateEvent},
-};
+use graphannis::{graph::AnnoKey, model::AnnotationComponent};
 use graphannis_core::util::split_qname;
 
 use serde::Serialize;
@@ -21,6 +17,7 @@ use crate::{
     StepID,
     importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
+    util::graphupdate::ConfiguredUpdate,
 };
 
 #[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
@@ -120,15 +117,15 @@ impl Importer for ImportTable {
         config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = GraphUpdate::default();
-        let paths_and_node_names = config.derive_corpus_graph(input_path, &mut update)?;
+        let mut update = ConfiguredUpdate::from(config);
+        let paths_and_node_names = update.build_corpus_graph(input_path)?;
         let progress =
             ProgressReporter::new(tx.clone(), step_id.clone(), paths_and_node_names.len())?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
-            self.import_document(&config, &mut update, pathbuf.as_path(), doc_node_name)?;
+            self.import_document(&mut update, pathbuf.as_path(), doc_node_name)?;
             progress.worked(1)?;
         }
-        Ok(update)
+        Ok(update.into())
     }
 }
 
@@ -145,8 +142,7 @@ impl DefaultImportConfiguration for ImportTable {
 impl ImportTable {
     fn import_document(
         &self,
-        config: &GenericImportConfiguration,
-        update: &mut GraphUpdate,
+        update: &mut ConfiguredUpdate,
         document_path: &Path,
         document_node_name: String,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -166,7 +162,7 @@ impl ImportTable {
         }
         let reader = reader_builder.from_path(document_path)?;
 
-        self.map_token(config, update, &document_node_name, reader)?;
+        self.map_token(update, &document_node_name, reader)?;
 
         if let Some(empty_line_group) = &self.empty_line_group {
             // Go trough the file and find empty lines
@@ -181,7 +177,6 @@ impl ImportTable {
 
                 if line.trim_ascii().is_empty() {
                     self.map_span(
-                        &config,
                         update,
                         group_start_token,
                         next_token_idx,
@@ -199,7 +194,6 @@ impl ImportTable {
             if next_token_idx > group_start_token {
                 // Map the last group as well
                 self.map_span(
-                    &config,
                     update,
                     group_start_token,
                     next_token_idx,
@@ -215,8 +209,7 @@ impl ImportTable {
 
     fn map_span(
         &self,
-        config: &GenericImportConfiguration,
-        update: &mut GraphUpdate,
+        update: &mut ConfiguredUpdate,
         group_start_token: u64,
         next_token_idx: u64,
         empty_line_group: &EmptyLineGroup,
@@ -227,42 +220,29 @@ impl ImportTable {
             "{document_node_name}#group_span_{group_start_token}_{}",
             next_token_idx - 1
         );
-
-        update.add_event(UpdateEvent::AddNode {
-            node_name: group_span_name.clone(),
-            node_type: "node".to_string(),
-        })?;
-        update.add_event(UpdateEvent::AddNodeLabel {
-            node_name: group_span_name.clone(),
-            anno_ns: empty_line_group.anno.ns.to_string(),
-            anno_name: empty_line_group.anno.name.to_string(),
-            anno_value: value,
-        })?;
-        update.add_event(UpdateEvent::AddEdge {
-            source_node: group_span_name.clone(),
-            target_node: document_node_name.to_string(),
-            layer: config.default_part_of().layer.to_string(),
-            component_type: config.default_part_of().get_type().to_string(),
-            component_name: config.default_part_of().name.to_string(),
-        })?;
+        update.labeled_node(
+            group_span_name.clone(),
+            "node".to_string(),
+            empty_line_group.anno.ns.to_string(),
+            empty_line_group.anno.name.to_string(),
+            value,
+        )?;
+        update.part_of(group_span_name.clone(), document_node_name.to_string())?;
         // Add spanning relations for all covered token
         for t in group_start_token..next_token_idx {
             if let Some(c) = &empty_line_group.component {
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: group_span_name.clone(),
-                    target_node: format!("{document_node_name}#t{t}"),
-                    layer: c.layer.to_string(),
-                    component_type: c.get_type().to_string(),
-                    component_name: c.name.to_string(),
-                })?;
+                update.edge_by_parts(
+                    group_span_name.clone(),
+                    format!("{document_node_name}#t{t}"),
+                    c.layer.to_string(),
+                    c.get_type(),
+                    c.name.to_string(),
+                )?;
             } else {
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: group_span_name.clone(),
-                    target_node: format!("{document_node_name}#t{t}"),
-                    layer: config.default_coverage().layer.to_string(),
-                    component_type: config.default_coverage().get_type().to_string(),
-                    component_name: config.default_coverage().name.to_string(),
-                })?;
+                update.coverage(
+                    group_span_name.clone(),
+                    format!("{document_node_name}#t{t}"),
+                )?;
             }
         }
         Ok(())
@@ -270,8 +250,7 @@ impl ImportTable {
 
     fn map_token<R>(
         &self,
-        config: &GenericImportConfiguration,
-        update: &mut GraphUpdate,
+        update: &mut ConfiguredUpdate,
         document_node_name: &str,
         mut reader: Reader<R>,
     ) -> Result<(), Box<dyn std::error::Error>>
@@ -291,26 +270,11 @@ impl ImportTable {
 
             // Add node for token
             let node_name = format!("{document_node_name}#t{token_idx}");
-            update.add_event(UpdateEvent::AddNode {
-                node_name: node_name.clone(),
-                node_type: "node".to_string(),
-            })?;
-            update.add_event(UpdateEvent::AddEdge {
-                source_node: node_name.clone(),
-                target_node: document_node_name.to_string(),
-                layer: config.default_part_of().layer.to_string(),
-                component_type: config.default_part_of().get_type().to_string(),
-                component_name: config.default_part_of().name.to_string(),
-            })?;
+            update.node(node_name.clone(), "node".to_string())?;
+            update.part_of(node_name.clone(), document_node_name.to_string())?;
             if token_idx > 0 {
                 let last_token_node_name = format!("{document_node_name}#t{}", token_idx - 1);
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: last_token_node_name.clone(),
-                    target_node: node_name.clone(),
-                    layer: config.default_ordering().layer.to_string(),
-                    component_type: config.default_ordering().get_type().to_string(),
-                    component_name: config.default_ordering().name.to_string(),
-                })?;
+                update.ordering(last_token_node_name.clone(), node_name.clone())?;
             }
 
             // Add all columns as token annotations
@@ -322,12 +286,12 @@ impl ImportTable {
                         continue;
                     }
                     let (ns, name) = split_qname(name);
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.clone(),
-                        anno_ns: ns.unwrap_or(config.default_namespace()).to_string(),
-                        anno_name: name.to_string(),
-                        anno_value: val.to_string(),
-                    })?;
+                    update.node_label(
+                        node_name.clone(),
+                        ns.unwrap_or(update.config.default_namespace()).to_string(),
+                        name.to_string(),
+                        val.to_string(),
+                    )?;
                 }
             }
             token_idx += 1;
