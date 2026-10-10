@@ -272,6 +272,34 @@ impl DefaultComponents {
             pointing,
         }
     }
+
+    pub fn from_configured_importer(
+        importer: &dyn Importer,
+        config: &GenericImportConfiguration,
+    ) -> Self {
+        Self::new(
+            config
+                .user_provided_ordering()
+                .or(importer.preset_default_ordering())
+                .cloned(),
+            config
+                .user_provided_coverage()
+                .or(importer.preset_default_coverage())
+                .cloned(),
+            config
+                .user_provided_part_of()
+                .or(importer.preset_default_part_of())
+                .cloned(),
+            config
+                .user_provided_dominance()
+                .or(importer.preset_default_dominance())
+                .cloned(),
+            config
+                .user_provided_pointing()
+                .or(importer.preset_default_pointing())
+                .cloned(),
+        )
+    }
 }
 
 impl<'a> GenericImportConfiguration {
@@ -369,6 +397,14 @@ impl<'a> GenericImportConfiguration {
         self.default_ns.is_some()
     }
 
+    pub fn user_provided_ordering(&self) -> Option<&AnnotationComponent> {
+        if let Some(default_components) = &self.default_components {
+            default_components.ordering.as_ref()
+        } else {
+            None
+        }
+    }
+
     pub fn default_ordering(&self) -> &AnnotationComponent {
         if let Some(default_components) = &self.default_components {
             default_components
@@ -377,6 +413,14 @@ impl<'a> GenericImportConfiguration {
                 .unwrap_or(&GLOBAL_DEFAULT_ORDERING)
         } else {
             &GLOBAL_DEFAULT_ORDERING
+        }
+    }
+
+    pub fn user_provided_coverage(&self) -> Option<&AnnotationComponent> {
+        if let Some(default_components) = &self.default_components {
+            default_components.coverage.as_ref()
+        } else {
+            None
         }
     }
 
@@ -391,6 +435,14 @@ impl<'a> GenericImportConfiguration {
         }
     }
 
+    pub fn user_provided_part_of(&self) -> Option<&AnnotationComponent> {
+        if let Some(default_components) = &self.default_components {
+            default_components.part_of.as_ref()
+        } else {
+            None
+        }
+    }
+
     pub fn default_part_of(&self) -> &AnnotationComponent {
         if let Some(default_components) = &self.default_components {
             default_components
@@ -402,6 +454,14 @@ impl<'a> GenericImportConfiguration {
         }
     }
 
+    pub fn user_provided_dominance(&self) -> Option<&AnnotationComponent> {
+        if let Some(default_components) = &self.default_components {
+            default_components.dominance.as_ref()
+        } else {
+            None
+        }
+    }
+
     pub fn default_dominance(&self) -> &AnnotationComponent {
         if let Some(default_components) = &self.default_components {
             default_components
@@ -410,6 +470,14 @@ impl<'a> GenericImportConfiguration {
                 .unwrap_or(&GLOBAL_DEFAULT_DOMINANCE)
         } else {
             &GLOBAL_DEFAULT_DOMINANCE
+        }
+    }
+
+    pub fn user_provided_pointing(&self) -> Option<&AnnotationComponent> {
+        if let Some(default_components) = &self.default_components {
+            default_components.pointing.as_ref()
+        } else {
+            None
         }
     }
 

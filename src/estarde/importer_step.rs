@@ -40,45 +40,11 @@ pub mod optional_sequence {
                                 .preset_default_namespace()
                                 .map(ToString::to_string)
                         };
-                        let resolved_default_components = if let Some(DefaultComponents {
-                            ordering,
-                            coverage,
-                            part_of,
-                            dominance,
-                            pointing,
-                        }) = given_config.default_components()
-                        {
-                            DefaultComponents {
-                                ordering: ordering
-                                    .as_ref()
-                                    .or(module.reader().preset_default_ordering())
-                                    .cloned(),
-                                coverage: coverage
-                                    .as_ref()
-                                    .or(module.reader().preset_default_coverage())
-                                    .cloned(),
-                                part_of: part_of
-                                    .as_ref()
-                                    .or(module.reader().preset_default_part_of())
-                                    .cloned(),
-                                dominance: dominance
-                                    .as_ref()
-                                    .or(module.reader().preset_default_dominance())
-                                    .cloned(),
-                                pointing: pointing
-                                    .as_ref()
-                                    .or(module.reader().preset_default_pointing())
-                                    .cloned(),
-                            }
-                        } else {
-                            DefaultComponents {
-                                ordering: module.reader().preset_default_ordering().cloned(),
-                                coverage: module.reader().preset_default_coverage().cloned(),
-                                part_of: module.reader().preset_default_part_of().cloned(),
-                                dominance: module.reader().preset_default_dominance().cloned(),
-                                pointing: module.reader().preset_default_pointing().cloned(),
-                            }
-                        };
+                        let resolved_default_components =
+                            DefaultComponents::from_configured_importer(
+                                module.reader(),
+                                &given_config,
+                            );
                         Some(GenericImportConfiguration::new(
                             given_config.custom_root_name(),
                             resolved_extensions,
