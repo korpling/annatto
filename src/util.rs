@@ -1,13 +1,12 @@
 use crate::{
     StepID,
     error::{AnnattoError, Result},
-    importer::{GenericImportConfiguration, NamedPaths},
 };
 use graphannis::{
     AnnotationGraph,
     graph::{EdgeContainer, GraphStorage},
     model::{AnnotationComponent, AnnotationComponentType},
-    update::{GraphUpdate, UpdateEvent},
+    update::GraphUpdate,
 };
 
 use crate::{progress::ProgressReporter, workflow::StatusSender};
