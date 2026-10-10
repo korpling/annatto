@@ -1,5 +1,4 @@
 use facet::Facet;
-use graphannis::update::{GraphUpdate, UpdateEvent};
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use normpath::PathExt;
@@ -19,7 +18,7 @@ use crate::{
     error::AnnattoError,
     importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
-    util::graphupdate::map_audio_source,
+    util::graphupdate::{ConfiguredUpdate, map_audio_source},
     workflow::StatusMessage,
 };
 
@@ -56,8 +55,8 @@ impl Importer for ImportEXMARaLDA {
         config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = GraphUpdate::default();
-        let all_files = config.derive_corpus_graph(input_path, &mut update)?;
+        let mut update = ConfiguredUpdate::from(config);
+        let all_files = update.build_corpus_graph(input_path)?;
         let progress = ProgressReporter::new(tx.clone(), step_id.clone(), all_files.len())?;
         let document_status: Result<Vec<()>, AnnattoError> = all_files
             .into_iter()
@@ -66,7 +65,6 @@ impl Importer for ImportEXMARaLDA {
                     &step_id,
                     &doc_node_name,
                     fp.as_path(),
-                    &config,
                     &mut update,
                     &progress,
                     &tx,
@@ -75,7 +73,7 @@ impl Importer for ImportEXMARaLDA {
             .collect();
         // Check for any errors
         document_status?;
-        Ok(update)
+        Ok(update.into())
     }
 }
 
@@ -107,8 +105,7 @@ impl ImportEXMARaLDA {
         step_id: &StepID,
         doc_node_name: &str,
         document_path: &std::path::Path,
-        config: &GenericImportConfiguration,
-        update: &mut GraphUpdate,
+        update: &mut ConfiguredUpdate,
         progress: &ProgressReporter,
         tx: &Option<crate::workflow::StatusSender>,
     ) -> crate::error::Result<()> {
@@ -232,13 +229,13 @@ impl ImportEXMARaLDA {
                                     speaker_map.insert(speaker_id.to_string(), speaker_name);
                                 }
 
-                                update.add_event(UpdateEvent::AddNodeLabel {
-                                    // speaker table data as document meta annotation
-                                    node_name: doc_node_name.to_string(),
-                                    anno_ns: speaker_id.to_string(),
-                                    anno_name: str_tag_name,
-                                    anno_value: char_buf.to_string(),
-                                })?;
+                                // speaker table data as document meta annotation
+                                update.node_label(
+                                    doc_node_name.to_string(),
+                                    speaker_id.to_string(),
+                                    str_tag_name,
+                                    char_buf.to_string(),
+                                )?;
                             }
                         }
                         "common-timeline" => {
@@ -290,27 +287,18 @@ impl ImportEXMARaLDA {
                             // build empty toks
                             for (tli_id, time_opt) in &tlis {
                                 let node_name = format!("{}#{}", doc_node_name, tli_id);
-                                update.add_event(UpdateEvent::AddNode {
-                                    node_name: node_name.to_string(),
-                                    node_type: "node".to_string(),
-                                })?;
-                                update.add_event(UpdateEvent::AddNodeLabel {
-                                    node_name: node_name.to_string(),
-                                    anno_ns: ANNIS_NS.to_string(),
-                                    anno_name: "tok".to_string(),
-                                    anno_value: " ".to_string(),
-                                })?;
+                                update.labeled_node(
+                                    node_name.to_string(),
+                                    "node".to_string(),
+                                    ANNIS_NS.to_string(),
+                                    "tok".to_string(),
+                                    " ".to_string(),
+                                )?;
                                 timeline.insert(
                                     tli_id.to_string(),
                                     ((*time_opt), node_name.to_string()),
                                 );
-                                update.add_event(UpdateEvent::AddEdge {
-                                    source_node: node_name.to_string(),
-                                    target_node: doc_node_name.to_string(),
-                                    layer: config.default_part_of().layer.to_string(),
-                                    component_type: config.default_part_of().get_type().to_string(),
-                                    component_name: config.default_part_of().name.to_string(),
-                                })?;
+                                update.part_of(node_name.to_string(), doc_node_name.to_string())?;
                             }
                             // order timeline elements / empty toks
                             ordered_tl_nodes
@@ -319,16 +307,7 @@ impl ImportEXMARaLDA {
                                 if let Some(source) = &timeline.get(&ordered_tl_nodes[i - 1])
                                     && let Some(target) = &timeline.get(&ordered_tl_nodes[i])
                                 {
-                                    update.add_event(UpdateEvent::AddEdge {
-                                        source_node: source.1.to_string(),
-                                        target_node: target.1.to_string(),
-                                        layer: config.default_ordering().layer.to_string(),
-                                        component_type: config
-                                            .default_ordering()
-                                            .get_type()
-                                            .to_string(),
-                                        component_name: config.default_ordering().name.to_string(),
-                                    })?;
+                                    update.ordering(source.1.to_string(), target.1.to_string())?;
                                 }
                             }
                         }
@@ -476,34 +455,15 @@ impl ImportEXMARaLDA {
                                 )
                             };
                             if !already_defined.contains(&node_name) {
-                                update.add_event(UpdateEvent::AddNode {
-                                    node_name: node_name.to_string(),
-                                    node_type: "node".to_string(),
-                                })?;
-                                // part-of
-                                update.add_event(UpdateEvent::AddEdge {
-                                    source_node: node_name.to_string(),
-                                    target_node: doc_node_name.to_string(),
-                                    layer: config.default_part_of().layer.to_string(),
-                                    component_type: config.default_part_of().get_type().to_string(),
-                                    component_name: config.default_part_of().name.to_string(),
-                                })?;
+                                update.node(node_name.to_string(), "node".to_string())?;
+                                update.part_of(node_name.to_string(), doc_node_name.to_string())?;
                                 // coverage
                                 for overlapped_id in overlapped {
                                     if let Some((_, target_id)) = timeline.get(overlapped_id) {
-                                        update.add_event(UpdateEvent::AddEdge {
-                                            source_node: node_name.to_string(),
-                                            target_node: target_id.to_string(),
-                                            layer: config.default_coverage().layer.to_string(),
-                                            component_type: config
-                                                .default_coverage()
-                                                .get_type()
-                                                .to_string(),
-                                            component_name: config
-                                                .default_coverage()
-                                                .name
-                                                .to_string(),
-                                        })?;
+                                        update.coverage(
+                                            node_name.to_string(),
+                                            target_id.to_string(),
+                                        )?;
                                     }
                                 }
                                 let node_tpl = if let Some(t_name) = ordered_tl_nodes.get(end_i) {
@@ -522,29 +482,29 @@ impl ImportEXMARaLDA {
                                 if let Some((Some(start_time), _)) = timeline.get(key)
                                     && let Some((Some(end_time), _)) = node_tpl
                                 {
-                                    update.add_event(UpdateEvent::AddNodeLabel {
-                                        node_name: node_name.to_string(),
-                                        anno_ns: ANNIS_NS.to_string(),
-                                        anno_name: "time".to_string(),
-                                        anno_value: format!("{start_time}-{end_time}"),
-                                    })?;
+                                    update.node_label(
+                                        node_name.to_string(),
+                                        ANNIS_NS.to_string(),
+                                        "time".to_string(),
+                                        format!("{start_time}-{end_time}"),
+                                    )?;
                                     already_defined.insert(node_name.to_string());
                                 }
                             }
-                            update.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: node_name.to_string(),
-                                anno_ns: ANNIS_NS.to_string(),
-                                anno_name: "layer".to_string(),
-                                anno_value: speaker_name.to_string(),
-                            })?;
+                            update.node_label(
+                                node_name.to_string(),
+                                ANNIS_NS.to_string(),
+                                "layer".to_string(),
+                                speaker_name.to_string(),
+                            )?;
                             if tier_type == "t" {
                                 // tokenization
-                                update.add_event(UpdateEvent::AddNodeLabel {
-                                    node_name: node_name.to_string(),
-                                    anno_ns: ANNIS_NS.to_string(),
-                                    anno_name: "tok".to_string(),
-                                    anno_value: text.to_string(),
-                                })?;
+                                update.node_label(
+                                    node_name.to_string(),
+                                    ANNIS_NS.to_string(),
+                                    "tok".to_string(),
+                                    text.to_string(),
+                                )?;
                                 // order nodes
                                 let order_tpl = (start_i, node_name.to_string());
                                 match named_orderings.entry(anno_name.to_string()) {
@@ -556,12 +516,12 @@ impl ImportEXMARaLDA {
                                     }
                                 }
                             }
-                            update.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: node_name.to_string(),
-                                anno_ns: speaker_name.to_string(),
-                                anno_name: anno_name.to_string(),
-                                anno_value: text.to_string(),
-                            })?;
+                            update.node_label(
+                                node_name.to_string(),
+                                speaker_name.to_string(),
+                                anno_name.to_string(),
+                                text.to_string(),
+                            )?;
                         }
                         "ud-information" => {
                             if let Some(anno_name) = parent_map
@@ -578,12 +538,12 @@ impl ImportEXMARaLDA {
                                 } else {
                                     ""
                                 };
-                                update.add_event(UpdateEvent::AddNodeLabel {
-                                    node_name: doc_node_name.to_string(),
-                                    anno_ns: ns.to_string(),
-                                    anno_name: anno_name.to_string(),
-                                    anno_value: char_buf.to_string(),
-                                })?;
+                                update.node_label(
+                                    doc_node_name.to_string(),
+                                    ns.to_string(),
+                                    anno_name.to_string(),
+                                    char_buf.to_string(),
+                                )?;
                             }
                         }
                         _ => {}
@@ -605,13 +565,13 @@ impl ImportEXMARaLDA {
             let mut prev = None;
             for (_, node_name) in node_name_vec.into_iter().sorted_by(|a, b| a.0.cmp(&b.0)) {
                 if let Some(source) = prev {
-                    update.add_event(UpdateEvent::AddEdge {
-                        source_node: source,
-                        target_node: node_name.to_string(),
-                        layer: ANNIS_NS.to_string(), // TODO switch to DEFAULT_NS
-                        component_type: config.default_ordering().get_type().to_string(),
-                        component_name: name.to_string(),
-                    })?;
+                    update.edge_by_parts(
+                        source,
+                        node_name.to_string(),
+                        ANNIS_NS.to_string(), // TODO switch to DEFAULT_NS
+                        update.config.default_ordering().get_type(),
+                        name.to_string(),
+                    )?;
                 }
                 prev = Some(node_name);
             }
