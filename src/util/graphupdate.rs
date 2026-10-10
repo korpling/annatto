@@ -271,8 +271,8 @@ impl ConfiguredUpdate {
         source_node: String,
         target_node: String,
         component: &AnnotationComponent,
-        anno_name: String,
         anno_ns: String,
+        anno_name: String,
         anno_value: String,
     ) -> Result<()> {
         self.inner.add_event(UpdateEvent::AddEdgeLabel {
