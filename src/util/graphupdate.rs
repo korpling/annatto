@@ -199,6 +199,12 @@ impl ConfiguredUpdate {
         Ok(())
     }
 
+    pub(crate) fn delete(&mut self, node_name: String) -> Result<()> {
+        self.inner
+            .add_event(UpdateEvent::DeleteNode { node_name })?;
+        Ok(())
+    }
+
     pub(crate) fn node_label(
         &mut self,
         node_name: String,
