@@ -3,11 +3,13 @@ use std::path::PathBuf;
 use anyhow::anyhow;
 use facet::Facet;
 use git2::{Repository, StatusOptions};
-use graphannis::update::{GraphUpdate, UpdateEvent};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::importer::{DefaultImportConfiguration, GenericImportConfiguration, Importer};
+use crate::{
+    importer::{DefaultImportConfiguration, GenericImportConfiguration, Importer},
+    util::graphupdate::ConfiguredUpdate,
+};
 
 /// This importer can enrich a corpus with commit metadata. The import path needs
 /// to be the root directory of the local git repository.
@@ -40,7 +42,7 @@ impl Importer for ImportGitMetadata {
         config: GenericImportConfiguration,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = GraphUpdate::default();
+        let mut update = ConfiguredUpdate::from(config);
         let repo = Repository::open(input_path)?;
         let head_sha = repo
             .revparse("HEAD")?
@@ -72,17 +74,14 @@ impl Importer for ImportGitMetadata {
             .file_name()
             .ok_or(anyhow!("Could not determine root directory of input path."))?
             .to_string_lossy();
-        update.add_event(UpdateEvent::AddNode {
-            node_name: corpus_root.to_string(),
-            node_type: "corpus".to_string(),
-        })?;
-        update.add_event(UpdateEvent::AddNodeLabel {
-            node_name: corpus_root.to_string(),
-            anno_ns: config.default_namespace().to_string(),
-            anno_name: "revision".to_string(),
-            anno_value: head_sha.to_string(),
-        })?;
-        Ok(update)
+        update.labeled_node(
+            corpus_root.to_string(),
+            "corpus".to_string(),
+            update.config.default_namespace().to_string(),
+            "revision".to_string(),
+            head_sha.to_string(),
+        )?;
+        Ok(update.into())
     }
 }
 
