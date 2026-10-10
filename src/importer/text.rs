@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use encoding_rs::Encoding;
 use encoding_rs_io::DecodeReaderBytesBuilder;
 use facet::Facet;
-use graphannis::update::{GraphUpdate, UpdateEvent};
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -14,6 +13,7 @@ use crate::{
         text::tokenizer::{Token, TreeTaggerTokenizer},
     },
     progress::ProgressReporter,
+    util::graphupdate::ConfiguredUpdate,
 };
 
 pub(crate) mod tokenizer;
@@ -95,10 +95,10 @@ impl Importer for ImportText {
         step_id: crate::StepID,
         config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
-    ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = GraphUpdate::default();
+    ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
+        let mut update = ConfiguredUpdate::from(config);
 
-        let all_files = config.derive_corpus_graph(input_path, &mut update)?;
+        let all_files = update.build_corpus_graph(input_path)?;
 
         let tokenizer = match &self.tokenizer {
             Tokenizer::Treetagger { language } => TreeTaggerTokenizer::new(language.into())?,
@@ -118,8 +118,8 @@ impl Importer for ImportText {
             .collect_vec();
         mapper_vec
             .into_iter()
-            .try_for_each(|m| m.import_textfile(&config, &mut update))?;
-        Ok(update)
+            .try_for_each(|m| m.import_textfile(&mut update))?;
+        Ok(update.into())
     }
 }
 
@@ -144,11 +144,7 @@ struct TextfileMapper<'a> {
 }
 
 impl<'a> TextfileMapper<'a> {
-    fn import_textfile(
-        &self,
-        config: &GenericImportConfiguration,
-        update: &mut GraphUpdate,
-    ) -> anyhow::Result<()> {
+    fn import_textfile(&self, update: &mut ConfiguredUpdate) -> anyhow::Result<()> {
         self.progress
             .info(format!("Processing {}", self.path.to_string_lossy()))?;
 
@@ -171,7 +167,6 @@ impl<'a> TextfileMapper<'a> {
                 whitespace_after: ws,
             } = t;
             create_token_node(
-                config,
                 update,
                 &format!("{}tok{}", prefix, i),
                 t,
@@ -182,54 +177,41 @@ impl<'a> TextfileMapper<'a> {
 
         // add the order relations
         for i in 0..(token_strings.len() - 1) {
-            update.add_event(UpdateEvent::AddEdge {
-                source_node: format!("{}tok{}", prefix, i),
-                target_node: format!("{}tok{}", prefix, i + 1),
-                layer: config.default_ordering().layer.to_string(),
-                component_type: config.default_ordering().get_type().to_string(),
-                component_name: config.default_ordering().name.to_string(),
-            })?;
+            update.ordering(
+                format!("{}tok{}", prefix, i),
+                format!("{}tok{}", prefix, i + 1),
+            )?;
         }
         Ok(())
     }
 }
 
 pub fn create_token_node(
-    config: &GenericImportConfiguration,
-    update: &mut GraphUpdate,
+    update: &mut ConfiguredUpdate,
     node_name: &str,
     token_value: &str,
     whitespace_after: Option<&String>,
     document_node: &str,
 ) -> anyhow::Result<()> {
-    update.add_event(UpdateEvent::AddNode {
-        node_name: node_name.to_string(),
-        node_type: "node".to_string(),
-    })?;
-    update.add_event(UpdateEvent::AddNodeLabel {
-        node_name: node_name.to_string(),
-        anno_ns: ANNIS_NS.to_string(),
-        anno_name: "tok".to_string(),
-        anno_value: token_value.to_string(),
-    })?;
+    update.labeled_node(
+        node_name.to_string(),
+        "node".to_string(),
+        ANNIS_NS.to_string(),
+        "tok".to_string(),
+        token_value.to_string(),
+    )?;
 
     if let Some(ws) = whitespace_after {
-        update.add_event(UpdateEvent::AddNodeLabel {
-            node_name: node_name.to_string(),
-            anno_ns: ANNIS_NS.to_string(),
-            anno_name: "tok-whitespace-after".to_string(),
-            anno_value: ws.to_string(),
-        })?;
+        update.node_label(
+            node_name.to_string(),
+            ANNIS_NS.to_string(),
+            "tok-whitespace-after".to_string(),
+            ws.to_string(),
+        )?;
     }
 
     // add the token node to the document
-    update.add_event(UpdateEvent::AddEdge {
-        source_node: node_name.to_string(),
-        target_node: document_node.to_string(),
-        layer: config.default_part_of().layer.to_string(),
-        component_type: config.default_part_of().get_type().to_string(),
-        component_name: config.default_part_of().name.to_string(),
-    })?;
+    update.part_of(node_name.to_string(), document_node.to_string())?;
 
     Ok(())
 }
