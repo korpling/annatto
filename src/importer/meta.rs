@@ -6,10 +6,7 @@ use std::{
 
 use anyhow::anyhow;
 use facet::Facet;
-use graphannis::{
-    graph::AnnoKey,
-    update::{GraphUpdate, UpdateEvent},
-};
+use graphannis::graph::AnnoKey;
 use graphannis_core::{
     graph::ANNIS_NS,
     util::{join_qname, split_qname},
@@ -22,7 +19,7 @@ use crate::{
     StepID,
     importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
-    util::get_all_files,
+    util::{get_all_files, graphupdate::ConfiguredUpdate},
 };
 
 use super::Importer;
@@ -116,14 +113,20 @@ impl Importer for AnnotateCorpus {
         config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = GraphUpdate::default();
-        let extensions = config.extensions();
-        let documents = config.document_list();
-        let default_ns = config.default_namespace();
-        let file_extensions = extensions.iter().map(String::as_str).collect_vec();
-        let all_files = get_all_files(input_path, &file_extensions, documents)?;
+        let mut update = ConfiguredUpdate::from(config);
+        let all_files = get_all_files(
+            input_path,
+            &update
+                .config
+                .extensions()
+                .iter()
+                .map(|s| s.as_str())
+                .collect_vec(),
+            update.config.document_list(),
+        )?;
         let progress = ProgressReporter::new(tx, step_id, all_files.len())?;
         let start_index = input_path.to_string_lossy().len() + 1;
+        let default_ns = update.config.default_namespace().to_string();
         for file_path in all_files.into_iter().filter(|p| p.is_file()) {
             let parent_opt = &file_path.parent();
             let file_stem_opt = file_path.file_stem();
@@ -142,33 +145,25 @@ impl Importer for AnnotateCorpus {
                     .rfind(std::path::MAIN_SEPARATOR_STR)
                     .unwrap_or_default()
                     + 1;
-                self.import_from_csv(
-                    &file_path,
-                    &parent.to_string_lossy()[s_ix..],
-                    &config,
-                    &mut update,
-                )?;
+                self.import_from_csv(&file_path, &parent.to_string_lossy()[s_ix..], &mut update)?;
             } else {
                 let full_path = &parent.join(file_stem);
                 let node_name = &full_path.to_string_lossy()[start_index..];
-                update.add_event(UpdateEvent::AddNode {
-                    node_name: node_name.to_string(),
-                    node_type: "corpus".to_string(),
-                })?; // this is required, corpus annotations might be first updates to be processed
+                update.node(node_name.to_string(), "corpus".to_string())?; // this is required, corpus annotations might be first updates to be processed
                 let annotations = read_annotations(&file_path, &progress)?;
                 for (k, v) in annotations {
                     let (anno_ns, anno_name) = split_qname(&k);
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: anno_ns.unwrap_or(default_ns).trim().to_string(),
-                        anno_name: anno_name.trim().to_string(),
-                        anno_value: v.trim().to_string(),
-                    })?;
+                    update.node_label(
+                        node_name.to_string(),
+                        anno_ns.unwrap_or(&default_ns).trim().to_string(),
+                        anno_name.trim().to_string(),
+                        v.trim().to_string(),
+                    )?;
                 }
             }
             progress.worked(1)?;
         }
-        Ok(update)
+        Ok(update.into())
     }
 }
 
@@ -177,8 +172,7 @@ impl AnnotateCorpus {
         &self,
         path: &Path,
         parent: &str,
-        config: &GenericImportConfiguration,
-        update: &mut GraphUpdate,
+        update: &mut ConfiguredUpdate,
     ) -> Result<(), anyhow::Error> {
         let node_column = if self.identifier.ns.is_empty() {
             self.identifier.name.to_string()
@@ -203,29 +197,18 @@ impl AnnotateCorpus {
                 }
             }
             if let Some(node_name) = node_name_opt {
-                update.add_event(UpdateEvent::AddNode {
-                    node_name: parent.to_string(),
-                    node_type: "corpus".to_string(),
-                })?;
-                update.add_event(UpdateEvent::AddNode {
-                    node_name: node_name.to_string(),
-                    node_type: "corpus".to_string(),
-                })?;
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: node_name.to_string(),
-                    target_node: parent.to_string(),
-                    layer: config.default_part_of().layer.to_string(),
-                    component_type: config.default_part_of().get_type().to_string(),
-                    component_name: config.default_part_of().name.to_string(),
-                })?;
+                update.node(parent.to_string(), "corpus".to_string())?;
+                update.node(node_name.to_string(), "corpus".to_string())?;
+                update.part_of(node_name.to_string(), parent.to_string())?;
                 for (k, v) in annotations {
                     let (ns, name) = split_qname(&k);
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: ns.unwrap_or_default().to_string(),
-                        anno_name: name.to_string(),
-                        anno_value: v.trim().to_string(),
-                    })?;
+                    update.node_label(
+                        node_name.to_string(),
+                        ns.map(ToString::to_string)
+                            .unwrap_or(update.config.default_namespace().to_string()),
+                        name.to_string(),
+                        v.trim().to_string(),
+                    )?;
                 }
             }
         }
