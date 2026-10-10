@@ -11,7 +11,7 @@ use super::Importer;
 use encoding_rs::Encoding;
 use encoding_rs_io::DecodeReaderBytesBuilder;
 use facet::Facet;
-use graphannis::{graph::AnnoKey, model::AnnotationComponentType};
+use graphannis::graph::AnnoKey;
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use itertools::Itertools;
 use pest::{Parser, iterators::Pairs};
