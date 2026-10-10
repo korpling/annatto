@@ -1,11 +1,9 @@
 use std::{collections::BTreeMap, fs::File, path::Path};
 
 use facet::Facet;
-use graphannis::{
-    model::AnnotationComponentType,
-    update::{GraphUpdate, UpdateEvent},
-};
+use graphannis::model::{AnnotationComponent, AnnotationComponentType};
 use graphannis_core::graph::ANNIS_NS;
+use lazy_static::lazy_static;
 use serde::Serialize;
 use serde_derive::Deserialize;
 use xml::{EventReader, ParserConfig};
@@ -15,6 +13,7 @@ use crate::{
     error::{AnnattoError, Result},
     importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
+    util::graphupdate::ConfiguredUpdate,
 };
 
 use super::Importer;
@@ -45,15 +44,28 @@ impl Importer for ImportXML {
         step_id: crate::StepID,
         config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
-    ) -> std::result::Result<GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = GraphUpdate::default();
-        let all_files = config.derive_corpus_graph(input_path, &mut update)?;
+    ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
+        let mut update = ConfiguredUpdate::from(config);
+        let all_files = update.build_corpus_graph(input_path)?;
         let progress = ProgressReporter::new(tx.clone(), step_id.clone(), all_files.len())?;
         all_files.into_iter().try_for_each(|(p, d)| {
-            self.import_document(&config, &step_id, p.as_path(), d, &mut update, &progress)
+            self.import_document(&step_id, p.as_path(), d, &mut update, &progress)
         })?;
-        Ok(update)
+        Ok(update.into())
     }
+}
+
+lazy_static! {
+    static ref DEFAULT_DOMINANCE_COMPONENT: AnnotationComponent = AnnotationComponent::new(
+        AnnotationComponentType::Dominance,
+        GENERIC_NS.to_string(),
+        "".to_string()
+    );
+    static ref DEFAULT_COVERAGE_COMPONENT: AnnotationComponent = AnnotationComponent::new(
+        AnnotationComponentType::Coverage,
+        GENERIC_NS.to_string(),
+        "".to_string()
+    );
 }
 
 impl DefaultImportConfiguration for ImportXML {
@@ -64,6 +76,14 @@ impl DefaultImportConfiguration for ImportXML {
     fn preset_default_namespace(&self) -> Option<&str> {
         Some(GENERIC_NS)
     }
+
+    fn preset_default_dominance(&self) -> Option<&AnnotationComponent> {
+        Some(&DEFAULT_DOMINANCE_COMPONENT)
+    }
+
+    fn preset_default_coverage(&self) -> Option<&AnnotationComponent> {
+        Some(&DEFAULT_COVERAGE_COMPONENT)
+    }
 }
 
 const GENERIC_NS: &str = "xml";
@@ -71,11 +91,10 @@ const GENERIC_NS: &str = "xml";
 impl ImportXML {
     fn import_document(
         &self,
-        config: &GenericImportConfiguration,
         step_id: &StepID,
         path: &Path,
         doc_node_name: String,
-        update: &mut GraphUpdate,
+        update: &mut ConfiguredUpdate,
         progress: &ProgressReporter,
     ) -> Result<()> {
         // parsing
@@ -109,32 +128,25 @@ impl ImportXML {
                     let node_name = format!("{doc_node_name}#{}{}", name, node_counts[&name_str]);
                     add_node(update, &doc_node_name, &node_name, None)?;
                     if let Some((dom_node_name, _)) = node_stack.last() {
-                        update.add_event(UpdateEvent::AddEdge {
-                            source_node: dom_node_name.to_string(),
-                            target_node: node_name.to_string(),
-                            layer: GENERIC_NS.to_string(),
-                            component_type: AnnotationComponentType::Dominance.to_string(),
-                            component_name: "".to_string(),
-                        })?;
+                        update.dominance(dom_node_name.to_string(), node_name.to_string())?;
                     }
                     // It is important that before running for a text attribute below, the latest node is pushed onto the node stack
                     // this way the node directly dominates its text which it is required to do
                     node_stack.push((node_name.to_string(), name.to_string()));
                     let text_attr_name = self.text_from_attribute.get(&name_str);
                     for attr in attributes {
-                        update.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: node_name.to_string(),
-                            anno_ns: GENERIC_NS.to_string(),
-                            anno_name: attr.name.to_string(),
-                            anno_value: attr.value.to_string(),
-                        })?;
+                        update.node_label(
+                            node_name.to_string(),
+                            update.config.default_namespace().to_string(),
+                            attr.name.to_string(),
+                            attr.value.to_string(),
+                        )?;
                         if let Some(target_name) = text_attr_name
                             && &attr.name.to_string() == target_name
                         {
                             let token_text_from_attr = &attr.value;
                             for t in token_text_from_attr.chars() {
                                 build_token(
-                                    config,
                                     update,
                                     &doc_node_name,
                                     t.to_string(),
@@ -151,12 +163,12 @@ impl ImportXML {
                         && &name.to_string() == pop_node_type
                     {
                         if let Some(last_string) = value_stack.pop() {
-                            update.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: node_name.to_string(),
-                                anno_ns: config.default_namespace().to_string(),
-                                anno_name: name.local_name.to_string(),
-                                anno_value: last_string.to_string(),
-                            })?;
+                            update.node_label(
+                                node_name.to_string(),
+                                update.config.default_namespace().to_string(),
+                                name.local_name.to_string(),
+                                last_string.to_string(),
+                            )?;
                             if let Some(new_last) = value_stack.last_mut() {
                                 new_last.push_str(&last_string);
                             }
@@ -164,7 +176,6 @@ impl ImportXML {
                         if !self.closing_default.is_empty() {
                             for t in self.closing_default.chars() {
                                 build_token(
-                                    config,
                                     update,
                                     &doc_node_name,
                                     t.to_string(),
@@ -179,7 +190,6 @@ impl ImportXML {
                 xml::reader::XmlEvent::Characters(chars) | xml::reader::XmlEvent::CData(chars) => {
                     for token in chars.chars() {
                         build_token(
-                            config,
                             update,
                             &doc_node_name,
                             token.to_string(),
@@ -206,8 +216,7 @@ fn token_name(doc_node_name: &str, n: usize) -> String {
 }
 
 fn build_token(
-    config: &GenericImportConfiguration,
-    update: &mut GraphUpdate,
+    update: &mut ConfiguredUpdate,
     doc_node_name: &str,
     token_value: String,
     node_counts: &mut BTreeMap<String, usize>,
@@ -224,75 +233,53 @@ fn build_token(
         None
     };
     add_node(update, doc_node_name, &node_name, order_data)?;
-    integrate_token(config, update, &node_name, token_value, node_stack)?;
+    integrate_token(update, &node_name, token_value, node_stack)?;
     Ok(())
 }
 
 fn add_node(
-    update: &mut GraphUpdate,
+    update: &mut ConfiguredUpdate,
     doc_node_name: &str,
     node_name: &str,
     order_data: Option<(String, &str)>,
 ) -> Result<()> {
-    update.add_event(UpdateEvent::AddNode {
-        node_name: node_name.to_string(),
-        node_type: "node".to_string(),
-    })?;
-    update.add_event(UpdateEvent::AddNodeLabel {
-        node_name: node_name.to_string(),
-        anno_ns: ANNIS_NS.to_string(),
-        anno_name: "layer".to_string(),
-        anno_value: "default_layer".to_string(),
-    })?;
-    update.add_event(UpdateEvent::AddEdge {
-        source_node: node_name.to_string(),
-        target_node: doc_node_name.to_string(),
-        layer: ANNIS_NS.to_string(),
-        component_type: AnnotationComponentType::PartOf.to_string(),
-        component_name: "".to_string(),
-    })?;
+    update.labeled_node(
+        node_name.to_string(),
+        "node".to_string(),
+        ANNIS_NS.to_string(),
+        "layer".to_string(),
+        "default_layer".to_string(),
+    )?;
+    update.part_of(node_name.to_string(), doc_node_name.to_string())?;
     if let Some((prev_node_name, order_name)) = order_data {
-        update.add_event(UpdateEvent::AddEdge {
-            source_node: prev_node_name,
-            target_node: node_name.to_string(),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::Ordering.to_string(),
-            component_name: order_name.to_string(),
-        })?;
+        update.edge_by_parts(
+            prev_node_name,
+            node_name.to_string(),
+            update.config.default_ordering().layer.to_string(),
+            update.config.default_ordering().get_type(),
+            order_name.to_string(),
+        )?;
     }
     Ok(())
 }
 
 fn integrate_token(
-    config: &GenericImportConfiguration,
-    update: &mut GraphUpdate,
+    update: &mut ConfiguredUpdate,
     token_name: &str,
     value: String,
     node_stack: &[(String, String)],
 ) -> Result<()> {
-    update.add_event(UpdateEvent::AddNodeLabel {
-        node_name: token_name.to_string(),
-        anno_ns: ANNIS_NS.to_string(),
-        anno_name: "tok".to_string(),
-        anno_value: value,
-    })?;
+    update.node_label(
+        token_name.to_string(),
+        ANNIS_NS.to_string(),
+        "tok".to_string(),
+        value,
+    )?;
     for (cov_node_name, _) in node_stack {
-        update.add_event(UpdateEvent::AddEdge {
-            source_node: cov_node_name.to_string(),
-            target_node: token_name.to_string(),
-            layer: config.default_namespace().to_string(),
-            component_type: AnnotationComponentType::Coverage.to_string(),
-            component_name: "".to_string(),
-        })?;
+        update.coverage(cov_node_name.to_string(), token_name.to_string())?;
     }
     if let Some((dom_node, _)) = node_stack.last() {
-        update.add_event(UpdateEvent::AddEdge {
-            source_node: dom_node.to_string(),
-            target_node: token_name.to_string(),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::Dominance.to_string(),
-            component_name: "".to_string(),
-        })?;
+        update.dominance(dom_node.to_string(), token_name.to_string())?;
     }
     Ok(())
 }
