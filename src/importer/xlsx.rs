@@ -23,7 +23,7 @@ use crate::{
     error::AnnattoError,
     importer::{DefaultImportConfiguration, GenericImportConfiguration, NODE_NAME_ENCODE_SET},
     progress::ProgressReporter,
-    util::graphupdate::ConfiguredUpdate,
+    util::graphupdate::UpdateWriter,
 };
 
 /// Imports Excel Spreadsheets where each line is a token, the other columns are
@@ -173,7 +173,7 @@ impl<'a> MetasheetMapper<'a> {
     fn import_as_metadata(
         &self,
         doc_node_name: &str,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
     ) -> Result<(), AnnattoError> {
         let max_row_num = self.max_row as usize; // 1-based
         for row_num in (self.skip_rows + 1)..max_row_num + 1 {
@@ -248,7 +248,7 @@ impl<'a> DatasheetMapper<'a> {
     fn import_datasheet(
         &self,
         doc_node_name: &str,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
         progress: &ProgressReporter,
     ) -> Result<(), AnnattoError> {
         let expected_names = self
@@ -275,7 +275,7 @@ impl<'a> DatasheetMapper<'a> {
 
     fn import_column(
         &self,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
         doc_node_name: &str,
         col_num: u32,
         mut merged_cells: BTreeMap<u32, u32>,
@@ -412,7 +412,7 @@ impl<'a> DatasheetMapper<'a> {
 
     fn build_tokens(
         &self,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
         doc_node_name: &str,
     ) -> Result<Vec<String>, anyhow::Error> {
         let mut base_tokens = Vec::with_capacity(self.max_row as usize);
@@ -554,7 +554,7 @@ impl<'a> SheetRef<'a> {
 impl WorkbookMapper<'_> {
     fn import_workbook(
         self,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
         evaluate_formulas: bool,
     ) -> Result<(), AnnattoError> {
         let book = umya_spreadsheet::reader::xlsx::read(&self.path)?;
@@ -668,9 +668,9 @@ impl Importer for ImportSpreadsheet {
         config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = ConfiguredUpdate::from(config);
+        let mut update = UpdateWriter::from(config);
 
-        let all_files = update.build_corpus_graph(input_path)?;
+        let all_files = update.write_corpus_graph_from_file_tree(input_path)?;
         // figure out which files are backup data and should not be imported
         let ignore_docs = invalid_doc_nodes(all_files.as_ref());
         // ignore the number of backup files for progress reporting, as these will be skipped
@@ -1295,9 +1295,9 @@ edition = ["chapter"]
         let config = GenericImportConfiguration::new_with_extensions(
             FILE_EXTENSIONS.iter().map(|e| e.to_string()).collect_vec(),
         );
-        let mut update = ConfiguredUpdate::from(config);
+        let mut update = UpdateWriter::from(config);
         let files_with_names =
-            update.build_corpus_graph(Path::new("tests/data/import/xlsx/with_backup/xlsx/"));
+            update.write_corpus_graph_from_file_tree(Path::new("tests/data/import/xlsx/with_backup/xlsx/"));
         assert!(
             files_with_names.is_ok(),
             "Failed: {:?}",

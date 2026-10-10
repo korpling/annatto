@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
-    util::graphupdate::ConfiguredUpdate,
+    util::graphupdate::UpdateWriter,
 };
 
 use super::Importer;
@@ -77,8 +77,8 @@ impl Importer for ImportWhisper {
         config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = ConfiguredUpdate::from(config);
-        let paths_and_node_names = update.build_corpus_graph(input_path)?;
+        let mut update = UpdateWriter::from(config);
+        let paths_and_node_names = update.write_corpus_graph_from_file_tree(input_path)?;
         let progress =
             ProgressReporter::new(tx.clone(), step_id.clone(), paths_and_node_names.len())?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
@@ -104,7 +104,7 @@ const WHISPER_NS: &str = "whisper";
 impl ImportWhisper {
     fn import_document(
         &self,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
         path: &Path,
         node_name: &str,
     ) -> Result<(), anyhow::Error> {
@@ -135,7 +135,7 @@ impl ImportWhisper {
 
     fn import_with_tokens(
         &self,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
         data: WhisperJSON,
         node_name: &str,
     ) -> Result<(), anyhow::Error> {
@@ -271,7 +271,7 @@ impl ImportWhisper {
 
     fn import_segments_only(
         &self,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
         data: WhisperJSON,
         node_name: &str,
     ) -> Result<(), anyhow::Error> {

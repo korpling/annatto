@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     importer::{DefaultImportConfiguration, GenericImportConfiguration, Importer},
-    util::graphupdate::ConfiguredUpdate,
+    util::graphupdate::UpdateWriter,
 };
 
 /// This importer can enrich a corpus with commit metadata. The import path needs
@@ -42,7 +42,7 @@ impl Importer for ImportGitMetadata {
         config: GenericImportConfiguration,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = ConfiguredUpdate::from(config);
+        let mut update = UpdateWriter::from(config);
         let repo = Repository::open(input_path)?;
         let head_sha = repo
             .revparse("HEAD")?

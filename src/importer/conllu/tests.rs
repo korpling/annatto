@@ -14,7 +14,7 @@ use crate::{
         conllu::default_comment_key,
     },
     test_util::{import_as_graphml_string, import_as_graphml_string_with_custom_config},
-    util::graphupdate::ConfiguredUpdate,
+    util::graphupdate::UpdateWriter,
 };
 
 use super::ImportCoNLLU;
@@ -67,7 +67,7 @@ fn test_conll_fail_invalid() {
     assert!(job.is_err());
     assert_snapshot!(job.err().unwrap().to_string());
     let import = ImportCoNLLU::default();
-    let mut u = ConfiguredUpdate::from(import.default_configuration());
+    let mut u = UpdateWriter::from(import.default_configuration());
     let step_id = StepID::from_importer_step(&import_step);
     let run = import.import_document(
         &step_id,

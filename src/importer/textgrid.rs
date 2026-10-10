@@ -10,7 +10,7 @@ use crate::importer::{DefaultImportConfiguration, GenericImportConfiguration};
 use crate::models::textgrid::{Interval, TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{
-    ConfiguredUpdate, NodeInfo, add_order_relations, map_annotations, map_audio_source,
+    UpdateWriter, NodeInfo, add_order_relations, map_annotations, map_audio_source,
     map_token_with_ds, root_corpus_from_path,
 };
 use anyhow::{Result, anyhow};
@@ -85,7 +85,7 @@ struct DocumentMapper<'a> {
 }
 
 impl DocumentMapper<'_> {
-    fn map(&mut self, u: &mut ConfiguredUpdate) -> Result<()> {
+    fn map(&mut self, u: &mut UpdateWriter) -> Result<()> {
         // Add a subcorpus like node for the text
         u.node(self.text_node_name.clone(), "datasource".to_string())?;
         u.part_of(self.text_node_name.clone(), self.doc_path.clone())?;
@@ -136,7 +136,7 @@ impl DocumentMapper<'_> {
 
     fn map_timeline_from_timecode(
         &self,
-        u: &mut ConfiguredUpdate,
+        u: &mut UpdateWriter,
         valid_tier_names: Option<&BTreeSet<String>>,
     ) -> Result<BTreeMap<OrderedFloat<f64>, String>> {
         // Collect all points of time based on the intervals and points.
@@ -207,7 +207,7 @@ impl DocumentMapper<'_> {
 
     fn map_timeline_from_token_tier(
         &self,
-        u: &mut ConfiguredUpdate,
+        u: &mut UpdateWriter,
     ) -> Result<BTreeMap<OrderedFloat<f64>, String>> {
         // One can only map without a timeline if there is a single token
         // layer explicitily defined by the tier_group property.
@@ -263,7 +263,7 @@ impl DocumentMapper<'_> {
 
     fn map_tier_group(
         &mut self,
-        u: &mut ConfiguredUpdate,
+        u: &mut UpdateWriter,
         tok_tier_name: &str,
         time_to_id: &mut BTreeMap<OrderedFloat<f64>, String>,
         map_token_tier: bool,
@@ -285,7 +285,7 @@ impl DocumentMapper<'_> {
 
     fn map_annotation_tier(
         &mut self,
-        u: &mut ConfiguredUpdate,
+        u: &mut UpdateWriter,
         tier_name: &str,
         parent_tier_name: Option<&str>,
         is_segmentation: bool,
@@ -374,7 +374,7 @@ impl DocumentMapper<'_> {
 
     fn add_span(
         &self,
-        u: &mut ConfiguredUpdate,
+        u: &mut UpdateWriter,
         anno_tuple: (&str, &str, f64, f64),
         time_to_token_id: &BTreeMap<OrderedFloat<f64>, String>,
     ) -> Result<String> {
@@ -411,7 +411,7 @@ impl Importer for ImportTextgrid {
         config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut u = ConfiguredUpdate::from(config);
+        let mut u = UpdateWriter::from(config);
         let tier_groups = if let Some(ref tg) = self.tier_groups {
             tg.clone()
         } else {
@@ -425,7 +425,7 @@ impl Importer for ImportTextgrid {
             audio_extension: self.audio_extension.as_str(),
         };
 
-        let documents = u.build_corpus_graph(input_path)?;
+        let documents = u.write_corpus_graph_from_file_tree(input_path)?;
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
         for (file_path, doc_path) in documents {
             reporter.info(format!("Processing {}", file_path.to_string_lossy()))?;

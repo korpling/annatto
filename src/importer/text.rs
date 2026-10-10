@@ -13,7 +13,7 @@ use crate::{
         text::tokenizer::{Token, TreeTaggerTokenizer},
     },
     progress::ProgressReporter,
-    util::graphupdate::ConfiguredUpdate,
+    util::graphupdate::UpdateWriter,
 };
 
 pub(crate) mod tokenizer;
@@ -96,9 +96,9 @@ impl Importer for ImportText {
         config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = ConfiguredUpdate::from(config);
+        let mut update = UpdateWriter::from(config);
 
-        let all_files = update.build_corpus_graph(input_path)?;
+        let all_files = update.write_corpus_graph_from_file_tree(input_path)?;
 
         let tokenizer = match &self.tokenizer {
             Tokenizer::Treetagger { language } => TreeTaggerTokenizer::new(language.into())?,
@@ -144,7 +144,7 @@ struct TextfileMapper<'a> {
 }
 
 impl<'a> TextfileMapper<'a> {
-    fn import_textfile(&self, update: &mut ConfiguredUpdate) -> anyhow::Result<()> {
+    fn import_textfile(&self, update: &mut UpdateWriter) -> anyhow::Result<()> {
         self.progress
             .info(format!("Processing {}", self.path.to_string_lossy()))?;
 
@@ -187,7 +187,7 @@ impl<'a> TextfileMapper<'a> {
 }
 
 pub fn create_token_node(
-    update: &mut ConfiguredUpdate,
+    update: &mut UpdateWriter,
     node_name: &str,
     token_value: &str,
     whitespace_after: Option<&String>,

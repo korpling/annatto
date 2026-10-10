@@ -13,7 +13,7 @@ use crate::{
     error::{AnnattoError, Result},
     importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
-    util::graphupdate::ConfiguredUpdate,
+    util::graphupdate::UpdateWriter,
 };
 
 use super::Importer;
@@ -45,8 +45,8 @@ impl Importer for ImportXML {
         config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = ConfiguredUpdate::from(config);
-        let all_files = update.build_corpus_graph(input_path)?;
+        let mut update = UpdateWriter::from(config);
+        let all_files = update.write_corpus_graph_from_file_tree(input_path)?;
         let progress = ProgressReporter::new(tx.clone(), step_id.clone(), all_files.len())?;
         all_files.into_iter().try_for_each(|(p, d)| {
             self.import_document(&step_id, p.as_path(), d, &mut update, &progress)
@@ -94,7 +94,7 @@ impl ImportXML {
         step_id: &StepID,
         path: &Path,
         doc_node_name: String,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
         progress: &ProgressReporter,
     ) -> Result<()> {
         // parsing
@@ -216,7 +216,7 @@ fn token_name(doc_node_name: &str, n: usize) -> String {
 }
 
 fn build_token(
-    update: &mut ConfiguredUpdate,
+    update: &mut UpdateWriter,
     doc_node_name: &str,
     token_value: String,
     node_counts: &mut BTreeMap<String, usize>,
@@ -238,7 +238,7 @@ fn build_token(
 }
 
 fn add_node(
-    update: &mut ConfiguredUpdate,
+    update: &mut UpdateWriter,
     doc_node_name: &str,
     node_name: &str,
     order_data: Option<(String, &str)>,
@@ -264,7 +264,7 @@ fn add_node(
 }
 
 fn integrate_token(
-    update: &mut ConfiguredUpdate,
+    update: &mut UpdateWriter,
     token_name: &str,
     value: String,
     node_stack: &[(String, String)],

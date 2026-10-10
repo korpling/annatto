@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     importer::{DefaultImportConfiguration, Importer},
     progress::ProgressReporter,
-    util::graphupdate::ConfiguredUpdate,
+    util::graphupdate::UpdateWriter,
 };
 
 #[derive(Clone, Default, Deserialize, Facet, PartialEq, Serialize)]
@@ -53,8 +53,8 @@ impl Importer for ImportELAN {
         config: super::GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = ConfiguredUpdate::from(config);
-        let named_paths = update.build_corpus_graph(input_path)?;
+        let mut update = UpdateWriter::from(config);
+        let named_paths = update.write_corpus_graph_from_file_tree(input_path)?;
         let progress = ProgressReporter::new(tx, step_id, named_paths.len())?;
         named_paths
             .into_iter()
@@ -68,7 +68,7 @@ impl ImportELAN {
         &self,
         path: &std::path::Path,
         doc_node_name: &str,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
         progress: &ProgressReporter,
     ) -> crate::error::Result<()> {
         progress.worked(1)?;
@@ -170,7 +170,7 @@ struct ELANMapper<'a> {
 }
 
 impl<'a> ELANMapper<'a> {
-    fn map(&mut self, update: &mut ConfiguredUpdate) -> crate::error::Result<()> {
+    fn map(&mut self, update: &mut UpdateWriter) -> crate::error::Result<()> {
         let timeline = self.scan_timeline()?;
         self.data.sort_tiers();
         let scan = self.scan_tiers(&timeline)?;
@@ -402,7 +402,7 @@ impl<'a> ELANMapper<'a> {
         &self,
         timeline: Timeline,
         scan: DocumentScan,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
     ) -> crate::error::Result<()> {
         // build time line
         let mut ts_id_to_node_name: LinkedHashMap<String, String> = LinkedHashMap::default();

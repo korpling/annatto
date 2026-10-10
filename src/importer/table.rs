@@ -17,7 +17,7 @@ use crate::{
     StepID,
     importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
-    util::graphupdate::ConfiguredUpdate,
+    util::graphupdate::UpdateWriter,
 };
 
 #[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
@@ -117,8 +117,8 @@ impl Importer for ImportTable {
         config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = ConfiguredUpdate::from(config);
-        let paths_and_node_names = update.build_corpus_graph(input_path)?;
+        let mut update = UpdateWriter::from(config);
+        let paths_and_node_names = update.write_corpus_graph_from_file_tree(input_path)?;
         let progress =
             ProgressReporter::new(tx.clone(), step_id.clone(), paths_and_node_names.len())?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
@@ -142,7 +142,7 @@ impl DefaultImportConfiguration for ImportTable {
 impl ImportTable {
     fn import_document(
         &self,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
         document_path: &Path,
         document_node_name: String,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -209,7 +209,7 @@ impl ImportTable {
 
     fn map_span(
         &self,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
         group_start_token: u64,
         next_token_idx: u64,
         empty_line_group: &EmptyLineGroup,
@@ -250,7 +250,7 @@ impl ImportTable {
 
     fn map_token<R>(
         &self,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
         document_node_name: &str,
         mut reader: Reader<R>,
     ) -> Result<(), Box<dyn std::error::Error>>

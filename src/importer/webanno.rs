@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
-    util::graphupdate::ConfiguredUpdate,
+    util::graphupdate::UpdateWriter,
 };
 
 use super::Importer;
@@ -32,8 +32,8 @@ impl Importer for ImportWebAnnoTSV {
         config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = ConfiguredUpdate::from(config);
-        let paths_and_node_names = update.build_corpus_graph(input_path)?;
+        let mut update = UpdateWriter::from(config);
+        let paths_and_node_names = update.write_corpus_graph_from_file_tree(input_path)?;
         let progress =
             ProgressReporter::new(tx.clone(), step_id.clone(), paths_and_node_names.len())?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
@@ -59,7 +59,7 @@ impl ImportWebAnnoTSV {
         &self,
         path: &Path,
         doc_node_name: String,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
     ) -> Result<(), anyhow::Error> {
         let data = fs::read_to_string(path)?;
         let mut parse_data = WebAnnoTSVParser::parse(Rule::data, &data)?
@@ -82,7 +82,7 @@ impl ImportWebAnnoTSV {
         data: Pair<Rule>,
         doc_node_name: String,
         columns: &[AnnotationGroup],
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
     ) -> Result<(), anyhow::Error> {
         let mut ordering_node = None;
         for sentence in data.into_inner() {
@@ -96,7 +96,7 @@ impl ImportWebAnnoTSV {
         sentence: Pair<Rule>,
         doc_node_name: &str,
         columns: &[AnnotationGroup],
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
         mut previous_token: Option<String>,
     ) -> Result<Option<String>, anyhow::Error> {
         let sentence_node_name = format!("{doc_node_name}#sentence_line{}", sentence.line_col().0);
@@ -141,7 +141,7 @@ impl ImportWebAnnoTSV {
         token: Pair<Rule>,
         doc_node_name: &str,
         columns: &[AnnotationGroup],
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
     ) -> Result<String, anyhow::Error> {
         let mut token_columns = token.into_inner();
         let id = token_columns

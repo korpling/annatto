@@ -19,7 +19,7 @@ use crate::{
     StepID,
     importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
-    util::{get_all_files, graphupdate::ConfiguredUpdate},
+    util::{get_all_files, graphupdate::UpdateWriter},
 };
 
 use super::Importer;
@@ -113,7 +113,7 @@ impl Importer for AnnotateCorpus {
         config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = ConfiguredUpdate::from(config);
+        let mut update = UpdateWriter::from(config);
         let all_files = get_all_files(
             input_path,
             &update
@@ -172,7 +172,7 @@ impl AnnotateCorpus {
         &self,
         path: &Path,
         parent: &str,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
     ) -> Result<(), anyhow::Error> {
         let node_column = if self.identifier.ns.is_empty() {
             self.identifier.name.to_string()

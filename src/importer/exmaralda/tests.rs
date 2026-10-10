@@ -13,7 +13,7 @@ use crate::{
     importer::{DefaultComponents, DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
     test_util::import_as_graphml_string_2,
-    util::graphupdate::ConfiguredUpdate,
+    util::graphupdate::UpdateWriter,
     workflow::StatusMessage,
 };
 
@@ -47,7 +47,7 @@ fn timeline_fail() {
     assert!(r.is_err());
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = "./tests/data/import/exmaralda/fail-corrupt_timeline/import/test_doc.exb";
-    let mut u = ConfiguredUpdate::from(ImportEXMARaLDA::default().default_configuration());
+    let mut u = UpdateWriter::from(ImportEXMARaLDA::default().default_configuration());
     let import = ImportEXMARaLDA::default();
     let step_id = StepID::from_importer_step(&import_step);
     assert!(
@@ -82,7 +82,7 @@ fn category_fail() {
     assert!(r.is_err());
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
-    let mut u = ConfiguredUpdate::from(ImportEXMARaLDA::default().default_configuration());
+    let mut u = UpdateWriter::from(ImportEXMARaLDA::default().default_configuration());
     assert!(
         ImportEXMARaLDA::default()
             .import_document(
@@ -120,7 +120,7 @@ fn undefined_speaker_fail() {
     assert!(r.is_err());
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
-    let mut u = ConfiguredUpdate::from(ImportEXMARaLDA::default().default_configuration());
+    let mut u = UpdateWriter::from(ImportEXMARaLDA::default().default_configuration());
     assert!(
         ImportEXMARaLDA::default()
             .import_document(
@@ -153,7 +153,7 @@ fn unknown_tli_fail() {
     assert!(r.is_err());
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
-    let mut u = ConfiguredUpdate::from(ImportEXMARaLDA::default().default_configuration());
+    let mut u = UpdateWriter::from(ImportEXMARaLDA::default().default_configuration());
     assert!(
         ImportEXMARaLDA::default()
             .import_document(
@@ -186,7 +186,7 @@ fn bad_timevalue_fail() {
     assert!(r.is_err());
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
-    let mut u = ConfiguredUpdate::from(ImportEXMARaLDA::default().default_configuration());
+    let mut u = UpdateWriter::from(ImportEXMARaLDA::default().default_configuration());
     assert!(
         ImportEXMARaLDA::default()
             .import_document(
@@ -236,7 +236,7 @@ fn invalid_fail() {
     assert!(r.is_err());
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = "./tests/data/import/exmaralda/fail-invalid/import/test_doc_invalid.exb";
-    let mut u = ConfiguredUpdate::from(ImportEXMARaLDA::default().default_configuration());
+    let mut u = UpdateWriter::from(ImportEXMARaLDA::default().default_configuration());
     assert!(
         ImportEXMARaLDA::default()
             .import_document(

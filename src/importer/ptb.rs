@@ -18,7 +18,7 @@ use crate::{
     StepID,
     importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
-    util::graphupdate::ConfiguredUpdate,
+    util::graphupdate::UpdateWriter,
 };
 
 use super::Importer;
@@ -38,7 +38,7 @@ struct DocumentMapper {
 }
 
 impl DocumentMapper {
-    fn map(&mut self, u: &mut ConfiguredUpdate, mut ptb: Pairs<Rule>) -> anyhow::Result<()> {
+    fn map(&mut self, u: &mut UpdateWriter, mut ptb: Pairs<Rule>) -> anyhow::Result<()> {
         // Add a subcorpus like node for the text
         u.node(self.text_node_name.clone(), "datasource".to_string())?;
         u.part_of(self.text_node_name.clone(), self.doc_path.clone())?;
@@ -58,7 +58,7 @@ impl DocumentMapper {
 
     fn annotate_edge(
         &self,
-        u: &mut ConfiguredUpdate,
+        u: &mut UpdateWriter,
         source: Option<&String>,
         target: String,
         edge_label: Option<&str>,
@@ -118,7 +118,7 @@ impl DocumentMapper {
         &mut self,
         mut phrase_children: Pairs<Rule>,
         parent: Option<&String>,
-        u: &mut ConfiguredUpdate,
+        u: &mut UpdateWriter,
     ) -> anyhow::Result<String> {
         // The first child of a phrase we want to map must be a label
         if let Some(phrase_label) = phrase_children.next() {
@@ -170,7 +170,7 @@ impl DocumentMapper {
 
     fn consume_token(
         &mut self,
-        u: &mut ConfiguredUpdate,
+        u: &mut UpdateWriter,
         pair: &Pair<Rule>,
         phrase_label: String,
         parent: Option<&String>,
@@ -292,9 +292,9 @@ impl Importer for ImportPTB {
         config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut u = ConfiguredUpdate::from(config);
+        let mut u = UpdateWriter::from(config);
 
-        let documents = u.build_corpus_graph(input_path)?;
+        let documents = u.write_corpus_graph_from_file_tree(input_path)?;
 
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
 

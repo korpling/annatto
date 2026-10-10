@@ -10,7 +10,7 @@ use crate::{
     error::{AnnattoError, Result},
     importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
-    util::graphupdate::ConfiguredUpdate,
+    util::graphupdate::UpdateWriter,
 };
 
 use super::Importer;
@@ -63,8 +63,8 @@ impl Importer for ImportOpusLinks {
         config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = ConfiguredUpdate::from(config);
-        let all_files = update.build_corpus_graph(input_path)?;
+        let mut update = UpdateWriter::from(config);
+        let all_files = update.write_corpus_graph_from_file_tree(input_path)?;
         let progress = ProgressReporter::new(tx, step_id.clone(), all_files.len())?;
         all_files.into_iter().try_for_each(|(p, d)| {
             if let Err(e) =
@@ -94,7 +94,7 @@ impl DefaultImportConfiguration for ImportOpusLinks {
 impl ImportOpusLinks {
     fn link(
         &self,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
         source_doc_node_id: &str,
         target_doc_node_id: &str,
         single_source: &str,
@@ -130,7 +130,7 @@ impl ImportOpusLinks {
         step_id: &crate::StepID,
         path: &Path,
         corpus_node_path: &Path,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
     ) -> Result<()> {
         // buffers
         let mut source_doc_node_id = String::new();

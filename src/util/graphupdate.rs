@@ -176,12 +176,12 @@ pub fn root_corpus_from_path(root_path: &Path) -> Result<String> {
     Ok(root_name.to_string())
 }
 
-pub struct ConfiguredUpdate {
+pub struct UpdateWriter {
     inner: GraphUpdate,
     pub(crate) config: GenericImportConfiguration,
 }
 
-impl From<GenericImportConfiguration> for ConfiguredUpdate {
+impl From<GenericImportConfiguration> for UpdateWriter {
     fn from(config: GenericImportConfiguration) -> Self {
         Self {
             inner: GraphUpdate::default(),
@@ -190,7 +190,7 @@ impl From<GenericImportConfiguration> for ConfiguredUpdate {
     }
 }
 
-impl ConfiguredUpdate {
+impl UpdateWriter {
     pub(crate) fn node(&mut self, node_name: String, node_type: String) -> Result<()> {
         self.inner.add_event(UpdateEvent::AddNode {
             node_name,
@@ -393,7 +393,10 @@ impl ConfiguredUpdate {
         Ok(self.inner.add_event(ue)?)
     }
 
-    pub(crate) fn build_corpus_graph(&mut self, import_path: &Path) -> Result<NamedPaths> {
+    pub(crate) fn write_corpus_graph_from_file_tree(
+        &mut self,
+        import_path: &Path,
+    ) -> Result<NamedPaths> {
         let root_name = self
             .config
             .custom_root_name()
@@ -525,7 +528,7 @@ impl ConfiguredUpdate {
     }
 }
 
-impl Into<GraphUpdate> for ConfiguredUpdate {
+impl Into<GraphUpdate> for UpdateWriter {
     fn into(self) -> GraphUpdate {
         self.inner
     }
@@ -566,7 +569,7 @@ pub fn import_corpus_graph_from_files(
 
 #[deprecated]
 pub fn map_audio_source(
-    u: &mut ConfiguredUpdate,
+    u: &mut UpdateWriter,
     audio_path: &Path,
     parent_corpus: &str,
     doc_path: &str,
@@ -596,7 +599,7 @@ pub fn map_audio_source(
 
 #[deprecated]
 pub fn add_order_relations<S: AsRef<str>>(
-    u: &mut ConfiguredUpdate,
+    u: &mut UpdateWriter,
     node_ids: &[S],
     order_name: Option<&str>,
 ) -> Result<()> {
@@ -637,7 +640,7 @@ impl<'a> NodeInfo<'a> {
 }
 
 pub fn map_token_with_ds(
-    u: &mut ConfiguredUpdate,
+    u: &mut UpdateWriter,
     node: &NodeInfo,
     text_name: Option<&str>,
     value: &str,
@@ -700,7 +703,7 @@ pub fn map_token_with_ds(
 
 #[deprecated]
 pub fn map_annotations<S: AsRef<str>>(
-    u: &mut ConfiguredUpdate,
+    u: &mut UpdateWriter,
     node: &NodeInfo,
     ns: Option<&str>,
     name: Option<&str>,

@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     error::AnnattoError,
     importer::{DefaultImportConfiguration, Importer},
-    util::graphupdate::ConfiguredUpdate,
+    util::graphupdate::UpdateWriter,
 };
 
 /// Import annotations provided in the fieldlinguist's toolbox text format.
@@ -51,8 +51,8 @@ impl Importer for ImportFLToolbox {
         config: super::GenericImportConfiguration,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = ConfiguredUpdate::from(config);
-        let named_paths = update.build_corpus_graph(input_path)?;
+        let mut update = UpdateWriter::from(config);
+        let named_paths = update.write_corpus_graph_from_file_tree(input_path)?;
         named_paths
             .into_iter()
             .try_for_each(|(p, d)| self.import_document(&p, &d, &mut update))?;
@@ -77,7 +77,7 @@ impl ImportFLToolbox {
         &self,
         path: &Path,
         doc_node_name: &str,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
     ) -> crate::error::Result<()> {
         let content = fs::read_to_string(path)?;
         let mut parsed_data = FLTBParser::parse(Rule::data, &content).map_err(|e| {
@@ -101,7 +101,7 @@ impl ImportFLToolbox {
         &self,
         data: Pairs<Rule>,
         doc_node_name: &str,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
     ) -> crate::error::Result<()> {
         let mut order_from = None;
         let mut global_values = BTreeMap::default();
@@ -123,7 +123,7 @@ impl ImportFLToolbox {
         doc_node_name: &str,
         continue_ordering_at: Option<String>,
         global_values: &mut BTreeMap<String, Vec<u8>>,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
     ) -> crate::error::Result<Option<String>> {
         let mut continue_ordering_at = continue_ordering_at;
         let mut byte_grid = Vec::with_capacity(6); // to find 4 tiers only is unlikely

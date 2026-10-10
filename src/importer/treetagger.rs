@@ -4,7 +4,7 @@ use crate::{
     StepID,
     importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
-    util::graphupdate::ConfiguredUpdate,
+    util::graphupdate::UpdateWriter,
 };
 
 use super::Importer;
@@ -50,7 +50,7 @@ struct DocumentMapper<'a> {
 }
 
 impl<'a> DocumentMapper<'a> {
-    fn map(&mut self, u: &mut ConfiguredUpdate, mut tt: Pairs<'a, Rule>) -> anyhow::Result<()> {
+    fn map(&mut self, u: &mut UpdateWriter, mut tt: Pairs<'a, Rule>) -> anyhow::Result<()> {
         // Add a subcorpus like node for the text
         u.node(self.text_node_name.clone(), "datasource".to_string())?;
         u.part_of(self.text_node_name.clone(), self.doc_path.clone())?;
@@ -64,11 +64,7 @@ impl<'a> DocumentMapper<'a> {
         Ok(())
     }
 
-    fn map_tt_rule(
-        &mut self,
-        u: &mut ConfiguredUpdate,
-        mut tt: Pairs<'a, Rule>,
-    ) -> anyhow::Result<()> {
+    fn map_tt_rule(&mut self, u: &mut UpdateWriter, mut tt: Pairs<'a, Rule>) -> anyhow::Result<()> {
         let mut was_first_line = true;
         while let Some(line) = tt.next() {
             match line.as_rule() {
@@ -97,7 +93,7 @@ impl<'a> DocumentMapper<'a> {
 
     fn consume_token_line(
         &mut self,
-        u: &mut ConfiguredUpdate,
+        u: &mut UpdateWriter,
         mut token_line: Pairs<'a, Rule>,
     ) -> anyhow::Result<()> {
         // Create a token node for this column
@@ -204,7 +200,7 @@ impl<'a> DocumentMapper<'a> {
 
     fn consume_end_tag(
         &mut self,
-        u: &mut ConfiguredUpdate,
+        u: &mut UpdateWriter,
         mut end_tag: Pairs<'a, Rule>,
         is_last_line: bool,
     ) -> anyhow::Result<()> {
@@ -380,9 +376,9 @@ impl Importer for ImportTreeTagger {
         config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut u = ConfiguredUpdate::from(config);
+        let mut u = UpdateWriter::from(config);
 
-        let documents = u.build_corpus_graph(input_path)?;
+        let documents = u.write_corpus_graph_from_file_tree(input_path)?;
 
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
 

@@ -33,7 +33,7 @@ use crate::{
     error::AnnattoError,
     importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
-    util::graphupdate::ConfiguredUpdate,
+    util::graphupdate::UpdateWriter,
 };
 
 /// Import files in the [CONLL-U format](https://universaldependencies.org/format.html)
@@ -108,8 +108,8 @@ impl Importer for ImportCoNLLU {
         config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = ConfiguredUpdate::from(config);
-        let paths_and_node_names = update.build_corpus_graph(input_path)?;
+        let mut update = UpdateWriter::from(config);
+        let paths_and_node_names = update.write_corpus_graph_from_file_tree(input_path)?;
         let progress =
             ProgressReporter::new(tx.clone(), step_id.clone(), paths_and_node_names.len())?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
@@ -140,7 +140,7 @@ impl ImportCoNLLU {
     fn import_document(
         &self,
         step_id: &StepID,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
         document_path: &Path,
         document_node_name: String,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -157,7 +157,7 @@ impl ImportCoNLLU {
     fn map_document(
         &self,
         step_id: &StepID,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
         document_node_name: String,
         mut conllu: Pairs<Rule>,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -194,7 +194,7 @@ impl ImportCoNLLU {
     fn map_sentence(
         &self,
         step_id: &StepID,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
         document_node_name: &str,
         sentence: Pair<Rule>,
     ) -> anyhow::Result<Vec<String>> {
@@ -366,7 +366,7 @@ impl ImportCoNLLU {
     fn map_token(
         &self,
         step_id: &StepID,
-        update: &mut ConfiguredUpdate,
+        update: &mut UpdateWriter,
         document_node_name: &str,
         token: Pair<Rule>,
         multi_token: &Option<(usize, usize, String)>,

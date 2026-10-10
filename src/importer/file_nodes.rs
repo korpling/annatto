@@ -1,7 +1,7 @@
 use crate::{
     error::AnnattoError,
     importer::{DefaultImportConfiguration, GenericImportConfiguration},
-    util::graphupdate::ConfiguredUpdate,
+    util::graphupdate::UpdateWriter,
 };
 
 use super::Importer;
@@ -40,7 +40,7 @@ impl Importer for CreateFileNodes {
         config: GenericImportConfiguration,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = ConfiguredUpdate::from(config);
+        let mut update = UpdateWriter::from(config);
         let base_dir = input_path.normalize()?;
         if let Some(base_dir_name) = base_dir.file_name() {
             let start_index = base_dir.as_path().to_string_lossy().len() - base_dir_name.len();
