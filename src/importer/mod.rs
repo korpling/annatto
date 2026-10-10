@@ -1,6 +1,7 @@
 //! Importer modules allow importing files from different formats.
 pub mod conllu;
 pub mod elan;
+#[allow(deprecated)] // TODO remove deprecated features from exmaralda import in the future
 pub mod exmaralda;
 pub mod file_nodes;
 pub mod git;
