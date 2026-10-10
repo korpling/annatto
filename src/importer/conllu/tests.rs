@@ -3,7 +3,6 @@ use std::{collections::BTreeSet, path::Path, sync::mpsc};
 use graphannis::{
     graph::AnnoKey,
     model::{AnnotationComponent, AnnotationComponentType},
-    update::GraphUpdate,
 };
 use graphannis_core::graph::DEFAULT_NS;
 use insta::assert_snapshot;
@@ -15,6 +14,7 @@ use crate::{
         conllu::default_comment_key,
     },
     test_util::{import_as_graphml_string, import_as_graphml_string_with_custom_config},
+    util::graphupdate::ConfiguredUpdate,
 };
 
 use super::ImportCoNLLU;
@@ -66,12 +66,10 @@ fn test_conll_fail_invalid() {
     let job = import_step.execute(None);
     assert!(job.is_err());
     assert_snapshot!(job.err().unwrap().to_string());
-    let mut u = GraphUpdate::default();
     let import = ImportCoNLLU::default();
+    let mut u = ConfiguredUpdate::from(import.default_configuration());
     let step_id = StepID::from_importer_step(&import_step);
-    let config = import.default_configuration();
     let run = import.import_document(
-        &config,
         &step_id,
         &mut u,
         import_path.join("test_file.conllu").as_path(),
