@@ -80,6 +80,7 @@ pub(crate) fn update_graph_silent(
 pub mod documentation;
 #[cfg(test)]
 pub(crate) mod example_generator;
+#[allow(deprecated)]
 pub(crate) mod graphupdate;
 pub(crate) mod sort_matches;
 pub(crate) mod token_helper;
