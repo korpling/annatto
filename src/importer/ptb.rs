@@ -1,11 +1,8 @@
 use anyhow::anyhow;
 use encoding_rs_io::DecodeReaderBytes;
 use facet::Facet;
-use graphannis::{
-    model::{AnnotationComponent, AnnotationComponentType},
-    update::{GraphUpdate, UpdateEvent},
-};
-use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
+use graphannis::model::{AnnotationComponent, AnnotationComponentType};
+use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use pest::{
@@ -21,6 +18,7 @@ use crate::{
     StepID,
     importer::{DefaultImportConfiguration, GenericImportConfiguration},
     progress::ProgressReporter,
+    util::graphupdate::ConfiguredUpdate,
 };
 
 use super::Importer;
@@ -40,24 +38,10 @@ struct DocumentMapper {
 }
 
 impl DocumentMapper {
-    fn map(
-        &mut self,
-        u: &mut GraphUpdate,
-        mut ptb: Pairs<Rule>,
-        config: &GenericImportConfiguration,
-    ) -> anyhow::Result<()> {
+    fn map(&mut self, u: &mut ConfiguredUpdate, mut ptb: Pairs<Rule>) -> anyhow::Result<()> {
         // Add a subcorpus like node for the text
-        u.add_event(UpdateEvent::AddNode {
-            node_name: self.text_node_name.clone(),
-            node_type: "datasource".to_string(),
-        })?;
-        u.add_event(UpdateEvent::AddEdge {
-            source_node: self.text_node_name.clone(),
-            target_node: self.doc_path.clone(),
-            layer: ANNIS_NS.to_string(),
-            component_type: "PartOf".to_string(),
-            component_name: "".to_string(),
-        })?;
+        u.node(self.text_node_name.clone(), "datasource".to_string())?;
+        u.part_of(self.text_node_name.clone(), self.doc_path.clone())?;
 
         // Iterate over all root phrases and map them
         if let Some(ptb) = ptb.next()
@@ -65,7 +49,7 @@ impl DocumentMapper {
         {
             for root_phrase in ptb.into_inner() {
                 if root_phrase.as_rule() == Rule::phrase {
-                    self.consume_phrase(root_phrase.into_inner(), None, config, u)?;
+                    self.consume_phrase(root_phrase.into_inner(), None, u)?;
                 }
             }
         }
@@ -74,8 +58,7 @@ impl DocumentMapper {
 
     fn annotate_edge(
         &self,
-        config: &GenericImportConfiguration,
-        u: &mut GraphUpdate,
+        u: &mut ConfiguredUpdate,
         source: Option<&String>,
         target: String,
         edge_label: Option<&str>,
@@ -85,43 +68,35 @@ impl DocumentMapper {
             // dominance edge (empty component name) between this parent
             // node and the child node.
             // TODO: make the layer and component name configurable
-            u.add_event(UpdateEvent::AddEdge {
-                source_node: parent_node_name.to_string(),
-                target_node: target.to_string(),
-                layer: config.default_dominance().layer.to_string(),
-                component_type: config.default_dominance().get_type().to_string(),
-                component_name: config.default_dominance().name.to_string(),
-            })?;
-            u.add_event(UpdateEvent::AddEdge {
-                source_node: parent_node_name.clone(),
-                target_node: target.to_string(),
-                layer: config.default_dominance().layer.to_string(),
-                component_type: config.default_dominance().get_type().to_string(),
-                component_name: format!("{}edge", config.default_dominance().name),
-            })?;
+            let prim_c = u
+                .dominance(parent_node_name.to_string(), target.to_string())?
+                .clone();
+            let sec_c = u.edge_by_parts(
+                parent_node_name.clone(),
+                target.to_string(),
+                u.config.default_dominance().layer.to_string(),
+                u.config.default_dominance().get_type(),
+                format!("{}edge", u.config.default_dominance().name),
+            )?;
             if let Some(label) = edge_label
                 && !label.is_empty()
             {
-                u.add_event(UpdateEvent::AddEdgeLabel {
-                    source_node: parent_node_name.to_string(),
-                    target_node: target.to_string(),
-                    layer: config.default_dominance().layer.to_string(),
-                    component_type: config.default_dominance().get_type().to_string(),
-                    component_name: config.default_dominance().name.to_string(),
-                    anno_ns: config.default_namespace().to_string(),
-                    anno_name: "func".to_string(),
-                    anno_value: label.to_string(),
-                })?;
-                u.add_event(UpdateEvent::AddEdgeLabel {
-                    source_node: parent_node_name.to_string(),
-                    target_node: target,
-                    layer: config.default_dominance().layer.to_string(),
-                    component_type: config.default_dominance().get_type().to_string(),
-                    component_name: format!("{}edge", config.default_dominance().name),
-                    anno_ns: config.default_namespace().to_string(),
-                    anno_name: "func".to_string(),
-                    anno_value: label.to_string(),
-                })?;
+                u.edge_label(
+                    parent_node_name.to_string(),
+                    target.to_string(),
+                    &prim_c,
+                    u.config.default_namespace().to_string(),
+                    "func".to_string(),
+                    label.to_string(),
+                )?;
+                u.edge_label(
+                    parent_node_name.to_string(),
+                    target.to_string(),
+                    &sec_c,
+                    u.config.default_namespace().to_string(),
+                    "func".to_string(),
+                    label.to_string(),
+                )?;
             }
         }
         Ok(())
@@ -143,8 +118,7 @@ impl DocumentMapper {
         &mut self,
         mut phrase_children: Pairs<Rule>,
         parent: Option<&String>,
-        config: &GenericImportConfiguration,
-        u: &mut GraphUpdate,
+        u: &mut ConfiguredUpdate,
     ) -> anyhow::Result<String> {
         // The first child of a phrase we want to map must be a label
         if let Some(phrase_label) = phrase_children.next() {
@@ -155,8 +129,7 @@ impl DocumentMapper {
                     || remaining_children[0].as_rule() == Rule::label)
             {
                 // map the value as token
-                let tok_id =
-                    self.consume_token(config, u, &remaining_children[0], phrase_label, parent)?;
+                let tok_id = self.consume_token(u, &remaining_children[0], phrase_label, parent)?;
                 Ok(tok_id)
             } else {
                 let (node_label, edge_label) = self.split_annotation_value(&phrase_label);
@@ -164,39 +137,29 @@ impl DocumentMapper {
                 let id = self.number_of_spans + 1;
                 let node_name = format!("{}#n{id}", self.doc_path);
 
-                u.add_event(UpdateEvent::AddNode {
-                    node_name: node_name.clone(),
-                    node_type: "node".to_string(),
-                })?;
-                // TODO: make the annotaton name configurable
-                u.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: node_name.clone(),
-                    anno_ns: config.default_namespace().to_string(),
-                    anno_name: "cat".to_string(),
-                    anno_value: node_label.to_string(),
-                })?;
+                u.labeled_node(
+                    node_name.clone(),
+                    "node".to_string(),
+                    u.config.default_namespace().to_string(),
+                    "cat".to_string(),
+                    node_label.to_string(),
+                )?;
                 // TODO: make the layer configurable
-                u.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: node_name.clone(),
-                    anno_ns: ANNIS_NS.to_string(),
-                    anno_name: "layer".to_string(),
-                    anno_value: config.default_namespace().to_string(), // TODO re-think that for the future
-                })?;
-                u.add_event(UpdateEvent::AddEdge {
-                    source_node: node_name.to_string(),
-                    target_node: self.doc_path.to_string(),
-                    layer: config.default_part_of().layer.to_string(),
-                    component_type: config.default_part_of().get_type().to_string(),
-                    component_name: config.default_part_of().name.to_string(),
-                })?;
+                u.node_label(
+                    node_name.clone(),
+                    ANNIS_NS.to_string(),
+                    "layer".to_string(),
+                    u.config.default_namespace().to_string(), // TODO re-think that for the future
+                )?;
+                u.part_of(node_name.to_string(), self.doc_path.to_string())?;
 
-                self.annotate_edge(config, u, parent, node_name.to_string(), edge_label)?;
+                self.annotate_edge(u, parent, node_name.to_string(), edge_label)?;
                 self.number_of_spans += 1;
 
                 // Left-descend to any phrase
                 //let mut target_node = node_name.to_string();
                 for c in remaining_children {
-                    self.consume_phrase(c.into_inner(), Some(&node_name), config, u)?;
+                    self.consume_phrase(c.into_inner(), Some(&node_name), u)?;
                 }
                 Ok(node_name)
             }
@@ -207,8 +170,7 @@ impl DocumentMapper {
 
     fn consume_token(
         &mut self,
-        config: &GenericImportConfiguration,
-        u: &mut GraphUpdate,
+        u: &mut ConfiguredUpdate,
         pair: &Pair<Rule>,
         phrase_label: String,
         parent: Option<&String>,
@@ -217,51 +179,36 @@ impl DocumentMapper {
         let id = self.number_of_token + 1;
         let tok_id = format!("{}#t{id}", self.doc_path);
         let (node_label, edge_label) = self.split_annotation_value(&phrase_label);
-        u.add_event(UpdateEvent::AddNode {
-            node_name: tok_id.clone(),
-            node_type: "node".to_string(),
-        })?;
-        u.add_event(UpdateEvent::AddNodeLabel {
-            node_name: tok_id.clone(),
-            anno_ns: ANNIS_NS.to_string(),
-            anno_name: "tok".to_string(),
-            anno_value: value,
-        })?;
-        u.add_event(UpdateEvent::AddNodeLabel {
-            node_name: tok_id.clone(),
-            anno_ns: ANNIS_NS.to_string(),
-            anno_name: "layer".to_string(),
-            anno_value: "default_layer".to_string(),
-        })?;
-        u.add_event(UpdateEvent::AddEdge {
-            source_node: tok_id.clone(),
-            target_node: self.text_node_name.clone(),
-            layer: config.default_part_of().layer.to_string(),
-            component_type: config.default_part_of().get_type().to_string(),
-            component_name: config.default_part_of().name.to_string(),
-        })?;
-        self.annotate_edge(config, u, parent, tok_id.to_string(), edge_label)?;
+        u.labeled_node(
+            tok_id.clone(),
+            "node".to_string(),
+            ANNIS_NS.to_string(),
+            "tok".to_string(),
+            value,
+        )?;
+        u.node_label(
+            tok_id.clone(),
+            ANNIS_NS.to_string(),
+            "layer".to_string(),
+            "default_layer".to_string(),
+        )?;
+        u.part_of(tok_id.clone(), self.text_node_name.clone())?;
+        self.annotate_edge(u, parent, tok_id.to_string(), edge_label)?;
         // TODO: allow to customize the token annotation name
-        u.add_event(UpdateEvent::AddNodeLabel {
-            node_name: tok_id.clone(),
-            anno_ns: DEFAULT_NS.to_string(),
-            anno_name: "pos".to_string(),
-            anno_value: node_label.to_string(),
-        })?;
+        u.node_label(
+            tok_id.clone(),
+            u.config.default_namespace().to_string(),
+            "pos".to_string(),
+            node_label.to_string(),
+        )?;
         if let Some(last_token_id) = &self.last_token_id {
-            u.add_event(UpdateEvent::AddNodeLabel {
-                node_name: tok_id.clone(),
-                anno_ns: ANNIS_NS.to_string(),
-                anno_name: "tok-whitespace-before".to_string(),
-                anno_value: " ".to_string(),
-            })?;
-            u.add_event(UpdateEvent::AddEdge {
-                source_node: last_token_id.clone(),
-                target_node: tok_id.clone(),
-                layer: config.default_ordering().layer.to_string(),
-                component_type: config.default_ordering().get_type().to_string(),
-                component_name: config.default_ordering().name.to_string(),
-            })?;
+            u.node_label(
+                tok_id.clone(),
+                ANNIS_NS.to_string(),
+                "tok-whitespace-before".to_string(),
+                " ".to_string(),
+            )?;
+            u.ordering(last_token_id.clone(), tok_id.clone())?;
         }
         self.number_of_token += 1;
         self.last_token_id = Some(tok_id.clone());
@@ -344,10 +291,10 @@ impl Importer for ImportPTB {
         step_id: StepID,
         config: GenericImportConfiguration,
         tx: Option<crate::workflow::StatusSender>,
-    ) -> std::result::Result<GraphUpdate, Box<dyn std::error::Error>> {
-        let mut u = GraphUpdate::default();
+    ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
+        let mut u = ConfiguredUpdate::from(config);
 
-        let documents = config.derive_corpus_graph(input_path, &mut u)?;
+        let documents = u.build_corpus_graph(input_path)?;
 
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
 
@@ -372,7 +319,7 @@ impl Importer for ImportPTB {
                         edge_delimiter: self.edge_delimiter.clone(),
                     };
 
-                    doc_mapper.map(&mut u, ptb, &config)?;
+                    doc_mapper.map(&mut u, ptb)?;
                     reporter.worked(1)?;
                 }
                 Err(e) => files_with_errors.push((file_path, e)),
@@ -385,7 +332,7 @@ impl Importer for ImportPTB {
                 .join("");
             Err(anyhow!(msg).into())
         } else {
-            Ok(u)
+            Ok(u.into())
         }
     }
 }
