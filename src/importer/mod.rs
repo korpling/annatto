@@ -279,23 +279,23 @@ impl DefaultComponents {
     ) -> Self {
         Self::new(
             config
-                .user_provided_ordering()
+                .configured_ordering()
                 .or(importer.preset_default_ordering())
                 .cloned(),
             config
-                .user_provided_coverage()
+                .configured_coverage()
                 .or(importer.preset_default_coverage())
                 .cloned(),
             config
-                .user_provided_part_of()
+                .configured_part_of()
                 .or(importer.preset_default_part_of())
                 .cloned(),
             config
-                .user_provided_dominance()
+                .configured_dominance()
                 .or(importer.preset_default_dominance())
                 .cloned(),
             config
-                .user_provided_pointing()
+                .configured_pointing()
                 .or(importer.preset_default_pointing())
                 .cloned(),
         )
@@ -397,7 +397,7 @@ impl<'a> GenericImportConfiguration {
         self.default_ns.is_some()
     }
 
-    pub fn user_provided_ordering(&self) -> Option<&AnnotationComponent> {
+    pub fn configured_ordering(&self) -> Option<&AnnotationComponent> {
         if let Some(default_components) = &self.default_components {
             default_components.ordering.as_ref()
         } else {
@@ -416,7 +416,7 @@ impl<'a> GenericImportConfiguration {
         }
     }
 
-    pub fn user_provided_coverage(&self) -> Option<&AnnotationComponent> {
+    pub fn configured_coverage(&self) -> Option<&AnnotationComponent> {
         if let Some(default_components) = &self.default_components {
             default_components.coverage.as_ref()
         } else {
@@ -435,7 +435,7 @@ impl<'a> GenericImportConfiguration {
         }
     }
 
-    pub fn user_provided_part_of(&self) -> Option<&AnnotationComponent> {
+    pub fn configured_part_of(&self) -> Option<&AnnotationComponent> {
         if let Some(default_components) = &self.default_components {
             default_components.part_of.as_ref()
         } else {
@@ -454,7 +454,7 @@ impl<'a> GenericImportConfiguration {
         }
     }
 
-    pub fn user_provided_dominance(&self) -> Option<&AnnotationComponent> {
+    pub fn configured_dominance(&self) -> Option<&AnnotationComponent> {
         if let Some(default_components) = &self.default_components {
             default_components.dominance.as_ref()
         } else {
@@ -473,7 +473,7 @@ impl<'a> GenericImportConfiguration {
         }
     }
 
-    pub fn user_provided_pointing(&self) -> Option<&AnnotationComponent> {
+    pub fn configured_pointing(&self) -> Option<&AnnotationComponent> {
         if let Some(default_components) = &self.default_components {
             default_components.pointing.as_ref()
         } else {
