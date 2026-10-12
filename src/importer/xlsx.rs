@@ -731,7 +731,12 @@ mod tests {
     use tempfile::tempdir;
 
     use crate::{
-        ImporterStep, ReadFrom, exporter::graphml::GraphMLExporter, importer::GenericImportConfiguration, test_util::export_to_string, util::update_graph_silent, workflow::{StatusMessage, Workflow},
+        ImporterStep, ReadFrom,
+        exporter::graphml::GraphMLExporter,
+        importer::GenericImportConfiguration,
+        test_util::export_to_string,
+        util::update_graph_silent,
+        workflow::{StatusMessage, Workflow},
     };
 
     use super::*;

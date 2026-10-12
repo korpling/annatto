@@ -375,7 +375,10 @@ mod tests {
     use insta::assert_snapshot;
 
     use crate::{
-        exporter::graphml::GraphMLExporter, importer::{GenericImportConfiguration, Importer}, test_util::export_to_string, util::{graphupdate::UpdateWriter, update_graph_silent},
+        exporter::graphml::GraphMLExporter,
+        importer::{GenericImportConfiguration, Importer},
+        test_util::export_to_string,
+        util::{graphupdate::UpdateWriter, update_graph_silent},
     };
 
     use super::ImportWebAnnoTSV;

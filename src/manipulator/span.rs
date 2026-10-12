@@ -247,10 +247,14 @@ mod tests {
     use insta::assert_snapshot;
 
     use crate::{
-        exporter::graphml::GraphMLExporter, importer::{DefaultImportConfiguration, Importer, treetagger::ImportTreeTagger}, manipulator::{
+        exporter::graphml::GraphMLExporter,
+        importer::{DefaultImportConfiguration, Importer, treetagger::ImportTreeTagger},
+        manipulator::{
             Manipulator,
             span::{CreateSpans, default_component},
-        }, test_util::export_to_string, util::graphupdate::UpdateWriter,
+        },
+        test_util::export_to_string,
+        util::graphupdate::UpdateWriter,
     };
 
     #[test]

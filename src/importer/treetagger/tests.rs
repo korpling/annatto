@@ -5,10 +5,13 @@ use insta::assert_snapshot;
 use itertools::Itertools;
 
 use crate::{
-    StepID, importer::{
+    StepID,
+    importer::{
         GenericImportConfiguration, Importer,
         treetagger::{AttributeDecoding, ImportTreeTagger},
-    }, test_util::import_as_graphml_string, util::graphupdate::UpdateWriter,
+    },
+    test_util::import_as_graphml_string,
+    util::graphupdate::UpdateWriter,
 };
 
 const TT_DEFAULT_VIS_CONFIG: &str = r#"

@@ -94,7 +94,11 @@ mod tests {
     use tempfile::tempdir;
 
     use crate::{
-        StepID, exporter::graphml::GraphMLExporter, importer::{DefaultImportConfiguration, Importer, git::ImportGitMetadata}, test_util::export_to_string, util::graphupdate::UpdateWriter,
+        StepID,
+        exporter::graphml::GraphMLExporter,
+        importer::{DefaultImportConfiguration, Importer, git::ImportGitMetadata},
+        test_util::export_to_string,
+        util::graphupdate::UpdateWriter,
     };
 
     #[test]

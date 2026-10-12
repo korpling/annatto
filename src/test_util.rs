@@ -1,5 +1,10 @@
 use crate::{
-    StepID, error::{AnnattoError, Result}, exporter::Exporter, importer::{GenericImportConfiguration, Importer}, util::{get_all_files, graphupdate::UpdateWriter}, workflow::StatusSender,
+    StepID,
+    error::{AnnattoError, Result},
+    exporter::Exporter,
+    importer::{GenericImportConfiguration, Importer},
+    util::{get_all_files, graphupdate::UpdateWriter},
+    workflow::StatusSender,
 };
 use graphannis::AnnotationGraph;
 

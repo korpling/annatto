@@ -9,7 +9,12 @@ use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use insta::assert_snapshot;
 
 use crate::{
-    StepID, exporter::{exmaralda::ExportExmaralda, graphml::GraphMLExporter, sequence::ExportSequence}, importer::{GenericImportConfiguration, Importer, exmaralda::ImportEXMARaLDA}, manipulator::{Manipulator, diff::DiffSubgraphs}, test_util::export_to_string, util::{graphupdate::UpdateWriter, update_graph_silent},
+    StepID,
+    exporter::{exmaralda::ExportExmaralda, graphml::GraphMLExporter, sequence::ExportSequence},
+    importer::{GenericImportConfiguration, Importer, exmaralda::ImportEXMARaLDA},
+    manipulator::{Manipulator, diff::DiffSubgraphs},
+    test_util::export_to_string,
+    util::{graphupdate::UpdateWriter, update_graph_silent},
 };
 
 #[test]
@@ -23,7 +28,9 @@ fn with_data() {
             module_name: "test_import".to_string(),
             path: None,
         },
-        UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(&import)),
+        UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+            &import,
+        )),
         None,
     );
     assert!(u.is_ok());

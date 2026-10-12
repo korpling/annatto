@@ -1,7 +1,5 @@
 use crate::{
-    error::AnnattoError,
-    importer::{DefaultImportConfiguration},
-    util::graphupdate::UpdateWriter,
+    error::AnnattoError, importer::DefaultImportConfiguration, util::graphupdate::UpdateWriter,
 };
 
 use super::Importer;

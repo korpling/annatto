@@ -249,10 +249,15 @@ mod tests {
     use insta::assert_snapshot;
 
     use crate::{
-        StepID, exporter::graphml::GraphMLExporter, importer::{GenericImportConfiguration, Importer, treetagger::ImportTreeTagger}, manipulator::{
+        StepID,
+        exporter::graphml::GraphMLExporter,
+        importer::{GenericImportConfiguration, Importer, treetagger::ImportTreeTagger},
+        manipulator::{
             Manipulator,
             align::{AlignNodes, AlignmentMethod, NodeGroup, default_component},
-        }, test_util::export_to_string, util::{example_generator, graphupdate::UpdateWriter, update_graph_silent},
+        },
+        test_util::export_to_string,
+        util::{example_generator, graphupdate::UpdateWriter, update_graph_silent},
     };
 
     #[test]
