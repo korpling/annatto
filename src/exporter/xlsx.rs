@@ -555,7 +555,7 @@ mod tests {
             DefaultImportConfiguration, Importer, conllu::ImportCoNLLU, xlsx::ImportSpreadsheet,
         },
         test_util::compare_graphs,
-        util::example_generator,
+        util::{example_generator, graphupdate::UpdateWriter},
     };
 
     use super::*;
@@ -1071,7 +1071,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            import.default_configuration(),
+            UpdateWriter::from(import.default_configuration()),
             None,
         );
         assert!(u.is_ok());
@@ -1163,7 +1163,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            import.default_configuration(),
+            UpdateWriter::from(import.default_configuration()),
             None,
         );
         assert!(u.is_ok(), "Err: {:?}", u.err().unwrap());

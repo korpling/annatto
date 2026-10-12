@@ -247,13 +247,10 @@ mod tests {
     use insta::assert_snapshot;
 
     use crate::{
-        exporter::graphml::GraphMLExporter,
-        importer::{DefaultImportConfiguration, Importer, treetagger::ImportTreeTagger},
-        manipulator::{
+        exporter::graphml::GraphMLExporter, importer::{DefaultImportConfiguration, Importer, treetagger::ImportTreeTagger}, manipulator::{
             Manipulator,
             span::{CreateSpans, default_component},
-        },
-        test_util::export_to_string,
+        }, test_util::export_to_string, util::graphupdate::UpdateWriter,
     };
 
     #[test]
@@ -338,7 +335,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            importer.default_configuration(),
+            UpdateWriter::from(importer.default_configuration()),
             None,
         );
         assert!(u.is_ok());
@@ -386,7 +383,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            importer.default_configuration(),
+            UpdateWriter::from(importer.default_configuration()),
             None,
         );
         assert!(u.is_ok());

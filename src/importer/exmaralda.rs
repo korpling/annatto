@@ -16,7 +16,7 @@ use super::Importer;
 use crate::{
     StepID,
     error::AnnattoError,
-    importer::{DefaultImportConfiguration, GenericImportConfiguration},
+    importer::DefaultImportConfiguration,
     progress::ProgressReporter,
     util::graphupdate::{UpdateWriter, map_audio_source},
     workflow::StatusMessage,
@@ -52,10 +52,9 @@ impl Importer for ImportEXMARaLDA {
         &self,
         input_path: &std::path::Path,
         step_id: StepID,
-        config: GenericImportConfiguration,
+        mut update: UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = UpdateWriter::from(config);
         let all_files = update.write_corpus_graph_from_file_tree(input_path)?;
         let progress = ProgressReporter::new(tx.clone(), step_id.clone(), all_files.len())?;
         let document_status: Result<Vec<()>, AnnattoError> = all_files

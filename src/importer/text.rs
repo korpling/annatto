@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     importer::{
-        DefaultImportConfiguration, GenericImportConfiguration, Importer,
+        DefaultImportConfiguration, Importer,
         text::tokenizer::{Token, TreeTaggerTokenizer},
     },
     progress::ProgressReporter,
@@ -93,11 +93,9 @@ impl Importer for ImportText {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        config: GenericImportConfiguration,
+        mut update: UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = UpdateWriter::from(config);
-
         let all_files = update.write_corpus_graph_from_file_tree(input_path)?;
 
         let tokenizer = match &self.tokenizer {
@@ -227,7 +225,7 @@ mod tests {
         exporter::graphml::GraphMLExporter,
         importer::{GenericImportConfiguration, Importer, text::ImportText},
         test_util::export_to_string,
-        util::update_graph_silent,
+        util::{graphupdate::UpdateWriter, update_graph_silent},
     };
 
     #[test]
@@ -240,7 +238,9 @@ mod tests {
                 module_name: "test_text".to_string(),
                 path: Some(import_path.to_path_buf()),
             },
-            GenericImportConfiguration::new_with_default_extensions(&importer),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &importer,
+            )),
             None,
         );
         assert!(u.is_ok(), "Err: {:?}", u.err());
@@ -265,7 +265,9 @@ mod tests {
                 module_name: "test_text".to_string(),
                 path: Some(import_path.to_path_buf()),
             },
-            GenericImportConfiguration::new_with_default_extensions(&importer),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &importer,
+            )),
             None,
         );
         assert!(u.is_ok(), "Err: {:?}", u.err());

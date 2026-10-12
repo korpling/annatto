@@ -339,11 +339,13 @@ impl ImporterStep {
         &self,
         tx: Option<StatusSender>,
     ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
+        use crate::util::graphupdate::UpdateWriter;
+
         let default_conf = self.module.reader().default_configuration();
         self.module.reader().import_corpus(
             &self.path,
             StepID::from_importer_step(&self),
-            self.generic_config.clone().unwrap_or(default_conf),
+            UpdateWriter::from(self.generic_config.clone().unwrap_or(default_conf)),
             tx,
         )
     }

@@ -11,7 +11,7 @@ use xml::{EventReader, ParserConfig};
 use crate::{
     StepID,
     error::{AnnattoError, Result},
-    importer::{DefaultImportConfiguration, GenericImportConfiguration},
+    importer::DefaultImportConfiguration,
     progress::ProgressReporter,
     util::graphupdate::UpdateWriter,
 };
@@ -42,10 +42,9 @@ impl Importer for ImportXML {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        config: GenericImportConfiguration,
+        mut update: UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = UpdateWriter::from(config);
         let all_files = update.write_corpus_graph_from_file_tree(input_path)?;
         let progress = ProgressReporter::new(tx.clone(), step_id.clone(), all_files.len())?;
         all_files.into_iter().try_for_each(|(p, d)| {

@@ -4,8 +4,9 @@ use graphannis_core::graph::serialization;
 
 use crate::{
     StepID,
-    importer::{DefaultImportConfiguration, GenericImportConfiguration, Importer},
+    importer::{DefaultImportConfiguration, Importer},
     progress::ProgressReporter,
+    util::graphupdate::UpdateWriter,
     workflow::StatusSender,
 };
 use serde::Serialize;
@@ -37,12 +38,12 @@ impl Importer for GraphMLImporter {
         &self,
         path: &Path,
         step_id: StepID,
-        config: GenericImportConfiguration,
+        update: UpdateWriter,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let reporter = ProgressReporter::new_unknown_total_work(tx.clone(), step_id.clone())?;
 
-        if config != self.default_configuration() {
+        if update.config != self.default_configuration() {
             reporter
                 .warn("Generic configuration keys are currently ignored for GraphML imports.")?;
         }
@@ -50,7 +51,7 @@ impl Importer for GraphMLImporter {
         // TODO: connected binary files
 
         // Load the GraphML files (could be a ZIP file, too) from the given location
-        let mut updates = GraphUpdate::default();
+        let mut updates = update.into();
         let mut edge_updates = GraphUpdate::default();
 
         // Find all the files that belong to this corpus file (if it is partitioned)
@@ -97,6 +98,7 @@ mod tests {
     use crate::{
         importer::{GenericImportConfiguration, Importer, graphml::GraphMLImporter},
         test_util::import_as_graphml_string,
+        util::graphupdate::UpdateWriter,
     };
 
     #[test]
@@ -122,7 +124,9 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_root_name("custom_root".to_string()),
+            UpdateWriter::from(GenericImportConfiguration::new_with_root_name(
+                "custom_root".to_string(),
+            )),
             Some(tx),
         );
         assert!(import.is_ok());

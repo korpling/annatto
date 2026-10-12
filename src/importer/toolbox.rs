@@ -48,10 +48,9 @@ impl Importer for ImportFLToolbox {
         &self,
         input_path: &Path,
         _step_id: crate::StepID,
-        config: super::GenericImportConfiguration,
+        mut update: UpdateWriter,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = UpdateWriter::from(config);
         let named_paths = update.write_corpus_graph_from_file_tree(input_path)?;
         named_paths
             .into_iter()

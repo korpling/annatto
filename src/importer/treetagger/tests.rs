@@ -5,12 +5,10 @@ use insta::assert_snapshot;
 use itertools::Itertools;
 
 use crate::{
-    StepID,
-    importer::{
+    StepID, importer::{
         GenericImportConfiguration, Importer,
         treetagger::{AttributeDecoding, ImportTreeTagger},
-    },
-    test_util::import_as_graphml_string,
+    }, test_util::import_as_graphml_string, util::graphupdate::UpdateWriter,
 };
 
 const TT_DEFAULT_VIS_CONFIG: &str = r#"
@@ -117,7 +115,9 @@ fn complex_attribute_names() {
         .import_corpus(
             path.as_ref(),
             step_id.clone(),
-            GenericImportConfiguration::new_with_default_extensions(&importer),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &importer,
+            )),
             None,
         )
         .unwrap();

@@ -6,11 +6,11 @@ use std::*;
 
 use super::Importer;
 use crate::StepID;
-use crate::importer::{DefaultImportConfiguration, GenericImportConfiguration};
+use crate::importer::DefaultImportConfiguration;
 use crate::models::textgrid::{Interval, TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{
-    UpdateWriter, NodeInfo, add_order_relations, map_annotations, map_audio_source,
+    NodeInfo, UpdateWriter, add_order_relations, map_annotations, map_audio_source,
     map_token_with_ds, root_corpus_from_path,
 };
 use anyhow::{Result, anyhow};
@@ -408,10 +408,9 @@ impl Importer for ImportTextgrid {
         &self,
         input_path: &Path,
         step_id: StepID,
-        config: GenericImportConfiguration,
+        mut u: UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
     ) -> result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut u = UpdateWriter::from(config);
         let tier_groups = if let Some(ref tg) = self.tier_groups {
             tg.clone()
         } else {

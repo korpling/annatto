@@ -10,8 +10,7 @@ use pest_derive::Parser;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    importer::{DefaultImportConfiguration, GenericImportConfiguration},
-    progress::ProgressReporter,
+    importer::DefaultImportConfiguration, progress::ProgressReporter,
     util::graphupdate::UpdateWriter,
 };
 
@@ -29,10 +28,9 @@ impl Importer for ImportWebAnnoTSV {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        config: GenericImportConfiguration,
+        mut update: UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = UpdateWriter::from(config);
         let paths_and_node_names = update.write_corpus_graph_from_file_tree(input_path)?;
         let progress =
             ProgressReporter::new(tx.clone(), step_id.clone(), paths_and_node_names.len())?;
@@ -377,10 +375,7 @@ mod tests {
     use insta::assert_snapshot;
 
     use crate::{
-        exporter::graphml::GraphMLExporter,
-        importer::{GenericImportConfiguration, Importer},
-        test_util::export_to_string,
-        util::update_graph_silent,
+        exporter::graphml::GraphMLExporter, importer::{GenericImportConfiguration, Importer}, test_util::export_to_string, util::{graphupdate::UpdateWriter, update_graph_silent},
     };
 
     use super::ImportWebAnnoTSV;
@@ -407,7 +402,9 @@ mod tests {
                 module_name: "test_webanno".to_string(),
                 path: Some(import_path.to_path_buf()),
             },
-            GenericImportConfiguration::new_with_default_extensions(&importer),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &importer,
+            )),
             None,
         );
         assert!(u.is_ok(), "Err: {:?}", u.err());
@@ -432,7 +429,9 @@ mod tests {
                 module_name: "test_webanno".to_string(),
                 path: Some(import_path.to_path_buf()),
             },
-            GenericImportConfiguration::new_with_default_extensions(&importer),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &importer,
+            )),
             None,
         );
         assert!(u.is_ok(), "Err: {:?}", u.err());

@@ -50,10 +50,9 @@ impl Importer for ImportELAN {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        config: super::GenericImportConfiguration,
+        mut update: super::UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = UpdateWriter::from(config);
         let named_paths = update.write_corpus_graph_from_file_tree(input_path)?;
         let progress = ProgressReporter::new(tx, step_id, named_paths.len())?;
         named_paths

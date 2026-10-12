@@ -503,6 +503,7 @@ mod tests {
             exmaralda::ImportEXMARaLDA,
         },
         test_util::export_to_string,
+        util::graphupdate::UpdateWriter,
     };
 
     #[test]
@@ -560,7 +561,9 @@ mod tests {
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&exmaralda),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &exmaralda,
+            )),
             None,
         );
         assert!(mprt.is_ok());
@@ -583,7 +586,9 @@ mod tests {
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&exmaralda),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &exmaralda,
+            )),
             None,
         );
         assert!(mprt.is_ok());
@@ -613,7 +618,7 @@ mod tests {
                 module_name: "test_import_conll".to_string(),
                 path: None,
             },
-            to_conll.default_configuration(),
+            UpdateWriter::from(to_conll.default_configuration()),
             None,
         );
         assert!(mprt.is_ok());
@@ -646,7 +651,7 @@ mod tests {
                 module_name: "test_import_conll".to_string(),
                 path: None,
             },
-            to_conll.default_configuration(),
+            UpdateWriter::from(to_conll.default_configuration()),
             None,
         );
         assert!(mprt.is_ok());
@@ -687,7 +692,9 @@ mod tests {
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&exmaralda),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &exmaralda,
+            )),
             None,
         );
         assert!(mprt.is_ok());
@@ -719,7 +726,9 @@ mod tests {
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&exmaralda),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &exmaralda,
+            )),
             None,
         );
         assert!(mprt.is_ok());
@@ -751,7 +760,9 @@ mod tests {
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&exmaralda),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &exmaralda,
+            )),
             None,
         );
         assert!(mprt.is_ok());

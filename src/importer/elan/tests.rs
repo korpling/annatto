@@ -13,6 +13,7 @@ use crate::{
         elan::ImportELAN,
     },
     test_util::export_to_string,
+    util::graphupdate::UpdateWriter,
 };
 
 #[test]
@@ -25,7 +26,7 @@ fn basic() {
             module_name: "test_elan".to_string(),
             path: None,
         },
-        import.default_configuration(),
+        UpdateWriter::from(import.default_configuration()),
         None,
     );
     assert!(u.is_ok(), "Err: {}", u.err().unwrap());
@@ -51,7 +52,7 @@ fn with_segmentations() {
             module_name: "test_elan".to_string(),
             path: None,
         },
-        import.default_configuration(),
+        UpdateWriter::from(import.default_configuration()),
         None,
     );
     assert!(u.is_ok(), "Err: {}", u.err().unwrap());
@@ -102,7 +103,7 @@ fn customized_generic_config() {
             module_name: "test_elan".to_string(),
             path: None,
         },
-        config,
+        UpdateWriter::from(config),
         None,
     );
     assert!(u.is_ok(), "Err: {}", u.err().unwrap());

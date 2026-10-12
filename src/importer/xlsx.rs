@@ -21,7 +21,7 @@ use super::Importer;
 use crate::{
     StepID,
     error::AnnattoError,
-    importer::{DefaultImportConfiguration, GenericImportConfiguration, NODE_NAME_ENCODE_SET},
+    importer::{DefaultImportConfiguration, NODE_NAME_ENCODE_SET},
     progress::ProgressReporter,
     util::graphupdate::UpdateWriter,
 };
@@ -665,11 +665,9 @@ impl Importer for ImportSpreadsheet {
         &self,
         input_path: &std::path::Path,
         step_id: StepID,
-        config: GenericImportConfiguration,
+        mut update: UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = UpdateWriter::from(config);
-
         let all_files = update.write_corpus_graph_from_file_tree(input_path)?;
         // figure out which files are backup data and should not be imported
         let ignore_docs = invalid_doc_nodes(all_files.as_ref());
@@ -733,11 +731,7 @@ mod tests {
     use tempfile::tempdir;
 
     use crate::{
-        ImporterStep, ReadFrom,
-        exporter::graphml::GraphMLExporter,
-        test_util::export_to_string,
-        util::update_graph_silent,
-        workflow::{StatusMessage, Workflow},
+        ImporterStep, ReadFrom, exporter::graphml::GraphMLExporter, importer::GenericImportConfiguration, test_util::export_to_string, util::update_graph_silent, workflow::{StatusMessage, Workflow},
     };
 
     use super::*;
@@ -801,7 +795,9 @@ mod tests {
                 module_name: "test_xslx_import".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&import),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &import,
+            )),
             Some(sender),
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -839,7 +835,9 @@ mod tests {
                 module_name: "test_xslx_import".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&import),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &import,
+            )),
             None,
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -867,7 +865,9 @@ mod tests {
                 module_name: "test_xslx_import".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&import),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &import,
+            )),
             None,
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -1296,8 +1296,9 @@ edition = ["chapter"]
             FILE_EXTENSIONS.iter().map(|e| e.to_string()).collect_vec(),
         );
         let mut update = UpdateWriter::from(config);
-        let files_with_names =
-            update.write_corpus_graph_from_file_tree(Path::new("tests/data/import/xlsx/with_backup/xlsx/"));
+        let files_with_names = update.write_corpus_graph_from_file_tree(Path::new(
+            "tests/data/import/xlsx/with_backup/xlsx/",
+        ));
         assert!(
             files_with_names.is_ok(),
             "Failed: {:?}",
@@ -1326,7 +1327,9 @@ norm = ["pos", "lemma"]
                 module_name: "test_xlsx".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&import),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &import,
+            )),
             None,
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -1356,7 +1359,9 @@ norm = ["pos", "lemma"]
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&module),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &module,
+            )),
             None,
         );
         assert!(u.is_ok());
@@ -1388,7 +1393,7 @@ norm = ["pos", "lemma"]
                 module_name: "test_import_multisheet".to_string(),
                 path: None,
             },
-            import.default_configuration(),
+            UpdateWriter::from(import.default_configuration()),
             None,
         );
         assert!(u.is_ok());
@@ -1414,7 +1419,7 @@ norm = ["pos", "lemma"]
                 module_name: "test_import_multisheet".to_string(),
                 path: None,
             },
-            import.default_configuration(),
+            UpdateWriter::from(import.default_configuration()),
             None,
         );
         assert!(u.is_err());
@@ -1450,7 +1455,7 @@ norm = ["pos", "lemma"]
                 module_name: "test_import_multisheet".to_string(),
                 path: None,
             },
-            import.default_configuration(),
+            UpdateWriter::from(import.default_configuration()),
             Some(tx.clone()),
         );
         assert!(u.is_ok());
@@ -1470,7 +1475,7 @@ norm = ["pos", "lemma"]
                 module_name: "test_import_multisheet".to_string(),
                 path: None,
             },
-            import.default_configuration(),
+            UpdateWriter::from(import.default_configuration()),
             Some(tx),
         );
         assert!(u.is_ok());

@@ -735,12 +735,7 @@ mod tests {
     use tests::test_util::export_to_string;
 
     use crate::{
-        StepID,
-        exporter::graphml::GraphMLExporter,
-        importer::{DefaultImportConfiguration, Importer, treetagger::ImportTreeTagger},
-        manipulator::Manipulator,
-        test_util,
-        util::example_generator,
+        StepID, exporter::graphml::GraphMLExporter, importer::{DefaultImportConfiguration, Importer, treetagger::ImportTreeTagger}, manipulator::Manipulator, test_util, util::{example_generator, graphupdate::UpdateWriter},
     };
 
     use super::*;
@@ -1484,7 +1479,7 @@ value = "PROPN"
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            import.default_configuration(),
+            UpdateWriter::from(import.default_configuration()),
             None,
         );
         assert!(u.is_ok());

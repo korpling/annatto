@@ -1,9 +1,7 @@
 use std::{collections::HashMap, io::Read, path::Path};
 
 use crate::{
-    StepID,
-    importer::{DefaultImportConfiguration, GenericImportConfiguration},
-    progress::ProgressReporter,
+    StepID, importer::DefaultImportConfiguration, progress::ProgressReporter,
     util::graphupdate::UpdateWriter,
 };
 
@@ -373,11 +371,9 @@ impl Importer for ImportTreeTagger {
         &self,
         input_path: &Path,
         step_id: StepID,
-        config: GenericImportConfiguration,
+        mut u: UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
     ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut u = UpdateWriter::from(config);
-
         let documents = u.write_corpus_graph_from_file_tree(input_path)?;
 
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;

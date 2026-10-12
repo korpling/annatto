@@ -175,15 +175,10 @@ mod tests {
     use insta::assert_snapshot;
 
     use crate::{
-        StepID,
-        exporter::graphml::GraphMLExporter,
-        importer::{GenericImportConfiguration, Importer, treetagger::ImportTreeTagger},
-        manipulator::{
+        StepID, exporter::graphml::GraphMLExporter, importer::{GenericImportConfiguration, Importer, treetagger::ImportTreeTagger}, manipulator::{
             Manipulator,
             split::{Layer, SplitValues, default_delimiter},
-        },
-        test_util::export_to_string,
-        util::{example_generator, update_graph_silent},
+        }, test_util::export_to_string, util::{example_generator, graphupdate::UpdateWriter, update_graph_silent},
     };
 
     #[test]
@@ -269,7 +264,7 @@ mod tests {
                 module_name: "import_treetagger".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&importer),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(&importer)),
             None,
         );
         assert!(u.is_ok());

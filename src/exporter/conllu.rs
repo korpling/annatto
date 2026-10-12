@@ -550,6 +550,7 @@ mod tests {
         exporter::conllu::ExportCoNLLU,
         importer::{DefaultImportConfiguration, Importer, conllu::ImportCoNLLU},
         test_util::export_to_string,
+        util::graphupdate::UpdateWriter,
     };
 
     #[test]
@@ -647,7 +648,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            conll_in.default_configuration(),
+            UpdateWriter::from(conll_in.default_configuration()),
             None,
         );
         assert!(u.is_ok());

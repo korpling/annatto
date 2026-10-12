@@ -1,10 +1,5 @@
 use crate::{
-    StepID,
-    error::{AnnattoError, Result},
-    exporter::Exporter,
-    importer::{GenericImportConfiguration, Importer},
-    util::get_all_files,
-    workflow::StatusSender,
+    StepID, error::{AnnattoError, Result}, exporter::Exporter, importer::{GenericImportConfiguration, Importer}, util::{get_all_files, graphupdate::UpdateWriter}, workflow::StatusSender,
 };
 use graphannis::AnnotationGraph;
 
@@ -61,7 +56,12 @@ where
         path: None,
     };
     let mut u = importer
-        .import_corpus(path.as_ref(), step_id.clone(), config, tx)
+        .import_corpus(
+            path.as_ref(),
+            step_id.clone(),
+            UpdateWriter::from(config),
+            tx,
+        )
         .map_err(|e| AnnattoError::Import {
             reason: e.to_string(),
             importer: step_id.module_name.to_string(),

@@ -6,8 +6,7 @@ use graphannis_core::graph::ANNIS_NS;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    importer::{DefaultImportConfiguration, GenericImportConfiguration},
-    progress::ProgressReporter,
+    importer::DefaultImportConfiguration, progress::ProgressReporter,
     util::graphupdate::UpdateWriter,
 };
 
@@ -74,10 +73,9 @@ impl Importer for ImportWhisper {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        config: GenericImportConfiguration,
+        mut update: UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = UpdateWriter::from(config);
         let paths_and_node_names = update.write_corpus_graph_from_file_tree(input_path)?;
         let progress =
             ProgressReporter::new(tx.clone(), step_id.clone(), paths_and_node_names.len())?;
@@ -324,9 +322,7 @@ mod tests {
     use insta::assert_snapshot;
 
     use crate::{
-        exporter::graphml::GraphMLExporter,
-        importer::{DefaultImportConfiguration, Importer},
-        test_util::export_to_string,
+        exporter::graphml::GraphMLExporter, importer::{DefaultImportConfiguration, Importer}, test_util::export_to_string, util::graphupdate::UpdateWriter,
     };
 
     use super::ImportWhisper;
@@ -380,7 +376,7 @@ mod tests {
                     module_name: "test_whisper".to_string(),
                     path: Some(path.to_path_buf()),
                 },
-                config,
+                UpdateWriter::from(config),
                 None,
             )
             .map_err(|e| anyhow!("An error occured: {:?}", e))?;
@@ -404,7 +400,7 @@ mod tests {
                     module_name: "test_whisper".to_string(),
                     path: Some(path.to_path_buf()),
                 },
-                module.default_configuration(),
+                UpdateWriter::from(module.default_configuration()),
                 None,
             )
             .map_err(|e| anyhow!("An error occured: {:?}", e));

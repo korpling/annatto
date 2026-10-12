@@ -11,7 +11,7 @@ use crate::{
         GenericImportConfiguration, Importer, exmaralda::ImportEXMARaLDA,
         file_nodes::CreateFileNodes, graphml::GraphMLImporter, xlsx::ImportSpreadsheet,
     },
-    util::update_graph_silent,
+    util::{graphupdate::UpdateWriter, update_graph_silent},
 };
 
 #[test]
@@ -56,7 +56,9 @@ fn export_as_zip_with_files() {
         .import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda"),
             step_id.clone(),
-            GenericImportConfiguration::new_with_default_extensions(&importer),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &importer,
+            )),
             None,
         )
         .unwrap();
@@ -99,7 +101,9 @@ fn export_graphml_with_vis() {
         .import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda"),
             step_id.clone(),
-            GenericImportConfiguration::new_with_default_extensions(&importer),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &importer,
+            )),
             None,
         )
         .unwrap();
@@ -134,7 +138,9 @@ fn zip_with_linked_files_custom() {
             module_name: "test_import".to_string(),
             path: None,
         },
-        GenericImportConfiguration::new_with_default_extensions(&ImportSpreadsheet::default()),
+        UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+            &ImportSpreadsheet::default(),
+        )),
         None,
     );
     assert!(u1.is_ok());
@@ -147,7 +153,9 @@ fn zip_with_linked_files_custom() {
             module_name: "link_files".to_string(),
             path: None,
         },
-        GenericImportConfiguration::new_with_default_extensions(&file_linker),
+        UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+            &file_linker,
+        )),
         None,
     );
     assert!(u2.is_ok(), "Error linking files: {:?}", u2.err());
@@ -190,7 +198,9 @@ fn fail_on_non_existing_file() {
         .import_corpus(
             Path::new("tests/data/import/exmaralda/clean/import/exmaralda"),
             step_id.clone(),
-            GenericImportConfiguration::new_with_default_extensions(&importer),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &importer,
+            )),
             None,
         )
         .unwrap();
@@ -246,7 +256,9 @@ fn export_graphml_with_partition() {
         .import_corpus(
             Path::new("tests/data/import/graphml/single_sentence_two_documents.graphml"),
             step_id.clone(),
-            GenericImportConfiguration::new_with_default_extensions(&importer),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &importer,
+            )),
             None,
         )
         .unwrap();
@@ -301,7 +313,9 @@ fn expor_zip_graphml_with_partition() {
         .import_corpus(
             Path::new("tests/data/import/graphml/single_sentence_two_documents.graphml"),
             step_id.clone(),
-            GenericImportConfiguration::new_with_default_extensions(&importer),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &importer,
+            )),
             None,
         )
         .unwrap();

@@ -7,7 +7,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    importer::{DefaultImportConfiguration, GenericImportConfiguration, Importer},
+    importer::{DefaultImportConfiguration, Importer},
     util::graphupdate::UpdateWriter,
 };
 
@@ -39,10 +39,9 @@ impl Importer for ImportGitMetadata {
         &self,
         input_path: &std::path::Path,
         _step_id: crate::StepID,
-        config: GenericImportConfiguration,
+        mut update: UpdateWriter,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = UpdateWriter::from(config);
         let repo = Repository::open(input_path)?;
         let head_sha = repo
             .revparse("HEAD")?
@@ -95,10 +94,7 @@ mod tests {
     use tempfile::tempdir;
 
     use crate::{
-        StepID,
-        exporter::graphml::GraphMLExporter,
-        importer::{DefaultImportConfiguration, Importer, git::ImportGitMetadata},
-        test_util::export_to_string,
+        StepID, exporter::graphml::GraphMLExporter, importer::{DefaultImportConfiguration, Importer, git::ImportGitMetadata}, test_util::export_to_string, util::graphupdate::UpdateWriter,
     };
 
     #[test]
@@ -153,7 +149,7 @@ mod tests {
                 module_name: "test_git".to_string(),
                 path: None,
             },
-            gitmeta.default_configuration(),
+            UpdateWriter::from(gitmeta.default_configuration()),
             None,
         );
         assert_eq!(u.is_ok(), commit, "Result: {:?}", u.err());

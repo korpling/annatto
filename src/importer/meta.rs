@@ -17,7 +17,7 @@ use serde_derive::Deserialize;
 
 use crate::{
     StepID,
-    importer::{DefaultImportConfiguration, GenericImportConfiguration},
+    importer::DefaultImportConfiguration,
     progress::ProgressReporter,
     util::{get_all_files, graphupdate::UpdateWriter},
 };
@@ -110,10 +110,9 @@ impl Importer for AnnotateCorpus {
         &self,
         input_path: &std::path::Path,
         step_id: StepID,
-        config: GenericImportConfiguration,
+        mut update: UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = UpdateWriter::from(config);
         let all_files = get_all_files(
             input_path,
             &update
@@ -236,6 +235,7 @@ mod tests {
         exporter::graphml::GraphMLExporter,
         importer::{GenericImportConfiguration, Importer},
         test_util::export_to_string,
+        util::graphupdate::UpdateWriter,
     };
 
     use super::AnnotateCorpus;
@@ -277,7 +277,9 @@ mod tests {
                 module_name: "test".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&import),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &import,
+            )),
             None,
         );
         assert!(r.is_ok(), "ERROR: {:?}", r.err());

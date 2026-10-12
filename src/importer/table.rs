@@ -14,9 +14,7 @@ use serde_derive::Deserialize;
 
 use super::Importer;
 use crate::{
-    StepID,
-    importer::{DefaultImportConfiguration, GenericImportConfiguration},
-    progress::ProgressReporter,
+    StepID, importer::DefaultImportConfiguration, progress::ProgressReporter,
     util::graphupdate::UpdateWriter,
 };
 
@@ -114,10 +112,9 @@ impl Importer for ImportTable {
         &self,
         input_path: &std::path::Path,
         step_id: StepID,
-        config: GenericImportConfiguration,
+        mut update: UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = UpdateWriter::from(config);
         let paths_and_node_names = update.write_corpus_graph_from_file_tree(input_path)?;
         let progress =
             ProgressReporter::new(tx.clone(), step_id.clone(), paths_and_node_names.len())?;

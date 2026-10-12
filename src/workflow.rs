@@ -22,7 +22,7 @@ use crate::{
     ExporterStep, ImporterStep, ManipulatorStep, StepID,
     error::{AnnattoError, Result},
     progress::ProgressReporter,
-    util::update_graph,
+    util::{graphupdate::UpdateWriter, update_graph},
 };
 use normpath::PathExt;
 use rayon::prelude::*;
@@ -627,15 +627,17 @@ impl Workflow {
             import_path
         };
 
+        let step_config = step
+            .generic_config
+            .clone()
+            .unwrap_or(step.module.reader().default_configuration());
         let updates = step
             .module
             .reader()
             .import_corpus(
                 resolved_import_path.as_path(),
                 step_id.clone(),
-                step.generic_config
-                    .clone()
-                    .unwrap_or(step.module.reader().default_configuration()),
+                UpdateWriter::from(step_config),
                 tx.clone(),
             )
             .map_err(|reason| AnnattoError::Import {

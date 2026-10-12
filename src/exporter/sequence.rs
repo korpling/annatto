@@ -324,9 +324,7 @@ mod tests {
     use insta::assert_snapshot;
 
     use crate::{
-        exporter::sequence::{default_anno, default_delimiter, default_fileby_key},
-        importer::{GenericImportConfiguration, Importer, xlsx::ImportSpreadsheet},
-        test_util::export_to_string,
+        exporter::sequence::{default_anno, default_delimiter, default_fileby_key}, importer::{GenericImportConfiguration, Importer, xlsx::ImportSpreadsheet}, test_util::export_to_string, util::graphupdate::UpdateWriter,
     };
 
     use super::ExportSequence;
@@ -439,7 +437,9 @@ mod tests {
                 module_name: "test_import_xlsx".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&import),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &import,
+            )),
             None,
         );
         assert!(u.is_ok());

@@ -815,6 +815,7 @@ mod tests {
             treetagger::ImportTreeTagger,
         },
         test_util::{export_to_string, export_to_string_in_directory},
+        util::graphupdate::UpdateWriter,
     };
 
     #[test]
@@ -868,7 +869,9 @@ mod tests {
                 module_name: "test_import".into(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&import),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &import,
+            )),
             None,
         );
         assert!(u.is_ok());
@@ -997,7 +1000,9 @@ mod tests {
                 module_name: "test_import".into(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&import),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &import,
+            )),
             None,
         );
         let mut update = u.unwrap();

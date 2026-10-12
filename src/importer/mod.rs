@@ -23,7 +23,7 @@ pub mod whisper;
 pub mod xlsx;
 pub mod xml;
 
-use crate::{StepID, workflow::StatusSender};
+use crate::{StepID, util::graphupdate::UpdateWriter, workflow::StatusSender};
 use graphannis::{
     model::{AnnotationComponent, AnnotationComponentType},
     update::GraphUpdate,
@@ -53,7 +53,7 @@ pub trait Importer: Sync + DefaultImportConfiguration {
         &self,
         input_path: &Path,
         step_id: StepID,
-        config: GenericImportConfiguration,
+        update: UpdateWriter,
         tx: Option<StatusSender>,
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>>;
 }
