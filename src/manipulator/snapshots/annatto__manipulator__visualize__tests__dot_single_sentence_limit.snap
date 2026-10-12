@@ -5,10 +5,10 @@ expression: result_dot
 digraph G {
   subgraph token {
     rank=same
-    6[shape=box label="single_sentence/zossen#t1\n \nannis:layer=default_layer\nannis:node_type=node\ndefault_ns:pos=ART\nannis:tok=Die"]
-    7[shape=box label="single_sentence/zossen#t2\n \nannis:layer=default_layer\nannis:node_type=node\ndefault_ns:pos=NN\nannis:tok=Jugendlichen\nannis:tok-whitespace-before= "]
-    9[shape=box label="single_sentence/zossen#t3\n \nannis:layer=default_layer\nannis:node_type=node\ndefault_ns:pos=APPR\nannis:tok=in\nannis:tok-whitespace-before= "]
-    10[shape=box label="single_sentence/zossen#t4\n \nannis:layer=default_layer\nannis:node_type=node\ndefault_ns:pos=NE\nannis:tok=Zossen\nannis:tok-whitespace-before= "]
+    6[shape=box label="single_sentence/zossen#t1\n \nannis:tok=Die\nannis:layer=default_layer\nannis:node_type=node\ndefault_ns:pos=ART"]
+    7[shape=box label="single_sentence/zossen#t2\n \nannis:tok=Jugendlichen\nannis:layer=default_layer\nannis:node_type=node\ndefault_ns:pos=NN\nannis:tok-whitespace-before= "]
+    9[shape=box label="single_sentence/zossen#t3\n \nannis:tok=in\nannis:layer=default_layer\nannis:node_type=node\ndefault_ns:pos=APPR\nannis:tok-whitespace-before= "]
+    10[shape=box label="single_sentence/zossen#t4\n \nannis:tok=Zossen\nannis:layer=default_layer\nannis:node_type=node\ndefault_ns:pos=NE\nannis:tok-whitespace-before= "]
   }
   2[shape=box label="single_sentence/zossen#text\n \nannis:node_type=datasource"]
   1[shape=box label="single_sentence/zossen\n \nannis:doc=zossen\nannis:node_type=corpus"]

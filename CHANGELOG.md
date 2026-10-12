@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - import `ptb`: Namespace of part of speech annotation changed to `syntax` as well.
 - New import API.
 
+### Fixed
+
+- graph op `visualizer`: documentation for specifying a document as root was
+  wrong
+- graph op `visualizer`: speed up execution by skipping already processed tokens
+  and ignoring pointing relations to find reachable nodes
+
 ## [0.60.0] - 2026-10-06
 
 ### Added
