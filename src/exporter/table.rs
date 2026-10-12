@@ -499,7 +499,8 @@ mod tests {
         StepID,
         exporter::table::ExportTable,
         importer::{
-            GenericImportConfiguration, Importer, conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA,
+            DefaultImportConfiguration, GenericImportConfiguration, Importer, conllu::ImportCoNLLU,
+            exmaralda::ImportEXMARaLDA,
         },
         test_util::export_to_string,
     };
@@ -612,7 +613,7 @@ mod tests {
                 module_name: "test_import_conll".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&to_conll),
+            to_conll.default_configuration(),
             None,
         );
         assert!(mprt.is_ok());
@@ -645,7 +646,7 @@ mod tests {
                 module_name: "test_import_conll".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&to_conll),
+            to_conll.default_configuration(),
             None,
         );
         assert!(mprt.is_ok());

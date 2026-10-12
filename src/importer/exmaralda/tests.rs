@@ -353,6 +353,7 @@ fn custom_config() {
                 )),
                 ..Default::default()
             }),
+            extensions: vec!["exb".to_string()],
             ..Default::default()
         },
         true,

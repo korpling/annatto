@@ -3,7 +3,10 @@ use std::{fs, path::Path};
 use graphannis::model::{AnnotationComponent, AnnotationComponentType};
 use insta::assert_snapshot;
 
-use crate::importer::{DefaultComponents, GenericImportConfiguration, toolbox::ImportFLToolbox};
+use crate::importer::{
+    DefaultComponents, DefaultImportConfiguration, GenericImportConfiguration,
+    toolbox::ImportFLToolbox,
+};
 
 #[test]
 fn serialize_custom() {
@@ -76,7 +79,11 @@ fn custom_update_config() {
     let importer = imp.unwrap();
     let config = GenericImportConfiguration {
         root_as: Some("custom_root".to_string()),
-        extensions: vec![],
+        extensions: importer
+            .default_file_extensions()
+            .iter()
+            .map(ToString::to_string)
+            .collect(),
         documents: None,
         default_ns: Some("custom_ns".to_string()),
         default_components: Some(DefaultComponents::new(

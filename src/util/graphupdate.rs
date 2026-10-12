@@ -1,6 +1,5 @@
 use std::{
     borrow::Cow,
-    collections::BTreeSet,
     ffi::OsStr,
     path::{Path, PathBuf},
 };
@@ -14,149 +13,7 @@ use graphannis::{
     update::{GraphUpdate, UpdateEvent},
 };
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
-use itertools::Itertools;
 use normpath::PathExt;
-
-#[deprecated]
-fn add_subcorpora(
-    u: &mut GraphUpdate,
-    path: &Path,
-    parent_corpus: &str,
-    file_endings: &[&str],
-    document_filter: Option<&BTreeSet<String>>,
-) -> Result<Vec<(PathBuf, String)>> {
-    let mut result = Vec::new();
-
-    // Get the files and sort them according to their path, to get a predictable
-    // order of adding the documents to the graph.
-
-    if path.is_file()
-        && file_endings
-            .iter()
-            .any(|ext| path.extension().unwrap_or_default().to_string_lossy() == *ext)
-        && document_filter
-            .map(|s| {
-                let path_str = path.to_string_lossy();
-                let mut contained = s.contains(&*path_str);
-                if let Some(stem) = path.file_stem() {
-                    contained |= s.contains(&*stem.to_string_lossy());
-                }
-                contained
-            })
-            .unwrap_or(true)
-    {
-        // Add the file itself as document
-        let subcorpus_name = path
-            .file_stem()
-            .map(|p| p.to_string_lossy().to_string())
-            .unwrap_or_else(|| "document".to_string());
-        let node_name = format!("{parent_corpus}/{subcorpus_name}");
-        u.add_event(UpdateEvent::AddNode {
-            node_name: node_name.clone(),
-            node_type: "corpus".to_string(),
-        })?;
-        u.add_event(UpdateEvent::AddNodeLabel {
-            node_name: node_name.clone(),
-            anno_ns: ANNIS_NS.to_string(),
-            anno_name: "doc".to_string(),
-            anno_value: subcorpus_name.to_string(),
-        })?;
-        u.add_event(UpdateEvent::AddEdge {
-            source_node: node_name.clone(),
-            target_node: parent_corpus.to_string(),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::PartOf.to_string(),
-            component_name: "".to_string(),
-        })?;
-        let result = (path.to_path_buf(), node_name);
-        Ok(vec![result])
-    } else {
-        let read_dir = std::fs::read_dir(path)?;
-        let mut entries_in_directory = Vec::with_capacity(read_dir.size_hint().0 + 4);
-        for entry in read_dir {
-            let entry = entry?;
-            let is_dir = entry.path().is_dir();
-            let valid_extension = if entry.path().is_file()
-                && let Some(extension) = entry.path().extension()
-            {
-                file_endings
-                    .iter()
-                    .any(|ext| *ext == extension.to_string_lossy().as_ref())
-            } else {
-                false
-            };
-            let file_inclusion_is_licensed = if entry.path().is_file()
-                && let Some(file_stem) = entry.path().file_stem().map(OsStr::to_string_lossy)
-            {
-                document_filter
-                    .map(|df| {
-                        let long_path = Path::new(parent_corpus).join(&*file_stem);
-                        df.contains(&*file_stem) || df.contains(&*long_path.to_string_lossy())
-                    })
-                    .unwrap_or(true)
-            } else {
-                false
-            };
-            if is_dir || (valid_extension && file_inclusion_is_licensed) {
-                entries_in_directory.push(entry);
-            }
-        }
-        entries_in_directory.sort_by_key(|dir_entry| dir_entry.path());
-
-        for entry in entries_in_directory {
-            let entry_type = entry.file_type()?;
-            let entry_path = entry.path();
-            let subcorpus_name = if entry_path.is_dir() {
-                entry_path
-                    .file_name() // do not strip extension!
-                    .map(|f| f.to_os_string())
-                    .unwrap_or_else(|| entry.file_name())
-                    .to_string_lossy()
-                    .to_string()
-            } else {
-                entry_path
-                    .file_stem() // strip extension
-                    .map(|f| f.to_os_string())
-                    .unwrap_or_else(|| entry.file_name())
-                    .to_string_lossy()
-                    .to_string()
-            };
-            let node_name = format!("{parent_corpus}/{subcorpus_name}");
-            u.add_event(UpdateEvent::AddNode {
-                node_name: node_name.clone(),
-                node_type: "corpus".to_string(),
-            })?;
-            u.add_event(UpdateEvent::AddEdge {
-                source_node: node_name.clone(),
-                target_node: parent_corpus.to_string(),
-                layer: ANNIS_NS.to_string(),
-                component_type: AnnotationComponentType::PartOf.to_string(),
-                component_name: "".to_string(),
-            })?;
-
-            if entry_type.is_dir() {
-                result.extend(add_subcorpora(
-                    u,
-                    &entry.path(),
-                    &node_name,
-                    file_endings,
-                    document_filter,
-                )?);
-            } else if entry_type.is_file() {
-                // Also add the special "annis:doc" label to mark this as document
-                u.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: node_name.clone(),
-                    anno_ns: ANNIS_NS.to_string(),
-                    anno_name: "doc".to_string(),
-                    anno_value: subcorpus_name.to_string(),
-                })?;
-                // Only add the corpus graph leafs to the result vector
-                result.push((entry.path(), node_name));
-            }
-        }
-        Ok(result)
-    }
-}
 
 pub fn root_corpus_from_path(root_path: &Path) -> Result<String> {
     let norm_path = root_path.normalize()?;
@@ -191,7 +48,7 @@ impl From<GenericImportConfiguration> for UpdateWriter {
 }
 
 impl UpdateWriter {
-    pub(crate) fn node(&mut self, node_name: String, node_type: String) -> Result<()> {
+    pub fn node(&mut self, node_name: String, node_type: String) -> Result<()> {
         self.inner.add_event(UpdateEvent::AddNode {
             node_name,
             node_type,
@@ -199,13 +56,13 @@ impl UpdateWriter {
         Ok(())
     }
 
-    pub(crate) fn delete(&mut self, node_name: String) -> Result<()> {
+    pub fn delete(&mut self, node_name: String) -> Result<()> {
         self.inner
             .add_event(UpdateEvent::DeleteNode { node_name })?;
         Ok(())
     }
 
-    pub(crate) fn node_label(
+    pub fn node_label(
         &mut self,
         node_name: String,
         anno_ns: String,
@@ -221,7 +78,7 @@ impl UpdateWriter {
         Ok(())
     }
 
-    pub(crate) fn labeled_node(
+    pub fn labeled_node(
         &mut self,
         node_name: String,
         node_type: String,
@@ -234,7 +91,7 @@ impl UpdateWriter {
         Ok(())
     }
 
-    pub(crate) fn edge(
+    pub fn edge(
         &mut self,
         source_node: String,
         target_node: String,
@@ -250,7 +107,7 @@ impl UpdateWriter {
         Ok(())
     }
 
-    pub(crate) fn edge_by_parts(
+    pub fn edge_by_parts(
         &mut self,
         source_node: String,
         target_node: String,
@@ -272,7 +129,7 @@ impl UpdateWriter {
         ))
     }
 
-    pub(crate) fn edge_label(
+    pub fn edge_label(
         &mut self,
         source_node: String,
         target_node: String,
@@ -294,7 +151,7 @@ impl UpdateWriter {
         Ok(())
     }
 
-    pub(crate) fn labeled_edge(
+    pub fn labeled_edge(
         &mut self,
         source_node: String,
         target_node: String,
@@ -314,11 +171,7 @@ impl UpdateWriter {
         )
     }
 
-    pub(crate) fn ordering(
-        &mut self,
-        source: String,
-        target: String,
-    ) -> Result<&AnnotationComponent> {
+    pub fn ordering(&mut self, source: String, target: String) -> Result<&AnnotationComponent> {
         self.inner.add_event(UpdateEvent::AddEdge {
             source_node: source,
             target_node: target,
@@ -329,11 +182,7 @@ impl UpdateWriter {
         Ok(self.config.default_ordering())
     }
 
-    pub(crate) fn part_of(
-        &mut self,
-        source: String,
-        target: String,
-    ) -> Result<&AnnotationComponent> {
+    pub fn part_of(&mut self, source: String, target: String) -> Result<&AnnotationComponent> {
         self.inner.add_event(UpdateEvent::AddEdge {
             source_node: source,
             target_node: target,
@@ -344,11 +193,7 @@ impl UpdateWriter {
         Ok(self.config.default_part_of())
     }
 
-    pub(crate) fn coverage(
-        &mut self,
-        source: String,
-        target: String,
-    ) -> Result<&AnnotationComponent> {
+    pub fn coverage(&mut self, source: String, target: String) -> Result<&AnnotationComponent> {
         self.inner.add_event(UpdateEvent::AddEdge {
             source_node: source,
             target_node: target,
@@ -359,11 +204,7 @@ impl UpdateWriter {
         Ok(self.config.default_coverage())
     }
 
-    pub(crate) fn dominance(
-        &mut self,
-        source: String,
-        target: String,
-    ) -> Result<&AnnotationComponent> {
+    pub fn dominance(&mut self, source: String, target: String) -> Result<&AnnotationComponent> {
         self.inner.add_event(UpdateEvent::AddEdge {
             source_node: source,
             target_node: target,
@@ -374,11 +215,7 @@ impl UpdateWriter {
         Ok(self.config.default_dominance())
     }
 
-    pub(crate) fn pointing(
-        &mut self,
-        source: String,
-        target: String,
-    ) -> Result<&AnnotationComponent> {
+    pub fn pointing(&mut self, source: String, target: String) -> Result<&AnnotationComponent> {
         self.inner.add_event(UpdateEvent::AddEdge {
             source_node: source,
             target_node: target,
@@ -389,14 +226,17 @@ impl UpdateWriter {
         Ok(self.config.default_pointing())
     }
 
-    pub(crate) fn add_event(&mut self, ue: UpdateEvent) -> Result<()> {
+    pub fn add_event(&mut self, ue: UpdateEvent) -> Result<()> {
         Ok(self.inner.add_event(ue)?)
     }
 
-    pub(crate) fn write_corpus_graph_from_file_tree(
-        &mut self,
-        import_path: &Path,
-    ) -> Result<NamedPaths> {
+    /// Finds all files with a given ending in a directory and map the corpus
+    /// structure according to the file/directory structure.
+    ///
+    /// The root directory is mapped as root corpus, sub-directories as sub-corpora
+    /// and files as documents. The found documents are returned with the
+    /// corresponding file path and the document node ID as string.
+    pub fn write_corpus_graph_from_file_tree(&mut self, import_path: &Path) -> Result<NamedPaths> {
         let root_name = self
             .config
             .custom_root_name()
@@ -452,7 +292,7 @@ impl UpdateWriter {
                 "doc".to_string(),
                 subcorpus_name.to_string(),
             )?;
-            self.part_of(node_name.clone(), parent_corpus.to_string());
+            self.part_of(node_name.clone(), parent_corpus.to_string())?;
             Ok(vec![(path.to_path_buf(), node_name)])
         } else {
             let read_dir = std::fs::read_dir(path)?;
@@ -532,39 +372,6 @@ impl Into<GraphUpdate> for UpdateWriter {
     fn into(self) -> GraphUpdate {
         self.inner
     }
-}
-
-/// Finds all files with a given ending in a directory and map the corpus
-/// structure according to the file/directory structure.
-///
-/// The root directory is mapped as root corpus, sub-directories as sub-corpora
-/// and files as documents. The found documents are returned with the
-/// corresponding file path and the document node ID as string.
-#[deprecated]
-pub fn import_corpus_graph_from_files(
-    u: &mut GraphUpdate,
-    root_path: &Path,
-    config: &GenericImportConfiguration,
-) -> Result<Vec<(PathBuf, String)>> {
-    let root_name = config
-        .custom_root_name()
-        .unwrap_or(root_corpus_from_path(root_path)?);
-
-    u.add_event(UpdateEvent::AddNode {
-        node_name: root_name.clone(),
-        node_type: "corpus".to_string(),
-    })?;
-
-    let file_endings = config.extensions().iter().map(String::as_str).collect_vec();
-    let mut path_tuples = add_subcorpora(
-        u,
-        root_path,
-        &root_name,
-        &file_endings,
-        config.document_list(),
-    )?;
-    path_tuples.sort();
-    Ok(path_tuples)
 }
 
 #[deprecated]
@@ -738,24 +545,25 @@ pub fn map_annotations<S: AsRef<str>>(
 mod tests {
     use std::{fs, path::Path};
 
-    use graphannis::update::GraphUpdate;
     use insta::{assert_debug_snapshot, assert_snapshot};
     use itertools::Itertools;
     use tempfile::TempDir;
 
-    use crate::importer::GenericImportConfiguration;
-
-    use super::import_corpus_graph_from_files;
+    use crate::{
+        importer::{
+            DefaultImportConfiguration, GenericImportConfiguration, exmaralda::ImportEXMARaLDA,
+        },
+        util::graphupdate::UpdateWriter,
+    };
 
     #[test]
     fn single_file_import() {
-        let mut u = GraphUpdate::new();
-        let result = import_corpus_graph_from_files(
-            &mut u,
-            Path::new("tests/data/import/exmaralda/clean/import/exmaralda/test_doc.exb"),
-            &GenericImportConfiguration::new_with_extensions(vec!["exb".to_string()]),
-        )
-        .unwrap();
+        let mut u = UpdateWriter::from(ImportEXMARaLDA::default().default_configuration());
+        let result = u
+            .write_corpus_graph_from_file_tree(Path::new(
+                "tests/data/import/exmaralda/clean/import/exmaralda/test_doc.exb",
+            ))
+            .unwrap();
 
         assert_eq!(1, result.len());
         assert_eq!(
@@ -764,7 +572,8 @@ mod tests {
         );
         assert_eq!("test_doc/test_doc", result[0].1);
 
-        let created_updates: graphannis_core::errors::Result<Vec<_>> = u.iter().unwrap().collect();
+        let created_updates: graphannis_core::errors::Result<Vec<_>> =
+            u.inner.iter().unwrap().collect();
         let created_updates = created_updates.unwrap();
 
         assert_debug_snapshot!(created_updates);
@@ -772,14 +581,12 @@ mod tests {
 
     #[test]
     fn rename_root() {
-        let mut u = GraphUpdate::new();
-        let mut result = import_corpus_graph_from_files(
-            &mut u,
-            Path::new("tests/data/import/exmaralda/"),
-            &GenericImportConfiguration::new_with_root_name("custom_root_name".to_string())
-                .and_extensions(vec!["exb".to_string()]),
-        )
-        .unwrap();
+        let config = GenericImportConfiguration::new_with_root_name("custom_root_name".to_string())
+            .and_extensions(vec!["exb".to_string()]);
+        let mut u = UpdateWriter::from(config);
+        let mut result = u
+            .write_corpus_graph_from_file_tree(Path::new("tests/data/import/exmaralda/"))
+            .unwrap();
         result.sort();
         let path_to_name = result
             .into_iter()
@@ -811,19 +618,13 @@ mod tests {
             )
         });
         let root_path = tmp_dir.path().join(paths[0]);
-        let mut update = GraphUpdate::default();
-        assert!(
-            import_corpus_graph_from_files(
-                &mut update,
-                &root_path,
-                &GenericImportConfiguration::new_with_extensions(vec![
-                    "fancyExtension".to_string()
-                ])
-            )
-            .is_ok()
-        );
+        let mut update = UpdateWriter::from(GenericImportConfiguration::new_with_extensions(vec![
+            "fancyExtension".to_string(),
+        ]));
+        assert!(update.write_corpus_graph_from_file_tree(&root_path).is_ok());
         assert_snapshot!(
             update
+                .inner
                 .iter()
                 .unwrap()
                 .flatten()

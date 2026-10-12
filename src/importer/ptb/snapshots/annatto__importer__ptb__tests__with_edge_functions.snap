@@ -8,7 +8,7 @@ expression: actual
     <key id="k1" for="node" attr.name="annis::doc" attr.type="string"/>
     <key id="k2" for="node" attr.name="annis::layer" attr.type="string"/>
     <key id="k3" for="node" attr.name="annis::node_type" attr.type="string"/>
-    <key id="k4" for="node" attr.name="default_ns::pos" attr.type="string"/>
+    <key id="k4" for="node" attr.name="syntax::pos" attr.type="string"/>
     <key id="k5" for="node" attr.name="annis::tok" attr.type="string"/>
     <key id="k6" for="node" attr.name="annis::tok-whitespace-before" attr.type="string"/>
     <key id="k7" for="node" attr.name="syntax::func" attr.type="string"/>

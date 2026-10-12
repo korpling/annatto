@@ -386,7 +386,8 @@ mod tests {
         StepID,
         exporter::graphml::GraphMLExporter,
         importer::{
-            GenericImportConfiguration, Importer, conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA,
+            DefaultImportConfiguration, GenericImportConfiguration, Importer, conllu::ImportCoNLLU,
+            exmaralda::ImportEXMARaLDA,
         },
         manipulator::{Manipulator, time::Filltime},
         test_util::export_to_string,
@@ -529,7 +530,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&import_conll),
+            import_conll.default_configuration(),
             None,
         );
         assert!(import.is_ok(), "import failed: {:?}", import.err());

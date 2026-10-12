@@ -268,7 +268,13 @@ fn labeled_targets() {
         vec!["conllu".to_string()],
         Some(BTreeSet::from(["website_example".to_string()])),
         Some("custom_ns".to_string()),
-        Default::default(),
+        DefaultComponents {
+            ordering: importer.preset_default_ordering().cloned(),
+            coverage: importer.preset_default_coverage().cloned(),
+            part_of: importer.preset_default_part_of().cloned(),
+            dominance: importer.preset_default_dominance().cloned(),
+            pointing: importer.preset_default_pointing().cloned(),
+        },
     );
     let actual = import_as_graphml_string_with_custom_config(
         importer,
