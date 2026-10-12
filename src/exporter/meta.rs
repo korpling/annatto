@@ -171,6 +171,7 @@ mod tests {
     use crate::{
         importer::{GenericImportConfiguration, Importer, exmaralda::ImportEXMARaLDA},
         test_util::export_to_string,
+        util::graphupdate::UpdateWriter,
     };
 
     use super::ExportMeta;
@@ -227,7 +228,9 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&importer),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &importer,
+            )),
             None,
         );
         assert!(u.is_ok());

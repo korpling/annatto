@@ -10,14 +10,14 @@ use encoding_rs_io::DecodeReaderBytes;
 use facet::Facet;
 use graphannis::{
     graph::AnnoKey,
-    model::AnnotationComponentType,
-    update::{GraphUpdate, UpdateEvent},
+    model::{AnnotationComponent, AnnotationComponentType},
 };
 use graphannis_core::{
     graph::ANNIS_NS,
     util::{join_qname, split_qname},
 };
 use itertools::Itertools;
+use lazy_static::lazy_static;
 use linked_hash_set::LinkedHashSet;
 use pest::{
     Parser,
@@ -29,10 +29,8 @@ use serde_derive::Deserialize;
 
 use super::Importer;
 use crate::{
-    StepID,
-    error::AnnattoError,
-    importer::{DefaultImportConfiguration, GenericImportConfiguration},
-    progress::ProgressReporter,
+    StepID, error::AnnattoError, importer::DefaultImportConfiguration, progress::ProgressReporter,
+    util::graphupdate::UpdateWriter,
 };
 
 /// Import files in the [CONLL-U format](https://universaldependencies.org/format.html)
@@ -78,12 +76,24 @@ fn default_comment_key() -> AnnoKey {
 
 const FILE_EXTENSIONS: [&str; 2] = ["conll", "conllu"];
 
+lazy_static! {
+    pub(crate) static ref DEFAULT_POINTING: AnnotationComponent = AnnotationComponent::new(
+        AnnotationComponentType::Pointing,
+        "".to_string(),
+        "dep".to_string()
+    );
+}
+
 impl DefaultImportConfiguration for ImportCoNLLU {
     fn preset_default_namespace(&self) -> Option<&str> {
         Some("")
     }
     fn default_file_extensions(&self) -> &[&str] {
         &FILE_EXTENSIONS
+    }
+
+    fn preset_default_pointing(&self) -> Option<&graphannis::model::AnnotationComponent> {
+        Some(&DEFAULT_POINTING)
     }
 }
 
@@ -92,24 +102,17 @@ impl Importer for ImportCoNLLU {
         &self,
         input_path: &std::path::Path,
         step_id: StepID,
-        config: GenericImportConfiguration,
+        mut update: UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = GraphUpdate::default();
-        let paths_and_node_names = config.derive_corpus_graph(input_path, &mut update)?;
+        let paths_and_node_names = update.write_corpus_graph_from_file_tree(input_path)?;
         let progress =
             ProgressReporter::new(tx.clone(), step_id.clone(), paths_and_node_names.len())?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
-            self.import_document(
-                &config,
-                &step_id,
-                &mut update,
-                pathbuf.as_path(),
-                doc_node_name,
-            )?;
+            self.import_document(&step_id, &mut update, pathbuf.as_path(), doc_node_name)?;
             progress.worked(1)?;
         }
-        Ok(update)
+        Ok(update.into())
     }
 }
 
@@ -132,9 +135,8 @@ type DepSpec = LinkedHashSet<(usize, Option<String>)>;
 impl ImportCoNLLU {
     fn import_document(
         &self,
-        config: &GenericImportConfiguration,
         step_id: &StepID,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
         document_path: &Path,
         document_node_name: String,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -144,15 +146,14 @@ impl ImportCoNLLU {
         decoder.read_to_string(&mut file_content)?; // TODO this needs to be buffered. UD Files can be very large
         let conllu: Pairs<Rule> = CoNLLUParser::parse(Rule::conllu, &file_content)
             .map_err(|e| anyhow!("Could not parse {document_path:?}:\n{e}"))?;
-        self.map_document(config, step_id, update, document_node_name, conllu)?;
+        self.map_document(step_id, update, document_node_name, conllu)?;
         Ok(())
     }
 
     fn map_document(
         &self,
-        config: &GenericImportConfiguration,
         step_id: &StepID,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
         document_node_name: String,
         mut conllu: Pairs<Rule>,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -164,7 +165,6 @@ impl ImportCoNLLU {
                 // iterate over sentences
                 if sentence.as_rule() == Rule::sentence {
                     token_names.extend(self.map_sentence(
-                        config,
                         step_id,
                         update,
                         document_node_name.as_str(),
@@ -182,22 +182,15 @@ impl ImportCoNLLU {
             return Err(err.into());
         }
         for (source, target) in token_names.iter().tuple_windows() {
-            update.add_event(UpdateEvent::AddEdge {
-                source_node: source.to_string(),
-                target_node: target.to_string(),
-                layer: ANNIS_NS.to_string(),
-                component_type: AnnotationComponentType::Ordering.to_string(),
-                component_name: "".to_string(),
-            })?;
+            update.ordering(source.to_string(), target.to_string())?;
         }
         Ok(())
     }
 
     fn map_sentence(
         &self,
-        config: &GenericImportConfiguration,
         step_id: &StepID,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
         document_node_name: &str,
         sentence: Pair<Rule>,
     ) -> anyhow::Result<Vec<String>> {
@@ -210,14 +203,8 @@ impl ImportCoNLLU {
         for member in sentence.into_inner() {
             match member.as_rule() {
                 Rule::token => {
-                    let (tok_name, tok_id, mut deps) = self.map_token(
-                        config,
-                        step_id,
-                        update,
-                        document_node_name,
-                        member,
-                        &multi_tok,
-                    )?;
+                    let (tok_name, tok_id, mut deps) =
+                        self.map_token(step_id, update, document_node_name, member, &multi_tok)?;
 
                     id_to_tok_name.insert(tok_id, tok_name.to_string());
                     if let Some(dependency) = deps.pop_front() {
@@ -225,8 +212,8 @@ impl ImportCoNLLU {
                             tok_name.to_string(),
                             dependency.0,
                             dependency.1.clone(),
-                            "",
-                            "dep",
+                            update.config.default_pointing().layer.to_string(),
+                            update.config.default_pointing().name.to_string(),
                         ));
                     }
 
@@ -237,7 +224,13 @@ impl ImportCoNLLU {
                     }
 
                     for (h, r) in deps {
-                        dependencies.push((tok_name.to_string(), h, r, "enh", "dep"));
+                        dependencies.push((
+                            tok_name.to_string(),
+                            h,
+                            r,
+                            "enh".to_string(),
+                            update.config.default_pointing().name.to_string(),
+                        ));
                     }
                 }
                 Rule::multi_token => {
@@ -302,68 +295,51 @@ impl ImportCoNLLU {
         }
         if !id_to_tok_name.is_empty() {
             let node_name = format!("{document_node_name}#s{l}");
-            update.add_event(UpdateEvent::AddNode {
-                node_name: node_name.to_string(),
-                node_type: "node".to_string(),
-            })?;
-            update.add_event(UpdateEvent::AddEdge {
-                source_node: node_name.to_string(),
-                target_node: document_node_name.to_string(),
-                layer: ANNIS_NS.to_string(),
-                component_type: AnnotationComponentType::PartOf.to_string(),
-                component_name: "".to_string(),
-            })?;
+            update.node(node_name.to_string(), "node".to_string())?;
+            update.part_of(node_name.to_string(), document_node_name.to_string())?;
             for (anno_name, anno_values) in s_annos {
                 let (ns, name) = split_qname(&anno_name);
                 let anno_value = anno_values.join("\n");
-                update.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: node_name.to_string(),
-                    anno_ns: ns.unwrap_or_default().to_string(),
-                    anno_name: name.to_string(),
+                update.node_label(
+                    node_name.to_string(),
+                    ns.unwrap_or_default().to_string(),
+                    name.to_string(),
                     anno_value,
-                })?;
+                )?;
             }
             for token_name in id_to_tok_name.values() {
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: node_name.to_string(),
-                    target_node: token_name.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Coverage.to_string(),
-                    component_name: "".to_string(),
-                })?;
+                update.coverage(node_name.to_string(), token_name.to_string())?;
             }
             for (target_node_name, head_id, deprel, clayer, cname) in dependencies {
                 if head_id > 0 {
                     if let Some(source_node_name) = id_to_tok_name.get(&head_id) {
-                        update.add_event(UpdateEvent::AddEdge {
-                            source_node: source_node_name.to_string(),
-                            target_node: target_node_name.to_string(),
-                            layer: clayer.to_string(),
-                            component_type: AnnotationComponentType::Pointing.to_string(),
-                            component_name: cname.to_string(),
-                        })?;
+                        let dep_c = update.edge_by_parts(
+                            source_node_name.to_string(),
+                            target_node_name.to_string(),
+                            clayer.to_string(), // this is set by the config above
+                            update.config.default_pointing().get_type(),
+                            cname.to_string(), // this is set by the config above
+                        )?;
                         if let Some(deprel_value) = deprel {
-                            update.add_event(UpdateEvent::AddEdgeLabel {
-                                source_node: source_node_name.to_string(),
-                                target_node: target_node_name.to_string(),
-                                layer: clayer.to_string(),
-                                component_type: AnnotationComponentType::Pointing.to_string(),
-                                component_name: cname.to_string(),
-                                anno_ns: config.default_namespace().to_string(),
-                                anno_name: "deprel".to_string(),
-                                anno_value: deprel_value.to_string(),
-                            })?;
+                            update.edge_label(
+                                source_node_name.to_string(),
+                                target_node_name.to_string(),
+                                &dep_c,
+                                update.config.default_namespace().to_string(),
+                                "deprel".to_string(),
+                                deprel_value.to_string(),
+                            )?;
                             if self.labeled_targets {
-                                update.add_event(UpdateEvent::AddNodeLabel {
-                                    node_name: target_node_name.to_string(),
-                                    anno_ns: if clayer.is_empty() {
-                                        config.default_namespace().to_string()
+                                update.node_label(
+                                    target_node_name.to_string(),
+                                    if clayer.is_empty() {
+                                        update.config.default_namespace().to_string()
                                     } else {
                                         clayer.to_string()
                                     },
-                                    anno_name: "deprel".to_string(),
-                                    anno_value: deprel_value.to_string(),
-                                })?;
+                                    "deprel".to_string(),
+                                    deprel_value.to_string(),
+                                )?;
                             }
                         }
                     } else {
@@ -385,9 +361,8 @@ impl ImportCoNLLU {
 
     fn map_token(
         &self,
-        config: &GenericImportConfiguration,
         step_id: &StepID,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
         document_node_name: &str,
         token: Pair<Rule>,
         multi_token: &Option<(usize, usize, String)>,
@@ -395,23 +370,14 @@ impl ImportCoNLLU {
         let (l, _) = token.line_col();
         let line = token.as_str().to_string();
         let node_name = format!("{document_node_name}#t{l}");
-        update.add_event(UpdateEvent::AddNode {
-            node_name: node_name.to_string(),
-            node_type: "node".to_string(),
-        })?;
-        update.add_event(UpdateEvent::AddEdge {
-            source_node: node_name.to_string(),
-            target_node: document_node_name.to_string(),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::PartOf.to_string(),
-            component_name: "".to_string(),
-        })?;
-        update.add_event(UpdateEvent::AddNodeLabel {
-            node_name: node_name.to_string(),
-            anno_ns: ANNIS_NS.to_string(),
-            anno_name: "layer".to_string(),
-            anno_value: "default_layer".to_string(),
-        })?;
+        update.labeled_node(
+            node_name.to_string(),
+            "node".to_string(),
+            ANNIS_NS.to_string(),
+            "layer".to_string(),
+            "default_layer".to_string(),
+        )?;
+        update.part_of(node_name.to_string(), document_node_name.to_string())?;
         let mut token_id = None;
         let mut dependencies = DepSpec::default();
         for member in token.into_inner() {
@@ -421,12 +387,12 @@ impl ImportCoNLLU {
                     token_id = Some(member.as_str().parse::<usize>()?);
                 }
                 Rule::form => {
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: ANNIS_NS.to_string(),
-                        anno_name: "tok".to_string(),
-                        anno_value: member.as_str().to_string(),
-                    })?;
+                    update.node_label(
+                        node_name.to_string(),
+                        ANNIS_NS.to_string(),
+                        "tok".to_string(),
+                        member.as_str().to_string(),
+                    )?;
                     if let Some(anno) = &self.multi_tok {
                         let (span_name, text_value) = if let Some((start, end, value)) = multi_token
                         {
@@ -440,40 +406,25 @@ impl ImportCoNLLU {
                                 member.as_str().to_string(),
                             )
                         };
-                        update.add_event(UpdateEvent::AddNode {
-                            node_name: span_name.to_string(),
-                            node_type: "node".to_string(),
-                        })?;
-                        update.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: span_name.to_string(),
-                            anno_ns: anno.ns.to_string(),
-                            anno_name: anno.name.to_string(),
-                            anno_value: text_value.to_string(),
-                        })?;
-                        update.add_event(UpdateEvent::AddEdge {
-                            source_node: span_name.to_string(),
-                            target_node: document_node_name.to_string(),
-                            layer: ANNIS_NS.to_string(),
-                            component_type: AnnotationComponentType::PartOf.to_string(),
-                            component_name: "".to_string(),
-                        })?;
-                        update.add_event(UpdateEvent::AddEdge {
-                            source_node: span_name.to_string(),
-                            target_node: node_name.to_string(),
-                            layer: ANNIS_NS.to_string(),
-                            component_type: AnnotationComponentType::Coverage.to_string(),
-                            component_name: "".to_string(),
-                        })?;
+                        update.labeled_node(
+                            span_name.to_string(),
+                            "node".to_string(),
+                            anno.ns.to_string(),
+                            anno.name.to_string(),
+                            text_value.to_string(),
+                        )?;
+                        update.part_of(span_name.to_string(), document_node_name.to_string())?;
+                        update.coverage(span_name.to_string(), node_name.to_string())?;
                     }
                 }
                 Rule::lemma | Rule::upos | Rule::xpos => {
                     let anno_name = rule.to_string();
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: config.default_namespace().to_string(),
-                        anno_name: anno_name.to_string(),
-                        anno_value: member.as_str().to_string(),
-                    })?;
+                    update.node_label(
+                        node_name.to_string(),
+                        update.config.default_namespace().to_string(),
+                        anno_name.to_string(),
+                        member.as_str().to_string(),
+                    )?;
                 }
                 Rule::features | Rule::misc => {
                     for feature in member.into_inner() {
@@ -490,12 +441,12 @@ impl ImportCoNLLU {
                                 if let Some(n) = &anno_name
                                     && let Some(v) = &anno_value
                                 {
-                                    update.add_event(UpdateEvent::AddNodeLabel {
-                                        node_name: node_name.to_string(),
-                                        anno_ns: config.default_namespace().to_string(),
-                                        anno_name: n.trim().to_string(),
-                                        anno_value: v.trim().to_string(),
-                                    })?;
+                                    update.node_label(
+                                        node_name.to_string(),
+                                        update.config.default_namespace().to_string(),
+                                        n.trim().to_string(),
+                                        v.trim().to_string(),
+                                    )?;
                                 }
                             }
                         }

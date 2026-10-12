@@ -1,5 +1,6 @@
-use crate::importer::{DefaultImportConfiguration, GenericImportConfiguration};
+use crate::importer::DefaultImportConfiguration;
 use crate::progress::ProgressReporter;
+use crate::util::graphupdate::UpdateWriter;
 
 use super::{Importer, NODE_NAME_ENCODE_SET};
 use anyhow::{Result, anyhow};
@@ -51,7 +52,7 @@ impl Importer for ImportRelAnnis {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        _config: GenericImportConfiguration,
+        update: UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let progress = ProgressReporter::new_unknown_total_work(tx, step_id.clone())?;
@@ -69,7 +70,7 @@ impl Importer for ImportRelAnnis {
                 false
             };
 
-            let mut updates = GraphUpdate::new();
+            let mut updates = update.into();
             let load_node_and_corpus_result =
                 load_node_and_corpus_tables(input_path, &mut updates, is_annis_33, &progress)?;
             {

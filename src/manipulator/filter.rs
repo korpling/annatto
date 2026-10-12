@@ -147,7 +147,7 @@ mod tests {
         importer::{GenericImportConfiguration, Importer, exmaralda::ImportEXMARaLDA},
         manipulator::{Manipulator, filter::FilterNodes},
         test_util::export_to_string,
-        util::{example_generator, update_graph_silent},
+        util::{example_generator, graphupdate::UpdateWriter, update_graph_silent},
     };
 
     #[test]
@@ -208,7 +208,9 @@ mod tests {
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&exmaralda),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &exmaralda,
+            )),
             None,
         );
         assert!(mprt.is_ok());
@@ -248,7 +250,9 @@ mod tests {
                 module_name: "test_import_exb".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&exmaralda),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &exmaralda,
+            )),
             None,
         );
         assert!(mprt.is_ok());

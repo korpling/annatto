@@ -549,115 +549,115 @@ expression: actual
         </edge>
         <edge id="e109" source="standoff/test_file#constituent3" target="standoff/test_file#42" label="Coverage/xml/">
         </edge>
-        <edge id="e110" source="standoff/test_file#document1" target="standoff/test_file#44" label="Dominance/annis/">
+        <edge id="e110" source="standoff/test_file#document1" target="standoff/test_file#text1" label="Dominance/xml/">
         </edge>
-        <edge id="e111" source="standoff/test_file#text1" target="standoff/test_file#1" label="Dominance/annis/">
+        <edge id="e111" source="standoff/test_file#document1" target="standoff/test_file#tokens1" label="Dominance/xml/">
         </edge>
-        <edge id="e112" source="standoff/test_file#text1" target="standoff/test_file#2" label="Dominance/annis/">
+        <edge id="e112" source="standoff/test_file#document1" target="standoff/test_file#constituents1" label="Dominance/xml/">
         </edge>
-        <edge id="e113" source="standoff/test_file#text1" target="standoff/test_file#3" label="Dominance/annis/">
+        <edge id="e113" source="standoff/test_file#document1" target="standoff/test_file#44" label="Dominance/xml/">
         </edge>
-        <edge id="e114" source="standoff/test_file#text1" target="standoff/test_file#4" label="Dominance/annis/">
+        <edge id="e114" source="standoff/test_file#text1" target="standoff/test_file#1" label="Dominance/xml/">
         </edge>
-        <edge id="e115" source="standoff/test_file#text1" target="standoff/test_file#5" label="Dominance/annis/">
+        <edge id="e115" source="standoff/test_file#text1" target="standoff/test_file#2" label="Dominance/xml/">
         </edge>
-        <edge id="e116" source="standoff/test_file#text1" target="standoff/test_file#6" label="Dominance/annis/">
+        <edge id="e116" source="standoff/test_file#text1" target="standoff/test_file#3" label="Dominance/xml/">
         </edge>
-        <edge id="e117" source="standoff/test_file#text1" target="standoff/test_file#7" label="Dominance/annis/">
+        <edge id="e117" source="standoff/test_file#text1" target="standoff/test_file#4" label="Dominance/xml/">
         </edge>
-        <edge id="e118" source="standoff/test_file#text1" target="standoff/test_file#8" label="Dominance/annis/">
+        <edge id="e118" source="standoff/test_file#text1" target="standoff/test_file#5" label="Dominance/xml/">
         </edge>
-        <edge id="e119" source="standoff/test_file#text1" target="standoff/test_file#9" label="Dominance/annis/">
+        <edge id="e119" source="standoff/test_file#text1" target="standoff/test_file#6" label="Dominance/xml/">
         </edge>
-        <edge id="e120" source="standoff/test_file#text1" target="standoff/test_file#10" label="Dominance/annis/">
+        <edge id="e120" source="standoff/test_file#text1" target="standoff/test_file#7" label="Dominance/xml/">
         </edge>
-        <edge id="e121" source="standoff/test_file#text1" target="standoff/test_file#12" label="Dominance/annis/">
+        <edge id="e121" source="standoff/test_file#text1" target="standoff/test_file#8" label="Dominance/xml/">
         </edge>
-        <edge id="e122" source="standoff/test_file#text1" target="standoff/test_file#13" label="Dominance/annis/">
+        <edge id="e122" source="standoff/test_file#text1" target="standoff/test_file#9" label="Dominance/xml/">
         </edge>
-        <edge id="e123" source="standoff/test_file#text1" target="standoff/test_file#14" label="Dominance/annis/">
+        <edge id="e123" source="standoff/test_file#text1" target="standoff/test_file#10" label="Dominance/xml/">
         </edge>
-        <edge id="e124" source="standoff/test_file#text1" target="standoff/test_file#15" label="Dominance/annis/">
+        <edge id="e124" source="standoff/test_file#text1" target="standoff/test_file#br1" label="Dominance/xml/">
         </edge>
-        <edge id="e125" source="standoff/test_file#text1" target="standoff/test_file#16" label="Dominance/annis/">
+        <edge id="e125" source="standoff/test_file#text1" target="standoff/test_file#12" label="Dominance/xml/">
         </edge>
-        <edge id="e126" source="standoff/test_file#text1" target="standoff/test_file#17" label="Dominance/annis/">
+        <edge id="e126" source="standoff/test_file#text1" target="standoff/test_file#13" label="Dominance/xml/">
         </edge>
-        <edge id="e127" source="standoff/test_file#text1" target="standoff/test_file#18" label="Dominance/annis/">
+        <edge id="e127" source="standoff/test_file#text1" target="standoff/test_file#14" label="Dominance/xml/">
         </edge>
-        <edge id="e128" source="standoff/test_file#text1" target="standoff/test_file#19" label="Dominance/annis/">
+        <edge id="e128" source="standoff/test_file#text1" target="standoff/test_file#15" label="Dominance/xml/">
         </edge>
-        <edge id="e129" source="standoff/test_file#br1" target="standoff/test_file#11" label="Dominance/annis/">
+        <edge id="e129" source="standoff/test_file#text1" target="standoff/test_file#16" label="Dominance/xml/">
         </edge>
-        <edge id="e130" source="standoff/test_file#tokens1" target="standoff/test_file#39" label="Dominance/annis/">
+        <edge id="e130" source="standoff/test_file#text1" target="standoff/test_file#17" label="Dominance/xml/">
         </edge>
-        <edge id="e131" source="standoff/test_file#token1" target="standoff/test_file#20" label="Dominance/annis/">
+        <edge id="e131" source="standoff/test_file#text1" target="standoff/test_file#18" label="Dominance/xml/">
         </edge>
-        <edge id="e132" source="standoff/test_file#token1" target="standoff/test_file#21" label="Dominance/annis/">
+        <edge id="e132" source="standoff/test_file#text1" target="standoff/test_file#19" label="Dominance/xml/">
         </edge>
-        <edge id="e133" source="standoff/test_file#token1" target="standoff/test_file#22" label="Dominance/annis/">
+        <edge id="e133" source="standoff/test_file#br1" target="standoff/test_file#11" label="Dominance/xml/">
         </edge>
-        <edge id="e134" source="standoff/test_file#token1" target="standoff/test_file#23" label="Dominance/annis/">
+        <edge id="e134" source="standoff/test_file#tokens1" target="standoff/test_file#token1" label="Dominance/xml/">
         </edge>
-        <edge id="e135" source="standoff/test_file#token1" target="standoff/test_file#24" label="Dominance/annis/">
+        <edge id="e135" source="standoff/test_file#tokens1" target="standoff/test_file#token2" label="Dominance/xml/">
         </edge>
-        <edge id="e136" source="standoff/test_file#token2" target="standoff/test_file#25" label="Dominance/annis/">
+        <edge id="e136" source="standoff/test_file#tokens1" target="standoff/test_file#token3" label="Dominance/xml/">
         </edge>
-        <edge id="e137" source="standoff/test_file#token2" target="standoff/test_file#26" label="Dominance/annis/">
+        <edge id="e137" source="standoff/test_file#tokens1" target="standoff/test_file#token4" label="Dominance/xml/">
         </edge>
-        <edge id="e138" source="standoff/test_file#token2" target="standoff/test_file#27" label="Dominance/annis/">
+        <edge id="e138" source="standoff/test_file#tokens1" target="standoff/test_file#39" label="Dominance/xml/">
         </edge>
-        <edge id="e139" source="standoff/test_file#token3" target="standoff/test_file#28" label="Dominance/annis/">
+        <edge id="e139" source="standoff/test_file#token1" target="standoff/test_file#20" label="Dominance/xml/">
         </edge>
-        <edge id="e140" source="standoff/test_file#token3" target="standoff/test_file#29" label="Dominance/annis/">
+        <edge id="e140" source="standoff/test_file#token1" target="standoff/test_file#21" label="Dominance/xml/">
         </edge>
-        <edge id="e141" source="standoff/test_file#token3" target="standoff/test_file#30" label="Dominance/annis/">
+        <edge id="e141" source="standoff/test_file#token1" target="standoff/test_file#22" label="Dominance/xml/">
         </edge>
-        <edge id="e142" source="standoff/test_file#token4" target="standoff/test_file#31" label="Dominance/annis/">
+        <edge id="e142" source="standoff/test_file#token1" target="standoff/test_file#23" label="Dominance/xml/">
         </edge>
-        <edge id="e143" source="standoff/test_file#token4" target="standoff/test_file#32" label="Dominance/annis/">
+        <edge id="e143" source="standoff/test_file#token1" target="standoff/test_file#24" label="Dominance/xml/">
         </edge>
-        <edge id="e144" source="standoff/test_file#token4" target="standoff/test_file#33" label="Dominance/annis/">
+        <edge id="e144" source="standoff/test_file#token2" target="standoff/test_file#25" label="Dominance/xml/">
         </edge>
-        <edge id="e145" source="standoff/test_file#token4" target="standoff/test_file#34" label="Dominance/annis/">
+        <edge id="e145" source="standoff/test_file#token2" target="standoff/test_file#26" label="Dominance/xml/">
         </edge>
-        <edge id="e146" source="standoff/test_file#token4" target="standoff/test_file#35" label="Dominance/annis/">
+        <edge id="e146" source="standoff/test_file#token2" target="standoff/test_file#27" label="Dominance/xml/">
         </edge>
-        <edge id="e147" source="standoff/test_file#token4" target="standoff/test_file#36" label="Dominance/annis/">
+        <edge id="e147" source="standoff/test_file#token3" target="standoff/test_file#28" label="Dominance/xml/">
         </edge>
-        <edge id="e148" source="standoff/test_file#token4" target="standoff/test_file#37" label="Dominance/annis/">
+        <edge id="e148" source="standoff/test_file#token3" target="standoff/test_file#29" label="Dominance/xml/">
         </edge>
-        <edge id="e149" source="standoff/test_file#token4" target="standoff/test_file#38" label="Dominance/annis/">
+        <edge id="e149" source="standoff/test_file#token3" target="standoff/test_file#30" label="Dominance/xml/">
         </edge>
-        <edge id="e150" source="standoff/test_file#constituents1" target="standoff/test_file#43" label="Dominance/annis/">
+        <edge id="e150" source="standoff/test_file#token4" target="standoff/test_file#31" label="Dominance/xml/">
         </edge>
-        <edge id="e151" source="standoff/test_file#constituent1" target="standoff/test_file#40" label="Dominance/annis/">
+        <edge id="e151" source="standoff/test_file#token4" target="standoff/test_file#32" label="Dominance/xml/">
         </edge>
-        <edge id="e152" source="standoff/test_file#constituent2" target="standoff/test_file#41" label="Dominance/annis/">
+        <edge id="e152" source="standoff/test_file#token4" target="standoff/test_file#33" label="Dominance/xml/">
         </edge>
-        <edge id="e153" source="standoff/test_file#constituent3" target="standoff/test_file#42" label="Dominance/annis/">
+        <edge id="e153" source="standoff/test_file#token4" target="standoff/test_file#34" label="Dominance/xml/">
         </edge>
-        <edge id="e154" source="standoff/test_file#document1" target="standoff/test_file#text1" label="Dominance/xml/">
+        <edge id="e154" source="standoff/test_file#token4" target="standoff/test_file#35" label="Dominance/xml/">
         </edge>
-        <edge id="e155" source="standoff/test_file#document1" target="standoff/test_file#tokens1" label="Dominance/xml/">
+        <edge id="e155" source="standoff/test_file#token4" target="standoff/test_file#36" label="Dominance/xml/">
         </edge>
-        <edge id="e156" source="standoff/test_file#document1" target="standoff/test_file#constituents1" label="Dominance/xml/">
+        <edge id="e156" source="standoff/test_file#token4" target="standoff/test_file#37" label="Dominance/xml/">
         </edge>
-        <edge id="e157" source="standoff/test_file#text1" target="standoff/test_file#br1" label="Dominance/xml/">
+        <edge id="e157" source="standoff/test_file#token4" target="standoff/test_file#38" label="Dominance/xml/">
         </edge>
-        <edge id="e158" source="standoff/test_file#tokens1" target="standoff/test_file#token1" label="Dominance/xml/">
+        <edge id="e158" source="standoff/test_file#constituents1" target="standoff/test_file#constituent1" label="Dominance/xml/">
         </edge>
-        <edge id="e159" source="standoff/test_file#tokens1" target="standoff/test_file#token2" label="Dominance/xml/">
+        <edge id="e159" source="standoff/test_file#constituents1" target="standoff/test_file#constituent2" label="Dominance/xml/">
         </edge>
-        <edge id="e160" source="standoff/test_file#tokens1" target="standoff/test_file#token3" label="Dominance/xml/">
+        <edge id="e160" source="standoff/test_file#constituents1" target="standoff/test_file#constituent3" label="Dominance/xml/">
         </edge>
-        <edge id="e161" source="standoff/test_file#tokens1" target="standoff/test_file#token4" label="Dominance/xml/">
+        <edge id="e161" source="standoff/test_file#constituents1" target="standoff/test_file#43" label="Dominance/xml/">
         </edge>
-        <edge id="e162" source="standoff/test_file#constituents1" target="standoff/test_file#constituent1" label="Dominance/xml/">
+        <edge id="e162" source="standoff/test_file#constituent1" target="standoff/test_file#40" label="Dominance/xml/">
         </edge>
-        <edge id="e163" source="standoff/test_file#constituents1" target="standoff/test_file#constituent2" label="Dominance/xml/">
+        <edge id="e163" source="standoff/test_file#constituent2" target="standoff/test_file#41" label="Dominance/xml/">
         </edge>
-        <edge id="e164" source="standoff/test_file#constituents1" target="standoff/test_file#constituent3" label="Dominance/xml/">
+        <edge id="e164" source="standoff/test_file#constituent3" target="standoff/test_file#42" label="Dominance/xml/">
         </edge>
         <edge id="e165" source="standoff/test_file#1" target="standoff/test_file#2" label="Ordering/annis/">
         </edge>

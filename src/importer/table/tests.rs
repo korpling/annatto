@@ -9,7 +9,7 @@ use insta::assert_snapshot;
 
 use crate::{
     importer::{
-        GenericImportConfiguration,
+        DefaultComponents, GenericImportConfiguration,
         table::{EmptyLineGroup, ImportTable},
     },
     test_util::{import_as_graphml_string, import_as_graphml_string_with_custom_config},
@@ -117,6 +117,25 @@ fn custom_generic_config() {
             vec!["csv".to_string(), "tsv".to_string(), "txt".to_string()],
             None,
             Some("custom_ns".to_string()),
+            DefaultComponents::new(
+                Some(AnnotationComponent::new(
+                    AnnotationComponentType::Ordering,
+                    "custom-ord".to_string(),
+                    "custom-ord-name".to_string(),
+                )),
+                Some(AnnotationComponent::new(
+                    AnnotationComponentType::Coverage,
+                    "custom-cov".to_string(),
+                    "custom-cov-name".to_string(),
+                )),
+                Some(AnnotationComponent::new(
+                    AnnotationComponentType::PartOf,
+                    "custom-part-of".to_string(),
+                    "custom-part-of-name".to_string(),
+                )),
+                None,
+                None,
+            ),
         ),
     );
     assert!(actual.is_ok());

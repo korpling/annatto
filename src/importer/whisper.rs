@@ -2,16 +2,12 @@ use std::{collections::BTreeMap, fs, path::Path};
 
 use anyhow::anyhow;
 use facet::Facet;
-use graphannis::{
-    model::AnnotationComponentType,
-    update::{GraphUpdate, UpdateEvent},
-};
 use graphannis_core::graph::ANNIS_NS;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    importer::{DefaultImportConfiguration, GenericImportConfiguration},
-    progress::ProgressReporter,
+    importer::DefaultImportConfiguration, progress::ProgressReporter,
+    util::graphupdate::UpdateWriter,
 };
 
 use super::Importer;
@@ -77,18 +73,17 @@ impl Importer for ImportWhisper {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        config: GenericImportConfiguration,
+        mut update: UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = GraphUpdate::default();
-        let paths_and_node_names = config.derive_corpus_graph(input_path, &mut update)?;
+        let paths_and_node_names = update.write_corpus_graph_from_file_tree(input_path)?;
         let progress =
             ProgressReporter::new(tx.clone(), step_id.clone(), paths_and_node_names.len())?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
-            self.import_document(&config, &mut update, pathbuf.as_path(), &doc_node_name)?;
+            self.import_document(&mut update, pathbuf.as_path(), &doc_node_name)?;
             progress.worked(1)?;
         }
-        Ok(update)
+        Ok(update.into())
     }
 }
 
@@ -107,139 +102,116 @@ const WHISPER_NS: &str = "whisper";
 impl ImportWhisper {
     fn import_document(
         &self,
-        config: &GenericImportConfiguration,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
         path: &Path,
         node_name: &str,
     ) -> Result<(), anyhow::Error> {
         let data = load_json(path)?;
-        update.add_event(UpdateEvent::AddNodeLabel {
-            node_name: node_name.to_string(),
-            anno_ns: config.default_namespace().to_string(),
-            anno_name: "language".to_string(),
-            anno_value: data.language.to_string(),
-        })?;
+        update.node_label(
+            node_name.to_string(),
+            update.config.default_namespace().to_string(),
+            "language".to_string(),
+            data.language.to_string(),
+        )?;
         let ds = format!("{node_name}#datasource");
-        update.add_event(UpdateEvent::AddNode {
-            node_name: ds.to_string(),
-            node_type: "datasource".to_string(),
-        })?;
+        update.node(ds.to_string(), "datasource".to_string())?;
         if let Some(text) = &data.text {
-            update.add_event(UpdateEvent::AddNodeLabel {
-                node_name: ds.to_string(),
-                anno_ns: config.default_namespace().to_string(),
-                anno_name: "text".to_string(),
-                anno_value: text.trim().to_string(),
-            })?;
+            update.node_label(
+                ds.to_string(),
+                update.config.default_namespace().to_string(),
+                "text".to_string(),
+                text.trim().to_string(),
+            )?;
         }
-        update.add_event(UpdateEvent::AddEdge {
-            source_node: ds,
-            target_node: node_name.to_string(),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::PartOf.to_string(),
-            component_name: "".to_string(),
-        })?;
+        update.part_of(ds, node_name.to_string())?;
         if self.skip_tokens {
             self.import_segments_only(update, data, node_name)
         } else {
-            self.import_with_tokens(config, update, data, node_name)
+            self.import_with_tokens(update, data, node_name)
         }
     }
 
     fn import_with_tokens(
         &self,
-        config: &GenericImportConfiguration,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
         data: WhisperJSON,
         node_name: &str,
     ) -> Result<(), anyhow::Error> {
         let vocabulary = load_vocabulary()?;
         for (s, segment) in data.segments.iter().enumerate() {
             let span = format!("{node_name}#s{s}");
-            update.add_event(UpdateEvent::AddNode {
-                node_name: span.to_string(),
-                node_type: "node".to_string(),
-            })?;
-            update.add_event(UpdateEvent::AddNodeLabel {
-                node_name: span.to_string(),
-                anno_ns: config.default_namespace().to_string(),
-                anno_name: "segment".to_string(),
-                anno_value: segment.text.trim().to_string(),
-            })?;
+            update.labeled_node(
+                span.to_string(),
+                "node".to_string(),
+                update.config.default_namespace().to_string(),
+                "segment".to_string(),
+                segment.text.trim().to_string(),
+            )?;
             if let Some(id_val) = &segment.id {
-                update.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: span.to_string(),
-                    anno_ns: config.default_namespace().to_string(),
-                    anno_name: "segment_id".to_string(),
-                    anno_value: id_val.to_string(),
-                })?;
+                update.node_label(
+                    span.to_string(),
+                    update.config.default_namespace().to_string(),
+                    "segment_id".to_string(),
+                    id_val.to_string(),
+                )?;
             }
             if let Some(seek) = &segment.seek {
-                update.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: span.to_string(),
-                    anno_ns: config.default_namespace().to_string(),
-                    anno_name: "seek".to_string(),
-                    anno_value: seek.to_string(),
-                })?;
+                update.node_label(
+                    span.to_string(),
+                    update.config.default_namespace().to_string(),
+                    "seek".to_string(),
+                    seek.to_string(),
+                )?;
             }
-            update.add_event(UpdateEvent::AddNodeLabel {
-                node_name: span.to_string(),
-                anno_ns: ANNIS_NS.to_string(),
-                anno_name: "time".to_string(),
-                anno_value: format!("{}-{}", segment.start, segment.end),
-            })?;
+            update.node_label(
+                span.to_string(),
+                ANNIS_NS.to_string(),
+                "time".to_string(),
+                format!("{}-{}", segment.start, segment.end),
+            )?;
             if let Some(temperature) = &segment.temperature {
-                update.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: span.to_string(),
-                    anno_ns: config.default_namespace().to_string(),
-                    anno_name: "temperature".to_string(),
-                    anno_value: temperature.to_string(),
-                })?;
+                update.node_label(
+                    span.to_string(),
+                    update.config.default_namespace().to_string(),
+                    "temperature".to_string(),
+                    temperature.to_string(),
+                )?;
             }
             if let Some(avg_logprob) = &segment.avg_logprob {
-                update.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: span.to_string(),
-                    anno_ns: config.default_namespace().to_string(),
-                    anno_name: "avg_logprob".to_string(),
-                    anno_value: avg_logprob.to_string(),
-                })?;
+                update.node_label(
+                    span.to_string(),
+                    update.config.default_namespace().to_string(),
+                    "avg_logprob".to_string(),
+                    avg_logprob.to_string(),
+                )?;
             }
             if let Some(compression_ratio) = segment.compression_ratio {
-                update.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: span.to_string(),
-                    anno_ns: config.default_namespace().to_string(),
-                    anno_name: "compression_ratio".to_string(),
-                    anno_value: compression_ratio.to_string(),
-                })?;
+                update.node_label(
+                    span.to_string(),
+                    update.config.default_namespace().to_string(),
+                    "compression_ratio".to_string(),
+                    compression_ratio.to_string(),
+                )?;
             }
             if let Some(no_speech_prob) = &segment.no_speech_prob {
-                update.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: span.to_string(),
-                    anno_ns: config.default_namespace().to_string(),
-                    anno_name: "no_speech_prob".to_string(),
-                    anno_value: no_speech_prob.to_string(),
-                })?;
+                update.node_label(
+                    span.to_string(),
+                    update.config.default_namespace().to_string(),
+                    "no_speech_prob".to_string(),
+                    no_speech_prob.to_string(),
+                )?;
             }
-            update.add_event(UpdateEvent::AddEdge {
-                source_node: span.to_string(),
-                target_node: node_name.to_string(),
-                layer: ANNIS_NS.to_string(),
-                component_type: AnnotationComponentType::PartOf.to_string(),
-                component_name: "".to_string(),
-            })?;
+            update.part_of(span.to_string(), node_name.to_string())?;
             if let Some(tokens) = &segment.tokens {
                 for (t, token) in tokens.iter().enumerate() {
                     let tok_name = format!("{node_name}#t{s}-{t}");
-                    update.add_event(UpdateEvent::AddNode {
-                        node_name: tok_name.to_string(),
-                        node_type: "node".to_string(),
-                    })?;
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: tok_name.to_string(),
-                        anno_ns: ANNIS_NS.to_string(),
-                        anno_name: "layer".to_string(),
-                        anno_value: "default_layer".to_string(),
-                    })?;
+                    update.labeled_node(
+                        tok_name.to_string(),
+                        "node".to_string(),
+                        ANNIS_NS.to_string(),
+                        "layer".to_string(),
+                        "default_layer".to_string(),
+                    )?;
                     let text_value = match token {
                         WhisperToken::Id(token_index) => {
                             if let Some(w) = vocabulary.get(token_index) {
@@ -257,53 +229,38 @@ impl ImportWhisper {
                             if let Some(start_val) = start
                                 && let Some(end_val) = end
                             {
-                                update.add_event(UpdateEvent::AddNodeLabel {
-                                    node_name: tok_name.to_string(),
-                                    anno_ns: ANNIS_NS.to_string(),
-                                    anno_name: "time".to_string(),
-                                    anno_value: format!("{start_val}-{end_val}"),
-                                })?;
+                                update.node_label(
+                                    tok_name.to_string(),
+                                    ANNIS_NS.to_string(),
+                                    "time".to_string(),
+                                    format!("{start_val}-{end_val}"),
+                                )?;
                             }
                             if let Some(score_val) = score {
-                                update.add_event(UpdateEvent::AddNodeLabel {
-                                    node_name: tok_name.to_string(),
-                                    anno_ns: config.default_namespace().to_string(),
-                                    anno_name: "score".to_string(),
-                                    anno_value: score_val.to_string(),
-                                })?;
+                                update.node_label(
+                                    tok_name.to_string(),
+                                    update.config.default_namespace().to_string(),
+                                    "score".to_string(),
+                                    score_val.to_string(),
+                                )?;
                             }
                             word.to_string()
                         }
                     };
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: tok_name.to_string(),
-                        anno_ns: ANNIS_NS.to_string(),
-                        anno_name: "tok".to_string(),
-                        anno_value: text_value.to_string(),
-                    })?;
-                    update.add_event(UpdateEvent::AddEdge {
-                        source_node: span.to_string(),
-                        target_node: tok_name.to_string(),
-                        layer: ANNIS_NS.to_string(),
-                        component_type: AnnotationComponentType::Coverage.to_string(),
-                        component_name: "".to_string(),
-                    })?;
+                    update.node_label(
+                        tok_name.to_string(),
+                        ANNIS_NS.to_string(),
+                        "tok".to_string(),
+                        text_value.to_string(),
+                    )?;
+                    update.coverage(span.to_string(), tok_name.to_string())?;
                     if t > 0 {
-                        update.add_event(UpdateEvent::AddEdge {
-                            source_node: format!("{node_name}#t{s}-{}", t - 1),
-                            target_node: tok_name.to_string(),
-                            layer: ANNIS_NS.to_string(),
-                            component_type: AnnotationComponentType::Ordering.to_string(),
-                            component_name: "".to_string(),
-                        })?;
+                        update.ordering(
+                            format!("{node_name}#t{s}-{}", t - 1),
+                            tok_name.to_string(),
+                        )?;
                     }
-                    update.add_event(UpdateEvent::AddEdge {
-                        source_node: tok_name.to_string(),
-                        target_node: node_name.to_string(),
-                        layer: ANNIS_NS.to_string(),
-                        component_type: AnnotationComponentType::PartOf.to_string(),
-                        component_name: "".to_string(),
-                    })?;
+                    update.part_of(tok_name.to_string(), node_name.to_string())?;
                 }
             }
         }
@@ -312,49 +269,34 @@ impl ImportWhisper {
 
     fn import_segments_only(
         &self,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
         data: WhisperJSON,
         node_name: &str,
     ) -> Result<(), anyhow::Error> {
         for (s, segment) in data.segments.iter().enumerate() {
             let span = format!("{node_name}#s{s}");
-            update.add_event(UpdateEvent::AddNode {
-                node_name: span.to_string(),
-                node_type: "node".to_string(),
-            })?;
-            update.add_event(UpdateEvent::AddNodeLabel {
-                node_name: span.to_string(),
-                anno_ns: ANNIS_NS.to_string(),
-                anno_name: "tok".to_string(),
-                anno_value: segment.text.trim().to_string(),
-            })?;
-            update.add_event(UpdateEvent::AddNodeLabel {
-                node_name: span.to_string(),
-                anno_ns: ANNIS_NS.to_string(),
-                anno_name: "layer".to_string(),
-                anno_value: "default_layer".to_string(),
-            })?;
-            update.add_event(UpdateEvent::AddNodeLabel {
-                node_name: span.to_string(),
-                anno_ns: ANNIS_NS.to_string(),
-                anno_name: "time".to_string(),
-                anno_value: format!("{}-{}", segment.start, segment.end),
-            })?;
-            update.add_event(UpdateEvent::AddEdge {
-                source_node: span.to_string(),
-                target_node: node_name.to_string(),
-                layer: ANNIS_NS.to_string(),
-                component_type: AnnotationComponentType::PartOf.to_string(),
-                component_name: "".to_string(),
-            })?;
+            update.labeled_node(
+                span.to_string(),
+                "node".to_string(),
+                ANNIS_NS.to_string(),
+                "tok".to_string(),
+                segment.text.trim().to_string(),
+            )?;
+            update.node_label(
+                span.to_string(),
+                ANNIS_NS.to_string(),
+                "layer".to_string(),
+                "default_layer".to_string(),
+            )?;
+            update.node_label(
+                span.to_string(),
+                ANNIS_NS.to_string(),
+                "time".to_string(),
+                format!("{}-{}", segment.start, segment.end),
+            )?;
+            update.part_of(span.to_string(), node_name.to_string())?;
             if s > 0 {
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: format!("{node_name}#s{}", s - 1),
-                    target_node: span.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: "".to_string(),
-                })?;
+                update.ordering(format!("{node_name}#s{}", s - 1), span.to_string())?;
             }
         }
         Ok(())
@@ -383,6 +325,7 @@ mod tests {
         exporter::graphml::GraphMLExporter,
         importer::{DefaultImportConfiguration, Importer},
         test_util::export_to_string,
+        util::graphupdate::UpdateWriter,
     };
 
     use super::ImportWhisper;
@@ -436,7 +379,7 @@ mod tests {
                     module_name: "test_whisper".to_string(),
                     path: Some(path.to_path_buf()),
                 },
-                config,
+                UpdateWriter::from(config),
                 None,
             )
             .map_err(|e| anyhow!("An error occured: {:?}", e))?;
@@ -460,7 +403,7 @@ mod tests {
                     module_name: "test_whisper".to_string(),
                     path: Some(path.to_path_buf()),
                 },
-                module.default_configuration(),
+                UpdateWriter::from(module.default_configuration()),
                 None,
             )
             .map_err(|e| anyhow!("An error occured: {:?}", e));

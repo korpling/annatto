@@ -548,8 +548,9 @@ mod tests {
     use crate::{
         StepID,
         exporter::conllu::ExportCoNLLU,
-        importer::{GenericImportConfiguration, Importer, conllu::ImportCoNLLU},
+        importer::{DefaultImportConfiguration, Importer, conllu::ImportCoNLLU},
         test_util::export_to_string,
+        util::graphupdate::UpdateWriter,
     };
 
     #[test]
@@ -647,7 +648,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&conll_in),
+            UpdateWriter::from(conll_in.default_configuration()),
             None,
         );
         assert!(u.is_ok());

@@ -6,11 +6,7 @@ use std::{
 
 use anyhow::anyhow;
 use facet::Facet;
-use graphannis::{
-    graph::AnnoKey,
-    model::AnnotationComponentType,
-    update::{GraphUpdate, UpdateEvent},
-};
+use graphannis::graph::AnnoKey;
 use graphannis_core::{
     graph::ANNIS_NS,
     util::{join_qname, split_qname},
@@ -21,9 +17,9 @@ use serde_derive::Deserialize;
 
 use crate::{
     StepID,
-    importer::{DefaultImportConfiguration, GenericImportConfiguration},
+    importer::DefaultImportConfiguration,
     progress::ProgressReporter,
-    util::get_all_files,
+    util::{get_all_files, graphupdate::UpdateWriter},
 };
 
 use super::Importer;
@@ -114,17 +110,22 @@ impl Importer for AnnotateCorpus {
         &self,
         input_path: &std::path::Path,
         step_id: StepID,
-        config: GenericImportConfiguration,
+        mut update: UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = GraphUpdate::default();
-        let extensions = config.extensions();
-        let documents = config.document_list();
-        let default_ns = config.default_namespace();
-        let file_extensions = extensions.iter().map(String::as_str).collect_vec();
-        let all_files = get_all_files(input_path, &file_extensions, documents)?;
+        let all_files = get_all_files(
+            input_path,
+            &update
+                .config
+                .extensions()
+                .iter()
+                .map(|s| s.as_str())
+                .collect_vec(),
+            update.config.document_list(),
+        )?;
         let progress = ProgressReporter::new(tx, step_id, all_files.len())?;
         let start_index = input_path.to_string_lossy().len() + 1;
+        let default_ns = update.config.default_namespace().to_string();
         for file_path in all_files.into_iter().filter(|p| p.is_file()) {
             let parent_opt = &file_path.parent();
             let file_stem_opt = file_path.file_stem();
@@ -147,24 +148,21 @@ impl Importer for AnnotateCorpus {
             } else {
                 let full_path = &parent.join(file_stem);
                 let node_name = &full_path.to_string_lossy()[start_index..];
-                update.add_event(UpdateEvent::AddNode {
-                    node_name: node_name.to_string(),
-                    node_type: "corpus".to_string(),
-                })?; // this is required, corpus annotations might be first updates to be processed
+                update.node(node_name.to_string(), "corpus".to_string())?; // this is required, corpus annotations might be first updates to be processed
                 let annotations = read_annotations(&file_path, &progress)?;
                 for (k, v) in annotations {
                     let (anno_ns, anno_name) = split_qname(&k);
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: anno_ns.unwrap_or(default_ns).trim().to_string(),
-                        anno_name: anno_name.trim().to_string(),
-                        anno_value: v.trim().to_string(),
-                    })?;
+                    update.node_label(
+                        node_name.to_string(),
+                        anno_ns.unwrap_or(&default_ns).trim().to_string(),
+                        anno_name.trim().to_string(),
+                        v.trim().to_string(),
+                    )?;
                 }
             }
             progress.worked(1)?;
         }
-        Ok(update)
+        Ok(update.into())
     }
 }
 
@@ -173,7 +171,7 @@ impl AnnotateCorpus {
         &self,
         path: &Path,
         parent: &str,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
     ) -> Result<(), anyhow::Error> {
         let node_column = if self.identifier.ns.is_empty() {
             self.identifier.name.to_string()
@@ -198,29 +196,18 @@ impl AnnotateCorpus {
                 }
             }
             if let Some(node_name) = node_name_opt {
-                update.add_event(UpdateEvent::AddNode {
-                    node_name: parent.to_string(),
-                    node_type: "corpus".to_string(),
-                })?;
-                update.add_event(UpdateEvent::AddNode {
-                    node_name: node_name.to_string(),
-                    node_type: "corpus".to_string(),
-                })?;
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: node_name.to_string(),
-                    target_node: parent.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::PartOf.to_string(),
-                    component_name: "".to_string(),
-                })?;
+                update.node(parent.to_string(), "corpus".to_string())?;
+                update.node(node_name.to_string(), "corpus".to_string())?;
+                update.part_of(node_name.to_string(), parent.to_string())?;
                 for (k, v) in annotations {
                     let (ns, name) = split_qname(&k);
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: ns.unwrap_or_default().to_string(),
-                        anno_name: name.to_string(),
-                        anno_value: v.trim().to_string(),
-                    })?;
+                    update.node_label(
+                        node_name.to_string(),
+                        ns.map(ToString::to_string)
+                            .unwrap_or(update.config.default_namespace().to_string()),
+                        name.to_string(),
+                        v.trim().to_string(),
+                    )?;
                 }
             }
         }
@@ -248,6 +235,7 @@ mod tests {
         exporter::graphml::GraphMLExporter,
         importer::{GenericImportConfiguration, Importer},
         test_util::export_to_string,
+        util::graphupdate::UpdateWriter,
     };
 
     use super::AnnotateCorpus;
@@ -289,7 +277,9 @@ mod tests {
                 module_name: "test".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&import),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &import,
+            )),
             None,
         );
         assert!(r.is_ok(), "ERROR: {:?}", r.err());

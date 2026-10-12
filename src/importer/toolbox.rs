@@ -6,10 +6,6 @@ use std::{
 
 use anyhow::anyhow;
 use facet::Facet;
-use graphannis::{
-    model::AnnotationComponentType,
-    update::{GraphUpdate, UpdateEvent},
-};
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use linked_hash_set::LinkedHashSet;
@@ -19,7 +15,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::AnnattoError,
-    importer::{DefaultImportConfiguration, GenericImportConfiguration, Importer},
+    importer::{DefaultImportConfiguration, Importer},
+    util::graphupdate::UpdateWriter,
 };
 
 /// Import annotations provided in the fieldlinguist's toolbox text format.
@@ -51,15 +48,14 @@ impl Importer for ImportFLToolbox {
         &self,
         input_path: &Path,
         _step_id: crate::StepID,
-        config: super::GenericImportConfiguration,
+        mut update: UpdateWriter,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = GraphUpdate::default();
-        let named_paths = config.derive_corpus_graph(input_path, &mut update)?;
+        let named_paths = update.write_corpus_graph_from_file_tree(input_path)?;
         named_paths
             .into_iter()
-            .try_for_each(|(p, d)| self.import_document(&p, &d, &config, &mut update))?;
-        Ok(update)
+            .try_for_each(|(p, d)| self.import_document(&p, &d, &mut update))?;
+        Ok(update.into())
     }
 }
 
@@ -80,8 +76,7 @@ impl ImportFLToolbox {
         &self,
         path: &Path,
         doc_node_name: &str,
-        config: &GenericImportConfiguration,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
     ) -> crate::error::Result<()> {
         let content = fs::read_to_string(path)?;
         let mut parsed_data = FLTBParser::parse(Rule::data, &content).map_err(|e| {
@@ -96,7 +91,6 @@ impl ImportFLToolbox {
                 .ok_or::<AnnattoError>(anyhow!("Parsing error").into())?
                 .into_inner(),
             doc_node_name,
-            config,
             update,
         )?;
         Ok(())
@@ -106,8 +100,7 @@ impl ImportFLToolbox {
         &self,
         data: Pairs<Rule>,
         doc_node_name: &str,
-        config: &GenericImportConfiguration,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
     ) -> crate::error::Result<()> {
         let mut order_from = None;
         let mut global_values = BTreeMap::default();
@@ -117,7 +110,6 @@ impl ImportFLToolbox {
                 doc_node_name,
                 order_from,
                 &mut global_values,
-                config,
                 update,
             )?;
         }
@@ -130,8 +122,7 @@ impl ImportFLToolbox {
         doc_node_name: &str,
         continue_ordering_at: Option<String>,
         global_values: &mut BTreeMap<String, Vec<u8>>,
-        config: &GenericImportConfiguration,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
     ) -> crate::error::Result<Option<String>> {
         let mut continue_ordering_at = continue_ordering_at;
         let mut byte_grid = Vec::with_capacity(6); // to find 4 tiers only is unlikely
@@ -171,77 +162,47 @@ impl ImportFLToolbox {
             None
         } else {
             let span = format!("{doc_node_name}#s{line_n}");
-            update.add_event(UpdateEvent::AddNode {
-                node_name: span.to_string(),
-                node_type: "node".to_string(),
-            })?;
-            update.add_event(UpdateEvent::AddEdge {
-                source_node: span.to_string(),
-                target_node: doc_node_name.to_string(),
-                layer: ANNIS_NS.to_string(),
-                component_type: AnnotationComponentType::PartOf.to_string(),
-                component_name: "".to_string(),
-            })?;
+            update.node(span.to_string(), "node".to_string())?;
+            update.part_of(span.to_string(), doc_node_name.to_string())?;
             for (k, v) in span_values {
-                update.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: span.to_string(),
-                    anno_ns: config.default_namespace().to_string(),
-                    anno_name: k,
-                    anno_value: str::from_utf8(&v)?.to_string(),
-                })?;
+                update.node_label(
+                    span.to_string(),
+                    update.config.default_namespace().to_string(),
+                    k,
+                    str::from_utf8(&v)?.to_string(),
+                )?;
             }
             for (k, v) in global_values {
-                update.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: span.to_string(),
-                    anno_ns: config.default_namespace().to_string(),
-                    anno_name: k.to_string(),
-                    anno_value: str::from_utf8(v)?.to_string(),
-                })?;
+                update.node_label(
+                    span.to_string(),
+                    update.config.default_namespace().to_string(),
+                    k.to_string(),
+                    str::from_utf8(v)?.to_string(),
+                )?;
             }
             Some(span)
         };
         for slot in &all_slots {
             let tok_name = format!("{doc_node_name}#t{line_n}_{slot}");
-            update.add_event(UpdateEvent::AddNode {
-                node_name: tok_name.to_string(),
-                node_type: "node".to_string(),
-            })?;
-            update.add_event(UpdateEvent::AddNodeLabel {
-                node_name: tok_name.to_string(),
-                anno_ns: ANNIS_NS.to_string(),
-                anno_name: "tok".to_string(),
-                anno_value: " ".to_string(),
-            })?;
-            update.add_event(UpdateEvent::AddNodeLabel {
-                node_name: tok_name.to_string(),
-                anno_ns: ANNIS_NS.to_string(),
-                anno_name: "layer".to_string(),
-                anno_value: "default_layer".to_string(),
-            })?;
-            update.add_event(UpdateEvent::AddEdge {
-                source_node: tok_name.to_string(),
-                target_node: doc_node_name.to_string(),
-                layer: ANNIS_NS.to_string(),
-                component_type: AnnotationComponentType::PartOf.to_string(),
-                component_name: "".to_string(),
-            })?;
+            update.labeled_node(
+                tok_name.to_string(),
+                "node".to_string(),
+                ANNIS_NS.to_string(),
+                "tok".to_string(),
+                " ".to_string(),
+            )?;
+            update.node_label(
+                tok_name.to_string(),
+                ANNIS_NS.to_string(),
+                "layer".to_string(),
+                "default_layer".to_string(),
+            )?;
+            update.part_of(tok_name.to_string(), doc_node_name.to_string())?;
             if let Some(predecessor) = continue_ordering_at {
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: predecessor,
-                    target_node: tok_name.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: "".to_string(),
-                })?;
+                update.ordering(predecessor, tok_name.to_string())?;
             }
             if let Some(span_name) = &block_span {
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: span_name.to_string(),
-                    target_node: tok_name.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Coverage.to_string(),
-                    component_name: "".to_string(),
-                })?;
+                update.coverage(span_name.to_string(), tok_name.to_string())?;
             }
             continue_ordering_at = Some(tok_name.to_string());
             slot_map.insert(*slot, tok_name);
@@ -252,23 +213,14 @@ impl ImportFLToolbox {
             for slot in &all_slots {
                 let node_name = if grid_line.slots.contains(slot) {
                     let name = format!("{doc_node_name}#{}_{line_n}_{slot}", grid_line.marker);
-                    update.add_event(UpdateEvent::AddNode {
-                        node_name: name.to_string(),
-                        node_type: "node".to_string(),
-                    })?;
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: name.to_string(),
-                        anno_ns: ANNIS_NS.to_string(),
-                        anno_name: "layer".to_string(),
-                        anno_value: "default_layer".to_string(),
-                    })?;
-                    update.add_event(UpdateEvent::AddEdge {
-                        source_node: name.to_string(),
-                        target_node: doc_node_name.to_string(),
-                        layer: ANNIS_NS.to_string(),
-                        component_type: AnnotationComponentType::PartOf.to_string(),
-                        component_name: "".to_string(),
-                    })?;
+                    update.labeled_node(
+                        name.to_string(),
+                        "node".to_string(),
+                        ANNIS_NS.to_string(),
+                        "layer".to_string(),
+                        "default_layer".to_string(),
+                    )?;
+                    update.part_of(name.to_string(), doc_node_name.to_string())?;
                     let anno_value_raw = grid_line.bytes.get(byte_index).ok_or(anyhow!(
                         "No value available for marker {} in slot {}.",
                         grid_line.marker,
@@ -277,12 +229,12 @@ impl ImportFLToolbox {
                     let anno_value = str::from_utf8(anno_value_raw)?.trim();
                     byte_index += 1;
                     if anno_value != "-" || self.explicit_null {
-                        update.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: name.to_string(),
-                            anno_ns: config.default_namespace().to_string(),
-                            anno_name: grid_line.marker.to_string(),
-                            anno_value: anno_value.to_string(),
-                        })?;
+                        update.node_label(
+                            name.to_string(),
+                            update.config.default_namespace().to_string(),
+                            grid_line.marker.to_string(),
+                            anno_value.to_string(),
+                        )?;
                     }
                     name
                 } else {
@@ -300,13 +252,7 @@ impl ImportFLToolbox {
                 };
                 latest_node_name = Some(node_name.to_string());
                 if let Some(tok_name) = slot_map.get(slot) {
-                    update.add_event(UpdateEvent::AddEdge {
-                        source_node: node_name.to_string(),
-                        target_node: tok_name.to_string(),
-                        layer: ANNIS_NS.to_string(),
-                        component_type: AnnotationComponentType::Coverage.to_string(),
-                        component_name: "".to_string(),
-                    })?;
+                    update.coverage(node_name.to_string(), tok_name.to_string())?;
                 }
             }
         }

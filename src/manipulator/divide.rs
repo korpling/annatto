@@ -545,6 +545,7 @@ mod tests {
         },
         manipulator::{Manipulator, divide::DivideSegments},
         test_util::export_to_string,
+        util::graphupdate::UpdateWriter,
         workflow::StatusMessage,
     };
 
@@ -590,7 +591,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            import.default_configuration(),
+            UpdateWriter::from(import.default_configuration()),
             None,
         );
         assert!(u.is_ok());
@@ -650,7 +651,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            import.default_configuration(),
+            UpdateWriter::from(import.default_configuration()),
             None,
         );
         assert!(u.is_ok());
@@ -710,7 +711,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            import.default_configuration(),
+            UpdateWriter::from(import.default_configuration()),
             None,
         );
         assert!(u.is_ok());
@@ -771,7 +772,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            import.default_configuration(),
+            UpdateWriter::from(import.default_configuration()),
             None,
         );
         assert!(u.is_ok());
@@ -826,7 +827,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: Some(data_path.to_path_buf()),
             },
-            import.default_configuration(),
+            UpdateWriter::from(import.default_configuration()),
             None,
         );
         assert!(
@@ -886,7 +887,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: Some(data_path.to_path_buf()),
             },
-            import.default_configuration(),
+            UpdateWriter::from(import.default_configuration()),
             None,
         );
         assert!(
@@ -949,7 +950,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: Some(data_path.to_path_buf()),
             },
-            import.default_configuration(),
+            UpdateWriter::from(import.default_configuration()),
             None,
         );
         assert!(

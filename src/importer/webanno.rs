@@ -2,11 +2,7 @@ use std::{fs, path::Path};
 
 use anyhow::{anyhow, bail};
 use facet::Facet;
-use graphannis::{
-    graph::AnnoKey,
-    model::AnnotationComponentType,
-    update::{GraphUpdate, UpdateEvent},
-};
+use graphannis::graph::AnnoKey;
 use graphannis_core::graph::ANNIS_NS;
 use itertools::Itertools;
 use pest::{Parser, iterators::Pair};
@@ -14,8 +10,8 @@ use pest_derive::Parser;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    importer::{DefaultImportConfiguration, GenericImportConfiguration},
-    progress::ProgressReporter,
+    importer::DefaultImportConfiguration, progress::ProgressReporter,
+    util::graphupdate::UpdateWriter,
 };
 
 use super::Importer;
@@ -32,18 +28,17 @@ impl Importer for ImportWebAnnoTSV {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        config: GenericImportConfiguration,
+        mut update: UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = GraphUpdate::default();
-        let paths_and_node_names = config.derive_corpus_graph(input_path, &mut update)?;
+        let paths_and_node_names = update.write_corpus_graph_from_file_tree(input_path)?;
         let progress =
             ProgressReporter::new(tx.clone(), step_id.clone(), paths_and_node_names.len())?;
         for (pathbuf, doc_node_name) in paths_and_node_names {
-            self.import_document(pathbuf.as_path(), doc_node_name, &config, &mut update)?;
+            self.import_document(pathbuf.as_path(), doc_node_name, &mut update)?;
             progress.worked(1)?;
         }
-        Ok(update)
+        Ok(update.into())
     }
 }
 
@@ -62,8 +57,7 @@ impl ImportWebAnnoTSV {
         &self,
         path: &Path,
         doc_node_name: String,
-        config: &GenericImportConfiguration,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
     ) -> Result<(), anyhow::Error> {
         let data = fs::read_to_string(path)?;
         let mut parse_data = WebAnnoTSVParser::parse(Rule::data, &data)?
@@ -75,7 +69,7 @@ impl ImportWebAnnoTSV {
             .ok_or(anyhow!("Could not retrieve header"))
             .map(Self::consume_header)??;
         if let Some(body) = parse_data.next() {
-            Self::process_body(body, doc_node_name, &column_spec, config, update)?;
+            Self::process_body(body, doc_node_name, &column_spec, update)?;
         } else {
             bail!("Missing body in document {doc_node_name}");
         }
@@ -86,19 +80,12 @@ impl ImportWebAnnoTSV {
         data: Pair<Rule>,
         doc_node_name: String,
         columns: &[AnnotationGroup],
-        config: &GenericImportConfiguration,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
     ) -> Result<(), anyhow::Error> {
         let mut ordering_node = None;
         for sentence in data.into_inner() {
-            ordering_node = Self::map_sentence(
-                sentence,
-                &doc_node_name,
-                columns,
-                config,
-                update,
-                ordering_node,
-            )?;
+            ordering_node =
+                Self::map_sentence(sentence, &doc_node_name, columns, update, ordering_node)?;
         }
         Ok(())
     }
@@ -107,28 +94,18 @@ impl ImportWebAnnoTSV {
         sentence: Pair<Rule>,
         doc_node_name: &str,
         columns: &[AnnotationGroup],
-        config: &GenericImportConfiguration,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
         mut previous_token: Option<String>,
     ) -> Result<Option<String>, anyhow::Error> {
         let sentence_node_name = format!("{doc_node_name}#sentence_line{}", sentence.line_col().0);
-        update.add_event(UpdateEvent::AddNode {
-            node_name: sentence_node_name.to_string(),
-            node_type: "node".to_string(),
-        })?;
-        update.add_event(UpdateEvent::AddEdge {
-            source_node: sentence_node_name.to_string(),
-            target_node: doc_node_name.to_string(),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::PartOf.to_string(),
-            component_name: "".to_string(),
-        })?;
-        update.add_event(UpdateEvent::AddNodeLabel {
-            node_name: sentence_node_name.to_string(),
-            anno_ns: ANNIS_NS.to_string(),
-            anno_name: "layer".to_string(),
-            anno_value: "default_layer".to_string(),
-        })?;
+        update.labeled_node(
+            sentence_node_name.to_string(),
+            "node".to_string(),
+            ANNIS_NS.to_string(),
+            "layer".to_string(),
+            "default_layer".to_string(),
+        )?;
+        update.part_of(sentence_node_name.to_string(), doc_node_name.to_string())?;
         for member in sentence.into_inner() {
             match member.as_rule() {
                 Rule::sentence_meta => {
@@ -136,31 +113,19 @@ impl ImportWebAnnoTSV {
                     let anno_name = inner.next();
                     let anno_value = inner.next();
                     if let (Some(name), Some(value)) = (anno_name, anno_value) {
-                        update.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: sentence_node_name.to_string(),
-                            anno_ns: config.default_namespace().to_string(),
-                            anno_name: name.as_str().trim().to_string(),
-                            anno_value: value.as_str().trim().to_string(),
-                        })?;
+                        update.node_label(
+                            sentence_node_name.to_string(),
+                            update.config.default_namespace().to_string(),
+                            name.as_str().trim().to_string(),
+                            value.as_str().trim().to_string(),
+                        )?;
                     }
                 }
                 Rule::token => {
                     let tok_name = Self::map_token(member, doc_node_name, columns, update)?;
-                    update.add_event(UpdateEvent::AddEdge {
-                        source_node: sentence_node_name.to_string(),
-                        target_node: tok_name.to_string(),
-                        layer: ANNIS_NS.to_string(),
-                        component_type: AnnotationComponentType::Coverage.to_string(),
-                        component_name: "".to_string(),
-                    })?;
+                    update.coverage(sentence_node_name.to_string(), tok_name.to_string())?;
                     if let Some(prev_tok_name) = previous_token {
-                        update.add_event(UpdateEvent::AddEdge {
-                            source_node: prev_tok_name,
-                            target_node: tok_name.to_string(),
-                            layer: ANNIS_NS.to_string(),
-                            component_type: AnnotationComponentType::Ordering.to_string(),
-                            component_name: "".to_string(),
-                        })?;
+                        update.ordering(prev_tok_name, tok_name.to_string())?;
                     }
                     previous_token = Some(tok_name);
                 }
@@ -174,7 +139,7 @@ impl ImportWebAnnoTSV {
         token: Pair<Rule>,
         doc_node_name: &str,
         columns: &[AnnotationGroup],
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
     ) -> Result<String, anyhow::Error> {
         let mut token_columns = token.into_inner();
         let id = token_columns
@@ -182,17 +147,8 @@ impl ImportWebAnnoTSV {
             .ok_or(anyhow!("Token has no id"))?
             .as_str();
         let token_name = format!("{doc_node_name}#{id}");
-        update.add_event(UpdateEvent::AddNode {
-            node_name: token_name.to_string(),
-            node_type: "node".to_string(),
-        })?;
-        update.add_event(UpdateEvent::AddEdge {
-            source_node: token_name.to_string(),
-            target_node: doc_node_name.to_string(),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::PartOf.to_string(),
-            component_name: "".to_string(),
-        })?;
+        update.node(token_name.to_string(), "node".to_string())?;
+        update.part_of(token_name.to_string(), doc_node_name.to_string())?;
         token_columns
             .next()
             .ok_or(anyhow!("No character span for token {}", id))?;
@@ -202,18 +158,18 @@ impl ImportWebAnnoTSV {
                 "No form for token {id} in document {doc_node_name}"
             ))?
             .as_str();
-        update.add_event(UpdateEvent::AddNodeLabel {
-            node_name: token_name.to_string(),
-            anno_ns: ANNIS_NS.to_string(),
-            anno_name: "tok".to_string(),
-            anno_value: form.to_string(),
-        })?;
-        update.add_event(UpdateEvent::AddNodeLabel {
-            node_name: token_name.to_string(),
-            anno_ns: ANNIS_NS.to_string(),
-            anno_name: "layer".to_string(),
-            anno_value: "default_layer".to_string(),
-        })?;
+        update.node_label(
+            token_name.to_string(),
+            ANNIS_NS.to_string(),
+            "tok".to_string(),
+            form.to_string(),
+        )?;
+        update.node_label(
+            token_name.to_string(),
+            ANNIS_NS.to_string(),
+            "layer".to_string(),
+            "default_layer".to_string(),
+        )?;
         for anno_group in columns {
             match anno_group {
                 AnnotationGroup::NodeBare { keys } => {
@@ -232,12 +188,12 @@ impl ImportWebAnnoTSV {
                             continue;
                         }
                         let anno_value = value.as_str();
-                        update.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: token_name.to_string(),
-                            anno_ns: key.ns.to_string(),
-                            anno_name: key.name.to_string(),
-                            anno_value: anno_value.to_string(),
-                        })?;
+                        update.node_label(
+                            token_name.to_string(),
+                            key.ns.to_string(),
+                            key.name.to_string(),
+                            anno_value.to_string(),
+                        )?;
                     }
                 }
                 AnnotationGroup::NodeParse { ns, size, index } => {
@@ -263,19 +219,19 @@ impl ImportWebAnnoTSV {
                     }
                     for entry in feature_vec.as_str().split("\\|") {
                         if let Some((name, value)) = entry.split_once("=") {
-                            update.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: token_name.to_string(),
-                                anno_ns: ns.to_string(),
-                                anno_name: name.trim().to_string(),
-                                anno_value: value.trim().to_string(),
-                            })?;
+                            update.node_label(
+                                token_name.to_string(),
+                                ns.to_string(),
+                                name.trim().to_string(),
+                                value.trim().to_string(),
+                            )?;
                         } else {
-                            update.add_event(UpdateEvent::AddNodeLabel {
-                                node_name: token_name.to_string(),
-                                anno_ns: ns.to_string(),
-                                anno_name: ns.to_string(),
-                                anno_value: entry.to_string(),
-                            })?;
+                            update.node_label(
+                                token_name.to_string(),
+                                ns.to_string(),
+                                ns.to_string(),
+                                entry.to_string(),
+                            )?;
                         }
                     }
                 }
@@ -306,28 +262,23 @@ impl ImportWebAnnoTSV {
                         .ok_or(anyhow!("Edge source id could not be retrieved"))?
                         .as_str();
                     let source_name = format!("{doc_node_name}#{source_ref}");
-                    update.add_event(UpdateEvent::AddNode {
-                        node_name: source_name.to_string(),
-                        node_type: "node".to_string(),
-                    })?; // just in case, it will be build at some point anyway
-                    update.add_event(UpdateEvent::AddEdge {
-                        source_node: source_name.to_string(),
-                        target_node: token_name.to_string(),
-                        layer: "".to_string(),
-                        component_type: AnnotationComponentType::Pointing.to_string(),
-                        component_name: edge_name.to_string(),
-                    })?;
+                    update.node(source_name.to_string(), "node".to_string())?; // just in case, it will be build at some point anyway
+                    let edge_c = update.edge_by_parts(
+                        source_name.to_string(),
+                        token_name.to_string(),
+                        "".to_string(),
+                        update.config.default_pointing().get_type(), // by default this is pointing, but maybe the user indicates preference for a different type
+                        edge_name.to_string(),
+                    )?;
                     for (key, value) in annotations {
-                        update.add_event(UpdateEvent::AddEdgeLabel {
-                            source_node: source_name.to_string(),
-                            target_node: token_name.to_string(),
-                            layer: "".to_string(),
-                            component_type: AnnotationComponentType::Pointing.to_string(),
-                            component_name: edge_name.to_string(),
-                            anno_ns: key.ns.to_string(),
-                            anno_name: key.name.to_string(),
-                            anno_value: value.to_string(),
-                        })?;
+                        update.edge_label(
+                            source_name.to_string(),
+                            token_name.to_string(),
+                            &edge_c,
+                            key.ns.to_string(),
+                            key.name.to_string(),
+                            value.to_string(),
+                        )?;
                     }
                 }
             }
@@ -427,7 +378,7 @@ mod tests {
         exporter::graphml::GraphMLExporter,
         importer::{GenericImportConfiguration, Importer},
         test_util::export_to_string,
-        util::update_graph_silent,
+        util::{graphupdate::UpdateWriter, update_graph_silent},
     };
 
     use super::ImportWebAnnoTSV;
@@ -454,7 +405,9 @@ mod tests {
                 module_name: "test_webanno".to_string(),
                 path: Some(import_path.to_path_buf()),
             },
-            GenericImportConfiguration::new_with_default_extensions(&importer),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &importer,
+            )),
             None,
         );
         assert!(u.is_ok(), "Err: {:?}", u.err());
@@ -479,7 +432,9 @@ mod tests {
                 module_name: "test_webanno".to_string(),
                 path: Some(import_path.to_path_buf()),
             },
-            GenericImportConfiguration::new_with_default_extensions(&importer),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &importer,
+            )),
             None,
         );
         assert!(u.is_ok(), "Err: {:?}", u.err());

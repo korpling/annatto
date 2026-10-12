@@ -5,6 +5,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- All importers can be configured for default components. 
+
+### Changed
+
+- import `xml`: use only one dominance component.
+- import `ptb`: Namespace of part of speech annotation changed to `syntax` as well.
+- New import API.
+
 ### Fixed
 
 - graph op `visualizer`: documentation for specifying a document as root was

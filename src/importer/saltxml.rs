@@ -1,12 +1,11 @@
 use document::DocumentMapper;
 use facet::Facet;
-use graphannis::update::GraphUpdate;
 use roxmltree::Node;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    importer::{DefaultImportConfiguration, GenericImportConfiguration},
-    progress::ProgressReporter,
+    importer::DefaultImportConfiguration, progress::ProgressReporter,
+    util::graphupdate::UpdateWriter,
 };
 
 use super::Importer;
@@ -52,10 +51,10 @@ impl Importer for ImportSaltXml {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        _config: GenericImportConfiguration,
+        update: UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut updates = GraphUpdate::new();
+        let mut updates = update.into();
         // Start  with an undetermined progress reporter
         let reporter = ProgressReporter::new_unknown_total_work(tx.clone(), step_id.clone())?;
         let mapper = corpus_structure::SaltCorpusStructureMapper::new();

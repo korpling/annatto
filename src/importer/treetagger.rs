@@ -1,20 +1,15 @@
 use std::{collections::HashMap, io::Read, path::Path};
 
 use crate::{
-    StepID,
-    importer::{DefaultImportConfiguration, GenericImportConfiguration},
-    progress::ProgressReporter,
+    StepID, importer::DefaultImportConfiguration, progress::ProgressReporter,
+    util::graphupdate::UpdateWriter,
 };
 
 use super::Importer;
 use encoding_rs::Encoding;
 use encoding_rs_io::DecodeReaderBytesBuilder;
 use facet::Facet;
-use graphannis::{
-    graph::AnnoKey,
-    model::AnnotationComponentType,
-    update::{GraphUpdate, UpdateEvent},
-};
+use graphannis::graph::AnnoKey;
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use itertools::Itertools;
 use pest::{Parser, iterators::Pairs};
@@ -53,46 +48,27 @@ struct DocumentMapper<'a> {
 }
 
 impl<'a> DocumentMapper<'a> {
-    fn map(
-        &mut self,
-        config: &GenericImportConfiguration,
-        u: &mut GraphUpdate,
-        mut tt: Pairs<'a, Rule>,
-    ) -> anyhow::Result<()> {
+    fn map(&mut self, u: &mut UpdateWriter, mut tt: Pairs<'a, Rule>) -> anyhow::Result<()> {
         // Add a subcorpus like node for the text
-        u.add_event(UpdateEvent::AddNode {
-            node_name: self.text_node_name.clone(),
-            node_type: "datasource".to_string(),
-        })?;
-        u.add_event(UpdateEvent::AddEdge {
-            source_node: self.text_node_name.clone(),
-            target_node: self.doc_path.clone(),
-            layer: ANNIS_NS.to_string(),
-            component_type: "PartOf".to_string(),
-            component_name: "".to_string(),
-        })?;
+        u.node(self.text_node_name.clone(), "datasource".to_string())?;
+        u.part_of(self.text_node_name.clone(), self.doc_path.clone())?;
 
         if let Some(tt) = tt.next()
             && tt.as_rule() == Rule::treetagger
         {
             let tt = tt.into_inner();
-            self.map_tt_rule(config, u, tt)?;
+            self.map_tt_rule(u, tt)?;
         }
         Ok(())
     }
 
-    fn map_tt_rule(
-        &mut self,
-        config: &GenericImportConfiguration,
-        u: &mut GraphUpdate,
-        mut tt: Pairs<'a, Rule>,
-    ) -> anyhow::Result<()> {
+    fn map_tt_rule(&mut self, u: &mut UpdateWriter, mut tt: Pairs<'a, Rule>) -> anyhow::Result<()> {
         let mut was_first_line = true;
         while let Some(line) = tt.next() {
             match line.as_rule() {
                 Rule::token_line => {
                     let token_line = line.into_inner();
-                    self.consume_token_line(config, u, token_line)?;
+                    self.consume_token_line(u, token_line)?;
                 }
                 Rule::start_tag => {
                     let start_tag = line.into_inner();
@@ -115,31 +91,20 @@ impl<'a> DocumentMapper<'a> {
 
     fn consume_token_line(
         &mut self,
-        config: &GenericImportConfiguration,
-        u: &mut GraphUpdate,
+        u: &mut UpdateWriter,
         mut token_line: Pairs<'a, Rule>,
     ) -> anyhow::Result<()> {
         // Create a token node for this column
         let id = self.number_of_token + 1;
         let tok_id = format!("{}#t{id}", self.doc_path);
-        u.add_event(UpdateEvent::AddNode {
-            node_name: tok_id.clone(),
-            node_type: "node".to_string(),
-        })?;
-
-        u.add_event(UpdateEvent::AddNodeLabel {
-            node_name: tok_id.clone(),
-            anno_ns: ANNIS_NS.to_string(),
-            anno_name: "layer".to_string(),
-            anno_value: "default_layer".to_string(),
-        })?;
-        u.add_event(UpdateEvent::AddEdge {
-            source_node: tok_id.clone(),
-            target_node: self.text_node_name.clone(),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::PartOf.to_string(),
-            component_name: "".to_string(),
-        })?;
+        u.labeled_node(
+            tok_id.clone(),
+            "node".to_string(),
+            ANNIS_NS.to_string(),
+            "layer".to_string(),
+            "default_layer".to_string(),
+        )?;
+        u.part_of(tok_id.clone(), self.text_node_name.clone())?;
 
         // Remember this token as covered for all spans on the stack
         for e in self.tag_stack.iter_mut() {
@@ -147,19 +112,13 @@ impl<'a> DocumentMapper<'a> {
         }
 
         if let Some(last_token_id) = &self.last_token_id {
-            u.add_event(UpdateEvent::AddNodeLabel {
-                node_name: tok_id.clone(),
-                anno_ns: ANNIS_NS.to_string(),
-                anno_name: "tok-whitespace-before".to_string(),
-                anno_value: " ".to_string(),
-            })?;
-            u.add_event(UpdateEvent::AddEdge {
-                source_node: last_token_id.clone(),
-                target_node: tok_id.clone(),
-                layer: ANNIS_NS.to_string(),
-                component_type: AnnotationComponentType::Ordering.to_string(),
-                component_name: "".to_string(),
-            })?;
+            u.node_label(
+                tok_id.clone(),
+                ANNIS_NS.to_string(),
+                "tok-whitespace-before".to_string(),
+                " ".to_string(),
+            )?;
+            u.ordering(last_token_id.clone(), tok_id.clone())?;
         }
         self.number_of_token += 1;
         self.last_token_id = Some(tok_id.clone());
@@ -171,24 +130,24 @@ impl<'a> DocumentMapper<'a> {
                 if column_key.name.as_str() == "tok"
                     && (column_key.ns.is_empty() || column_key.ns.as_str() == ANNIS_NS)
                 {
-                    u.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: tok_id.to_string(),
-                        anno_ns: ANNIS_NS.to_string(),
-                        anno_name: "tok".to_string(),
-                        anno_value: column_value.as_str().to_string(),
-                    })?;
+                    u.node_label(
+                        tok_id.to_string(),
+                        ANNIS_NS.to_string(),
+                        "tok".to_string(),
+                        column_value.as_str().to_string(),
+                    )?;
                 } else {
                     let ns = if column_key.ns.is_empty() {
-                        config.default_namespace()
+                        u.config.default_namespace()
                     } else {
                         column_key.ns.as_str()
                     };
-                    u.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: tok_id.to_string(),
-                        anno_ns: ns.to_string(),
-                        anno_name: column_key.name.to_string(),
-                        anno_value: column_value.as_str().to_string(),
-                    })?;
+                    u.node_label(
+                        tok_id.to_string(),
+                        ns.to_string(),
+                        column_key.name.to_string(),
+                        column_value.as_str().to_string(),
+                    )?;
                 }
             }
         }
@@ -239,7 +198,7 @@ impl<'a> DocumentMapper<'a> {
 
     fn consume_end_tag(
         &mut self,
-        u: &mut GraphUpdate,
+        u: &mut UpdateWriter,
         mut end_tag: Pairs<'a, Rule>,
         is_last_line: bool,
     ) -> anyhow::Result<()> {
@@ -261,33 +220,23 @@ impl<'a> DocumentMapper<'a> {
                     // Add a node update for the new span
                     self.number_of_spans += 1;
                     let span_id = format!("{}#span{}", self.doc_path, self.number_of_spans);
-                    u.add_event(UpdateEvent::AddNode {
-                        node_name: span_id.clone(),
-                        node_type: "node".into(),
-                    })?;
-                    // TODO: support namespaces in span annotation name
-                    u.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: span_id.clone(),
-                        anno_ns: "".into(),
-                        anno_name: tag_name.into(),
-                        anno_value: tag_name.into(),
-                    })?;
+                    u.labeled_node(
+                        span_id.clone(),
+                        "node".into(),
+                        "".into(), // should this be the default namespace?
+                        tag_name.into(),
+                        tag_name.into(),
+                    )?;
 
-                    u.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: span_id.clone(),
-                        anno_ns: ANNIS_NS.to_string(),
-                        anno_name: "layer".to_string(),
-                        anno_value: "default_layer".to_string(),
-                    })?;
+                    u.node_label(
+                        span_id.clone(),
+                        ANNIS_NS.to_string(),
+                        "layer".to_string(),
+                        "default_layer".to_string(),
+                    )?;
                     // Add coverage edges for all covered token
                     for t in entry.covered_token {
-                        u.add_event(UpdateEvent::AddEdge {
-                            source_node: span_id.clone(),
-                            target_node: t,
-                            layer: ANNIS_NS.into(),
-                            component_type: "Coverage".into(),
-                            component_name: "".into(),
-                        })?;
+                        u.coverage(span_id.clone(), t)?;
                     }
                     span_id
                 };
@@ -302,12 +251,7 @@ impl<'a> DocumentMapper<'a> {
                         format!("{tag_name}_{anno_name}")
                     };
                     // TODO: support namespaces as annotation names
-                    u.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_id.clone(),
-                        anno_ns: "".into(),
-                        anno_name,
-                        anno_value,
-                    })?;
+                    u.node_label(node_id.clone(), "".into(), anno_name, anno_value)?;
                 }
             }
         }
@@ -427,12 +371,10 @@ impl Importer for ImportTreeTagger {
         &self,
         input_path: &Path,
         step_id: StepID,
-        config: GenericImportConfiguration,
+        mut u: UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
-    ) -> std::result::Result<GraphUpdate, Box<dyn std::error::Error>> {
-        let mut u = GraphUpdate::default();
-
-        let documents = config.derive_corpus_graph(input_path, &mut u)?;
+    ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
+        let documents = u.write_corpus_graph_from_file_tree(input_path)?;
 
         let reporter = ProgressReporter::new(tx, step_id, documents.len())?;
 
@@ -473,10 +415,10 @@ impl Importer for ImportTreeTagger {
                 tag_stack: Vec::new(),
             };
 
-            doc_mapper.map(&config, &mut u, tt)?;
+            doc_mapper.map(&mut u, tt)?;
             reporter.worked(1)?;
         }
-        Ok(u)
+        Ok(u.into())
     }
 }
 

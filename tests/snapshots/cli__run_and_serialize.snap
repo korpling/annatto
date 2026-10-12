@@ -12,6 +12,11 @@ default_ns = ""
 comment_anno = "conll::comment"
 labeled_targets = false
 
+[import.default_components.pointing]
+ctype = "Pointing"
+layer = ""
+name = "dep"
+
 [[graph_op]]
 action = "check"
 

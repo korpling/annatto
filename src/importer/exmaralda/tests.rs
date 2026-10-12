@@ -4,13 +4,17 @@ use std::{
     sync::mpsc,
 };
 
-use graphannis::update::GraphUpdate;
+use graphannis::model::{AnnotationComponent, AnnotationComponentType};
 use insta::assert_snapshot;
 use itertools::Itertools;
 
 use crate::{
-    ImporterStep, StepID, importer::DefaultImportConfiguration, progress::ProgressReporter,
-    test_util::import_as_graphml_string_2, workflow::StatusMessage,
+    ImporterStep, StepID,
+    importer::{DefaultComponents, DefaultImportConfiguration, GenericImportConfiguration},
+    progress::ProgressReporter,
+    test_util::import_as_graphml_string_2,
+    util::graphupdate::UpdateWriter,
+    workflow::StatusMessage,
 };
 
 use super::ImportEXMARaLDA;
@@ -43,7 +47,7 @@ fn timeline_fail() {
     assert!(r.is_err());
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = "./tests/data/import/exmaralda/fail-corrupt_timeline/import/test_doc.exb";
-    let mut u = GraphUpdate::default();
+    let mut u = UpdateWriter::from(ImportEXMARaLDA::default().default_configuration());
     let import = ImportEXMARaLDA::default();
     let step_id = StepID::from_importer_step(&import_step);
     assert!(
@@ -78,7 +82,7 @@ fn category_fail() {
     assert!(r.is_err());
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
-    let mut u = GraphUpdate::default();
+    let mut u = UpdateWriter::from(ImportEXMARaLDA::default().default_configuration());
     assert!(
         ImportEXMARaLDA::default()
             .import_document(
@@ -116,7 +120,7 @@ fn undefined_speaker_fail() {
     assert!(r.is_err());
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
-    let mut u = GraphUpdate::default();
+    let mut u = UpdateWriter::from(ImportEXMARaLDA::default().default_configuration());
     assert!(
         ImportEXMARaLDA::default()
             .import_document(
@@ -149,7 +153,7 @@ fn unknown_tli_fail() {
     assert!(r.is_err());
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
-    let mut u = GraphUpdate::default();
+    let mut u = UpdateWriter::from(ImportEXMARaLDA::default().default_configuration());
     assert!(
         ImportEXMARaLDA::default()
             .import_document(
@@ -182,7 +186,7 @@ fn bad_timevalue_fail() {
     assert!(r.is_err());
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = Path::new(import_path).join("test_doc.exb");
-    let mut u = GraphUpdate::default();
+    let mut u = UpdateWriter::from(ImportEXMARaLDA::default().default_configuration());
     assert!(
         ImportEXMARaLDA::default()
             .import_document(
@@ -232,7 +236,7 @@ fn invalid_fail() {
     assert!(r.is_err());
     assert_snapshot!(r.err().unwrap().to_string());
     let document_path = "./tests/data/import/exmaralda/fail-invalid/import/test_doc_invalid.exb";
-    let mut u = GraphUpdate::default();
+    let mut u = UpdateWriter::from(ImportEXMARaLDA::default().default_configuration());
     assert!(
         ImportEXMARaLDA::default()
             .import_document(
@@ -321,4 +325,39 @@ fn run_test(
         warnings
     );
     Ok(actual)
+}
+
+#[test]
+fn custom_config() {
+    let import_path = Path::new("./tests/data/import/exmaralda/clean/import/");
+    let actual = import_as_graphml_string_2(
+        ImportEXMARaLDA::default(),
+        env::current_dir().unwrap().join(import_path), // IMPORTANT: test with absolute paths, this is what Annatto does at runtime
+        None,
+        GenericImportConfiguration {
+            default_components: Some(DefaultComponents {
+                ordering: Some(AnnotationComponent::new(
+                    AnnotationComponentType::Ordering,
+                    "custom-default-layer".to_string(),
+                    "with-name".to_string(),
+                )),
+                part_of: Some(AnnotationComponent::new(
+                    AnnotationComponentType::PartOf,
+                    "custom-part-of-layer".to_string(),
+                    "custom-part-of-name".to_string(),
+                )),
+                coverage: Some(AnnotationComponent::new(
+                    AnnotationComponentType::Coverage,
+                    "custom-cov".to_string(),
+                    "custom-cov-name".to_string(),
+                )),
+                ..Default::default()
+            }),
+            extensions: vec!["exb".to_string()],
+            ..Default::default()
+        },
+        true,
+        None,
+    );
+    assert_snapshot!(actual.unwrap());
 }

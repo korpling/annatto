@@ -1,14 +1,9 @@
 use crate::{
-    error::AnnattoError,
-    importer::{DefaultImportConfiguration, GenericImportConfiguration},
+    error::AnnattoError, importer::DefaultImportConfiguration, util::graphupdate::UpdateWriter,
 };
 
 use super::Importer;
 use facet::Facet;
-use graphannis::{
-    model::AnnotationComponentType,
-    update::{GraphUpdate, UpdateEvent},
-};
 use graphannis_core::graph::ANNIS_NS;
 use normpath::PathExt;
 use serde::Serialize;
@@ -40,55 +35,42 @@ impl Importer for CreateFileNodes {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        config: GenericImportConfiguration,
+        mut update: UpdateWriter,
         _tx: Option<crate::workflow::StatusSender>,
-    ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = GraphUpdate::default();
+    ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         let base_dir = input_path.normalize()?;
-        let GenericImportConfiguration { documents, .. } = config;
         if let Some(base_dir_name) = base_dir.file_name() {
             let start_index = base_dir.as_path().to_string_lossy().len() - base_dir_name.len();
             if let Some(link_target) = &self.corpus_name {
-                update.add_event(UpdateEvent::AddNode {
-                    node_name: link_target.to_string(),
-                    node_type: "corpus".to_string(),
-                })?;
+                update.node(link_target.to_string(), "corpus".to_string())?;
             }
             for path_r in
                 glob::glob(format!("{}/**/*", base_dir.as_path().to_string_lossy()).as_str())?
             {
                 let path = path_r?;
                 let node_name = path.to_string_lossy()[start_index..].to_string();
-                if documents
-                    .as_ref()
+                if update
+                    .config
+                    .document_list()
                     .map(|d| !d.contains(&*path.to_string_lossy()) && !d.contains(&node_name))
                     .unwrap_or_default()
                 {
                     continue;
                 }
                 if path.is_file() {
-                    update.add_event(UpdateEvent::AddNode {
-                        node_name: node_name.to_string(),
-                        node_type: "file".to_string(),
-                    })?;
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: ANNIS_NS.to_string(),
-                        anno_name: "file".to_string(),
-                        anno_value: node_name.to_string(),
-                    })?;
+                    update.labeled_node(
+                        node_name.to_string(),
+                        "file".to_string(),
+                        ANNIS_NS.to_string(),
+                        "file".to_string(),
+                        node_name.to_string(),
+                    )?;
                     if let Some(link_target) = &self.corpus_name {
-                        update.add_event(UpdateEvent::AddEdge {
-                            source_node: node_name,
-                            target_node: link_target.to_string(),
-                            layer: ANNIS_NS.to_string(),
-                            component_type: AnnotationComponentType::PartOf.to_string(),
-                            component_name: "".to_string(),
-                        })?;
+                        update.part_of(node_name, link_target.to_string())?;
                     }
                 }
             }
-            Ok(update)
+            Ok(update.into())
         } else {
             Err(Box::new(AnnattoError::Import {
                 reason: "Could not determine base dir.".to_string(),

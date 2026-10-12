@@ -1,19 +1,16 @@
 use std::{collections::BTreeMap, fs::File, path::Path};
 
 use facet::Facet;
-use graphannis::{
-    model::AnnotationComponentType,
-    update::{GraphUpdate, UpdateEvent},
-};
-use graphannis_core::graph::ANNIS_NS;
+use graphannis::model::AnnotationComponentType;
 use serde::Serialize;
 use serde_derive::Deserialize;
 use xml::{EventReader, ParserConfig};
 
 use crate::{
     error::{AnnattoError, Result},
-    importer::{DefaultImportConfiguration, GenericImportConfiguration},
+    importer::DefaultImportConfiguration,
     progress::ProgressReporter,
+    util::graphupdate::UpdateWriter,
 };
 
 use super::Importer;
@@ -63,11 +60,10 @@ impl Importer for ImportOpusLinks {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        config: GenericImportConfiguration,
+        mut update: UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
-    ) -> std::result::Result<GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = GraphUpdate::default();
-        let all_files = config.derive_corpus_graph(input_path, &mut update)?;
+    ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
+        let all_files = update.write_corpus_graph_from_file_tree(input_path)?;
         let progress = ProgressReporter::new(tx, step_id.clone(), all_files.len())?;
         all_files.into_iter().try_for_each(|(p, d)| {
             if let Err(e) =
@@ -78,7 +74,7 @@ impl Importer for ImportOpusLinks {
                 progress.worked(1)
             }
         })?;
-        Ok(update)
+        Ok(update.into())
     }
 }
 
@@ -97,7 +93,7 @@ impl DefaultImportConfiguration for ImportOpusLinks {
 impl ImportOpusLinks {
     fn link(
         &self,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
         source_doc_node_id: &str,
         target_doc_node_id: &str,
         single_source: &str,
@@ -105,43 +101,25 @@ impl ImportOpusLinks {
     ) -> Result<()> {
         let source_id = format!("{source_doc_node_id}#{single_source}");
         let target_id = format!("{target_doc_node_id}#{single_target}");
-        update.add_event(UpdateEvent::AddNode {
-            node_name: source_id.to_string(),
-            node_type: "node".to_string(),
-        })?;
-        update.add_event(UpdateEvent::AddEdge {
-            source_node: source_id.to_string(),
-            target_node: source_doc_node_id.to_string(),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::PartOf.to_string(),
-            component_name: "".to_string(),
-        })?;
-        update.add_event(UpdateEvent::AddNode {
-            node_name: target_id.to_string(),
-            node_type: "node".to_string(),
-        })?;
-        update.add_event(UpdateEvent::AddEdge {
-            source_node: target_id.to_string(),
-            target_node: target_doc_node_id.to_string(),
-            layer: ANNIS_NS.to_string(),
-            component_type: AnnotationComponentType::PartOf.to_string(),
-            component_name: "".to_string(),
-        })?;
-        update.add_event(UpdateEvent::AddEdge {
-            source_node: source_id.to_string(),
-            target_node: target_id.to_string(),
-            layer: "".to_string(),
-            component_type: self.default_type.to_string(),
-            component_name: self.default_name.to_string(),
-        })?;
+        update.node(source_id.to_string(), "node".to_string())?;
+        update.part_of(source_id.to_string(), source_doc_node_id.to_string())?;
+        update.node(target_id.to_string(), "node".to_string())?;
+        update.part_of(target_id.to_string(), target_doc_node_id.to_string())?;
+        update.edge_by_parts(
+            source_id.to_string(),
+            target_id.to_string(),
+            "".to_string(),
+            self.default_type.clone(),
+            self.default_name.to_string(),
+        )?;
         if let Some(name) = &self.reverse_name {
-            update.add_event(UpdateEvent::AddEdge {
-                source_node: target_id.to_string(),
-                target_node: source_id.to_string(),
-                layer: "".to_string(),
-                component_type: self.reverse_type.to_string(),
-                component_name: name.to_string(),
-            })?;
+            update.edge_by_parts(
+                target_id.to_string(),
+                source_id.to_string(),
+                "".to_string(),
+                self.reverse_type.clone(),
+                name.to_string(),
+            )?;
         }
         Ok(())
     }
@@ -151,7 +129,7 @@ impl ImportOpusLinks {
         step_id: &crate::StepID,
         path: &Path,
         corpus_node_path: &Path,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
     ) -> Result<()> {
         // buffers
         let mut source_doc_node_id = String::new();

@@ -4,18 +4,15 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::anyhow;
 use facet::Facet;
-use graphannis::{
-    model::AnnotationComponentType,
-    update::{GraphUpdate, UpdateEvent},
-};
 use graphannis_core::graph::{ANNIS_NS, DEFAULT_NS};
 use itertools::Itertools;
 use linked_hash_map::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    importer::{DefaultImportConfiguration, GenericImportConfiguration, Importer},
+    importer::{DefaultImportConfiguration, Importer},
     progress::ProgressReporter,
+    util::graphupdate::UpdateWriter,
 };
 
 #[derive(Clone, Default, Deserialize, Facet, PartialEq, Serialize)]
@@ -53,16 +50,15 @@ impl Importer for ImportELAN {
         &self,
         input_path: &std::path::Path,
         step_id: crate::StepID,
-        config: super::GenericImportConfiguration,
+        mut update: super::UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = GraphUpdate::default();
-        let named_paths = config.derive_corpus_graph(input_path, &mut update)?;
+        let named_paths = update.write_corpus_graph_from_file_tree(input_path)?;
         let progress = ProgressReporter::new(tx, step_id, named_paths.len())?;
         named_paths
             .into_iter()
-            .try_for_each(|(p, d)| self.import_document(&p, &d, &config, &mut update, &progress))?;
-        Ok(update)
+            .try_for_each(|(p, d)| self.import_document(&p, &d, &mut update, &progress))?;
+        Ok(update.into())
     }
 }
 
@@ -71,8 +67,7 @@ impl ImportELAN {
         &self,
         path: &std::path::Path,
         doc_node_name: &str,
-        config: &GenericImportConfiguration,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
         progress: &ProgressReporter,
     ) -> crate::error::Result<()> {
         progress.worked(1)?;
@@ -85,7 +80,7 @@ impl ImportELAN {
             segmentations: &self.segmentations,
             skip_time: self.skip_time,
         }
-        .map(config, update)
+        .map(update)
     }
 }
 
@@ -174,15 +169,11 @@ struct ELANMapper<'a> {
 }
 
 impl<'a> ELANMapper<'a> {
-    fn map(
-        &mut self,
-        config: &GenericImportConfiguration,
-        update: &mut GraphUpdate,
-    ) -> crate::error::Result<()> {
+    fn map(&mut self, update: &mut UpdateWriter) -> crate::error::Result<()> {
         let timeline = self.scan_timeline()?;
         self.data.sort_tiers();
         let scan = self.scan_tiers(&timeline)?;
-        self.build(timeline, scan, config, update)?;
+        self.build(timeline, scan, update)?;
         Ok(())
     }
 
@@ -410,8 +401,7 @@ impl<'a> ELANMapper<'a> {
         &self,
         timeline: Timeline,
         scan: DocumentScan,
-        config: &GenericImportConfiguration,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
     ) -> crate::error::Result<()> {
         // build time line
         let mut ts_id_to_node_name: LinkedHashMap<String, String> = LinkedHashMap::default();
@@ -424,29 +414,20 @@ impl<'a> ELANMapper<'a> {
             }
             used_timeslots.insert(ts_id);
             predecessor = if let Some(first_node) = timeline.node_sequence.get(*index) {
-                update.add_event(UpdateEvent::AddNode {
-                    node_name: first_node.to_string(),
-                    node_type: "node".to_string(),
-                })?;
-                update.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: first_node.to_string(),
-                    anno_ns: ANNIS_NS.to_string(),
-                    anno_name: "tok".to_string(),
-                    anno_value: " ".to_string(),
-                })?;
-                update.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: first_node.to_string(),
-                    anno_ns: ANNIS_NS.to_string(),
-                    anno_name: "layer".to_string(),
-                    anno_value: "default_layer".to_string(),
-                })?;
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: first_node.to_string(),
-                    target_node: self.doc_node_name.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::PartOf.to_string(),
-                    component_name: "".to_string(),
-                })?;
+                update.labeled_node(
+                    first_node.to_string(),
+                    "node".to_string(),
+                    ANNIS_NS.to_string(),
+                    "tok".to_string(),
+                    " ".to_string(),
+                )?;
+                update.node_label(
+                    first_node.to_string(),
+                    ANNIS_NS.to_string(),
+                    "layer".to_string(),
+                    "default_layer".to_string(),
+                )?;
+                update.part_of(first_node.to_string(), self.doc_node_name.to_string())?;
                 ts_id_to_node_name.insert(ts_id.to_string(), first_node.to_string());
                 if let Some(slot_list) = scan.slot_nodes.get(ts_id)
                     && let Some(pseudonym) = slot_list.first()
@@ -454,13 +435,7 @@ impl<'a> ELANMapper<'a> {
                     ts_id_to_node_name.insert(pseudonym.to_string(), first_node.to_string());
                 }
                 if let Some(prenode) = predecessor {
-                    update.add_event(UpdateEvent::AddEdge {
-                        source_node: prenode,
-                        target_node: first_node.to_string(),
-                        layer: ANNIS_NS.to_string(),
-                        component_type: AnnotationComponentType::Ordering.to_string(),
-                        component_name: "".to_string(),
-                    })?;
+                    update.ordering(prenode, first_node.to_string())?;
                 }
                 Some(first_node.to_string())
             } else {
@@ -474,39 +449,24 @@ impl<'a> ELANMapper<'a> {
                 .dropping(1)
             {
                 let subnode_name = format!("{}#{subnode_id}", self.doc_node_name);
-                update.add_event(UpdateEvent::AddNode {
-                    node_name: subnode_name.to_string(),
-                    node_type: "node".to_string(),
-                })?;
+                update.labeled_node(
+                    subnode_name.to_string(),
+                    "node".to_string(),
+                    ANNIS_NS.to_string(),
+                    "tok".to_string(),
+                    " ".to_string(),
+                )?;
                 if let Some(prenode) = predecessor {
-                    update.add_event(UpdateEvent::AddEdge {
-                        source_node: prenode,
-                        target_node: subnode_name.to_string(),
-                        layer: ANNIS_NS.to_string(),
-                        component_type: AnnotationComponentType::Ordering.to_string(),
-                        component_name: "".to_string(),
-                    })?;
+                    update.ordering(prenode, subnode_name.to_string())?;
                 }
                 predecessor = Some(subnode_name.to_string());
-                update.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: subnode_name.to_string(),
-                    anno_ns: ANNIS_NS.to_string(),
-                    anno_name: "tok".to_string(),
-                    anno_value: " ".to_string(),
-                })?;
-                update.add_event(UpdateEvent::AddNodeLabel {
-                    node_name: subnode_name.to_string(),
-                    anno_ns: ANNIS_NS.to_string(),
-                    anno_name: "layer".to_string(),
-                    anno_value: "default_layer".to_string(),
-                })?;
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: subnode_name.to_string(),
-                    target_node: self.doc_node_name.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::PartOf.to_string(),
-                    component_name: "".to_string(),
-                })?;
+                update.node_label(
+                    subnode_name.to_string(),
+                    ANNIS_NS.to_string(),
+                    "layer".to_string(),
+                    "default_layer".to_string(),
+                )?;
+                update.part_of(subnode_name.to_string(), self.doc_node_name.to_string())?;
                 ts_id_to_node_name.insert(subnode_id.to_string(), subnode_name);
             }
         }
@@ -537,62 +497,47 @@ impl<'a> ELANMapper<'a> {
                     .ok_or(anyhow!("No interval specified for {anno_id}"))?;
                 if let Some(targets) = full_timeline.slice(start, end_excl) {
                     let node_name = format!("{}#{anno_id}", self.doc_node_name);
-                    update.add_event(UpdateEvent::AddNode {
-                        node_name: node_name.to_string(),
-                        node_type: "node".to_string(),
-                    })?;
+                    update.node(node_name.to_string(), "node".to_string())?;
                     if !self.skip_time
                         && let Some(start_time) = full_timeline.id_to_time.get(start)
                         && let Some(end_time) = full_timeline.id_to_time.get(end_excl)
                     {
-                        update.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: node_name.to_string(),
-                            anno_ns: ANNIS_NS.to_string(),
-                            anno_name: "time".to_string(),
-                            anno_value: format!("{start_time}-{end_time}"),
-                        })?;
+                        update.node_label(
+                            node_name.to_string(),
+                            ANNIS_NS.to_string(),
+                            "time".to_string(),
+                            format!("{start_time}-{end_time}"),
+                        )?;
                     }
-                    update.add_event(UpdateEvent::AddEdge {
-                        source_node: node_name.to_string(),
-                        target_node: self.doc_node_name.to_string(),
-                        layer: ANNIS_NS.to_string(),
-                        component_type: AnnotationComponentType::PartOf.to_string(),
-                        component_name: "".to_string(),
-                    })?;
+                    update.part_of(node_name.to_string(), self.doc_node_name.to_string())?;
                     if let Some(anno_value) = scan.anno_values.get(anno_id) {
-                        update.add_event(UpdateEvent::AddNodeLabel {
-                            node_name: node_name.to_string(),
-                            anno_ns: config.default_namespace().to_string(),
-                            anno_name: anno_name.to_string(),
-                            anno_value: anno_value.to_string(),
-                        })?
+                        update.node_label(
+                            node_name.to_string(),
+                            update.config.default_namespace().to_string(),
+                            anno_name.to_string(),
+                            anno_value.to_string(),
+                        )?
                     } else {
                         return Err(anyhow!("No value for annotation {anno_id}").into());
                     }
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: node_name.to_string(),
-                        anno_ns: ANNIS_NS.to_string(),
-                        anno_name: "layer".to_string(),
-                        anno_value: "default_layer".to_string(),
-                    })?;
+                    update.node_label(
+                        node_name.to_string(),
+                        ANNIS_NS.to_string(),
+                        "layer".to_string(),
+                        "default_layer".to_string(),
+                    )?;
                     for target in targets {
-                        update.add_event(UpdateEvent::AddEdge {
-                            source_node: node_name.to_string(),
-                            target_node: target.to_string(),
-                            layer: ANNIS_NS.to_string(),
-                            component_type: AnnotationComponentType::Coverage.to_string(),
-                            component_name: "".to_string(),
-                        })?;
+                        update.coverage(node_name.to_string(), target.to_string())?;
                     }
                     if build_ordering {
                         if let Some(previous_node) = last_ordered_element {
-                            update.add_event(UpdateEvent::AddEdge {
-                                source_node: previous_node,
-                                target_node: node_name.to_string(),
-                                layer: DEFAULT_NS.to_string(),
-                                component_type: AnnotationComponentType::Ordering.to_string(),
-                                component_name: anno_name.to_string(),
-                            })?;
+                            update.edge_by_parts(
+                                previous_node,
+                                node_name.to_string(),
+                                DEFAULT_NS.to_string(),
+                                update.config.default_ordering().get_type(),
+                                anno_name.to_string(),
+                            )?;
                         }
                         last_ordered_element = Some(node_name);
                     }

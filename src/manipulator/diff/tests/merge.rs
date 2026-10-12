@@ -14,7 +14,7 @@ use crate::{
     importer::{GenericImportConfiguration, Importer, exmaralda::ImportEXMARaLDA},
     manipulator::{Manipulator, diff::DiffSubgraphs},
     test_util::export_to_string,
-    util::update_graph_silent,
+    util::{graphupdate::UpdateWriter, update_graph_silent},
 };
 
 #[test]
@@ -28,7 +28,9 @@ fn with_data() {
             module_name: "test_import".to_string(),
             path: None,
         },
-        GenericImportConfiguration::new_with_default_extensions(&import),
+        UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+            &import,
+        )),
         None,
     );
     assert!(u.is_ok());

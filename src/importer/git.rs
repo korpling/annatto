@@ -3,11 +3,13 @@ use std::path::PathBuf;
 use anyhow::anyhow;
 use facet::Facet;
 use git2::{Repository, StatusOptions};
-use graphannis::update::{GraphUpdate, UpdateEvent};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::importer::{DefaultImportConfiguration, GenericImportConfiguration, Importer};
+use crate::{
+    importer::{DefaultImportConfiguration, Importer},
+    util::graphupdate::UpdateWriter,
+};
 
 /// This importer can enrich a corpus with commit metadata. The import path needs
 /// to be the root directory of the local git repository.
@@ -37,10 +39,9 @@ impl Importer for ImportGitMetadata {
         &self,
         input_path: &std::path::Path,
         _step_id: crate::StepID,
-        config: GenericImportConfiguration,
+        mut update: UpdateWriter,
         _tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = GraphUpdate::default();
         let repo = Repository::open(input_path)?;
         let head_sha = repo
             .revparse("HEAD")?
@@ -72,17 +73,14 @@ impl Importer for ImportGitMetadata {
             .file_name()
             .ok_or(anyhow!("Could not determine root directory of input path."))?
             .to_string_lossy();
-        update.add_event(UpdateEvent::AddNode {
-            node_name: corpus_root.to_string(),
-            node_type: "corpus".to_string(),
-        })?;
-        update.add_event(UpdateEvent::AddNodeLabel {
-            node_name: corpus_root.to_string(),
-            anno_ns: config.default_namespace().to_string(),
-            anno_name: "revision".to_string(),
-            anno_value: head_sha.to_string(),
-        })?;
-        Ok(update)
+        update.labeled_node(
+            corpus_root.to_string(),
+            "corpus".to_string(),
+            update.config.default_namespace().to_string(),
+            "revision".to_string(),
+            head_sha.to_string(),
+        )?;
+        Ok(update.into())
     }
 }
 
@@ -100,6 +98,7 @@ mod tests {
         exporter::graphml::GraphMLExporter,
         importer::{DefaultImportConfiguration, Importer, git::ImportGitMetadata},
         test_util::export_to_string,
+        util::graphupdate::UpdateWriter,
     };
 
     #[test]
@@ -154,7 +153,7 @@ mod tests {
                 module_name: "test_git".to_string(),
                 path: None,
             },
-            gitmeta.default_configuration(),
+            UpdateWriter::from(gitmeta.default_configuration()),
             None,
         );
         assert_eq!(u.is_ok(), commit, "Result: {:?}", u.err());

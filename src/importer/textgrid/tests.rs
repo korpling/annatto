@@ -174,7 +174,9 @@ fn fail_wrong_map() {
                 module_name: "test_failing_import".to_string(),
                 path: None
             },
-            GenericImportConfiguration::new_with_default_extensions(&ImportTextgrid::default()),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &ImportTextgrid::default()
+            )),
             None
         )
         .is_err()

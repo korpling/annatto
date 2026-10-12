@@ -6,11 +6,7 @@ use std::{
 
 use anyhow::{anyhow, bail};
 use facet::Facet;
-use graphannis::{
-    graph::AnnoKey,
-    model::AnnotationComponentType,
-    update::{GraphUpdate, UpdateEvent},
-};
+use graphannis::graph::AnnoKey;
 use graphannis_core::{
     graph::{ANNIS_NS, DEFAULT_NS},
     util::split_qname,
@@ -25,8 +21,9 @@ use super::Importer;
 use crate::{
     StepID,
     error::AnnattoError,
-    importer::{DefaultImportConfiguration, GenericImportConfiguration, NODE_NAME_ENCODE_SET},
+    importer::{DefaultImportConfiguration, NODE_NAME_ENCODE_SET},
     progress::ProgressReporter,
+    util::graphupdate::UpdateWriter,
 };
 
 /// Imports Excel Spreadsheets where each line is a token, the other columns are
@@ -176,7 +173,7 @@ impl<'a> MetasheetMapper<'a> {
     fn import_as_metadata(
         &self,
         doc_node_name: &str,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
     ) -> Result<(), AnnattoError> {
         let max_row_num = self.max_row as usize; // 1-based
         for row_num in (self.skip_rows + 1)..max_row_num + 1 {
@@ -201,12 +198,12 @@ impl<'a> MetasheetMapper<'a> {
                         value_cell.get_raw_value().to_string()
                     };
                     let value = vv.trim();
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: doc_node_name.to_string(),
-                        anno_ns: ns.map_or("".to_string(), str::to_string),
-                        anno_name: name.to_string(),
-                        anno_value: value.to_string(),
-                    })?;
+                    update.node_label(
+                        doc_node_name.to_string(),
+                        ns.map_or("".to_string(), str::to_string),
+                        name.to_string(),
+                        value.to_string(),
+                    )?;
                 }
             }
         }
@@ -251,7 +248,7 @@ impl<'a> DatasheetMapper<'a> {
     fn import_datasheet(
         &self,
         doc_node_name: &str,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
         progress: &ProgressReporter,
     ) -> Result<(), AnnattoError> {
         let expected_names = self
@@ -278,7 +275,7 @@ impl<'a> DatasheetMapper<'a> {
 
     fn import_column(
         &self,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
         doc_node_name: &str,
         col_num: u32,
         mut merged_cells: BTreeMap<u32, u32>,
@@ -380,47 +377,32 @@ impl<'a> DatasheetMapper<'a> {
                     row_num as usize + covered_tokens.len()
                 )
             };
-            update.add_event(UpdateEvent::AddNode {
-                node_name: node_name.to_string(),
-                node_type: "node".to_string(),
-            })?;
-            update.add_event(UpdateEvent::AddEdge {
-                source_node: node_name.to_string(),
-                target_node: doc_node_name.to_string(),
-                layer: ANNIS_NS.to_string(),
-                component_type: AnnotationComponentType::PartOf.to_string(),
-                component_name: "".to_string(),
-            })?;
-            update.add_event(UpdateEvent::AddNodeLabel {
-                node_name: node_name.to_string(),
-                anno_ns: ANNIS_NS.to_string(),
-                anno_name: "layer".to_string(),
-                anno_value: anno_key.ns.to_string(),
-            })?;
-            update.add_event(UpdateEvent::AddNodeLabel {
-                node_name: node_name.to_string(),
-                anno_ns: anno_key.ns.to_string(),
-                anno_name: anno_key.name.to_string(),
-                anno_value: cell_value.trim().to_string(),
-            })?;
+            update.labeled_node(
+                node_name.to_string(),
+                "node".to_string(),
+                ANNIS_NS.to_string(),
+                "layer".to_string(),
+                anno_key.ns.to_string(),
+            )?;
+            update.node_label(
+                node_name.to_string(),
+                anno_key.ns.to_string(),
+                anno_key.name.to_string(),
+                cell_value.trim().to_string(),
+            )?;
+            update.part_of(node_name.to_string(), doc_node_name.to_string())?;
             for tok_id in covered_tokens {
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: node_name.to_string(),
-                    target_node: tok_id.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Coverage.to_string(),
-                    component_name: "".to_string(),
-                })?;
+                update.coverage(node_name.to_string(), tok_id.to_string())?;
             }
             if is_segmentation {
                 if let Some(prev_name) = last_segment_node {
-                    update.add_event(UpdateEvent::AddEdge {
-                        source_node: prev_name,
-                        target_node: node_name.to_string(),
-                        layer: DEFAULT_NS.to_string(),
-                        component_type: AnnotationComponentType::Ordering.to_string(),
-                        component_name: anno_key.ns.to_string(),
-                    })?;
+                    update.edge_by_parts(
+                        prev_name,
+                        node_name.to_string(),
+                        DEFAULT_NS.to_string(),
+                        update.config.default_ordering().get_type(),
+                        anno_key.ns.to_string(),
+                    )?;
                 }
                 last_segment_node = Some(node_name);
             }
@@ -430,49 +412,34 @@ impl<'a> DatasheetMapper<'a> {
 
     fn build_tokens(
         &self,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
         doc_node_name: &str,
     ) -> Result<Vec<String>, anyhow::Error> {
         let mut base_tokens = Vec::with_capacity(self.max_row as usize);
         for i in 2..=self.max_row as usize {
             // keep spreadsheet row indices in token names for easier debugging
             let tok_id = format!("{doc_node_name}#row{i}");
-            update.add_event(UpdateEvent::AddNode {
-                node_name: tok_id.to_string(),
-                node_type: "node".to_string(),
-            })?;
-            update.add_event(UpdateEvent::AddNodeLabel {
-                node_name: tok_id.to_string(),
-                anno_ns: ANNIS_NS.to_string(),
-                anno_name: "tok".to_string(),
-                anno_value: " ".to_string(),
-            })?;
-            update.add_event(UpdateEvent::AddNodeLabel {
-                node_name: tok_id.to_string(),
-                anno_ns: ANNIS_NS.to_string(),
-                anno_name: "layer".to_string(),
-                anno_value: "default_layer".to_string(),
-            })?;
-            update.add_event(UpdateEvent::AddEdge {
-                source_node: tok_id.to_string(),
-                target_node: doc_node_name.to_string(),
-                layer: ANNIS_NS.to_string(),
-                component_type: AnnotationComponentType::PartOf.to_string(),
-                component_name: "".to_string(),
-            })?;
+            update.labeled_node(
+                tok_id.to_string(),
+                "node".to_string(),
+                ANNIS_NS.to_string(),
+                "tok".to_string(),
+                " ".to_string(),
+            )?;
+            update.node_label(
+                tok_id.to_string(),
+                ANNIS_NS.to_string(),
+                "layer".to_string(),
+                "default_layer".to_string(),
+            )?;
+            update.part_of(tok_id.to_string(), doc_node_name.to_string())?;
             base_tokens.push(tok_id);
         }
         base_tokens
             .iter()
             .tuple_windows()
             .try_for_each(|(first, second)| {
-                update.add_event(UpdateEvent::AddEdge {
-                    source_node: first.to_string(),
-                    target_node: second.to_string(),
-                    layer: ANNIS_NS.to_string(),
-                    component_type: AnnotationComponentType::Ordering.to_string(),
-                    component_name: "".to_string(),
-                })?;
+                update.ordering(first.to_string(), second.to_string())?;
                 Ok::<(), AnnattoError>(())
             })?;
         Ok(base_tokens)
@@ -587,7 +554,7 @@ impl<'a> SheetRef<'a> {
 impl WorkbookMapper<'_> {
     fn import_workbook(
         self,
-        update: &mut GraphUpdate,
+        update: &mut UpdateWriter,
         evaluate_formulas: bool,
     ) -> Result<(), AnnattoError> {
         let book = umya_spreadsheet::reader::xlsx::read(&self.path)?;
@@ -626,23 +593,14 @@ impl WorkbookMapper<'_> {
                     })
                 }) {
                     let sheet_name = format!("{}/{}", self.doc_node_name, sheet.get_name());
-                    update.add_event(UpdateEvent::AddNode {
-                        node_name: sheet_name.to_string(),
-                        node_type: "corpus".to_string(),
-                    })?;
-                    update.add_event(UpdateEvent::AddNodeLabel {
-                        node_name: sheet_name.to_string(),
-                        anno_ns: "xlsx".to_string(),
-                        anno_name: "sheet".to_string(),
-                        anno_value: sheet.get_name().to_string(),
-                    })?;
-                    update.add_event(UpdateEvent::AddEdge {
-                        source_node: sheet_name.to_string(),
-                        target_node: self.doc_node_name.to_string(),
-                        layer: ANNIS_NS.to_string(),
-                        component_type: AnnotationComponentType::PartOf.to_string(),
-                        component_name: "".to_string(),
-                    })?;
+                    update.labeled_node(
+                        sheet_name.to_string(),
+                        "corpus".to_string(),
+                        "xlsx".to_string(),
+                        "sheet".to_string(),
+                        sheet.get_name().to_string(),
+                    )?;
+                    update.part_of(sheet_name.to_string(), self.doc_node_name.to_string())?;
                     DatasheetMapper::new(
                         SheetRef::new(sheet, &self.path),
                         self.column_map,
@@ -707,12 +665,10 @@ impl Importer for ImportSpreadsheet {
         &self,
         input_path: &std::path::Path,
         step_id: StepID,
-        config: GenericImportConfiguration,
+        mut update: UpdateWriter,
         tx: Option<crate::workflow::StatusSender>,
     ) -> Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
-        let mut update = GraphUpdate::default();
-
-        let all_files = config.derive_corpus_graph(input_path, &mut update)?;
+        let all_files = update.write_corpus_graph_from_file_tree(input_path)?;
         // figure out which files are backup data and should not be imported
         let ignore_docs = invalid_doc_nodes(all_files.as_ref());
         // ignore the number of backup files for progress reporting, as these will be skipped
@@ -745,8 +701,8 @@ impl Importer for ImportSpreadsheet {
         // delete document nodes that exist for backup files
         ignore_docs
             .into_iter()
-            .try_for_each(|node_name| update.add_event(UpdateEvent::DeleteNode { node_name }))?;
-        Ok(update)
+            .try_for_each(|node_name| update.delete(node_name))?;
+        Ok(update.into())
     }
 }
 
@@ -777,6 +733,7 @@ mod tests {
     use crate::{
         ImporterStep, ReadFrom,
         exporter::graphml::GraphMLExporter,
+        importer::GenericImportConfiguration,
         test_util::export_to_string,
         util::update_graph_silent,
         workflow::{StatusMessage, Workflow},
@@ -843,7 +800,9 @@ mod tests {
                 module_name: "test_xslx_import".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&import),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &import,
+            )),
             Some(sender),
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -881,7 +840,9 @@ mod tests {
                 module_name: "test_xslx_import".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&import),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &import,
+            )),
             None,
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -909,7 +870,9 @@ mod tests {
                 module_name: "test_xslx_import".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&import),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &import,
+            )),
             None,
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -1334,14 +1297,13 @@ edition = ["chapter"]
 
     #[test]
     fn file_filter() {
-        let mut update = GraphUpdate::default();
-        let files_with_names = crate::util::graphupdate::import_corpus_graph_from_files(
-            &mut update,
-            Path::new("tests/data/import/xlsx/with_backup/xlsx/"),
-            &GenericImportConfiguration::new_with_extensions(
-                FILE_EXTENSIONS.iter().map(|e| e.to_string()).collect_vec(),
-            ),
+        let config = GenericImportConfiguration::new_with_extensions(
+            FILE_EXTENSIONS.iter().map(|e| e.to_string()).collect_vec(),
         );
+        let mut update = UpdateWriter::from(config);
+        let files_with_names = update.write_corpus_graph_from_file_tree(Path::new(
+            "tests/data/import/xlsx/with_backup/xlsx/",
+        ));
         assert!(
             files_with_names.is_ok(),
             "Failed: {:?}",
@@ -1370,7 +1332,9 @@ norm = ["pos", "lemma"]
                 module_name: "test_xlsx".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&import),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &import,
+            )),
             None,
         );
         assert!(u.is_ok(), "Failed to import: {:?}", u.err());
@@ -1400,7 +1364,9 @@ norm = ["pos", "lemma"]
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&module),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &module,
+            )),
             None,
         );
         assert!(u.is_ok());
@@ -1432,7 +1398,7 @@ norm = ["pos", "lemma"]
                 module_name: "test_import_multisheet".to_string(),
                 path: None,
             },
-            import.default_configuration(),
+            UpdateWriter::from(import.default_configuration()),
             None,
         );
         assert!(u.is_ok());
@@ -1458,7 +1424,7 @@ norm = ["pos", "lemma"]
                 module_name: "test_import_multisheet".to_string(),
                 path: None,
             },
-            import.default_configuration(),
+            UpdateWriter::from(import.default_configuration()),
             None,
         );
         assert!(u.is_err());
@@ -1494,7 +1460,7 @@ norm = ["pos", "lemma"]
                 module_name: "test_import_multisheet".to_string(),
                 path: None,
             },
-            import.default_configuration(),
+            UpdateWriter::from(import.default_configuration()),
             Some(tx.clone()),
         );
         assert!(u.is_ok());
@@ -1514,7 +1480,7 @@ norm = ["pos", "lemma"]
                 module_name: "test_import_multisheet".to_string(),
                 path: None,
             },
-            import.default_configuration(),
+            UpdateWriter::from(import.default_configuration()),
             Some(tx),
         );
         assert!(u.is_ok());

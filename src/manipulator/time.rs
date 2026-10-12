@@ -386,11 +386,12 @@ mod tests {
         StepID,
         exporter::graphml::GraphMLExporter,
         importer::{
-            GenericImportConfiguration, Importer, conllu::ImportCoNLLU, exmaralda::ImportEXMARaLDA,
+            DefaultImportConfiguration, GenericImportConfiguration, Importer, conllu::ImportCoNLLU,
+            exmaralda::ImportEXMARaLDA,
         },
         manipulator::{Manipulator, time::Filltime},
         test_util::export_to_string,
-        util::{example_generator, update_graph_silent},
+        util::{example_generator, graphupdate::UpdateWriter, update_graph_silent},
     };
 
     #[test]
@@ -452,7 +453,9 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&import_exmaralda),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &import_exmaralda,
+            )),
             None,
         );
         assert!(import.is_ok(), "import failed: {:?}", import.err());
@@ -490,7 +493,9 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&import_exmaralda),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &import_exmaralda,
+            )),
             None,
         );
         assert!(import.is_ok(), "import failed: {:?}", import.err());
@@ -529,7 +534,7 @@ mod tests {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&import_conll),
+            UpdateWriter::from(import_conll.default_configuration()),
             None,
         );
         assert!(import.is_ok(), "import failed: {:?}", import.err());

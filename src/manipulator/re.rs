@@ -804,6 +804,7 @@ mod tests {
     use crate::progress::ProgressReporter;
     use crate::test_util::export_to_string;
     use crate::util::example_generator;
+    use crate::util::graphupdate::UpdateWriter;
     use crate::util::update_graph_silent;
     use crate::{Result, StepID};
 
@@ -2319,7 +2320,9 @@ remove = [1, 2]
                 module_name: "_test_helper_import".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&import),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &import,
+            )),
             None,
         );
         assert!(u.is_ok());
@@ -2353,7 +2356,9 @@ remove = [{node=1, anno="default_ns::pos"}]
                 module_name: "_test_helper_import".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&import),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &import,
+            )),
             None,
         );
         assert!(u.is_ok());

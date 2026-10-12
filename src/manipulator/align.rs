@@ -25,6 +25,7 @@ use super::Manipulator;
 
 /// Aligns nodes identified by queries with edges in the defined component.
 #[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct AlignNodes {
     /// Define node groups that should be aligned. Neighbouring node groups in the
     /// provided list are aligned, given common nodes can be identified. You can
@@ -256,7 +257,7 @@ mod tests {
             align::{AlignNodes, AlignmentMethod, NodeGroup, default_component},
         },
         test_util::export_to_string,
-        util::{example_generator, update_graph_silent},
+        util::{example_generator, graphupdate::UpdateWriter, update_graph_silent},
     };
 
     #[test]
@@ -349,7 +350,9 @@ mod tests {
                 module_name: "import_docs".to_string(),
                 path: None,
             },
-            GenericImportConfiguration::new_with_default_extensions(&import),
+            UpdateWriter::from(GenericImportConfiguration::new_with_default_extensions(
+                &import,
+            )),
             None,
         );
         assert!(u.is_ok());

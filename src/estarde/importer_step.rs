@@ -1,7 +1,10 @@
 pub mod optional_sequence {
     use serde::{Deserialize, Deserializer};
 
-    use crate::{ImporterStep, importer::GenericImportConfiguration};
+    use crate::{
+        ImporterStep,
+        importer::{DefaultComponents, GenericImportConfiguration},
+    };
 
     pub fn deserialize<'de, D: Deserializer<'de>, T: FromIterator<ImporterStep>>(
         deserializer: D,
@@ -37,11 +40,17 @@ pub mod optional_sequence {
                                 .preset_default_namespace()
                                 .map(ToString::to_string)
                         };
+                        let resolved_default_components =
+                            DefaultComponents::from_configured_importer(
+                                module.reader(),
+                                &given_config,
+                            );
                         Some(GenericImportConfiguration::new(
                             given_config.custom_root_name(),
                             resolved_extensions,
                             given_config.document_list().cloned(),
                             resolved_ns,
+                            resolved_default_components,
                         ))
                     } else {
                         None
