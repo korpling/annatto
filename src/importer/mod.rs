@@ -230,7 +230,7 @@ lazy_static! {
 /// This object models the user interface, i. e., which components the user
 /// can and has to define (none). Actual default component values are taken
 /// from the individual import steps on deserialization.
-#[derive(Deserialize, Clone, PartialEq, Serialize)]
+#[derive(Default, Deserialize, Clone, PartialEq, Serialize)]
 pub struct DefaultComponents {
     #[serde(with = "crate::estarde::annotation_component::as_option")]
     pub(crate) ordering: Option<AnnotationComponent>,
@@ -242,18 +242,6 @@ pub struct DefaultComponents {
     pub(crate) dominance: Option<AnnotationComponent>,
     #[serde(with = "crate::estarde::annotation_component::as_option")]
     pub(crate) pointing: Option<AnnotationComponent>,
-}
-
-impl Default for DefaultComponents {
-    fn default() -> Self {
-        Self {
-            ordering: None,
-            coverage: None,
-            part_of: None,
-            dominance: None,
-            pointing: None,
-        }
-    }
 }
 
 impl DefaultComponents {

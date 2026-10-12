@@ -368,9 +368,9 @@ impl UpdateWriter {
     }
 }
 
-impl Into<GraphUpdate> for UpdateWriter {
-    fn into(self) -> GraphUpdate {
-        self.inner
+impl From<UpdateWriter> for GraphUpdate {
+    fn from(value: UpdateWriter) -> Self {
+        value.inner
     }
 }
 
