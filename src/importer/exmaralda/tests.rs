@@ -327,14 +327,12 @@ fn run_test(
     Ok(actual)
 }
 
-fn custom_config(
-    import_path: &str,
-    expected_warnings_count: usize,
-) -> Result<String, Box<dyn std::error::Error>> {
-    let (sender, receiver) = mpsc::channel();
+#[test]
+fn custom_config() {
+    let import_path = Path::new("./tests/data/import/exmaralda/clean/import/");
     let actual = import_as_graphml_string_2(
         ImportEXMARaLDA::default(),
-        env::current_dir()?.join(import_path), // IMPORTANT: test with absolute paths, this is what Annatto does at runtime
+        env::current_dir().unwrap().join(import_path), // IMPORTANT: test with absolute paths, this is what Annatto does at runtime
         None,
         GenericImportConfiguration {
             default_components: Some(DefaultComponents {
@@ -358,17 +356,7 @@ fn custom_config(
             ..Default::default()
         },
         true,
-        Some(sender),
-    )?;
-    let warnings = receiver
-        .into_iter()
-        .filter(|m| matches!(m, StatusMessage::Warning(..)))
-        .collect_vec();
-    assert_eq!(
-        expected_warnings_count,
-        warnings.len(),
-        "Unexpected amount of warnings: {:?}",
-        warnings
+        None,
     );
-    Ok(actual)
+    assert_snapshot!(actual.unwrap());
 }
