@@ -69,6 +69,18 @@ fn simple_token() {
 }
 
 #[test]
+fn single_sentence_with_spans() {
+    let actual = import_as_graphml_string(
+        ImportTreeTagger::default(),
+        Path::new("tests/data/import/treetagger/single_sentence"),
+        Some(TT_DEFAULT_VIS_CONFIG),
+    )
+    .unwrap();
+
+    assert_snapshot!(actual);
+}
+
+#[test]
 fn encoding_latin() {
     let mut importer = ImportTreeTagger::default();
     importer.file_encoding = Some("Latin1".into());

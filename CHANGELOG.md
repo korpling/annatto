@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   wrong
 - graph op `visualizer`: speed up execution by skipping already processed tokens
   and ignoring pointing relations to find reachable nodes
+- import `treetagger`: add `PartOf` relation to documennt
 
 ## [0.60.0] - 2026-10-06
 

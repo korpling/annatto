@@ -227,6 +227,7 @@ impl<'a> DocumentMapper<'a> {
                         tag_name.into(),
                         tag_name.into(),
                     )?;
+                    u.part_of(span_id.clone(), self.text_node_name.clone())?;
 
                     u.node_label(
                         span_id.clone(),
