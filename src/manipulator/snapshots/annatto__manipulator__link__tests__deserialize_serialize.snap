@@ -1,0 +1,23 @@
+---
+source: src/manipulator/link.rs
+expression: toml_str.unwrap()
+---
+source_query = "tok _ident_ id"
+source_node = 1
+source_value = [2]
+source_to_edge = []
+target_query = "norm _ident_ id"
+target_node = 1
+target_value = [2]
+target_to_edge = []
+value_sep = ""
+
+[[component]]
+ctype = "Pointing"
+layer = ""
+name = "align"
+
+[[component]]
+ctype = "Pointing"
+layer = ""
+name = "link"
