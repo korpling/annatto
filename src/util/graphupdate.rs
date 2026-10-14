@@ -48,6 +48,7 @@ impl From<GenericImportConfiguration> for UpdateWriter {
 }
 
 impl UpdateWriter {
+    /// Add a node with the given name and type.
     pub fn node(&mut self, node_name: String, node_type: String) -> Result<()> {
         self.inner.add_event(UpdateEvent::AddNode {
             node_name,
@@ -56,12 +57,27 @@ impl UpdateWriter {
         Ok(())
     }
 
+    /// Add a node with the given name and type and attach
+    /// it to a corpus node via a `PartOf` edge.
+    pub fn node_at(
+        &mut self,
+        node_name: String,
+        node_type: String,
+        corpus_node: String,
+    ) -> Result<()> {
+        self.node(node_name.to_string(), node_type)?;
+        self.part_of(node_name, corpus_node)?;
+        Ok(())
+    }
+
+    /// Delete the node with the given name.
     pub fn delete(&mut self, node_name: String) -> Result<()> {
         self.inner
             .add_event(UpdateEvent::DeleteNode { node_name })?;
         Ok(())
     }
 
+    /// Add a label to a node.
     pub fn node_label(
         &mut self,
         node_name: String,
@@ -78,6 +94,22 @@ impl UpdateWriter {
         Ok(())
     }
 
+    /// Add a label to a node and use the default namespace.
+    pub fn default_node_label(
+        &mut self,
+        node_name: String,
+        anno_name: String,
+        anno_value: String,
+    ) -> Result<()> {
+        self.node_label(
+            node_name,
+            self.config.default_namespace().to_string(),
+            anno_name,
+            anno_value,
+        )
+    }
+
+    /// Create a new node and add a label.
     pub fn labeled_node(
         &mut self,
         node_name: String,
@@ -91,6 +123,7 @@ impl UpdateWriter {
         Ok(())
     }
 
+    /// Add an edge in the given component.
     pub fn edge(
         &mut self,
         source_node: String,
@@ -107,6 +140,7 @@ impl UpdateWriter {
         Ok(())
     }
 
+    /// Add an edge by providing its parameters.
     pub fn edge_by_parts(
         &mut self,
         source_node: String,
@@ -129,6 +163,7 @@ impl UpdateWriter {
         ))
     }
 
+    /// Add a label to an edge.
     pub fn edge_label(
         &mut self,
         source_node: String,
@@ -151,6 +186,26 @@ impl UpdateWriter {
         Ok(())
     }
 
+    /// Add a label to an edge and use the default namespace.
+    pub fn default_edge_label(
+        &mut self,
+        source_node: String,
+        target_node: String,
+        component: &AnnotationComponent,
+        anno_name: String,
+        anno_value: String,
+    ) -> Result<()> {
+        self.edge_label(
+            source_node,
+            target_node,
+            component,
+            self.config.default_namespace().to_string(),
+            anno_name,
+            anno_value,
+        )
+    }
+
+    /// Add an edge to a component and a label to the new edge.
     pub fn labeled_edge(
         &mut self,
         source_node: String,
@@ -171,6 +226,7 @@ impl UpdateWriter {
         )
     }
 
+    /// Add an ordering edge.
     pub fn ordering(&mut self, source: String, target: String) -> Result<&AnnotationComponent> {
         self.inner.add_event(UpdateEvent::AddEdge {
             source_node: source,
@@ -182,6 +238,24 @@ impl UpdateWriter {
         Ok(self.config.default_ordering())
     }
 
+    /// Add a named ordering edge. NOTE that this ignores the name
+    /// of the default ordering component.
+    pub fn named_ordering(
+        &mut self,
+        source: String,
+        target: String,
+        name: String,
+    ) -> Result<AnnotationComponent> {
+        self.edge_by_parts(
+            source,
+            target,
+            self.config.default_ordering().layer.to_string(),
+            self.config.default_ordering().get_type(),
+            name,
+        )
+    }
+
+    /// Add a part of edge.
     pub fn part_of(&mut self, source: String, target: String) -> Result<&AnnotationComponent> {
         self.inner.add_event(UpdateEvent::AddEdge {
             source_node: source,
@@ -193,6 +267,7 @@ impl UpdateWriter {
         Ok(self.config.default_part_of())
     }
 
+    /// Add a coverage edge.
     pub fn coverage(&mut self, source: String, target: String) -> Result<&AnnotationComponent> {
         self.inner.add_event(UpdateEvent::AddEdge {
             source_node: source,
@@ -204,6 +279,7 @@ impl UpdateWriter {
         Ok(self.config.default_coverage())
     }
 
+    /// Add a dominance edge.
     pub fn dominance(&mut self, source: String, target: String) -> Result<&AnnotationComponent> {
         self.inner.add_event(UpdateEvent::AddEdge {
             source_node: source,
@@ -215,6 +291,24 @@ impl UpdateWriter {
         Ok(self.config.default_dominance())
     }
 
+    /// Add a named dominance edge. NOTE that this ignores the name
+    /// of the default dominance component.
+    pub fn named_dominance(
+        &mut self,
+        source: String,
+        target: String,
+        name: String,
+    ) -> Result<AnnotationComponent> {
+        self.edge_by_parts(
+            source,
+            target,
+            self.config.default_dominance().layer.to_string(),
+            self.config.default_dominance().get_type(),
+            name,
+        )
+    }
+
+    /// Add a pointing edge.
     pub fn pointing(&mut self, source: String, target: String) -> Result<&AnnotationComponent> {
         self.inner.add_event(UpdateEvent::AddEdge {
             source_node: source,
@@ -226,6 +320,7 @@ impl UpdateWriter {
         Ok(self.config.default_pointing())
     }
 
+    /// Forward a raw update event into the `GraphUpdate`.
     pub fn add_event(&mut self, ue: UpdateEvent) -> Result<()> {
         Ok(self.inner.add_event(ue)?)
     }
