@@ -165,17 +165,11 @@ impl ImportFLToolbox {
             update.node(span.to_string(), "node".to_string())?;
             update.part_of(span.to_string(), doc_node_name.to_string())?;
             for (k, v) in span_values {
-                update.node_label(
-                    span.to_string(),
-                    update.config.default_namespace().to_string(),
-                    k,
-                    str::from_utf8(&v)?.to_string(),
-                )?;
+                update.default_node_label(span.to_string(), k, str::from_utf8(&v)?.to_string())?;
             }
             for (k, v) in global_values {
-                update.node_label(
+                update.default_node_label(
                     span.to_string(),
-                    update.config.default_namespace().to_string(),
                     k.to_string(),
                     str::from_utf8(v)?.to_string(),
                 )?;
@@ -229,9 +223,8 @@ impl ImportFLToolbox {
                     let anno_value = str::from_utf8(anno_value_raw)?.trim();
                     byte_index += 1;
                     if anno_value != "-" || self.explicit_null {
-                        update.node_label(
+                        update.default_node_label(
                             name.to_string(),
-                            update.config.default_namespace().to_string(),
                             grid_line.marker.to_string(),
                             anno_value.to_string(),
                         )?;

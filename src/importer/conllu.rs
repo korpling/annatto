@@ -419,9 +419,8 @@ impl ImportCoNLLU {
                 }
                 Rule::lemma | Rule::upos | Rule::xpos => {
                     let anno_name = rule.to_string();
-                    update.node_label(
+                    update.default_node_label(
                         node_name.to_string(),
-                        update.config.default_namespace().to_string(),
                         anno_name.to_string(),
                         member.as_str().to_string(),
                     )?;
@@ -441,9 +440,8 @@ impl ImportCoNLLU {
                                 if let Some(n) = &anno_name
                                     && let Some(v) = &anno_value
                                 {
-                                    update.node_label(
+                                    update.default_node_label(
                                         node_name.to_string(),
-                                        update.config.default_namespace().to_string(),
                                         n.trim().to_string(),
                                         v.trim().to_string(),
                                     )?;

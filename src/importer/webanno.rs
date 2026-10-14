@@ -263,11 +263,9 @@ impl ImportWebAnnoTSV {
                         .as_str();
                     let source_name = format!("{doc_node_name}#{source_ref}");
                     update.node(source_name.to_string(), "node".to_string())?; // just in case, it will be build at some point anyway
-                    let edge_c = update.edge_by_parts(
+                    let edge_c = update.named_pointing(
                         source_name.to_string(),
                         token_name.to_string(),
-                        "".to_string(),
-                        update.config.default_pointing().get_type(), // by default this is pointing, but maybe the user indicates preference for a different type
                         edge_name.to_string(),
                     )?;
                     for (key, value) in annotations {

@@ -73,10 +73,9 @@ impl Importer for ImportGitMetadata {
             .file_name()
             .ok_or(anyhow!("Could not determine root directory of input path."))?
             .to_string_lossy();
-        update.labeled_node(
+        update.node(corpus_root.to_string(), "corpus".to_string())?;
+        update.default_node_label(
             corpus_root.to_string(),
-            "corpus".to_string(),
-            update.config.default_namespace().to_string(),
             "revision".to_string(),
             head_sha.to_string(),
         )?;

@@ -320,6 +320,23 @@ impl UpdateWriter {
         Ok(self.config.default_pointing())
     }
 
+    /// Add a pointing edge with a different name. This overrides the default pointing
+    /// component's name.
+    pub fn named_pointing(
+        &mut self,
+        source: String,
+        target: String,
+        name: String,
+    ) -> Result<AnnotationComponent> {
+        self.edge_by_parts(
+            source,
+            target,
+            self.config.default_pointing().layer.to_string(),
+            self.config.default_pointing().get_type(),
+            name,
+        )
+    }
+
     /// Forward a raw update event into the `GraphUpdate`.
     pub fn add_event(&mut self, ue: UpdateEvent) -> Result<()> {
         Ok(self.inner.add_event(ue)?)
