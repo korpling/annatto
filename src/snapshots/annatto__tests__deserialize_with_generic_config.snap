@@ -11,7 +11,33 @@ extensions = ["xml"]
 [import.config]
 merge_events = true
 
-[import.default_components]
+[import.model]
+default_ns = "custom_ns"
+
+[import.model.default_components.ordering]
+ctype = "Pointing"
+layer = ""
+name = "ordering"
+
+[import.model.default_components.coverage]
+ctype = "Pointing"
+layer = ""
+name = "coverage"
+
+[import.model.default_components.part_of]
+ctype = "Pointing"
+layer = ""
+name = "part-of"
+
+[import.model.default_components.dominance]
+ctype = "Pointing"
+layer = ""
+name = "dominance"
+
+[import.model.default_components.pointing]
+ctype = "Pointing"
+layer = ""
+name = "pointing"
 
 [footer]
 annatto_version = ""
