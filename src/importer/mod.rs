@@ -68,14 +68,16 @@ pub trait DefaultImportConfiguration {
                 .map(<&str>::to_string)
                 .collect(),
             documents: None, // default document list does not need to be trait derived, there is no meaningful alternative to None
-            default_ns: self.preset_default_namespace().map(ToString::to_string),
-            default_components: Some(DefaultComponents {
-                ordering: self.preset_default_ordering().cloned(),
-                coverage: self.preset_default_coverage().cloned(),
-                part_of: self.preset_default_part_of().cloned(),
-                dominance: self.preset_default_dominance().cloned(),
-                pointing: self.preset_default_pointing().cloned(),
-            }),
+            model: ModelConfiguration {
+                default_ns: self.preset_default_namespace().map(ToString::to_string),
+                default_components: Some(DefaultComponents {
+                    ordering: self.preset_default_ordering().cloned(),
+                    coverage: self.preset_default_coverage().cloned(),
+                    part_of: self.preset_default_part_of().cloned(),
+                    dominance: self.preset_default_dominance().cloned(),
+                    pointing: self.preset_default_pointing().cloned(),
+                }),
+            },
         }
     }
 
@@ -182,6 +184,15 @@ pub struct GenericImportConfiguration {
     /// Extension is optional.
     #[serde(default)]
     documents: Option<BTreeSet<String>>, // this is an option to have strictly linear semantics on the set: more entries mean more documents starting at 0 meaning 0 documents (not a sensible use-case, but could be used for building subcorpus structure from paths, i. e., to license a corpus hack)
+    /// This is a sub section of configurations that restrains the model, that will be derived from the data
+    /// in certain ways, e. g. by setting a default annotation namespace or default components to be used.
+    #[serde(default)]
+    // the user must be allowed to leave out this section, as it is for advanced level scenarios only.
+    model: ModelConfiguration,
+}
+
+#[derive(Clone, Default, Deserialize, PartialEq, Serialize)]
+pub struct ModelConfiguration {
     /// There is a general namespace, that each module uses, that can be set here.
     /// The default value depends on the implementation and the format model.
     #[serde(default)]
@@ -314,8 +325,10 @@ impl<'a> GenericImportConfiguration {
             root_as,
             extensions,
             documents,
-            default_ns,
-            default_components: Some(default_components),
+            model: ModelConfiguration {
+                default_ns,
+                default_components: Some(default_components),
+            },
         }
     }
 
@@ -325,8 +338,10 @@ impl<'a> GenericImportConfiguration {
             root_as: Some(root_name),
             extensions: vec![],
             documents: None,
-            default_ns: Default::default(),
-            default_components: Default::default(),
+            model: ModelConfiguration {
+                default_ns: Default::default(),
+                default_components: Default::default(),
+            },
         }
     }
 
@@ -336,8 +351,10 @@ impl<'a> GenericImportConfiguration {
             root_as: None,
             extensions,
             documents: None,
-            default_ns: Default::default(),
-            default_components: Default::default(),
+            model: ModelConfiguration {
+                default_ns: Default::default(),
+                default_components: Default::default(),
+            },
         }
     }
 
@@ -355,8 +372,10 @@ impl<'a> GenericImportConfiguration {
                 .map(<&str>::to_string)
                 .collect_vec(),
             documents: None,
-            default_ns: Default::default(),
-            default_components: Default::default(),
+            model: ModelConfiguration {
+                default_ns: Default::default(),
+                default_components: Default::default(),
+            },
         }
     }
 
@@ -366,15 +385,17 @@ impl<'a> GenericImportConfiguration {
             root_as: self.root_as,
             extensions,
             documents: self.documents,
-            default_ns: Default::default(),
-            default_components: Default::default(),
+            model: ModelConfiguration {
+                default_ns: Default::default(),
+                default_components: Default::default(),
+            },
         }
     }
 
     const EMPTY_NS: &'a str = "";
 
     pub fn default_namespace(&self) -> &str {
-        if let Some(v) = &self.default_ns {
+        if let Some(v) = &self.model.default_ns {
             v.as_str()
         } else {
             GenericImportConfiguration::EMPTY_NS
@@ -382,11 +403,11 @@ impl<'a> GenericImportConfiguration {
     }
 
     pub fn customizes_default_namespace(&self) -> bool {
-        self.default_ns.is_some()
+        self.model.default_ns.is_some()
     }
 
     pub fn configured_ordering(&self) -> Option<&AnnotationComponent> {
-        if let Some(default_components) = &self.default_components {
+        if let Some(default_components) = &self.model.default_components {
             default_components.ordering.as_ref()
         } else {
             None
@@ -394,7 +415,7 @@ impl<'a> GenericImportConfiguration {
     }
 
     pub fn default_ordering(&self) -> &AnnotationComponent {
-        if let Some(default_components) = &self.default_components {
+        if let Some(default_components) = &self.model.default_components {
             default_components
                 .ordering
                 .as_ref()
@@ -405,7 +426,7 @@ impl<'a> GenericImportConfiguration {
     }
 
     pub fn configured_coverage(&self) -> Option<&AnnotationComponent> {
-        if let Some(default_components) = &self.default_components {
+        if let Some(default_components) = &self.model.default_components {
             default_components.coverage.as_ref()
         } else {
             None
@@ -413,7 +434,7 @@ impl<'a> GenericImportConfiguration {
     }
 
     pub fn default_coverage(&self) -> &AnnotationComponent {
-        if let Some(default_components) = &self.default_components {
+        if let Some(default_components) = &self.model.default_components {
             default_components
                 .coverage
                 .as_ref()
@@ -424,7 +445,7 @@ impl<'a> GenericImportConfiguration {
     }
 
     pub fn configured_part_of(&self) -> Option<&AnnotationComponent> {
-        if let Some(default_components) = &self.default_components {
+        if let Some(default_components) = &self.model.default_components {
             default_components.part_of.as_ref()
         } else {
             None
@@ -432,7 +453,7 @@ impl<'a> GenericImportConfiguration {
     }
 
     pub fn default_part_of(&self) -> &AnnotationComponent {
-        if let Some(default_components) = &self.default_components {
+        if let Some(default_components) = &self.model.default_components {
             default_components
                 .part_of
                 .as_ref()
@@ -443,7 +464,7 @@ impl<'a> GenericImportConfiguration {
     }
 
     pub fn configured_dominance(&self) -> Option<&AnnotationComponent> {
-        if let Some(default_components) = &self.default_components {
+        if let Some(default_components) = &self.model.default_components {
             default_components.dominance.as_ref()
         } else {
             None
@@ -451,7 +472,7 @@ impl<'a> GenericImportConfiguration {
     }
 
     pub fn default_dominance(&self) -> &AnnotationComponent {
-        if let Some(default_components) = &self.default_components {
+        if let Some(default_components) = &self.model.default_components {
             default_components
                 .dominance
                 .as_ref()
@@ -462,7 +483,7 @@ impl<'a> GenericImportConfiguration {
     }
 
     pub fn configured_pointing(&self) -> Option<&AnnotationComponent> {
-        if let Some(default_components) = &self.default_components {
+        if let Some(default_components) = &self.model.default_components {
             default_components.pointing.as_ref()
         } else {
             None
@@ -470,7 +491,7 @@ impl<'a> GenericImportConfiguration {
     }
 
     pub fn default_pointing(&self) -> &AnnotationComponent {
-        if let Some(default_components) = &self.default_components {
+        if let Some(default_components) = &self.model.default_components {
             default_components
                 .pointing
                 .as_ref()
