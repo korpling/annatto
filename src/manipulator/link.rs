@@ -16,7 +16,10 @@ use graphannis_core::{graph::NODE_NAME_KEY, types::AnnoKey};
 use itertools::Itertools;
 use serde::Serialize;
 use serde_derive::Deserialize;
-use std::{collections::BTreeMap, ops::Deref};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    ops::Deref,
+};
 
 /// Link nodes within a graph. Source and target of a link are determined via
 /// queries; type, layer, and name of the link component can be configured.
@@ -96,12 +99,50 @@ pub struct LinkNodes {
     /// This 1-based index list can be used to copy the given annotations from the target query to the edge that is to be created.
     #[serde(default)]
     target_to_edge: Vec<usize>,
-    /// The edge component to be built.
-    #[serde(with = "crate::estarde::annotation_component")]
-    component: AnnotationComponent,
+    /// The edge component to be built. You can provide a single, or multiple components.
+    ///
+    /// Example (single component):
+    /// ```toml
+    /// [graph_op.config]
+    /// source_query = 'tok _ident_ id @* node_name="corpus/subcorpus_a/doc1"'
+    /// source_node = 1
+    /// source_value = [3, 2]
+    /// target_query = 'tok _ident_ id @* node_name="corpus/subcorpus_a/doc2"'
+    /// target_node = 1
+    /// target_value = [3, 2]
+    /// component = { ctype = "Pointing", layer = "", name = "align" }
+    /// ```
+    ///
+    /// Example (multiple components):
+    /// ```toml
+    /// [graph_op.config]
+    /// source_query = 'cat > tok _ident_ id @* node_name="corpus/subcorpus_a/doc1"'
+    /// source_node = 1
+    /// source_value = [4, 3]
+    /// target_query = 'tok _ident_ id @* node_name="corpus/subcorpus_a/doc2"'
+    /// target_node = 1
+    /// target_value = [3, 2]
+    /// component = [
+    ///     { ctype = "Dominance", layer = "syntax", name = "" },
+    ///     { ctype = "Dominance", layer = "syntax", name = "edge" }
+    /// ]
+    /// ```
+    #[serde(alias = "components")]
+    component: ComponentConfiguration,
     /// In case of multiple `source_values` or `target_values` this delimiter (default empty string) will be used for value concatenation.
     #[serde(default)]
     value_sep: String,
+}
+
+#[derive(Facet, Deserialize, Serialize, Clone, PartialEq)]
+#[serde(untagged)]
+#[repr(u8)]
+enum ComponentConfiguration {
+    Single(#[serde(with = "crate::estarde::annotation_component")] AnnotationComponent),
+    Multiple(
+        #[serde(with = "crate::estarde::annotation_component::in_sequence")]
+        BTreeSet<AnnotationComponent>,
+    ),
 }
 
 impl Manipulator for LinkNodes {
@@ -242,30 +283,36 @@ impl LinkNodes {
     ) -> Result<GraphUpdate, Box<dyn std::error::Error>> {
         let mut update = GraphUpdate::default();
         let progress = ProgressReporter::new(tx, step_id, sources.len())?;
+        let components = match &self.component {
+            ComponentConfiguration::Single(component) => vec![component],
+            ComponentConfiguration::Multiple(btree_set) => btree_set.iter().collect_vec(),
+        };
         for (anno_value, node_list) in sources {
             if let Some(target_node_list) = targets.get(&anno_value) {
                 for ((source, src_edge_data), (target, tgt_edge_data)) in
                     node_list.iter().cartesian_product(target_node_list)
                 {
-                    update.add_event(UpdateEvent::AddEdge {
-                        source_node: source.to_string(),
-                        target_node: target.to_string(),
-                        layer: self.component.layer.to_string(),
-                        component_type: self.component.get_type().to_string(),
-                        component_name: self.component.name.to_string(),
-                    })?;
-                    for data in [src_edge_data, tgt_edge_data] {
-                        for (k, v) in data {
-                            update.add_event(UpdateEvent::AddEdgeLabel {
-                                source_node: source.to_string(),
-                                target_node: target.to_string(),
-                                layer: self.component.layer.to_string(),
-                                component_type: self.component.get_type().to_string(),
-                                component_name: self.component.name.to_string(),
-                                anno_ns: k.ns.to_string(),
-                                anno_name: k.name.to_string(),
-                                anno_value: v.to_string(),
-                            })?;
+                    for component in &components {
+                        update.add_event(UpdateEvent::AddEdge {
+                            source_node: source.to_string(),
+                            target_node: target.to_string(),
+                            layer: component.layer.to_string(),
+                            component_type: component.get_type().to_string(),
+                            component_name: component.name.to_string(),
+                        })?;
+                        for data in [src_edge_data, tgt_edge_data] {
+                            for (k, v) in data {
+                                update.add_event(UpdateEvent::AddEdgeLabel {
+                                    source_node: source.to_string(),
+                                    target_node: target.to_string(),
+                                    layer: component.layer.to_string(),
+                                    component_type: component.get_type().to_string(),
+                                    component_name: component.name.to_string(),
+                                    anno_ns: k.ns.to_string(),
+                                    anno_name: k.name.to_string(),
+                                    anno_value: v.to_string(),
+                                })?;
+                            }
                         }
                     }
                 }
@@ -308,11 +355,11 @@ mod tests {
             target_node: 1,
             target_value: vec![1],
             target_to_edge: vec![],
-            component: AnnotationComponent::new(
+            component: super::ComponentConfiguration::Single(AnnotationComponent::new(
                 AnnotationComponentType::Pointing,
                 "".into(),
                 "link".into(),
-            ),
+            )),
             value_sep: "#".to_string(),
         };
         let serialization = toml::to_string(&module);
@@ -322,6 +369,30 @@ mod tests {
             serialization.err()
         );
         assert_snapshot!(serialization.unwrap());
+    }
+
+    #[test]
+    fn deserialize_serialize() {
+        let toml_str = r#"
+        source_query = "tok _ident_ id"
+        source_node = 1
+        source_value = [2]
+        target_query = "norm _ident_ id"
+        target_node = 1
+        target_value = [2]
+        component = [
+            { ctype = "Pointing", layer = "", name = "align" },
+            { ctype = "Pointing", layer = "", name = "link" }
+        ]
+        "#;
+        let link: Result<LinkNodes, _> = toml::from_str(toml_str);
+        assert!(
+            link.is_ok(),
+            "Deserialization error: {:?}",
+            link.err().unwrap()
+        );
+        let toml_str = toml::to_string(&link.unwrap());
+        assert_snapshot!(toml_str.unwrap());
     }
 
     #[test]
@@ -358,11 +429,11 @@ mod tests {
             target_node: 1,
             target_value: vec![],
             target_to_edge: vec![],
-            component: AnnotationComponent::new(
+            component: super::ComponentConfiguration::Single(AnnotationComponent::new(
                 AnnotationComponentType::Pointing,
                 "".into(),
                 "link".into(),
-            ),
+            )),
             value_sep: "".to_string(),
         };
         assert!(
@@ -390,10 +461,54 @@ mod tests {
             target_query: "morph & node? !> #1".to_string(),
             target_node: 1,
             target_value: vec![1],
-            component: AnnotationComponent::new(
+            component: super::ComponentConfiguration::Single(AnnotationComponent::new(
                 AnnotationComponentType::Pointing,
                 "".into(),
                 "morphology".into(),
+            )),
+            value_sep: "".to_string(),
+            source_to_edge: vec![2],
+            target_to_edge: vec![1],
+        };
+        linker.manipulate_corpus(
+            &mut graph,
+            Path::new("./"),
+            StepID {
+                module_name: "test_linker".into(),
+                path: None,
+            },
+            None,
+        )?;
+        let actual = export_to_string(&graph, GraphMLExporter::default())?;
+        assert_snapshot!(actual);
+        Ok(())
+    }
+
+    #[test]
+    fn multiple_components() -> Result<(), Box<dyn std::error::Error>> {
+        let mut graph = source_graph()?;
+        let linker = LinkNodes {
+            source_query: "norm _=_ lemma".to_string(),
+            source_node: 1,
+            source_value: vec![2],
+            target_query: "morph & node? !> #1".to_string(),
+            target_node: 1,
+            target_value: vec![1],
+            component: super::ComponentConfiguration::Multiple(
+                [
+                    AnnotationComponent::new(
+                        AnnotationComponentType::Pointing,
+                        "".into(),
+                        "morphology".into(),
+                    ),
+                    AnnotationComponent::new(
+                        AnnotationComponentType::Pointing,
+                        "once_again".into(),
+                        "morphology".into(),
+                    ),
+                ]
+                .into_iter()
+                .collect(),
             ),
             value_sep: "".to_string(),
             source_to_edge: vec![2],

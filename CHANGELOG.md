@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - All importers can be configured for default components. 
 - Import API has more functions.
+- graph op `link`: Allow to build eges in more than one component.
 
 ### Changed
 
