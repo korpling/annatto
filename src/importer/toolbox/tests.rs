@@ -4,7 +4,7 @@ use graphannis::model::{AnnotationComponent, AnnotationComponentType};
 use insta::assert_snapshot;
 
 use crate::importer::{
-    DefaultComponents, DefaultImportConfiguration, GenericImportConfiguration,
+    DefaultComponents, DefaultImportConfiguration, GenericImportConfiguration, ModelConfiguration,
     toolbox::ImportFLToolbox,
 };
 
@@ -85,26 +85,28 @@ fn custom_update_config() {
             .map(ToString::to_string)
             .collect(),
         documents: None,
-        default_ns: Some("custom_ns".to_string()),
-        default_components: Some(DefaultComponents::new(
-            Some(AnnotationComponent::new(
-                AnnotationComponentType::Ordering,
-                "custom-ord".to_string(),
-                "custom-ord-name".to_string(),
+        model: ModelConfiguration {
+            default_ns: Some("custom_ns".to_string()),
+            default_components: Some(DefaultComponents::new(
+                Some(AnnotationComponent::new(
+                    AnnotationComponentType::Ordering,
+                    "custom-ord".to_string(),
+                    "custom-ord-name".to_string(),
+                )),
+                Some(AnnotationComponent::new(
+                    AnnotationComponentType::Coverage,
+                    "custom-cov".to_string(),
+                    "custom-cov-name".to_string(),
+                )),
+                Some(AnnotationComponent::new(
+                    AnnotationComponentType::PartOf,
+                    "custom-part-of".to_string(),
+                    "custom-part-of-name".to_string(),
+                )),
+                None,
+                None,
             )),
-            Some(AnnotationComponent::new(
-                AnnotationComponentType::Coverage,
-                "custom-cov".to_string(),
-                "custom-cov-name".to_string(),
-            )),
-            Some(AnnotationComponent::new(
-                AnnotationComponentType::PartOf,
-                "custom-part-of".to_string(),
-                "custom-part-of-name".to_string(),
-            )),
-            None,
-            None,
-        )),
+        },
     };
     let graphml_is = crate::test_util::import_as_graphml_string_with_custom_config(
         importer,

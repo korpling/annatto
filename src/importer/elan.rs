@@ -511,9 +511,8 @@ impl<'a> ELANMapper<'a> {
                     }
                     update.part_of(node_name.to_string(), self.doc_node_name.to_string())?;
                     if let Some(anno_value) = scan.anno_values.get(anno_id) {
-                        update.node_label(
+                        update.default_node_label(
                             node_name.to_string(),
-                            update.config.default_namespace().to_string(),
                             anno_name.to_string(),
                             anno_value.to_string(),
                         )?

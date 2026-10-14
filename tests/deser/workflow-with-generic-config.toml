@@ -4,6 +4,16 @@ path = "./"
 extensions = ["xml"]
 as = "custom_corpus_root"
 
+[import.model]
+default_ns = "custom_ns"
+
+[import.model.default_components]
+ordering = { ctype = "Pointing", layer = "", name = "ordering" }
+coverage = { ctype = "Pointing", layer = "", name = "coverage" }
+dominance = { ctype = "Pointing", layer = "", name = "dominance" }
+part_of = { ctype = "Pointing", layer = "", name = "part-of" }
+pointing = { ctype = "Pointing", layer = "", name = "pointing" }
+
 [import.config]
 
 [footer]

@@ -20,7 +20,7 @@ edition = ["chapter", "line", "line_m", "page", "subchapter", "verse"]
 map = []
 text = ["Glosse", "clause", "document", "inflection", "inflectionClass", "inflectionClassLemma", "lang", "lemma", "pos", "posLemma", "register", "rhyme", "text", "translation", "writer"]
 
-[import.default_components]
+[import.model.default_components]
 
 [[graph_op]]
 action = "split"

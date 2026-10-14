@@ -107,18 +107,16 @@ impl ImportWhisper {
         node_name: &str,
     ) -> Result<(), anyhow::Error> {
         let data = load_json(path)?;
-        update.node_label(
+        update.default_node_label(
             node_name.to_string(),
-            update.config.default_namespace().to_string(),
             "language".to_string(),
             data.language.to_string(),
         )?;
         let ds = format!("{node_name}#datasource");
         update.node(ds.to_string(), "datasource".to_string())?;
         if let Some(text) = &data.text {
-            update.node_label(
+            update.default_node_label(
                 ds.to_string(),
-                update.config.default_namespace().to_string(),
                 "text".to_string(),
                 text.trim().to_string(),
             )?;
@@ -140,25 +138,22 @@ impl ImportWhisper {
         let vocabulary = load_vocabulary()?;
         for (s, segment) in data.segments.iter().enumerate() {
             let span = format!("{node_name}#s{s}");
-            update.labeled_node(
+            update.node(span.to_string(), "node".to_string())?;
+            update.default_node_label(
                 span.to_string(),
-                "node".to_string(),
-                update.config.default_namespace().to_string(),
                 "segment".to_string(),
                 segment.text.trim().to_string(),
             )?;
             if let Some(id_val) = &segment.id {
-                update.node_label(
+                update.default_node_label(
                     span.to_string(),
-                    update.config.default_namespace().to_string(),
                     "segment_id".to_string(),
                     id_val.to_string(),
                 )?;
             }
             if let Some(seek) = &segment.seek {
-                update.node_label(
+                update.default_node_label(
                     span.to_string(),
-                    update.config.default_namespace().to_string(),
                     "seek".to_string(),
                     seek.to_string(),
                 )?;
@@ -170,33 +165,29 @@ impl ImportWhisper {
                 format!("{}-{}", segment.start, segment.end),
             )?;
             if let Some(temperature) = &segment.temperature {
-                update.node_label(
+                update.default_node_label(
                     span.to_string(),
-                    update.config.default_namespace().to_string(),
                     "temperature".to_string(),
                     temperature.to_string(),
                 )?;
             }
             if let Some(avg_logprob) = &segment.avg_logprob {
-                update.node_label(
+                update.default_node_label(
                     span.to_string(),
-                    update.config.default_namespace().to_string(),
                     "avg_logprob".to_string(),
                     avg_logprob.to_string(),
                 )?;
             }
             if let Some(compression_ratio) = segment.compression_ratio {
-                update.node_label(
+                update.default_node_label(
                     span.to_string(),
-                    update.config.default_namespace().to_string(),
                     "compression_ratio".to_string(),
                     compression_ratio.to_string(),
                 )?;
             }
             if let Some(no_speech_prob) = &segment.no_speech_prob {
-                update.node_label(
+                update.default_node_label(
                     span.to_string(),
-                    update.config.default_namespace().to_string(),
                     "no_speech_prob".to_string(),
                     no_speech_prob.to_string(),
                 )?;
@@ -237,9 +228,8 @@ impl ImportWhisper {
                                 )?;
                             }
                             if let Some(score_val) = score {
-                                update.node_label(
+                                update.default_node_label(
                                     tok_name.to_string(),
-                                    update.config.default_namespace().to_string(),
                                     "score".to_string(),
                                     score_val.to_string(),
                                 )?;

@@ -69,29 +69,25 @@ impl DocumentMapper {
             let prim_c = u
                 .dominance(parent_node_name.to_string(), target.to_string())?
                 .clone();
-            let sec_c = u.edge_by_parts(
+            let sec_c = u.named_dominance(
                 parent_node_name.clone(),
                 target.to_string(),
-                u.config.default_dominance().layer.to_string(),
-                u.config.default_dominance().get_type(),
                 format!("{}edge", u.config.default_dominance().name),
             )?;
             if let Some(label) = edge_label
                 && !label.is_empty()
             {
-                u.edge_label(
+                u.default_edge_label(
                     parent_node_name.to_string(),
                     target.to_string(),
                     &prim_c,
-                    u.config.default_namespace().to_string(),
                     "func".to_string(),
                     label.to_string(),
                 )?;
-                u.edge_label(
+                u.default_edge_label(
                     parent_node_name.to_string(),
                     target.to_string(),
                     &sec_c,
-                    u.config.default_namespace().to_string(),
                     "func".to_string(),
                     label.to_string(),
                 )?;
@@ -135,19 +131,14 @@ impl DocumentMapper {
                 let id = self.number_of_spans + 1;
                 let node_name = format!("{}#n{id}", self.doc_path);
 
-                u.labeled_node(
-                    node_name.clone(),
-                    "node".to_string(),
-                    u.config.default_namespace().to_string(),
-                    "cat".to_string(),
-                    node_label.to_string(),
-                )?;
+                u.node(node_name.to_string(), "node".to_string())?;
+                u.default_node_label(node_name.clone(), "cat".to_string(), node_label.to_string())?;
                 // TODO: make the layer configurable
                 u.node_label(
                     node_name.clone(),
                     ANNIS_NS.to_string(),
                     "layer".to_string(),
-                    u.config.default_namespace().to_string(), // TODO re-think that for the future
+                    u.config.default_namespace().to_string(),
                 )?;
                 u.part_of(node_name.to_string(), self.doc_path.to_string())?;
 
@@ -193,12 +184,7 @@ impl DocumentMapper {
         u.part_of(tok_id.clone(), self.text_node_name.clone())?;
         self.annotate_edge(u, parent, tok_id.to_string(), edge_label)?;
         // TODO: allow to customize the token annotation name
-        u.node_label(
-            tok_id.clone(),
-            u.config.default_namespace().to_string(),
-            "pos".to_string(),
-            node_label.to_string(),
-        )?;
+        u.default_node_label(tok_id.clone(), "pos".to_string(), node_label.to_string())?;
         if let Some(last_token_id) = &self.last_token_id {
             u.node_label(
                 tok_id.clone(),

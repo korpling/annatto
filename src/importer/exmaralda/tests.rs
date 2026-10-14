@@ -335,24 +335,27 @@ fn custom_config() {
         env::current_dir().unwrap().join(import_path), // IMPORTANT: test with absolute paths, this is what Annatto does at runtime
         None,
         GenericImportConfiguration {
-            default_components: Some(DefaultComponents {
-                ordering: Some(AnnotationComponent::new(
-                    AnnotationComponentType::Ordering,
-                    "custom-default-layer".to_string(),
-                    "with-name".to_string(),
-                )),
-                part_of: Some(AnnotationComponent::new(
-                    AnnotationComponentType::PartOf,
-                    "custom-part-of-layer".to_string(),
-                    "custom-part-of-name".to_string(),
-                )),
-                coverage: Some(AnnotationComponent::new(
-                    AnnotationComponentType::Coverage,
-                    "custom-cov".to_string(),
-                    "custom-cov-name".to_string(),
-                )),
-                ..Default::default()
-            }),
+            model: crate::importer::ModelConfiguration {
+                default_components: Some(DefaultComponents {
+                    ordering: Some(AnnotationComponent::new(
+                        AnnotationComponentType::Ordering,
+                        "custom-default-layer".to_string(),
+                        "with-name".to_string(),
+                    )),
+                    part_of: Some(AnnotationComponent::new(
+                        AnnotationComponentType::PartOf,
+                        "custom-part-of-layer".to_string(),
+                        "custom-part-of-name".to_string(),
+                    )),
+                    coverage: Some(AnnotationComponent::new(
+                        AnnotationComponentType::Coverage,
+                        "custom-cov".to_string(),
+                        "custom-cov-name".to_string(),
+                    )),
+                    ..Default::default()
+                }),
+                default_ns: None,
+            },
             extensions: vec!["exb".to_string()],
             ..Default::default()
         },

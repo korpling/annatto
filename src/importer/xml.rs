@@ -134,9 +134,8 @@ impl ImportXML {
                     node_stack.push((node_name.to_string(), name.to_string()));
                     let text_attr_name = self.text_from_attribute.get(&name_str);
                     for attr in attributes {
-                        update.node_label(
+                        update.default_node_label(
                             node_name.to_string(),
-                            update.config.default_namespace().to_string(),
                             attr.name.to_string(),
                             attr.value.to_string(),
                         )?;
@@ -162,9 +161,8 @@ impl ImportXML {
                         && &name.to_string() == pop_node_type
                     {
                         if let Some(last_string) = value_stack.pop() {
-                            update.node_label(
+                            update.default_node_label(
                                 node_name.to_string(),
-                                update.config.default_namespace().to_string(),
                                 name.local_name.to_string(),
                                 last_string.to_string(),
                             )?;
@@ -251,11 +249,9 @@ fn add_node(
     )?;
     update.part_of(node_name.to_string(), doc_node_name.to_string())?;
     if let Some((prev_node_name, order_name)) = order_data {
-        update.edge_by_parts(
+        update.named_ordering(
             prev_node_name,
             node_name.to_string(),
-            update.config.default_ordering().layer.to_string(),
-            update.config.default_ordering().get_type(),
             order_name.to_string(),
         )?;
     }

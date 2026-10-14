@@ -202,17 +202,17 @@ expression: actual.unwrap()
         </edge>
         <edge id="e19" source="import/exmaralda/test_doc#a_norm_T2-T4" target="import/exmaralda/test_doc#T3" label="Coverage/custom-cov/custom-cov-name">
         </edge>
-        <edge id="e20" source="import/exmaralda/test_doc#t_dipl_T286-T1" target="import/exmaralda/test_doc#t_dipl_T1-T2" label="Ordering/annis/dipl">
+        <edge id="e20" source="import/exmaralda/test_doc#t_dipl_T286-T1" target="import/exmaralda/test_doc#t_dipl_T1-T2" label="Ordering/custom-default-layer/dipl">
         </edge>
-        <edge id="e21" source="import/exmaralda/test_doc#t_dipl_T1-T2" target="import/exmaralda/test_doc#t_dipl_T2-T3" label="Ordering/annis/dipl">
+        <edge id="e21" source="import/exmaralda/test_doc#t_dipl_T1-T2" target="import/exmaralda/test_doc#t_dipl_T2-T3" label="Ordering/custom-default-layer/dipl">
         </edge>
-        <edge id="e22" source="import/exmaralda/test_doc#t_dipl_T2-T3" target="import/exmaralda/test_doc#t_dipl_T3-T4" label="Ordering/annis/dipl">
+        <edge id="e22" source="import/exmaralda/test_doc#t_dipl_T2-T3" target="import/exmaralda/test_doc#t_dipl_T3-T4" label="Ordering/custom-default-layer/dipl">
         </edge>
-        <edge id="e23" source="import/exmaralda/test_doc#t_norm_T286-T0" target="import/exmaralda/test_doc#t_norm_T0-T1" label="Ordering/annis/norm">
+        <edge id="e23" source="import/exmaralda/test_doc#t_norm_T286-T0" target="import/exmaralda/test_doc#t_norm_T0-T1" label="Ordering/custom-default-layer/norm">
         </edge>
-        <edge id="e24" source="import/exmaralda/test_doc#t_norm_T0-T1" target="import/exmaralda/test_doc#t_norm_T1-T2" label="Ordering/annis/norm">
+        <edge id="e24" source="import/exmaralda/test_doc#t_norm_T0-T1" target="import/exmaralda/test_doc#t_norm_T1-T2" label="Ordering/custom-default-layer/norm">
         </edge>
-        <edge id="e25" source="import/exmaralda/test_doc#t_norm_T1-T2" target="import/exmaralda/test_doc#t_norm_T2-T4" label="Ordering/annis/norm">
+        <edge id="e25" source="import/exmaralda/test_doc#t_norm_T1-T2" target="import/exmaralda/test_doc#t_norm_T2-T4" label="Ordering/custom-default-layer/norm">
         </edge>
         <edge id="e26" source="import/exmaralda/test_doc#T286" target="import/exmaralda/test_doc#T0" label="Ordering/custom-default-layer/with-name">
         </edge>

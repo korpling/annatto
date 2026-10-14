@@ -564,13 +564,7 @@ impl ImportEXMARaLDA {
             let mut prev = None;
             for (_, node_name) in node_name_vec.into_iter().sorted_by(|a, b| a.0.cmp(&b.0)) {
                 if let Some(source) = prev {
-                    update.edge_by_parts(
-                        source,
-                        node_name.to_string(),
-                        ANNIS_NS.to_string(), // TODO switch to DEFAULT_NS
-                        update.config.default_ordering().get_type(),
-                        name.to_string(),
-                    )?;
+                    update.named_ordering(source, node_name.to_string(), name.to_string())?;
                 }
                 prev = Some(node_name);
             }

@@ -11,7 +11,7 @@ extensions = ["xml"]
 [import.config]
 merge_events = true
 
-[import.default_components]
+[import.model.default_components]
 
 [footer]
 annatto_version = ""
