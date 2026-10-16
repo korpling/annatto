@@ -14,12 +14,8 @@ use xml::{EventReader, ParserConfig, attribute::OwnedAttribute, reader::XmlEvent
 
 use super::Importer;
 use crate::{
-    StepID,
-    error::AnnattoError,
-    importer::DefaultImportConfiguration,
-    progress::ProgressReporter,
-    util::graphupdate::{UpdateWriter, map_audio_source},
-    workflow::StatusMessage,
+    StepID, error::AnnattoError, importer::DefaultImportConfiguration, progress::ProgressReporter,
+    util::graphupdate::UpdateWriter, workflow::StatusMessage,
 };
 
 /// Import [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
@@ -149,15 +145,10 @@ impl ImportEXMARaLDA {
                                             absolute_audio_path,
                                             env::current_dir()?,
                                         ) {
-                                            if let Some(name_tuple) = doc_node_name.rsplit_once('/')
-                                            {
-                                                map_audio_source(
-                                                    update,
-                                                    rel_path.as_path(),
-                                                    name_tuple.0,
-                                                    doc_node_name,
-                                                )?;
-                                            }
+                                            update.media_source(
+                                                doc_node_name.to_string(),
+                                                &rel_path,
+                                            )?;
                                         } else {
                                             progress.warn(
                                                 format!(

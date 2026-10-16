@@ -44,7 +44,7 @@ expression: r.unwrap()
             <data key="k8">deu</data>
             <data key="k9">eng,eng</data>
         </node>
-        <node id="import/exmaralda/test_file.wav">
+        <node id="import/exmaralda/test_doc/test_file.wav">
             <data key="k12">file</data>
             <data key="k6">tests/data/import/exmaralda/valid-sparse-timevalues/import/exmaralda/test_file.wav</data>
         </node>
@@ -217,7 +217,7 @@ expression: r.unwrap()
         </edge>
         <edge id="e32" source="import/exmaralda/test_doc" target="import/exmaralda" label="PartOf/annis/">
         </edge>
-        <edge id="e33" source="import/exmaralda/test_file.wav" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e33" source="import/exmaralda/test_doc/test_file.wav" target="import/exmaralda/test_doc" label="PartOf/annis/">
         </edge>
         <edge id="e34" source="import/exmaralda/test_doc#T286" target="import/exmaralda/test_doc" label="PartOf/annis/">
         </edge>

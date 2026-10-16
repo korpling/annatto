@@ -46,7 +46,7 @@ expression: export.unwrap()
             <data key="k8">eng</data>
             <data key="k9">deu</data>
         </node>
-        <node id="exmaralda/test_file.wav">
+        <node id="exmaralda/test_doc/test_file.wav">
             <data key="k13">file</data>
             <data key="k7">tests/data/import/exmaralda/clean/import/exmaralda/test_file.wav</data>
         </node>
@@ -208,7 +208,7 @@ expression: export.unwrap()
         </edge>
         <edge id="e28" source="exmaralda/test_doc" target="exmaralda" label="PartOf/annis/">
         </edge>
-        <edge id="e29" source="exmaralda/test_file.wav" target="exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e29" source="exmaralda/test_doc/test_file.wav" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
         <edge id="e30" source="exmaralda/test_doc#T286" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
