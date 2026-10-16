@@ -693,8 +693,10 @@ mod tests {
 
     #[test]
     fn rename_root() {
-        let config = GenericImportConfiguration::new_with_root_name("custom_root_name".to_string())
-            .and_extensions(vec!["exb".to_string()]);
+        let config =
+            GenericImportConfiguration::new_with_default_extensions(&ImportEXMARaLDA::default())
+                .and_root_name("custom_root_name".to_string());
+
         let mut u = UpdateWriter::from(config);
         let mut result = u
             .write_corpus_graph_from_file_tree(Path::new("tests/data/import/exmaralda/"))
@@ -730,9 +732,10 @@ mod tests {
             )
         });
         let root_path = tmp_dir.path().join(paths[0]);
-        let mut update = UpdateWriter::from(GenericImportConfiguration::new_with_extensions(vec![
-            "fancyExtension".to_string(),
-        ]));
+        let config = ImportEXMARaLDA::default()
+            .default_configuration()
+            .and_extensions(vec!["fancyExtension".to_string()]);
+        let mut update = UpdateWriter::from(config);
         assert!(update.write_corpus_graph_from_file_tree(&root_path).is_ok());
         assert_snapshot!(
             update

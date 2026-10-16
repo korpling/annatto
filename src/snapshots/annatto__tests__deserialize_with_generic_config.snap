@@ -5,7 +5,7 @@ expression: "toml::to_string(&workflow).unwrap()"
 [[import]]
 format = "exmaralda"
 path = "./"
-root_as = "custom_corpus_root"
+as = "custom_corpus_root"
 extensions = ["xml"]
 
 [import.config]

@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use crate::{
-    importer::{DefaultComponents, GenericImportConfiguration, ptb::ImportPTB},
+    importer::{DefaultComponents, GenericImportConfiguration, ModelConfiguration, ptb::ImportPTB},
     test_util::{import_as_graphml_string, import_as_graphml_string_with_custom_config},
 };
 use graphannis::model::{AnnotationComponent, AnnotationComponentType};
@@ -129,25 +129,24 @@ fn custom_generic_config() {
             Some("custom_root".to_string()),
             vec!["ptb".to_string(), "txt".to_string()],
             None,
-            Some("custom_ns".to_string()),
-            DefaultComponents::new(
-                Some(AnnotationComponent::new(
-                    AnnotationComponentType::Ordering,
-                    "custom-ord".to_string(),
-                    "custom-ord-name".to_string(),
-                )),
-                None,
-                Some(AnnotationComponent::new(
-                    AnnotationComponentType::PartOf,
-                    "custom-part-of".to_string(),
-                    "custom-part-of-name".to_string(),
-                )),
-                Some(AnnotationComponent::new(
-                    AnnotationComponentType::Dominance,
-                    "tiger".to_string(),
-                    "constituents".to_string(),
-                )),
-                None,
+            ModelConfiguration::new(
+                "custom_ns".to_string(),
+                DefaultComponents::default()
+                    .with_ordering(AnnotationComponent::new(
+                        AnnotationComponentType::Ordering,
+                        "custom-ord".to_string(),
+                        "custom-ord-name".to_string(),
+                    ))
+                    .with_part_of(AnnotationComponent::new(
+                        AnnotationComponentType::PartOf,
+                        "custom-part-of".to_string(),
+                        "custom-part-of-name".to_string(),
+                    ))
+                    .with_dominance(AnnotationComponent::new(
+                        AnnotationComponentType::Dominance,
+                        "tiger".to_string(),
+                        "constituents".to_string(),
+                    )),
             ),
         ),
     )

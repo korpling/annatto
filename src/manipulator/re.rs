@@ -1905,6 +1905,7 @@ from = "deprel"
         };
         let r = op.manipulate_corpus(&mut g, Path::new("./"), step_id, None);
         assert!(r.is_ok(), "graph op returned error: {:?}", r.err());
+        assert!(g.calculate_all_statistics().is_ok());
         let current_components = g.get_all_components(None, None);
         for ec in erased_components {
             let storage = g.get_graphstorage(&ec);
@@ -1914,7 +1915,10 @@ from = "deprel"
             );
         }
         for nc in new_components {
-            assert!(current_components.contains(&nc));
+            assert!(
+                current_components.contains(&nc),
+                "Failed for component: {nc}"
+            );
         }
         Ok(())
     }

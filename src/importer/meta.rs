@@ -333,11 +333,12 @@ mod tests {
             .write(corpus_metadata.join("\n").as_bytes())
             .map_err(|_| assert!(false))
             .unwrap();
+        let generic_config = add_metadata.reader().default_configuration();
         let import_step = ImporterStep {
             module: add_metadata,
             path: tmp_dir.path().join("metadata").to_path_buf(),
             description: None,
-            generic_config: None,
+            generic_config,
         };
         let r = import_step.execute(None);
         assert_eq!(

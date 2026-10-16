@@ -614,11 +614,12 @@ mod tests {
 
         // Import an example document
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
+        let generic_config = importer.default_configuration();
         let orig_import_step = ImporterStep {
             module: crate::ReadFrom::Xlsx(importer),
             path: path.to_path_buf(),
             description: None,
-            generic_config: None,
+            generic_config,
         };
         let mut updates = orig_import_step.execute(None).unwrap();
         let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -643,11 +644,12 @@ mod tests {
             "#,
         )
         .unwrap();
+        let generic_config = importer.default_configuration();
         let second_import_step = ImporterStep {
             module: crate::ReadFrom::Xlsx(importer),
             path: output_dir.clone(),
             description: None,
-            generic_config: None,
+            generic_config,
         };
         let mut updates = second_import_step.execute(None).unwrap();
         let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -669,12 +671,13 @@ mod tests {
 
         // Import an example document
         let path = Path::new("./tests/data/import/xlsx/sample_sentence/");
+        let generic_config = importer.default_configuration();
         let importer = crate::ReadFrom::Xlsx(importer);
         let orig_import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
             description: None,
-            generic_config: None,
+            generic_config,
         };
         let mut updates = orig_import_step.execute(None).unwrap();
         let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -699,11 +702,12 @@ mod tests {
             "#,
         )
         .unwrap();
+        let generic_config = importer.default_configuration();
         let second_import_step = ImporterStep {
             module: crate::ReadFrom::Xlsx(importer),
             path: output_dir.clone(),
             description: None,
-            generic_config: None,
+            generic_config,
         };
         let mut updates = second_import_step.execute(None).unwrap();
 
@@ -745,11 +749,12 @@ mod tests {
 
         // Import an example document
         let path = Path::new("./tests/data/import/xlsx/sample_sentence_with_namespace/");
+        let generic_config = importer.reader().default_configuration();
         let first_import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
             description: None,
-            generic_config: None,
+            generic_config,
         };
 
         let mut updates = first_import_step.execute(None).unwrap();
@@ -774,11 +779,12 @@ mod tests {
             "#,
         )
         .unwrap();
+        let generic_config = importer.default_configuration();
         let second_import_step = ImporterStep {
             module: crate::ReadFrom::Xlsx(importer),
             path: output_dir.clone(),
             description: None,
-            generic_config: None,
+            generic_config,
         };
         let mut updates = second_import_step.execute(None).unwrap();
 
@@ -816,12 +822,13 @@ mod tests {
 
         // Import an example document
         let path = Path::new("./tests/data/import/xlsx/sample_sentence/");
+        let generic_config = importer.default_configuration();
         let importer = crate::ReadFrom::Xlsx(importer);
         let orig_import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
             description: None,
-            generic_config: None,
+            generic_config,
         };
         let mut updates = orig_import_step.execute(None).unwrap();
         let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -848,11 +855,12 @@ mod tests {
             "#,
         )
         .unwrap();
+        let generic_config = importer.default_configuration();
         let second_import_step = ImporterStep {
             module: crate::ReadFrom::Xlsx(importer),
             path: output_dir.clone(),
             description: None,
-            generic_config: None,
+            generic_config,
         };
         let e = second_import_step.execute(None);
         assert!(e.is_ok(), "Error re-importing: {:?}", e.err().unwrap());
@@ -908,12 +916,13 @@ mod tests {
             "#,
         )
         .unwrap();
+        let generic_config = importer.default_configuration();
         let importer = crate::ReadFrom::Xlsx(importer);
         let orig_import_step = ImporterStep {
             module: importer,
             path: corpus_dir.path().to_path_buf(),
             description: None,
-            generic_config: None,
+            generic_config,
         };
         let mut updates = orig_import_step.execute(None).unwrap();
         let mut graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -961,12 +970,13 @@ mod tests {
             "#,
         )
         .unwrap();
+        let generic_config = importer.default_configuration();
         let importer = crate::ReadFrom::Xlsx(importer);
         let orig_import_step = ImporterStep {
             module: importer,
             path: corpus_dir.path().to_path_buf(),
             description: None,
-            generic_config: None,
+            generic_config,
         };
         let mut updates = orig_import_step.execute(None).unwrap();
         let mut graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -1016,12 +1026,13 @@ mod tests {
             "#,
         )
         .unwrap();
+        let generic_config = importer.default_configuration();
         let importer = crate::ReadFrom::Xlsx(importer);
         let orig_import_step = ImporterStep {
             module: importer,
             path: corpus_dir.path().to_path_buf(),
             description: Some("custom-xlsx-export-id".to_string()),
-            generic_config: None,
+            generic_config,
         };
         let mut updates = orig_import_step.execute(None).unwrap();
         let mut graph = AnnotationGraph::with_default_graphstorages(false).unwrap();

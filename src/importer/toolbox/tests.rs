@@ -4,7 +4,8 @@ use graphannis::model::{AnnotationComponent, AnnotationComponentType};
 use insta::assert_snapshot;
 
 use crate::importer::{
-    DefaultComponents, DefaultImportConfiguration, GenericImportConfiguration, ModelConfiguration,
+    DefaultComponents, DefaultImportConfiguration, GLOBAL_DEFAULT_DOMINANCE,
+    GLOBAL_DEFAULT_POINTING, GenericImportConfiguration, ModelConfiguration,
     toolbox::ImportFLToolbox,
 };
 
@@ -86,26 +87,26 @@ fn custom_update_config() {
             .collect(),
         documents: None,
         model: ModelConfiguration {
-            default_ns: Some("custom_ns".to_string()),
-            default_components: Some(DefaultComponents::new(
-                Some(AnnotationComponent::new(
+            default_ns: "custom_ns".to_string(),
+            default_components: DefaultComponents::new(
+                AnnotationComponent::new(
                     AnnotationComponentType::Ordering,
                     "custom-ord".to_string(),
                     "custom-ord-name".to_string(),
-                )),
-                Some(AnnotationComponent::new(
+                ),
+                AnnotationComponent::new(
                     AnnotationComponentType::Coverage,
                     "custom-cov".to_string(),
                     "custom-cov-name".to_string(),
-                )),
-                Some(AnnotationComponent::new(
+                ),
+                AnnotationComponent::new(
                     AnnotationComponentType::PartOf,
                     "custom-part-of".to_string(),
                     "custom-part-of-name".to_string(),
-                )),
-                None,
-                None,
-            )),
+                ),
+                (*GLOBAL_DEFAULT_DOMINANCE).clone(),
+                (*GLOBAL_DEFAULT_POINTING).clone(),
+            ),
         },
     };
     let graphml_is = crate::test_util::import_as_graphml_string_with_custom_config(

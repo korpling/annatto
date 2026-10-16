@@ -57,11 +57,12 @@ fn serialize_custom() {
 fn test_conll_fail_invalid() {
     let import = ReadFrom::CoNLLU(ImportCoNLLU::default());
     let import_path = Path::new("tests/data/import/conll/invalid");
+    let generic_config = import.reader().default_configuration();
     let import_step = ImporterStep {
         module: import,
         path: import_path.to_path_buf(),
         description: None,
-        generic_config: None,
+        generic_config,
     };
     let job = import_step.execute(None);
     assert!(job.is_err());
@@ -83,11 +84,12 @@ fn test_conll_fail_invalid() {
 fn fail_missing_column() {
     let import = ReadFrom::CoNLLU(ImportCoNLLU::default());
     let import_path = Path::new("tests/data/import/conll/missing-column/");
+    let generic_config = import.reader().default_configuration();
     let import_step = ImporterStep {
         module: import,
         path: import_path.to_path_buf(),
         description: None,
-        generic_config: None,
+        generic_config,
     };
     let (sender, _receiver) = mpsc::channel();
     let job = import_step.execute(Some(sender));
@@ -99,11 +101,12 @@ fn fail_missing_column() {
 fn test_conll_fail_invalid_heads() {
     let import = ReadFrom::CoNLLU(ImportCoNLLU::default());
     let import_path = Path::new("tests/data/import/conll/invalid-heads/");
+    let generic_config = import.reader().default_configuration();
     let import_step = ImporterStep {
         module: import,
         path: import_path.to_path_buf(),
         description: None,
-        generic_config: None,
+        generic_config,
     };
     let (sender, _receiver) = mpsc::channel();
     let job = import_step.execute(Some(sender));
@@ -115,11 +118,12 @@ fn test_conll_fail_invalid_heads() {
 fn test_conll_fail_cyclic() -> Result<(), Box<dyn std::error::Error>> {
     let import = ReadFrom::CoNLLU(ImportCoNLLU::default());
     let import_path = Path::new("tests/data/import/conll/cyclic-deps/");
+    let generic_config = import.reader().default_configuration();
     let import_step = ImporterStep {
         module: import,
         path: import_path.to_path_buf(),
         description: None,
-        generic_config: None,
+        generic_config,
     };
 
     let job = import_step.execute(None);
@@ -226,25 +230,24 @@ fn customized_generic_config() {
         Some("custom_root".to_string()),
         vec!["conllu".to_string()],
         Some(BTreeSet::from(["website_example".to_string()])),
-        Some("custom_ns".to_string()),
-        DefaultComponents::new(
-            None,
-            Some(AnnotationComponent::new(
-                AnnotationComponentType::Coverage,
-                DEFAULT_NS.to_string(),
-                "custom_cov".to_string(),
-            )),
-            Some(AnnotationComponent::new(
-                AnnotationComponentType::PartOf,
-                DEFAULT_NS.to_string(),
-                "custom_part_of".to_string(),
-            )),
-            None,
-            Some(AnnotationComponent::new(
-                AnnotationComponentType::Pointing,
-                DEFAULT_NS.to_string(),
-                "syntax".to_string(),
-            )),
+        crate::importer::ModelConfiguration::new(
+            "custom_ns".to_string(),
+            DefaultComponents::default()
+                .with_coverage(AnnotationComponent::new(
+                    AnnotationComponentType::Coverage,
+                    DEFAULT_NS.to_string(),
+                    "custom_cov".to_string(),
+                ))
+                .with_part_of(AnnotationComponent::new(
+                    AnnotationComponentType::PartOf,
+                    DEFAULT_NS.to_string(),
+                    "custom_part_of".to_string(),
+                ))
+                .with_pointing(AnnotationComponent::new(
+                    AnnotationComponentType::Pointing,
+                    DEFAULT_NS.to_string(),
+                    "syntax".to_string(),
+                )),
         ),
     );
     let actual = import_as_graphml_string_with_custom_config(
@@ -267,14 +270,11 @@ fn labeled_targets() {
         Some("custom_root".to_string()),
         vec!["conllu".to_string()],
         Some(BTreeSet::from(["website_example".to_string()])),
-        Some("custom_ns".to_string()),
-        DefaultComponents {
-            ordering: importer.preset_default_ordering().cloned(),
-            coverage: importer.preset_default_coverage().cloned(),
-            part_of: importer.preset_default_part_of().cloned(),
-            dominance: importer.preset_default_dominance().cloned(),
-            pointing: importer.preset_default_pointing().cloned(),
-        },
+        crate::importer::ModelConfiguration::new(
+            "custom_ns".to_string(),
+            DefaultComponents::default()
+                .with_pointing(importer.preset_default_pointing().cloned().unwrap()),
+        ),
     );
     let actual = import_as_graphml_string_with_custom_config(
         importer,

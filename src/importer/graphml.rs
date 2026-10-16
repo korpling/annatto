@@ -96,7 +96,7 @@ mod tests {
     use itertools::Itertools;
 
     use crate::{
-        importer::{GenericImportConfiguration, Importer, graphml::GraphMLImporter},
+        importer::{DefaultImportConfiguration, Importer, graphml::GraphMLImporter},
         test_util::import_as_graphml_string,
         util::graphupdate::UpdateWriter,
     };
@@ -118,15 +118,16 @@ mod tests {
         let input_path = Path::new("tests/data/import/graphml/single_sentence.graphml");
         let import = GraphMLImporter::default();
         let (tx, rx) = mpsc::channel();
+        let config = import
+            .default_configuration()
+            .and_root_name("custom_root".to_string());
         let import = import.import_corpus(
             input_path,
             crate::StepID {
                 module_name: "test_import".to_string(),
                 path: None,
             },
-            UpdateWriter::from(GenericImportConfiguration::new_with_root_name(
-                "custom_root".to_string(),
-            )),
+            UpdateWriter::from(config),
             Some(tx),
         );
         assert!(import.is_ok());

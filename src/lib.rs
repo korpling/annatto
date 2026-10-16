@@ -308,15 +308,19 @@ impl Display for StepID {
 pub trait Step {}
 
 #[derive(Deserialize, Serialize, Clone, PartialEq)]
-#[serde(deny_unknown_fields)]
+#[serde(
+    deny_unknown_fields,
+    try_from = "crate::estarde::importer_step::ImporterStepUI",
+    into = "crate::estarde::importer_step::ImporterStepUI"
+)]
 pub struct ImporterStep {
     #[serde(flatten)]
     module: ReadFrom,
     path: PathBuf,
-    #[serde(default, alias = "label")]
+    #[serde(alias = "label")]
     description: Option<String>,
-    #[serde(flatten, default)]
-    generic_config: Option<GenericImportConfiguration>,
+    #[serde(flatten)]
+    generic_config: GenericImportConfiguration,
 }
 
 impl ImporterStep {
@@ -325,7 +329,7 @@ impl ImporterStep {
     where
         P: Into<PathBuf>,
     {
-        let generic_config = Some(module.reader().default_configuration());
+        let generic_config = module.reader().default_configuration();
         Self {
             module,
             path: path.into(),
@@ -341,11 +345,10 @@ impl ImporterStep {
     ) -> std::result::Result<graphannis::update::GraphUpdate, Box<dyn std::error::Error>> {
         use crate::util::graphupdate::UpdateWriter;
 
-        let default_conf = self.module.reader().default_configuration();
         self.module.reader().import_corpus(
             &self.path,
             StepID::from_importer_step(&self),
-            UpdateWriter::from(self.generic_config.clone().unwrap_or(default_conf)),
+            UpdateWriter::from(self.generic_config.clone()),
             tx,
         )
     }
@@ -496,17 +499,12 @@ mod tests {
         assert_eq!(
             import_step
                 .generic_config
-                .as_ref()
-                .unwrap()
                 .custom_root_name()
                 .as_ref()
                 .unwrap(),
             "custom_corpus_root"
         );
-        assert_eq!(
-            import_step.generic_config.as_ref().unwrap().extensions(),
-            &["xml"]
-        );
+        assert_eq!(import_step.generic_config.extensions(), &["xml"]);
         assert_snapshot!(toml::to_string(&workflow).unwrap());
     }
 

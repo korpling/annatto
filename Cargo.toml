@@ -25,8 +25,8 @@ facet = "0.46.0"
 facet-reflect = "0.46.0"
 git2 = { version = "0.20.2", default-features = false }
 glob = "0.3"
-graphannis = "4.2.0"
-graphannis-core = "4.2.0"
+graphannis = { git = "https://github.com/korpling/graphannis", rev = "55c9d812d2ede7e253956d815adefc5d3fcd2c22" }
+graphannis-core = { git = "https://github.com/korpling/graphannis", rev = "55c9d812d2ede7e253956d815adefc5d3fcd2c22" }
 graphviz-rust = "0.9.9"
 indicatif = "0.17"
 itertools = "0.12"
@@ -65,7 +65,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 umya-spreadsheet = "2.3.3"
 url = "2.5.2"
 xml-rs = "0.8"
-zip = "8.6.0"
+zip = "9.0.4"
 
 [dev-dependencies]
 assert_cmd = "2.1"

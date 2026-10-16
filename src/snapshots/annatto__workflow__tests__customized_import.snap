@@ -5,13 +5,39 @@ expression: toml_str.unwrap()
 [[import]]
 format = "exmaralda"
 path = "path/to/data"
-root_as = "RUEG"
+as = "RUEG"
 extensions = ["xml"]
 
 [import.config]
 merge_events = true
 
-[import.model.default_components]
+[import.model]
+default_ns = ""
+
+[import.model.default_components.ordering]
+ctype = "Ordering"
+layer = "annis"
+name = ""
+
+[import.model.default_components.coverage]
+ctype = "Coverage"
+layer = "annis"
+name = ""
+
+[import.model.default_components.part_of]
+ctype = "PartOf"
+layer = "annis"
+name = ""
+
+[import.model.default_components.dominance]
+ctype = "Dominance"
+layer = "annis"
+name = ""
+
+[import.model.default_components.pointing]
+ctype = "Pointing"
+layer = ""
+name = "point"
 
 [footer]
 annatto_version = ""
