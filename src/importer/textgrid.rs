@@ -11,7 +11,6 @@ use crate::models::textgrid::{Interval, TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{
     NodeInfo, UpdateWriter, add_order_relations, map_annotations, map_token_with_ds,
-    root_corpus_from_path,
 };
 use anyhow::{Result, anyhow};
 use encoding_rs_io::DecodeReaderBytes;
@@ -74,7 +73,6 @@ struct MapperParams<'a> {
 }
 
 struct DocumentMapper<'a> {
-    root_corpus: String,
     doc_path: String,
     text_node_name: String,
     textgrid: TextGrid,
@@ -440,10 +438,8 @@ impl Importer for ImportTextgrid {
             let textgrid = TextGrid::parse(&file_content)?;
 
             let text_node_name = format!("{doc_path}#text");
-            let root_corpus = root_corpus_from_path(input_path)?;
 
             let mut doc_mapper = DocumentMapper {
-                root_corpus,
                 doc_path,
                 textgrid,
                 reporter: &reporter,

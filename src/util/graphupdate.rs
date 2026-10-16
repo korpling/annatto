@@ -1,5 +1,4 @@
 use std::{
-    borrow::Cow,
     ffi::OsStr,
     path::{Path, PathBuf},
 };
