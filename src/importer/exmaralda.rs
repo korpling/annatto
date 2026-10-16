@@ -298,6 +298,16 @@ impl ImportEXMARaLDA {
                                     && let Some(target) = &timeline.get(&ordered_tl_nodes[i])
                                 {
                                     update.ordering(source.1.to_string(), target.1.to_string())?;
+                                    if let Some(t0) = &source.0
+                                        && let Some(t1) = &target.0
+                                    {
+                                        update.node_label(
+                                            source.1.to_string(),
+                                            ANNIS_NS.to_string(),
+                                            "time".to_string(),
+                                            format!("{t0}-{t1}"),
+                                        )?;
+                                    }
                                 }
                             }
                         }

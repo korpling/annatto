@@ -66,6 +66,7 @@ expression: r.unwrap()
         </node>
         <node id="import/exmaralda/test_doc#T3">
             <data key="k12">node</data>
+            <data key="k18">4.44444-5.55555</data>
             <data key="k19"> </data>
         </node>
         <node id="import/exmaralda/test_doc#T4">
