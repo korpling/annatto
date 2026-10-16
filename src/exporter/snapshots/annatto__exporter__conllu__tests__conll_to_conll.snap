@@ -15,4 +15,3 @@ expression: actual.unwrap()
 3	no	no	DET	DT	PronType=Neg	4	det	4:det	_
 4	clue	clue	NOUN	NN	Number=Sing	2	obj	2:obj	SpaceAfter=No
 5	.	.	PUNCT	.	_	2	punct	2:punct	_
-

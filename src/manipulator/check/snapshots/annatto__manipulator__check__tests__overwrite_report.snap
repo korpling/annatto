@@ -2,6 +2,8 @@
 source: src/manipulator/check/tests.rs
 expression: log_contents.unwrap()
 ---
+
+
 +--------------------------+--------+
 | description              | result |
 +--------------------------+--------+
