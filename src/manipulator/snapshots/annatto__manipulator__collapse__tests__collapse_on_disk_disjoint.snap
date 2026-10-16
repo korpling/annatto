@@ -110,93 +110,79 @@ expression: gml.unwrap()
         </edge>
         <edge id="e9" source="corpus#a4" target="corpus#t9" label="Coverage/annis/">
         </edge>
-        <edge id="e10" source="corpus#s0" target="corpus#s1" label="Dominance/annis/">
+        <edge id="e10" source="corpus#s0" target="corpus#s1" label="Dominance//constituents">
         </edge>
-        <edge id="e11" source="corpus#s0" target="corpus#s2" label="Dominance/annis/">
+        <edge id="e11" source="corpus#s0" target="corpus#s2" label="Dominance//constituents">
         </edge>
-        <edge id="e12" source="corpus#s1" target="corpus#a0" label="Dominance/annis/">
+        <edge id="e12" source="corpus#s1" target="corpus#a0" label="Dominance//constituents">
         </edge>
-        <edge id="e13" source="corpus#s1" target="corpus#a1" label="Dominance/annis/">
+        <edge id="e13" source="corpus#s1" target="corpus#a1" label="Dominance//constituents">
         </edge>
-        <edge id="e14" source="corpus#s2" target="corpus#a2" label="Dominance/annis/">
+        <edge id="e14" source="corpus#s2" target="corpus#a2" label="Dominance//constituents">
         </edge>
-        <edge id="e15" source="corpus#s2" target="corpus#a3" label="Dominance/annis/">
+        <edge id="e15" source="corpus#s2" target="corpus#a3" label="Dominance//constituents">
         </edge>
-        <edge id="e16" source="corpus#s2" target="corpus#a4" label="Dominance/annis/">
+        <edge id="e16" source="corpus#s2" target="corpus#a4" label="Dominance//constituents">
         </edge>
-        <edge id="e17" source="corpus#s0" target="corpus#s1" label="Dominance//constituents">
-        </edge>
-        <edge id="e18" source="corpus#s0" target="corpus#s2" label="Dominance//constituents">
-        </edge>
-        <edge id="e19" source="corpus#s1" target="corpus#a0" label="Dominance//constituents">
-        </edge>
-        <edge id="e20" source="corpus#s1" target="corpus#a1" label="Dominance//constituents">
-        </edge>
-        <edge id="e21" source="corpus#s2" target="corpus#a2" label="Dominance//constituents">
-        </edge>
-        <edge id="e22" source="corpus#s2" target="corpus#a3" label="Dominance//constituents">
-        </edge>
-        <edge id="e23" source="corpus#s2" target="corpus#a4" label="Dominance//constituents">
-        </edge>
-        <edge id="e24" source="corpus#a1" target="corpus#a0" label="Pointing//dep">
+        <edge id="e17" source="corpus#a1" target="corpus#a0" label="Pointing//dep">
             <data key="k5">det</data>
         </edge>
-        <edge id="e25" source="corpus#a2" target="corpus#a1" label="Pointing//dep">
+        <edge id="e18" source="corpus#a2" target="corpus#a1" label="Pointing//dep">
             <data key="k5">subj</data>
         </edge>
-        <edge id="e26" source="corpus#a2" target="corpus#a4" label="Pointing//dep">
+        <edge id="e19" source="corpus#a2" target="corpus#a4" label="Pointing//dep">
             <data key="k5">comp:obj</data>
         </edge>
-        <edge id="e27" source="corpus#a4" target="corpus#a3" label="Pointing//dep">
+        <edge id="e20" source="corpus#a4" target="corpus#a3" label="Pointing//dep">
             <data key="k5">mod</data>
         </edge>
-        <edge id="e28" source="corpus#t0" target="corpus#t1" label="Ordering/annis/">
+        <edge id="e21" source="corpus#t0" target="corpus#t1" label="Ordering/annis/">
         </edge>
-        <edge id="e29" source="corpus#t1" target="corpus#t2" label="Ordering/annis/">
+        <edge id="e22" source="corpus#t1" target="corpus#t2" label="Ordering/annis/">
         </edge>
-        <edge id="e30" source="corpus#t2" target="corpus#t3" label="Ordering/annis/">
+        <edge id="e23" source="corpus#t2" target="corpus#t3" label="Ordering/annis/">
         </edge>
-        <edge id="e31" source="corpus#t3" target="corpus#t4" label="Ordering/annis/">
+        <edge id="e24" source="corpus#t3" target="corpus#t4" label="Ordering/annis/">
         </edge>
-        <edge id="e32" source="corpus#t4" target="corpus#t5" label="Ordering/annis/">
+        <edge id="e25" source="corpus#t4" target="corpus#t5" label="Ordering/annis/">
         </edge>
-        <edge id="e33" source="corpus#t5" target="corpus#t6" label="Ordering/annis/">
+        <edge id="e26" source="corpus#t5" target="corpus#t6" label="Ordering/annis/">
         </edge>
-        <edge id="e34" source="corpus#t6" target="corpus#t7" label="Ordering/annis/">
+        <edge id="e27" source="corpus#t6" target="corpus#t7" label="Ordering/annis/">
         </edge>
-        <edge id="e35" source="corpus#t7" target="corpus#t8" label="Ordering/annis/">
+        <edge id="e28" source="corpus#t7" target="corpus#t8" label="Ordering/annis/">
         </edge>
-        <edge id="e36" source="corpus#t8" target="corpus#t9" label="Ordering/annis/">
+        <edge id="e29" source="corpus#t8" target="corpus#t9" label="Ordering/annis/">
         </edge>
-        <edge id="e37" source="corpus#t9" target="corpus#t10" label="Ordering/annis/">
+        <edge id="e30" source="corpus#t9" target="corpus#t10" label="Ordering/annis/">
         </edge>
-        <edge id="e38" source="corpus#t10" target="corpus#t11" label="Ordering/annis/">
+        <edge id="e31" source="corpus#t10" target="corpus#t11" label="Ordering/annis/">
         </edge>
-        <edge id="e39" source="corpus#a0" target="corpus#a1" label="Ordering/annis/a">
+        <edge id="e32" source="corpus#a0" target="corpus#a1" label="Ordering/annis/a">
         </edge>
-        <edge id="e40" source="corpus#a1" target="corpus#a2" label="Ordering/annis/a">
+        <edge id="e33" source="corpus#a1" target="corpus#a2" label="Ordering/annis/a">
         </edge>
-        <edge id="e41" source="corpus#a2" target="corpus#a3" label="Ordering/annis/a">
+        <edge id="e34" source="corpus#a2" target="corpus#a3" label="Ordering/annis/a">
         </edge>
-        <edge id="e42" source="corpus#a3" target="corpus#a4" label="Ordering/annis/a">
+        <edge id="e35" source="corpus#a3" target="corpus#a4" label="Ordering/annis/a">
         </edge>
-        <edge id="e43" source="corpus#a0" target="corpus#a1" label="Ordering/annis/b">
+        <edge id="e36" source="corpus#a0" target="corpus#a1" label="Ordering/annis/b">
         </edge>
-        <edge id="e44" source="corpus#a1" target="corpus#a2" label="Ordering/annis/b">
+        <edge id="e37" source="corpus#a1" target="corpus#a2" label="Ordering/annis/b">
         </edge>
-        <edge id="e45" source="corpus#a2" target="corpus#a3" label="Ordering/annis/b">
+        <edge id="e38" source="corpus#a2" target="corpus#a3" label="Ordering/annis/b">
         </edge>
-        <edge id="e46" source="corpus#a3" target="corpus#a4" label="Ordering/annis/b">
+        <edge id="e39" source="corpus#a3" target="corpus#a4" label="Ordering/annis/b">
         </edge>
-        <edge id="e47" source="corpus#a0" target="corpus" label="PartOf/annis/">
+        <edge id="e40" source="corpus#a0" target="corpus" label="PartOf/annis/">
         </edge>
-        <edge id="e48" source="corpus#a1" target="corpus" label="PartOf/annis/">
+        <edge id="e41" source="corpus#a1" target="corpus" label="PartOf/annis/">
         </edge>
-        <edge id="e49" source="corpus#a2" target="corpus" label="PartOf/annis/">
+        <edge id="e42" source="corpus#a2" target="corpus" label="PartOf/annis/">
         </edge>
-        <edge id="e50" source="corpus#a3" target="corpus" label="PartOf/annis/">
+        <edge id="e43" source="corpus#a3" target="corpus" label="PartOf/annis/">
         </edge>
-        <edge id="e51" source="corpus#a4" target="corpus" label="PartOf/annis/">
+        <edge id="e44" source="corpus#a4" target="corpus" label="PartOf/annis/">
         </edge>
     </graph>
 </graphml>

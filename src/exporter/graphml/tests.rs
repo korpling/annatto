@@ -80,7 +80,7 @@ fn export_as_zip_with_files() {
     assert_eq!(true, zip_file_path.is_file());
     // Read the ZIP file and check its contents
     let zip = zip::ZipArchive::new(zip_file).unwrap();
-    let files: Vec<_> = zip.file_names().sorted().collect();
+    let files: Vec<_> = zip.file_names().flatten().sorted().collect();
     assert_eq!(
         vec![
             "exmaralda.graphml",
@@ -183,7 +183,7 @@ fn zip_with_linked_files_custom() {
     let a = ZipArchive::new(zf.unwrap());
     assert!(a.is_ok());
     let archive = a.unwrap();
-    assert_snapshot!(archive.file_names().sorted().join("\n"));
+    assert_snapshot!(archive.file_names().flatten().sorted().join("\n"));
     assert!(fs::remove_file(zip_path).is_ok());
 }
 

@@ -1914,7 +1914,10 @@ from = "deprel"
             );
         }
         for nc in new_components {
-            assert!(current_components.contains(&nc));
+            assert!(
+                current_components.contains(&nc),
+                "Failed for component: {nc}"
+            );
         }
         Ok(())
     }
