@@ -30,22 +30,27 @@ expression: r.unwrap()
             <data key="k6">corpus</data>
         </node>
         <node id="import/exmaralda/test_doc#T286">
+            <data key="k10">0-1</data>
             <data key="k11"> </data>
             <data key="k6">node</data>
         </node>
         <node id="import/exmaralda/test_doc#T0">
+            <data key="k10">1-2</data>
             <data key="k11"> </data>
             <data key="k6">node</data>
         </node>
         <node id="import/exmaralda/test_doc#T1">
+            <data key="k10">2-3</data>
             <data key="k11"> </data>
             <data key="k6">node</data>
         </node>
         <node id="import/exmaralda/test_doc#T2">
+            <data key="k10">3-4</data>
             <data key="k11"> </data>
             <data key="k6">node</data>
         </node>
         <node id="import/exmaralda/test_doc#T3">
+            <data key="k10">4-5</data>
             <data key="k11"> </data>
             <data key="k6">node</data>
         </node>

@@ -1,13 +1,14 @@
 use std::{
-    borrow::Cow,
     ffi::OsStr,
     path::{Path, PathBuf},
 };
 
 use crate::{
     Result,
+    error::AnnattoError,
     importer::{GenericImportConfiguration, NamedPaths},
 };
+use anyhow::anyhow;
 use graphannis::{
     model::{AnnotationComponent, AnnotationComponentType},
     update::{GraphUpdate, UpdateEvent},
@@ -361,6 +362,23 @@ impl UpdateWriter {
         Ok(path_tuples)
     }
 
+    pub fn media_source(&mut self, document_node: String, path: &Path) -> Result<String> {
+        let media_node_base = path
+            .file_name()
+            .ok_or::<AnnattoError>(AnnattoError::Anyhow(anyhow!("Filename cannot be derived.")))?
+            .to_string_lossy();
+        let media_node_name = format!("{}/{media_node_base}", document_node);
+        self.labeled_node(
+            media_node_name.to_string(),
+            "file".to_string(),
+            ANNIS_NS.to_string(),
+            "file".to_string(),
+            path.to_string_lossy().to_string(),
+        )?;
+        self.part_of(media_node_name.to_string(), document_node)?;
+        Ok(media_node_name)
+    }
+
     fn add_subcorpora(
         &mut self,
         path: &Path,
@@ -484,36 +502,6 @@ impl From<UpdateWriter> for GraphUpdate {
     fn from(value: UpdateWriter) -> Self {
         value.inner
     }
-}
-
-#[deprecated]
-pub fn map_audio_source(
-    u: &mut UpdateWriter,
-    audio_path: &Path,
-    parent_corpus: &str,
-    doc_path: &str,
-) -> Result<String> {
-    let node_name = format!(
-        "{}/{}",
-        parent_corpus,
-        audio_path
-            .file_name()
-            .map_or_else(|| Cow::from("unknown_file"), |f| f.to_string_lossy())
-    );
-    // TODO: make sure the file path is relative to the corpus directory. This
-    // means we also have to implement copying the linked files to the same
-    // location as the GraphML file.
-    let audio_path = audio_path.to_string_lossy().to_string();
-    u.labeled_node(
-        node_name.to_string(),
-        "file".to_string(),
-        ANNIS_NS.to_string(),
-        "file".to_string(),
-        audio_path,
-    )?;
-    u.part_of(node_name.to_string(), doc_path.to_string())?;
-
-    Ok(node_name)
 }
 
 #[deprecated]

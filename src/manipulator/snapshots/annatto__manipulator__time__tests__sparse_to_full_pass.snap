@@ -52,7 +52,7 @@ expression: actual.unwrap()
             <data key="k8">eng</data>
             <data key="k9">deu</data>
         </node>
-        <node id="valid-sparse-timevalues_2/import/exmaralda/test_file.wav">
+        <node id="valid-sparse-timevalues_2/import/exmaralda/test_doc/test_file.wav">
             <data key="k13">file</data>
             <data key="k7">tests/data/import/exmaralda/valid-sparse-timevalues_2/import/exmaralda/test_file.wav</data>
         </node>
@@ -243,7 +243,7 @@ expression: actual.unwrap()
         </edge>
         <edge id="e33" source="valid-sparse-timevalues_2/import/exmaralda/test_doc" target="valid-sparse-timevalues_2/import/exmaralda" label="PartOf/annis/">
         </edge>
-        <edge id="e34" source="valid-sparse-timevalues_2/import/exmaralda/test_file.wav" target="valid-sparse-timevalues_2/import/exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e34" source="valid-sparse-timevalues_2/import/exmaralda/test_doc/test_file.wav" target="valid-sparse-timevalues_2/import/exmaralda/test_doc" label="PartOf/annis/">
         </edge>
         <edge id="e35" source="valid-sparse-timevalues_2/import/exmaralda/test_doc#T286" target="valid-sparse-timevalues_2/import/exmaralda/test_doc" label="PartOf/annis/">
         </edge>

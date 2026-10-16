@@ -74,28 +74,33 @@ visibility = "preloaded"
             <data key="k8">eng</data>
             <data key="k9">deu</data>
         </node>
-        <node id="exmaralda/test_file.wav">
+        <node id="exmaralda/test_doc/test_file.wav">
             <data key="k13">file</data>
             <data key="k7">tests/data/import/exmaralda/clean/import/exmaralda/test_file.wav</data>
         </node>
         <node id="exmaralda/test_doc#T286">
             <data key="k13">node</data>
+            <data key="k19">0-1.11111</data>
             <data key="k20"> </data>
         </node>
         <node id="exmaralda/test_doc#T0">
             <data key="k13">node</data>
+            <data key="k19">1.11111-2.22222</data>
             <data key="k20"> </data>
         </node>
         <node id="exmaralda/test_doc#T1">
             <data key="k13">node</data>
+            <data key="k19">2.22222-3.33333</data>
             <data key="k20"> </data>
         </node>
         <node id="exmaralda/test_doc#T2">
             <data key="k13">node</data>
+            <data key="k19">3.33333-4.44444</data>
             <data key="k20"> </data>
         </node>
         <node id="exmaralda/test_doc#T3">
             <data key="k13">node</data>
+            <data key="k19">4.44444-5.55555</data>
             <data key="k20"> </data>
         </node>
         <node id="exmaralda/test_doc#T4">
@@ -256,7 +261,7 @@ visibility = "preloaded"
         </edge>
         <edge id="e31" source="exmaralda/test_doc" target="exmaralda" label="PartOf/annis/">
         </edge>
-        <edge id="e32" source="exmaralda/test_file.wav" target="exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e32" source="exmaralda/test_doc/test_file.wav" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
         <edge id="e33" source="exmaralda/test_doc#T286" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>

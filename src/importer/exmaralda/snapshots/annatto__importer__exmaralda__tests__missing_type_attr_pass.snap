@@ -30,27 +30,32 @@ expression: r.unwrap()
             <data key="k3">test_doc</data>
             <data key="k7">corpus</data>
         </node>
-        <node id="import/exmaralda/test_file.wav">
+        <node id="import/exmaralda/test_doc/test_file.wav">
             <data key="k4">tests/data/import/exmaralda/pass-no_tier_type/import/exmaralda/test_file.wav</data>
             <data key="k7">file</data>
         </node>
         <node id="import/exmaralda/test_doc#T286">
+            <data key="k11">0-1</data>
             <data key="k12"> </data>
             <data key="k7">node</data>
         </node>
         <node id="import/exmaralda/test_doc#T0">
+            <data key="k11">1-2</data>
             <data key="k12"> </data>
             <data key="k7">node</data>
         </node>
         <node id="import/exmaralda/test_doc#T1">
+            <data key="k11">2-3</data>
             <data key="k12"> </data>
             <data key="k7">node</data>
         </node>
         <node id="import/exmaralda/test_doc#T2">
+            <data key="k11">3-4</data>
             <data key="k12"> </data>
             <data key="k7">node</data>
         </node>
         <node id="import/exmaralda/test_doc#T3">
+            <data key="k11">4-5</data>
             <data key="k12"> </data>
             <data key="k7">node</data>
         </node>
@@ -214,7 +219,7 @@ expression: r.unwrap()
         </edge>
         <edge id="e32" source="import/exmaralda/test_doc" target="import/exmaralda" label="PartOf/annis/">
         </edge>
-        <edge id="e33" source="import/exmaralda/test_file.wav" target="import/exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e33" source="import/exmaralda/test_doc/test_file.wav" target="import/exmaralda/test_doc" label="PartOf/annis/">
         </edge>
         <edge id="e34" source="import/exmaralda/test_doc#T286" target="import/exmaralda/test_doc" label="PartOf/annis/">
         </edge>

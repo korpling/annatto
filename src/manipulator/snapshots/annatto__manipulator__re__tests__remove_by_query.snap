@@ -44,28 +44,33 @@ expression: export.unwrap()
             <data key="k8">deu</data>
             <data key="k9">eng,eng</data>
         </node>
-        <node id="exmaralda/test_file.wav">
+        <node id="exmaralda/test_doc/test_file.wav">
             <data key="k12">file</data>
             <data key="k6">tests/data/import/exmaralda/clean/import/exmaralda/test_file.wav</data>
         </node>
         <node id="exmaralda/test_doc#T286">
             <data key="k12">node</data>
+            <data key="k17">0-1.11111</data>
             <data key="k18"> </data>
         </node>
         <node id="exmaralda/test_doc#T0">
             <data key="k12">node</data>
+            <data key="k17">1.11111-2.22222</data>
             <data key="k18"> </data>
         </node>
         <node id="exmaralda/test_doc#T1">
             <data key="k12">node</data>
+            <data key="k17">2.22222-3.33333</data>
             <data key="k18"> </data>
         </node>
         <node id="exmaralda/test_doc#T2">
             <data key="k12">node</data>
+            <data key="k17">3.33333-4.44444</data>
             <data key="k18"> </data>
         </node>
         <node id="exmaralda/test_doc#T3">
             <data key="k12">node</data>
+            <data key="k17">4.44444-5.55555</data>
             <data key="k18"> </data>
         </node>
         <node id="exmaralda/test_doc#T4">
@@ -138,7 +143,7 @@ expression: export.unwrap()
         </edge>
         <edge id="e15" source="exmaralda/test_doc" target="exmaralda" label="PartOf/annis/">
         </edge>
-        <edge id="e16" source="exmaralda/test_file.wav" target="exmaralda/test_doc" label="PartOf/annis/">
+        <edge id="e16" source="exmaralda/test_doc/test_file.wav" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>
         <edge id="e17" source="exmaralda/test_doc#T286" target="exmaralda/test_doc" label="PartOf/annis/">
         </edge>

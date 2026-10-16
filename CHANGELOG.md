@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - import `xml`: use only one dominance component.
 - import `ptb`: Namespace of part of speech annotation changed to `syntax` as well.
 - New import API.
+- import `exmaralda`: Also timeline nodes are assigned time annotations.
 
 ### Fixed
 
@@ -25,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and ignoring pointing relations to find reachable nodes
 - import `treetagger`: add `PartOf` relation to documennt
 - user interface and internal representation of import steps are now seperated, defaults are updated on deserialization. As a consequence, setting custom extensions, corpus name, and model works again.
+- media nodes are now linked properly.
 
 ## [0.60.0] - 2026-10-06
 

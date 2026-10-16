@@ -10,8 +10,7 @@ use crate::importer::DefaultImportConfiguration;
 use crate::models::textgrid::{Interval, TextGrid, TextGridItem};
 use crate::progress::ProgressReporter;
 use crate::util::graphupdate::{
-    NodeInfo, UpdateWriter, add_order_relations, map_annotations, map_audio_source,
-    map_token_with_ds, root_corpus_from_path,
+    NodeInfo, UpdateWriter, add_order_relations, map_annotations, map_token_with_ds,
 };
 use anyhow::{Result, anyhow};
 use encoding_rs_io::DecodeReaderBytes;
@@ -74,7 +73,6 @@ struct MapperParams<'a> {
 }
 
 struct DocumentMapper<'a> {
-    root_corpus: String,
     doc_path: String,
     text_node_name: String,
     textgrid: TextGrid,
@@ -94,7 +92,7 @@ impl DocumentMapper<'_> {
             // TODO: Check assumption that the audio file is always relative to the actual file
             let audio_path = self.file_path.with_extension(self.params.audio_extension);
             if audio_path.exists() {
-                map_audio_source(u, &audio_path, &self.root_corpus, &self.doc_path)?;
+                u.media_source(self.doc_path.to_string(), &audio_path)?;
             } else {
                 self.reporter.info(format!(
                     "Could not find corresponding audio file {}",
@@ -440,10 +438,8 @@ impl Importer for ImportTextgrid {
             let textgrid = TextGrid::parse(&file_content)?;
 
             let text_node_name = format!("{doc_path}#text");
-            let root_corpus = root_corpus_from_path(input_path)?;
 
             let mut doc_mapper = DocumentMapper {
-                root_corpus,
                 doc_path,
                 textgrid,
                 reporter: &reporter,

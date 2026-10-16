@@ -14,12 +14,8 @@ use xml::{EventReader, ParserConfig, attribute::OwnedAttribute, reader::XmlEvent
 
 use super::Importer;
 use crate::{
-    StepID,
-    error::AnnattoError,
-    importer::DefaultImportConfiguration,
-    progress::ProgressReporter,
-    util::graphupdate::{UpdateWriter, map_audio_source},
-    workflow::StatusMessage,
+    StepID, error::AnnattoError, importer::DefaultImportConfiguration, progress::ProgressReporter,
+    util::graphupdate::UpdateWriter, workflow::StatusMessage,
 };
 
 /// Import [EXMARaLDA partition editor](https://exmaralda.org/en/partitur-editor-en/)
@@ -149,15 +145,10 @@ impl ImportEXMARaLDA {
                                             absolute_audio_path,
                                             env::current_dir()?,
                                         ) {
-                                            if let Some(name_tuple) = doc_node_name.rsplit_once('/')
-                                            {
-                                                map_audio_source(
-                                                    update,
-                                                    rel_path.as_path(),
-                                                    name_tuple.0,
-                                                    doc_node_name,
-                                                )?;
-                                            }
+                                            update.media_source(
+                                                doc_node_name.to_string(),
+                                                &rel_path,
+                                            )?;
                                         } else {
                                             progress.warn(
                                                 format!(
@@ -307,6 +298,16 @@ impl ImportEXMARaLDA {
                                     && let Some(target) = &timeline.get(&ordered_tl_nodes[i])
                                 {
                                     update.ordering(source.1.to_string(), target.1.to_string())?;
+                                    if let Some(t0) = &source.0
+                                        && let Some(t1) = &target.0
+                                    {
+                                        update.node_label(
+                                            source.1.to_string(),
+                                            ANNIS_NS.to_string(),
+                                            "time".to_string(),
+                                            format!("{t0}-{t1}"),
+                                        )?;
+                                    }
                                 }
                             }
                         }
