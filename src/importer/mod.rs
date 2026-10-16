@@ -343,11 +343,11 @@ impl DefaultComponents {
 impl Default for DefaultComponents {
     fn default() -> Self {
         Self {
-            ordering: (*&GLOBAL_DEFAULT_ORDERING).clone(),
-            coverage: (*&GLOBAL_DEFAULT_COVERAGE).clone(),
-            part_of: (*&GLOBAL_DEFAULT_PART_OF).clone(),
-            dominance: (*&GLOBAL_DEFAULT_DOMINANCE).clone(),
-            pointing: (*&GLOBAL_DEFAULT_POINTING).clone(),
+            ordering: GLOBAL_DEFAULT_ORDERING.clone(),
+            coverage: GLOBAL_DEFAULT_COVERAGE.clone(),
+            part_of: GLOBAL_DEFAULT_PART_OF.clone(),
+            dominance: GLOBAL_DEFAULT_DOMINANCE.clone(),
+            pointing: GLOBAL_DEFAULT_POINTING.clone(),
         }
     }
 }
