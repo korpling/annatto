@@ -367,7 +367,7 @@ impl UpdateWriter {
             .file_name()
             .ok_or::<AnnattoError>(AnnattoError::Anyhow(anyhow!("Filename cannot be derived.")))?
             .to_string_lossy();
-        let media_node_name = format!("{}/{media_node_base}", &document_node);
+        let media_node_name = format!("{}/{media_node_base}", document_node);
         self.labeled_node(
             media_node_name.to_string(),
             "file".to_string(),
