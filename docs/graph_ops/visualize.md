@@ -63,10 +63,10 @@ action = "visualize"
 root = "first_document"
 ```
 
-Alternativly it can be configured to include all documents (`root = "all"`) or you can give the ID of the document as argument.
+Alternativly it can be configured to include all documents (`root = "all"`) or you can configure it select a document by its ID.
 ```toml
 [graph_op.config]
-root = "mycorpus/subcorpus1/mydocument"
+root = {document = "mycorpus/subcorpus1/mydocument"}
 ```
 
 ###  output_dot

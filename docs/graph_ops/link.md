@@ -92,7 +92,34 @@ This 1-based index list can be used to copy the given annotations from the targe
 
 ###  component
 
-The edge component to be built.
+The edge component to be built. You can provide a single, or multiple components.
+
+Example (single component):
+```toml
+[graph_op.config]
+source_query = 'tok _ident_ id @* node_name="corpus/subcorpus_a/doc1"'
+source_node = 1
+source_value = [3, 2]
+target_query = 'tok _ident_ id @* node_name="corpus/subcorpus_a/doc2"'
+target_node = 1
+target_value = [3, 2]
+component = { ctype = "Pointing", layer = "", name = "align" }
+```
+
+Example (multiple components):
+```toml
+[graph_op.config]
+source_query = 'cat > tok _ident_ id @* node_name="corpus/subcorpus_a/doc1"'
+source_node = 1
+source_value = [4, 3]
+target_query = 'tok _ident_ id @* node_name="corpus/subcorpus_a/doc2"'
+target_node = 1
+target_value = [3, 2]
+component = [
+{ ctype = "Dominance", layer = "syntax", name = "" },
+{ ctype = "Dominance", layer = "syntax", name = "edge" }
+]
+```
 
 ###  value_sep
 
