@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - graph op `visualizer`: speed up execution by skipping already processed tokens
   and ignoring pointing relations to find reachable nodes
 - import `treetagger`: add `PartOf` relation to documennt
+- user interface and internal representation of import steps are now seperated, defaults are updated on deserialization. As a consequence, setting custom extensions, corpus name, and model works again.
 
 ## [0.60.0] - 2026-10-06
 
