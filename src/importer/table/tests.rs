@@ -9,10 +9,8 @@ use insta::assert_snapshot;
 
 use crate::{
     importer::{
-        DefaultComponents, GenericImportConfiguration,
-        table::{EmptyLineGroup, ImportTable},
-    },
-    test_util::{import_as_graphml_string, import_as_graphml_string_with_custom_config},
+        DefaultComponents, GLOBAL_DEFAULT_DOMINANCE, GLOBAL_DEFAULT_POINTING, GenericImportConfiguration, table::{EmptyLineGroup, ImportTable},
+    }, test_util::{import_as_graphml_string, import_as_graphml_string_with_custom_config},
 };
 
 #[test]
@@ -116,28 +114,27 @@ fn custom_generic_config() {
             Some("custom_root".to_string()),
             vec!["csv".to_string(), "tsv".to_string(), "txt".to_string()],
             None,
-            Some("custom_ns".to_string()),
+            crate::importer::ModelConfiguration::new("custom_ns".to_string(),
             DefaultComponents::new(
-                Some(AnnotationComponent::new(
+                AnnotationComponent::new(
                     AnnotationComponentType::Ordering,
                     "custom-ord".to_string(),
                     "custom-ord-name".to_string(),
-                )),
-                Some(AnnotationComponent::new(
+                ),
+                AnnotationComponent::new(
                     AnnotationComponentType::Coverage,
                     "custom-cov".to_string(),
                     "custom-cov-name".to_string(),
-                )),
-                Some(AnnotationComponent::new(
+                ),
+                AnnotationComponent::new(
                     AnnotationComponentType::PartOf,
                     "custom-part-of".to_string(),
                     "custom-part-of-name".to_string(),
-                )),
-                None,
-                None,
+                ),
+                (*GLOBAL_DEFAULT_DOMINANCE).clone(),
+                (*GLOBAL_DEFAULT_POINTING).clone(),
             ),
-        ),
-    );
+        )));
     assert!(actual.is_ok());
     assert_snapshot!(actual.unwrap());
 }

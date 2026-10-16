@@ -10,7 +10,7 @@ use crate::{
     exporter::graphml::GraphMLExporter,
     importer::{
         DefaultComponents, DefaultImportConfiguration, GenericImportConfiguration, Importer,
-        elan::ImportELAN,
+        ModelConfiguration, elan::ImportELAN,
     },
     test_util::export_to_string,
     util::graphupdate::UpdateWriter,
@@ -77,25 +77,25 @@ fn customized_generic_config() {
             .map(ToString::to_string)
             .collect(),
         None,
-        Some("custom_ns".to_string()),
-        DefaultComponents {
-            ordering: Some(AnnotationComponent::new(
-                AnnotationComponentType::Ordering,
-                "custom-default".to_string(),
-                "custom-ord-name".to_string(),
-            )),
-            coverage: Some(AnnotationComponent::new(
-                AnnotationComponentType::Coverage,
-                "custom-cov".to_string(),
-                "custom-cov-name".to_string(),
-            )),
-            part_of: Some(AnnotationComponent::new(
-                AnnotationComponentType::PartOf,
-                "custom-part-of".to_string(),
-                "custom-part-of-name".to_string(),
-            )),
-            ..Default::default()
-        },
+        ModelConfiguration::new(
+            "custom_ns".to_string(),
+            DefaultComponents::default()
+                .with_ordering(AnnotationComponent::new(
+                    AnnotationComponentType::Ordering,
+                    "custom-default".to_string(),
+                    "custom-ord-name".to_string(),
+                ))
+                .with_coverage(AnnotationComponent::new(
+                    AnnotationComponentType::Coverage,
+                    "custom-cov".to_string(),
+                    "custom-cov-name".to_string(),
+                ))
+                .with_part_of(AnnotationComponent::new(
+                    AnnotationComponentType::PartOf,
+                    "custom-part-of".to_string(),
+                    "custom-part-of-name".to_string(),
+                )),
+        ),
     );
     let u = import.import_corpus(
         path,

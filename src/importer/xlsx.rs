@@ -920,11 +920,12 @@ mod tests {
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
+        let generic_config = importer.reader().default_configuration();
         let import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
             description: None,
-            generic_config: None,
+            generic_config,
         };
 
         let import = import_step.execute(None);
@@ -1035,11 +1036,12 @@ mod tests {
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/dirty/xlsx/");
+        let generic_config = importer.reader().default_configuration();
         let import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
             description: None,
-            generic_config: None,
+            generic_config,
         };
         let (sender, receiver) = mpsc::channel();
         let import = import_step.execute(Some(sender));
@@ -1073,11 +1075,12 @@ mod tests {
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/warnings/xlsx/");
+        let generic_config = importer.reader().default_configuration();
         let import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
             description: None,
-            generic_config: None,
+            generic_config,
         };
         let (sender, receiver) = mpsc::channel();
         let import = import_step.execute(Some(sender));
@@ -1155,11 +1158,12 @@ mod tests {
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
+        let generic_config = importer.reader().default_configuration();
         let import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
             description: None,
-            generic_config: None,
+            generic_config,
         };
         let (sender, receiver) = mpsc::channel();
         let import = import_step.execute(Some(sender));
@@ -1231,11 +1235,12 @@ mod tests {
         };
         let importer = ReadFrom::Xlsx(importer);
         let path = Path::new("./tests/data/import/xlsx/clean/xlsx/");
+        let generic_config = importer.reader().default_configuration();
         let import_step = ImporterStep {
             module: importer,
             path: path.to_path_buf(),
             description: None,
-            generic_config: None,
+            generic_config,
         };
 
         let import = import_step.execute(None);
@@ -1297,9 +1302,7 @@ edition = ["chapter"]
 
     #[test]
     fn file_filter() {
-        let config = GenericImportConfiguration::new_with_extensions(
-            FILE_EXTENSIONS.iter().map(|e| e.to_string()).collect_vec(),
-        );
+        let config = ImportSpreadsheet::default().default_configuration();
         let mut update = UpdateWriter::from(config);
         let files_with_names = update.write_corpus_graph_from_file_tree(Path::new(
             "tests/data/import/xlsx/with_backup/xlsx/",

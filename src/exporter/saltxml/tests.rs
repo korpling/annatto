@@ -9,8 +9,10 @@ use tempfile::TempDir;
 
 use super::*;
 use crate::{
-    ExporterStep, ImporterStep, StepID, importer::saltxml::ImportSaltXml,
-    test_util::compare_graphs, util::example_generator,
+    ExporterStep, ImporterStep, StepID,
+    importer::{DefaultImportConfiguration, saltxml::ImportSaltXml},
+    test_util::compare_graphs,
+    util::example_generator,
 };
 
 #[test]
@@ -282,11 +284,12 @@ fn import_export_sample_sentence() {
 
     // Import the example project
     let path = Path::new("./tests/data/import/salt/SaltSampleCorpus");
+    let generic_config = importer.default_configuration();
     let orig_import_step = ImporterStep {
         module: crate::ReadFrom::SaltXml(importer),
         path: path.to_path_buf(),
         description: None,
-        generic_config: None,
+        generic_config,
     };
     let mut updates = orig_import_step.execute(None).unwrap();
     let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -306,11 +309,12 @@ fn import_export_sample_sentence() {
     export_step.execute(&original_graph, None).unwrap();
 
     let importer: ImportSaltXml = toml::from_str(r#"missing_anno_ns_from_layer = false"#).unwrap();
+    let generic_config = importer.default_configuration();
     let second_import_step = ImporterStep {
         module: crate::ReadFrom::SaltXml(importer),
         path: output_dir.clone(),
         description: None,
-        generic_config: None,
+        generic_config,
     };
     let mut updates = second_import_step.execute(None).unwrap();
     let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -326,12 +330,13 @@ fn import_export_dialog_demo() {
     let exporter = ExportSaltXml::default();
 
     // Import the example project
+    let generic_config = importer.default_configuration();
     let path = Path::new("./tests/data/import/salt/dialog.demo");
     let orig_import_step = ImporterStep {
         module: crate::ReadFrom::SaltXml(importer),
         path: path.to_path_buf(),
         description: None,
-        generic_config: None,
+        generic_config,
     };
     let mut updates = orig_import_step.execute(None).unwrap();
     let mut original_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();
@@ -351,11 +356,12 @@ fn import_export_dialog_demo() {
     export_step.execute(&original_graph, None).unwrap();
 
     let importer: ImportSaltXml = toml::from_str(r#"missing_anno_ns_from_layer = false"#).unwrap();
+    let generic_config = importer.default_configuration();
     let second_import_step = ImporterStep {
         module: crate::ReadFrom::SaltXml(importer),
         path: output_dir.clone(),
         description: None,
-        generic_config: None,
+        generic_config,
     };
     let mut updates = second_import_step.execute(None).unwrap();
     let mut written_graph = AnnotationGraph::with_default_graphstorages(false).unwrap();

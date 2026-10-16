@@ -31,7 +31,6 @@ use graphannis::{
 use graphannis_core::graph::ANNIS_NS;
 use lazy_static::lazy_static;
 use percent_encoding::{AsciiSet, CONTROLS};
-use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeSet,
     path::{Path, PathBuf},
@@ -69,14 +68,32 @@ pub trait DefaultImportConfiguration {
                 .collect(),
             documents: None, // default document list does not need to be trait derived, there is no meaningful alternative to None
             model: ModelConfiguration {
-                default_ns: self.preset_default_namespace().map(ToString::to_string),
-                default_components: Some(DefaultComponents {
-                    ordering: self.preset_default_ordering().cloned(),
-                    coverage: self.preset_default_coverage().cloned(),
-                    part_of: self.preset_default_part_of().cloned(),
-                    dominance: self.preset_default_dominance().cloned(),
-                    pointing: self.preset_default_pointing().cloned(),
-                }),
+                default_ns: self
+                    .preset_default_namespace()
+                    .unwrap_or(GenericImportConfiguration::EMPTY_NS)
+                    .to_string(),
+                default_components: DefaultComponents {
+                    ordering: self
+                        .preset_default_ordering()
+                        .cloned()
+                        .unwrap_or((*GLOBAL_DEFAULT_ORDERING).clone()),
+                    coverage: self
+                        .preset_default_coverage()
+                        .cloned()
+                        .unwrap_or((*GLOBAL_DEFAULT_COVERAGE).clone()),
+                    part_of: self
+                        .preset_default_part_of()
+                        .cloned()
+                        .unwrap_or((*GLOBAL_DEFAULT_PART_OF).clone()),
+                    dominance: self
+                        .preset_default_dominance()
+                        .cloned()
+                        .unwrap_or((*GLOBAL_DEFAULT_DOMINANCE).clone()),
+                    pointing: self
+                        .preset_default_pointing()
+                        .cloned()
+                        .unwrap_or((*GLOBAL_DEFAULT_POINTING).clone()),
+                },
             },
         }
     }
@@ -174,29 +191,24 @@ pub const NODE_NAME_ENCODE_SET: &AsciiSet = &CONTROLS
     .add(b'*');
 
 // NOTE: fields of this should never be read directly; if you require access please write and use some sort of getter
-#[derive(Clone, Default, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, PartialEq)]
 pub struct GenericImportConfiguration {
-    #[serde(alias = "as", default)]
     root_as: Option<String>,
-    #[serde(default)]
     extensions: Vec<String>, // this is a vec for smoother interoperability with the internal api, semantically this behaves like a set down the line
     /// This is a document filter. If none provided, all documents will be imported. If provided, only documents matching the document stem or path will be imported.
     /// Extension is optional.
-    #[serde(default)]
     documents: Option<BTreeSet<String>>, // this is an option to have strictly linear semantics on the set: more entries mean more documents starting at 0 meaning 0 documents (not a sensible use-case, but could be used for building subcorpus structure from paths, i. e., to license a corpus hack)
     /// This is a sub section of configurations that restrains the model, that will be derived from the data
     /// in certain ways, e. g. by setting a default annotation namespace or default components to be used.
-    #[serde(default)]
     // the user must be allowed to leave out this section, as it is for advanced level scenarios only.
     model: ModelConfiguration,
 }
 
-#[derive(Clone, Default, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, PartialEq)]
 pub struct ModelConfiguration {
     /// There is a general namespace, that each module uses, that can be set here.
     /// The default value depends on the implementation and the format model.
-    #[serde(default)]
-    default_ns: Option<String>, // This is an option only for the simple reason that we need to distinguish whether the user SET an empty value or did not set a value (so deserialization forces this upon us). Therefore, this field should never be read directly, there is a method extracting the value.
+    default_ns: String, // This is an option only for the simple reason that we need to distinguish whether the user SET an empty value or did not set a value (so deserialization forces this upon us). Therefore, this field should never be read directly, there is a method extracting the value.
     /// Per component type one default component can be configured.
     ///
     /// Example:
@@ -206,8 +218,16 @@ pub struct ModelConfiguration {
     /// pointing = { layer = "", name = "dependency" }
     /// ...
     /// ```
-    #[serde(default)]
-    default_components: Option<DefaultComponents>,
+    default_components: DefaultComponents,
+}
+
+impl ModelConfiguration {
+    pub(crate) fn new(default_ns: String, default_components: DefaultComponents) -> Self {
+        Self {
+            default_ns,
+            default_components,
+        }
+    }
 }
 
 lazy_static! {
@@ -238,30 +258,22 @@ lazy_static! {
     );
 }
 
-/// This object models the user interface, i. e., which components the user
-/// can and has to define (none). Actual default component values are taken
-/// from the individual import steps on deserialization.
-#[derive(Default, Deserialize, Clone, PartialEq, Serialize)]
+#[derive(Clone, PartialEq)]
 pub struct DefaultComponents {
-    #[serde(with = "crate::estarde::annotation_component::as_option")]
-    pub(crate) ordering: Option<AnnotationComponent>,
-    #[serde(with = "crate::estarde::annotation_component::as_option")]
-    pub(crate) coverage: Option<AnnotationComponent>,
-    #[serde(with = "crate::estarde::annotation_component::as_option")]
-    pub(crate) part_of: Option<AnnotationComponent>,
-    #[serde(with = "crate::estarde::annotation_component::as_option")]
-    pub(crate) dominance: Option<AnnotationComponent>,
-    #[serde(with = "crate::estarde::annotation_component::as_option")]
-    pub(crate) pointing: Option<AnnotationComponent>,
+    pub(crate) ordering: AnnotationComponent,
+    pub(crate) coverage: AnnotationComponent,
+    pub(crate) part_of: AnnotationComponent,
+    pub(crate) dominance: AnnotationComponent,
+    pub(crate) pointing: AnnotationComponent,
 }
 
 impl DefaultComponents {
-    fn new(
-        ordering: Option<AnnotationComponent>,
-        coverage: Option<AnnotationComponent>,
-        part_of: Option<AnnotationComponent>,
-        dominance: Option<AnnotationComponent>,
-        pointing: Option<AnnotationComponent>,
+    pub(crate) fn new(
+        ordering: AnnotationComponent,
+        coverage: AnnotationComponent,
+        part_of: AnnotationComponent,
+        dominance: AnnotationComponent,
+        pointing: AnnotationComponent,
     ) -> Self {
         Self {
             ordering,
@@ -272,32 +284,71 @@ impl DefaultComponents {
         }
     }
 
-    pub fn from_configured_importer(
-        importer: &dyn Importer,
-        config: &GenericImportConfiguration,
-    ) -> Self {
-        Self::new(
-            config
-                .configured_ordering()
-                .or(importer.preset_default_ordering())
-                .cloned(),
-            config
-                .configured_coverage()
-                .or(importer.preset_default_coverage())
-                .cloned(),
-            config
-                .configured_part_of()
-                .or(importer.preset_default_part_of())
-                .cloned(),
-            config
-                .configured_dominance()
-                .or(importer.preset_default_dominance())
-                .cloned(),
-            config
-                .configured_pointing()
-                .or(importer.preset_default_pointing())
-                .cloned(),
-        )
+    #[cfg(test)]
+    pub(crate) fn with_ordering(self, ordering: AnnotationComponent) -> Self {
+        Self {
+            ordering,
+            coverage: self.coverage,
+            part_of: self.part_of,
+            dominance: self.dominance,
+            pointing: self.pointing,
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn with_coverage(self, coverage: AnnotationComponent) -> Self {
+        Self {
+            ordering: self.ordering,
+            coverage,
+            part_of: self.part_of,
+            dominance: self.dominance,
+            pointing: self.pointing,
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn with_part_of(self, part_of: AnnotationComponent) -> Self {
+        Self {
+            ordering: self.ordering,
+            coverage: self.coverage,
+            part_of,
+            dominance: self.dominance,
+            pointing: self.pointing,
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn with_dominance(self, dominance: AnnotationComponent) -> Self {
+        Self {
+            ordering: self.ordering,
+            coverage: self.coverage,
+            part_of: self.part_of,
+            dominance,
+            pointing: self.pointing,
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn with_pointing(self, pointing: AnnotationComponent) -> Self {
+        Self {
+            ordering: self.ordering,
+            coverage: self.coverage,
+            part_of: self.part_of,
+            dominance: self.dominance,
+            pointing,
+        }
+    }
+}
+
+impl Default for DefaultComponents {
+    fn default() -> Self {
+        Self {
+            ordering: (*&GLOBAL_DEFAULT_ORDERING).clone(),
+            coverage: (*&GLOBAL_DEFAULT_COVERAGE).clone(),
+            part_of: (*&GLOBAL_DEFAULT_PART_OF).clone(),
+            dominance: (*&GLOBAL_DEFAULT_DOMINANCE).clone(),
+            pointing: (*&GLOBAL_DEFAULT_POINTING).clone(),
+        }
     }
 }
 
@@ -318,43 +369,13 @@ impl<'a> GenericImportConfiguration {
         root_as: Option<String>,
         extensions: Vec<String>,
         documents: Option<BTreeSet<String>>,
-        default_ns: Option<String>,
-        default_components: DefaultComponents,
+        model: ModelConfiguration,
     ) -> Self {
         GenericImportConfiguration {
             root_as,
             extensions,
             documents,
-            model: ModelConfiguration {
-                default_ns,
-                default_components: Some(default_components),
-            },
-        }
-    }
-
-    #[cfg(test)]
-    pub fn new_with_root_name(root_name: String) -> GenericImportConfiguration {
-        GenericImportConfiguration {
-            root_as: Some(root_name),
-            extensions: vec![],
-            documents: None,
-            model: ModelConfiguration {
-                default_ns: Default::default(),
-                default_components: Default::default(),
-            },
-        }
-    }
-
-    #[cfg(test)]
-    pub fn new_with_extensions(extensions: Vec<String>) -> GenericImportConfiguration {
-        GenericImportConfiguration {
-            root_as: None,
-            extensions,
-            documents: None,
-            model: ModelConfiguration {
-                default_ns: Default::default(),
-                default_components: Default::default(),
-            },
+            model,
         }
     }
 
@@ -372,10 +393,17 @@ impl<'a> GenericImportConfiguration {
                 .map(<&str>::to_string)
                 .collect_vec(),
             documents: None,
-            model: ModelConfiguration {
-                default_ns: Default::default(),
-                default_components: Default::default(),
-            },
+            model: importer.default_configuration().model,
+        }
+    }
+
+    #[cfg(test)]
+    pub fn and_root_name(self, root_name: String) -> GenericImportConfiguration {
+        GenericImportConfiguration {
+            root_as: Some(root_name),
+            extensions: self.extensions,
+            documents: self.documents,
+            model: self.model,
         }
     }
 
@@ -385,120 +413,34 @@ impl<'a> GenericImportConfiguration {
             root_as: self.root_as,
             extensions,
             documents: self.documents,
-            model: ModelConfiguration {
-                default_ns: Default::default(),
-                default_components: Default::default(),
-            },
+            model: self.model,
         }
     }
 
     const EMPTY_NS: &'a str = "";
 
     pub fn default_namespace(&self) -> &str {
-        if let Some(v) = &self.model.default_ns {
-            v.as_str()
-        } else {
-            GenericImportConfiguration::EMPTY_NS
-        }
-    }
-
-    pub fn customizes_default_namespace(&self) -> bool {
-        self.model.default_ns.is_some()
-    }
-
-    pub fn configured_ordering(&self) -> Option<&AnnotationComponent> {
-        if let Some(default_components) = &self.model.default_components {
-            default_components.ordering.as_ref()
-        } else {
-            None
-        }
+        &self.model.default_ns
     }
 
     pub fn default_ordering(&self) -> &AnnotationComponent {
-        if let Some(default_components) = &self.model.default_components {
-            default_components
-                .ordering
-                .as_ref()
-                .unwrap_or(&GLOBAL_DEFAULT_ORDERING)
-        } else {
-            &GLOBAL_DEFAULT_ORDERING
-        }
-    }
-
-    pub fn configured_coverage(&self) -> Option<&AnnotationComponent> {
-        if let Some(default_components) = &self.model.default_components {
-            default_components.coverage.as_ref()
-        } else {
-            None
-        }
+        &self.model.default_components.ordering
     }
 
     pub fn default_coverage(&self) -> &AnnotationComponent {
-        if let Some(default_components) = &self.model.default_components {
-            default_components
-                .coverage
-                .as_ref()
-                .unwrap_or(&GLOBAL_DEFAULT_COVERAGE)
-        } else {
-            &GLOBAL_DEFAULT_COVERAGE
-        }
-    }
-
-    pub fn configured_part_of(&self) -> Option<&AnnotationComponent> {
-        if let Some(default_components) = &self.model.default_components {
-            default_components.part_of.as_ref()
-        } else {
-            None
-        }
+        &self.model.default_components.coverage
     }
 
     pub fn default_part_of(&self) -> &AnnotationComponent {
-        if let Some(default_components) = &self.model.default_components {
-            default_components
-                .part_of
-                .as_ref()
-                .unwrap_or(&GLOBAL_DEFAULT_PART_OF)
-        } else {
-            &GLOBAL_DEFAULT_PART_OF
-        }
-    }
-
-    pub fn configured_dominance(&self) -> Option<&AnnotationComponent> {
-        if let Some(default_components) = &self.model.default_components {
-            default_components.dominance.as_ref()
-        } else {
-            None
-        }
+        &self.model.default_components.part_of
     }
 
     pub fn default_dominance(&self) -> &AnnotationComponent {
-        if let Some(default_components) = &self.model.default_components {
-            default_components
-                .dominance
-                .as_ref()
-                .unwrap_or(&GLOBAL_DEFAULT_DOMINANCE)
-        } else {
-            &GLOBAL_DEFAULT_DOMINANCE
-        }
-    }
-
-    pub fn configured_pointing(&self) -> Option<&AnnotationComponent> {
-        if let Some(default_components) = &self.model.default_components {
-            default_components.pointing.as_ref()
-        } else {
-            None
-        }
+        &self.model.default_components.dominance
     }
 
     pub fn default_pointing(&self) -> &AnnotationComponent {
-        if let Some(default_components) = &self.model.default_components {
-            default_components
-                .pointing
-                .as_ref()
-                .unwrap_or(&GLOBAL_DEFAULT_POINTING)
-        } else {
-            &GLOBAL_DEFAULT_POINTING
-        }
+        &self.model.default_components.pointing
     }
 }
 

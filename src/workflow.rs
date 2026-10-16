@@ -54,15 +54,10 @@ pub enum StatusMessage {
 /// First , all importers are executed in parallel. Then their output are appended to create a single annotation graph.
 /// The manipulators are executed in their defined sequence and can change the annotation graph.
 /// Last, all exporters are called with the now read-only annotation graph in parallel.
-#[derive(Deserialize, Serialize, Default)]
+#[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Workflow {
-    #[serde(default)]
     load: Option<LoadGraph>,
-    #[serde(
-        default,
-        deserialize_with = "crate::estarde::importer_step::optional_sequence::deserialize"
-    )]
     import: Option<Vec<ImporterStep>>,
     graph_op: Option<Vec<ManipulatorStep>>,
     export: Option<Vec<ExporterStep>>,
@@ -79,7 +74,6 @@ pub struct LoadGraph {
     /// The corpus name.
     corpus: String,
     /// Optimize components for writing before moving on.
-    #[serde(default)]
     optimize: Option<OptimizationTarget>,
 }
 
@@ -629,8 +623,7 @@ impl Workflow {
 
         let step_config = step
             .generic_config
-            .clone()
-            .unwrap_or(step.module.reader().default_configuration());
+            .clone();
         let updates = step
             .module
             .reader()
@@ -1139,5 +1132,33 @@ mod tests {
         assert!(fs::create_dir_all(tmp_dir.path().join("data").join("xlsx")).is_ok());
         assert!(fs::create_dir(tmp_dir.path().join("data").join("conllu")).is_ok());
         assert!(workflow.check_and_make_paths(tmp_dir.path()).is_ok());
+    }
+
+    /// This test deserializes a custom model configuration which matches exactly
+    /// the default model configuration, as errors have been observed.
+    #[test]
+    fn deserialize_explicit_default_configuration() {
+        let workflow_path =
+            Path::new("tests/data/import/generic/load-explicit-default-conf/workflow.toml");
+        let toml_str = fs::read_to_string(workflow_path).unwrap();
+        let workflow: std::result::Result<Workflow, _> = toml::from_str(&toml_str);
+        assert!(
+            workflow.is_ok(),
+            "Deserialization error: {}",
+            workflow.err().unwrap()
+        );
+        let mut workflow = workflow.unwrap();
+        let export_dir = tempdir().unwrap();
+        workflow.export_steps_mut().map(|v| {
+            v.first_mut().unwrap().path = export_dir.path().to_path_buf();
+        });
+        let run = workflow.execute(None, Path::new("./"), true);
+        assert!(run.is_ok(), "Err: {:?}", run.err().unwrap());
+        assert!(
+            export_dir.path().join("custom_name.graphml").exists(),
+            "Expected file was not created."
+        );
+        let graphml_str = fs::read_to_string(export_dir.path().join("custom_name.graphml"));
+        assert_snapshot!(graphml_str.unwrap());
     }
 }

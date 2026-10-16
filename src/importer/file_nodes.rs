@@ -94,7 +94,7 @@ mod tests {
     use insta::assert_snapshot;
     use itertools::Itertools;
 
-    use crate::ImporterStep;
+    use crate::{ImporterStep, importer::DefaultImportConfiguration};
 
     use super::CreateFileNodes;
 
@@ -174,11 +174,12 @@ mod tests {
         let import = CreateFileNodes {
             corpus_name: Some("xlsx".to_string()),
         };
+        let generic_config = import.default_configuration();
         let step = ImporterStep {
             module: crate::ReadFrom::Path(import),
             path: PathBuf::from("tests/data/import/xlsx/clean/xlsx/"),
             description: Some("Custom-id-import".to_string()),
-            generic_config: None,
+            generic_config,
         };
         let mut test_u = step.execute(None)?;
         // add dummy node and dummy ordering edge to pass model checks when applying the update to the graph

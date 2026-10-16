@@ -808,14 +808,9 @@ mod tests {
     use tempfile::TempDir;
 
     use crate::{
-        ImporterStep, ReadFrom, StepID,
-        exporter::exmaralda::ExportExmaralda,
-        importer::{
-            GenericImportConfiguration, Importer, exmaralda::ImportEXMARaLDA,
-            treetagger::ImportTreeTagger,
-        },
-        test_util::{export_to_string, export_to_string_in_directory},
-        util::graphupdate::UpdateWriter,
+        ImporterStep, ReadFrom, StepID, exporter::exmaralda::ExportExmaralda, importer::{
+            DefaultImportConfiguration, GenericImportConfiguration, Importer, exmaralda::ImportEXMARaLDA, treetagger::ImportTreeTagger,
+        }, test_util::{export_to_string, export_to_string_in_directory}, util::graphupdate::UpdateWriter,
     };
 
     #[test]
@@ -890,11 +885,12 @@ mod tests {
     #[test]
     fn test_exmaralda_export() {
         let import = ImportEXMARaLDA::default();
+        let generic_config = import.default_configuration();
         let step = ImporterStep {
             module: crate::ReadFrom::EXMARaLDA(import),
             path: PathBuf::from("./tests/data/import/exmaralda/clean/import/"),
             description: None,
-            generic_config: None,
+            generic_config,
         };
         let u = step.execute(None);
         assert!(u.is_ok());
@@ -923,11 +919,12 @@ mod tests {
     #[test]
     fn test_exmaralda_export_ordered() {
         let import = ImportEXMARaLDA::default();
+        let generic_config = import.default_configuration();
         let step = ImporterStep {
             module: crate::ReadFrom::EXMARaLDA(import),
             path: PathBuf::from("./tests/data/import/exmaralda/clean/import/"),
             description: None,
-            generic_config: None,
+            generic_config,
         };
         let u = step.execute(None);
         assert!(u.is_ok());
@@ -963,12 +960,13 @@ mod tests {
         let source_path = wd
             .unwrap()
             .join(Path::new("./tests/data/import/exmaralda/clean/import/"));
+        let generic_config = import.reader().default_configuration();
 
         let step = ImporterStep {
             module: import,
             path: source_path,
             description: None,
-            generic_config: None,
+            generic_config,
         };
         let u = step.execute(None);
 

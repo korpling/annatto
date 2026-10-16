@@ -35,11 +35,12 @@ fn serialize() {
 fn timeline_fail() {
     let import = crate::ReadFrom::EXMARaLDA(ImportEXMARaLDA::default());
     let import_path = "./tests/data/import/exmaralda/fail-corrupt_timeline/import/";
+    let generic_config = import.reader().default_configuration();
     let import_step = ImporterStep {
         module: import,
         path: PathBuf::from(import_path),
         description: None,
-        generic_config: None,
+        generic_config,
     };
 
     let (sender, _receiver) = mpsc::channel();
@@ -68,11 +69,12 @@ fn timeline_fail() {
 fn category_fail() {
     let import = crate::ReadFrom::EXMARaLDA(ImportEXMARaLDA::default());
     let import_path = "./tests/data/import/exmaralda/fail-no_category/";
+    let generic_config = import.reader().default_configuration();
     let import_step = ImporterStep {
         module: import,
         path: PathBuf::from(import_path),
         description: None,
-        generic_config: None,
+        generic_config,
     };
 
     let step_id = StepID::from_importer_step(&import_step);
@@ -106,11 +108,12 @@ fn no_speaker_attr_pass() {
 fn undefined_speaker_fail() {
     let import = crate::ReadFrom::EXMARaLDA(ImportEXMARaLDA::default());
     let import_path = "./tests/data/import/exmaralda/fail-undefined_speaker/";
+    let generic_config = import.reader().default_configuration();
     let import_step = ImporterStep {
         module: import,
         path: PathBuf::from(import_path),
         description: None,
-        generic_config: None,
+        generic_config,
     };
 
     let step_id = StepID::from_importer_step(&import_step);
@@ -139,11 +142,12 @@ fn undefined_speaker_fail() {
 fn unknown_tli_fail() {
     let import = crate::ReadFrom::EXMARaLDA(ImportEXMARaLDA::default());
     let import_path = "./tests/data/import/exmaralda/fail-unknown_tli/";
+    let generic_config = import.reader().default_configuration();
     let import_step = ImporterStep {
         module: import,
         path: PathBuf::from(import_path),
         description: None,
-        generic_config: None,
+        generic_config,
     };
 
     let step_id = StepID::from_importer_step(&import_step);
@@ -172,11 +176,12 @@ fn unknown_tli_fail() {
 fn bad_timevalue_fail() {
     let import = crate::ReadFrom::EXMARaLDA(ImportEXMARaLDA::default());
     let import_path = "./tests/data/import/exmaralda/fail-bad_timevalue/";
+    let generic_config = import.reader().default_configuration();
     let import_step = ImporterStep {
         module: import,
         path: PathBuf::from(import_path),
         description: None,
-        generic_config: None,
+        generic_config,
     };
 
     let step_id = StepID::from_importer_step(&import_step);
@@ -205,11 +210,12 @@ fn bad_timevalue_fail() {
 fn underspec_event_fail() {
     let import = crate::ReadFrom::EXMARaLDA(ImportEXMARaLDA::default());
     let import_path = "./tests/data/import/exmaralda/fail-no_start_no_end/";
+    let generic_config = import.reader().default_configuration();
     let import_step = ImporterStep {
         module: import,
         path: PathBuf::from(import_path),
         description: None,
-        generic_config: None,
+        generic_config,
     };
 
     let (sender, _receiver) = mpsc::channel();
@@ -222,11 +228,12 @@ fn underspec_event_fail() {
 fn invalid_fail() {
     let import = crate::ReadFrom::EXMARaLDA(ImportEXMARaLDA::default());
     let import_path = "./tests/data/import/exmaralda/fail-invalid/import/";
+    let generic_config = import.reader().default_configuration();
     let import_step = ImporterStep {
         module: import,
         path: PathBuf::from(import_path),
         description: None,
-        generic_config: None,
+        generic_config,
     };
 
     let step_id = StepID::from_importer_step(&import_step);
@@ -336,28 +343,30 @@ fn custom_config() {
         None,
         GenericImportConfiguration {
             model: crate::importer::ModelConfiguration {
-                default_components: Some(DefaultComponents {
-                    ordering: Some(AnnotationComponent::new(
+                default_components: DefaultComponents::default()
+                    .with_ordering(AnnotationComponent::new(
                         AnnotationComponentType::Ordering,
                         "custom-default-layer".to_string(),
                         "with-name".to_string(),
-                    )),
-                    part_of: Some(AnnotationComponent::new(
+                    ))
+                    .with_part_of(AnnotationComponent::new(
                         AnnotationComponentType::PartOf,
                         "custom-part-of-layer".to_string(),
                         "custom-part-of-name".to_string(),
-                    )),
-                    coverage: Some(AnnotationComponent::new(
+                    ))
+                    .with_coverage(AnnotationComponent::new(
                         AnnotationComponentType::Coverage,
                         "custom-cov".to_string(),
                         "custom-cov-name".to_string(),
                     )),
-                    ..Default::default()
-                }),
-                default_ns: None,
+                default_ns: ImportEXMARaLDA::default()
+                    .default_configuration()
+                    .default_namespace()
+                    .to_string(),
             },
             extensions: vec!["exb".to_string()],
-            ..Default::default()
+            documents: None,
+            root_as: None,
         },
         true,
         None,

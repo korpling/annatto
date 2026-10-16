@@ -1,0 +1,21 @@
+[[import]]
+format = "ptb"
+path = "./tests/data/import/generic/load-explicit-default-conf/data"  # path resolution is skipped in this test, so it has to relate to the runtime dir
+description = "This tests import configuration deserialization."
+extensions = ["txt"]
+as = "custom_name"
+
+[import.model]
+default_ns = "syntax"
+
+[import.model.default_components]
+dominance = { ctype = "Dominance", layer = "syntax", name = "" }
+
+[import.config]
+
+[[export]]
+format = "graphml"
+path = "."
+
+[export.config]
+stable_order = true
