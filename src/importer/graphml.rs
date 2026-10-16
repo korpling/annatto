@@ -96,10 +96,7 @@ mod tests {
     use itertools::Itertools;
 
     use crate::{
-        importer::{
-            DefaultImportConfiguration, GenericImportConfiguration, Importer,
-            graphml::GraphMLImporter,
-        },
+        importer::{DefaultImportConfiguration, Importer, graphml::GraphMLImporter},
         test_util::import_as_graphml_string,
         util::graphupdate::UpdateWriter,
     };

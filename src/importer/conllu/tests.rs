@@ -273,10 +273,6 @@ fn labeled_targets() {
         crate::importer::ModelConfiguration::new(
             "custom_ns".to_string(),
             DefaultComponents::default()
-                .with_ordering(importer.preset_default_ordering().cloned().unwrap())
-                .with_coverage(importer.preset_default_coverage().cloned().unwrap())
-                .with_part_of(importer.preset_default_part_of().cloned().unwrap())
-                .with_dominance(importer.preset_default_dominance().cloned().unwrap())
                 .with_pointing(importer.preset_default_pointing().cloned().unwrap()),
         ),
     );

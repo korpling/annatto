@@ -54,52 +54,95 @@ impl TryFrom<ImporterStepUI> for ImporterStep {
                     .map(ToString::to_string)
                     .collect_vec()
             };
-            let ModelConfigurationUI {
+            let resolved_model = if let Some(ModelConfigurationUI {
                 default_ns,
                 default_components,
-            } = model;
-            let resolved_default_ns = if let Some(ns) = default_ns {
-                ns
+            }) = model
+            {
+                let resolved_default_ns = if let Some(ns) = default_ns {
+                    ns
+                } else {
+                    module
+                        .reader()
+                        .default_configuration()
+                        .default_namespace()
+                        .to_string()
+                };
+                let resolved_components = {
+                    let DefaultComponentsUI {
+                        ordering,
+                        coverage,
+                        part_of,
+                        dominance,
+                        pointing,
+                    } = default_components;
+                    let resolved_ordering = ordering
+                        .or(module.reader().preset_default_ordering().cloned())
+                        .unwrap_or((*GLOBAL_DEFAULT_ORDERING).clone());
+                    let resolved_coverage = coverage
+                        .or(module.reader().preset_default_coverage().cloned())
+                        .unwrap_or((*GLOBAL_DEFAULT_COVERAGE).clone());
+                    let resolved_part_of = part_of
+                        .or(module.reader().preset_default_part_of().cloned())
+                        .unwrap_or((*GLOBAL_DEFAULT_PART_OF).clone());
+                    let resolved_dominance = dominance
+                        .or(module.reader().preset_default_dominance().cloned())
+                        .unwrap_or((*GLOBAL_DEFAULT_DOMINANCE).clone());
+                    let resolved_pointing = pointing
+                        .or(module.reader().preset_default_pointing().cloned())
+                        .unwrap_or((*GLOBAL_DEFAULT_POINTING).clone());
+                    DefaultComponents::new(
+                        resolved_ordering,
+                        resolved_coverage,
+                        resolved_part_of,
+                        resolved_dominance,
+                        resolved_pointing,
+                    )
+                };
+                ModelConfiguration::new(resolved_default_ns, resolved_components)
             } else {
-                module
+                let resolved_ordering = module
                     .reader()
-                    .default_configuration()
-                    .default_namespace()
-                    .to_string()
-            };
-            let resolved_components = {
-                let DefaultComponentsUI {
-                    ordering,
-                    coverage,
-                    part_of,
-                    dominance,
-                    pointing,
-                } = default_components;
-                let resolved_ordering = ordering
-                    .or(module.reader().preset_default_ordering().cloned())
-                    .unwrap_or((*GLOBAL_DEFAULT_ORDERING).clone());
-                let resolved_coverage = coverage
-                    .or(module.reader().preset_default_coverage().cloned())
-                    .unwrap_or((*GLOBAL_DEFAULT_COVERAGE).clone());
-                let resolved_part_of = part_of
-                    .or(module.reader().preset_default_part_of().cloned())
-                    .unwrap_or((*GLOBAL_DEFAULT_PART_OF).clone());
-                let resolved_dominance = dominance
-                    .or(module.reader().preset_default_dominance().cloned())
-                    .unwrap_or((*GLOBAL_DEFAULT_DOMINANCE).clone());
-                let resolved_pointing = pointing
-                    .or(module.reader().preset_default_pointing().cloned())
-                    .unwrap_or((*GLOBAL_DEFAULT_POINTING).clone());
-                DefaultComponents::new(
+                    .preset_default_ordering()
+                    .unwrap_or(&GLOBAL_DEFAULT_ORDERING)
+                    .clone();
+                let resolved_coverage = module
+                    .reader()
+                    .preset_default_coverage()
+                    .unwrap_or(&GLOBAL_DEFAULT_COVERAGE)
+                    .clone();
+                let resolved_part_of = module
+                    .reader()
+                    .preset_default_part_of()
+                    .unwrap_or(&GLOBAL_DEFAULT_PART_OF)
+                    .clone();
+                let resolved_dominance = module
+                    .reader()
+                    .preset_default_dominance()
+                    .unwrap_or(&GLOBAL_DEFAULT_DOMINANCE)
+                    .clone();
+                let resolved_pointing = module
+                    .reader()
+                    .preset_default_pointing()
+                    .unwrap_or(&GLOBAL_DEFAULT_POINTING)
+                    .clone();
+                let default_components = DefaultComponents::new(
                     resolved_ordering,
                     resolved_coverage,
                     resolved_part_of,
                     resolved_dominance,
                     resolved_pointing,
+                );
+                ModelConfiguration::new(
+                    module
+                        .reader()
+                        .default_configuration()
+                        .default_namespace()
+                        .to_string(),
+                    default_components,
                 )
             };
-            let model = ModelConfiguration::new(resolved_default_ns, resolved_components);
-            GenericImportConfiguration::new(root_as, resolved_extensions, documents, model)
+            GenericImportConfiguration::new(root_as, resolved_extensions, documents, resolved_model)
         };
         Ok(ImporterStep {
             module,
@@ -123,8 +166,8 @@ impl From<ImporterStep> for ImporterStepUI {
                 root_as: generic_config.custom_root_name(),
                 extensions: Some(generic_config.extensions().clone()),
                 documents: generic_config.document_list().cloned(),
-                model: ModelConfigurationUI {
-                    default_ns: Some("".to_string()),
+                model: Some(ModelConfigurationUI {
+                    default_ns: Some(generic_config.default_namespace().to_string()),
                     default_components: DefaultComponentsUI {
                         ordering: Some(generic_config.default_ordering().clone()),
                         coverage: Some(generic_config.default_coverage().clone()),
@@ -132,7 +175,7 @@ impl From<ImporterStep> for ImporterStepUI {
                         part_of: Some(generic_config.default_part_of().clone()),
                         pointing: Some(generic_config.default_pointing().clone()),
                     },
-                },
+                }),
             }
         };
         Self {
@@ -157,7 +200,7 @@ pub(crate) struct GenericConfigUI {
     /// This is a sub section of configurations that restrains the model, that will be derived from the data
     /// in certain ways, e. g. by setting a default annotation namespace or default components to be used.
     // the user must be allowed to leave out this section, as it is for advanced level scenarios only.
-    model: ModelConfigurationUI,
+    model: Option<ModelConfigurationUI>,
 }
 
 #[derive(Deserialize, Serialize, Clone, PartialEq)]
