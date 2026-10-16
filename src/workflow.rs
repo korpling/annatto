@@ -621,9 +621,7 @@ impl Workflow {
             import_path
         };
 
-        let step_config = step
-            .generic_config
-            .clone();
+        let step_config = step.generic_config.clone();
         let updates = step
             .module
             .reader()

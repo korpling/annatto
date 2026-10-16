@@ -4,7 +4,9 @@ use graphannis::model::{AnnotationComponent, AnnotationComponentType};
 use insta::assert_snapshot;
 
 use crate::importer::{
-    DefaultComponents, DefaultImportConfiguration, GLOBAL_DEFAULT_DOMINANCE, GLOBAL_DEFAULT_POINTING, GenericImportConfiguration, ModelConfiguration, toolbox::ImportFLToolbox,
+    DefaultComponents, DefaultImportConfiguration, GLOBAL_DEFAULT_DOMINANCE,
+    GLOBAL_DEFAULT_POINTING, GenericImportConfiguration, ModelConfiguration,
+    toolbox::ImportFLToolbox,
 };
 
 #[test]

@@ -808,9 +808,14 @@ mod tests {
     use tempfile::TempDir;
 
     use crate::{
-        ImporterStep, ReadFrom, StepID, exporter::exmaralda::ExportExmaralda, importer::{
-            DefaultImportConfiguration, GenericImportConfiguration, Importer, exmaralda::ImportEXMARaLDA, treetagger::ImportTreeTagger,
-        }, test_util::{export_to_string, export_to_string_in_directory}, util::graphupdate::UpdateWriter,
+        ImporterStep, ReadFrom, StepID,
+        exporter::exmaralda::ExportExmaralda,
+        importer::{
+            DefaultImportConfiguration, GenericImportConfiguration, Importer,
+            exmaralda::ImportEXMARaLDA, treetagger::ImportTreeTagger,
+        },
+        test_util::{export_to_string, export_to_string_in_directory},
+        util::graphupdate::UpdateWriter,
     };
 
     #[test]

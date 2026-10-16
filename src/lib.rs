@@ -504,10 +504,7 @@ mod tests {
                 .unwrap(),
             "custom_corpus_root"
         );
-        assert_eq!(
-            import_step.generic_config.extensions(),
-            &["xml"]
-        );
+        assert_eq!(import_step.generic_config.extensions(), &["xml"]);
         assert_snapshot!(toml::to_string(&workflow).unwrap());
     }
 
