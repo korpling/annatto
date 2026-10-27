@@ -12,7 +12,7 @@ use itertools::Itertools;
 use linked_hash_map::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 
-use crate::{exporter::Exporter, importer::GLOBAL_DEFAULT_PART_OF};
+use crate::{exporter::Exporter, importer::GLOBAL_DEFAULT_PART_OF, progress::ProgressReporter};
 
 #[derive(Clone, Deserialize, Facet, PartialEq, Serialize)]
 pub struct ExportPTB {
@@ -121,6 +121,7 @@ impl Exporter for ExportPTB {
             .flatten()
             .map(|m| m.node)
             .collect_vec();
+        let progress = ProgressReporter::new(tx, step_id, document_nodes.len())?;
         let ordering_storage = graph
             .get_graphstorage(&self.terminal_component)
             .ok_or(anyhow!(
@@ -141,9 +142,10 @@ impl Exporter for ExportPTB {
         let sorting_guide = SortingGuide {
             guiding_sequence: &total_ordering,
         };
-        document_nodes
-            .into_iter()
-            .try_for_each(|n| self.export_document(graph, n, output_path, &sorting_guide))?;
+        document_nodes.into_iter().try_for_each(|n| {
+            self.export_document(graph, n, output_path, &sorting_guide)?;
+            progress.worked(1)
+        })?;
         Ok(())
     }
 
@@ -415,7 +417,7 @@ impl SortingGuide<'_> {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, path::Path};
+    use std::path::Path;
 
     use graphannis::AnnotationGraph;
     use insta::assert_snapshot;
