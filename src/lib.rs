@@ -44,9 +44,11 @@ use tabled::Tabled;
 use workflow::StatusSender;
 
 use crate::{
-    exporter::{ptb::ExportPTB, treetagger::ExportTreeTagger}, importer::{
+    exporter::{ptb::ExportPTB, treetagger::ExportTreeTagger},
+    importer::{
         GenericImportConfiguration, elan::ImportELAN, git::ImportGitMetadata, text::ImportText,
-    }, manipulator::{
+    },
+    manipulator::{
         diff::DiffSubgraphs, divide::DivideSegments, edit::EditGraph, mv::MoveAnnos,
         span::CreateSpans,
     },
