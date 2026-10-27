@@ -14,26 +14,34 @@ use serde::{Deserialize, Serialize};
 
 use crate::{exporter::Exporter, importer::GLOBAL_DEFAULT_PART_OF, progress::ProgressReporter};
 
+/// This module exports tree structures in parentheses format as known from Penn Treebank.
 #[derive(Clone, Deserialize, Facet, PartialEq, Serialize)]
 pub struct ExportPTB {
+    /// This is used to set the syntax component. The default is `{ ctype = "Dominance", layer = "syntax", name = ""}`.
     #[serde(
         with = "crate::estarde::annotation_component",
         default = "default_component"
     )]
     component: AnnotationComponent,
+    /// This component is used to split the corpus graph in separate files. Default is `{ ctype = "PartOf", layer = "annis", name = ""}`.
     #[serde(
         default = "default_file_component",
         with = "crate::estarde::annotation_component"
     )]
     file_component: AnnotationComponent,
+    /// The given key identifies the nodes gathering all nodes of a document. Default is `annis::doc`.
     #[serde(default = "default_file_key")]
     file_key: AnnoKey,
+    /// This annotation key is used to derive the category of nonterminal nodes. Default is `syntax::cat`.
     #[serde(default = "default_nonterminal_key", with = "crate::estarde::anno_key")]
     nonterminal_key: AnnoKey,
+    /// This annotation key is used to derive the category of terminal nodes. Default is `syntax::pos`.
     #[serde(default = "default_terminal_key", with = "crate::estarde::anno_key")]
     terminal_key: AnnoKey,
+    /// This annotation key contains the text value of the leaves of the tree. Default is `annis::tok`.
     #[serde(default = "default_text_key", with = "crate::estarde::anno_key")]
     text_key: AnnoKey,
+    /// This component, usually an ordering, is used to identify the linear sequence of leave nodes. Default is `{ ctype = "Ordering", layer = "annis", name = ""}`.
     #[serde(
         default = "default_terminal_component",
         with = "crate::estarde::annotation_component"
