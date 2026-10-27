@@ -223,12 +223,12 @@ impl ExportPTB {
                     let start_index = total_ordering
                         .guiding_sequence
                         .iter()
-                        .position(|e| *e == v.first().map(|n| *n).unwrap_or_default())
+                        .position(|e| *e == v.first().copied().unwrap_or_default())
                         .ok_or(anyhow!("Could not determine position of terminal node"))?;
                     let end_index = total_ordering
                         .guiding_sequence
                         .iter()
-                        .position(|e| *e == v.last().map(|n| *n).unwrap_or_default())
+                        .position(|e| *e == v.last().copied().unwrap_or_default())
                         .ok_or(anyhow!("Could not determine position of terminal node"))?;
                     roots_with_text_nodes.insert(*n, (start_index, end_index + 1));
                 }
@@ -294,10 +294,10 @@ impl ExportPTB {
             );
             terminal_strings.push(terminal_str);
         }
-        let mut terminal_iter = node_sequence.iter().zip(terminal_strings);
+        let terminal_iter = node_sequence.iter().zip(terminal_strings);
         let mut tree = String::from("("); // open outer
         let mut visited_nodes = vec![];
-        while let Some((terminal_id, terminal_repr)) = terminal_iter.next() {
+        for (terminal_id, terminal_repr) in terminal_iter {
             for (i, node) in visited_nodes.iter().rev().enumerate() {
                 let is_connected =
                     syntax_gs.is_connected(*node, *terminal_id, 1, std::ops::Bound::Unbounded)?;
@@ -319,7 +319,7 @@ impl ExportPTB {
         for _ in visited_nodes {
             write!(&mut tree, ")")?;
         }
-        write!(&mut tree, ")\n")?; // close outer
+        writeln!(&mut tree, ")")?; // close outer
         Ok(tree)
     }
 
@@ -352,7 +352,7 @@ impl ExportPTB {
 fn clean_text_value(value: &str) -> Result<String, anyhow::Error> {
     let mut clean_value = String::with_capacity(value.len() + 2);
     let is_multi_token_string = value.contains(" ");
-    if is_multi_token_string && value.chars().nth(0) != Some('"') {
+    if is_multi_token_string && !value.starts_with('"') {
         write!(&mut clean_value, "\"")?;
     }
     write!(
@@ -360,14 +360,17 @@ fn clean_text_value(value: &str) -> Result<String, anyhow::Error> {
         "{}",
         value.replace("(", "-LRB-").replace(")", "-RRB-")
     )?;
-    if is_multi_token_string && value.chars().nth(value.len() - 1) != Some('"') {
+    if is_multi_token_string && !value.ends_with('"') {
         write!(&mut clean_value, "\"")?;
     }
     Ok(clean_value)
 }
 
 fn clean_anno_value(value: &str) -> String {
-    format!("{}", value.replace("(", "-LRB-").replace(")", "-RRB-"))
+    value
+        .replace("(", "-LRB-")
+        .replace(")", "-RRB-")
+        .to_string()
 }
 
 struct SortingGuide<'a> {
@@ -381,14 +384,14 @@ impl SortingGuide<'_> {
             if let Some(pos_a) = self.guiding_sequence.iter().position(|e| *e == a) {
                 if pos_a < self.guiding_sequence.len() / 2 {
                     // search on the left
-                    if (&self.guiding_sequence[0..pos_a]).contains(&b) {
+                    if (self.guiding_sequence[0..pos_a]).contains(&b) {
                         std::cmp::Ordering::Greater
                     } else {
                         std::cmp::Ordering::Less
                     }
                 } else {
                     // search on the right
-                    if (&self.guiding_sequence[pos_a..]).contains(&b) {
+                    if (self.guiding_sequence[pos_a..]).contains(&b) {
                         std::cmp::Ordering::Less
                     } else {
                         std::cmp::Ordering::Greater
@@ -402,14 +405,14 @@ impl SortingGuide<'_> {
             if let Some(pos_b) = self.guiding_sequence.iter().position(|e| *e == b) {
                 if pos_b < self.guiding_sequence.len() / 2 {
                     // check to the left
-                    if (&self.guiding_sequence[0..pos_b]).contains(&a) {
+                    if (self.guiding_sequence[0..pos_b]).contains(&a) {
                         std::cmp::Ordering::Less
                     } else {
                         std::cmp::Ordering::Greater
                     }
                 } else {
                     // check to the right
-                    if (&self.guiding_sequence[pos_b..]).contains(&a) {
+                    if (self.guiding_sequence[pos_b..]).contains(&a) {
                         std::cmp::Ordering::Greater
                     } else {
                         std::cmp::Ordering::Less
