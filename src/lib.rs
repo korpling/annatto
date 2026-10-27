@@ -44,7 +44,7 @@ use tabled::Tabled;
 use workflow::StatusSender;
 
 use crate::{
-    exporter::treetagger::ExportTreeTagger,
+    exporter::{ptb::ExportPTB, treetagger::ExportTreeTagger},
     importer::{
         GenericImportConfiguration, elan::ImportELAN, git::ImportGitMetadata, text::ImportText,
     },
@@ -68,6 +68,7 @@ pub enum WriteAs {
     EXMARaLDA(#[serde(default)] ExportExmaralda),
     GraphML(#[serde(default)] GraphMLExporter), // the purpose of serde(default) here is, that an empty `[export.config]` table can be omited in the future
     Meta(#[serde(default)] ExportMeta),
+    Ptb(ExportPTB),
     SaltXml(#[serde(default)] ExportSaltXml),
     Sequence(#[serde(default)] ExportSequence),
     Table(#[serde(default)] ExportTable),
@@ -96,6 +97,7 @@ impl WriteAs {
             WriteAs::Xlsx(m) => m,
             WriteAs::CoNLLU(m) => m.as_ref(),
             WriteAs::Meta(m) => m,
+            WriteAs::Ptb(m) => m,
         }
     }
 

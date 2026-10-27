@@ -1,0 +1,17 @@
+---
+source: src/exporter/ptb.rs
+expression: actual.unwrap()
+---
+---- doc1.ptb:
+( (VROOT (DM (NGHES äh)) (DM (NGIRR hey) (NE USbi58FD_P))))
+( (VROOT (SIMPX (VF (PPER ich)) (LK (VAFIN hab)) (MF (ADV gerade) (ART einen) (NN Unfall)) (VC (VVPP gesehen)) (NF (ART ein) (NN Autounfall)))))
+( (VROOT (DM (SEDM also)) (SIMPX (VF (ADV da)) (LK (VAFIN war)) (DM (NGHES äh)) (MF (PDAT dieser) (NN Mann) (KON und) (PDAT diese) (NN Frau)))))
+( (VROOT (SIMPX (KOORD (KON und)) (DM (NGHES äh)) (VF (ART der) (NN Mann)) (LK (VAFIN hatte)) (MF (ART ein) (NN Fußball)))))
+( (VROOT (SIMPX (KOORD (KON und)) (VF (PDS die)) (LK (VAFIN sind)) (VC (VVPP vorbeigelaufen)))))
+( (VROOT (SIMPX (KOORD (KON und)) (VF (PDAT diese) (CARD zwei) (NN Autos)) (LK (VVFIN kamen)) (MF (ADV dann)) (VC (PTKVZ daher)))))
+( (VROOT (SIMPX (KOORD (KON und)) (VF (ADV da)) (LK (VAFIN war)) (MF (PDAT diese) (NN Frau)) (NF (SIMPX (C (PRELS die)) (DM (NGHES äh)) (MF (APPR aus) (PPOSAT ihrem) (NN Auto) (NN Essen)) (VC (VVPP geholt) (VAFIN hat)))))))
+( (VROOT (SIMPX (KOORD (KON und)) (VF (PPER sie)) (LK (VAFIN hat)) (MF (ART ein) (NN Hund) (ADV dabei)))))
+( (VROOT (SIMPX (KOORD (KON und)) (VF (ART der) (NN Ball)) (LK (VAFIN ist)) (MF (APPR von) (ART dem) (NN Manns) (NN Fingern)) (VC (VVPP gefallen)))))
+( (VROOT (SIMPX (KOORD (KON und)) (DM (NGHES äh)) (MF (ART der) (NN Hund)) (DM (NGHES äh)) (FKOORD (FKONJ (VC (VVFIN kam))) (KON und) (FKONJ (LK (VAFIN ist)) (VC (VVPP dazugerannt)))))))
+( (VROOT (SIMPX (VF (KON und) (ART das) (NN Auto) (SIMPX (C (PRELS das)) (MF (ADV da)) (VC (VVFIN kam)))) (FRAG (LK (VAFIN ist)) (MF (ADJD schnell))) (LK (VAFIN hat)) (MF (ADJD schnell)) (VC (VVPP gestoppt)))))
+( (VROOT (SIMPX (KOORD (KON und)) (VF (ART das) (NN Auto) (ADV hinterher)) (LK (VAFIN ist)) (VC (VVPP reingefahren)) (NF (APPR in) (ART das) (PIDAT andere) (NN Auto)))))
