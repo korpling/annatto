@@ -4,10 +4,11 @@ Import annotations provided in the fieldlinguist's toolbox text format.
 
 ## Configuration
 
-###  target
+###  globals
 
-This attribute sets the annotation layer, that other annotations will point to.
-This needs to be set to avoid an invalid model.
+The annotation names are considered global spans, i. e., they will cover all following
+annotations' tokens until a follow-up value is defined. Also, they are considered single-valued
+per line.
 
 ###  span
 
@@ -15,6 +16,10 @@ The annotation names named here are considered single-valued per line. Space val
 are not considered delimiters, but part of the annotation value. Such annotations
 rely on the existence of the target nodes, i. e. annotation lines without any other
 non-spanning annotation in the block will be dropped.
+
+###  ignore
+
+Lists the annotation markers to be ignored.
 
 ###  explicit_null
 
