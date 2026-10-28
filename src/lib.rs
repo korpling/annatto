@@ -128,8 +128,7 @@ pub enum ReadFrom {
     Table(#[serde(default)] ImportTable),
     Text(#[serde(default)] ImportText),
     TextGrid(#[serde(default)] ImportTextgrid),
-    #[serde(rename = "toolbox")]
-    ByteAlignedToolBox(ImportFLToolbox),
+    Toolbox(ImportFLToolbox),
     TreeTagger(#[serde(default)] ImportTreeTagger),
     Webanno(#[serde(default)] ImportWebAnnoTSV),
     Whisper(#[serde(default)] ImportWhisper),
@@ -166,7 +165,7 @@ impl ReadFrom {
             ReadFrom::Xml(m) => m,
             ReadFrom::Webanno(m) => m,
             ReadFrom::Git(m) => m,
-            ReadFrom::ByteAlignedToolBox(m) => m,
+            ReadFrom::Toolbox(m) => m,
             ReadFrom::Elan(m) => m,
         }
     }
