@@ -1,0 +1,41 @@
+---
+source: src/importer/toolbox/tests.rs
+expression: "toml::to_string(&importer_step).unwrap()"
+---
+format = "toolbox"
+path = "./"
+extensions = ["txt"]
+
+[config]
+globals = ["id"]
+span = ["clause", "sentence"]
+ignore = ["comment"]
+explicit_null = false
+
+[model]
+default_ns = ""
+
+[model.default_components.ordering]
+ctype = "Ordering"
+layer = "annis"
+name = ""
+
+[model.default_components.coverage]
+ctype = "Coverage"
+layer = "annis"
+name = ""
+
+[model.default_components.part_of]
+ctype = "PartOf"
+layer = "annis"
+name = ""
+
+[model.default_components.dominance]
+ctype = "Dominance"
+layer = "annis"
+name = ""
+
+[model.default_components.pointing]
+ctype = "Pointing"
+layer = ""
+name = "point"

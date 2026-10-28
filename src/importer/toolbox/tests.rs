@@ -3,10 +3,13 @@ use std::{fs, path::Path};
 use graphannis::model::{AnnotationComponent, AnnotationComponentType};
 use insta::assert_snapshot;
 
-use crate::importer::{
-    DefaultComponents, DefaultImportConfiguration, GLOBAL_DEFAULT_DOMINANCE,
-    GLOBAL_DEFAULT_POINTING, GenericImportConfiguration, ModelConfiguration,
-    toolbox::ImportFLToolbox,
+use crate::{
+    ImporterStep,
+    importer::{
+        DefaultComponents, DefaultImportConfiguration, GLOBAL_DEFAULT_DOMINANCE,
+        GLOBAL_DEFAULT_POINTING, GenericImportConfiguration, ModelConfiguration,
+        toolbox::ImportFLToolbox,
+    },
 };
 
 #[test]
@@ -26,6 +29,26 @@ fn serialize_custom() {
         serialization.err()
     );
     assert_snapshot!(serialization.unwrap());
+}
+
+#[test]
+fn serialize_in_container() {
+    let module = crate::ReadFrom::Toolbox(ImportFLToolbox {
+        span: ["sentence".to_string(), "clause".to_string()]
+            .into_iter()
+            .collect(),
+        ignore: ["comment".to_string()].into_iter().collect(),
+        globals: ["id".to_string()].into_iter().collect(),
+        explicit_null: false,
+    });
+    let generic_config = module.reader().default_configuration();
+    let importer_step = ImporterStep {
+        module,
+        path: Path::new("./").to_path_buf(),
+        description: None,
+        generic_config,
+    };
+    assert_snapshot!(toml::to_string(&importer_step).unwrap());
 }
 
 #[test]
