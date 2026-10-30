@@ -43,6 +43,7 @@ fn serialize_custom() {
             ns: "norm".into(),
         }),
         labeled_targets: true,
+        root_mode: None,
     };
     let serialization = toml::to_string(&module);
     assert!(
@@ -281,6 +282,32 @@ fn labeled_targets() {
         Path::new("tests/data/import/conll/valid/"),
         None,
         config,
+    );
+    assert!(actual.is_ok());
+    assert_snapshot!(actual.unwrap());
+}
+
+#[test]
+fn implicit_root_mode() {
+    let importer: Result<ImportCoNLLU, _> = toml::from_str(r#"root_mode = "implicit""#);
+    assert!(importer.is_ok());
+    let actual = import_as_graphml_string(
+        importer.unwrap(),
+        Path::new("tests/data/import/conll/root-mode-tests"),
+        None,
+    );
+    assert!(actual.is_ok());
+    assert_snapshot!(actual.unwrap());
+}
+
+#[test]
+fn explicit_root_mode() {
+    let importer: Result<ImportCoNLLU, _> = toml::from_str(r#"root_mode = "explicit""#);
+    assert!(importer.is_ok());
+    let actual = import_as_graphml_string(
+        importer.unwrap(),
+        Path::new("tests/data/import/conll/root-mode-tests"),
+        None,
     );
     assert!(actual.is_ok());
     assert_snapshot!(actual.unwrap());
