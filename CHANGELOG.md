@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add export `ptb`.
+- import `conllu`: Add two modes for building root edges.
 
 ### Fixed
 
