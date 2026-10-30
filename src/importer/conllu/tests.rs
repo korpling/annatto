@@ -11,7 +11,7 @@ use crate::{
     ImporterStep, ReadFrom, StepID,
     importer::{
         DefaultComponents, DefaultImportConfiguration, GenericImportConfiguration,
-        conllu::{default_comment_key},
+        conllu::default_comment_key,
     },
     test_util::{import_as_graphml_string, import_as_graphml_string_with_custom_config},
     util::graphupdate::UpdateWriter,
