@@ -99,7 +99,9 @@ impl Importer for ImportText {
         let all_files = update.write_corpus_graph_from_file_tree(input_path)?;
 
         let tokenizer = match &self.tokenizer {
-            Tokenizer::Treetagger { language } => TreeTaggerTokenizer::new(language.as_str().into())?,
+            Tokenizer::Treetagger { language } => {
+                TreeTaggerTokenizer::new(language.as_str().into())?
+            }
         };
 
         // Each file is a work step
