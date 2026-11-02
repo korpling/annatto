@@ -65,14 +65,11 @@ impl From<Language> for LanguageConfig {
     }
 }
 
-impl<S> From<S> for Language
-where
-    S: AsRef<str>,
-{
-    fn from(value: S) -> Self {
-        if value.as_ref().len() >= 2 {
+impl From<&str> for Language {
+    fn from(value: &str) -> Self {
+        if value.len() >= 2 {
             // Match the first two letters
-            match &value.as_ref()[0..2] {
+            match &value[0..2] {
                 "ca" => Language::Catalan,
                 "en" => Language::English,
                 "fr" => Language::French,
