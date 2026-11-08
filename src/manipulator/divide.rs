@@ -146,7 +146,7 @@ impl DivideMode {
                 Ok(value.split(delimiter).map(str::to_string).collect())
             }
             DivideMode::Tokenize { language } => {
-                let tokenizer = TreeTaggerTokenizer::new(Language::from(language))?;
+                let tokenizer = TreeTaggerTokenizer::new(Language::from(language.as_str()))?;
                 let s_value = ReadableValue::from(value);
                 let tokens = tokenizer.tokenize(s_value)?;
                 Ok(tokens
