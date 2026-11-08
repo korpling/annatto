@@ -9,8 +9,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     importer::{
-        DefaultImportConfiguration, Importer, text::tokenizer::{Language, Token, TreeTaggerTokenizer},
-    }, progress::ProgressReporter, util::graphupdate::UpdateWriter,
+        DefaultImportConfiguration, Importer,
+        text::tokenizer::{Language, Token, TreeTaggerTokenizer},
+    },
+    progress::ProgressReporter,
+    util::graphupdate::UpdateWriter,
 };
 
 pub(crate) mod tokenizer;
