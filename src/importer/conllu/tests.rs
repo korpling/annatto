@@ -292,7 +292,12 @@ fn labeled_targets() {
 
 #[test]
 fn implicit_root_mode() {
-    let importer: Result<ImportCoNLLU, _> = toml::from_str(r#"root_mode = "implicit""#);
+    let importer: Result<ImportCoNLLU, _> = toml::from_str(
+        r#"
+    root_mode = "implicit"
+    labeled_targets = true
+    "#,
+    );
     assert!(importer.is_ok());
     let actual = import_as_graphml_string(
         importer.unwrap(),
@@ -305,7 +310,12 @@ fn implicit_root_mode() {
 
 #[test]
 fn explicit_root_mode() {
-    let importer: Result<ImportCoNLLU, _> = toml::from_str(r#"root_mode = "explicit""#);
+    let importer: Result<ImportCoNLLU, _> = toml::from_str(
+        r#"
+    root_mode = "explicit"
+    labeled_targets = true
+    "#,
+    );
     assert!(importer.is_ok());
     let actual = import_as_graphml_string(
         importer.unwrap(),
