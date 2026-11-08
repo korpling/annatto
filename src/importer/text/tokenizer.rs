@@ -67,12 +67,13 @@ impl From<Language> for LanguageConfig {
 
 impl<S> From<S> for Language
 where
-    S: AsRef<str>,
+    S: ToString,
 {
     fn from(value: S) -> Self {
-        if value.as_ref().len() >= 2 {
+        let s = value.to_string();
+        if s.len() >= 2 {
             // Match the first two letters
-            match &value.as_ref()[0..2] {
+            match &s[0..2] {
                 "ca" => Language::Catalan,
                 "en" => Language::English,
                 "fr" => Language::French,
