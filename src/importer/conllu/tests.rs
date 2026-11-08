@@ -273,8 +273,11 @@ fn labeled_targets() {
         Some(BTreeSet::from(["website_example".to_string()])),
         crate::importer::ModelConfiguration::new(
             "custom_ns".to_string(),
-            DefaultComponents::default()
-                .with_pointing(importer.preset_default_pointing().cloned().unwrap()),
+            DefaultComponents::default().with_pointing(AnnotationComponent::new(
+                AnnotationComponentType::Pointing,
+                "use-a-layer".to_string(),
+                "syntax".to_string(),
+            )),
         ),
     );
     let actual = import_as_graphml_string_with_custom_config(
