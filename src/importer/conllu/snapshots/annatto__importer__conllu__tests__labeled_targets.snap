@@ -11,8 +11,8 @@ expression: actual.unwrap()
     <key id="k4" for="node" attr.name="custom_ns::PronType" attr.type="string"/>
     <key id="k5" for="node" attr.name="custom_ns::SpaceAfter" attr.type="string"/>
     <key id="k6" for="node" attr.name="custom_ns::Tense" attr.type="string"/>
-    <key id="k7" for="node" attr.name="custom_ns::deprel" attr.type="string"/>
-    <key id="k8" for="node" attr.name="enh::deprel" attr.type="string"/>
+    <key id="k7" for="node" attr.name="enh::deprel" attr.type="string"/>
+    <key id="k8" for="node" attr.name="use-a-layer::deprel" attr.type="string"/>
     <key id="k9" for="node" attr.name="annis::doc" attr.type="string"/>
     <key id="k10" for="node" attr.name="annis::layer" attr.type="string"/>
     <key id="k11" for="node" attr.name="custom_ns::lemma" attr.type="string"/>
@@ -22,6 +22,7 @@ expression: actual.unwrap()
     <key id="k15" for="node" attr.name="annis::tok" attr.type="string"/>
     <key id="k16" for="node" attr.name="custom_ns::upos" attr.type="string"/>
     <key id="k17" for="node" attr.name="custom_ns::xpos" attr.type="string"/>
+    <key id="k18" for="node" attr.name="custom_ns::deprel" attr.type="string"/>
     <graph edgedefault="directed" parse.order="nodesfirst" parse.nodeids="free" parse.edgeids="canonical">
         <node id="custom_root">
             <data key="k12">corpus</data>
@@ -60,7 +61,7 @@ expression: actual.unwrap()
             <data key="k15">and</data>
             <data key="k16">CONJ</data>
             <data key="k17">CC</data>
-            <data key="k7">cc</data>
+            <data key="k8">cc</data>
         </node>
         <node id="custom_root/website_example#t8">
             <data key="k1">value with space</data>
@@ -73,7 +74,7 @@ expression: actual.unwrap()
             <data key="k2">Plur</data>
             <data key="k3">3</data>
             <data key="k6">Pres</data>
-            <data key="k7">conj</data>
+            <data key="k8">conj</data>
         </node>
         <node id="custom_root/website_example#t9">
             <data key="k10">default_layer</data>
@@ -94,7 +95,7 @@ expression: actual.unwrap()
             <data key="k15">.</data>
             <data key="k16">PUNCT</data>
             <data key="k17">.</data>
-            <data key="k7">punct</data>
+            <data key="k8">punct</data>
         </node>
         <node id="custom_root/website_example#s3">
             <data key="k12">node</data>
@@ -111,7 +112,7 @@ expression: actual.unwrap()
             <data key="k17">PRP</data>
             <data key="k2">Sing</data>
             <data key="k3">1</data>
-            <data key="k7">nsubj</data>
+            <data key="k8">nsubj</data>
         </node>
         <node id="custom_root/website_example#t15">
             <data key="k10">default_layer</data>
@@ -132,7 +133,7 @@ expression: actual.unwrap()
             <data key="k16">DET</data>
             <data key="k17">DT</data>
             <data key="k4">Neg</data>
-            <data key="k7">det</data>
+            <data key="k8">det</data>
         </node>
         <node id="custom_root/website_example#t17">
             <data key="k10">default_layer</data>
@@ -143,7 +144,7 @@ expression: actual.unwrap()
             <data key="k17">NN</data>
             <data key="k2">Sing</data>
             <data key="k5">No</data>
-            <data key="k7">obj</data>
+            <data key="k8">obj</data>
         </node>
         <node id="custom_root/website_example#t18">
             <data key="k10">default_layer</data>
@@ -152,7 +153,7 @@ expression: actual.unwrap()
             <data key="k15">.</data>
             <data key="k16">PUNCT</data>
             <data key="k17">.</data>
-            <data key="k7">punct</data>
+            <data key="k8">punct</data>
         </node>
         <node id="custom_root/website_example#s12">
             <data key="k12">node</data>
@@ -181,38 +182,38 @@ expression: actual.unwrap()
         </edge>
         <edge id="e10" source="custom_root/website_example#s12" target="custom_root/website_example#t18" label="Coverage/annis/">
         </edge>
-        <edge id="e11" source="custom_root/website_example#t6" target="custom_root/website_example#t5" label="Pointing//dep">
-            <data key="k7">nsubj</data>
+        <edge id="e11" source="custom_root/website_example#t8" target="custom_root/website_example#t5" label="Pointing/enh/syntax">
+            <data key="k18">nsubj</data>
         </edge>
-        <edge id="e12" source="custom_root/website_example#t6" target="custom_root/website_example#t8" label="Pointing//dep">
-            <data key="k7">conj</data>
+        <edge id="e12" source="custom_root/website_example#t8" target="custom_root/website_example#t9" label="Pointing/enh/syntax">
+            <data key="k18">obj</data>
         </edge>
-        <edge id="e13" source="custom_root/website_example#t6" target="custom_root/website_example#t9" label="Pointing//dep">
-            <data key="k7">obj</data>
+        <edge id="e13" source="custom_root/website_example#t6" target="custom_root/website_example#t5" label="Pointing/use-a-layer/syntax">
+            <data key="k18">nsubj</data>
         </edge>
-        <edge id="e14" source="custom_root/website_example#t6" target="custom_root/website_example#t10" label="Pointing//dep">
-            <data key="k7">punct</data>
+        <edge id="e14" source="custom_root/website_example#t6" target="custom_root/website_example#t8" label="Pointing/use-a-layer/syntax">
+            <data key="k18">conj</data>
         </edge>
-        <edge id="e15" source="custom_root/website_example#t8" target="custom_root/website_example#t7" label="Pointing//dep">
-            <data key="k7">cc</data>
+        <edge id="e15" source="custom_root/website_example#t6" target="custom_root/website_example#t9" label="Pointing/use-a-layer/syntax">
+            <data key="k18">obj</data>
         </edge>
-        <edge id="e16" source="custom_root/website_example#t15" target="custom_root/website_example#t14" label="Pointing//dep">
-            <data key="k7">nsubj</data>
+        <edge id="e16" source="custom_root/website_example#t6" target="custom_root/website_example#t10" label="Pointing/use-a-layer/syntax">
+            <data key="k18">punct</data>
         </edge>
-        <edge id="e17" source="custom_root/website_example#t15" target="custom_root/website_example#t17" label="Pointing//dep">
-            <data key="k7">obj</data>
+        <edge id="e17" source="custom_root/website_example#t8" target="custom_root/website_example#t7" label="Pointing/use-a-layer/syntax">
+            <data key="k18">cc</data>
         </edge>
-        <edge id="e18" source="custom_root/website_example#t15" target="custom_root/website_example#t18" label="Pointing//dep">
-            <data key="k7">punct</data>
+        <edge id="e18" source="custom_root/website_example#t15" target="custom_root/website_example#t14" label="Pointing/use-a-layer/syntax">
+            <data key="k18">nsubj</data>
         </edge>
-        <edge id="e19" source="custom_root/website_example#t17" target="custom_root/website_example#t16" label="Pointing//dep">
-            <data key="k7">det</data>
+        <edge id="e19" source="custom_root/website_example#t15" target="custom_root/website_example#t17" label="Pointing/use-a-layer/syntax">
+            <data key="k18">obj</data>
         </edge>
-        <edge id="e20" source="custom_root/website_example#t8" target="custom_root/website_example#t5" label="Pointing/enh/dep">
-            <data key="k7">nsubj</data>
+        <edge id="e20" source="custom_root/website_example#t15" target="custom_root/website_example#t18" label="Pointing/use-a-layer/syntax">
+            <data key="k18">punct</data>
         </edge>
-        <edge id="e21" source="custom_root/website_example#t8" target="custom_root/website_example#t9" label="Pointing/enh/dep">
-            <data key="k7">obj</data>
+        <edge id="e21" source="custom_root/website_example#t17" target="custom_root/website_example#t16" label="Pointing/use-a-layer/syntax">
+            <data key="k18">det</data>
         </edge>
         <edge id="e22" source="custom_root/website_example#t5" target="custom_root/website_example#t6" label="Ordering/annis/">
         </edge>

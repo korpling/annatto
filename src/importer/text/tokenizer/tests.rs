@@ -19,7 +19,7 @@ fn tokenize_unknown() {
 #[test]
 fn tokenize_english() {
     let text = "O.K., so the answer's obvious. Don't feed the trolls...";
-    let tokenizer = TreeTaggerTokenizer::new("en".into()).unwrap();
+    let tokenizer = TreeTaggerTokenizer::new(Language::from("en")).unwrap();
     let tokens = tokenizer
         .tokenize(text.as_bytes())
         .unwrap()

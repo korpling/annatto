@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     importer::{
         DefaultImportConfiguration, Importer,
-        text::tokenizer::{Token, TreeTaggerTokenizer},
+        text::tokenizer::{Language, Token, TreeTaggerTokenizer},
     },
     progress::ProgressReporter,
     util::graphupdate::UpdateWriter,
@@ -99,7 +99,9 @@ impl Importer for ImportText {
         let all_files = update.write_corpus_graph_from_file_tree(input_path)?;
 
         let tokenizer = match &self.tokenizer {
-            Tokenizer::Treetagger { language } => TreeTaggerTokenizer::new(language.into())?,
+            Tokenizer::Treetagger { language } => {
+                TreeTaggerTokenizer::new(Language::from(language.as_str()))?
+            }
         };
 
         // Each file is a work step

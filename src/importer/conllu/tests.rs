@@ -43,6 +43,7 @@ fn serialize_custom() {
             ns: "norm".into(),
         }),
         labeled_targets: true,
+        root_mode: None,
     };
     let serialization = toml::to_string(&module);
     assert!(
@@ -272,8 +273,11 @@ fn labeled_targets() {
         Some(BTreeSet::from(["website_example".to_string()])),
         crate::importer::ModelConfiguration::new(
             "custom_ns".to_string(),
-            DefaultComponents::default()
-                .with_pointing(importer.preset_default_pointing().cloned().unwrap()),
+            DefaultComponents::default().with_pointing(AnnotationComponent::new(
+                AnnotationComponentType::Pointing,
+                "use-a-layer".to_string(),
+                "syntax".to_string(),
+            )),
         ),
     );
     let actual = import_as_graphml_string_with_custom_config(
@@ -281,6 +285,42 @@ fn labeled_targets() {
         Path::new("tests/data/import/conll/valid/"),
         None,
         config,
+    );
+    assert!(actual.is_ok());
+    assert_snapshot!(actual.unwrap());
+}
+
+#[test]
+fn implicit_root_mode() {
+    let importer: Result<ImportCoNLLU, _> = toml::from_str(
+        r#"
+    root_mode = "implicit"
+    labeled_targets = true
+    "#,
+    );
+    assert!(importer.is_ok());
+    let actual = import_as_graphml_string(
+        importer.unwrap(),
+        Path::new("tests/data/import/conll/root-mode-tests"),
+        None,
+    );
+    assert!(actual.is_ok());
+    assert_snapshot!(actual.unwrap());
+}
+
+#[test]
+fn explicit_root_mode() {
+    let importer: Result<ImportCoNLLU, _> = toml::from_str(
+        r#"
+    root_mode = "explicit"
+    labeled_targets = true
+    "#,
+    );
+    assert!(importer.is_ok());
+    let actual = import_as_graphml_string(
+        importer.unwrap(),
+        Path::new("tests/data/import/conll/root-mode-tests"),
+        None,
     );
     assert!(actual.is_ok());
     assert_snapshot!(actual.unwrap());

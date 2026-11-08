@@ -55,6 +55,34 @@ pub struct ImportCoNLLU {
     /// Setting this to `true` additionally adds the dependency edge label as a label on the edge's target node.
     #[serde(default)]
     labeled_targets: bool,
+    /// This allows to create a root edge from the created sentence span to root nodes.
+    /// By default, these edges are not created. There are two modes that can be used
+    /// to identify the nodes that should be attached via a root edge:
+    ///
+    /// `implicit`: All unattached tokens (deprel column is `_`) and explicitly annotated
+    ///             tokens (deprel column is `root`) are attached to the sentence span.
+    ///
+    /// `explicit`: Only nodes with deprel `root` count as roots.
+    ///
+    /// Example:
+    /// ```toml
+    /// [[import]]
+    /// format = "conllu"
+    /// path = "..."
+    ///
+    /// [import.config]
+    /// root_mode = "explicit"
+    /// ```
+    #[serde(default)]
+    root_mode: Option<RootMode>,
+}
+
+#[derive(Clone, Deserialize, Facet, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+#[repr(u8)]
+enum RootMode {
+    Implicit,
+    Explicit,
 }
 
 impl Default for ImportCoNLLU {
@@ -63,6 +91,7 @@ impl Default for ImportCoNLLU {
             comment_anno: default_comment_key(),
             multi_tok: Default::default(),
             labeled_targets: Default::default(),
+            root_mode: None,
         }
     }
 }
@@ -353,6 +382,36 @@ impl ImportCoNLLU {
                         };
                         return Err(err.into());
                     }
+                } else if self.root_mode.is_some() {
+                    let dep_c = update.edge_by_parts(
+                        node_name.to_string(),
+                        target_node_name.to_string(),
+                        clayer.to_string(),
+                        update.config.default_pointing().get_type(),
+                        cname.to_string(),
+                    )?;
+                    if let Some(deprel_value) = deprel {
+                        update.edge_label(
+                            node_name.to_string(),
+                            target_node_name.to_string(),
+                            &dep_c,
+                            update.config.default_namespace().to_string(),
+                            "deprel".to_string(),
+                            deprel_value.to_string(),
+                        )?;
+                        if self.labeled_targets {
+                            update.node_label(
+                                target_node_name.to_string(),
+                                if clayer.is_empty() {
+                                    update.config.default_namespace().to_string()
+                                } else {
+                                    clayer.to_string()
+                                },
+                                "deprel".to_string(),
+                                deprel_value.to_string(),
+                            )?;
+                        }
+                    }
                 }
             }
         }
@@ -380,6 +439,7 @@ impl ImportCoNLLU {
         update.part_of(node_name.to_string(), document_node_name.to_string())?;
         let mut token_id = None;
         let mut dependencies = DepSpec::default();
+        let mut has_basic_dependency = false;
         for member in token.into_inner() {
             let rule = member.as_rule();
             match rule {
@@ -452,11 +512,13 @@ impl ImportCoNLLU {
                 }
                 Rule::head => {
                     dependencies.insert((member.as_str().trim().parse::<usize>()?, None));
+                    has_basic_dependency = true;
                 }
                 Rule::deprel => {
                     if let Some((base_head, None)) = dependencies.pop_back() {
                         dependencies.insert((base_head, Some(member.as_str().trim().to_string())));
                     }
+                    has_basic_dependency = true;
                 }
                 Rule::enhanced_deps => {
                     for enh_dep in member.into_inner() {
@@ -480,6 +542,19 @@ impl ImportCoNLLU {
                 _ => {}
             }
         }
+        let dependencies =
+            if !has_basic_dependency && let Some(RootMode::Implicit) = &self.root_mode {
+                if dependencies.is_empty() {
+                    [(0, None)].into_iter().collect()
+                } else {
+                    let mut d = LinkedHashSet::with_capacity(dependencies.len());
+                    d.insert((0, None));
+                    d.extend(dependencies);
+                    d
+                }
+            } else {
+                dependencies
+            };
         if let Some(id) = token_id {
             Ok((node_name, id, dependencies))
         } else {
