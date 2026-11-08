@@ -25,3 +25,24 @@ For importing multi-tokens, a mode can be set. By default, multi-tokens are skip
 
 Setting this to `true` additionally adds the dependency edge label as a label on the edge's target node.
 
+###  root_mode
+
+This allows to create a root edge from the created sentence span to root nodes.
+By default, these edges are not created. There are two modes that can be used
+to identify the nodes that should be attached via a root edge:
+
+`implicit`: All unattached tokens (deprel column is `_`) and explicitly annotated
+tokens (deprel column is `root`) are attached to the sentence span.
+
+`explicit`: Only nodes with deprel `root` count as roots.
+
+Example:
+```toml
+[[import]]
+format = "conllu"
+path = "..."
+
+[import.config]
+root_mode = "explicit"
+```
+
