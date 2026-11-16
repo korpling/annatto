@@ -1867,6 +1867,11 @@ from = "deprel"
         let mut new_components = Vec::new();
         let mut component_mod_config = Vec::default();
         for existing_component in previous_components {
+            if existing_component.layer == ANNIS_NS {
+                // Do not modify internal components (e.g. indexes) from graphANNIS
+                continue;
+            }
+
             let new_ctype = match existing_component.get_type() {
                 AnnotationComponentType::Coverage => continue,
                 AnnotationComponentType::Dominance => AnnotationComponentType::Pointing,
