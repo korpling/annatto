@@ -5,7 +5,6 @@ authors = [
 ]
 description = "Converts linguistic data formats based on the graphANNIS data model as intermediate representation and can apply consistency tests."
 edition = "2024"
-homepage = "https://github.com/korpling/annatto/"
 license = "Apache-2.0"
 name = "annatto"
 repository = "https://github.com/korpling/annatto/"
@@ -25,8 +24,8 @@ facet = "0.46.0"
 facet-reflect = "0.46.0"
 git2 = { version = "0.20.2", default-features = false }
 glob = "0.3"
-graphannis = "~4.2.0"
-graphannis-core = "~4.2.0"
+graphannis = "4.3.0"
+graphannis-core = "4.3.0"
 graphviz-rust = "0.9.9"
 indicatif = "0.17"
 itertools = "0.12"
