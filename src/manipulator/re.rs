@@ -1862,16 +1862,16 @@ from = "deprel"
         let mut g = input_graph_for_move(on_disk)
             .map_err(|_| assert!(false))
             .unwrap();
-        let previous_components = g.get_all_components(None, None);
+        let previous_components: Vec<_> = g
+            .get_all_components(None, None)
+            .into_iter()
+            // Do not modify internal components (e.g. indexes) from graphANNIS
+            .filter(|c| c.layer != ANNIS_NS)
+            .collect();
         let mut erased_components = Vec::new();
         let mut new_components = Vec::new();
         let mut component_mod_config = Vec::default();
         for existing_component in previous_components {
-            if existing_component.layer == ANNIS_NS {
-                // Do not modify internal components (e.g. indexes) from graphANNIS
-                continue;
-            }
-
             let new_ctype = match existing_component.get_type() {
                 AnnotationComponentType::Coverage => continue,
                 AnnotationComponentType::Dominance => AnnotationComponentType::Pointing,
